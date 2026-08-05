@@ -1,8 +1,3 @@
-# MiniMax H3 Audio T8
-
-面向当前 ComfyUI 原生 MiniMax H3 的独立音频节点包。它不修改旧的
-`comfyui-vrgamedevgirl`，节点统一位于 `T8/MiniMax H3/Audio`。
-
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
 噪声掩码之间的契约。
