@@ -1,0 +1,138 @@
+{
+  "1": {
+    "inputs": {"audio": "replace_with_source_audio.wav"},
+    "class_type": "LoadAudio",
+    "_meta": {"title": "Load source audio"}
+  },
+  "2": {
+    "inputs": {
+      "scene_start_seconds": 0.0,
+      "scene_duration_seconds": 5.0,
+      "warmup_seconds": 0.0,
+      "cooldown_seconds": 0.0,
+      "ensure_minimum_context": true,
+      "audio": ["1", 0]
+    },
+    "class_type": "MiniMaxH3AudioWindowT8",
+    "_meta": {"title": "Align source audio to H3 context"}
+  },
+  "3": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_video_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "4": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_audio_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "5": {
+    "inputs": {
+      "clip_name": "replace_with_qwen3vl_minimax_h3.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "6": {
+    "inputs": {
+      "unet_name": "replace_with_native_minimax_h3_diffusion_model.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load native H3 diffusion model"}
+  },
+  "7": {
+    "inputs": {"shift_video": 12.0, "shift_audio": 3.0, "model": ["6", 0]},
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {"title": "Native H3 sigma shifts"}
+  },
+  "8": {
+    "inputs": {
+      "prompt": "A singer performs in perfect synchronization with <Audio 1>; natural facial motion and precise lip movement.",
+      "width": 1344,
+      "height": 768,
+      "length": ["2", 1],
+      "task_type": "auto",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": true,
+      "prompt_primary_audio_ordinal": 1,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["5", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "drive_audio": ["2", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "T8 H3 audio lock conditioning"}
+  },
+  "9": {
+    "inputs": {"noise_seed": 123456789},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Noise"}
+  },
+  "10": {
+    "inputs": {"model": ["7", 0], "conditioning": ["8", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "11": {
+    "inputs": {"sampler_name": "res_multistep"},
+    "class_type": "KSamplerSelect",
+    "_meta": {"title": "Sampler"}
+  },
+  "12": {
+    "inputs": {"scheduler": "simple", "steps": 20, "denoise": 1.0, "model": ["7", 0]},
+    "class_type": "BasicScheduler",
+    "_meta": {"title": "Sigmas"}
+  },
+  "13": {
+    "inputs": {
+      "noise": ["9", 0],
+      "guider": ["10", 0],
+      "sampler": ["11", 0],
+      "sigmas": ["12", 0],
+      "latent_image": ["8", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample H3 AV latent"}
+  },
+  "14": {
+    "inputs": {"av_latent": ["13", 0], "video_vae": ["3", 0], "audio_vae": ["4", 0]},
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode H3 video and generated audio"}
+  },
+  "15": {
+    "inputs": {
+      "start_seconds": ["2", 2],
+      "duration_seconds": ["2", 3],
+      "fps": 24.0,
+      "frames": ["14", 0],
+      "audio": ["8", 2]
+    },
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "_meta": {"title": "Restore exact requested scene"}
+  },
+  "16": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_Audio_T8",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["15", 0],
+      "audio": ["15", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save synchronized MP4"}
+  }
+}

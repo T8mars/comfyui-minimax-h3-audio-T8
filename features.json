@@ -1,0 +1,28 @@
+{
+  "native_h3_contract": {
+    "fps": 24,
+    "frame_grid": "17n+5",
+    "trained_frame_range": [124, 362],
+    "max_pixel_area": 1032192,
+    "batch_size": 1
+  },
+  "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
+  "task_modes": ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
+  "nodes": [
+    "MiniMaxH3AudioConditioningT8",
+    "MiniMaxH3AudioLatentControlT8",
+    "MiniMaxH3DurationPlannerT8",
+    "MiniMaxH3AudioWindowT8",
+    "MiniMaxH3PromptTagsT8",
+    "MiniMaxH3AVDecodeT8",
+    "MiniMaxH3AudioMixT8",
+    "MiniMaxH3OutputTrimT8",
+    "MiniMaxH3PreflightT8"
+  ],
+  "reference_limits": {
+    "pictures": 9,
+    "videos": 3,
+    "standalone_audios": 3,
+    "reference_video_guidance_seconds": [2, 15]
+  }
+}
