@@ -28,7 +28,9 @@ class FakeVideoVAE:
         return torch.zeros((1, 24, latent_t, max(1, height // 16), max(1, width // 16)))
 
     def decode(self, latent):
-        return torch.zeros((1, latent.shape[2], latent.shape[3] * 16, latent.shape[4] * 16, 3))
+        latent_t = latent.shape[2]
+        frames = 1 if latent_t == 1 else ((latent_t - 2) // 5) * 17 + 5
+        return torch.zeros((1, frames, latent.shape[3] * 16, latent.shape[4] * 16, 3))
 
 
 class FakeAudioVAE:

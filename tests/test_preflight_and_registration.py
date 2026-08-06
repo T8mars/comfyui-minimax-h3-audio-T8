@@ -16,9 +16,25 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 9
+    assert len(ids) == 14
     assert len(ids) == len(set(ids))
     assert "MiniMaxH3AudioConditioningT8" in ids
+    assert "MiniMaxH3DualClockSamplerT8" in ids
+    assert "MiniMaxH3MultiRateSamplerEXPT8" in ids
+    assert "MiniMaxH3StillConditioningT8" in ids
+    assert "MiniMaxH3StillPreflightT8" in ids
+    assert "MiniMaxH3StillDecodeT8" in ids
+    exp_schema = schemas[ids.index("MiniMaxH3MultiRateSamplerEXPT8")]
+    assert exp_schema.is_experimental is True
+    assert exp_schema.category == "T8/MiniMax H3/Audio/Experimental"
+    for still_id in {
+        "MiniMaxH3StillConditioningT8",
+        "MiniMaxH3StillPreflightT8",
+        "MiniMaxH3StillDecodeT8",
+    }:
+        still_schema = schemas[ids.index(still_id)]
+        assert still_schema.is_experimental is True
+        assert still_schema.category == "T8/MiniMax H3/Still/Experimental"
 
 
 def test_preflight_reports_alignment_audio_and_reference_guidance():
@@ -52,3 +68,116 @@ def test_example_api_workflow_is_valid_and_references_existing_nodes():
         for value in node["inputs"].values():
             if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
                 assert value[0] in node_ids
+
+
+def test_dual_clock_example_uses_one_coherent_sampling_setup():
+    path = Path(__file__).resolve().parents[1] / "examples" / "dual_clock_4step_api.json"
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    dual_nodes = [value for value in workflow.values() if value["class_type"] == "MiniMaxH3DualClockSamplerT8"]
+    assert len(dual_nodes) == 1
+    assert dual_nodes[0]["inputs"]["steps"] == 4
+    assert not any(value["class_type"] in {"MiniMaxH3SigmaShift", "KSamplerSelect", "BasicScheduler"}
+                   for value in workflow.values())
+    node_ids = set(workflow)
+    for node in workflow.values():
+        for value in node["inputs"].values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                assert value[0] in node_ids
+
+
+def test_multirate_exp_example_is_independent_and_uses_eight_joint_calls():
+    path = Path(__file__).resolve().parents[1] / "examples" / "multirate_exp_api.json"
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    exp_nodes = [
+        value for value in workflow.values()
+        if value["class_type"] == "MiniMaxH3MultiRateSamplerEXPT8"
+    ]
+    assert len(exp_nodes) == 1
+    assert exp_nodes[0]["inputs"]["video_steps"] == 4
+    assert exp_nodes[0]["inputs"]["audio_steps"] == 8
+    assert not any(
+        value["class_type"] in {
+            "MiniMaxH3DualClockSamplerT8",
+            "MiniMaxH3SigmaShift",
+            "KSamplerSelect",
+            "BasicScheduler",
+        }
+        for value in workflow.values()
+    )
+    node_ids = set(workflow)
+    for node in workflow.values():
+        for value in node["inputs"].values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                assert value[0] in node_ids
+
+
+def test_still_image_edit_example_uses_ref2va_without_incompatible_lora():
+    path = Path(__file__).resolve().parents[1] / "examples" / "still_image_edit_api.json"
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    types = {value["class_type"] for value in workflow.values()}
+    assert "MiniMaxH3StillConditioningT8" in types
+    assert "MiniMaxH3StillDecodeT8" in types
+    assert "MiniMaxH3DualClockSamplerT8" in types
+    assert not any("Lora" in node_type for node_type in types)
+
+    unet = next(value for value in workflow.values() if value["class_type"] == "UNETLoader")
+    assert "ref2va" in unet["inputs"]["unet_name"]
+    conditioning = next(
+        value for value in workflow.values()
+        if value["class_type"] == "MiniMaxH3StillConditioningT8"
+    )
+    assert conditioning["inputs"]["target_mode"] == "direct_1_frame"
+    sampler = next(
+        value for value in workflow.values()
+        if value["class_type"] == "MiniMaxH3DualClockSamplerT8"
+    )
+    assert sampler["inputs"]["steps"] == 20
+
+    node_ids = set(workflow)
+    for node in workflow.values():
+        for value in node["inputs"].values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                assert value[0] in node_ids
+
+
+def test_frontend_workflows_cover_stable_and_both_exp_step_counts():
+    workflow_dir = Path(__file__).resolve().parents[1] / "examples" / "workflows"
+    expected = {
+        "H3_Turbo_Stable_4V4A.json": ("MiniMaxH3DualClockSamplerT8", [4, 12.0, 3.0]),
+        "H3_Turbo_EXP_4V8A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 8, 12.0, 3.0]),
+        "H3_Turbo_EXP_4V10A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 10, 12.0, 3.0]),
+    }
+
+    for filename, (sampler_type, sampler_widgets) in expected.items():
+        workflow = json.loads((workflow_dir / filename).read_text(encoding="utf-8"))
+        assert workflow["version"] == 0.4
+        assert workflow["last_node_id"] == max(node["id"] for node in workflow["nodes"])
+        assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+
+        nodes = {node["id"]: node for node in workflow["nodes"]}
+        types = {node["type"] for node in nodes.values()}
+        assert "LoraLoaderBypassModelOnly" in types
+        assert "MiniMaxH3SigmaShift" not in types
+        assert "BasicScheduler" not in types
+        assert "KSamplerSelect" not in types
+
+        sampler_nodes = [node for node in nodes.values() if node["type"] == sampler_type]
+        assert len(sampler_nodes) == 1
+        assert sampler_nodes[0]["widgets_values"] == sampler_widgets
+
+        unet = next(node for node in nodes.values() if node["type"] == "UNETLoader")
+        assert unet["widgets_values"][0] == "minimax_h3_fl2va_int8_convrot.safetensors"
+        lora = next(
+            node for node in nodes.values() if node["type"] == "LoraLoaderBypassModelOnly"
+        )
+        assert lora["widgets_values"][0] == (
+            "minimax_h3_turbo_4步加速ema_comfyui.safetensors"
+        )
+
+        for link_id, source_id, source_slot, target_id, target_slot, link_type in workflow["links"]:
+            source = nodes[source_id]
+            target = nodes[target_id]
+            assert link_id in source["outputs"][source_slot]["links"]
+            assert target["inputs"][target_slot]["link"] == link_id
+            assert source["outputs"][source_slot]["type"] == link_type
+            assert target["inputs"][target_slot]["type"] == link_type

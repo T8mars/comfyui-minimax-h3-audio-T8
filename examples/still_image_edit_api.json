@@ -1,0 +1,97 @@
+{
+  "1": {
+    "inputs": {"image": "replace_with_edit_image.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Load primary edit image (Picture 1)"}
+  },
+  "2": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "4": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load H3 Ref2VA model"}
+  },
+  "5": {
+    "inputs": {
+      "prompt": "Edit <Picture 1>: preserve the person's identity and composition, change the jacket to deep red, keep realistic fabric detail and natural lighting.",
+      "canvas_mode": "from_edit_image",
+      "width": 1344,
+      "height": 768,
+      "target_mode": "direct_1_frame",
+      "reference_strength": 0.999,
+      "audio_target": "generate_and_discard",
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "clip": ["3", 0],
+      "video_vae": ["2", 0],
+      "edit_image": ["1", 0]
+    },
+    "class_type": "MiniMaxH3StillConditioningT8",
+    "_meta": {"title": "Experimental H3 reference image edit"}
+  },
+  "6": {
+    "inputs": {
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": ["4", 0],
+      "av_latent": ["5", 1]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "H3 dual-clock sampling setup"}
+  },
+  "7": {
+    "inputs": {"noise_seed": 123456789},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Noise"}
+  },
+  "8": {
+    "inputs": {"model": ["6", 0], "conditioning": ["5", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "9": {
+    "inputs": {
+      "noise": ["7", 0],
+      "guider": ["8", 0],
+      "sampler": ["6", 1],
+      "sigmas": ["6", 2],
+      "latent_image": ["5", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample experimental H3 still latent"}
+  },
+  "10": {
+    "inputs": {
+      "frame_selection": "middle",
+      "frame_index": 0,
+      "av_latent": ["9", 0],
+      "video_vae": ["2", 0]
+    },
+    "class_type": "MiniMaxH3StillDecodeT8",
+    "_meta": {"title": "Decode and select still image"}
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "MiniMaxH3_Still_Edit_EXP",
+      "images": ["10", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {"title": "Save edited image"}
+  }
+}

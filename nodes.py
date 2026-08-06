@@ -4,8 +4,15 @@ from comfy_api.latest import ComfyExtension, io
 
 from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av_output
 from .conditioning import build_conditioning
+from .nodes_multirate_exp import MiniMaxH3MultiRateSamplerEXPT8
+from .nodes_still_exp import (
+    MiniMaxH3StillConditioningT8,
+    MiniMaxH3StillDecodeT8,
+    MiniMaxH3StillPreflightT8,
+)
 from .preflight import run_preflight
 from .prompt_tags import prepare_prompt
+from .sampling import setup_dual_clock_sampling
 from .timing import make_timing_plan, window_audio
 
 
@@ -263,12 +270,46 @@ class MiniMaxH3PreflightT8(io.ComfyNode):
                                             drive_audio, ref_images, ref_videos, ref_audios))
 
 
+class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3DualClockSamplerT8",
+            display_name="MiniMax H3 Dual-Clock Sampler (T8)",
+            description=(
+                "Four-step H3 Euler setup with separate video/audio clocks. "
+                "Outputs a coherently shifted model, sampler, and native flow sigmas."
+            ),
+            category=CATEGORY,
+            inputs=[
+                io.Model.Input("model"),
+                io.Latent.Input("av_latent"),
+                io.Int.Input("steps", default=4, min=1, max=1000),
+                io.Float.Input("shift_video", default=12.0, min=0.01, max=100.0, step=0.01, advanced=True),
+                io.Float.Input("shift_audio", default=3.0, min=0.01, max=100.0, step=0.01, advanced=True),
+            ],
+            outputs=[
+                io.Model.Output(display_name="model"),
+                io.Sampler.Output(display_name="sampler"),
+                io.Sigmas.Output(display_name="sigmas"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, model, av_latent, steps, shift_video, shift_audio):
+        return io.NodeOutput(*setup_dual_clock_sampling(
+            model, av_latent, steps, shift_video, shift_audio
+        ))
+
+
 class MiniMaxH3AudioT8Extension(ComfyExtension):
     async def get_node_list(self):
         return [MiniMaxH3AudioConditioningT8, MiniMaxH3AudioLatentControlT8,
                 MiniMaxH3DurationPlannerT8, MiniMaxH3AudioWindowT8, MiniMaxH3PromptTagsT8,
                 MiniMaxH3AVDecodeT8, MiniMaxH3AudioMixT8, MiniMaxH3OutputTrimT8,
-                MiniMaxH3PreflightT8]
+                MiniMaxH3PreflightT8, MiniMaxH3DualClockSamplerT8,
+                MiniMaxH3MultiRateSamplerEXPT8, MiniMaxH3StillConditioningT8,
+                MiniMaxH3StillPreflightT8, MiniMaxH3StillDecodeT8]
 
 
 def comfy_entrypoint():

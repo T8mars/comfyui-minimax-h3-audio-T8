@@ -17,8 +17,47 @@
     "MiniMaxH3AVDecodeT8",
     "MiniMaxH3AudioMixT8",
     "MiniMaxH3OutputTrimT8",
-    "MiniMaxH3PreflightT8"
+    "MiniMaxH3PreflightT8",
+    "MiniMaxH3DualClockSamplerT8",
+    "MiniMaxH3MultiRateSamplerEXPT8",
+    "MiniMaxH3StillConditioningT8",
+    "MiniMaxH3StillPreflightT8",
+    "MiniMaxH3StillDecodeT8"
   ],
+  "sampling": {
+    "algorithm": "dual-clock Euler",
+    "default_steps": 4,
+    "video_shift": 12.0,
+    "audio_shift": 3.0,
+    "sigma_grid": "native shifted uniform flow"
+  },
+  "experimental_sampling": {
+    "node": "MiniMaxH3MultiRateSamplerEXPT8",
+    "algorithm": "multi-rate dual-clock Euler",
+    "default_video_steps": 4,
+    "default_audio_steps": 8,
+    "model_evaluations": "audio_steps",
+    "video_update_policy": "one frozen-derivative macro update per video step",
+    "status": "experimental; does not replace or modify the stable dual-clock node"
+  },
+  "experimental_still_image_edit": {
+    "conditioning_node": "MiniMaxH3StillConditioningT8",
+    "preflight_node": "MiniMaxH3StillPreflightT8",
+    "decode_node": "MiniMaxH3StillDecodeT8",
+    "checkpoint_family": "MiniMax H3 Ref2VA",
+    "target_modes": ["direct_1_frame", "micro_video_5_frames", "trained_124_frames"],
+    "audio_strategies": ["generate_and_discard", "lock_silence"],
+    "total_reference_picture_limit": 9,
+    "status": "experimental semantic reference editing; not mask-based pixel editing",
+    "validated_probe": {
+      "checkpoint": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "resolution": [512, 512],
+      "target_mode": "direct_1_frame",
+      "steps": 20,
+      "result": "successful single reference color/material edit",
+      "scope": "one perceptual probe; not a broad quality benchmark"
+    }
+  },
   "reference_limits": {
     "pictures": 9,
     "videos": 3,

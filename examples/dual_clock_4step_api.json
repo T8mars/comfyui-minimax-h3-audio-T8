@@ -1,0 +1,114 @@
+{
+  "1": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_video_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "2": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_audio_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "replace_with_qwen3vl_minimax_h3.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "4": {
+    "inputs": {
+      "unet_name": "replace_with_native_minimax_h3_diffusion_model.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load native H3 diffusion model"}
+  },
+  "5": {
+    "inputs": {
+      "lora_name": "minimax_h3_turbo_4step_comfyui.safetensors",
+      "strength_model": 1.0,
+      "model": ["4", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {"title": "Load H3 Turbo 4-step LoRA"}
+  },
+  "6": {
+    "inputs": {
+      "prompt": "A cinematic scene with coherent motion and clean synchronized sound.",
+      "width": 1344,
+      "height": 768,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["3", 0],
+      "video_vae": ["1", 0],
+      "audio_vae": ["2", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Native H3 text-to-video-and-audio"}
+  },
+  "7": {
+    "inputs": {
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": ["5", 0],
+      "av_latent": ["6", 1]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "H3 Turbo dual-clock setup"}
+  },
+  "8": {
+    "inputs": {"noise_seed": 123456789},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Noise"}
+  },
+  "9": {
+    "inputs": {"model": ["7", 0], "conditioning": ["6", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "10": {
+    "inputs": {
+      "noise": ["8", 0],
+      "guider": ["9", 0],
+      "sampler": ["7", 1],
+      "sigmas": ["7", 2],
+      "latent_image": ["6", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample H3 AV latent at four steps"}
+  },
+  "11": {
+    "inputs": {"av_latent": ["10", 0], "video_vae": ["1", 0], "audio_vae": ["2", 0]},
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode generated video and audio"}
+  },
+  "12": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_Turbo_DualClock",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["11", 0],
+      "audio": ["11", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save synchronized MP4"}
+  }
+}

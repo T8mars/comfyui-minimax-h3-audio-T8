@@ -1,7 +1,7 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.0.0"
-description = "Native MiniMax H3 audio conditioning, timing, validation, decode, mix, and trim nodes for ComfyUI"
+version = "1.3.0"
+description = "MiniMax H3 audio, dual-clock sampling, and experimental Ref2VA still-image editing nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
@@ -10,3 +10,7 @@ dependencies = []
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 testpaths = ["tests"]
+norecursedirs = ["artifacts"]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/*.py" = ["T201"]
