@@ -13,6 +13,7 @@ from h3_audio_t8_pkg.still_image import (
     resolve_still_target,
     run_still_preflight,
 )
+from h3_audio_t8_pkg.core import MAX_PIXELS
 from helpers import FakeClip, FakeVideoVAE
 
 
@@ -98,14 +99,16 @@ def test_locked_silence_preserves_video_denoising_and_locks_audio():
     assert torch.all(audio_mask == 0)
 
 
-def test_canvas_from_edit_image_stays_aligned_and_inside_native_cap():
+def test_canvas_from_edit_image_and_custom_1080p_stay_inside_supported_cap():
     image = torch.zeros((1, 720, 1280, 3))
     width, height = resolve_still_canvas(image, "from_edit_image", 32, 32)
     assert width % 32 == 0 and height % 32 == 0
-    assert width * height <= 768 * 1344
+    assert width * height <= MAX_PIXELS
 
-    with pytest.raises(ValueError, match="native H3 cap"):
-        resolve_still_canvas(image, "custom", 1408, 768)
+    assert resolve_still_canvas(image, "custom", 1920, 1088) == (1920, 1088)
+
+    with pytest.raises(ValueError, match="2,088,960"):
+        resolve_still_canvas(image, "custom", 1952, 1088)
 
 
 def test_still_preflight_reports_missing_image_and_single_frame_ood_warning():

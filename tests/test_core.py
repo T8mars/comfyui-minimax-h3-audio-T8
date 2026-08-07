@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import torch
 
 import comfy.nested_tensor
@@ -9,7 +11,26 @@ from h3_audio_t8_pkg.core import (
     fit_audio_latent,
     replace_audio_latent,
     temporal_shape,
+    validate_audio,
 )
+
+
+class LazyAudioMapping(Mapping):
+    def __init__(self, audio):
+        self.audio = audio
+        self.loaded = False
+
+    def __getitem__(self, key):
+        self.loaded = True
+        return self.audio[key]
+
+    def __iter__(self):
+        self.loaded = True
+        return iter(self.audio)
+
+    def __len__(self):
+        self.loaded = True
+        return len(self.audio)
 
 
 def test_frame_grid_and_temporal_shapes():
@@ -29,6 +50,16 @@ def test_fit_audio_latent_trims_and_pads():
     long = fit_audio_latent(torch.ones((1, 32, 2, 20)), template)
     assert long.shape == template.shape
     assert torch.all(long == 1)
+
+
+def test_validate_audio_accepts_lazy_mapping_from_video_loaders():
+    lazy_audio = LazyAudioMapping(
+        {"waveform": torch.ones((1, 1, 8000)), "sample_rate": 16000}
+    )
+    waveform, sample_rate = validate_audio(lazy_audio)
+    assert lazy_audio.loaded is True
+    assert waveform.shape == (1, 1, 8000)
+    assert sample_rate == 16000
 
 
 def test_audio_replacement_preserves_existing_video_mask():

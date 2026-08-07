@@ -18,6 +18,13 @@ class FakeClip:
 
 
 class FakeVideoVAE:
+    # ComfyUI's generic VAE wrapper exposes audio_sample_rate even for video
+    # VAEs. The H3 video/audio distinction must use the latent contract.
+    audio_sample_rate = 44100
+    latent_channels = 24
+    latent_dim = 3
+    output_channels = 3
+
     def __init__(self):
         self.encode_calls = []
 
@@ -36,6 +43,9 @@ class FakeVideoVAE:
 class FakeAudioVAE:
     audio_sample_rate = 32000
     audio_sample_rate_output = 32000
+    latent_channels = 32
+    latent_dim = 2
+    output_channels = 2
 
     def __init__(self):
         self.encode_calls = []

@@ -190,3 +190,36 @@ Validation evidence:
 - all 14 Block Cache tests cover current raw audio velocity and simulated legacy slope-scaled
   velocity; all 74 Prompt Enhancer tests pass. The disabled EasyCache directory and RH H3 directory
   contain no active sampling implementation.
+
+## Version 1.3.2 media, VAE, and 2.0MP regression (2026-08-07)
+
+Three independent issues were reproduced and fixed without changing either stable or experimental
+sampling mathematics:
+
+- VideoHelperSuite returns its audio as a lazy `Mapping`, not necessarily a concrete `dict`.
+  The shared audio validator now accepts the mapping protocol while preserving the same waveform,
+  sample-rate, rank, and finite-value checks. A live `VHS_LoadVideo` output from `1.mp4` was connected
+  directly to `ref_video_audios.ref_video_audio_0`; conditioning completed and mapped the media as
+  `Video 1` plus `Audio 1`.
+- Current ComfyUI initializes a generic `audio_sample_rate` attribute on both H3 VAE wrappers, so
+  attribute presence cannot distinguish video from audio VAEs. Preflight now identifies the native
+  H3 VAE contract from the underlying class or the latent geometry (`24/3D` video, `32/2D` audio).
+  Live main and still-image preflights both classified the installed video VAE as `video`; the main
+  preflight also classified the installed audio VAE as `audio` and returned `ready=true`.
+- The accepted canvas-area envelope was raised from 1,032,192 pixels to 2,088,960 pixels, with
+  `1920x1088` accepted exactly and larger test input `1952x1088` rejected. Canvases above the old
+  0.98M threshold remain allowed but produce a high-VRAM warning.
+
+Validation evidence:
+
+- 65 project tests pass and Ruff reports no findings;
+- isolated ComfyUI whitelist import succeeds against ComfyUI `0.30.0` at `a464ac335`;
+- a live `1920x1088`, 22-frame, one-step stable dual-clock run completed a real joint H3 forward
+  using the FL2VA INT8 ConvRot model, Qwen3-VL NVFP4 encoder, and both native H3 VAEs;
+- that run completed in 30.4 seconds in the then-warm process, and coarse `/system_stats` polling
+  observed a minimum of about 1,212 MiB free VRAM on the RTX 4060 Ti 16GB.
+
+The real-model probe stopped at the generated joint latent and did not decode or assess perceptual
+quality. It proves that the new boundary is executable for this short one-step case, not that a
+2.0MP 124- or 362-frame workflow will fit every 16GB environment. Resolution, frame count, steps,
+reference-media size, previews, allocator state, and other loaded models can still determine OOM.

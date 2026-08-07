@@ -13,7 +13,8 @@ import comfy.utils
 
 CANVAS_MULTIPLE = 32
 BASE_SHORT_EDGE = 768
-MAX_PIXELS = 768 * 1344
+VRAM_CAUTION_PIXELS = 1344 * 768
+MAX_PIXELS = 1920 * 1088
 REF_IMAGE_SHORT_EDGE = 2048
 FPS = 24
 AUDIO_LATENT_FPS = 40
@@ -98,8 +99,33 @@ def nested_av_parts(av_latent: dict) -> tuple[torch.Tensor, torch.Tensor]:
     return video, audio
 
 
-def validate_audio(audio: dict, name: str = "audio") -> tuple[torch.Tensor, int]:
-    if not isinstance(audio, dict):
+def classify_h3_vae(vae) -> str:
+    """Classify ComfyUI H3 VAE wrappers without relying on audio_sample_rate.
+
+    ComfyUI initializes ``audio_sample_rate`` on every generic VAE wrapper,
+    including MiniMax H3 video VAEs. The latent contract and wrapped model
+    class are the stable discriminators for the two H3 VAE families.
+    """
+    if vae is None:
+        return "unknown"
+    first_stage = getattr(vae, "first_stage_model", None)
+    class_name = type(first_stage).__name__ if first_stage is not None else ""
+    if class_name == "MiniMaxH3VideoVAE":
+        return "video"
+    if class_name == "MiniMaxH3AudioVAE":
+        return "audio"
+
+    latent_channels = getattr(vae, "latent_channels", None)
+    latent_dim = getattr(vae, "latent_dim", None)
+    if latent_channels == 24 and latent_dim == 3:
+        return "video"
+    if latent_channels == 32 and latent_dim == 2:
+        return "audio"
+    return "unknown"
+
+
+def validate_audio(audio: Mapping, name: str = "audio") -> tuple[torch.Tensor, int]:
+    if not isinstance(audio, Mapping):
         raise ValueError(f"{name} must be a connected AUDIO value")
     waveform = audio.get("waveform")
     sample_rate = audio.get("sample_rate")
@@ -114,7 +140,7 @@ def validate_audio(audio: dict, name: str = "audio") -> tuple[torch.Tensor, int]
     return waveform, int(sample_rate)
 
 
-def encode_audio_once(audio_vae, audio: dict) -> torch.Tensor:
+def encode_audio_once(audio_vae, audio: Mapping) -> torch.Tensor:
     waveform, sample_rate = validate_audio(audio)
     vae_sample_rate = int(getattr(audio_vae, "audio_sample_rate", 32000))
     if sample_rate != vae_sample_rate:

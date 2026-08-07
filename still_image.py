@@ -16,7 +16,9 @@ from .core import (
     FPS,
     MAX_PIXELS,
     REF_IMAGE_SHORT_EDGE,
+    VRAM_CAUTION_PIXELS,
     adapt_canvas,
+    classify_h3_vae,
     nested_av_parts,
     resize_image,
     sorted_autogrow_values,
@@ -68,7 +70,8 @@ def resolve_still_canvas(
         raise ValueError("MiniMax H3 still width and height must be positive multiples of 32")
     if width * height > MAX_PIXELS:
         raise ValueError(
-            f"Still canvas has {width * height:,} pixels; native H3 cap is {MAX_PIXELS:,}"
+            f"Still canvas has {width * height:,} pixels; configured H3 2.0MP cap is "
+            f"{MAX_PIXELS:,} pixels (1920x1088)"
         )
     return width, height
 
@@ -292,6 +295,10 @@ def run_still_preflight(
                 warnings.append(
                     "canvas short edge below 512 may collapse image structure; use from_edit_image or a larger custom canvas"
                 )
+            if resolved_width * resolved_height > VRAM_CAUTION_PIXELS:
+                warnings.append(
+                    "high-resolution still canvas is supported up to 1920x1088 but may require substantially more VRAM"
+                )
         except ValueError as error:
             errors.append(str(error))
 
@@ -327,8 +334,11 @@ def run_still_preflight(
         warnings.append("connect model to verify the native MiniMax H3 model class")
     if video_vae is None:
         warnings.append("connect video_vae to include it in the preflight graph")
-    elif hasattr(video_vae, "audio_sample_rate"):
-        errors.append("video_vae appears to be an audio VAE")
+    else:
+        video_vae_kind = classify_h3_vae(video_vae)
+        facts["video_vae_kind"] = video_vae_kind
+        if video_vae_kind == "audio":
+            errors.append("video_vae is an H3 audio VAE; connect the H3 video VAE")
 
     facts["pictures"] = len(references)
     warnings.append("checkpoint variant cannot be inferred reliably; select a Ref2VA checkpoint")

@@ -12,6 +12,7 @@ from comfy.model_base import MiniMaxH3 as MiniMaxH3BaseModel
 from .core import (
     CANVAS_MULTIPLE,
     FPS,
+    MAX_PIXELS,
     REF_IMAGE_SHORT_EDGE,
     adapt_canvas,
     align_frame_count_down,
@@ -148,10 +149,10 @@ def build_conditioning(
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
-    if width * height > 768 * 1344:
+    if width * height > MAX_PIXELS:
         raise ValueError(
-            "Requested canvas exceeds MiniMax H3's native 768x1344 pixel-area cap; "
-            "reduce width/height to avoid an unvalidated VRAM path"
+            f"Requested canvas has {width * height:,} pixels and exceeds the configured "
+            f"MiniMax H3 2.0MP cap of {MAX_PIXELS:,} pixels (1920x1088); reduce width/height"
         )
     if not 0.0 <= audio_denoise_strength <= 1.0:
         raise ValueError("audio_denoise_strength must be between 0 and 1")

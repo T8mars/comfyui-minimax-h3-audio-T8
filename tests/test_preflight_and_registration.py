@@ -78,12 +78,49 @@ def test_preflight_reports_alignment_audio_and_reference_guidance():
     assert ready is True
     assert warning_count >= 3
     assert data["facts"]["aligned_frames"] == 124
+    assert data["facts"]["video_vae_kind"] == "video"
+    assert not any("swapped" in warning for warning in data["warnings"])
 
 
-def test_preflight_blocks_oversize_canvas_and_missing_drive_audio():
-    ready, _, report = run_preflight(1408, 768, 124, "lock_source")
+def test_preflight_allows_1080p_area_and_blocks_only_above_it():
+    ready, warning_count, report = run_preflight(1920, 1088, 124, "native")
+    data = json.loads(report)
+    assert ready is True
+    assert warning_count >= 1
+    assert data["facts"]["pixels"] == 1920 * 1088
+    assert any("VRAM" in warning for warning in data["warnings"])
+
+    ready, _, report = run_preflight(1952, 1088, 124, "lock_source")
     assert ready is False
     assert len(json.loads(report)["errors"]) == 2
+
+
+def test_preflight_distinguishes_h3_video_and_audio_vaes_by_latent_contract():
+    ready, _, report = run_preflight(
+        1344,
+        768,
+        124,
+        "native",
+        video_vae=FakeVideoVAE(),
+        audio_vae=FakeAudioVAE(),
+    )
+    data = json.loads(report)
+    assert ready is True
+    assert data["facts"]["video_vae_kind"] == "video"
+    assert data["facts"]["audio_vae_kind"] == "audio"
+
+    ready, _, report = run_preflight(
+        1344,
+        768,
+        124,
+        "native",
+        video_vae=FakeAudioVAE(),
+        audio_vae=FakeVideoVAE(),
+    )
+    data = json.loads(report)
+    assert ready is False
+    assert any("video_vae is an H3 audio VAE" in error for error in data["errors"])
+    assert any("audio_vae is an H3 video VAE" in error for error in data["errors"])
 
 
 def test_example_api_workflow_is_valid_and_references_existing_nodes():

@@ -10,7 +10,9 @@ from .core import (
     MAX_PIXELS,
     MAX_TRAINED_FRAMES,
     MIN_TRAINED_FRAMES,
+    VRAM_CAUTION_PIXELS,
     align_frame_count,
+    classify_h3_vae,
     sorted_autogrow_values,
     validate_audio,
 )
@@ -37,8 +39,17 @@ def run_preflight(
         errors.append("width and height must be positive multiples of 32")
     pixels = width * height
     facts["pixels"] = pixels
+    facts["max_pixel_area"] = MAX_PIXELS
     if pixels > MAX_PIXELS:
-        errors.append(f"canvas has {pixels:,} pixels; native H3 cap is {MAX_PIXELS:,}")
+        errors.append(
+            f"canvas has {pixels:,} pixels; configured H3 2.0MP cap is "
+            f"{MAX_PIXELS:,} pixels (1920x1088)"
+        )
+    elif pixels > VRAM_CAUTION_PIXELS:
+        warnings.append(
+            f"high-resolution canvas has {pixels:,} pixels; this is supported up to "
+            "1920x1088 but may require substantially more VRAM"
+        )
     aligned = align_frame_count(length)
     facts["aligned_frames"] = aligned
     if aligned != length:
@@ -52,9 +63,16 @@ def run_preflight(
         diffusion_model = getattr(getattr(model, "model", None), "diffusion_model", None)
         if not isinstance(diffusion_model, MiniMaxH3Model):
             errors.append("model is not a native ComfyUI MiniMax H3 diffusion model")
-    if video_vae is not None and hasattr(video_vae, "audio_sample_rate"):
-        warnings.append("video_vae exposes an audio sample rate; verify the video and audio VAEs are not swapped")
+    if video_vae is not None:
+        video_vae_kind = classify_h3_vae(video_vae)
+        facts["video_vae_kind"] = video_vae_kind
+        if video_vae_kind == "audio":
+            errors.append("video_vae is an H3 audio VAE; connect the H3 video VAE")
     if audio_vae is not None:
+        audio_vae_kind = classify_h3_vae(audio_vae)
+        facts["audio_vae_kind"] = audio_vae_kind
+        if audio_vae_kind == "video":
+            errors.append("audio_vae is an H3 video VAE; connect the H3 audio VAE")
         facts["audio_vae_sample_rate"] = int(getattr(audio_vae, "audio_sample_rate", 32000))
 
     if audio_mode != "native" and drive_audio is None:

@@ -116,8 +116,22 @@ def test_orphan_video_soundtrack_is_rejected():
         build_conditioning(**args)
 
 
-def test_canvas_over_native_area_cap_is_rejected():
+def test_canvas_allows_1080p_area_and_rejects_above_it():
     args = base_args()
-    args.update({"width": 1408, "height": 768})
-    with pytest.raises(ValueError, match="pixel-area cap"):
+    args.update({
+        "width": 1920,
+        "height": 1088,
+        "length": 22,
+        "audio_mode": "native",
+        "prompt": "A quiet cinematic landscape",
+        "drive_audio": None,
+        "add_source_as_reference": False,
+        "prompt_primary_audio_ordinal": 0,
+    })
+    _, latent, *_ = build_conditioning(**args)
+    video, _audio = latent["samples"].unbind()
+    assert video.shape[-2:] == (68, 120)
+
+    args.update({"width": 1952, "height": 1088})
+    with pytest.raises(ValueError, match="2,088,960"):
         build_conditioning(**args)

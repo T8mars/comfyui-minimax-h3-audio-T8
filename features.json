@@ -3,7 +3,9 @@
     "fps": 24,
     "frame_grid": "17n+5",
     "trained_frame_range": [124, 362],
-    "max_pixel_area": 1032192,
+    "max_pixel_area": 2088960,
+    "max_16_9_resolution": [1920, 1088],
+    "vram_caution_pixel_area": 1032192,
     "batch_size": 1
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
