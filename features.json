@@ -29,7 +29,12 @@
     "default_steps": 4,
     "video_shift": 12.0,
     "audio_shift": 3.0,
-    "sigma_grid": "native shifted uniform flow"
+    "sigma_grid": "native shifted uniform flow",
+    "comfyui_audio_velocity_compatibility": [
+      "legacy slope-scaled H3 velocity",
+      "current FLOW_AV raw H3 audio velocity"
+    ],
+    "custom_audio_scale": 1.0
   },
   "experimental_sampling": {
     "node": "MiniMaxH3MultiRateSamplerEXPT8",
@@ -38,6 +43,10 @@
     "default_audio_steps": 8,
     "model_evaluations": "audio_steps",
     "video_update_policy": "one frozen-derivative macro update per video step",
+    "comfyui_audio_velocity_compatibility": [
+      "legacy slope-scaled H3 velocity",
+      "current FLOW_AV raw H3 audio velocity"
+    ],
     "status": "experimental; does not replace or modify the stable dual-clock node"
   },
   "experimental_still_image_edit": {
@@ -45,9 +54,15 @@
     "preflight_node": "MiniMaxH3StillPreflightT8",
     "decode_node": "MiniMaxH3StillDecodeT8",
     "checkpoint_family": "MiniMax H3 Ref2VA",
-    "target_modes": ["direct_1_frame", "micro_video_5_frames", "trained_124_frames"],
+    "target_modes": [
+      "direct_1_frame",
+      "micro_video_5_frames",
+      "short_video_22_frames",
+      "trained_124_frames"
+    ],
     "audio_strategies": ["generate_and_discard", "lock_silence"],
     "total_reference_picture_limit": 9,
+    "frontend_workflow": "examples/workflows/H3_Still_Edit_22Frames_EXP.json",
     "status": "experimental semantic reference editing; not mask-based pixel editing",
     "validated_probe": {
       "checkpoint": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
@@ -57,6 +72,18 @@
       "result": "successful single reference color/material edit",
       "scope": "one perceptual probe; not a broad quality benchmark"
     }
+  },
+  "vram_validation": {
+    "tool": "tools/validate_h3_vram.py",
+    "modes": ["inspect", "make-pair", "run", "compare"],
+    "telemetry": [
+      "ComfyUI node and progress events",
+      "device VRAM baseline and peak",
+      "PyTorch active VRAM",
+      "DynamicVRAM startup evidence",
+      "execution error traceback"
+    ],
+    "scope": "diagnostic only; does not alter sampler math or model memory policy"
   },
   "reference_limits": {
     "pictures": 9,

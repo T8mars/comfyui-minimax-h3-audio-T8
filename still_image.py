@@ -24,9 +24,12 @@ from .core import (
 from .prompt_tags import media_map_json, prepare_prompt
 
 
+# Native H3 video timing maps frames 17k+5 to latent T=5k+2.
+# The direct one-frame target is an explicitly experimental exception.
 STILL_TARGETS = {
     "direct_1_frame": (1, 1),
     "micro_video_5_frames": (5, 2),
+    "short_video_22_frames": (22, 7),
     "trained_124_frames": (124, 37),
 }
 

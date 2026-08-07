@@ -3,3 +3,4 @@ __pycache__/
 *.py[cod]
 artifacts/releases/
 artifacts/legacy-project-mirror/
+artifacts/vram-validation/

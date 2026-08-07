@@ -19,4 +19,7 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     comfy_entrypoint = _nodes.comfy_entrypoint
 
 
-__all__ = ["comfy_entrypoint"]
+WEB_DIRECTORY = "./web"
+
+
+__all__ = ["comfy_entrypoint", "WEB_DIRECTORY"]

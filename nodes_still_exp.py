@@ -40,10 +40,14 @@ class MiniMaxH3StillConditioningT8(io.ComfyNode):
                     options=[
                         "direct_1_frame",
                         "micro_video_5_frames",
+                        "short_video_22_frames",
                         "trained_124_frames",
                     ],
                     default="direct_1_frame",
-                    tooltip="Direct 1-frame is cheapest and most experimental; 124-frame is the quality baseline.",
+                    tooltip=(
+                        "1-frame is cheapest and most experimental; 22-frame is the next native "
+                        "17n+5 grid point; 124-frame is the approximate trained-range baseline."
+                    ),
                 ),
                 io.Float.Input(
                     "reference_strength",
@@ -146,6 +150,7 @@ class MiniMaxH3StillPreflightT8(io.ComfyNode):
                     options=[
                         "direct_1_frame",
                         "micro_video_5_frames",
+                        "short_video_22_frames",
                         "trained_124_frames",
                     ],
                     default="direct_1_frame",

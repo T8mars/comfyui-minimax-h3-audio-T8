@@ -1,6 +1,6 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.3.0`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.3.1`，共注册
 14 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样，
 以及 Ref2VA 单图/多图参考的静态语义编辑。
 
@@ -20,8 +20,12 @@
 
 将项目目录放入 ComfyUI 的 `custom_nodes/minimax-h3-audio-T8`，重启 ComfyUI 后即可在上述
 菜单中找到节点。本项目没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
-MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `6f7cd7fce`、Python
+MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`、Python
 3.10+。模型、VAE、CLIP 和可选 LoRA 仍需按具体任务自行安装。
+
+`1.3.1` 同时兼容两代 H3 采样协议：旧版 ComfyUI 的 slope-scaled 音频速度，以及当前
+`FLOW_AV` / `ModelSamplingAV` 的原始音频速度。兼容性由实际 H3 基模能力检测，不依赖用户
+手动选择，也不会对新版 ComfyUI 再次应用音频 carry/scale。
 
 ## 项目目录
 
@@ -52,7 +56,21 @@ MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `6f
 | MiniMax H3 Multi-Rate Sampler (EXP/T8) | 实验性视频宏步/音频微步采样；独立实现，不替换稳定双时钟节点 |
 | MiniMax H3 Reference Image Edit (EXP/T8) | 用 Ref2VA 对单张主图进行语义编辑，并支持最多 8 张附加参考图 |
 | MiniMax H3 Still Preflight (EXP/T8) | 检查单帧 OOD、画布、参考数量、模型和 VAE 契约 |
-| MiniMax H3 Still Decode (EXP/T8) | 只解码视频 latent，并从 1/5/124 帧候选中选出一张图 |
+| MiniMax H3 Still Decode (EXP/T8) | 只解码视频 latent，并从 1/5/22/124 帧候选中选出一张图 |
+
+`MiniMax H3 Audio Conditioning (T8)` 的 `task_type` 下拉框会显示中英双语说明：
+
+| 选项 | 中文含义 |
+|---|---|
+| `auto` | 自动判断（按已连接输入） |
+| `T2VA` | 文生音视频 |
+| `I2VA` | 图生音视频（首帧） |
+| `FL2VA` | 首尾帧生音视频 |
+| `L2VA` | 尾帧生音视频 |
+| `Ref2VA` | 参考生音视频 |
+| `Hybrid` | 关键帧与参考媒体混合生成 |
+
+中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
 
 ## EXP：参考图像编辑
 
@@ -65,6 +83,8 @@ Prompt 应明确每张图的职责，例如主体身份、服装、背景或光�
 
 - `direct_1_frame`：直接创建 `video latent_t=1`，成本最低，但严重偏离训练帧数；
 - `micro_video_5_frames`：生成 H3 最短 5 帧，再在 Still Decode 中选帧；
+- `short_video_22_frames`：生成下一档原生 `17n+5` 网格的22帧，视频 latent T=7，
+  音频 latent T=37；比124帧便宜很多，但仍低于约124帧的训练下限；
 - `trained_124_frames`：按近似训练下限生成 124 帧，作为质量基准，成本最高。
 
 默认 `reference_strength=0.999` 与 H3 参考条件的原始噪声增强接近；降低该值会向参考
@@ -81,7 +101,9 @@ latent 注入更多噪声，可能增强重绘幅度，也可能损坏身份与�
 本机现有 Ref2VA 是 pruned INT8，不能完整应用本项目转换的 Turbo LoRA；示例因此不加载
 LoRA，并以 20 步作为结构基线。若以后安装非裁剪 Ref2VA，再单独进行 Turbo LoRA 对照。
 这项能力是参考引导的语义重绘，不是 mask/inpainting，也不保证未编辑区域像素不变。
-API 示例见 `examples/still_image_edit_api.json`。
+API 示例见 `examples/still_image_edit_api.json`；可直接拖入画布的完整示例见
+`examples/workflows/H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
+并连接 Still Preflight；在 Reference Image Edit 节点上点击“＋”可追加最多8张参考图。
 
 本机真实模型验证中，pruned Ref2VA INT8 在 512×512、20 步、`direct_1_frame` 下成功
 保留手袋主体并把黑色皮革改成深红色；相同任务在 128×128 下结构明显崩坏。因此默认推荐
@@ -90,16 +112,17 @@ API 示例见 `examples/still_image_edit_api.json`。
 
 ## H3 Turbo 四步双时钟采样
 
-H3 的视频流默认使用 shift 12，音频流使用 shift 3。原生 DiT 为兼容普通 ComfyUI
-采样器，会把音频速度乘上 `d(sigma_audio)/d(sigma_video)`；标准 Euler 再统一乘视频
-步长。在 20 步附近这是可用的数值近似，但四步时最后一跳会把音频更新放大到应有值的
-约 2.5 倍，常见结果就是画面正常而音频接近白噪声。
+H3 的视频流默认使用 shift 12，音频流使用 shift 3。旧版 ComfyUI 的 H3 DiT 会把音频
+速度乘上 `d(sigma_audio)/d(sigma_video)`；当前 ComfyUI 已改为 `FLOW_AV`，模型返回原始
+音频速度，并由原生 `ModelSamplingAV` 支持音频 carry/scale。T8 双时钟节点自己维护两个
+时钟，因此会检测实际基模协议：旧版移除 schedule slope，当前版直接按音频 sigma 差积分，
+同时把自定义 sampling 的 `audio_scale` 固定为 `1.0`，避免重复缩放。
 
 `MiniMax H3 Dual-Clock Sampler (T8)` 每步仍只做一次联合 AV 模型前向，不拆开模型，
 但更新 latent 时执行：
 
 - 视频：`delta_video * velocity_video`；
-- 音频：先除去模型返回值中的 schedule slope，再乘 `delta_audio`；
+- 音频：旧协议先除去 schedule slope，当前协议直接使用原始速度，再乘 `delta_audio`；
 - mask=0 的锁定区域保留 ComfyUI 原有的 inpaint 时钟，完整生成区域使用音频时钟。
 
 四步 Turbo 推荐连接：
@@ -122,7 +145,7 @@ H3 的视频流默认使用 shift 12，音频流使用 shift 3。原生 DiT 为�
 ## EXP：视频 4 步、音频更多步
 
 `MiniMax H3 Multi-Rate Sampler (EXP/T8)` 位于独立的 `Experimental` 分类，代码也在独立
-模块中；稳定版 `MiniMax H3 Dual-Clock Sampler (T8)` 的实现没有改动。EXP 节点把视频
+模块中，并使用与稳定版相同的新旧 ComfyUI 音频速度协议检测。EXP 节点把视频
 Euler 更新保持为 `video_steps` 个宏步，同时在每个宏步内部为音频安排更多微步。例如：
 
 - `video_steps=4, audio_steps=8`：每个视频区间 2 个音频微步；
@@ -189,7 +212,7 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 
 ## 示例与测试
 
-可直接拖入画布的稳定 4/4、EXP 4/8 和 EXP 4/10 完整示例位于
+可直接拖入画布的稳定 4/4、EXP 4/8、EXP 4/10 和 Ref2VA 22帧静态候选编辑示例位于
 `examples/workflows/`。API 示例见 `examples/audio_lock_api.json`、
 `examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
 `examples/still_image_edit_api.json`。替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
@@ -205,3 +228,20 @@ python -m pytest -q .\custom_nodes\minimax-h3-audio-T8
 
 自动化测试用于验证节点注册、条件与 latent 契约、sigma 数学、mask/callback、工作流结构
 和静态图像路径；它不等同于对所有模型、提示词、种子和画布的感知质量保证。
+
+## 显存与 DynamicVRAM 验证
+
+项目提供独立诊断工具 `tools/validate_h3_vram.py`，用于排查 H3 工作流在
+DynamicVRAM/VBAR、`LoraLoaderBypassModelOnly` 和双时钟采样组合下的 OOM。工具不修改
+采样数学或模型权重，可完成 API 工作流静态检查、生成 stock Euler/双时钟严格 A/B、按节点
+和采样进度记录显存曲线，以及比较两次运行的控制变量与峰值增量。
+
+第一轮稳定 Turbo 对照必须统一为 4 步、相同模型/LoRA/Prompt/seed/尺寸/帧数，并建议关闭
+预览。完整命令、判定规则和限制见 [显存验证方法](docs/VRAM_VALIDATION.md)。在取得真实 OOM
+traceback 和有效 A/B 前，不应把高显存直接归因于双时钟节点，也不应盲目替换 INT8 旁路
+LoRA 或关闭 VBAR。
+
+2026-08-07 的本机暖缓存实测中，`0.6M`、362 帧、4 步的 stock Euler 与双时钟设备峰值
+分别为 16,213.5 MiB 和 16,182.2 MiB，PyTorch 峰值均为 14,573.5 MiB；未发现双时钟路径
+存在实质峰值增加。两条路径都已非常接近 16 GiB 上限，这个单机结果不能替代反馈用户的
+精确工作流、OOM traceback 和冷启动换序复测。

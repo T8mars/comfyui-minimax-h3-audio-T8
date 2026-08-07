@@ -105,3 +105,88 @@ and `LoraLoaderBypassModelOnly`. Every node type, input type, and output type wa
 checked against the live ComfyUI `/object_info` endpoint; all links were also
 checked bidirectionally in the plugin test suite. Copies were installed under
 `ComfyUI/user/default/workflows/MiniMax H3 T8/`.
+
+A fourth ComfyUI 0.4 frontend workflow,
+`H3_Still_Edit_22Frames_EXP.json`, covers the experimental Ref2VA still-image
+path. It uses the locally available pruned Ref2VA INT8 checkpoint without Turbo
+LoRA, the H3 text encoder and video VAE, a 512x512/22-frame/20-step setup, Still
+Preflight reporting, middle-frame Still Decode, and PNG output. Twenty-two
+frames are on the native `17k+5` grid and map to video latent T=7 and audio
+latent T=37, but remain below the approximate 124-frame training range.
+The installed copy was listed by the live `/userdata` endpoint; all 13 nodes,
+19 links, and serialized input/output types produced zero contract errors
+against an isolated current-code `/object_info` server.
+
+## VRAM validation harness
+
+Added `tools/validate_h3_vram.py` as a diagnostic-only harness. It does not modify the stable or
+experimental sampler implementations. The tool can inspect API prompts, build a controlled stock
+Euler versus dual-clock pair, submit runs through the native ComfyUI API, correlate `/system_stats`
+VRAM samples with WebSocket node/progress events, preserve OOM tracebacks, and reject comparisons
+whose non-sampling controls differ.
+
+Validated locally against the running ComfyUI `0.30.0` server at commit `2eb609766`:
+
+- live `/system_stats` inspection identified comfy-aimdo `0.4.13`;
+- the startup log supplied explicit `DynamicVRAM support detected and enabled` evidence;
+- a lightweight API prompt completed through the WebSocket collector and produced node/progress
+  events plus baseline samples;
+- static analysis identified the stable 4-step setup and an intentionally constructed 12-step
+  mismatch;
+- unit tests cover API/frontend format detection, DynamicVRAM evidence, A/B rewiring, telemetry
+  peak attribution, and controlled-input comparison.
+
+### Real H3 VRAM checkpoint (2026-08-07)
+
+After the model stack became available, the harness was run against the user's known-working
+frontend workflow translated to the equivalent API graph. The active path used the non-pruned
+FL2VA INT8 ConvRot model, SageAttention patch, Standard bypass Turbo LoRA, H3 text encoder and H3
+video/audio VAEs. The muted reference-image node was correctly excluded from execution.
+
+The reported stress scale was reproduced with `0.6M`, 15 seconds aligned to 362 frames, no preview,
+and a 2,037.5 MiB pre-run device baseline:
+
+| Treatment | Steps | Status | Duration | Device peak | PyTorch peak | Peak node |
+|---|---:|---|---:|---:|---:|---|
+| stock Euler + stock scheduler | 4 | success | 1,210.9 s | 16,213.5 MiB | 14,573.5 MiB | `SamplerCustomAdvanced` |
+| T8 dual clock | 4 | success | 1,631.4 s | 16,182.2 MiB | 14,573.5 MiB | `SamplerCustomAdvanced` |
+| T8 dual clock stress run | 12 | success | 3,280.2 s | 16,245.5 MiB | 14,573.5 MiB | `SamplerCustomAdvanced` |
+
+The generated 4-step pair retained identical non-sampling controls. Its comparison verdict was
+`no_material_peak_difference` at a 128 MiB threshold: dual-clock minus stock peak was -31.3 MiB,
+and their measured PyTorch peaks were exactly equal. This run therefore does **not** support the
+hypothesis that `MiniMaxH3DualClockSamplerT8` bypasses DynamicVRAM/VBAR and causes a material model
+residency increase. Both paths are nevertheless extremely close to the 16 GiB device limit, so
+small differences in other CUDA users, previews, allocator fragmentation, model cache state, or
+workflow wiring can still decide whether an individual run OOMs.
+
+This is one warm-cache A/B sequence on one RTX 4060 Ti 16 GiB environment, not a universal proof.
+A cold-start, order-swapped repeat and the affected user's exact API-format official/modified pair
+remain the next tests before considering a production sampler change. The 4-step stock control is
+for memory attribution only; its audio integration is not numerically equivalent to dual-clock H3.
+
+## ComfyUI FLOW_AV compatibility regression (2026-08-07)
+
+ComfyUI commit `bdcb886a4` introduced `ModelType.FLOW_AV` / `ModelSamplingAV`, required
+`model_sampling.audio_scale`, and changed MiniMax H3 from slope-scaled audio velocity to raw audio
+velocity. Commit `a464ac335` is the validation HEAD. A property-only workaround would remove the
+`AttributeError` but would retain the wrong audio integration math, so version 1.3.1 detects the
+active H3 base-model protocol and selects the matching update rule. Its custom samplers expose a
+neutral `audio_scale=1.0` because they already own the separate audio clock.
+
+Validation evidence:
+
+- all 63 Audio T8 tests pass, including legacy/current constant-velocity endpoints, mask and
+  callback behavior, exact current `MiniMaxH3.audio_scale()` access, stable setup, and EXP setup;
+- Ruff passes for Audio T8 and the companion H3 Block Cache project;
+- a whitelist cold start imports Audio T8, H3 Block Cache, and H3 Prompt Enhancer together;
+- live `/object_info` exposes stable, EXP, conditioning, still-image, Block Cache, and Prompt
+  Enhancer nodes;
+- real FL2VA INT8 / Qwen3-VL / H3 VAE probes at 512x512, 22 frames and one step completed both
+  stable and EXP sampling; the deliberate core `SaveLatent` sink then failed because ComfyUI's
+  `SaveLatent` does not support packed `NestedTensor`, after sampler execution had completed;
+- a real one-step H3 forward with Block Cache attached also completed, reporting `cached 0/1` and
+  a 19.1 MiB CPU cache before the same deliberate post-sampling sink error;
+- all 14 Block Cache tests cover current raw audio velocity and simulated legacy slope-scaled
+  velocity; all 74 Prompt Enhancer tests pass. The disabled EasyCache directory and RH H3 directory
+  contain no active sampling implementation.

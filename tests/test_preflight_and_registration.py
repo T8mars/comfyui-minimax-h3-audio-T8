@@ -37,6 +37,37 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         assert still_schema.category == "T8/MiniMax H3/Still/Experimental"
 
 
+def test_task_type_frontend_labels_preserve_canonical_backend_values():
+    extension = h3_audio_t8_pkg.comfy_entrypoint()
+    node_classes = asyncio.run(extension.get_node_list())
+    conditioning = next(
+        node for node in node_classes
+        if node.define_schema().node_id == "MiniMaxH3AudioConditioningT8"
+    )
+    task_type = next(
+        item for item in conditioning.define_schema().inputs
+        if item.id == "task_type"
+    )
+    assert task_type.options == [
+        "auto", "T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid",
+    ]
+
+    package_root = Path(__file__).resolve().parents[1]
+    assert h3_audio_t8_pkg.WEB_DIRECTORY == "./web"
+    frontend = (package_root / "web" / "task_type_labels.js").read_text(encoding="utf-8")
+    for label in {
+        "auto — 自动判断",
+        "T2VA — 文生音视频",
+        "I2VA — 图生音视频（首帧）",
+        "FL2VA — 首尾帧生音视频",
+        "L2VA — 尾帧生音视频",
+        "Ref2VA — 参考生音视频",
+        "Hybrid — 关键帧+参考混合生成",
+    }:
+        assert label in frontend
+    assert "toBackendValue(widget.value)" in frontend
+
+
 def test_preflight_reports_alignment_audio_and_reference_guidance():
     ready, warning_count, report = run_preflight(
         1344, 768, 123, "lock_source", video_vae=FakeVideoVAE(), audio_vae=FakeAudioVAE(),
@@ -116,6 +147,7 @@ def test_still_image_edit_example_uses_ref2va_without_incompatible_lora():
     workflow = json.loads(path.read_text(encoding="utf-8"))
     types = {value["class_type"] for value in workflow.values()}
     assert "MiniMaxH3StillConditioningT8" in types
+    assert "MiniMaxH3StillPreflightT8" in types
     assert "MiniMaxH3StillDecodeT8" in types
     assert "MiniMaxH3DualClockSamplerT8" in types
     assert not any("Lora" in node_type for node_type in types)
@@ -126,7 +158,10 @@ def test_still_image_edit_example_uses_ref2va_without_incompatible_lora():
         value for value in workflow.values()
         if value["class_type"] == "MiniMaxH3StillConditioningT8"
     )
-    assert conditioning["inputs"]["target_mode"] == "direct_1_frame"
+    assert conditioning["inputs"]["target_mode"] == "short_video_22_frames"
+    assert conditioning["inputs"]["canvas_mode"] == "custom"
+    assert conditioning["inputs"]["width"] == 512
+    assert conditioning["inputs"]["height"] == 512
     sampler = next(
         value for value in workflow.values()
         if value["class_type"] == "MiniMaxH3DualClockSamplerT8"
@@ -181,3 +216,60 @@ def test_frontend_workflows_cover_stable_and_both_exp_step_counts():
             assert target["inputs"][target_slot]["link"] == link_id
             assert source["outputs"][source_slot]["type"] == link_type
             assert target["inputs"][target_slot]["type"] == link_type
+
+
+def test_frontend_still_edit_workflow_uses_native_22_frame_ref2va_target():
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "H3_Still_Edit_22Frames_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(node["id"] for node in workflow["nodes"])
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = {node["type"] for node in nodes.values()}
+    assert {
+        "MiniMaxH3StillConditioningT8",
+        "MiniMaxH3StillPreflightT8",
+        "MiniMaxH3StillDecodeT8",
+        "MiniMaxH3DualClockSamplerT8",
+        "SaveImage",
+    } <= types
+    assert not any("Lora" in node_type for node_type in types)
+
+    unet = next(node for node in nodes.values() if node["type"] == "UNETLoader")
+    assert unet["widgets_values"][0] == (
+        "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+    )
+    conditioning = next(
+        node for node in nodes.values()
+        if node["type"] == "MiniMaxH3StillConditioningT8"
+    )
+    assert conditioning["widgets_values"][1:7] == [
+        "custom",
+        512,
+        512,
+        "short_video_22_frames",
+        0.999,
+        "generate_and_discard",
+    ]
+    sampler = next(
+        node for node in nodes.values()
+        if node["type"] == "MiniMaxH3DualClockSamplerT8"
+    )
+    assert sampler["widgets_values"] == [20, 12.0, 3.0]
+
+    for link_id, source_id, source_slot, target_id, target_slot, link_type in workflow["links"]:
+        source = nodes[source_id]
+        target = nodes[target_id]
+        assert link_id in source["outputs"][source_slot]["links"]
+        assert target["inputs"][target_slot]["link"] == link_id
+        assert (
+            source["outputs"][source_slot]["type"] == link_type
+            or link_type == "*"
+        )
+        assert target["inputs"][target_slot]["type"] == link_type

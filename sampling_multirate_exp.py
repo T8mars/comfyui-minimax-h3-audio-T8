@@ -16,7 +16,17 @@ class MiniMaxH3MultiRateFlowSamplingEXP(
     comfy.model_sampling.ModelSamplingDiscreteFlow,
     comfy.model_sampling.CONST,
 ):
-    pass
+    @property
+    def audio_scale(self):
+        # This sampler owns the separate audio clock, so ComfyUI must not also
+        # carry/scale the audio stream onto the video schedule.
+        return 1.0
+
+
+def model_uses_raw_audio_velocity(model) -> bool:
+    """Detect the post-2026-08-06 ComfyUI MiniMax H3 sampling protocol."""
+    base_model = getattr(model, "model", None)
+    return callable(getattr(base_model, "audio_scale", None))
 
 
 def shift_sigma(base_sigma, shift: float):
@@ -71,9 +81,15 @@ def multirate_flow_schedule(
     return sigmas, tuple(macro_indices), counts
 
 
-def _audio_step_scale(sigma_video, sigma_audio, slope_audio, denoise_mask):
+def _audio_step_scale(
+    sigma_video,
+    sigma_audio,
+    slope_audio,
+    denoise_mask,
+    audio_velocity_is_raw: bool,
+):
     flat_scale = -sigma_video
-    dual_scale = -sigma_audio / slope_audio
+    dual_scale = -sigma_audio if audio_velocity_is_raw else -sigma_audio / slope_audio
     if denoise_mask is None:
         return dual_scale
     return flat_scale + denoise_mask * (dual_scale - flat_scale)
@@ -92,6 +108,7 @@ def sample_minimax_h3_multirate_exp_euler(
     shift_video: float,
     shift_audio: float,
     macro_indices: tuple[int, ...],
+    audio_velocity_is_raw: bool = False,
 ):
     extra_args = {} if extra_args is None else extra_args
     if x.shape[-1] != packed_values:
@@ -150,14 +167,22 @@ def sample_minimax_h3_multirate_exp_euler(
             sigma_audio_next = time_shift_sigma(sigma_video_next, shift_video, shift_audio)
             slope_audio = time_shift_slope(sigma_video, shift_video, shift_audio)
             video_delta = sigma_video_next - sigma_video
-            audio_delta = (sigma_audio_next - sigma_audio) / slope_audio
+            audio_delta = sigma_audio_next - sigma_audio
+            if not audio_velocity_is_raw:
+                # Legacy H3 returned slope-scaled audio velocity; current H3
+                # returns the raw audio-clock velocity.
+                audio_delta = audio_delta / slope_audio
             if audio_mask is not None:
                 audio_delta = video_delta + audio_mask * (audio_delta - video_delta)
 
             if callback is not None:
                 video_endpoint = video_start - video_derivative * sigma_macro_start
                 audio_endpoint_scale = _audio_step_scale(
-                    sigma_video, sigma_audio, slope_audio, audio_mask
+                    sigma_video,
+                    sigma_audio,
+                    slope_audio,
+                    audio_mask,
+                    audio_velocity_is_raw,
                 )
                 audio_endpoint = audio + audio_derivative * audio_endpoint_scale
                 callback({
@@ -195,6 +220,7 @@ def setup_multirate_exp_sampling(
     )
 
     patched_model = model.clone()
+    audio_velocity_is_raw = model_uses_raw_audio_velocity(model)
     original_sampling = model.get_model_object("model_sampling")
     model_sampling = MiniMaxH3MultiRateFlowSamplingEXP(model.model.model_config)
     model_sampling.set_parameters(shift=shift_video)
@@ -223,6 +249,7 @@ def setup_multirate_exp_sampling(
             shift_video=shift_video,
             shift_audio=shift_audio,
             macro_indices=macro_indices,
+            audio_velocity_is_raw=audio_velocity_is_raw,
         )
 
     sampler_function.__name__ = "sample_minimax_h3_multirate_exp_euler"

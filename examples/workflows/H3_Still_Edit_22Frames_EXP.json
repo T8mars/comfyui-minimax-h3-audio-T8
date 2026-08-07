@@ -1,0 +1,309 @@
+{
+  "id": "ee45022c-fd84-4de9-b250-465362c5691a",
+  "revision": 0,
+  "last_node_id": 13,
+  "last_link_id": 19,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "title": "1. Select the primary edit image (Picture 1)",
+      "pos": [0, 0],
+      "size": [360, 430],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "image", "type": "COMBO", "widget": {"name": "image"}, "link": null},
+        {"name": "upload", "type": "IMAGEUPLOAD", "widget": {"name": "upload"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1, 18]},
+        {"name": "MASK", "type": "MASK", "links": null}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
+      "widgets_values": ["replace_with_edit_image.png", "image"]
+    },
+    {
+      "id": 2,
+      "type": "UNETLoader",
+      "title": "Ref2VA pruned INT8 (no Turbo LoRA)",
+      "pos": [0, 500],
+      "size": [360, 90],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "unet_name", "type": "COMBO", "widget": {"name": "unet_name"}, "link": null},
+        {"name": "weight_dtype", "type": "COMBO", "widget": {"name": "weight_dtype"}, "link": null}
+      ],
+      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [4, 16]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "UNETLoader"},
+      "widgets_values": ["minimax_h3_ref2va_pruned_int8_convrot.safetensors", "default"]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [0, 640],
+      "size": [360, 110],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip_name", "type": "COMBO", "widget": {"name": "clip_name"}, "link": null},
+        {"name": "type", "type": "COMBO", "widget": {"name": "type"}, "link": null},
+        {"name": "device", "type": "COMBO", "widget": {"name": "device"}, "link": null}
+      ],
+      "outputs": [{"name": "CLIP", "type": "CLIP", "links": [2]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "CLIPLoader"},
+      "widgets_values": ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "minimax", "default"]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [0, 800],
+      "size": [360, 60],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "vae_name", "type": "COMBO", "widget": {"name": "vae_name"}, "link": null}
+      ],
+      "outputs": [{"name": "VAE", "type": "VAE", "links": [3, 14, 17]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "VAELoader"},
+      "widgets_values": ["minimax_h3_video_vae_fp16.safetensors"]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3StillConditioningT8",
+      "title": "2. Edit instruction + 22-frame short target (add references with +)",
+      "pos": [430, 0],
+      "size": [560, 570],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 2},
+        {"name": "video_vae", "type": "VAE", "link": 3},
+        {"name": "prompt", "type": "STRING", "widget": {"name": "prompt"}, "link": null},
+        {"name": "canvas_mode", "type": "COMBO", "widget": {"name": "canvas_mode"}, "link": null},
+        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
+        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
+        {"name": "target_mode", "type": "COMBO", "widget": {"name": "target_mode"}, "link": null},
+        {"name": "reference_strength", "type": "FLOAT", "widget": {"name": "reference_strength"}, "link": null},
+        {"name": "audio_target", "type": "COMBO", "widget": {"name": "audio_target"}, "link": null},
+        {"name": "strict_prompt_tags", "type": "BOOLEAN", "widget": {"name": "strict_prompt_tags"}, "link": null},
+        {"name": "ref_image_size", "type": "COMBO", "widget": {"name": "ref_image_size"}, "link": null},
+        {"name": "edit_image", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [
+        {"name": "positive", "type": "CONDITIONING", "links": [7]},
+        {"name": "av_latent", "type": "LATENT", "links": [5, 12]},
+        {"name": "conditioned_prompt", "type": "STRING", "links": []},
+        {"name": "media_map_json", "type": "STRING", "links": []},
+        {"name": "report_json", "type": "STRING", "links": []}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3StillConditioningT8"},
+      "widgets_values": [
+        "Edit <Picture 1>: preserve the subject, composition, geometry, material details, lighting, and background. Change the main black or dark surface to deep red.",
+        "custom",
+        512,
+        512,
+        "short_video_22_frames",
+        0.999,
+        "generate_and_discard",
+        true,
+        "match"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3StillPreflightT8",
+      "title": "Preflight: expect experimental warnings, but ready=true",
+      "pos": [430, 650],
+      "size": [480, 330],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "canvas_mode", "type": "COMBO", "widget": {"name": "canvas_mode"}, "link": null},
+        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
+        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
+        {"name": "target_mode", "type": "COMBO", "widget": {"name": "target_mode"}, "link": null},
+        {"name": "reference_strength", "type": "FLOAT", "widget": {"name": "reference_strength"}, "link": null},
+        {"name": "audio_target", "type": "COMBO", "widget": {"name": "audio_target"}, "link": null},
+        {"name": "model", "type": "MODEL", "link": 16, "shape": 7},
+        {"name": "video_vae", "type": "VAE", "link": 17, "shape": 7},
+        {"name": "edit_image", "type": "IMAGE", "link": 18, "shape": 7}
+      ],
+      "outputs": [
+        {"name": "ready", "type": "BOOLEAN", "links": []},
+        {"name": "warning_count", "type": "INT", "links": []},
+        {"name": "report_json", "type": "STRING", "links": [19]}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3StillPreflightT8"},
+      "widgets_values": ["custom", 512, 512, "short_video_22_frames", 0.999, "generate_and_discard"]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "3. Verified baseline: 20 steps",
+      "pos": [1060, 0],
+      "size": [390, 190],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 4},
+        {"name": "av_latent", "type": "LATENT", "link": 5},
+        {"name": "steps", "type": "INT", "widget": {"name": "steps"}, "link": null},
+        {"name": "shift_video", "type": "FLOAT", "widget": {"name": "shift_video"}, "link": null},
+        {"name": "shift_audio", "type": "FLOAT", "widget": {"name": "shift_audio"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "model", "type": "MODEL", "links": [6]},
+        {"name": "sampler", "type": "SAMPLER", "links": [10]},
+        {"name": "sigmas", "type": "SIGMAS", "links": [11]}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3DualClockSamplerT8"},
+      "widgets_values": [20, 12.0, 3.0]
+    },
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [1490, 0],
+      "size": [240, 70],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 6},
+        {"name": "conditioning", "type": "CONDITIONING", "link": 7}
+      ],
+      "outputs": [{"name": "GUIDER", "type": "GUIDER", "links": [8]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "BasicGuider"},
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [1490, 130],
+      "size": [240, 80],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "noise_seed", "type": "INT", "widget": {"name": "noise_seed"}, "link": null}
+      ],
+      "outputs": [{"name": "NOISE", "type": "NOISE", "links": [9]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "RandomNoise"},
+      "widgets_values": [123456789, "fixed"]
+    },
+    {
+      "id": 10,
+      "type": "SamplerCustomAdvanced",
+      "pos": [1780, 0],
+      "size": [300, 180],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "noise", "type": "NOISE", "link": 9},
+        {"name": "guider", "type": "GUIDER", "link": 8},
+        {"name": "sampler", "type": "SAMPLER", "link": 10},
+        {"name": "sigmas", "type": "SIGMAS", "link": 11},
+        {"name": "latent_image", "type": "LATENT", "link": 12}
+      ],
+      "outputs": [
+        {"name": "output", "type": "LATENT", "links": [13]},
+        {"name": "denoised_output", "type": "LATENT", "links": []}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SamplerCustomAdvanced"},
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3StillDecodeT8",
+      "title": "4. Decode 22 candidates and select the middle image",
+      "pos": [2140, 0],
+      "size": [330, 150],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "av_latent", "type": "LATENT", "link": 13},
+        {"name": "video_vae", "type": "VAE", "link": 14},
+        {"name": "frame_selection", "type": "COMBO", "widget": {"name": "frame_selection"}, "link": null},
+        {"name": "frame_index", "type": "INT", "widget": {"name": "frame_index"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "image", "type": "IMAGE", "links": [15]},
+        {"name": "candidate_frames", "type": "IMAGE", "links": []},
+        {"name": "report_json", "type": "STRING", "links": []}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3StillDecodeT8"},
+      "widgets_values": ["middle", 0]
+    },
+    {
+      "id": 12,
+      "type": "SaveImage",
+      "pos": [2530, 0],
+      "size": [360, 430],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 15},
+        {"name": "filename_prefix", "type": "STRING", "widget": {"name": "filename_prefix"}, "link": null}
+      ],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SaveImage"},
+      "widgets_values": ["MiniMaxH3/T8_Still_Edit_EXP"]
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "title": "Preflight report",
+      "pos": [960, 690],
+      "size": [420, 260],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [{"name": "source", "type": "*", "link": 19}],
+      "outputs": [],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewAny"},
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [1, 1, 0, 5, 11, "IMAGE"],
+    [2, 3, 0, 5, 0, "CLIP"],
+    [3, 4, 0, 5, 1, "VAE"],
+    [4, 2, 0, 7, 0, "MODEL"],
+    [5, 5, 1, 7, 1, "LATENT"],
+    [6, 7, 0, 8, 0, "MODEL"],
+    [7, 5, 0, 8, 1, "CONDITIONING"],
+    [8, 8, 0, 10, 1, "GUIDER"],
+    [9, 9, 0, 10, 0, "NOISE"],
+    [10, 7, 1, 10, 2, "SAMPLER"],
+    [11, 7, 2, 10, 3, "SIGMAS"],
+    [12, 5, 1, 10, 4, "LATENT"],
+    [13, 10, 0, 11, 0, "LATENT"],
+    [14, 4, 0, 11, 1, "VAE"],
+    [15, 11, 0, 12, 0, "IMAGE"],
+    [16, 2, 0, 6, 6, "MODEL"],
+    [17, 4, 0, 6, 7, "VAE"],
+    [18, 1, 0, 6, 8, "IMAGE"],
+    [19, 6, 2, 13, 0, "*"]
+  ],
+  "groups": [
+    {"id": 1, "title": "1. Input image + Ref2VA loaders (do not add Turbo LoRA to this pruned model)", "bounding": [-40, -70, 440, 980], "color": "#3f789e", "font_size": 24, "flags": {}},
+    {"id": 2, "title": "2. Reference-guided semantic edit (not mask/inpainting)", "bounding": [400, -70, 630, 690], "color": "#8157a1", "font_size": 24, "flags": {}},
+    {"id": 3, "title": "3. H3 joint AV sampling", "bounding": [1020, -70, 1110, 350], "color": "#3f9e64", "font_size": 24, "flags": {}},
+    {"id": 4, "title": "4. Decode one still candidate + save PNG", "bounding": [2100, -70, 840, 550], "color": "#9e6d3f", "font_size": 24, "flags": {}},
+    {"id": 5, "title": "Preflight (22 frames are native-grid but below the approximate trained range)", "bounding": [400, 620, 1020, 400], "color": "#9e963f", "font_size": 22, "flags": {}}
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.72, "offset": [70, 160]}, "ue_links": []},
+  "version": 0.4
+}

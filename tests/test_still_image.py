@@ -36,6 +36,7 @@ def edit_args():
 def test_still_target_modes_have_expected_joint_latent_shapes():
     assert resolve_still_target("direct_1_frame") == (1, 1, 2)
     assert resolve_still_target("micro_video_5_frames") == (5, 2, 8)
+    assert resolve_still_target("short_video_22_frames") == (22, 7, 37)
     assert resolve_still_target("trained_124_frames") == (124, 37, 207)
 
     direct, frames = empty_still_av_latent(
@@ -162,3 +163,20 @@ def test_still_decode_selects_candidate_without_decoding_audio():
 
     with pytest.raises(ValueError, match="outside the decoded range"):
         decode_still_image(latent, FakeVideoVAE(), "index", 5)
+
+
+def test_native_short_22_frame_target_decodes_all_candidates():
+    latent, frames = empty_still_av_latent(
+        128, 128, "short_video_22_frames", "generate_and_discard"
+    )
+    video, audio = latent["samples"].unbind()
+    assert frames == 22
+    assert video.shape == (1, 24, 7, 8, 8)
+    assert audio.shape == (1, 32, 2, 37)
+
+    selected, candidates, report = decode_still_image(
+        latent, FakeVideoVAE(), "middle", 0
+    )
+    assert candidates.shape[0] == 22
+    assert selected.shape[0] == 1
+    assert json.loads(report)["selected_index"] == 11

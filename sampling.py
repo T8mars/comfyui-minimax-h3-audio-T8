@@ -13,7 +13,18 @@ from .core import nested_av_parts
 
 
 class MiniMaxH3FlowSampling(comfy.model_sampling.ModelSamplingDiscreteFlow, comfy.model_sampling.CONST):
-    pass
+    @property
+    def audio_scale(self):
+        # The custom sampler advances the unpacked audio stream on its own clock.
+        # New ComfyUI H3 builds require this property, but must not additionally
+        # carry/scale audio onto the video clock (that would apply the transform twice).
+        return 1.0
+
+
+def model_uses_raw_audio_velocity(model) -> bool:
+    """Detect the post-2026-08-06 ComfyUI MiniMax H3 sampling protocol."""
+    base_model = getattr(model, "model", None)
+    return callable(getattr(base_model, "audio_scale", None))
 
 
 def shift_sigma(base_sigma, shift: float):
@@ -37,9 +48,15 @@ def native_flow_sigmas(steps: int, shift_video: float) -> torch.Tensor:
     return shift_sigma(base_sigmas, shift_video)
 
 
-def _audio_step_scale(sigma_video, sigma_audio, slope_audio, denoise_mask):
+def _audio_step_scale(
+    sigma_video,
+    sigma_audio,
+    slope_audio,
+    denoise_mask,
+    audio_velocity_is_raw: bool,
+):
     flat_scale = -sigma_video
-    dual_scale = -sigma_audio / slope_audio
+    dual_scale = -sigma_audio if audio_velocity_is_raw else -sigma_audio / slope_audio
     if denoise_mask is None:
         return dual_scale
     return flat_scale + denoise_mask * (dual_scale - flat_scale)
@@ -57,6 +74,7 @@ def sample_minimax_h3_dual_clock_euler(
     packed_values: int,
     shift_video: float,
     shift_audio: float,
+    audio_velocity_is_raw: bool = False,
 ):
     extra_args = {} if extra_args is None else extra_args
     if x.shape[-1] != packed_values:
@@ -83,12 +101,22 @@ def sample_minimax_h3_dual_clock_euler(
         sigma_audio_next = time_shift_sigma(sigma_video_next, shift_video, shift_audio)
         slope_audio = time_shift_slope(sigma_video, shift_video, shift_audio)
         video_delta = sigma_video_next - sigma_video
-        audio_delta = (sigma_audio_next - sigma_audio) / slope_audio
+        audio_delta = sigma_audio_next - sigma_audio
+        if not audio_velocity_is_raw:
+            # Older ComfyUI H3 builds returned an audio velocity multiplied by
+            # d(sigma_audio)/d(sigma_video), so their update needs the inverse.
+            audio_delta = audio_delta / slope_audio
         if audio_mask is not None:
             audio_delta = video_delta + audio_mask * (audio_delta - video_delta)
 
         if callback is not None:
-            endpoint_scale = _audio_step_scale(sigma_video, sigma_audio, slope_audio, audio_mask)
+            endpoint_scale = _audio_step_scale(
+                sigma_video,
+                sigma_audio,
+                slope_audio,
+                audio_mask,
+                audio_velocity_is_raw,
+            )
             denoised[..., video_values:] = x[..., video_values:] + derivative[..., video_values:] * endpoint_scale
             callback({
                 "x": x,
@@ -114,6 +142,7 @@ def setup_dual_clock_sampling(model, av_latent: dict, steps: int, shift_video: f
         )
 
     patched_model = model.clone()
+    audio_velocity_is_raw = model_uses_raw_audio_velocity(model)
     original_sampling = model.get_model_object("model_sampling")
     model_sampling = MiniMaxH3FlowSampling(model.model.model_config)
     model_sampling.set_parameters(shift=shift_video)
@@ -141,6 +170,7 @@ def setup_dual_clock_sampling(model, av_latent: dict, steps: int, shift_video: f
             packed_values=packed_values,
             shift_video=shift_video,
             shift_audio=shift_audio,
+            audio_velocity_is_raw=audio_velocity_is_raw,
         )
 
     sampler_function.__name__ = "sample_minimax_h3_dual_clock_euler"

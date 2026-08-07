@@ -29,10 +29,10 @@
   "5": {
     "inputs": {
       "prompt": "Edit <Picture 1>: preserve the person's identity and composition, change the jacket to deep red, keep realistic fabric detail and natural lighting.",
-      "canvas_mode": "from_edit_image",
-      "width": 1344,
-      "height": 768,
-      "target_mode": "direct_1_frame",
+      "canvas_mode": "custom",
+      "width": 512,
+      "height": 512,
+      "target_mode": "short_video_22_frames",
       "reference_strength": 0.999,
       "audio_target": "generate_and_discard",
       "strict_prompt_tags": true,
@@ -88,10 +88,30 @@
   },
   "11": {
     "inputs": {
-      "filename_prefix": "MiniMaxH3_Still_Edit_EXP",
+      "filename_prefix": "MiniMaxH3_Still_Edit_22F_EXP",
       "images": ["10", 0]
     },
     "class_type": "SaveImage",
     "_meta": {"title": "Save edited image"}
+  },
+  "12": {
+    "inputs": {
+      "canvas_mode": "custom",
+      "width": 512,
+      "height": 512,
+      "target_mode": "short_video_22_frames",
+      "reference_strength": 0.999,
+      "audio_target": "generate_and_discard",
+      "model": ["4", 0],
+      "video_vae": ["2", 0],
+      "edit_image": ["1", 0]
+    },
+    "class_type": "MiniMaxH3StillPreflightT8",
+    "_meta": {"title": "Validate experimental still-image setup"}
+  },
+  "13": {
+    "inputs": {"source": ["12", 2]},
+    "class_type": "PreviewAny",
+    "_meta": {"title": "Preview preflight report"}
   }
 }
