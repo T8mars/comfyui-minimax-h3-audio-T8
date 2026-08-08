@@ -12,7 +12,13 @@ from .nodes_still_exp import (
 )
 from .preflight import run_preflight
 from .prompt_tags import prepare_prompt
-from .sampling import setup_dual_clock_sampling
+from .sampling import (
+    DEFAULT_SAMPLER_NAME,
+    DEFAULT_SCHEDULER_NAME,
+    SAMPLER_OPTIONS,
+    SCHEDULER_OPTIONS,
+    setup_dual_clock_sampling,
+)
 from .timing import make_timing_plan, window_audio
 
 
@@ -277,8 +283,9 @@ class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
             node_id="MiniMaxH3DualClockSamplerT8",
             display_name="MiniMax H3 Dual-Clock Sampler (T8)",
             description=(
-                "Four-step H3 Euler setup with separate video/audio clocks. "
-                "Outputs a coherently shifted model, sampler, and native flow sigmas."
+                "MiniMax H3 sampling setup with separate video/audio clocks. "
+                "The default dual_clock_euler + native_flow path is unchanged; other ComfyUI "
+                "samplers use native FLOW_AV support."
             ),
             category=CATEGORY,
             inputs=[
@@ -287,6 +294,28 @@ class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
                 io.Int.Input("steps", default=4, min=1, max=1000),
                 io.Float.Input("shift_video", default=12.0, min=0.01, max=100.0, step=0.01, advanced=True),
                 io.Float.Input("shift_audio", default=3.0, min=0.01, max=100.0, step=0.01, advanced=True),
+                io.Combo.Input(
+                    "sampler_name",
+                    options=SAMPLER_OPTIONS,
+                    default=DEFAULT_SAMPLER_NAME,
+                    optional=True,
+                    display_name="sampler / 采样器",
+                    tooltip=(
+                        "dual_clock_euler preserves the original T8 explicit dual-clock path. "
+                        "Other choices use ComfyUI's native MiniMax H3 FLOW_AV protocol."
+                    ),
+                ),
+                io.Combo.Input(
+                    "scheduler",
+                    options=SCHEDULER_OPTIONS,
+                    default=DEFAULT_SCHEDULER_NAME,
+                    optional=True,
+                    display_name="scheduler / 调度器",
+                    tooltip=(
+                        "native_flow preserves the original shifted uniform H3 flow schedule. "
+                        "Other choices use ComfyUI's built-in scheduler implementation."
+                    ),
+                ),
             ],
             outputs=[
                 io.Model.Output(display_name="model"),
@@ -296,9 +325,24 @@ class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, model, av_latent, steps, shift_video, shift_audio):
+    def execute(
+        cls,
+        model,
+        av_latent,
+        steps,
+        shift_video,
+        shift_audio,
+        sampler_name=DEFAULT_SAMPLER_NAME,
+        scheduler=DEFAULT_SCHEDULER_NAME,
+    ):
         return io.NodeOutput(*setup_dual_clock_sampling(
-            model, av_latent, steps, shift_video, shift_audio
+            model,
+            av_latent,
+            steps,
+            shift_video,
+            shift_audio,
+            sampler_name,
+            scheduler,
         ))
 
 

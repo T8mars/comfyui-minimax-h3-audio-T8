@@ -1,6 +1,6 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.3.2`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.3.3`，共注册
 14 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样，
 以及 Ref2VA 单图/多图参考的静态语义编辑。
 
@@ -23,7 +23,9 @@
 MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`、Python
 3.10+。模型、VAE、CLIP 和可选 LoRA 仍需按具体任务自行安装。
 
-`1.3.2` 保留 `1.3.1` 对两代 H3 采样协议的兼容：旧版 ComfyUI 的 slope-scaled 音频速度，以及当前
+`1.3.3` 在稳定双时钟节点末尾追加可选的采样器与调度器下拉框；原有三个控件的顺序、
+默认双时钟 Euler、原生 flow sigma 和旧 API 缺省行为均保持不变。`1.3.2` 保留 `1.3.1`
+对两代 H3 采样协议的兼容：旧版 ComfyUI 的 slope-scaled 音频速度，以及当前
 `FLOW_AV` / `ModelSamplingAV` 的原始音频速度。兼容性由实际 H3 基模能力检测，不依赖用户
 手动选择，也不会对新版 ComfyUI 再次应用音频 carry/scale。本版本还兼容
 VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/音频 VAE，并把画布
@@ -54,7 +56,7 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Audio Mix (T8) | 源音轨与模型生成音轨重采样、增益、ducking、峰值限制后混合 |
 | MiniMax H3 Output Trim (T8) | 把 Planner 的时间窗口同时应用到解码帧和音频 |
 | MiniMax H3 Preflight (T8) | 在采样前检查模型、尺寸、帧数、音频、参考数量和参考视频时长 |
-| MiniMax H3 Dual-Clock Sampler (T8) | 为 H3 Turbo 低步数同时配置 12/3 shift、原生 flow sigma 网格和双时钟 Euler |
+| MiniMax H3 Dual-Clock Sampler (T8) | 默认配置 12/3 shift、原生 flow sigma 与双时钟 Euler，也可选择当前 ComfyUI 的原生采样器和调度器 |
 | MiniMax H3 Multi-Rate Sampler (EXP/T8) | 实验性视频宏步/音频微步采样；独立实现，不替换稳定双时钟节点 |
 | MiniMax H3 Reference Image Edit (EXP/T8) | 用 Ref2VA 对单张主图进行语义编辑，并支持最多 8 张附加参考图 |
 | MiniMax H3 Still Preflight (EXP/T8) | 检查单帧 OOD、画布、参考数量、模型和 VAE 契约 |
@@ -135,14 +137,31 @@ H3 的视频流默认使用 shift 12，音频流使用 shift 3。旧版 ComfyUI 
    `Dual-Clock Sampler.av_latent` 和 `SamplerCustomAdvanced.latent_image`。
 3. Dual-Clock 的 `model` 接 `BasicGuider.model`，`sampler` 和 `sigmas` 分别接
    `SamplerCustomAdvanced` 的同名输入。
-4. `steps=4`、`shift_video=12`、`shift_audio=3`。LoRA 强度使用作者建议值。
+4. `steps=4`、`shift_video=12`、`shift_audio=3`、`sampler=dual_clock_euler`、
+   `scheduler=native_flow`。LoRA 强度使用作者建议值。
+
+节点内部现在可选择采样器和调度器：
+
+| 控件 | 默认值 | 行为与兼容范围 |
+|---|---|---|
+| `sampler / 采样器` | `dual_clock_euler` | 原有 T8 显式双时钟 Euler，数值路径不变；兼容旧版与当前 ComfyUI |
+| 其他采样器 | 无 | 使用当前 ComfyUI 自带的 sampler，并切换到原生 `ModelSamplingAV` carry/scale；旧版 ComfyUI 不提供这些选项 |
+| `scheduler / 调度器` | `native_flow` | 原有 shifted-uniform H3 flow sigma，数值路径不变 |
+| 其他调度器 | 无 | 调用当前 ComfyUI 的同名 scheduler；改变 sigma 时间网格，不承诺一定改善 Turbo 画质或音质 |
+
+`dual_clock_euler` 配其他调度器时，仍由 T8 显式维护视频/音频两个时钟；其他采样器则由
+当前 ComfyUI 原生 `FLOW_AV` 协议把联合 latent 映射为单一求解时钟。两条路径不能混用
+carry/scale。标准采样器只在新版原生协议存在时开放，因为旧版 H3 没有可证明等价的通用
+多阶求解适配。
 
 这个节点已经代替 `MiniMax H3 Sigma Shift`、`KSamplerSelect` 和 scheduler 三个节点。
-不要再串联一次 Sigma Shift，也不要把 `beta/simple/normal` scheduler 接到采样器；
+不要再串联一次 Sigma Shift，也不要外接 `KSamplerSelect` 或 `BasicScheduler`；需要更换时
+直接使用本节点新增的两个下拉框。
 `SamplerCustomAdvanced`、`RandomNoise` 和 `BasicGuider` 仍照常使用。
 
 可导入的 API 结构示例见 `examples/dual_clock_4step_api.json`。其中模型文件名是占位符，
-请替换为本机的 H3 基模、两个 VAE、Qwen3-VL CLIP 和已转换 LoRA 文件名。
+请替换为本机的 H3 基模、两个 VAE、Qwen3-VL CLIP 和已转换 LoRA 文件名。旧 API JSON
+可以不提供 `sampler_name` 与 `scheduler`，后端会使用上述两个默认值。
 
 ## EXP：视频 4 步、音频更多步
 

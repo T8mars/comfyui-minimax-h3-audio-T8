@@ -68,6 +68,36 @@ def test_task_type_frontend_labels_preserve_canonical_backend_values():
     assert "toBackendValue(widget.value)" in frontend
 
 
+def test_dual_clock_sampler_appends_optional_choices_without_reordering_legacy_widgets():
+    extension = h3_audio_t8_pkg.comfy_entrypoint()
+    node_classes = asyncio.run(extension.get_node_list())
+    sampler_node = next(
+        node for node in node_classes
+        if node.define_schema().node_id == "MiniMaxH3DualClockSamplerT8"
+    )
+    inputs = sampler_node.define_schema().inputs
+
+    assert [item.id for item in inputs] == [
+        "model",
+        "av_latent",
+        "steps",
+        "shift_video",
+        "shift_audio",
+        "sampler_name",
+        "scheduler",
+    ]
+    sampler_name = inputs[-2]
+    scheduler = inputs[-1]
+    assert sampler_name.optional is True
+    assert sampler_name.default == "dual_clock_euler"
+    assert sampler_name.options[0] == "dual_clock_euler"
+    assert "euler" in sampler_name.options
+    assert scheduler.optional is True
+    assert scheduler.default == "native_flow"
+    assert scheduler.options[0] == "native_flow"
+    assert "normal" in scheduler.options
+
+
 def test_preflight_reports_alignment_audio_and_reference_guidance():
     ready, warning_count, report = run_preflight(
         1344, 768, 123, "lock_source", video_vae=FakeVideoVAE(), audio_vae=FakeAudioVAE(),

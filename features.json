@@ -27,11 +27,17 @@
     "MiniMaxH3StillDecodeT8"
   ],
   "sampling": {
-    "algorithm": "dual-clock Euler",
+    "algorithm": "selectable sampler and scheduler with a backward-compatible dual-clock default",
     "default_steps": 4,
+    "default_sampler": "dual_clock_euler",
+    "default_scheduler": "native_flow",
     "video_shift": 12.0,
     "audio_shift": 3.0,
     "sigma_grid": "native shifted uniform flow",
+    "sampler_options": "current comfy.samplers.SAMPLER_NAMES when native ModelSamplingAV is available",
+    "scheduler_options": "current comfy.samplers.SCHEDULER_NAMES",
+    "alternate_sampler_protocol": "native FLOW_AV carry/scale; unavailable on legacy ComfyUI",
+    "legacy_workflow_compatibility": "new optional widgets are appended after steps/shift_video/shift_audio",
     "comfyui_audio_velocity_compatibility": [
       "legacy slope-scaled H3 velocity",
       "current FLOW_AV raw H3 audio velocity"

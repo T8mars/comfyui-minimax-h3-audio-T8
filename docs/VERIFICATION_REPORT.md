@@ -223,3 +223,36 @@ The real-model probe stopped at the generated joint latent and did not decode or
 quality. It proves that the new boundary is executable for this short one-step case, not that a
 2.0MP 124- or 362-frame workflow will fit every 16GB environment. Resolution, frame count, steps,
 reference-media size, previews, allocator state, and other loaded models can still determine OOM.
+
+## Version 1.3.3 selectable sampler/scheduler regression (2026-08-08)
+
+The stable `MiniMaxH3DualClockSamplerT8` now appends two optional controls after the existing
+`steps`, `shift_video`, and `shift_audio` widgets. `dual_clock_euler + native_flow` remains the
+default and executes the same explicit dual-clock sampler and shifted-uniform sigma construction as
+the previous five-argument setup. Existing API prompts may omit both new inputs.
+
+Alternative sampler execution is deliberately separated from the custom default. When current
+ComfyUI exposes `ModelSamplingAV`, a selected built-in sampler receives a newly patched native
+FLOW_AV sampling object with coherent video/audio shifts and audio carry scale. Legacy H3 builds keep
+the explicit T8 Euler default but do not expose built-in sampler alternatives. Alternative schedulers
+use `comfy.samplers.calculate_sigmas`; changing that time grid is supported plumbing, not a claim of
+better Turbo quality.
+
+Validation evidence:
+
+- all 71 project tests pass and Ruff reports no findings;
+- implicit defaults and explicit `dual_clock_euler + native_flow` produce identical sampling type,
+  sampler function, and sigma tensors;
+- current-protocol built-in Euler setup produces native `ModelSamplingAV` with `audio_scale=4.0`
+  for shifts 12/3; a simulated legacy protocol rejects that path with a clear FLOW_AV error;
+- a non-default `normal` scheduler matches current ComfyUI's scheduler output while retaining the
+  explicit T8 Euler audio protocol;
+- the supplied eight-step frontend workflow retains its original `[8, 12, 3]` widget array;
+- an isolated whitelist import succeeds, and isolated `/object_info` reports the original five
+  inputs in required order followed by optional `sampler_name` and `scheduler`, defaulting to
+  `dual_clock_euler` and `native_flow`.
+
+No full perceptual H3 comparison across the additional sampler/scheduler matrix was run for this
+change. The regression proves routing, backward compatibility, and protocol selection; users should
+compare alternative numerical methods against the preserved default with controlled seeds before
+adopting them for production.

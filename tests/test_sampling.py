@@ -10,7 +10,11 @@ import comfy.model_sampling
 import comfy.nested_tensor
 
 from h3_audio_t8_pkg.sampling import (
+    DEFAULT_SAMPLER_NAME,
+    DEFAULT_SCHEDULER_NAME,
     MiniMaxH3FlowSampling,
+    SAMPLER_OPTIONS,
+    SCHEDULER_OPTIONS,
     model_uses_raw_audio_velocity,
     native_flow_sigmas,
     sample_minimax_h3_dual_clock_euler,
@@ -153,6 +157,112 @@ def test_setup_keeps_model_sampler_and_schedule_shifts_coherent():
     }
     assert sampler.sampler_function.__name__ == "sample_minimax_h3_dual_clock_euler"
     assert len(sigmas) == 5
+    assert DEFAULT_SAMPLER_NAME == "dual_clock_euler"
+    assert DEFAULT_SCHEDULER_NAME == "native_flow"
+
+
+def test_explicit_defaults_are_identical_to_the_legacy_five_argument_call():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    implicit = setup_dual_clock_sampling(FakeModelPatcher(), latent, 4, 12.0, 3.0)
+    explicit = setup_dual_clock_sampling(
+        FakeModelPatcher(),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+    )
+
+    assert type(implicit[0].get_model_object("model_sampling")) is type(
+        explicit[0].get_model_object("model_sampling")
+    )
+    assert implicit[1].sampler_function.__name__ == explicit[1].sampler_function.__name__
+    assert torch.equal(implicit[2], explicit[2])
+
+
+def test_custom_euler_accepts_comfyui_scheduler_without_changing_audio_protocol():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    model, sampler, sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "normal",
+    )
+    model_sampling = model.get_model_object("model_sampling")
+
+    assert model_sampling.audio_scale == 1.0
+    assert sampler.sampler_function.__name__ == "sample_minimax_h3_dual_clock_euler"
+    assert torch.equal(
+        sigmas,
+        comfy.samplers.calculate_sigmas(model_sampling, "normal", 4).cpu(),
+    )
+    assert not torch.equal(sigmas, native_flow_sigmas(4, 12.0))
+
+
+def test_standard_sampler_uses_current_comfyui_native_flow_av_protocol():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    model, sampler, sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(FakeCurrentBaseModel()),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "euler",
+        "native_flow",
+    )
+    model_sampling = model.get_model_object("model_sampling")
+
+    assert isinstance(model_sampling, comfy.model_sampling.ModelSamplingAV)
+    assert model_sampling.audio_scale == 4.0
+    assert sampler.sampler_function.__name__ == "sample_euler"
+    assert torch.equal(sigmas, native_flow_sigmas(4, 12.0))
+
+
+def test_standard_sampler_fails_clearly_on_legacy_comfyui_h3_protocol():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    with pytest.raises(RuntimeError, match="FLOW_AV"):
+        setup_dual_clock_sampling(
+            FakeModelPatcher(),
+            latent,
+            4,
+            12.0,
+            3.0,
+            "euler",
+            "native_flow",
+        )
+
+
+def test_sampler_and_scheduler_choices_reject_unknown_api_values():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    assert SAMPLER_OPTIONS[0] == "dual_clock_euler"
+    assert SCHEDULER_OPTIONS[0] == "native_flow"
+    with pytest.raises(ValueError, match="Unknown sampler"):
+        setup_dual_clock_sampling(
+            FakeModelPatcher(), latent, 4, 12.0, 3.0, "not_a_sampler", "native_flow"
+        )
+    with pytest.raises(ValueError, match="Unknown scheduler"):
+        setup_dual_clock_sampling(
+            FakeModelPatcher(), latent, 4, 12.0, 3.0, "dual_clock_euler", "not_a_scheduler"
+        )
 
 
 def test_setup_detects_current_and_legacy_h3_audio_velocity_protocols():

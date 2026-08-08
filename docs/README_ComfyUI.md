@@ -32,7 +32,8 @@ The bypass loader can therefore fail at runtime on a pruned model.
    part of the trained LoRA math.
 5. Use **MiniMax H3 Dual-Clock Sampler (T8)** from
    `custom_nodes/minimax-h3-audio-T8`, with `steps=4`, video shift `12`, and
-   audio shift `3`. Its `model` output goes to the guider; its `sampler` and
+   audio shift `3`. Keep `sampler=dual_clock_euler` and
+   `scheduler=native_flow` for the original verified path. Its `model` output goes to the guider; its `sampler` and
    `sigmas` outputs go to `SamplerCustomAdvanced`. Connect the same H3 AV latent
    to both the dual-clock node and `SamplerCustomAdvanced.latent_image`.
 6. To test more audio integration steps without changing the stable workflow,
@@ -43,9 +44,13 @@ The bypass loader can therefore fail at runtime on a pruned model.
    steps, so extra audio microsteps are experimental and not guaranteed to win.
 
 Do not combine the dual-clock node with `MiniMax H3 Sigma Shift`,
-`KSamplerSelect`, or a `beta/simple/normal` scheduler. The node replaces all
-three. A stock single-clock Euler sampler can render normal video at four steps
-while over-updating the audio—most severely on the final step—producing noise.
+`KSamplerSelect`, or an external scheduler node. The node replaces all three.
+Version 1.3.3 exposes internal sampler and scheduler dropdowns while preserving
+the original defaults. Alternative ComfyUI samplers use native `ModelSamplingAV`
+and are exposed only when the installed ComfyUI has FLOW_AV support; alternative
+schedulers change the sigma grid and are not a quality guarantee for a four-step
+Turbo LoRA. Old workflow/API JSON may omit both new fields and retains the
+original behavior.
 The same no-extra-scheduler rule applies to the EXP node.
 
 The bypass loader is recommended because it computes the author's intended
