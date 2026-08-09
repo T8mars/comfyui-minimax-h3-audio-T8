@@ -5,10 +5,86 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.7.0 real-generation checkpoint was verified on 2026-08-09 against ComfyUI `0.30.0`
-at `a464ac335`; the final unit-test and isolated-import regression also passed against
-`cbbc9dab1` before publication. Historical LoRA conversion evidence below was originally recorded
-on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+The current 1.9.0 checkpoint was verified on 2026-08-10 against ComfyUI `0.31.0` at
+`cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
+originally recorded on 2026-08-06 against source commit
+`563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.9.0 experimental visual-reference strength checkpoint
+
+`MiniMaxH3VisualReferenceStrengthEXPT8` was added as node 36, after all 35 existing nodes. It is a
+post-conditioning node that calls `node_helpers.conditioning_set_values()` with
+`minimax_visual_cond_noise_aug`; it does not receive or patch MODEL, latent, VAE, sampler,
+scheduler, sigmas, shifts, or steps. It rejects missing visual conditions and audio-only refs,
+allows keyframes with an explicit global-scope warning, and reports values at or below 0.950 as
+aggressive. The current H3 core maps this field to `visual_cond_noise_aug` and uses 0.999 when the
+field is absent.
+
+The live matrix used ComfyUI `0.31.0` at
+`cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`, Windows, an RTX 4060 Ti 16GiB, DynamicVRAM, the full
+`minimax_h3_ref2va_int8_convrot.safetensors`, Qwen3-VL NVFP4 CLIP, FP16 video VAE, FP32 audio VAE,
+and no LoRA. Every treatment fixed one reference image, prompt, seed `2608102201`, 736x416,
+124 frames, 20 steps, `dual_clock_euler + native_flow`, and shifts 12/3.
+
+| Treatment | Runtime | Whole-device peak | Minimum free | Result |
+|---|---:|---:|---:|---|
+| no post node | 254.375s | 16,337.598MiB | 41.902MiB | success |
+| explicit 0.999 | 303.984s | 16,344.617MiB | 34.883MiB | success |
+| explicit 0.995 | 276.812s | 16,337.598MiB | 41.902MiB | success |
+| explicit 0.990 | 276.563s | 16,337.598MiB | 41.902MiB | success |
+| explicit 0.980 | 264.703s | 16,337.598MiB | 41.902MiB | success |
+| explicit 0.950 | 378.860s; repeat 482.731s | 16,017.422MiB on repeat | 362.078MiB | both success |
+
+The timing variation includes dynamic-loading stalls and is not attributed to the scalar itself;
+the graph retains 20 DiT steps and the new node adds no model call. All observed free margins are
+below the project's 512MiB safety gate, so this matrix does not establish a 16GiB memory-safe tier.
+
+The critical compatibility gate passed exactly. Decoded no-node and explicit-0.999 video both
+contained 124 RGB frames and 113,897,472 bytes with identical SHA-256
+`59b0cff4408b2656f7c42c9e2c5430649e25b8899047fe7d54cf45e69b5763df`; their decoded float32 audio
+both contained 325,632 samples and had identical SHA-256
+`82796fa54b165f0ad9c86bf00777d47f68d11637328c567bb991e1f05ec8477f`. Both maximum absolute errors
+were zero. Two explicit-0.950 runs were also decoded-video and decoded-audio identical, with maximum
+absolute errors zero. This proves deterministic routing for these fixed controls; it is not a
+cross-hardware bitwise guarantee.
+
+Whole-video objective proxies were computed over all 124 decoded frames:
+
+| Strength | Mean RGB MAD vs 0.999 | Temporal MAD | Temporal gray SSIM | Face high-pass std |
+|---:|---:|---:|---:|---:|
+| 0.999 | 0.0000 | 4.9202 | 0.89021 | 8.1772 |
+| 0.995 | 24.8277 | 3.6117 | 0.91423 | 8.1577 |
+| 0.990 | 25.5275 | 4.1108 | 0.90307 | 8.1552 |
+| 0.980 | 13.5682 | 4.9253 | 0.88860 | 8.2397 |
+| 0.950 | 33.5909 | 3.4078 | 0.92725 | 7.6752 |
+
+MAD/SSIM only measure change, and Haar-face plus high-pass/Laplacian values are composition and
+sharpness proxies, not identity or skin-realism scores. Higher temporal SSIM can also mean less
+motion. Manual first/middle/last-frame review found that 0.995 through 0.950 changed pose,
+expression, motion trajectory, and/or composition; 0.950 introduced the largest background and
+framing shift. Its full-frame edge variance rose while its face high-pass proxy fell. This one
+case therefore proves that the control is effective, but it does not establish a winning
+"de-wax" value or monotonic visual improvement.
+
+Regression evidence:
+
+- 188 project tests passed; Ruff reported no findings;
+- isolated live `/object_info` exposed the exact two inputs, 0.999/0..1/0.001 numeric contract,
+  two named outputs, EXP flag, and category;
+- the API and ComfyUI 0.4 frontend examples passed structural/link checks and the frontend workflow
+  passed live object-info validation;
+- `sampling.py` SHA-256 remains
+  `111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`;
+- `conditioning.py`, `sampling_multirate_exp.py`, and `still_image.py` also remain byte-for-byte
+  unchanged, with SHA-256 `E15D95454FFD60076FFADECA5C205B9608AE225606ED955A09AAD95F0212C9E4`,
+  `BADCFA055938FF2AB0E0B8BD8C2FD789B6FAB33CC312F891E5226E8419BD4D5F`, and
+  `B154E3E154FD4DB1927A7E52BE96AC05EA827BE0A8CE6B5C2A27529016B23CE8`.
+
+Local detailed telemetry, decoded-equivalence files, objective metrics, and the contact sheet are
+under `artifacts/ref2va-visual-strength-check/`. That directory is intentionally excluded from Git.
+Remaining quality work is a representative multi-reference, multi-seed, image/video/keyframe and
+human-preference matrix; until then the node remains Experimental and must not be described as a
+Ref2VA oiliness fix.
 
 ## 1.7.0 explicit background executor checkpoint
 

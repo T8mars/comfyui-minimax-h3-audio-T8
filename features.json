@@ -41,7 +41,18 @@
     "MiniMaxH3LongVideoComposeAcceptedT8",
     "MiniMaxH3LongVideoOrchestratorT8",
     "MiniMaxH3LongVideoBackgroundStartT8",
-    "MiniMaxH3LongVideoAutoQueueT8"
+    "MiniMaxH3LongVideoAutoQueueT8",
+    "MiniMaxH3VoiceProfileT8",
+    "MiniMaxH3SpeechPlanT8",
+    "MiniMaxH3SpeechConditioningT8",
+    "MiniMaxH3SpeechDecodeT8",
+    "MiniMaxH3SpeechVerifyT8",
+    "MiniMaxH3SpeechAssembleT8",
+    "MiniMaxH3DialogueScriptT8",
+    "MiniMaxH3DialogueTurnSelectT8",
+    "MiniMaxH3SpeechFinalizeT8",
+    "MiniMaxH3SpeechStudioT8",
+    "MiniMaxH3VisualReferenceStrengthEXPT8"
   ],
   "sampling": {
     "algorithm": "selectable sampler and scheduler with a backward-compatible dual-clock default",
@@ -398,6 +409,112 @@
     "file_composition": "streaming H.264/AAC re-encode bounded to one video frame plus one segment PCM; exact absolute audio sample accounting; optional duration-preserving cosine boundary bridge",
     "single_case_ab": "direct 22-frame sampler latent and 22-frame video-VAE re-encode were close; one last frame was materially worse; VAE re-encode was not promoted",
     "status": "P1 generation, accepted-state, total-duration resume, initial P4 composition, and an explicit P2 background auto-queue/pause/resume/cancel/retry/release executor are implemented experimentally; model-free controls, one 256x256 one-step probe, one 736x416 four-step 60-second/14-segment strong-release background chain, a two-segment three-policy three-cold/three-warm matrix, repeated post-acceptance hard-kill recovery, same-queue dual-chain isolation, same-host Windows/NTFS process ownership/manifest serialization, the local on-disk schema-1 to schema-2 migration contract, eight acceptance-transaction fault-injection cases, two real-process transaction killpoints repeated across three rounds, and three same-prompt base-seed cold-start 60-second chains passed their mechanical/memory gates; all three long timelines showed facial-age/identity drift. The default-off full-first-frame strategy failed its 32-second identity-depth gate. A dedicated identity crop plus scene-and-identity dual-reference redesign then passed three development-seed short probes and strongly improved identity through one fixed 32-second/eight-segment chain, but failed the predeclared relative-motion floor; it remains default-off and the 60-second matrix is denied pending unseen multi-seed/multi-source intermediate replication and motion-regression work. Same-seed whole-chain warm repeats, cross-prompt multi-material quality, blind listening, arbitrary-instruction/power-loss recovery, cross-GPU/high-resolution profiles, complete released-version upgrade/downgrade matrices, network/shared-filesystem locking, true GPU parallelism, and any general memory_safe tier remain unresolved"
+  },
+  "experimental_speech": {
+    "category": "T8/MiniMax H3/Speech/Experimental",
+    "nodes": [
+      "MiniMaxH3VoiceProfileT8",
+      "MiniMaxH3SpeechPlanT8",
+      "MiniMaxH3SpeechConditioningT8",
+      "MiniMaxH3SpeechDecodeT8",
+      "MiniMaxH3SpeechVerifyT8",
+      "MiniMaxH3SpeechAssembleT8",
+      "MiniMaxH3DialogueScriptT8",
+      "MiniMaxH3DialogueTurnSelectT8",
+      "MiniMaxH3SpeechFinalizeT8",
+      "MiniMaxH3SpeechStudioT8"
+    ],
+    "positioning": "experimental audio-first use of the joint H3 AV model; not deterministic phoneme TTS and not a high-fidelity-clone claim",
+    "generation_models": "reuses connected H3 MODEL, Qwen3-VL CLIP, video VAE, and audio VAE; no hidden loader and no additional speech-generation checkpoint",
+    "modes": ["described_voice via T2VA", "reference_voice via Ref2VA"],
+    "dialogue_strategy": "two or three profiles are planned as independent per-turn generations, then assembled on an absolute-sample timeline; unverified joint multi-speaker generation is not exposed as stable",
+    "reference_contract": "explicit rights confirmation; 2-15 second bounded reference; 32kHz stereo CPU profile; attenuation-only preprocessing; in-workflow memory only",
+    "default_quality_probe": {
+      "steps": 20,
+      "sampler": "res_multistep",
+      "scheduler": "simple",
+      "canvas": [32, 32]
+    },
+    "node_default_release_policy": "clear_execution_cache",
+    "optional_verification": {
+      "asr": "lazy CPU faster-whisper; verify or exact ordered-target trim; model path is explicit and no model is downloaded silently",
+      "speaker": "lazy CPU WavLMForXVector cosine report; any threshold is dataset-dependent and report_cosine never gates output",
+      "peak": "final attenuation-only peak limiter, default -1 dBFS",
+      "release_policies": {
+        "keep_loaded": "keeps Comfy model cache intact",
+        "clear_execution_cache": "clears execution cache but is not proven to unload only H3 weights",
+        "unload_all_models": "strong global ComfyUI unload with an explicit global-side-effect report"
+      }
+    },
+    "api_examples": [
+      "examples/speech_described_api.json",
+      "examples/speech_reference_clone_api.json",
+      "examples/speech_dialogue_two_speaker_api.json"
+    ],
+    "frontend_workflows": [
+      "examples/workflows/H3_Speech_Described_Stock20_EXP.json",
+      "examples/workflows/H3_Speech_Reference_Clone_Stock20_EXP.json",
+      "examples/workflows/H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json"
+    ],
+    "validation_report": "docs/SPEECH_VALIDATION_REPORT.md",
+    "validated_real_probe": {
+      "date": "2026-08-10",
+      "hardware": "RTX 4060 Ti 16GiB; Windows; ComfyUI cbbc9dab1",
+      "checkpoint": "FL2VA pruned INT8, Qwen3-VL NVFP4, H3 video/audio VAEs",
+      "described_voice": "10.125s English sample; exact faster-whisper transcript; repeated same-seed PCM was identical",
+      "reference_voice": "ASR exact-target alignment reduced a 10.125s raw Ref2VA result with unrelated lead-in to a 4.465s exact transcript; same-seed aligned PCM repeated identically",
+      "speaker_signal": "one same-reference generated sample scored WavLM cosine 0.949587 while one deliberately different male control scored 0.484272; preliminary single-pair evidence only",
+      "dialogue": "two independently generated and aligned turns assembled to 9.81s with exact combined English transcript; the two located turn spans had WavLM cosine 0.247203",
+      "peak_limit": "current live Comfy node changed the clipped 324000-frame described sample from 0dBFS/4 clipped samples to -0.999854dBFS/0 clipped samples without changing length",
+      "whole_device_peak_mib_range": [16262.2, 16315.7],
+      "minimum_observed_headroom_mib_range": [64.0, 117.5],
+      "release_observation": "after explicit unload_all_models, the isolated server torch pool returned to 32-64MiB within 15 seconds",
+      "decision": "mechanically usable EXP prototype; 16GiB memory_safe label denied because observed headroom is below the 512MiB project gate"
+    },
+    "unvalidated_or_denied": [
+      "Chinese and multilingual ASR/CER",
+      "multi-speaker identity across a representative speaker set and blind ABX",
+      "calibrated emotion, rate, pitch, or acting intensity",
+      "joint multi-speaker generation",
+      "long-text continuity, cancellation, crash resume, ADR timing, and realtime streaming",
+      "three-cold plus three-warm staircase testing",
+      "a 16GiB memory_safe or never-OOM tier"
+    ],
+    "status": "P0 described/reference/dialogue mechanical probes and P1 native nodes implemented; remains Experimental"
+  },
+  "experimental_visual_reference_strength": {
+    "node": "MiniMaxH3VisualReferenceStrengthEXPT8",
+    "category": "T8/MiniMax H3/Conditioning/Experimental",
+    "conditioning_key": "minimax_visual_cond_noise_aug",
+    "h3_payload_key": "visual_cond_noise_aug",
+    "default": 0.999,
+    "range": [0.0, 1.0],
+    "step": 0.001,
+    "scope": "one global value for all MiniMax H3 image, video, video_audio, and visual-keyframe conditioning rows; audio conditioning is unchanged",
+    "behavior": "copies CONDITIONING metadata with node_helpers.conditioning_set_values; it does not alter MODEL, latent, VAE, text, audio strength, sampler, scheduler, sigmas, or DiT call count",
+    "visual_requirement": "rejects CONDITIONING without image/video/video_audio refs or minimax_keyframes",
+    "recommended_ab": [0.999, 0.995, 0.99, 0.98, 0.95],
+    "warnings": [
+      "experimental and may only mitigate overly smooth or waxy reference texture; improvement is not guaranteed",
+      "lower values can weaken identity, action, composition, and first/last-frame retention",
+      "0.950 and below are aggressive experiments",
+      "current ComfyUI H3 payload exposes one global value rather than a separate value per reference"
+    ],
+    "api_example": "examples/ref2va_visual_reference_strength_exp_api.json",
+    "frontend_workflow": "examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json",
+    "validated_real_probe": {
+      "date": "2026-08-10",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
+      "controls": "full Ref2VA INT8, Qwen3-VL NVFP4, both H3 VAEs, no LoRA, 736x416, 124 frames, 20 steps, seed 2608102201, dual_clock_euler/native_flow, shifts 12/3",
+      "matrix": ["no node", 0.999, 0.995, 0.99, 0.98, 0.95],
+      "default_equivalence": "decoded 124-frame RGB video and 325632-sample float32 audio were exactly equal between no-node and explicit 0.999; both maximum absolute errors were 0",
+      "repeatability": "two explicit 0.950 runs decoded to identical video and audio; both maximum absolute errors were 0",
+      "device_peak_mib_range": [16017.422, 16344.617],
+      "minimum_observed_headroom_mib_range": [34.883, 362.078],
+      "perceptual_decision": "single-case A/B proves the control is effective but does not establish a winning de-wax value; 0.995-0.950 changed pose, expression, motion or composition, and 0.950 had the largest output difference while its face high-pass proxy was lower than 0.999",
+      "evidence": "artifacts/ref2va-visual-strength-check/strength_matrix_summary.json"
+    },
+    "status": "implemented and real-model matrix-validated as an isolated EXP post-conditioning node; stable Conditioning and sampling paths remain unchanged"
   },
   "vram_validation": {
     "tool": "tools/validate_h3_vram.py",

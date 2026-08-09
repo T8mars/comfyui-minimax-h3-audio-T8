@@ -1,0 +1,905 @@
+{
+  "id": "58d375c5-fd0e-4637-9e63-1e33b46df5bc",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "1. H3 diffusion model",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        360,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "2. Reuse H3 Qwen3-VL text encoder",
+      "pos": [
+        0,
+        130
+      ],
+      "size": [
+        360,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          },
+          "link": null
+        },
+        {
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          },
+          "link": null
+        },
+        {
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "3. H3 video VAE",
+      "pos": [
+        0,
+        280
+      ],
+      "size": [
+        360,
+        60
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "4. H3 audio VAE",
+      "pos": [
+        0,
+        380
+      ],
+      "size": [
+        360,
+        60
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3VoiceProfileT8",
+      "title": "5. Describe a synthetic voice",
+      "pos": [
+        430,
+        0
+      ],
+      "size": [
+        520,
+        430
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "voice_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "voice_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "speaker_id",
+          "type": "STRING",
+          "widget": {
+            "name": "speaker_id"
+          },
+          "link": null
+        },
+        {
+          "name": "voice_description",
+          "type": "STRING",
+          "widget": {
+            "name": "voice_description"
+          },
+          "link": null
+        },
+        {
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "name": "rights_confirmed",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "rights_confirmed"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_start_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_start_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "highpass_60hz",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "highpass_60hz"
+          },
+          "link": null
+        },
+        {
+          "name": "peak_limit_minus_3_dbfs",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "peak_limit_minus_3_dbfs"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_audio",
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "links": [
+            5,
+            6
+          ]
+        },
+        {
+          "name": "prepared_reference_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VoiceProfileT8"
+      },
+      "widgets_values": [
+        "described_voice",
+        "narrator",
+        "an adult woman with a natural warm mid-low voice, close conversational presence, clear diction, restrained emotion, and realistic human micro-pauses",
+        "English",
+        false,
+        0,
+        0,
+        true,
+        true
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3SpeechPlanT8",
+      "title": "6. Spoken text and acting direction",
+      "pos": [
+        1010,
+        0
+      ],
+      "size": [
+        540,
+        520
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 5
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": null
+        },
+        {
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "name": "acting_direction",
+          "type": "STRING",
+          "widget": {
+            "name": "acting_direction"
+          },
+          "link": null
+        },
+        {
+          "name": "emotion",
+          "type": "STRING",
+          "widget": {
+            "name": "emotion"
+          },
+          "link": null
+        },
+        {
+          "name": "emotion_intensity",
+          "type": "FLOAT",
+          "widget": {
+            "name": "emotion_intensity"
+          },
+          "link": null
+        },
+        {
+          "name": "space",
+          "type": "COMBO",
+          "widget": {
+            "name": "space"
+          },
+          "link": null
+        },
+        {
+          "name": "chunking",
+          "type": "COMBO",
+          "widget": {
+            "name": "chunking"
+          },
+          "link": null
+        },
+        {
+          "name": "target_units",
+          "type": "INT",
+          "widget": {
+            "name": "target_units"
+          },
+          "link": null
+        },
+        {
+          "name": "max_units",
+          "type": "INT",
+          "widget": {
+            "name": "max_units"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SpeechPlanT8"
+      },
+      "widgets_values": [
+        "The lantern is still burning. We can begin when you're ready.",
+        "English",
+        "quiet, sincere, intimate, and naturally paced",
+        "tender",
+        0.6,
+        "studio",
+        "single_segment",
+        18,
+        24
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3SpeechStudioT8",
+      "title": "7. Stock20 native H3 speech; global unload after success",
+      "pos": [
+        1610,
+        0
+      ],
+      "size": [
+        650,
+        820
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 6
+        },
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 7
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "widget": {
+            "name": "segment_index"
+          },
+          "link": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "render_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "render_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "resolution"
+          },
+          "link": null
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        },
+        {
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "trim_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "trim_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "verify_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "verify_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "asr_model_directory",
+          "type": "STRING",
+          "widget": {
+            "name": "asr_model_directory"
+          },
+          "link": null
+        },
+        {
+          "name": "asr_language",
+          "type": "COMBO",
+          "widget": {
+            "name": "asr_language"
+          },
+          "link": null
+        },
+        {
+          "name": "min_similarity",
+          "type": "FLOAT",
+          "widget": {
+            "name": "min_similarity"
+          },
+          "link": null
+        },
+        {
+          "name": "unload_asr_after_verify",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "unload_asr_after_verify"
+          },
+          "link": null
+        },
+        {
+          "name": "speaker_check_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "speaker_check_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "speaker_model_directory",
+          "type": "STRING",
+          "widget": {
+            "name": "speaker_model_directory"
+          },
+          "link": null
+        },
+        {
+          "name": "min_speaker_similarity",
+          "type": "FLOAT",
+          "widget": {
+            "name": "min_speaker_similarity"
+          },
+          "link": null
+        },
+        {
+          "name": "unload_speaker_after_verify",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "unload_speaker_after_verify"
+          },
+          "link": null
+        },
+        {
+          "name": "peak_limit_dbfs",
+          "type": "FLOAT",
+          "widget": {
+            "name": "peak_limit_dbfs"
+          },
+          "link": null
+        },
+        {
+          "name": "release_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "release_policy"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "generated_av_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "transcript",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "text_similarity",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "speaker_similarity",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "accepted",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SpeechStudioT8"
+      },
+      "widgets_values": [
+        0,
+        2608099001,
+        10,
+        32,
+        20,
+        "res_multistep",
+        "simple",
+        12,
+        3,
+        "none",
+        "off",
+        "",
+        "English",
+        0.85,
+        true,
+        "off",
+        "",
+        0.86,
+        true,
+        -1,
+        "unload_all_models"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "SaveAudio",
+      "title": "8. Save generated speech",
+      "pos": [
+        2320,
+        0
+      ],
+      "size": [
+        390,
+        180
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 8
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveAudio"
+      },
+      "widgets_values": [
+        "MiniMaxH3_T8_Speech/described_stock20"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      7,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      3,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      7,
+      3,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      0,
+      "H3_T8_VOICE_PROFILE"
+    ],
+    [
+      6,
+      5,
+      0,
+      7,
+      4,
+      "H3_T8_VOICE_PROFILE"
+    ],
+    [
+      7,
+      6,
+      0,
+      7,
+      5,
+      "H3_T8_SPEECH_PLAN"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "1. Existing H3 model stack (no hidden duplicate loaders)",
+      "bounding": [
+        -40,
+        -70,
+        440,
+        580
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "2. Voice + spoken-text plan",
+      "bounding": [
+        390,
+        -70,
+        1200,
+        660
+      ],
+      "color": "#8157a1",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "3. Generate, protect peaks, release, save",
+      "bounding": [
+        1570,
+        -70,
+        1180,
+        960
+      ],
+      "color": "#3f9e64",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.68,
+      "offset": [
+        70,
+        160
+      ]
+    },
+    "ue_links": []
+  },
+  "version": 0.4
+}

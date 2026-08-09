@@ -1,18 +1,20 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.7.0`，共注册
-25 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
-隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成，以及 Ref2VA 单图/多图
-参考的静态语义编辑。
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.9.0`，共注册
+36 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
+参考的静态语义编辑，以及实验性的原生语音、参考音色和逐句多人对白链。
 
-节点按稳定性与用途分为四个菜单：
+节点按稳定性与用途分为六个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
 | `T8/MiniMax H3/Audio` | 稳定 | 音画条件、音频处理、预检、双时钟采样与 AV 解码 |
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
+| `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 对已有 H3 视觉参考/关键帧 Conditioning 设置全局参考强度，不修改采样链 |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
+| `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述音色、参考音色、语音规划、ASR/说话人校验、逐句对白、音频合成与显式释放策略 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -21,12 +23,15 @@
 ## 安装与兼容性
 
 将项目目录放入 ComfyUI 的 `custom_nodes/minimax-h3-audio-T8`，重启 ComfyUI 后即可在上述
-菜单中找到节点。本项目没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
-MiniMax H3 实现；当前真实生成验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`，最新提交前
-单元测试与白名单导入兼容检查另在 `cbbc9dab1` 通过，运行环境为 Python 3.10+。模型、VAE、
-CLIP 和可选 LoRA 仍需按具体任务自行安装。
+菜单中找到节点。基础节点没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
+MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `transformers`，缺少它们不会
+阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
+`cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
+仍需按具体任务自行安装。
 
-`1.7.0` 只在原23个节点之后追加 Background Start 与 Auto Accept & Continue；旧节点顺序不变。
+`1.9.0` 只在原35个节点之后追加一个视觉参考强度 EXP 后置节点；原节点 ID、顺序、默认值和
+旧工作流接线不变，只有用户主动插入节点时才写入实验字段。`1.8.0` 只在原25个节点之后追加10个实验性语音节点；旧节点顺序不变，原工作流不会自动进入
+语音链。`1.7.0` 只在原23个节点之后追加 Background Start 与 Auto Accept & Continue；旧节点顺序不变。
 `1.6.0` 在此前22个节点之后追加一个总时长编排节点；`1.5.0` 的四个候选/接受/合成节点与
 `1.4.0` 的四个手工分段节点继续保留。原有14个节点的 Node ID、
 schema 顺序和数值路径保持不变。`1.3.3` 在稳定双时钟节点末尾追加可选的采样器与调度器下拉框；原有三个控件的顺序、
@@ -78,6 +83,17 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Chain Orchestrator / 总时长自动分段 (EXP/T8) | 把总时长量化为固定内部窗口的完整时间轴，按 accepted manifest 自动定位下一段，并提供分段 prompt、seed、进度与完成阻断 |
 | MiniMax H3 Background Start / 后台长视频启动 (EXP/T8) | 在模型执行前登记当前 prompt；显式启用自动接受、失败重试和段间释放策略，安全默认仍为 `review_only` |
 | MiniMax H3 Auto Accept & Continue / 自动接受续跑 (EXP/T8) | 接受当前候选、可选合成最终 MP4，并且一次只校验和排入一个下一段 prompt |
+| MiniMax H3 Voice Profile / 音色档案 (EXP/T8) | 建立描述音色或经授权的内存参考音色；规范化真实剩余时长并输出质量报告 |
+| MiniMax H3 Speech Plan / 语音规划 (EXP/T8) | 按语言分句，把实际台词与演绎方向严格分离为可复现段计划 |
+| MiniMax H3 Speech Conditioning / 语音条件 (EXP/T8) | 描述音色走 T2VA，参考音色走 Ref2VA；复用外部 MODEL/CLIP/双 VAE，不重复加载 |
+| MiniMax H3 Speech Decode / 语音解码 (EXP/T8) | 只解码联合 latent 的音频部分，可选保守能量裁边 |
+| MiniMax H3 Speech Verify & Align / ASR校验裁切 (EXP/T8) | 可选 CPU ASR、完整目标顺序定位、说话人余弦报告与最终衰减式峰值保护 |
+| MiniMax H3 Speech Assemble / 语音合成 (EXP/T8) | 以绝对 sample 时间轴合并多段、停顿、重叠、淡化、声像和增益 |
+| MiniMax H3 Dialogue Script / 对白脚本 (EXP/T8) | 把2–3个角色的普通文本或 JSON 变成逐 turn 对白计划 |
+| MiniMax H3 Dialogue Turn Select / 对白段选择 (EXP/T8) | 逐 turn 选择正确角色档案和单段语音计划，避免把未验证联合多人模式当稳定能力 |
+| MiniMax H3 Speech Finalize / 语音完成与释放 (EXP/T8) | AUDIO 直通后执行 keep/cache-clear/全局卸载策略，并明确报告作用域 |
+| MiniMax H3 Speech Studio / 语音工作台 (EXP/T8) | GraphBuilder 一站式串起条件、stock采样、音频解码、校验和释放 |
+| MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -92,6 +108,104 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | `Hybrid` | 关键帧与参考媒体混合生成 |
 
 中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
+
+## EXP：视觉参考强度（Ref2VA 纹理 A/B）
+
+`MiniMax H3 Visual Reference Strength (EXP/T8)` 是轻量 Conditioning 后置节点。把现有
+`MiniMaxH3AudioConditioningT8.positive` 接入它，再把它的 `positive` 接到
+`BasicGuider.conditioning`；`av_latent`、MODEL、VAE、采样器、调度器、shift 和步数仍走原接线。
+节点把 `reference_strength` 原值写入 ComfyUI 当前支持的
+`minimax_visual_cond_noise_aug`，不会产生随机数或增加 DiT 前向次数。
+
+建议固定参考图、prompt、seed、尺寸和采样设置，从 `0.999` 基线依次比较 `0.995`、`0.990`，
+再谨慎测试 `0.980` / `0.950`。降低数值可能减少参考纹理被过度复制或平均化，但不能称为
+“修复油感”；它也会全局影响参考图片、参考视频以及 first/last-frame keyframe。`0.950` 及以下
+属于激进实验，可能明显损失身份、动作、构图和首尾帧一致性。没有视觉参考时节点会明确拒绝，
+只有音频参考也不会误报生效。当前核心只支持一个全局强度，不能为每张参考图单独设置。
+
+API 示例：`examples/ref2va_visual_reference_strength_exp_api.json`；可拖入画布的工作流：
+`examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
+`minimax_h3_ref2va_int8_convrot.safetensors`、736×416、124帧和20步基线，导入后先替换
+占位参考图。该参数本身不要求这些采样值，接入旧工作流时保持用户原有 sampler/scheduler 即可。
+
+本机单参考、单 seed 的完整矩阵已经跑通：无节点与显式 `0.999` 的解码视频/音频最大绝对
+误差均为0，`0.950` 重复两次也逐帧逐样本一致。该案例没有得到“数值越低越去油”的证据：
+`0.995～0.950` 会改变姿态、表情、动作轨迹或构图，`0.950` 的输出偏移最大，面部高频代理还
+低于 `0.999`。因此节点只适合受控 A/B；不能把某个默认值宣传成稳定修复。当前矩阵的最小
+显存余量约35MiB，远低于项目512MiB安全门槛，也不能据此称16GB安全档。
+
+## EXP：原生语音、参考音色与逐句对白
+
+这套节点已经完成真实 H3 生成检查，但仍标记为 `Experimental`。它不是额外的确定性 TTS
+模型，而是把联合音视频 H3 用在 32/64/128 像素暗色视频画布上，并只保留解码音频。小画布
+降低 activation，不会消除 H3、Qwen3-VL 和双 VAE 权重；因此不能把“小画布”解释成
+“16GB 必然安全”。
+
+### 推荐连接方式
+
+1. 将现有工作流的 H3 `MODEL`、Qwen3-VL `CLIP`、video VAE 和 audio VAE 直接接到
+   `Speech Studio`；节点内部没有隐藏加载器，也不会再加载一份 32B 文本编码器。
+2. 合成音色使用 `Voice Profile.voice_mode=described_voice`；参考音色使用
+   `reference_voice` 并连接 ComfyUI `AUDIO`。参考模式必须显式确认已取得权利，节点只在
+   当前工作流内保存 CPU 音频，不提供默认持久音色库。
+3. 使用 `Speech Plan` 明确输入实际台词、语言、演绎方向和渲染时长。当前质量探针使用
+   20步 `res_multistep + simple`；未经 A/B，不把视频 Turbo LoRA 静默套到语音上。
+4. 参考模式可能在目标台词前生成参考内容或无关引导声。需要严格文本输出时启用
+   `trim_exact_target`，并指定本地 faster-whisper CTranslate2 模型；只有 ASR 找到完整目标
+   token 顺序时才裁切，找不到会在报告中拒绝，不做模糊猜测。
+5. 两人/三人对白采用“每个 turn 独立生成 → Assemble 绝对 sample 时间线”的方式，支持
+   单句重做、停顿、重叠、声像和最终混合。联合一次生成多人身份尚未通过角色交换/串音门槛，
+   没有伪装成稳定模式。
+
+### 可选校验模型
+
+- ASR：`faster-whisper` + 本地 CTranslate2 模型。输入可用绝对目录，或放在
+  `ComfyUI/models/TTS/<folder>`。本机只验证了英文 `small.en`；中文和其他语言需要相应
+  多语言模型及独立 CER 验证，当前不能宣传为已验证。
+- 说话人：`transformers` + 本地 `WavLMForXVector` 目录，同样支持绝对目录或
+  `models/TTS/<folder>`。`report_cosine` 只报告余弦，不控制结果；`require_threshold` 的阈值
+  依数据集而异，不能把单一默认值描述为通用真假判定。
+- 两项模型都在 CPU 延迟加载，并可在每次校验后卸载。插件不自动下载，也不随仓库分发权重。
+
+### 释放策略
+
+| 策略 | 实际含义 |
+|---|---|
+| `keep_loaded` | 保持 ComfyUI 模型缓存，适合同一工作流后面还要继续生成 H3 |
+| `clear_execution_cache` | 请求清理执行缓存；不声称只卸载 H3，也不等于显存归零 |
+| `unload_all_models` | 强制全局卸载 ComfyUI 模型；会影响工作流中其他已加载模型，只有用户显式选择才执行 |
+
+所有正常完成的校验、拒绝和裁切结果都会返回 JSON 报告。上游采样直接 OOM 或抛异常时，
+ComfyUI 会中止图，位于下游的 Finalize 也不会执行；当前不能宣称异常路径能够自动全局卸载，
+需要使用 ComfyUI 的释放/重启机制处理。最终音频默认使用 `-1 dBFS` 的衰减式峰值保护，只降低
+超限音频，不把较安静的语音自动放大。
+
+### 2026-08-10 本机真实探针
+
+测试环境为 RTX 4060 Ti 16GiB、Windows、ComfyUI `cbbc9dab1`、FL2VA pruned INT8、
+Qwen3-VL NVFP4 和两套 H3 VAE；采样为 stock 20步，不是 Turbo 质量外推。
+
+| 探针 | 结果 | 不能推出什么 |
+|---|---|---|
+| 描述音色 | 10.125秒英文；ASR逐词一致；同 seed 重复 PCM 完全一致 | 不代表不同硬件/版本位级一致 |
+| 参考音色 | 原始10.125秒含无关前导；精确目标裁成4.465秒后英文逐词一致；同 seed 重复 PCM一致 | 不代表所有参考都能自动干净裁切 |
+| 说话人信号 | 同参考生成样本 WavLM余弦0.949587；刻意不同的男性负对照0.484272 | 单一正/负样本不能证明“高保真克隆” |
+| 两人对白 | 两段独立生成后合成9.81秒；合并台词逐词一致；两段余弦0.247203 | 不证明多人联合生成、角色长期稳定或重叠对白自然度 |
+| 显存/释放 | 整卡峰值约16262–16316MiB；显式全局卸载后隔离服务 torch pool 15秒回到32–64MiB | 观测最小余量约64–118MiB，低于512MiB门槛，不能标 `memory_safe` 或“绝不OOM” |
+
+当前没有完成：中文/多语言 CER、10人以上音色集合和盲听 ABX、情绪强度标定、长文本
+2分钟/10分钟连续性、持久音色库、取消/崩溃恢复、ADR 精确时长、真正实时流、三冷三暖
+阶梯增长矩阵和跨 GPU 验证。API 示例位于 `examples/speech_described_api.json`、
+`examples/speech_reference_clone_api.json` 与 `examples/speech_dialogue_two_speaker_api.json`；
+可直接拖入 ComfyUI 的对应画布工作流位于 `examples/workflows/H3_Speech_Described_Stock20_EXP.json`、
+`H3_Speech_Reference_Clone_Stock20_EXP.json` 与
+`H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json`。参考音色示例导入后必须替换
+`speech_reference.flac` 占位音频；完整环境、输出哈希、显存和否决项见
+[语音真实生成验证报告](docs/SPEECH_VALIDATION_REPORT.md)。
+
+声音参考必须获得说话人授权，不得用于未经同意的冒充；生成内容应按适用许可和平台规则
+披露为 AI。MiniMax H3 权重许可独立于本仓库 GPL 代码，插件不分发任何权重。请同时阅读
+[MiniMax H3 官方许可证](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE)。
 
 ## EXP：分段长视频续写
 

@@ -16,8 +16,14 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 25
+    assert len(ids) == 36
     assert len(ids) == len(set(ids))
+    features = json.loads(
+        (Path(__file__).resolve().parents[1] / "features.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert features["nodes"] == ids
     assert "MiniMaxH3AudioConditioningT8" in ids
     assert "MiniMaxH3DualClockSamplerT8" in ids
     assert "MiniMaxH3MultiRateSamplerEXPT8" in ids
@@ -69,10 +75,59 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         long_video_schema = schemas[ids.index(long_video_id)]
         assert long_video_schema.is_experimental is True
         assert long_video_schema.category == "T8/MiniMax H3/Long Video/Experimental"
-    assert ids[-2:] == [
+    assert ids[-3:-1] == [
+        "MiniMaxH3SpeechFinalizeT8",
+        "MiniMaxH3SpeechStudioT8",
+    ]
+
+    speech_ids = {
+        "MiniMaxH3VoiceProfileT8",
+        "MiniMaxH3SpeechPlanT8",
+        "MiniMaxH3SpeechConditioningT8",
+        "MiniMaxH3SpeechDecodeT8",
+        "MiniMaxH3SpeechVerifyT8",
+        "MiniMaxH3SpeechAssembleT8",
+        "MiniMaxH3DialogueScriptT8",
+        "MiniMaxH3DialogueTurnSelectT8",
+        "MiniMaxH3SpeechFinalizeT8",
+        "MiniMaxH3SpeechStudioT8",
+    }
+    assert ids[-11:-1] == [
+        "MiniMaxH3VoiceProfileT8",
+        "MiniMaxH3SpeechPlanT8",
+        "MiniMaxH3SpeechConditioningT8",
+        "MiniMaxH3SpeechDecodeT8",
+        "MiniMaxH3SpeechVerifyT8",
+        "MiniMaxH3SpeechAssembleT8",
+        "MiniMaxH3DialogueScriptT8",
+        "MiniMaxH3DialogueTurnSelectT8",
+        "MiniMaxH3SpeechFinalizeT8",
+        "MiniMaxH3SpeechStudioT8",
+    ]
+    assert ids[-1] == "MiniMaxH3VisualReferenceStrengthEXPT8"
+    assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",
     ]
+    for speech_id in speech_ids:
+        speech_schema = schemas[ids.index(speech_id)]
+        assert speech_schema.is_experimental is True
+        assert speech_schema.category == "T8/MiniMax H3/Speech/Experimental"
+
+    visual_strength = schemas[ids.index("MiniMaxH3VisualReferenceStrengthEXPT8")]
+    assert visual_strength.is_experimental is True
+    assert visual_strength.category == "T8/MiniMax H3/Conditioning/Experimental"
+
+    voice_profile = schemas[ids.index("MiniMaxH3VoiceProfileT8")]
+    rights = next(item for item in voice_profile.inputs if item.id == "rights_confirmed")
+    assert rights.default is False
+
+    studio = schemas[ids.index("MiniMaxH3SpeechStudioT8")]
+    studio_inputs = {item.id: item for item in studio.inputs}
+    assert studio_inputs["steps"].default == 20
+    assert studio_inputs["sampler_name"].default == "res_multistep"
+    assert studio_inputs["scheduler"].default == "simple"
+    assert studio_inputs["release_policy"].default == "clear_execution_cache"
 
     background_start = schemas[ids.index("MiniMaxH3LongVideoBackgroundStartT8")]
     mode = next(item for item in background_start.inputs if item.id == "execution_mode")
