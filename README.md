@@ -1,16 +1,18 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.3.3`，共注册
-14 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样，
-以及 Ref2VA 单图/多图参考的静态语义编辑。
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.7.0`，共注册
+25 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成，以及 Ref2VA 单图/多图
+参考的静态语义编辑。
 
-节点按稳定性与用途分为三个菜单：
+节点按稳定性与用途分为四个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
 | `T8/MiniMax H3/Audio` | 稳定 | 音画条件、音频处理、预检、双时钟采样与 AV 解码 |
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
+| `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -23,7 +25,10 @@
 MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`、Python
 3.10+。模型、VAE、CLIP 和可选 LoRA 仍需按具体任务自行安装。
 
-`1.3.3` 在稳定双时钟节点末尾追加可选的采样器与调度器下拉框；原有三个控件的顺序、
+`1.7.0` 只在原23个节点之后追加 Background Start 与 Auto Accept & Continue；旧节点顺序不变。
+`1.6.0` 在此前22个节点之后追加一个总时长编排节点；`1.5.0` 的四个候选/接受/合成节点与
+`1.4.0` 的四个手工分段节点继续保留。原有14个节点的 Node ID、
+schema 顺序和数值路径保持不变。`1.3.3` 在稳定双时钟节点末尾追加可选的采样器与调度器下拉框；原有三个控件的顺序、
 默认双时钟 Euler、原生 flow sigma 和旧 API 缺省行为均保持不变。`1.3.2` 保留 `1.3.1`
 对两代 H3 采样协议的兼容：旧版 ComfyUI 的 slope-scaled 音频速度，以及当前
 `FLOW_AV` / `ModelSamplingAV` 的原始音频速度。兼容性由实际 H3 基模能力检测，不依赖用户
@@ -61,8 +66,19 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Reference Image Edit (EXP/T8) | 用 Ref2VA 对单张主图进行语义编辑，并支持最多 8 张附加参考图 |
 | MiniMax H3 Still Preflight (EXP/T8) | 检查单帧 OOD、画布、参考数量、模型和 VAE 契约 |
 | MiniMax H3 Still Decode (EXP/T8) | 只解码视频 latent，并从 1/5/22/124 帧候选中选出一张图 |
+| MiniMax H3 Segment Planner / 长视频分段规划 (EXP/T8) | 计算当前段渲染帧、重叠裁头、有效时长、绝对时间和是否允许保存下一段上下文 |
+| MiniMax H3 Previous Context / 读取上一段上下文 (EXP/T8) | 第0段返回空上下文，第N段只读取并校验固定的 N-1 状态文件 |
+| MiniMax H3 Long Video Conditioning / 长视频续写条件 (EXP/T8) | 合并运动尾部、音频 timeline、原有关键帧/参考媒体，并只给克隆 MODEL 加局部补丁 |
+| MiniMax H3 Save AV Tail / 保存下一段上下文 (EXP/T8) | 只保存最多39帧所需的 CPU AV latent 尾部，校验哈希并原子替换当前段槽位 |
+| MiniMax H3 Save Candidate / 保存候选片段 (EXP/T8) | 把当前裁后 A/V 和有界 latent tail 原子写入候选目录，不修改已接受历史 |
+| MiniMax H3 Review & Accept / 预览并接受候选 (EXP/T8) | 默认只预览；确认后提交 manifest，替换中间段时使所有依赖后段失效 |
+| MiniMax H3 Accepted Context / 读取已接受上下文 (EXP/T8) | 只按 manifest 读取 N-1，并输出父候选 ID/修订号防止陈旧续接 |
+| MiniMax H3 Compose Accepted / 合成已接受片段 (EXP/T8) | 校验每段哈希后流式重编码；内存上限为单帧视频加单段 PCM，不聚合整条 tensor |
+| MiniMax H3 Chain Orchestrator / 总时长自动分段 (EXP/T8) | 把总时长量化为固定内部窗口的完整时间轴，按 accepted manifest 自动定位下一段，并提供分段 prompt、seed、进度与完成阻断 |
+| MiniMax H3 Background Start / 后台长视频启动 (EXP/T8) | 在模型执行前登记当前 prompt；显式启用自动接受、失败重试和段间释放策略，安全默认仍为 `review_only` |
+| MiniMax H3 Auto Accept & Continue / 自动接受续跑 (EXP/T8) | 接受当前候选、可选合成最终 MP4，并且一次只校验和排入一个下一段 prompt |
 
-`MiniMax H3 Audio Conditioning (T8)` 的 `task_type` 下拉框会显示中英双语说明：
+`MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
 | 选项 | 中文含义 |
 |---|---|
@@ -75,6 +91,370 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | `Hybrid` | 关键帧与参考媒体混合生成 |
 
 中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
+
+## EXP：分段长视频续写
+
+`T8/MiniMax H3/Long Video/Experimental` 是与原有14个节点隔离的实验子系统。它没有
+安装或依赖 `ComfyUI-H3-Motion-Context`，也不会在插件导入时全局修改 ComfyUI 的
+`PackedLayout` 或 `MiniMaxH3.extra_conds`。Long Video Conditioning 会克隆输入 MODEL，
+只在该克隆上挂接一个 `extra_conds` object patch；不带本项目长视频标记的 conditioning
+直接旁路，因此稳定 Conditioning、Hybrid、Still 和其他 H3 工作流不受该补丁影响。
+
+设计研究参考了 NikoDemon80 的
+[ComfyUI-H3-Motion-Context](https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context)
+固定提交 `15fc6a7` 所展示的内部关键帧和音频 timeline 思路；本项目没有复制或捆绑该插件，
+重新实现了局部模型补丁、多参考合并、直接 latent tail 和有校验的状态系统。上游代码采用
+GPL-3.0-only，本项目代码采用 GPL-3.0-or-later；二者均不包含模型权重。
+
+当前链路：
+
+1. Planner 输入固定 `chain_id`，把 `segment_index` 从 `0` 开始逐段递增；默认上下文为22帧。
+2. Previous Context 在第0段自动返回空值；第N段只读取
+   `output/minimax_h3_t8_long_video/<chain_id>/segment_(N-1).context.safetensors`，不会猜“最新文件”。
+3. Long Video Conditioning 直接截取 sampler 的视频 latent 尾部作为 5/22/39 帧运动条件，
+   不解码上一整段 IMAGE，也不做视频 VAE 重编码；`video_and_audio` 还会把音频 latent 尾部
+   放到当前目标头部的正确 timeline，`video_only` 则只续运动。
+4. sampled AV latent 同时进入 Context Save 和现有 AV Decode；Context Save 只保存最多39帧
+   所需的 CPU tail，并使用 tensor SHA-256、metadata 校验、同目录临时文件和原子替换。
+5. Planner 的 `trim_start_seconds` / `final_duration_seconds` 连接现有 Output Trim，同步删除
+   重建的画面与音频头部，再交给 ComfyUI 原生 `CreateVideo -> SaveVideo`。该链按帧数裁音频
+   tensor，并避免 VHS `apad + -shortest` 在独立 MP4 上造成约79–90ms声轨短缺。
+
+针对60秒实测暴露的逐段人物年龄/身份漂移，Long Video Conditioning 在输入末尾追加三个高级项，
+且默认值继续严格保持旧工作流：
+
+- `first_frame_reuse=segment0_only`：默认值；`first_frame`只作为第0段精确关键帧，续写段仍只用前段尾部。
+- `first_frame_reuse=persistent_identity_reference`：只在续写段增加非时间轴身份参考，同时保留
+  5/22/39帧运动上下文；第0段仍由原始`first_frame`精确控制。
+- `persistent_identity_image`：可选的续写专用身份裁剪图，建议清晰正脸或上半身；不会改变第0段。
+- `persistent_identity_strategy=single_reference`：兼容默认。连接身份裁剪图时优先只用裁剪图，未连接时
+  回退到完整`first_frame`。
+- `persistent_identity_strategy=scene_plus_identity`：续写段把完整`first_frame`和身份裁剪图作为两张
+  独立参考图；未连接`persistent_identity_image`会失败关闭。持续参考与用户ref images合计最多9张，
+  `task_type`应使用`auto`或`Hybrid`。
+
+新输入全部追加在旧schema末尾，因此旧API JSON和旧`widgets_values`前缀不变。方案不加载新模型、
+不保存完整历史视频，也不改稳定采样；但每个续写段会多1或2个reference block及对应VAE编码，序列、
+耗时和显存可能上升，也可能与运动上下文竞争。原来的“完整首帧单参考”在32秒/8段仍从首续段
+0.613漂到末段0.134，因此已经被否决为长期身份方案。
+
+重构后的短链验证分两步。身份裁剪图单参考在三seed足球/手臂高运动探针中，相对旧行为的配对余弦
+均值/中位数为+0.08272/+0.09845，54/59帧更高；但相对完整首帧单参考有一个seed回退，不能单独作为
+统一答案。随后“场景+身份裁剪”双参考完成三seed、6/6条双段冷链，所有12次采样成功且每组第0段
+逐比特一致；相对旧行为的余弦均值/中位数为+0.11278/+0.11628（56/59更高），相对完整首帧为
++0.08454/+0.09455（52/60更高），三个seed的中位收益均为正，接触图未见冻结或新伪影。
+
+最终用seed `2608097101`完成一条独立32秒/8段“场景+身份裁剪”链：8/8次采样一次成功，无OOM、
+重试或缓存复用，成片精确768帧/32.000秒。七个续写段的身份余弦中位数为
+0.699/0.639/0.644/0.609/0.737/0.601/0.574，末段/首续段保持率0.821；相对旧行为58个配对样本
+均值/中位数+0.42945/+0.46670，相对完整首帧63个样本+0.33771/+0.35802。最低空闲显存
+3906.07MiB，post-15秒占用回到1231.63MiB；这只证明本机固定档的一条链，没有通用无泄漏或显存
+安全含义。预设动作门槛没有全过：第2、5个续写段flow-P90仅为旧行为0.546/0.538，第5段MAD比
+0.647；2fps抽帧仍显示足球、手臂和姿态持续运动，不是冻帧，但动作幅度/轨迹受限警告成立。
+因此功能继续标为EXP并默认关闭，暂不进入三seed 60秒矩阵；下一步先做未参与调参的多seed/多素材
+32秒复验并解决动作强度回退，不能宣传为“身份锁定”“动作无损”或“显存安全档”。
+
+### 双参考身份续写示例
+
+可直接导入的 `examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
+基于后台长链示例，专门演示“完整场景首帧 + 人物身份裁剪图”的双参考续写：
+
+1. 完整场景图连接 Long Video Conditioning 的 `first_frame`，继续精确控制第0段首帧。
+2. 同一人物的清晰正脸或上半身裁剪图连接 `persistent_identity_image`；续写段同时保留完整场景与
+   身份裁剪两个独立 reference block。
+3. 节点预设 `task_type=auto`、`first_frame_reuse=persistent_identity_reference`、
+   `persistent_identity_strategy=scene_plus_identity` 和 `ref_image_size=match`。若身份图未连接，
+   `scene_plus_identity` 会明确报错，不会静默退回单参考。
+4. 示例沿用 736×416、124帧内部窗口、22帧上下文和4步采样的实验基线；导入后必须先替换两张
+   示例输入图，并检查模型、VAE、CLIP、LoRA 与输出目录是否符合本机环境。
+
+如果升级节点后画布仍看不到 `persistent_identity_image` 或 `persistent_identity_strategy`，先完整
+重启 ComfyUI 再导入该工作流；仅刷新浏览器不会重新加载 Python 节点 schema。
+
+身份裁剪图应只保留一个主要人物，尽量包含稳定可辨识的脸部、发型和上半身服装，不要用多人合照、
+过小人脸或严重遮挡图。这个工作流只提供已验证接线与参数基线；它仍是 EXP，32秒单链虽显著改善
+身份保持，但动作幅度门槛未全部通过，也没有证明所有素材、时长和显卡都不会 OOM。
+
+中间段有一条重要约束：裁后输出必须一直保留到本次 sampler 的末尾，否则下一段会从用户
+没有看到的隐藏尾帧续写。Planner 因此把可继续段的有效时长量化到当前 H3 `17n+5` 网格；
+只有最后一段开启高级项 `is_final_segment=true` 后，才允许按请求时长裁掉隐藏尾部，同时
+自动输出 `save_context=false`，防止把这个最终裁尾误用为后续上下文。默认4.25秒、22帧上下文
+时，第0段为124帧（约5.167秒），后续可继续段为裁头22帧后保留102帧（4.25秒）。
+
+`1.4.0` 的手工 P1 状态文件采用固定槽位：重抽第N段只覆盖 `segment_N`，而第N段读取的仍是 `segment_(N-1)`；
+中断或 OOM 前没有完成原子替换时，不会破坏上一段。状态只保留尾部，不缓存完整历史 IMAGE
+或完整 AV latent，因此链长增加不会让当前 H3 序列或状态内存随历史总时长线性堆积。
+
+`1.5.0` 进一步提供推荐的“候选→接受”状态链：
+
+1. 用 `Accepted Context` 代替旧 `Previous Context`；第0段仍为空，第N段只读取 manifest 中
+   已接受的 N-1，并输出父候选 ID 与 manifest revision。
+2. 解码、裁头后接 `Save Candidate`。它以绝对24fps时间轴计算音频起止 sample，原子写入
+   当前候选 MP4、可选 continuation context 和 `candidate.json`，不会改变已接受历史。
+3. `Review & Accept` 默认 `accept_candidate=false`，可直接预览候选。满意后改为 `true` 再排队；
+   同一候选重复提交是幂等的。若有意替换已接受的第N段，必须显式选择
+   `replace_and_invalidate_following`，manifest 会保留失效历史，但 N 之后都必须重新生成。
+4. manifest 写入有同目录锁、SHA-256、临时文件原子替换和一代有效备份。主清单损坏时可回退
+   上一修订；回退可能丢失最后一次接受记录，但候选文件仍保留，可重新提交而不必重新采样。
+5. 最后一段必须由 Planner 标为 final。所有段接受后，用 `Compose Accepted` 校验连续帧/sample
+   边界和文件哈希，再流式生成最终 MP4；默认不会把未标 final 的半成品误当成完整长片。
+
+`1.6.0` 新增推荐的“总时长→人工审核→自动恢复下一段”路线：
+
+1. `Chain Orchestrator` 只输入一次目标总时长。时长先量化到24fps的精确总帧数，再拆成固定
+   `17n+5` 内部窗口；默认窗口124帧、上下文22帧。总时长增加只增加片段数，不增加单段内部窗口。
+2. 第0段有效新增124帧，后续完整段有效新增102帧；最后一段自动标记 final 并精确裁到剩余帧。
+   例如60秒严格规划为14段：`124 + 12×102 + 92 = 1440帧`，所有段内部仍采样124帧。
+3. manifest 已接受段数就是恢复点。重新打开工作流或执行失败后，节点会输出第一段未接受的
+   `segment_index`、时间轴、裁切参数、prompt 和 seed；已接受时间结构与新设置冲突时明确拒绝。
+4. `global_prompt` 为默认提示词；高级 `segment_prompts_json` 可按段覆盖 prompt、seed 和镜头备注。
+   seed 支持固定、递增或按 chain/segment 哈希派生，同一计划可以确定性复现。steps、视频/音频
+   shift、sampler 和 scheduler 也由同一个 Orchestrator 同时连接采样节点和候选元数据；用户不必
+   在两处重复填写，已接受链改变采样身份时会在下一次采样前拒绝续接。
+5. 最后一段接受后，节点输出完整进度并阻断下游采样，避免多生成一段。它不会在一个节点里保留
+   完整历史 IMAGE/AUDIO tensor，也不会通过后台循环绕过 ComfyUI 的模型管理。
+
+`1.7.0` 在不移除上述人工审核路线的前提下增加一条显式后台路线。加载
+`examples/workflows/H3_Long_Video_Background_22F_EXP.json` 后，`Background Start` 的默认值仍是
+`review_only`；只有主动改为 `auto_accept_and_continue` 才会跳过人工预览，自动接受每个成功候选。
+终端节点每次只排入一个下一段 prompt，不在单个 Python 循环里长期持有完整 IMAGE/AUDIO 历史。
+
+后台节点提供 `status / 状态`、`pause / 当前段后暂停`、`resume / 继续` 与 `cancel / 取消` 按钮：
+
+- 暂停不会丢弃已接受段；当前段成功后停在下一段恢复点。排队但未开始的段会直接撤回。
+- 取消只按当前 background prompt ID 删除或中断，不清空用户的整个 ComfyUI 队列。若候选已经跨过
+  manifest 原子提交点，它可能完成本次提交，但不会再排下一段。
+- `max_retries` 表示同一失败段的额外尝试次数。重试复用完全相同的 API prompt，绝不静默降低
+  分辨率、帧数、上下文、采样步数或改 seed；同一错误超过上限后进入 `failed`。
+- `clear_execution_cache` 是默认释放策略：显式设置 `free_memory=true`、`unload_models=false`，
+  清执行 tensor/软缓存但不声称卸载模型。策略在每次候选原子接受后应用，包含继续排队、段后暂停
+  和 final；`unload_all_models` 会调用ComfyUI全局卸载标志，连H3以外的模型一起卸载；
+  `keep_loaded`不请求释放。接受后释放失败会保留manifest并把任务标记failed，不会重生成。
+- `background_job.json` 只保存状态和 prompt SHA-256，不保存 prompt 正文。ComfyUI 重启后 manifest
+  仍可恢复，但内存中的 prompt snapshot 已丢失，需把后台工作流重新排队一次完成重新附着。
+  错误状态采用字段白名单，不落盘 `current_inputs/current_outputs`、媒体 tensor 或提示词。
+- 最终段接受后可自动调用流式合成器。若接受已经成功但最终合成失败，任务会停止并保留完整
+  manifest，不能通过“重试生成”越过已提交边界；此时单独运行 `Compose Accepted`。
+
+隔离 ComfyUI 的模型无关实测已覆盖两段自动排队/合成、当前段后暂停再继续、定向取消以及一次
+原参数失败重试。另一次真实 H3 机械探针使用 FL2VA INT8、Standard Turbo EMA LoRA、NVFP4 CLIP、
+双 H3 VAE、256×256、124帧窗口、22帧 context、1步、DynamicVRAM headroom 2GiB，并选择
+`unload_all_models`：两个独立 prompt 均成功，manifest 为 `124+20=144` 帧，最终 H.264/AAC
+音画流均严格6.000秒。该探针只证明后台执行与强释放后重载闭环，不是画质基准，也不能外推成
+四步、高分辨率、其他GPU的通用 `memory_safe` 或“绝不 OOM”。
+
+随后完成了一条代表性的真实四步后台长链：RTX 4060 Ti 16GB、FL2VA INT8、Standard Turbo
+LoRA、736×416、124帧窗口、22帧音画context、DynamicVRAM headroom 2GiB，段间选择全局
+`unload_all_models`。60秒被严格拆为14个独立prompt，14/14均一次成功，无重试或OOM；manifest
+revision 14 为 `124 + 12×102 + 92 = 1440` 帧、1,920,000音频samples，最终H.264/AAC的
+视频、音频和容器均严格60.000秒。0.5秒轮询观察到整卡峰值约12,823MiB、最低余量约3,556MiB；
+全局峰值在第3段后基本平台化，第9段只增加约39MiB，此后不再上升，本轮没有阶梯式泄漏迹象。
+13个视频接触帧没有明显硬切，但音频半秒窗响度变化最大仍约13.75dB；5ms bridge仅把单样本
+跳变中位降低约96.2%，不能修复响度、语义、音乐节奏或口型。该结果只证明本机固定配置的一个
+单prompt/seed后台长链，不等于跨GPU、高分辨率、多参考或通用显存安全档。详细证据位于本地
+`artifacts/background-four-step-check/REPORT.md`。
+
+长链完成后的审计发现旧实现只在“准备排下一段”时请求释放，暂停和final会继续持有模型。
+现已改成每次接受后统一请求所选策略，并用另一条真实256×256一阶双段链复测：完成瞬间整卡约
+8,124MiB，状态记录 `last_release_policy=unload_all_models`，随后自动回落到约1,230MiB，释放约
+6,894MiB，不再需要手动调用`/free`。这证明final释放时机生效，不代表所有第三方模型都能无副作用重载。
+
+同条件释放策略对照随后扩展为3个配对seed：每档3次全新ComfyUI进程冷态，并在独立同进程
+primer后连续测3次暖态，共21条双段链、其中18条正式测量。全部成功且无重试/OOM；每个seed在
+三档×冷暖六种条件下的首段MP4、首段AV tail tensor、第二段MP4和最终成片SHA-256完全一致。
+
+| 策略 | 冷态耗时均值 | 暖态耗时均值 | 冷/暖整卡峰值均值 | 冷/暖15秒残留均值 |
+|---|---:|---:|---:|---:|
+| `keep_loaded` | 170.89s | 153.10s | 13,449.95 / 13,467.30MiB | 8,083.22 / 7,987.22MiB |
+| `clear_execution_cache` | 188.28s | 185.08s | 13,434.52 / 13,408.94MiB | 1,229.63 / 1,229.63MiB |
+| `unload_all_models` | 189.08s | 197.13s | 13,421.52 / 13,384.03MiB | 1,229.63 / 1,229.63MiB |
+
+三档所有配对峰值差均低于128MiB差异阈值，旧单次探针中强释放低约1GiB的现象没有重复。
+`keep_loaded`相对默认档冷/暖平均快17.39/31.97秒，但15秒后多占约6.85/6.76GiB；只适合用户
+明确愿意为单工作流吞吐量保留显存时选择。强释放相对默认档冷态只慢0.80秒，暖态平均慢
+12.05秒，还会卸载其他ComfyUI模型。默认因此继续使用`clear_execution_cache`。
+
+首次`keep_loaded`探针还发现ComfyUI会把运行期`is_changed`指纹写回prompt；若原样续排，会把
+整张下一段图误判为缓存命中。后台prompt快照现会双重剥离该字段。18条正式链中，keep-loaded
+只缓存节点1–5的加载器，编排、采样、保存和终端均正常重跑；另外两档没有节点缓存命中。
+这些结论仍只绑定本机RTX 4060 Ti 16GB、当前模型/插件和736×416双段配置，不能外推跨GPU、
+高分辨率、多参考或通用不OOM保证。
+
+后台恢复又完成了一次真实进程强杀检查：256×256、一阶、双段H3链在第0段已持久接受、manifest
+revision 1且下一prompt运行时终止ComfyUI。重启后的状态查询会把磁盘残留的`running`纠正为
+`detached`，显示已接受1段和“需重新排队工作流一次”；重新排同一工作流一次后从第1段继续，
+旧第0段的候选ID、MP4、AV tail tensor哈希和修改时间均未改变，最终revision 2为144帧且A/V/容器
+严格6.000秒。加入v2磁盘schema、操作系统锁与后台进程租约后再次复测通过，恢复阶段整卡峰值约
+13,537.02MiB；杀进程前的background state和manifest均已原生写成带明确format marker的schema 2。
+随后两个独立真实H3后台链在同一ComfyUI队列按
+`A0 -> B0 -> A1 -> B1`交错完成，两个job、prompt、manifest、父链、目录和成片保持隔离，整卡峰值
+约13,511.44MiB，无OOM，两个链的state和manifest也都保持原生schema 2。
+
+本地Windows/NTFS多进程门槛也已补齐：manifest改用进程死亡时由操作系统自动释放的
+`manifest.lock.v2`；两个进程争同一chain/index/revision时只有一个提交，四进程×25次共100次锁内
+更新无丢失，持锁进程强杀后2秒内可接管。后台job另有整链进程租约，第二个ComfyUI进程会在生成前
+被拒绝，首进程强杀后第三进程可接管并写入`previous_job_id`。旧版活锁会被尊重，死锁残留不阻塞且
+不被破坏性删除；未知新schema明确拒绝，不会回退旧backup，same-schema附加字段会跨下一次提交保留。
+损坏的辅助后台状态会隔离留档，再由accepted manifest恢复。现有schema 1 manifest/background
+state会只在内存中规范化为schema 2，纯读取不改原文件；下一次受锁保护的manifest提交会原子写入
+schema 2主文件并保留原始schema 1备份，后台重启接管也会写schema 2并记录来源schema。已有真实
+H3 schema 1链的只读迁移检查保持两个原文件哈希不变，新建原生schema 2强杀恢复链也已通过。
+
+接受事务另补8个确定性故障注入场景。完全相同的候选若已接受MP4丢失或context损坏，会从仍通过
+哈希校验的候选文件安全修复，manifest revision不增加；同一规范化`candidate_id`不得绑定不同
+内容，失效历史中的ID也不能覆盖原归档文件。context复制失败、备份写完但主manifest写入失败时，
+旧manifest仍是唯一权威，重试同一候选可完成提交。主manifest缺失时必须先读取有效backup，即使
+调用方允许新建链也不会重置历史；未知schema或损坏backup则拒绝创建空链。这些测试覆盖明确的
+程序步骤边界，不等于任意CPU指令或掉电边界已经全部证明。
+
+其中两个最高风险步骤又提升为Windows/NTFS真实进程强杀：worker持有真实`manifest.lock.v2`，
+分别在“accepted MP4已完整复制、context尚未复制”和“旧revision已写入backup、新primary尚未替换”
+时由父进程直接`kill()`。两个断点各做3轮独立重复，共6/6恢复；每次OS锁自动释放，旧/空manifest
+仍是权威，同一候选在2秒内完成重试，媒体哈希和最终revision正确，没有残留worker。这比Python
+异常注入更强，但仍使用小型测试媒体，不是H3 CUDA生成中的任意时刻强杀，也不覆盖机器掉电或网络盘。
+
+这些结果证明的是“持久接受边界后的强杀恢复”“单队列多链隔离”“本地schema 1→2迁移契约”和
+“单机NTFS同链所有权/提交串行化”，不等于不同已发布插件/ComfyUI组合的完整升级降级矩阵、网络
+共享盘锁、同时CUDA执行或多GPU并行。详细证据位于本地
+`artifacts/background-crash-recovery/REPORT.md`。
+
+合成器的视频逐帧处理，音频一次只解码一个已接受片段。默认 `cosine_bridge` 在每个边界把
+当前段开头的值连续地拉到上一段末样本，并在默认5ms内余弦衰减修正；它不做会缩短时长的
+overlap acrossfade，最终 sample 总数严格取 manifest 的绝对边界。该处理只能降低瞬时幅值跳变，
+不能证明相位、节奏或语义已经无缝；视频会重编码为 H.264，音频会重编码为 AAC，也不是无损拼接。
+
+既有124/102/102帧真实 H3 三段已完成一次 `none`/5ms bridge 文件级对照：两份输出均为
+328帧，视频13.6667秒、AAC 13.667秒；最终 AAC 解码后的两处边界跳变从约
+0.04226/0.03509降至0.00434/0.00704，约下降89.7%/79.9%。这是单素材的零阶幅值指标，
+尚未完成盲听和多素材 click energy/响度/频谱验证，不能据此宣传“音频无缝”。
+
+这不是“显存优化节点”的证明。124帧目标加22帧运动条件约增加18.9%的视频条件行，音频
+timeline 也增加约17.9%的音频 reference 行；这些是 packed rows 比例，不是显存百分比。
+分段只能让总时长的峰值有界，单个带上下文片段一定比同档普通片段更重。Block Cache、Sage
+和 DynamicVRAM headroom 的首轮受控矩阵及本机60秒门槛现已完成，结论见本节后文；它只支持
+一个固定本机保守档，不提供通用`memory_safe`宣传，也不承诺任意尺寸、任意帧数下不会OOM。
+
+2026-08-08 的四步实测使用非裁剪 FL2VA INT8、NVFP4 H3 CLIP、两个 H3 VAE、Standard
+四步 LoRA、736×416、124帧窗口和 DynamicVRAM：direct 22帧 AV context 的三段链全部完成，
+原生输出为124/102/102帧，视频与音频流时长一致。三次设备峰值约15,998/15,881/16,135MiB，
+余量都低于512MiB候选门槛。相同素材的三路 A/B 中，单末帧接缝显著差于两条22帧路线；
+VAE重编码22帧没有显示出优于直接 sampler latent 的充分证据，且暖态运行多约17.25秒，
+所以正式节点继续只保留 direct latent 默认。未处理的原始分段音频边界跳变仍接近局部最高值；
+该首版 bridge 检查当时只覆盖上述三段单素材；后续14段证据见下文。多素材长期退化矩阵和
+跨配置通用16GB安全档仍未完成，因此本功能继续保持 Experimental，不宣传无缝或绝不 OOM。
+
+旧手工链的画布/API 示例仍为 `examples/workflows/H3_Long_Video_22F_EXP.json` 与
+`examples/long_video_segment_api.json`。接受状态画布/API 示例为
+`examples/workflows/H3_Long_Video_Accepted_22F_EXP.json` 与
+`examples/long_video_candidate_accept_api.json`；完成全部片段后再单独运行
+`examples/long_video_compose_api.json`。推荐的总时长自动恢复画布/API 示例为
+`examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` 与
+`examples/long_video_auto_resume_api.json`；它自动管理 index、final、时间轴和断点位置，但保留
+逐段人工预览/接受。显式后台画布/API 为
+`examples/workflows/H3_Long_Video_Background_22F_EXP.json` 与
+`examples/long_video_background_api.json`；只有这组示例连接 Background Start 与 Auto Queue。
+
+本机已对这条自动恢复 API 做一次真实执行探针：非裁剪 FL2VA INT8、Standard Turbo LoRA、
+NVFP4 H3 CLIP、双 H3 VAE、736×416、124帧内部窗口、1步、目标1秒，并启用 DynamicVRAM。
+真实联合采样、裁成24帧候选、接受、完成后再次排队阻断，以及 accepted 文件合成全部成功；
+候选和最终 MP4 都是24fps、24帧，视频/音频/容器均为1.000秒。该结果只证明新工作流执行闭环，
+不代表四步多段画质、60秒质量或16GB显存安全档已经通过。
+
+随后又完成一条相同推荐 API 的真实四步双段检查：6秒精确拆为124帧与20帧，第二段自动读取
+已接受的22帧 AV context 和父候选身份；最终 manifest 覆盖144帧，完成后重排没有新增候选。
+`none` 与5ms bridge 合成都严格为24fps/144帧，视频、音频和容器均6.000秒。bridge 使最终
+AAC边界的单样本跳变约下降80.2%，但段前后仍有约33.3dB响度落差；视频边界静帧没有明显
+身份/构图跳切，不过MAD和SSIM不连续度均是附近16个片内转场中的最高值。两段设备峰值约
+15,461.4/16,181.5MiB，第二段只余约198MiB，因此仍只能称为“本机跑通、可续接”，不能称为
+音画无缝或16GB安全档。该双段检查本身不代表长期链已经通过。
+
+同日又在一个未重启的 DynamicVRAM 进程中完成了首条真实四步60秒长期链：14段按
+`124 + 12×102 + 92 = 1440` 精确接受并合成，视频24fps/1440帧，视频、音频和容器都严格为
+60.000秒。整个链没有显式调用 `/free`；14段设备峰值位于15,480.0–16,228.2MiB，暖态峰值的
+描述性线性斜率约为每段+28.0MiB，基线没有单调阶梯增长，因此这一次运行没有显示累积型显存泄漏。
+但第12段只余约151.3MiB，共5段低于512MiB安全余量，所以该配置仍不能标为16GB安全档；
+0.25秒轮询也可能漏掉更短的分配尖峰。
+
+13个视频边界的MAD中位数为0.01618、最大0.01906，SSIM中位数为0.96374、最小0.92868。
+最差接缝的接触图没有显示主体或背景的硬切，但14段中间帧时间轴可见人物外观和曝光逐步漂移，
+像素/光流指标也不能证明身份保持。音频的长期退化更明显：接缝前后半秒响度变化中位数约
+-9.51dB，最大绝对变化约40.83dB；首末段8kHz以上能量占比相差约-36.30dB，说明递归续写出现
+明显变闷/频谱漂移。5ms bridge 将最终AAC边界单样本跳变的中位数降低约97.23%，但不能修复
+响度、音色、对白语义或口型连续性。因此这条结果证明了“60秒、14段、可恢复、定长合成”的
+执行闭环，不证明无缝、身份无漂移或长期音频无损。仍需补人物对白/口型、快速运动、节奏音乐、
+多素材多seed、盲听/ASR/说话人/唇形评估，以及跨GPU/高分辨率/多参考显存档。
+
+最后一段接受后的首次完整重排在当前 ComfyUI 中会以预期的 `ExecutionBlocked` 终止（空 traceback，
+只执行到编排节点）；命中缓存后的复排也可能显示成功但只运行审核节点。两种情况下候选数都保持14，
+不会生成第15段。这是安全完成阻断，不应把预期的 `ExecutionBlocked` 当作生成故障。
+
+5帧/22帧现已完成0.3M与0.6M的重复矩阵，而不再只是单次试探。两档均固定复用各自仅接受
+第0段的基线；同分辨率下第0段MP4以及视频/音频tail tensor均bit-identical。每档使用3个
+配对seed、交替顺序执行3次独立冷启动；另在同一进程primer后执行3次暖态。相同context+seed
+的全部冷/暖候选也bit-identical，VRAM按0.10秒采样。
+
+0.3M（736×416）冷启动5/22帧整机峰值均值为15,279.5/15,224.0MiB，但三组`22-5`配对差为
++96.6/-78.3/-184.9MiB，方向不一致。Sampler PyTorch pool则稳定为约3,189.9/3,495.3MiB，
+5帧少约305MiB；冷态耗时均值86.53/93.08秒，暖态69.27/78.01秒。暖态最低余量仅97.6MiB，
+5/6次低于512MiB门槛。三个seed平均上，22帧的视频MAD/SSIM与音频响度/NCC更好。
+
+0.6M（1056×608）冷启动5/22帧整机峰值均值为15,739.0/15,724.2MiB，三组`22-5`配对差却为
+-752.0/+10.8/+696.7MiB；绝对峰值同样不能归因于context。Sampler pool稳定为约
+5,753.4/6,381.2MiB，5帧少约628MiB；冷态耗时均值200.29/230.38秒，暖态187.89/218.40秒。
+暖态6/6次均低于512MiB余量，最差只剩33.6MiB。该组三seed中5帧MAD/SSIM平均更连续，但可能
+包含运动被压低；22帧音频响度/NCC明显更好，且有一个seed出现正面到侧面的明显画面边界跳变。
+
+39帧随后在0.3M完成同一批3个seed的3次独立冷启动和primer后3次暖运行。六次均成功，且相同
+seed的冷/暖MP4 bit-identical；5/22/39三条链的第0段MP4及AV tail tensor也完全一致。39帧的
+sampler pool冷/暖均约3,799MiB，相对22帧稳定多约303–304MiB；冷/暖耗时均值为101.65/87.38秒。
+但暖态3/3次低于512MiB，最低只剩77.35MiB。人工检查三张接缝图时，只有1个seed较连续，
+1个有明显姿态/构图跳变，另1个发生严重人物身份和镜头关系变化。
+
+因此5帧只保留为`fast_context_5_experimental`候选：它确实更快并减少sampler activation pool，
+但没有可重复的整机峰值优势。22帧继续作为当前默认平衡候选；39帧降级为
+`context_39_high_risk_experimental`，既不是质量档，也不是安全档。旧策略下0.6M/39帧没有强行执行：
+0.6M/22帧暖态已经6/6低于512MiB、最低33.6MiB，继续增加5个latent step没有建立安全档的
+可能且有真实OOM风险。这是预定义安全门槛否决，不等于已经证实0.6M/39必然OOM。任何档位在
+绑定具体硬件、模型、分辨率和插件组合后通过至少512MiB余量前，都不能命名为`memory_safe`。
+
+2026-08-09 又完成了原生 DynamicVRAM `headroom=2.0GiB`、Stock/Sage和Block Cache的受控检查。
+736×416与1056×608各用3个seed完成3冷3暖；Stock和Sage的全部试次均高于512MiB，相同策略的
+冷/暖同seed输出bit-identical。默认Block Cache在4次前向中0次命中、CPU cache约117.7MiB，
+不能跳过首次完整前向，因此不作为OOM默认方案。Sage虽更快，但同headroom下整机峰值反而比
+Stock高；0.6M的3个seed中有2个出现明显镜头/姿态/运动轨迹分叉，只保留为高风险近似加速实验项。
+
+最终采用`Stock + DynamicVRAM headroom 2.0GiB`重跑真实60秒/14段链，全程不重启且不显式`/free`。
+14/14段、manifest revision 14、1440帧和1,920,000 audio samples全部完成；两份合成都是
+736×416、24fps、1440帧，视频/音频/容器严格60.000秒。峰值范围12,829.44–13,640.09MiB，
+中位13,137.67MiB，最低仍空闲2739.41MiB；暖态峰值不单调，未见典型阶梯泄漏。
+
+相对旧`headroom=0.5`的同提示词/同seed Stock链，14/14段MP4 SHA-256以及13/13个续写
+`video_tail`/`audio_tail`张量完全一致，说明调整的是原生内存调度而不是采样数值；峰值中位数
+降低约2635MiB，总生成时间增加约1.63%。因此该组合可以称为**本机固定配置已验证保守档**，
+但只覆盖RTX 4060 Ti 16GB、FL2VA INT8、Standard四步LoRA、736×416、124帧窗口、22帧context
+和本次插件集合。其他GPU、0.6M长链、更多参考媒体或桌面显存占用仍可能OOM，不能宣传通用
+`memory_safe`或“绝不爆显存”。0.6M/39帧也需在新策略下另做多seed显存与质量门槛。
+
+随后又保持相同prompt、模型、画布、窗口、context和Stock+h2策略，只改变base seed为
+`2608082000`、`2608083101`、`2608083202`，分别启动三个独立ComfyUI冷进程执行60秒/14段链。
+三链共42/42段一次成功，没有OOM、重试或候选复用；manifest、父候选/revision链、候选与
+accepted视频/context SHA-256、1440帧、1,920,000 samples、完成阻断以及六份60.000秒成片均
+独立复核通过。每条链的最大峰值分别为13,640.09、13,414.01、13,426.72MiB，最差空闲余量
+2739.41MiB，没有片段低于512MiB。这关闭了**本机固定档跨base-seed冷启动机械/显存门槛**，
+但同seed整链暖重复、跨prompt/多素材、其他GPU和桌面负载仍未验证。
+
+质量门槛没有随之通过：三个14段中间帧时间轴都出现逐段面部年龄与身份漂移，seed
+`2608083101`最严重；三链音频相邻半秒窗最大响度差为23.59–48.06dB，描述性NCC中位仅
+0.127–0.206，首末段8kHz以上能量占比下降9.66–36.30dB。5ms bridge把后AAC单样本跳变中位
+降低94.93%–97.33%，但不能修复响度、音色、语义或递归变闷。因此仍不能宣传长期身份稳定、
+音频无损或无缝；本地完整报告在
+`artifacts/long-video-generation-check/stock-headroom2-60s-multiseed/analysis/REPORT.md`。
+
+同一 ComfyUI 提交在 `--novram` 下，连本体自带的
+`EmptyMiniMaxH3LatentAV -> VAEDecodeAudio` 也会独立复现 CUDA 输入与 CPU filter 的设备不一致；
+因此这不是 T8 AV Decode 或 Orchestrator 引入的错误。当前建议使用本机已验证的 DynamicVRAM
+路线；在 ComfyUI 本体修复或本项目有可靠的局部兼容方案前，不宣称 H3 Audio VAE 的
+`--novram` 解码可用。
 
 ## EXP：参考图像编辑
 
@@ -197,6 +577,23 @@ DiT 前向次数：4/8 约是稳定 4/4 的 2 倍计算量，4/10 约是 2.5 倍
 外部人声分离器得到的 vocal stem 用作驱动，同时把原混音或另一条 stem 送到最终输出；
 本包不会假装内置了一个未经验证的分离模型。
 
+可直接拖入画布的音频示例：
+
+| 工作流 | `audio_mode` | 最终 MP4 音轨 | 用途 |
+|---|---|---|---|
+| `H3_Audio_Lock_Source_Stable_4V4A.json` | `lock_source` | Conditioning `mux_audio` | 锁定源 latent，保留干净输入原音轨 |
+| `H3_Audio_Remix_Source_Stable_4V4A.json` | `remix_source` | AV Decode `generated_audio` | 以默认0.35强度保留节奏/语音结构并重绘声音 |
+| `H3_Audio_Reference_Only_Stable_4V4A.json` | `reference_only` | AV Decode `generated_audio` | 输入音频仅作 `<Audio 1>` 参考，目标音频重新生成 |
+| `H3_Turbo_Stable_4V4A.json` | `native` | AV Decode `generated_audio` | 无需输入音频的原生音画联合生成 |
+
+三份输入音频示例均预设736×416、124帧、稳定4/4双时钟、原生 flow 调度，并通过 Audio Window
+把用户选择的5秒场景对齐到合法 H3 窗口，再由 Output Trim 恢复精确5秒。导入后必须先在
+`Load Audio` 中选择或上传音频。切换 `audio_mode` 时不要只改下拉框：`lock_source` 的最终音轨
+应取 `mux_audio`，而 `remix_source` / `reference_only` 应取模型解码的 `generated_audio`。
+其中 `reference_only` 仍需要把输入音频接入 `drive_audio`，只是不会把它注入目标音频 latent。
+若另接一条干净轨到 `final_audio`，它只会替换 Conditioning 的 `mux_audio` 输出；要把它用于最终
+MP4，仍需将 `mux_audio` 明确连接到 Output Trim 的 `audio`。
+
 ## 推荐连接
 
 锁定原音频生成画面：
@@ -254,8 +651,16 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 
 ## 示例与测试
 
-可直接拖入画布的稳定 4/4、EXP 4/8、EXP 4/10 和 Ref2VA 22帧静态候选编辑示例位于
-`examples/workflows/`。API 示例见 `examples/audio_lock_api.json`、
+可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑，
+以及以下长视频示例位于 `examples/workflows/`：
+
+- `H3_Long_Video_22F_EXP.json`：手工逐段续写基线。
+- `H3_Long_Video_Accepted_22F_EXP.json`：候选预览、接受和可恢复状态链。
+- `H3_Long_Video_Auto_Resume_22F_EXP.json`：总时长编排与人工审核后自动恢复。
+- `H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
+- `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
+
+API 示例见 `examples/audio_lock_api.json`、
 `examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
 `examples/still_image_edit_api.json`。替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
 输入图像和音频文件名后即可使用；

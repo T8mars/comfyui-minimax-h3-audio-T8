@@ -1,0 +1,171 @@
+{
+  "1": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_video_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "2": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_audio_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "replace_with_qwen3vl_minimax_h3.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "4": {
+    "inputs": {
+      "unet_name": "replace_with_native_minimax_h3_diffusion_model.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load native H3 diffusion model"}
+  },
+  "5": {
+    "inputs": {
+      "lora_name": "replace_with_minimax_h3_turbo_4step_comfyui.safetensors",
+      "strength_model": 1.0,
+      "model": ["4", 0]
+    },
+    "class_type": "LoraLoaderBypassModelOnly",
+    "_meta": {"title": "H3 Turbo 4-step LoRA (bypass model-only)"}
+  },
+  "6": {
+    "inputs": {
+      "chain_id": "h3_long_video_demo",
+      "segment_index": 0,
+      "new_duration_seconds": 4.25,
+      "context_frames": 22,
+      "minimum_render_frames": 124,
+      "timeline_start_seconds": -1.0,
+      "is_final_segment": false
+    },
+    "class_type": "MiniMaxH3LongVideoPlannerT8",
+    "_meta": {"title": "Set segment_index: 0, 1, 2..."}
+  },
+  "7": {
+    "inputs": {
+      "chain_id": ["6", 0],
+      "segment_index": ["6", 1]
+    },
+    "class_type": "MiniMaxH3LongVideoContextLoadT8",
+    "_meta": {"title": "Load exactly segment N-1"}
+  },
+  "8": {
+    "inputs": {
+      "model": ["5", 0],
+      "clip": ["3", 0],
+      "video_vae": ["1", 0],
+      "audio_vae": ["2", 0],
+      "context": ["7", 0],
+      "segment_index": ["6", 1],
+      "context_frames": ["6", 3],
+      "context_audio": "video_and_audio",
+      "prompt": "A continuous cinematic shot. Preserve the same subject, direction of motion, lighting, camera trajectory, and synchronized ambient sound across the cut.",
+      "width": 736,
+      "height": 416,
+      "length": ["6", 2],
+      "task_type": "auto",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s"
+    },
+    "class_type": "MiniMaxH3LongVideoConditioningT8",
+    "_meta": {"title": "Local model patch; stable H3 nodes remain untouched"}
+  },
+  "9": {
+    "inputs": {
+      "model": ["8", 0],
+      "av_latent": ["8", 2],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Stable T8 dual-clock sampler"}
+  },
+  "10": {
+    "inputs": {"noise_seed": 123456789},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Noise"}
+  },
+  "11": {
+    "inputs": {"model": ["9", 0], "conditioning": ["8", 1]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "CFG-disabled basic guider"}
+  },
+  "12": {
+    "inputs": {
+      "noise": ["10", 0],
+      "guider": ["11", 0],
+      "sampler": ["9", 1],
+      "sigmas": ["9", 2],
+      "latent_image": ["8", 2]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample one bounded H3 segment"}
+  },
+  "13": {
+    "inputs": {
+      "av_latent": ["12", 0],
+      "chain_id": ["6", 0],
+      "segment_index": ["6", 1],
+      "save_context": ["6", 8],
+      "model_id": "replace_with_model_and_lora_id",
+      "sampling_summary": "4-step dual_clock_euler/native_flow shift12/3"
+    },
+    "class_type": "MiniMaxH3LongVideoContextSaveT8",
+    "_meta": {"title": "Save bounded AV tail atomically"}
+  },
+  "14": {
+    "inputs": {
+      "av_latent": ["12", 0],
+      "video_vae": ["1", 0],
+      "audio_vae": ["2", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode current segment only"}
+  },
+  "15": {
+    "inputs": {
+      "frames": ["14", 0],
+      "start_seconds": ["6", 4],
+      "duration_seconds": ["6", 5],
+      "fps": 24.0,
+      "audio": ["14", 1]
+    },
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "_meta": {"title": "Remove reconstructed head context from AV"}
+  },
+  "16": {
+    "inputs": {
+      "images": ["15", 0],
+      "fps": 24.0,
+      "audio": ["15", 1],
+      "bit_depth": 8
+    },
+    "class_type": "CreateVideo",
+    "_meta": {"title": "Create one exact-duration synchronized segment"}
+  },
+  "17": {
+    "inputs": {
+      "video": ["16", 0],
+      "filename_prefix": "MiniMaxH3/long_video_segment",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {"title": "Save segment with ComfyUI core video output"}
+  }
+}

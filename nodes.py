@@ -5,6 +5,22 @@ from comfy_api.latest import ComfyExtension, io
 from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av_output
 from .conditioning import build_conditioning
 from .nodes_multirate_exp import MiniMaxH3MultiRateSamplerEXPT8
+from .nodes_long_video_exp import (
+    MiniMaxH3LongVideoConditioningT8,
+    MiniMaxH3LongVideoContextLoadT8,
+    MiniMaxH3LongVideoContextSaveT8,
+    MiniMaxH3LongVideoPlannerT8,
+)
+from .nodes_long_video_delivery_exp import (
+    MiniMaxH3LongVideoAcceptedContextLoadT8,
+    MiniMaxH3LongVideoAcceptCandidateT8,
+    MiniMaxH3LongVideoAutoQueueT8,
+    MiniMaxH3LongVideoBackgroundStartT8,
+    MiniMaxH3LongVideoCandidateSaveT8,
+    MiniMaxH3LongVideoComposeAcceptedT8,
+    MiniMaxH3LongVideoOrchestratorT8,
+)
+from .long_video_routes import register_long_video_background_routes
 from .nodes_still_exp import (
     MiniMaxH3StillConditioningT8,
     MiniMaxH3StillDecodeT8,
@@ -348,12 +364,21 @@ class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
 
 class MiniMaxH3AudioT8Extension(ComfyExtension):
     async def get_node_list(self):
+        register_long_video_background_routes()
         return [MiniMaxH3AudioConditioningT8, MiniMaxH3AudioLatentControlT8,
                 MiniMaxH3DurationPlannerT8, MiniMaxH3AudioWindowT8, MiniMaxH3PromptTagsT8,
                 MiniMaxH3AVDecodeT8, MiniMaxH3AudioMixT8, MiniMaxH3OutputTrimT8,
                 MiniMaxH3PreflightT8, MiniMaxH3DualClockSamplerT8,
                 MiniMaxH3MultiRateSamplerEXPT8, MiniMaxH3StillConditioningT8,
-                MiniMaxH3StillPreflightT8, MiniMaxH3StillDecodeT8]
+                MiniMaxH3StillPreflightT8, MiniMaxH3StillDecodeT8,
+                MiniMaxH3LongVideoPlannerT8, MiniMaxH3LongVideoContextLoadT8,
+                MiniMaxH3LongVideoConditioningT8, MiniMaxH3LongVideoContextSaveT8,
+                MiniMaxH3LongVideoCandidateSaveT8, MiniMaxH3LongVideoAcceptCandidateT8,
+                MiniMaxH3LongVideoAcceptedContextLoadT8,
+                MiniMaxH3LongVideoComposeAcceptedT8,
+                MiniMaxH3LongVideoOrchestratorT8,
+                MiniMaxH3LongVideoBackgroundStartT8,
+                MiniMaxH3LongVideoAutoQueueT8]
 
 
 def comfy_entrypoint():
