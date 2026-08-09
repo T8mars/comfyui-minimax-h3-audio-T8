@@ -293,6 +293,21 @@ class MiniMaxH3LongVideoConditioningT8(io.ComfyNode):
                         "it costs more reference rows/VRAM and remains a gated experiment."
                     ),
                 ),
+                io.Int.Input(
+                    "persistent_identity_interval",
+                    default=1,
+                    min=1,
+                    max=32,
+                    step=1,
+                    optional=True,
+                    advanced=True,
+                    tooltip=(
+                        "Continuation injection interval. 1 preserves the existing every-segment "
+                        "behavior; 2 injects on continuation segments 1, 3, 5, ... and lets the "
+                        "intermediate segments use motion context only. This is an Experimental "
+                        "identity-versus-motion control, not an adaptive drift detector."
+                    ),
+                ),
             ],
             outputs=[
                 io.Model.Output("model"),
@@ -340,6 +355,7 @@ class MiniMaxH3LongVideoConditioningT8(io.ComfyNode):
         first_frame_reuse="segment0_only",
         persistent_identity_image=None,
         persistent_identity_strategy="single_reference",
+        persistent_identity_interval=1,
     ):
         outputs = build_long_video_conditioning(
             clip,
@@ -372,6 +388,7 @@ class MiniMaxH3LongVideoConditioningT8(io.ComfyNode):
             first_frame_reuse,
             persistent_identity_image,
             persistent_identity_strategy,
+            persistent_identity_interval,
         )
         return io.NodeOutput(patch_long_video_model(model), *outputs)
 

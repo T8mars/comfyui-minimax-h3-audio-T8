@@ -558,6 +558,7 @@ def build_long_video_conditioning(
     first_frame_reuse: str = "segment0_only",
     persistent_identity_image=None,
     persistent_identity_strategy: str = "single_reference",
+    persistent_identity_interval: int = 1,
 ):
     if width % CANVAS_MULTIPLE or height % CANVAS_MULTIPLE:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -580,6 +581,9 @@ def build_long_video_conditioning(
         raise ValueError(
             "persistent_identity_strategy must be single_reference or scene_plus_identity"
         )
+    persistent_identity_interval = int(persistent_identity_interval)
+    if persistent_identity_interval < 1:
+        raise ValueError("persistent_identity_interval must be at least 1")
     if (
         first_frame_reuse == "persistent_identity_reference"
         and persistent_identity_strategy == "scene_plus_identity"
@@ -602,6 +606,10 @@ def build_long_video_conditioning(
     persistent_identity_source = "none"
     persistent_identity_sources: list[str] = []
     persistent_identity_images: list[torch.Tensor] = []
+    persistent_identity_requested = (
+        first_frame_reuse == "persistent_identity_reference"
+    )
+    persistent_identity_due = False
     if context_active:
         motion_keyframes, motion_audio_ref = _motion_context_blocks(
             context,
@@ -609,7 +617,11 @@ def build_long_video_conditioning(
             context_audio == "video_and_audio",
         )
         keyframes.extend(motion_keyframes)
-        if first_frame is not None and first_frame_reuse == "persistent_identity_reference":
+        persistent_identity_due = (
+            persistent_identity_requested
+            and (int(segment_index) - 1) % persistent_identity_interval == 0
+        )
+        if first_frame is not None and persistent_identity_due:
             persistent_identity_reference = True
             if persistent_identity_strategy == "scene_plus_identity":
                 persistent_identity_sources = ["first_frame", "persistent_identity_image"]
@@ -625,11 +637,19 @@ def build_long_video_conditioning(
                 f"{persistent_identity_source} is used as a non-timeline identity reference; "
                 "this adds reference rows and is not a guarantee of identity preservation"
             )
+        elif first_frame is not None and persistent_identity_requested:
+            warnings.append(
+                f"persistent identity references were skipped on segment {int(segment_index)} "
+                f"by interval {persistent_identity_interval}; only bounded motion context is used"
+            )
         elif first_frame is not None:
             warnings.append(
                 "initial first_frame was ignored because the previous segment motion context owns the head"
             )
-        if persistent_identity_image is not None and not persistent_identity_reference:
+        if (
+            persistent_identity_image is not None
+            and not persistent_identity_requested
+        ):
             warnings.append(
                 "persistent_identity_image was ignored because first_frame_reuse is segment0_only"
             )
@@ -837,8 +857,11 @@ def build_long_video_conditioning(
         "render_frames": frame_count,
         "motion_keyframes": sum(MOTION_FRAME_INDEX in item for item in keyframes),
         "first_frame_reuse": first_frame_reuse,
+        "persistent_identity_requested": persistent_identity_requested,
         "persistent_identity_reference": persistent_identity_reference,
         "persistent_identity_strategy": persistent_identity_strategy,
+        "persistent_identity_interval": persistent_identity_interval,
+        "persistent_identity_due": persistent_identity_due,
         "persistent_identity_source": persistent_identity_source,
         "persistent_identity_sources": persistent_identity_sources,
         "persistent_identity_reference_count": persistent_identity_reference_count,

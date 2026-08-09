@@ -5,8 +5,9 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.7.0 checkpoint was verified on 2026-08-09 against ComfyUI `0.30.0`
-at `a464ac335`. Historical LoRA conversion evidence below was originally recorded
+The current 1.7.0 real-generation checkpoint was verified on 2026-08-09 against ComfyUI `0.30.0`
+at `a464ac335`; the final unit-test and isolated-import regression also passed against
+`cbbc9dab1` before publication. Historical LoRA conversion evidence below was originally recorded
 on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
 ## 1.7.0 explicit background executor checkpoint
@@ -648,10 +649,52 @@ pass may authorize a bounded 60-second matrix. Raw evidence is in
 and
 `artifacts/long-video-generation-check/identity-anchor-scene-plus-crop-intermediate-8segment-seed2608097101/analysis/`.
 
-The final regression for this checkpoint is 148 passed tests with four third-party Triton
+The fixed-cadence motion-regression experiment then appended the optional
+`persistent_identity_interval`, with default `1` preserving the existing every-continuation
+behavior and old workflow/API prefix. Interval `2` injects on continuation segments 1/3/5/7 and
+uses bounded motion/audio context alone on 2/4/6. One matched development chain completed all eight
+prompts and exact 32-second media without OOM, retry, or cache use. Runtime was 825.92 seconds;
+whole-device peak/minimum free/Torch peak were 12744.43/3635.07/3735.12 MiB, and post-15 occupancy
+returned to 1231.63 MiB. Its identity continuation last/first ratio was 0.52509, below the
+every-segment strategy's 0.82066. Relative flow-P90 fell to 0.648/0.457/0.652 in three later
+continuations, including both injected and skipped segments. Fixed alternating injection therefore
+does not establish a causal or repeatable release of motion constraint. Interval 1 remains the
+workflow/default behavior; larger values are an Experimental research control, not a recommended
+quality mode.
+
+Two genuinely new source/prompt/base-seed chains then used interval 1, 736x416, 124/22 frames,
+four-step Stock plus DynamicVRAM h2, and `unload_all_models`. Each completed 8/8 prompts once,
+without OOM, retry, or cached nodes, and produced exact 768-frame/32-second A/V:
+
+- The qipao fan-dance/drum case ran 872.95 seconds with peak/minimum-free/Torch values
+  12170.76/4208.74/3726.08 MiB and post-15 1231.63 MiB. Manual timeline and motion-strip review
+  retained the same woman, qipao, courtyard, and active fan choreography; the metric-worst seam did
+  not show a hard cut. Face sampling was sparse during motion, but the continuation last/first
+  median ratio was 0.93654. Audio maximum half-second level gap was 2.68 dB and final-minus-first
+  above-8-kHz energy was -3.41 dB. The prompt requested a steady 120 BPM, while Librosa's
+  half/double-aware descriptive estimate was about 104.17 BPM; strict rhythm adherence therefore
+  did not pass, and no listening result is inferred from beat tracking.
+- The two-woman dialogue case ran 862.41 seconds with peak/minimum-free/Torch values
+  12227.57/4151.93/3738.38 MiB and the same 1231.63 MiB post-15 occupancy. Two-source InsightFace
+  assignment found both people in every one of 80 sampled frames and both remain visible at the
+  end. Manual review nevertheless rejects seamless framing: segment 6 to 7 jumps from full-body to
+  a close two-shot. A checksum-verified `Systran/faster-whisper-small.en` CPU model recognized both
+  requested phrases with best-window word error rate 0 throughout the 32 seconds, but the speech
+  mostly repeats those phrases and is not natural long-form conversation. A cropped-face
+  mouth-aperture/audio-envelope proxy reached only 0.042/-0.008 correlation with 85.4/27.1 percent
+  track coverage. This is not SyncNet and cannot establish lip sync; human viewing/listening and a
+  trained audio-visual metric remain open gates.
+
+The current user target is typical approximately 30-second creation, so this cycle treats 32
+seconds as the complete-chain gate. The arbitrary-duration and existing 60-second capability remain
+implemented, but no additional 60-second rendering is required. These results support local
+32-second mechanical/memory stability for the fixed profile; they do not close rhythm, framing seam,
+lip-sync, blind-review, high-resolution, or cross-GPU gates.
+
+The final regression for this checkpoint is 150 passed tests with four third-party Triton
 deprecation warnings and no project failure. Ruff passes for the project and all local analysis
 scripts, 21 non-artifact JSON files parse, `git diff --check` passes, isolated ComfyUI whitelist
-import succeeds against `a464ac335`, and stable `sampling.py` remains SHA-256
+import succeeds against `cbbc9dab1`, and stable `sampling.py` remains SHA-256
 `111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`. Raw telemetry,
 metrics, and contact sheets remain under the local excluded
 `artifacts/long-video-generation-check/` tree.

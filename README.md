@@ -22,8 +22,9 @@
 
 将项目目录放入 ComfyUI 的 `custom_nodes/minimax-h3-audio-T8`，重启 ComfyUI 后即可在上述
 菜单中找到节点。本项目没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
-MiniMax H3 实现；当前记录的验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`、Python
-3.10+。模型、VAE、CLIP 和可选 LoRA 仍需按具体任务自行安装。
+MiniMax H3 实现；当前真实生成验证基线为 ComfyUI `0.30.0`、提交 `a464ac335`，最新提交前
+单元测试与白名单导入兼容检查另在 `cbbc9dab1` 通过，运行环境为 Python 3.10+。模型、VAE、
+CLIP 和可选 LoRA 仍需按具体任务自行安装。
 
 `1.7.0` 只在原23个节点之后追加 Background Start 与 Auto Accept & Continue；旧节点顺序不变。
 `1.6.0` 在此前22个节点之后追加一个总时长编排节点；`1.5.0` 的四个候选/接受/合成节点与
@@ -132,8 +133,12 @@ GPL-3.0-only，本项目代码采用 GPL-3.0-or-later；二者均不包含模型
 - `persistent_identity_strategy=scene_plus_identity`：续写段把完整`first_frame`和身份裁剪图作为两张
   独立参考图；未连接`persistent_identity_image`会失败关闭。持续参考与用户ref images合计最多9张，
   `task_type`应使用`auto`或`Hybrid`。
+- `persistent_identity_interval=1`：高级实验项。`1`保持每个续写段都注入双参考的现有行为；`2`只在
+  续写段1、3、5、7……注入，间隔段只使用有界运动/音频上下文。它只是固定频率控制，不会检测
+  身份漂移，也不能保证减少参考后动作更自由。
 
-新输入全部追加在旧schema末尾，因此旧API JSON和旧`widgets_values`前缀不变。方案不加载新模型、
+新输入全部追加在旧schema末尾，因此旧API JSON和旧`widgets_values`前缀不变；缺省interval为1。
+方案不加载新模型、
 不保存完整历史视频，也不改稳定采样；但每个续写段会多1或2个reference block及对应VAE编码，序列、
 耗时和显存可能上升，也可能与运动上下文竞争。原来的“完整首帧单参考”在32秒/8段仍从首续段
 0.613漂到末段0.134，因此已经被否决为长期身份方案。
@@ -154,6 +159,31 @@ GPL-3.0-only，本项目代码采用 GPL-3.0-or-later；二者均不包含模型
 因此功能继续标为EXP并默认关闭，暂不进入三seed 60秒矩阵；下一步先做未参与调参的多seed/多素材
 32秒复验并解决动作强度回退，不能宣传为“身份锁定”“动作无损”或“显存安全档”。
 
+后续先做了同一开发案例的`persistent_identity_interval=2`对照。该链8/8段一次成功，成片精确
+768帧/32.000秒，运行825.92秒，整卡峰值12,744.43MiB、最低余量3,635.07MiB，post-15秒回到
+1,231.63MiB。身份末续段/首续段比为0.525，低于每段注入方案的0.821；相对旧行为的续写
+flow-P90仍在第4/5/6段降到0.648/0.457/0.652，动作地板继续失败。失败段并不只对应参考注入段，
+说明简单奇偶段降频不是稳定的“解除动作约束”方案。该控件因此只保留为EXP研究项，默认仍为1。
+
+随后使用未参与策略选择的新人物、seed和动作完成两条32秒/8段冷链；两条均是736×416、124帧
+窗口、22帧AV context、4步Stock+DynamicVRAM h2、每段双参考、段间`unload_all_models`：
+
+- 旗袍扇舞/鼓点：8/8成功，运行872.95秒，峰值12,170.76MiB、最低余量4,208.74MiB，post-15
+  回到1,231.63MiB。逐段时间线保持同一人物、服装与院落，扇舞持续且最差接缝未见硬切；稀疏
+  人脸抽样的末/首续段比约0.937。音频最大半秒响度差2.68dB、首末高频变化-3.41dB，但要求
+  120 BPM时Librosa描述性估计约104.17 BPM，不能判为严格节奏遵循通过。
+- 双人物对白：8/8成功，运行862.41秒，峰值12,227.57MiB、最低余量4,151.93MiB，post-15同样
+  回到1,231.63MiB。两个源人物在8段×10个抽样点均同时检出，末段仍保留两人；但第6→7段从
+  全身景别跳到近景，构图连续性失败。经校验的`faster-whisper-small.en`在32秒内持续识别两句
+  目标对白，两句最佳词错误率均为0，但内容主要重复这两句，不是自然长对话。裁脸后的嘴部代理
+  检测覆盖约85.4%/27.1%，与音频包络相关仅0.042/-0.008；由于没有训练型SyncNet证据，口型同步
+  仍是未证实项，不能宣传稳定。
+
+用户当前日常目标约30秒，因此本轮把32秒作为完整链验收长度，保留现有任意总时长/60秒能力，但
+不再要求新增60秒实跑。现有证据支持“本机固定配置下32秒分段机械与显存稳定”，不支持把节奏、
+镜头接缝或口型质量描述成已经普遍解决。跨GPU、高分辨率32秒、真人盲听/盲评和训练型唇同步评分
+仍需独立资源与硬件门槛。
+
 ### 双参考身份续写示例
 
 可直接导入的 `examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
@@ -165,10 +195,13 @@ GPL-3.0-only，本项目代码采用 GPL-3.0-or-later；二者均不包含模型
 3. 节点预设 `task_type=auto`、`first_frame_reuse=persistent_identity_reference`、
    `persistent_identity_strategy=scene_plus_identity` 和 `ref_image_size=match`。若身份图未连接，
    `scene_plus_identity` 会明确报错，不会静默退回单参考。
-4. 示例沿用 736×416、124帧内部窗口、22帧上下文和4步采样的实验基线；导入后必须先替换两张
+4. `persistent_identity_interval=1`保持当前每个续写段都注入双参考的已验证基线；提高该值只适合
+   受控对照，当前`2`没有通过动作复合门槛。
+5. 示例沿用 736×416、124帧内部窗口、22帧上下文和4步采样的实验基线；导入后必须先替换两张
    示例输入图，并检查模型、VAE、CLIP、LoRA 与输出目录是否符合本机环境。
 
-如果升级节点后画布仍看不到 `persistent_identity_image` 或 `persistent_identity_strategy`，先完整
+如果升级节点后画布仍看不到 `persistent_identity_image`、`persistent_identity_strategy` 或
+`persistent_identity_interval`，先完整
 重启 ComfyUI 再导入该工作流；仅刷新浏览器不会重新加载 Python 节点 schema。
 
 身份裁剪图应只保留一个主要人物，尽量包含稳定可辨识的脸部、发型和上半身服装，不要用多人合照、

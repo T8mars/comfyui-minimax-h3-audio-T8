@@ -90,13 +90,17 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     first_frame_reuse = next(
         item for item in long_conditioning.inputs if item.id == "first_frame_reuse"
     )
-    assert long_conditioning.inputs[-3].id == "first_frame_reuse"
-    assert long_conditioning.inputs[-2].id == "persistent_identity_image"
-    assert long_conditioning.inputs[-2].optional is True
-    strategy = long_conditioning.inputs[-1]
+    assert long_conditioning.inputs[-4].id == "first_frame_reuse"
+    assert long_conditioning.inputs[-3].id == "persistent_identity_image"
+    assert long_conditioning.inputs[-3].optional is True
+    strategy = long_conditioning.inputs[-2]
     assert strategy.id == "persistent_identity_strategy"
     assert strategy.default == "single_reference"
     assert strategy.options == ["single_reference", "scene_plus_identity"]
+    interval = long_conditioning.inputs[-1]
+    assert interval.id == "persistent_identity_interval"
+    assert interval.default == 1
+    assert interval.optional is True
     assert first_frame_reuse.default == "segment0_only"
     assert first_frame_reuse.options == [
         "segment0_only",
@@ -616,9 +620,10 @@ def test_scene_plus_identity_background_workflow_wires_two_images_and_exp_policy
     )
     inputs = {value["name"]: value for value in conditioning["inputs"]}
 
-    assert conditioning["widgets_values"][-2:] == [
+    assert conditioning["widgets_values"][-3:] == [
         "persistent_identity_reference",
         "scene_plus_identity",
+        1,
     ]
     assert links[inputs["first_frame"]["link"]][1:5] == [
         full_scene["id"], 0, conditioning["id"], 22,

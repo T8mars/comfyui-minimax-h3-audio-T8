@@ -417,6 +417,91 @@ def test_scene_plus_identity_supplies_two_continuation_only_references():
     assert report_data["user_reference_blocks"] == 0
 
 
+def test_persistent_identity_interval_skips_only_selected_continuation_segments():
+    first = torch.zeros((1, 128, 128, 3))
+    identity = torch.ones((1, 96, 96, 3))
+
+    skipped_vae = FakeVideoVAE()
+    skipped, _, _, _, skipped_map, skipped_report = build_long_video_conditioning(
+        FakeClip(),
+        skipped_vae,
+        FakeAudioVAE(),
+        make_context(source_segment_index=1),
+        2,
+        22,
+        "video_and_audio",
+        "Continue the same action.",
+        128,
+        128,
+        124,
+        first_frame=first,
+        first_frame_reuse="persistent_identity_reference",
+        persistent_identity_image=identity,
+        persistent_identity_strategy="scene_plus_identity",
+        persistent_identity_interval=2,
+    )
+    assert len(skipped_vae.encode_calls) == 0
+    assert [item["kind"] for item in skipped[0][1]["minimax_refs"]] == ["audio"]
+    assert json.loads(skipped_map)["pictures"] == {}
+    skipped_data = json.loads(skipped_report)
+    assert skipped_data["persistent_identity_requested"] is True
+    assert skipped_data["persistent_identity_reference"] is False
+    assert skipped_data["persistent_identity_due"] is False
+    assert skipped_data["persistent_identity_interval"] == 2
+    assert any("skipped on segment 2" in warning for warning in skipped_data["warnings"])
+
+    due_vae = FakeVideoVAE()
+    due, _, _, _, due_map, due_report = build_long_video_conditioning(
+        FakeClip(),
+        due_vae,
+        FakeAudioVAE(),
+        make_context(source_segment_index=2),
+        3,
+        22,
+        "video_and_audio",
+        "Continue with <Picture 1> and <Picture 2>.",
+        128,
+        128,
+        124,
+        first_frame=first,
+        first_frame_reuse="persistent_identity_reference",
+        persistent_identity_image=identity,
+        persistent_identity_strategy="scene_plus_identity",
+        persistent_identity_interval=2,
+    )
+    assert len(due_vae.encode_calls) == 2
+    assert [item["kind"] for item in due[0][1]["minimax_refs"]] == [
+        "image",
+        "image",
+        "audio",
+    ]
+    assert set(json.loads(due_map)["pictures"]) == {"1", "2"}
+    due_data = json.loads(due_report)
+    assert due_data["persistent_identity_reference"] is True
+    assert due_data["persistent_identity_due"] is True
+    assert due_data["persistent_identity_interval"] == 2
+
+
+def test_persistent_identity_interval_rejects_zero():
+    with pytest.raises(ValueError, match="persistent_identity_interval must be at least 1"):
+        build_long_video_conditioning(
+            FakeClip(),
+            FakeVideoVAE(),
+            FakeAudioVAE(),
+            make_context(),
+            1,
+            22,
+            "video_only",
+            "Continue.",
+            128,
+            128,
+            124,
+            first_frame=torch.zeros((1, 128, 128, 3)),
+            first_frame_reuse="persistent_identity_reference",
+            persistent_identity_interval=0,
+        )
+
+
 def test_scene_plus_identity_fails_closed_without_dedicated_image():
     with pytest.raises(ValueError, match="requires a connected persistent_identity_image"):
         build_long_video_conditioning(

@@ -845,7 +845,8 @@
         "match",
         "official_2_to_15s",
         "persistent_identity_reference",
-        "scene_plus_identity"
+        "scene_plus_identity",
+        1
       ]
     },
     {
