@@ -519,6 +519,7 @@ def test_speech_studio_expands_native_comfy_graph_without_loader_nodes():
         "MiniMaxH3SpeechDecodeT8",
         "MiniMaxH3SpeechVerifyT8",
         "MiniMaxH3SpeechFinalizeT8",
+        "MiniMaxH3SpeechGuardT8",
     }
     assert not {"UNETLoader", "CLIPLoader", "VAELoader"} & class_types
 
@@ -584,6 +585,15 @@ SPEECH_FRONTEND_WORKFLOWS = (
     "H3_Speech_Described_Stock20_EXP.json",
     "H3_Speech_Reference_Clone_Stock20_EXP.json",
     "H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
+    "H3_Speech_Performance_ADR_Stock20_EXP.json",
+    "H3_Speech_LongForm_Resume_Stock20_EXP.json",
+    "H3_Speech_LongForm_Compose_EXP.json",
+    "H3_Speech_Voice_Library_Save_EXP.json",
+    "H3_Speech_Voice_Library_Load_EXP.json",
+    "H3_Speech_Voice_Library_Delete_EXP.json",
+    "H3_Speech_VRAM_Preflight_EXP.json",
+    "H3_Speech_LongForm_Control_EXP.json",
+    "H3_Speech_Joint_Dialogue_Stock20_EXP.json",
 )
 
 
@@ -606,7 +616,7 @@ def test_speech_frontend_workflow_has_bidirectionally_consistent_links(filename)
     assert len(nodes) == len(workflow["nodes"])
     assert len(links) == len(workflow["links"])
     assert workflow["last_node_id"] == max(nodes)
-    assert workflow["last_link_id"] == max(links)
+    assert workflow["last_link_id"] == (max(links) if links else 0)
 
     for link_id, (_, source_id, source_slot, target_id, target_slot, link_type) in links.items():
         source = nodes[source_id]["outputs"][source_slot]
@@ -686,3 +696,30 @@ def test_speech_frontend_workflow_presets_keep_validated_exp_boundaries():
         "audio_segments.audio_segment_1",
     }
     assert dialogue_nodes[13]["widgets_values"] == ["unload_all_models"]
+
+
+def test_speech_reliability_api_examples_keep_explicit_safety_boundaries():
+    root = Path(__file__).resolve().parents[1] / "examples"
+    performance = json.loads((root / "speech_performance_adr_api.json").read_text(encoding="utf-8"))
+    assert performance["7"]["class_type"] == "MiniMaxH3SpeechPerformanceT8"
+    assert performance["8"]["inputs"]["speech_plan"] == ["7", 0]
+    assert performance["8"]["inputs"]["release_policy"] == "unload_all_models"
+    assert performance["9"]["class_type"] == "MiniMaxH3SpeechADRFitT8"
+    assert performance["9"]["inputs"]["minimum_rate"] == 0.9
+    assert performance["9"]["inputs"]["maximum_rate"] == 1.1
+
+    longform = json.loads((root / "speech_longform_resume_api.json").read_text(encoding="utf-8"))
+    assert longform["7"]["class_type"] == "MiniMaxH3SpeechLongFormStartT8"
+    assert longform["8"]["inputs"]["segment_index"] == ["7", 2]
+    assert longform["8"]["inputs"]["voice_profile"] == ["7", 1]
+    assert longform["8"]["inputs"]["release_policy"] == "unload_all_models"
+    assert longform["9"]["class_type"] == "MiniMaxH3SpeechLongFormAcceptT8"
+    assert longform["9"]["inputs"]["accepted"] == ["8", 7]
+
+    joint = json.loads((root / "speech_joint_dialogue_exp_api.json").read_text(encoding="utf-8"))
+    assert joint["10"]["class_type"] == "MiniMaxH3SpeechGuardT8"
+    assert joint["11"]["inputs"]["speech_guard"] == ["10", 0]
+    assert joint["17"]["inputs"]["speech_guard"] == ["10", 0]
+    assert joint["17"]["inputs"]["release_policy"] == "unload_all_models"
+    assert joint["5"]["inputs"]["audio"] == "speech_reference_a.flac"
+    assert joint["6"]["inputs"]["audio"] == "speech_reference_b.flac"

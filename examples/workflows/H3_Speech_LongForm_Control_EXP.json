@@ -1,0 +1,80 @@
+{
+  "id": "19833adb-597c-48f4-9f29-8fe0030a666c",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3SpeechLongFormControlT8",
+      "title": "Set action to request_cancel only between segments; use ComfyUI Stop for active sampling",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "job_id",
+          "type": "STRING",
+          "widget": {
+            "name": "job_id"
+          },
+          "link": null
+        },
+        {
+          "name": "action",
+          "type": "COMBO",
+          "widget": {
+            "name": "action"
+          },
+          "link": null
+        },
+        {
+          "name": "confirm_reset",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "confirm_reset"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SpeechLongFormControlT8"
+      },
+      "widgets_values": [
+        "speech_longform_demo_001",
+        "status",
+        false
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Speech Long Form Status and Cancel EXP"
+  },
+  "version": 0.4
+}

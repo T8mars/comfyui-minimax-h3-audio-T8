@@ -1,0 +1,11 @@
+{
+  "1": {
+    "inputs": {
+      "job_id": "speech_longform_demo_001",
+      "action": "status",
+      "confirm_reset": false
+    },
+    "class_type": "MiniMaxH3SpeechLongFormControlT8",
+    "_meta": {"title": "Set action to request_cancel only between segments; use ComfyUI Stop for active sampling"}
+  }
+}

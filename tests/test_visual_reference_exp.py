@@ -34,7 +34,7 @@ def test_visual_reference_strength_schema_and_registration_are_isolated_exp():
     assert [item.id for item in schema.outputs] == ["positive", "report"]
 
     node_classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
-    assert node_classes[-1] is MiniMaxH3VisualReferenceStrengthEXPT8
+    assert node_classes[35] is MiniMaxH3VisualReferenceStrengthEXPT8
 
 
 @pytest.mark.parametrize("strength", [0.999, 0.995, 0.990, 0.980, 0.950])

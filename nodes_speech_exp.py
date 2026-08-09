@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+from pathlib import Path
+
+import folder_paths
 
 from comfy_api.latest import io
 from comfy_execution.graph_utils import GraphBuilder
@@ -24,13 +28,37 @@ from .speech import (
     make_dialogue_plan,
     make_speech_plan,
     make_voice_profile,
+    public_plan,
     select_dialogue_turn,
+    validate_speech_plan,
 )
 from .speech_verification import ASR_LANGUAGE_CODES, verify_speech_audio
+from .speech_reliability import (
+    SPEECH_GUARD_TYPE,
+    arm_speech_guard,
+    complete_speech_guard,
+    vram_preflight,
+)
+from .speech_extended import (
+    SPEECH_SESSION_TYPE,
+    accept_longform_segment,
+    apply_performance_direction,
+    build_joint_dialogue_conditioning,
+    compose_longform_session,
+    control_longform_session,
+    delete_voice_profile,
+    fit_audio_for_adr,
+    load_voice_profile,
+    save_voice_profile,
+    speech_manifest_fingerprint,
+    start_or_resume_longform,
+)
 
 
 VoiceProfile = io.Custom(VOICE_PROFILE_TYPE)
 SpeechPlan = io.Custom(SPEECH_PLAN_TYPE)
+SpeechGuard = io.Custom(SPEECH_GUARD_TYPE)
+SpeechSession = io.Custom(SPEECH_SESSION_TYPE)
 
 SPEECH_SAMPLERS = list(SAMPLER_OPTIONS)
 if "res_multistep" in SPEECH_SAMPLERS:
@@ -268,6 +296,7 @@ class MiniMaxH3SpeechConditioningT8(io.ComfyNode):
                     ),
                 ),
                 io.Combo.Input("resolution", options=[32, 64, 128], default=32),
+                SpeechGuard.Input("speech_guard", optional=True),
             ],
             outputs=[
                 io.Conditioning.Output("positive"),
@@ -291,6 +320,7 @@ class MiniMaxH3SpeechConditioningT8(io.ComfyNode):
         segment_index,
         render_seconds,
         resolution,
+        speech_guard=None,
     ):
         return io.NodeOutput(
             *build_speech_conditioning(
@@ -705,6 +735,97 @@ def request_speech_release(release_policy: str) -> dict:
     }
 
 
+class MiniMaxH3SpeechGuardT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechGuardT8",
+            display_name="MiniMax H3 Speech Abnormal-Exit Guard / 异常释放保护 (EXP/T8)",
+            description=(
+                "Arms a prompt-lifecycle guard before speech conditioning. If OOM, cancellation, "
+                "or another upstream exception prevents Finalize, the selected error release is requested."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.Combo.Input(
+                    "error_release_policy",
+                    options=list(RELEASE_POLICIES),
+                    default="unload_all_models",
+                    tooltip=(
+                        "unload_all_models is global. Current ComfyUI already does this for recognized "
+                        "CUDA OOM; the guard closes non-OOM/cancel gaps."
+                    ),
+                ),
+            ],
+            outputs=[SpeechGuard.Output("speech_guard"), io.String.Output("report_json")],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, error_release_policy):
+        guard = arm_speech_guard(error_release_policy)
+        report = {
+            "schema": guard["schema"],
+            "armed": True,
+            "prompt_id": guard["prompt_id"],
+            "error_release_policy": error_release_policy,
+            "scope": (
+                "global_comfyui_models"
+                if error_release_policy == "unload_all_models"
+                else (
+                    "execution_cache_and_soft_memory"
+                    if error_release_policy == "clear_execution_cache"
+                    else "none"
+                )
+            ),
+            "recognized_oom_note": "Current ComfyUI also unloads all models immediately for recognized CUDA OOM.",
+        }
+        return io.NodeOutput(guard, json.dumps(report, ensure_ascii=False, indent=2))
+
+
+class MiniMaxH3SpeechVRAMPreflightT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechVRAMPreflightT8",
+            display_name="MiniMax H3 Speech VRAM Preflight / 显存预检 (EXP/T8)",
+            description=(
+                "Reports present whole-device free VRAM and DynamicVRAM configuration. "
+                "It cannot predict sampler peak and never grants a memory_safe label."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.Model.Input("model"),
+                io.Float.Input(
+                    "minimum_headroom_mib",
+                    default=512.0,
+                    min=0.0,
+                    max=16384.0,
+                    step=16.0,
+                ),
+                io.Boolean.Input("block_when_currently_below_gate", default=False),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                io.Boolean.Output("current_gate_pass"),
+                io.String.Output("report_json"),
+            ],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, model, minimum_headroom_mib, block_when_currently_below_gate):
+        report = vram_preflight(minimum_headroom_mib)
+        passed = bool(report.get("current_gate_pass"))
+        if block_when_currently_below_gate and not passed:
+            raise RuntimeError(
+                "Speech VRAM preflight is below the explicit current-headroom gate: "
+                + json.dumps(report, ensure_ascii=False)
+            )
+        return io.NodeOutput(model, passed, json.dumps(report, ensure_ascii=False, indent=2))
+
+
 class MiniMaxH3SpeechFinalizeT8(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -724,15 +845,21 @@ class MiniMaxH3SpeechFinalizeT8(io.ComfyNode):
                     default="clear_execution_cache",
                 ),
                 io.String.Input("upstream_report", optional=True, force_input=True),
+                SpeechGuard.Input("speech_guard", optional=True),
             ],
             outputs=[io.Audio.Output("audio"), io.String.Output("report_json")],
             is_experimental=True,
         )
 
     @classmethod
-    def execute(cls, audio, release_policy, upstream_report=None):
+    def execute(cls, audio, release_policy, upstream_report=None, speech_guard=None):
         release = request_speech_release(release_policy)
-        report = {"schema": "minimax_h3_t8_speech_finalize_v1", "release": release}
+        guard_completion = complete_speech_guard(speech_guard)
+        report = {
+            "schema": "minimax_h3_t8_speech_finalize_v2",
+            "release": release,
+            "abnormal_exit_guard": guard_completion,
+        }
         if upstream_report:
             try:
                 report["upstream"] = json.loads(upstream_report)
@@ -764,6 +891,7 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
                 io.Int.Input("seed", default=0, min=0, max=0xFFFFFFFFFFFFFFFF),
                 io.Float.Input("render_seconds", default=10.0, min=5.17, max=15.08, step=0.01),
                 io.Combo.Input("resolution", options=[32, 64, 128], default=32),
+                SpeechGuard.Input("speech_guard", optional=True),
                 io.Int.Input("steps", default=20, min=1, max=1000),
                 io.Combo.Input(
                     "sampler_name",
@@ -902,6 +1030,14 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
         release_policy="clear_execution_cache",
     ):
         graph = GraphBuilder()
+        error_release_policy = (
+            "keep_loaded" if release_policy == "keep_loaded" else "unload_all_models"
+        )
+        guard = graph.node(
+            "MiniMaxH3SpeechGuardT8",
+            id="speech_abnormal_exit_guard",
+            error_release_policy=error_release_policy,
+        )
         conditioning = graph.node(
             "MiniMaxH3SpeechConditioningT8",
             id="speech_conditioning",
@@ -913,6 +1049,7 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
             segment_index=segment_index,
             render_seconds=render_seconds,
             resolution=resolution,
+            speech_guard=guard.out(0),
         )
         sampling = graph.node(
             "MiniMaxH3DualClockSamplerT8",
@@ -978,6 +1115,7 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
             audio=verified.out(0),
             release_policy=release_policy,
             upstream_report=verified.out(5),
+            speech_guard=guard.out(0),
         )
         return io.NodeOutput(
             finalized.out(0),
@@ -992,6 +1130,379 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
         )
 
 
+class MiniMaxH3VoiceLibrarySaveT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3VoiceLibrarySaveT8",
+            display_name="MiniMax H3 Voice Library Save / 保存音色 (EXP/T8)",
+            description="Explicitly persists a voice profile and any reference audio in the local ComfyUI user directory.",
+            category=SPEECH_CATEGORY,
+            inputs=[
+                VoiceProfile.Input("voice_profile"),
+                io.String.Input("library_name", default="my_voice"),
+                io.Boolean.Input("replace_existing", default=False),
+            ],
+            outputs=[VoiceProfile.Output("voice_profile"), io.String.Output("report_json")],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, voice_profile, library_name, replace_existing):
+        return io.NodeOutput(*save_voice_profile(voice_profile, library_name, replace_existing))
+
+
+class MiniMaxH3VoiceLibraryLoadT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3VoiceLibraryLoadT8",
+            display_name="MiniMax H3 Voice Library Load / 加载音色 (EXP/T8)",
+            category=SPEECH_CATEGORY,
+            inputs=[io.String.Input("library_name", default="my_voice")],
+            outputs=[VoiceProfile.Output("voice_profile"), io.String.Output("report_json")],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, library_name):
+        return io.NodeOutput(*load_voice_profile(library_name))
+
+
+class MiniMaxH3VoiceLibraryDeleteT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3VoiceLibraryDeleteT8",
+            display_name="MiniMax H3 Voice Library Delete / 删除音色 (EXP/T8)",
+            description="Moves an entry to a recoverable local trash folder; it does not permanently erase it.",
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.String.Input("library_name", default="my_voice"),
+                io.Boolean.Input("confirm_delete", default=False),
+            ],
+            outputs=[io.String.Output("report_json")],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, library_name, confirm_delete):
+        return io.NodeOutput(delete_voice_profile(library_name, confirm_delete))
+
+
+class MiniMaxH3SpeechPerformanceT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechPerformanceT8",
+            display_name="MiniMax H3 Speech Performance Direction / 演绎控制 (EXP/T8)",
+            description=(
+                "Adds emotion, pace, pitch, energy and nonverbal prompt direction. "
+                "These model controls remain uncalibrated and are reported as such."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                SpeechPlan.Input("speech_plan"),
+                io.Int.Input("segment_index", default=-1, min=-1, max=9999, tooltip="-1 applies to all segments."),
+                io.String.Input("emotion", default="neutral"),
+                io.Float.Input("prompt_intensity", default=0.5, min=0.0, max=1.0, step=0.05),
+                io.Combo.Input("pace", options=["very_slow", "slow", "natural", "fast", "very_fast"], default="natural"),
+                io.Combo.Input("pitch", options=["very_low", "low", "natural", "high", "very_high"], default="natural"),
+                io.Combo.Input("energy", options=["restrained", "low", "natural", "high", "intense"], default="natural"),
+                io.String.Input("nonverbal_direction", default="", multiline=True),
+            ],
+            outputs=[SpeechPlan.Output("speech_plan"), io.String.Output("report_json")],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, speech_plan, segment_index, emotion, prompt_intensity, pace, pitch, energy, nonverbal_direction):
+        return io.NodeOutput(
+            *apply_performance_direction(
+                speech_plan,
+                segment_index,
+                emotion,
+                prompt_intensity,
+                pace,
+                pitch,
+                energy,
+                nonverbal_direction,
+            )
+        )
+
+
+class MiniMaxH3SpeechADRFitT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechADRFitT8",
+            display_name="MiniMax H3 Speech ADR Exact Fit / 配音精确时长 (EXP/T8)",
+            description=(
+                "Fits AUDIO to an exact sample count using refusal, pad/trim, or bounded phase-vocoder stretch. "
+                "Exact duration is not a lip-sync claim."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.Audio.Input("audio"),
+                io.Float.Input("target_duration_seconds", default=5.0, min=0.001, max=36000.0, step=0.001),
+                io.Combo.Input(
+                    "fit_mode",
+                    options=["refuse_if_mismatch", "pad_or_trim", "safe_time_stretch"],
+                    default="safe_time_stretch",
+                ),
+                io.Float.Input("minimum_rate", default=0.90, min=0.10, max=4.0, step=0.01, advanced=True),
+                io.Float.Input("maximum_rate", default=1.10, min=0.10, max=4.0, step=0.01, advanced=True),
+                io.Float.Input("pitch_semitones", default=0.0, min=-12.0, max=12.0, step=0.1, advanced=True),
+            ],
+            outputs=[io.Audio.Output("audio"), io.String.Output("report_json")],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, audio, target_duration_seconds, fit_mode, minimum_rate, maximum_rate, pitch_semitones):
+        return io.NodeOutput(
+            *fit_audio_for_adr(
+                audio,
+                target_duration_seconds,
+                fit_mode,
+                minimum_rate,
+                maximum_rate,
+                pitch_semitones,
+            )
+        )
+
+
+class MiniMaxH3SpeechLongFormStartT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechLongFormStartT8",
+            display_name="MiniMax H3 Speech Long Form Start/Resume / 长文本恢复 (EXP/T8)",
+            description=(
+                "Creates or resumes an atomic accepted-segment manifest. Render only next_index per prompt; "
+                "this avoids retaining every long-form latent in one execution."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                SpeechPlan.Input("speech_plan"),
+                io.String.Input("job_id", default="speech_job_001"),
+            ],
+            outputs=[
+                SpeechSession.Output("session"),
+                VoiceProfile.Output("next_voice_profile"),
+                io.Int.Output("next_index"),
+                io.String.Output("next_text"),
+                io.Boolean.Output("complete"),
+                io.String.Output("report_json"),
+            ],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, speech_plan, job_id):
+        session, profile, next_index, text, report = start_or_resume_longform(speech_plan, job_id)
+        return io.NodeOutput(session, profile, next_index, text, next_index < 0 and session["state"] == "complete", report)
+
+    @classmethod
+    def fingerprint_inputs(cls, speech_plan, job_id):
+        try:
+            plan_digest = hashlib.sha256(
+                json.dumps(public_plan(validate_speech_plan(speech_plan)), ensure_ascii=False, sort_keys=True).encode("utf-8")
+            ).hexdigest()
+            return f"{plan_digest}:{speech_manifest_fingerprint(job_id)}"
+        except (TypeError, ValueError):
+            return f"unresolved:{job_id!r}"
+
+
+class MiniMaxH3SpeechLongFormAcceptT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechLongFormAcceptT8",
+            display_name="MiniMax H3 Speech Long Form Accept / 接受语音分段 (EXP/T8)",
+            description="Atomically stores one accepted chunk before advancing the manifest; safe to resume after a crash.",
+            category=SPEECH_CATEGORY,
+            inputs=[
+                SpeechSession.Input("session"),
+                SpeechPlan.Input("speech_plan"),
+                io.Int.Input("segment_index", default=0, min=0, max=99999),
+                io.Audio.Input("audio"),
+                io.String.Input("transcript", default="", force_input=True),
+                io.Float.Input("text_similarity", default=0.0, min=0.0, max=1.0, force_input=True),
+                io.Float.Input("speaker_similarity", default=0.0, min=-1.0, max=1.0, force_input=True),
+                io.Boolean.Input("accepted", default=False, force_input=True),
+                io.Boolean.Input("replace_existing", default=False, advanced=True),
+            ],
+            outputs=[io.Audio.Output("chunk_ready_audio"), io.String.Output("report_json")],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        session,
+        speech_plan,
+        segment_index,
+        audio,
+        transcript,
+        text_similarity,
+        speaker_similarity,
+        accepted,
+        replace_existing,
+    ):
+        output_audio, report_json = accept_longform_segment(
+                session,
+                speech_plan,
+                segment_index,
+                audio,
+                transcript,
+                text_similarity,
+                speaker_similarity,
+                accepted,
+                replace_existing,
+            )
+        report = json.loads(report_json)
+        preview_path = Path(report["chunk_ready_preview_path"]).resolve()
+        output_root = Path(folder_paths.get_output_directory()).resolve()
+        relative = preview_path.relative_to(output_root)
+        return io.NodeOutput(
+            output_audio,
+            report_json,
+            ui={
+                "audio": [
+                    {
+                        "filename": relative.name,
+                        "subfolder": relative.parent.as_posix(),
+                        "type": "output",
+                    }
+                ]
+            },
+        )
+
+
+class MiniMaxH3SpeechLongFormControlT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechLongFormControlT8",
+            display_name="MiniMax H3 Speech Long Form Control / 长文本控制 (EXP/T8)",
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.String.Input("job_id", default="speech_job_001"),
+                io.Combo.Input(
+                    "action",
+                    options=["status", "request_cancel", "clear_cancel", "reset_to_trash"],
+                    default="status",
+                ),
+                io.Boolean.Input("confirm_reset", default=False),
+            ],
+            outputs=[io.String.Output("report_json")],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, job_id, action, confirm_reset):
+        return io.NodeOutput(control_longform_session(job_id, action, confirm_reset))
+
+
+class MiniMaxH3SpeechLongFormComposeT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SpeechLongFormComposeT8",
+            display_name="MiniMax H3 Speech Long Form Compose / 合成长文本 (EXP/T8)",
+            category=SPEECH_CATEGORY,
+            inputs=[
+                SpeechPlan.Input("speech_plan"),
+                io.String.Input("job_id", default="speech_job_001"),
+                io.Float.Input("crossfade_seconds", default=0.06, min=0.0, max=0.5, step=0.005),
+                io.Float.Input("peak_limit_dbfs", default=-1.0, min=-12.0, max=0.0, step=0.1),
+            ],
+            outputs=[
+                io.Audio.Output("audio"),
+                io.String.Output("timeline_json"),
+                io.String.Output("srt"),
+                io.String.Output("vtt"),
+            ],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(cls, speech_plan, job_id, crossfade_seconds, peak_limit_dbfs):
+        return io.NodeOutput(
+            *compose_longform_session(
+                speech_plan,
+                job_id,
+                crossfade_seconds,
+                peak_limit_dbfs,
+            )
+        )
+
+
+class MiniMaxH3JointDialogueConditioningT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3JointDialogueConditioningT8",
+            display_name="MiniMax H3 Joint Dialogue Conditioning / 多人同段条件 (EXP/T8)",
+            description=(
+                "Builds an unverified 2-3 speaker joint Ref2VA experiment. It is not the stable dialogue path "
+                "and must not be described as identity-safe until leakage and identity-swap tests pass."
+            ),
+            category=SPEECH_CATEGORY,
+            inputs=[
+                io.Clip.Input("clip"),
+                io.Vae.Input("video_vae"),
+                io.Vae.Input("audio_vae"),
+                SpeechPlan.Input("dialogue_plan"),
+                io.Int.Input("start_turn", default=0, min=0, max=9999),
+                io.Int.Input("turn_count", default=2, min=2, max=3),
+                io.Float.Input("render_seconds", default=10.0, min=5.17, max=15.08, step=0.01),
+                io.Combo.Input("resolution", options=[32, 64, 128], default=32),
+                SpeechGuard.Input("speech_guard", optional=True),
+            ],
+            outputs=[
+                io.Conditioning.Output("positive"),
+                io.Latent.Output("av_latent"),
+                io.String.Output("conditioned_prompt"),
+                io.String.Output("report_json"),
+            ],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        clip,
+        video_vae,
+        audio_vae,
+        dialogue_plan,
+        start_turn,
+        turn_count,
+        render_seconds,
+        resolution,
+        speech_guard=None,
+    ):
+        del speech_guard  # Graph dependency only: arm abnormal-exit cleanup before conditioning.
+        return io.NodeOutput(
+            *build_joint_dialogue_conditioning(
+                clip,
+                video_vae,
+                audio_vae,
+                dialogue_plan,
+                start_turn,
+                turn_count,
+                render_seconds,
+                resolution,
+            )
+        )
+
+
 SPEECH_NODE_CLASSES = [
     MiniMaxH3VoiceProfileT8,
     MiniMaxH3SpeechPlanT8,
@@ -1003,4 +1514,16 @@ SPEECH_NODE_CLASSES = [
     MiniMaxH3DialogueTurnSelectT8,
     MiniMaxH3SpeechFinalizeT8,
     MiniMaxH3SpeechStudioT8,
+    MiniMaxH3SpeechGuardT8,
+    MiniMaxH3SpeechVRAMPreflightT8,
+    MiniMaxH3VoiceLibrarySaveT8,
+    MiniMaxH3VoiceLibraryLoadT8,
+    MiniMaxH3VoiceLibraryDeleteT8,
+    MiniMaxH3SpeechPerformanceT8,
+    MiniMaxH3SpeechADRFitT8,
+    MiniMaxH3SpeechLongFormStartT8,
+    MiniMaxH3SpeechLongFormAcceptT8,
+    MiniMaxH3SpeechLongFormControlT8,
+    MiniMaxH3SpeechLongFormComposeT8,
+    MiniMaxH3JointDialogueConditioningT8,
 ]

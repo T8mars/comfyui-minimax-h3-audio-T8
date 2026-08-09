@@ -1,7 +1,7 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.9.0"
-description = "MiniMax H3 audio, experimental visual-reference strength and speech, dual-clock sampling, resumable long-video orchestration, and Ref2VA still-image editing nodes for ComfyUI"
+version = "1.10.0"
+description = "MiniMax H3 audio, guarded experimental speech/long-form voice workflows, visual-reference strength, dual-clock sampling, resumable long-video orchestration, and Ref2VA still-image editing nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }

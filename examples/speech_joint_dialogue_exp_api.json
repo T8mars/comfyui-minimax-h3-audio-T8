@@ -1,0 +1,147 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "5": {
+    "inputs": {"audio": "speech_reference_a.flac"},
+    "class_type": "LoadAudio"
+  },
+  "6": {
+    "inputs": {"audio": "speech_reference_b.flac"},
+    "class_type": "LoadAudio"
+  },
+  "7": {
+    "inputs": {
+      "voice_mode": "reference_voice",
+      "speaker_id": "speaker_a",
+      "voice_description": "the same adult speaker as licensed reference A, with natural clear diction",
+      "language": "English",
+      "rights_confirmed": true,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 10.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true,
+      "reference_audio": ["5", 0]
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "8": {
+    "inputs": {
+      "voice_mode": "reference_voice",
+      "speaker_id": "speaker_b",
+      "voice_description": "the same adult speaker as licensed reference B, with natural clear diction",
+      "language": "English",
+      "rights_confirmed": true,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 10.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true,
+      "reference_audio": ["6", 0]
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "9": {
+    "inputs": {
+      "script": "speaker_a: The room is ready.\nspeaker_b: Then let us begin.",
+      "script_format": "speaker_lines",
+      "default_language": "English",
+      "default_space": "studio",
+      "voice_profiles.voice_profile_0": ["7", 0],
+      "voice_profiles.voice_profile_1": ["8", 0]
+    },
+    "class_type": "MiniMaxH3DialogueScriptT8"
+  },
+  "10": {
+    "inputs": {"error_release_policy": "unload_all_models"},
+    "class_type": "MiniMaxH3SpeechGuardT8"
+  },
+  "11": {
+    "inputs": {
+      "start_turn": 0,
+      "turn_count": 2,
+      "render_seconds": 10.0,
+      "resolution": 32,
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "dialogue_plan": ["9", 0],
+      "speech_guard": ["10", 0]
+    },
+    "class_type": "MiniMaxH3JointDialogueConditioningT8"
+  },
+  "12": {
+    "inputs": {
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "model": ["1", 0],
+      "av_latent": ["11", 1]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8"
+  },
+  "13": {
+    "inputs": {"model": ["12", 0], "conditioning": ["11", 0]},
+    "class_type": "BasicGuider"
+  },
+  "14": {
+    "inputs": {"noise_seed": 2608106003},
+    "class_type": "RandomNoise"
+  },
+  "15": {
+    "inputs": {
+      "noise": ["14", 0],
+      "guider": ["13", 0],
+      "sampler": ["12", 1],
+      "sigmas": ["12", 2],
+      "latent_image": ["11", 1]
+    },
+    "class_type": "SamplerCustomAdvanced"
+  },
+  "16": {
+    "inputs": {
+      "trim_mode": "none",
+      "energy_threshold_dbfs": -50.0,
+      "trim_padding_seconds": 0.1,
+      "av_latent": ["15", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3SpeechDecodeT8"
+  },
+  "17": {
+    "inputs": {
+      "release_policy": "unload_all_models",
+      "audio": ["16", 0],
+      "speech_guard": ["10", 0]
+    },
+    "class_type": "MiniMaxH3SpeechFinalizeT8"
+  },
+  "18": {
+    "inputs": {
+      "audio": ["17", 0],
+      "filename_prefix": "MiniMaxH3_T8_Speech/joint_dialogue_exp"
+    },
+    "class_type": "SaveAudio"
+  }
+}

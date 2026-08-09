@@ -1,0 +1,22 @@
+{
+  "1": {"inputs": {"audio": "speech_reference.flac"}, "class_type": "LoadAudio"},
+  "2": {
+    "inputs": {
+      "voice_mode": "reference_voice",
+      "speaker_id": "licensed_voice",
+      "voice_description": "the same adult speaker as the connected licensed reference, with natural clear diction",
+      "language": "English",
+      "rights_confirmed": true,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 10.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true,
+      "reference_audio": ["1", 0]
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "3": {
+    "inputs": {"library_name": "my_licensed_voice", "replace_existing": false, "voice_profile": ["2", 0]},
+    "class_type": "MiniMaxH3VoiceLibrarySaveT8"
+  }
+}

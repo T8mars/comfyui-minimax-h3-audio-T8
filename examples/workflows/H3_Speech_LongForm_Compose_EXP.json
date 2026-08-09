@@ -1,0 +1,420 @@
+{
+  "id": "8b0500ac-642b-4c58-b4d1-3b55fe798dc9",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3VoiceProfileT8",
+      "title": "MiniMax H3 Voice Profile / 音色资料 (EXP/T8)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "voice_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "voice_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "speaker_id",
+          "type": "STRING",
+          "widget": {
+            "name": "speaker_id"
+          },
+          "link": null
+        },
+        {
+          "name": "voice_description",
+          "type": "STRING",
+          "widget": {
+            "name": "voice_description"
+          },
+          "link": null
+        },
+        {
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "name": "rights_confirmed",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "rights_confirmed"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_start_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_start_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "highpass_60hz",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "highpass_60hz"
+          },
+          "link": null
+        },
+        {
+          "name": "peak_limit_minus_3_dbfs",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "peak_limit_minus_3_dbfs"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "prepared_reference_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3VoiceProfileT8"
+      },
+      "widgets_values": [
+        "described_voice",
+        "longform_narrator",
+        "an adult narrator with a natural warm mid-low voice, clear diction, steady identity and restrained delivery",
+        "English",
+        false,
+        0.0,
+        0.0,
+        true,
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SpeechPlanT8",
+      "title": "MiniMax H3 Speech Plan / 语音规划 (EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        502
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": null
+        },
+        {
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "name": "acting_direction",
+          "type": "STRING",
+          "widget": {
+            "name": "acting_direction"
+          },
+          "link": null
+        },
+        {
+          "name": "emotion",
+          "type": "STRING",
+          "widget": {
+            "name": "emotion"
+          },
+          "link": null
+        },
+        {
+          "name": "emotion_intensity",
+          "type": "FLOAT",
+          "widget": {
+            "name": "emotion_intensity"
+          },
+          "link": null
+        },
+        {
+          "name": "space",
+          "type": "COMBO",
+          "widget": {
+            "name": "space"
+          },
+          "link": null
+        },
+        {
+          "name": "chunking",
+          "type": "COMBO",
+          "widget": {
+            "name": "chunking"
+          },
+          "link": null
+        },
+        {
+          "name": "target_units",
+          "type": "INT",
+          "widget": {
+            "name": "target_units"
+          },
+          "link": null
+        },
+        {
+          "name": "max_units",
+          "type": "INT",
+          "widget": {
+            "name": "max_units"
+          },
+          "link": null
+        },
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "plan_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SpeechPlanT8"
+      },
+      "widgets_values": [
+        "The first section begins in a quiet room. The second section keeps the same calm rhythm. The third section continues without changing speakers. The final section closes the demonstration.",
+        "English",
+        "calm, consistent narration with clear diction and natural micro-pauses",
+        "neutral",
+        0.4,
+        "studio",
+        "language_aware",
+        8,
+        12
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3SpeechLongFormComposeT8",
+      "title": "MiniMax H3 Speech Long Form Compose / 合成长文本 (EXP/T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "job_id",
+          "type": "STRING",
+          "widget": {
+            "name": "job_id"
+          },
+          "link": null
+        },
+        {
+          "name": "crossfade_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "crossfade_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "peak_limit_dbfs",
+          "type": "FLOAT",
+          "widget": {
+            "name": "peak_limit_dbfs"
+          },
+          "link": null
+        },
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "srt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "vtt",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SpeechLongFormComposeT8"
+      },
+      "widgets_values": [
+        "speech_longform_demo_001",
+        0.06,
+        -1.0
+      ]
+    },
+    {
+      "id": 4,
+      "type": "SaveAudio",
+      "title": "Save Audio (FLAC) (DEPRECATED)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 3
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveAudio"
+      },
+      "widgets_values": [
+        "MiniMaxH3_T8_Speech/longform_resume_complete"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      9,
+      "H3_T8_VOICE_PROFILE"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      3,
+      "H3_T8_SPEECH_PLAN"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Speech Long Form Compose EXP"
+  },
+  "version": 0.4
+}

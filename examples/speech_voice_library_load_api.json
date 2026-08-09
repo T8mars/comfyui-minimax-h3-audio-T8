@@ -1,0 +1,6 @@
+{
+  "1": {
+    "inputs": {"library_name": "my_licensed_voice"},
+    "class_type": "MiniMaxH3VoiceLibraryLoadT8"
+  }
+}

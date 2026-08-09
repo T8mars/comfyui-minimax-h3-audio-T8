@@ -1,0 +1,15 @@
+{
+  "1": {
+    "inputs": {"unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors", "weight_dtype": "default"},
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {
+      "minimum_headroom_mib": 512.0,
+      "block_when_currently_below_gate": false,
+      "model": ["1", 0]
+    },
+    "class_type": "MiniMaxH3SpeechVRAMPreflightT8",
+    "_meta": {"title": "Current-state report only; passing does not prove peak-VRAM safety"}
+  }
+}
