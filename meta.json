@@ -1,10 +1,14 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.3.3",
+  "version": "1.9.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
-  "validated_on": "2026-08-08",
-  "validated_comfyui_commit": "a464ac335",
+  "validated_on": "2026-08-10",
+  "validated_comfyui_commit": "cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44",
   "python": "3.10+",
-  "external_runtime_dependencies": []
+  "external_runtime_dependencies": [],
+  "optional_runtime_dependencies": [
+    "faster-whisper with a local CTranslate2 model for ASR verification/alignment",
+    "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting"
+  ]
 }

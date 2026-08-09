@@ -1,0 +1,103 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load H3 Ref2VA pruned INT8"}
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Reuse the standard H3 Qwen3-VL encoder"}
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "5": {
+    "inputs": {"audio": "speech_reference.flac"},
+    "class_type": "LoadAudio",
+    "_meta": {"title": "Replace with a licensed 2-15 second single-speaker reference"}
+  },
+  "6": {
+    "inputs": {
+      "voice_mode": "reference_voice",
+      "speaker_id": "licensed_reference",
+      "voice_description": "the same adult speaker as the connected licensed reference, with natural clear diction",
+      "language": "English",
+      "rights_confirmed": true,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 10.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true,
+      "reference_audio": ["5", 0]
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8",
+    "_meta": {"title": "Reference use requires the speaker's consent or another lawful right"}
+  },
+  "7": {
+    "inputs": {
+      "text": "The door is open now. I'll wait beside the window.",
+      "language": "English",
+      "acting_direction": "quiet, sincere, intimate, and naturally paced",
+      "emotion": "tender",
+      "emotion_intensity": 0.6,
+      "space": "studio",
+      "chunking": "single_segment",
+      "target_units": 18,
+      "max_units": 24,
+      "voice_profile": ["6", 0]
+    },
+    "class_type": "MiniMaxH3SpeechPlanT8"
+  },
+  "8": {
+    "inputs": {
+      "segment_index": 0,
+      "seed": 2608099002,
+      "render_seconds": 10.0,
+      "resolution": 32,
+      "steps": 20,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "trim_mode": "none",
+      "verify_mode": "trim_exact_target",
+      "asr_model_directory": "faster-whisper-small.en-d1d751a5",
+      "asr_language": "English",
+      "min_similarity": 0.85,
+      "unload_asr_after_verify": true,
+      "speaker_check_mode": "report_cosine",
+      "speaker_model_directory": "wavlm-base-plus-sv-feb593a6",
+      "min_speaker_similarity": 0.86,
+      "unload_speaker_after_verify": true,
+      "peak_limit_dbfs": -1.0,
+      "release_policy": "unload_all_models",
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "voice_profile": ["6", 0],
+      "speech_plan": ["7", 0]
+    },
+    "class_type": "MiniMaxH3SpeechStudioT8",
+    "_meta": {"title": "Experimental reference voice; globally unload models afterward"}
+  },
+  "9": {
+    "inputs": {
+      "audio": ["8", 0],
+      "filename_prefix": "MiniMaxH3_T8_Speech/reference_clone_stock20"
+    },
+    "class_type": "SaveAudio"
+  }
+}

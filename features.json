@@ -9,6 +9,12 @@
     "batch_size": 1
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
+  "audio_frontend_workflows": {
+    "native": "examples/workflows/H3_Turbo_Stable_4V4A.json",
+    "lock_source": "examples/workflows/H3_Audio_Lock_Source_Stable_4V4A.json",
+    "remix_source": "examples/workflows/H3_Audio_Remix_Source_Stable_4V4A.json",
+    "reference_only": "examples/workflows/H3_Audio_Reference_Only_Stable_4V4A.json"
+  },
   "task_modes": ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
   "nodes": [
     "MiniMaxH3AudioConditioningT8",
@@ -24,7 +30,29 @@
     "MiniMaxH3MultiRateSamplerEXPT8",
     "MiniMaxH3StillConditioningT8",
     "MiniMaxH3StillPreflightT8",
-    "MiniMaxH3StillDecodeT8"
+    "MiniMaxH3StillDecodeT8",
+    "MiniMaxH3LongVideoPlannerT8",
+    "MiniMaxH3LongVideoContextLoadT8",
+    "MiniMaxH3LongVideoConditioningT8",
+    "MiniMaxH3LongVideoContextSaveT8",
+    "MiniMaxH3LongVideoCandidateSaveT8",
+    "MiniMaxH3LongVideoAcceptCandidateT8",
+    "MiniMaxH3LongVideoAcceptedContextLoadT8",
+    "MiniMaxH3LongVideoComposeAcceptedT8",
+    "MiniMaxH3LongVideoOrchestratorT8",
+    "MiniMaxH3LongVideoBackgroundStartT8",
+    "MiniMaxH3LongVideoAutoQueueT8",
+    "MiniMaxH3VoiceProfileT8",
+    "MiniMaxH3SpeechPlanT8",
+    "MiniMaxH3SpeechConditioningT8",
+    "MiniMaxH3SpeechDecodeT8",
+    "MiniMaxH3SpeechVerifyT8",
+    "MiniMaxH3SpeechAssembleT8",
+    "MiniMaxH3DialogueScriptT8",
+    "MiniMaxH3DialogueTurnSelectT8",
+    "MiniMaxH3SpeechFinalizeT8",
+    "MiniMaxH3SpeechStudioT8",
+    "MiniMaxH3VisualReferenceStrengthEXPT8"
   ],
   "sampling": {
     "algorithm": "selectable sampler and scheduler with a backward-compatible dual-clock default",
@@ -80,6 +108,413 @@
       "result": "successful single reference color/material edit",
       "scope": "one perceptual probe; not a broad quality benchmark"
     }
+  },
+  "experimental_long_video": {
+    "category": "T8/MiniMax H3/Long Video/Experimental",
+    "nodes": [
+      "MiniMaxH3LongVideoPlannerT8",
+      "MiniMaxH3LongVideoContextLoadT8",
+      "MiniMaxH3LongVideoConditioningT8",
+      "MiniMaxH3LongVideoContextSaveT8",
+      "MiniMaxH3LongVideoCandidateSaveT8",
+      "MiniMaxH3LongVideoAcceptCandidateT8",
+      "MiniMaxH3LongVideoAcceptedContextLoadT8",
+      "MiniMaxH3LongVideoComposeAcceptedT8",
+      "MiniMaxH3LongVideoOrchestratorT8",
+      "MiniMaxH3LongVideoBackgroundStartT8",
+      "MiniMaxH3LongVideoAutoQueueT8"
+    ],
+    "context_frame_options": [5, 22, 39],
+    "default_context_frames": 22,
+    "state_strategy": "CPU tail-only safetensors, exact N-1 slot, checksum validation, atomic replace",
+    "accepted_state_strategy": "candidate preview is non-mutating; accepted manifest uses a lock, SHA-256, atomic replace, one valid backup, parent-candidate identity, and explicit downstream invalidation on replacement",
+    "model_patch_scope": "cloned MODEL object patch; no process-global PackedLayout or MiniMaxH3 monkey patch",
+    "video_context_strategy": "direct sampler video-latent tail; no video VAE decode/re-encode",
+    "audio_context_strategies": ["video_and_audio", "video_only"],
+    "continuation_rule": "non-final output reaches sampled tail; exact hidden-tail trim only on final segment",
+    "segment_output": "ComfyUI core CreateVideo -> SaveVideo; avoids the tested VHS apad/-shortest audio underrun",
+    "frontend_workflow": "examples/workflows/H3_Long_Video_22F_EXP.json",
+    "accepted_frontend_workflow": "examples/workflows/H3_Long_Video_Accepted_22F_EXP.json",
+    "auto_resume_frontend_workflow": "examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json",
+    "background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_EXP.json",
+    "scene_plus_identity_background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
+    "api_workflow": "examples/long_video_segment_api.json",
+    "candidate_accept_api_workflow": "examples/long_video_candidate_accept_api.json",
+    "compose_api_workflow": "examples/long_video_compose_api.json",
+    "auto_resume_api_workflow": "examples/long_video_auto_resume_api.json",
+    "background_api_workflow": "examples/long_video_background_api.json",
+    "orchestration": "total duration is quantized once to 24fps; a fixed 17n+5 render window bounds every segment; accepted manifest length selects the next segment; global/per-segment prompt and fixed/increment/hash seeds are supported; steps, shifts, sampler and scheduler are emitted from the same plan to both sampling and candidate identity; a complete final manifest blocks downstream sampling",
+    "background_executor": {
+      "activation": "review_only is the safe default; auto_accept_and_continue must be selected explicitly and accepts every successful candidate without human review",
+      "queue_rule": "the start node snapshots the current API prompt in memory before expensive work; the terminal accepts one candidate and validates/queues exactly one next prompt",
+      "controls": ["status", "pause_after_current", "resume", "targeted_cancel"],
+      "retry_rule": "0-10 additional attempts per failed segment; the exact prompt is reused and resolution, frames, context, sampler, scheduler and seed are never silently reduced",
+      "release_policies": {
+        "keep_loaded": "no queue memory flag",
+        "clear_execution_cache": "default; explicitly sets unload_models=false and free_memory=true",
+        "unload_all_models": "strong global ComfyUI unload; it is not H3-only"
+      },
+      "release_timing": "the selected policy is requested after every durable acceptance, including continue, pause and final; failure preserves the accepted manifest and stops without regeneration",
+      "prompt_snapshot_sanitization": "ComfyUI runtime is_changed fingerprints are removed both when capturing and when requeueing a prompt so an advanced keep_loaded segment cannot become a false whole-graph cache hit",
+      "persistence": "background_job.json stores state and prompt SHA-256 but never the prompt body; after a ComfyUI restart the workflow must be queued once to reattach the in-memory prompt snapshot",
+      "process_ownership": "one OS-owned background_job.lock.v2 lease per chain rejects another ComfyUI process before generation and is released automatically on process death",
+      "manifest_locking": "OS-owned manifest.lock.v2 serializes same-host commits and releases on process death; live legacy locks are respected and dead legacy residue remains rollback-compatible",
+      "disk_schema_migration": "accepted manifests and background states use explicit schema-2 format markers; valid schema-1 files normalize in memory without read-time mutation, then upgrade on the next protected write while preserving the raw v1 manifest backup; unknown future schemas fail closed",
+      "error_privacy": "persisted errors use an allowlist and exclude ComfyUI current_inputs/current_outputs, media tensors, and prompt text",
+      "composition": "the final accepted manifest may be composed automatically; post-accept composition errors fail the job without retrying from an already-advanced manifest"
+    },
+    "validated_background_executor_probe": {
+      "synthetic_controls": "live isolated ComfyUI checks passed two-segment auto queue/composition, pause-after-current then resume, targeted running-prompt cancel with no accepted manifest, and one exact-prompt retry followed by bounded failure",
+      "real_checkpoint": "minimax_h3_fl2va_int8_convrot + Standard Turbo EMA LoRA + Qwen3-VL NVFP4 + both H3 VAEs",
+      "resolution": [256, 256],
+      "internal_frames": 124,
+      "context_frames": 22,
+      "steps": 1,
+      "release_policy": "unload_all_models",
+      "dynamic_vram": "enabled with 2.0GiB headroom",
+      "result": "two distinct prompt ids succeeded; manifest revision 2 accepted 124+20=144 frames; automatic final H.264/AAC composition produced exact 6.000-second streams",
+      "runtime_seconds": 79.41,
+      "whole_device_vram_mib_baseline_peak": [7129, 14254],
+      "final_sha256": "e24acdc57996ae15a15a1590f3066c738f3ce39ba1949ffd5b42f2743e75eb7b",
+      "scope": "mechanical executor and strong-release probe only; 256x256 one-step output is not a quality benchmark or a general memory_safe/never-OOM result"
+    },
+    "validated_release_policy_ab": {
+      "controlled_input": "three paired seeds; FL2VA INT8; Standard four-step Turbo LoRA; 736x416; 124-frame render window; 22-frame AV context; two segments; six seconds; DynamicVRAM headroom 2GiB",
+      "protocol": "three fresh-process cold trials per policy; one unmeasured same-process primer followed by three measured warm trials per policy; 21 chains total and 18 measured",
+      "result": "21/21 chains completed without retry or OOM; all 18 measured chains reached manifest revision 2",
+      "cold_runtime_mean_seconds": {
+        "keep_loaded": 170.89,
+        "clear_execution_cache": 188.28,
+        "unload_all_models": 189.08
+      },
+      "warm_runtime_mean_seconds": {
+        "keep_loaded": 153.1,
+        "clear_execution_cache": 185.08,
+        "unload_all_models": 197.13
+      },
+      "cold_whole_device_peak_mean_mib": {
+        "keep_loaded": 13449.95,
+        "clear_execution_cache": 13434.52,
+        "unload_all_models": 13421.52
+      },
+      "warm_whole_device_peak_mean_mib": {
+        "keep_loaded": 13467.3,
+        "clear_execution_cache": 13408.94,
+        "unload_all_models": 13384.03
+      },
+      "cold_used_mib_15s_after_completion_mean": {
+        "keep_loaded": 8083.22,
+        "clear_execution_cache": 1229.63,
+        "unload_all_models": 1229.63
+      },
+      "warm_used_mib_15s_after_completion_mean": {
+        "keep_loaded": 7987.22,
+        "clear_execution_cache": 1229.63,
+        "unload_all_models": 1229.63
+      },
+      "output_identity": "for every seed, segment videos, accepted AV-tail tensor payload, and final H.264/AAC file hashes matched across all six policy/cold-warm conditions",
+      "cache_evidence": "keep_loaded cached only unchanged loader nodes 1-5; clear_execution_cache and unload_all_models had no cached nodes; orchestration, sampling, saving and terminal acceptance always reran",
+      "decision": "keep clear_execution_cache as the balanced default; keep_loaded trades 17.39s cold and 31.97s warm speed gains for about 6.8GiB extra residency, while global unload had no material peak advantage and was 12.05s slower warm"
+    },
+    "validated_crash_recovery_and_multichain": {
+      "crash_boundary": "owned ComfyUI process killed after segment 0 durable acceptance at manifest revision 1 while the next prompt was active",
+      "restart_result": "status reconciled stale running to detached with accepted_count 1 and queue_workflow_once; one requeue created a new job linked by previous_job_id and generated segment 1 only",
+      "unchanged_evidence": "segment 0 candidate identity, MP4 SHA-256, AV-tail tensor SHA-256, and file modification timestamp remained unchanged",
+      "final_media": "256x256, 144 frames, exact 6.000-second video/audio/container",
+      "recovery_whole_device_peak_mib": 13537.02,
+      "multichain_result": "two independent real H3 chains completed revision 2 in A0-B0-A1-B1 order on one serial ComfyUI prompt queue with isolated jobs, prompts, parents, roots, manifests, and final files",
+      "multichain_whole_device_peak_mib": 13511.44,
+      "native_v2_result": "the pre-kill background state and accepted manifest, resumed revision-2 chain, and both interleaved revision-2 chains used the exact schema-2 format markers",
+      "scope": "native-v2 repeat validates one post-acceptance hard-kill boundary and same-queue chain isolation; not a complete upgrade/downgrade matrix across separately released plugin/ComfyUI builds, network/shared-filesystem locking, arbitrary-instruction recovery, simultaneous CUDA execution, or multi-GPU parallelism"
+    },
+    "validated_local_multiprocess_reliability": {
+      "platform_scope": "same-host Windows/NTFS using the installed ComfyUI Python",
+      "same_slot_acceptance": "two processes competed for different candidates at the same chain/index/revision; exactly one committed revision 1 and the loser was rejected before an accepted copy",
+      "lock_stress": "four processes performed 25 protected updates each and retained all 100 updates",
+      "kill_release": "a forcibly terminated manifest-lock owner was replaced in under two seconds",
+      "background_ownership": "a second ComfyUI process was rejected before generation; after killing the first owner, a third process attached and linked previous_job_id",
+      "upgrade_safety": "live legacy lock respected even past old age threshold; dead legacy residue does not block and is not deleted; valid schema-1 manifest/background state normalizes to schema 2 without read-time mutation and upgrades on the next protected write; raw v1 manifest backup is preserved; unknown schemas fail closed without backup rollback; same-schema additive fields survive later commits",
+      "real_v1_read_only_evidence": "an existing real H3 schema-1 chain loaded as schema 2 with migrated_from_schema=1 while both raw file SHA-256 values remained unchanged",
+      "acceptance_transaction_fault_injection": "eight deterministic cases cover hash-verified idempotent asset repair without revision change, active/invalidated candidate-id path collision refusal, context-copy interruption, failure after backup but before primary replacement, valid-backup recovery when primary is missing even with allow_new, and fail-closed unknown/corrupt backup behavior",
+      "acceptance_transaction_process_kill": "on same-host Windows/NTFS, a worker holding manifest.lock.v2 was forcibly killed after accepted-video copy before context/manifest and after revision-1 backup before revision-2 primary replacement; three independent rounds covered both breakpoints and all 6/6 recovered in under two seconds without a stale worker or lost revision",
+      "corruption_recovery": "semantically invalid primary never replaces a valid backup; unreadable auxiliary background state is quarantined and recovered from the accepted manifest; unknown future background schema is never overwritten",
+      "scope": "deterministic fault injection plus two repeated real-process killpoints cover named program boundaries with small test media, not arbitrary CPU instructions, live-H3 CUDA termination, or storage power loss; network/shared filesystems, a complete upgrade/downgrade matrix across separately released plugin/ComfyUI versions, simultaneous same-chain generation, and multi-GPU execution remain unvalidated"
+    },
+    "validated_background_four_step_long_chain": {
+      "bound_contract": "RTX 4060 Ti 16GiB; FL2VA INT8 ConvRot; Standard four-step Turbo LoRA; Qwen3-VL NVFP4; both H3 VAEs; 736x416; 124-frame render window; 22-frame AV context; dual_clock_euler/native_flow shift12/3; DynamicVRAM headroom 2.0GiB; unload_all_models between segments",
+      "requested_output_seconds": 60.0,
+      "segment_output_frames": [124, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 92],
+      "result": "14 distinct prompt ids all succeeded once without retry or OOM; manifest revision 14 contains 1440 contiguous frames and 1920000 audio samples; every accepted media/context hash and parent identity validates; automatic H.264/AAC video, audio and container streams are exactly 60.000 seconds",
+      "runtime_seconds": 1478.83,
+      "whole_device_vram_mib_baseline_peak_minimum_free": [1229.63, 12823.13, 3556.37],
+      "torch_peak_mib": 3496.30,
+      "growth_evidence": "running maximum reached 12784.24MiB at segment 3, increased only 38.89MiB at segment 9, then remained flat through segment 14; this single sequence shows no staircase leak",
+      "determinism_evidence": "the same prompt/seed segment-0 MP4 is bit-identical to the six-second preflight; context-file identity metadata differs while video_tail and audio_tail tensor payloads are bit-identical",
+      "video_seam_evidence": "13 seams: MAD median/max 0.04696/0.07420 and SSIM median/min 0.73139/0.64589; only 2 seams were locally highest MAD and inspection found no obvious hard cut in this walking-shot sample",
+      "audio_seam_evidence": "adjacent half-second level-change median -0.42dB and maximum absolute 13.75dB; 5ms bridge reduced median single-sample jump about 96.16 percent but does not repair level, semantics, rhythm, timbre or lip sync",
+      "final_sha256": "cb3bdf5bae847c6f0fe708d991bd35a736fdc012e44cb21ef612d7c0f2f83ed0",
+      "final_release_followup": "after fixing release timing, a real 256x256 one-step/two-segment chain recorded last_release_policy=unload_all_models and whole-device use fell from about 8124MiB at completion to 1230MiB within 15 seconds without a manual /free call",
+      "scope": "one local fixed-profile prompt/seed pass; repeated cold/warm runs, multiple materials, other GPUs, high resolutions/references, actual cross-version migration, network/shared-filesystem behavior and true GPU parallelism remain unverified; not a universal memory_safe, seamless or never-OOM claim"
+    },
+    "validated_auto_resume_probe": {
+      "checkpoint": "minimax_h3_fl2va_int8_convrot + Standard Turbo LoRA",
+      "resolution": [736, 416],
+      "internal_frames": 124,
+      "context_frames": 22,
+      "requested_output_seconds": 6.0,
+      "segment_output_frames": [124, 20],
+      "effective_output_frames": 144,
+      "steps": 4,
+      "memory_mode": "DynamicVRAM enabled",
+      "peak_vram_mib": [15461.4, 16181.5],
+      "result": "two-segment candidate generation, accepted-parent/context auto-resume, machine-bound four-step sampling identity, acceptance, complete-chain block, and accepted-file composition succeeded with exact 6.0s A/V streams",
+      "seam_evidence": "5ms bridge reduced the post-AAC single-sample jump by about 80.2%, but a 33.3dB adjacent-window level drop and locally maximal video MAD/SSIM discontinuity prevent a seamless claim",
+      "scope": "one two-segment real execution probe; not an 8-16 segment perceptual-quality, blind-listening, or VRAM safety result"
+    },
+    "validated_long_chain_probe": {
+      "checkpoint": "minimax_h3_fl2va_int8_convrot + Standard Turbo LoRA",
+      "resolution": [736, 416],
+      "internal_frames": 124,
+      "context_frames": 22,
+      "requested_output_seconds": 60.0,
+      "segment_output_frames": [124, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 102, 92],
+      "effective_output_frames": 1440,
+      "steps": 4,
+      "memory_mode": "one uninterrupted DynamicVRAM process; no explicit /free between segments",
+      "peak_vram_mib_min_median_max": [15479.95, 15772.78, 16228.17],
+      "segments_below_512_mib_free_margin": [5, 7, 11, 12, 13],
+      "result": "14-segment candidate generation, accepted-parent/context resume, acceptance, exact completion blocking, and unbridged/bridge composition succeeded with 1440-frame 60.000s A/V streams",
+      "video_seam_evidence": "13 seams: MAD median/max 0.01618/0.01906 and SSIM median/min 0.96374/0.92868; no hard cut in inspected worst contacts, but gradual appearance/exposure drift is visible",
+      "audio_seam_evidence": "adjacent half-second level-change median -9.51dB, maximum absolute 40.83dB; above-8kHz energy ratio changed -36.30dB from first to last segment; bridge reduced median post-AAC sample jump 97.23% but did not repair long-term audio degradation",
+      "scope": "one prompt/seed warm run; proves exact bounded execution, not identity preservation, seamless/lossless audio, blind-listening quality, cold/warm repeatability, or a 16GB safety tier"
+    },
+    "validated_local_memory_policy": {
+      "profile": "Stock + native DynamicVRAM headroom 2.0GiB",
+      "bound_contract": "RTX 4060 Ti 16GiB; FL2VA INT8 ConvRot; Standard four-step Turbo LoRA; 736x416; 124-frame render window; 22-frame AV context; dual_clock_euler/native_flow shift12/3; current whitelisted plugin set",
+      "controlled_matrix": "Stock and Sage each completed three cold and three warm trials at 736x416 and 1056x608 with every trial above 512MiB free; matching strategy+seed cold/warm outputs were bit-identical; VRAM polling was 0.10 seconds",
+      "blockcache_decision": "not default: the default threshold hit 0 of 4 forwards, retained about 117.7MiB CPU cache, and cannot skip the mandatory first full forward",
+      "sage_decision": "high-risk approximate speed experiment only: faster, but higher whole-device peak than Stock at equal headroom and material camera/pose/trajectory divergence in two of three 1056x608 seeds",
+      "full_chain_result": "Stock+h2 completed 14/14 accepted segments without restart or explicit /free; revision 14, 1440 frames, 1920000 audio samples, and both assembled H.264/AAC outputs were exact 60.000-second 736x416 24fps streams",
+      "full_chain_peak_vram_mib_min_median_max": [12829.44, 13137.67, 13640.09],
+      "full_chain_minimum_free_margin_mib": 2739.41,
+      "full_chain_growth_evidence": "warm first-to-last +182.81MiB and descriptive OLS +26.31MiB/segment, but the sequence was non-monotonic and did not show a staircase leak",
+      "determinism_evidence": "versus the prior same-prompt/same-seed Stock headroom-0.5 chain, all 14 segment MP4 SHA-256 values and all 13 continuation video_tail/audio_tail tensor payloads were identical",
+      "policy_delta": "median peak reduced about 2635MiB while total generation time increased about 1.63 percent",
+      "full_chain_three_seed_protocol": "three independent ComfyUI cold-start processes with base seeds 2608082000, 2608083101, and 2608083202; prompt, model, canvas, render window, AV context, sampling, and Stock+headroom-2.0 policy held fixed",
+      "full_chain_three_seed_result": "42/42 segments completed once with no OOM, retry, or candidate reuse; candidate/accepted video and context hashes, parent/revision chains, raw schema 1/2/2 manifests, 1440 frames, 1920000 samples, completion blocking, and six exact 60.000-second assemblies independently passed",
+      "full_chain_three_seed_peak_max_mib_min_median_max": [13414.01, 13426.72, 13640.09],
+      "full_chain_three_seed_minimum_free_margin_mib": 2739.41,
+      "full_chain_three_seed_segments_below_512_mib": 0,
+      "full_chain_three_seed_generation_seconds_min_median_max": [1334.251, 1344.719, 1358.531],
+      "full_chain_three_seed_quality": "local worst-seam contacts had no obvious hard cut, but all three timelines accumulated facial-age and identity drift; maximum adjacent half-second audio level gaps were 23.59-48.06dB, descriptive NCC medians 0.127-0.206, final-versus-first above-8kHz energy ratios -9.66 to -36.30dB, and the 5ms bridge reduced median post-AAC single-sample jumps 94.93-97.33 percent without repairing level, timbre, semantics, or recursive dulling",
+      "full_chain_three_seed_report": "artifacts/long-video-generation-check/stock-headroom2-60s-multiseed/analysis/REPORT.md",
+      "decision": "validated local conservative profile only; the fixed-profile cross-base-seed cold-start mechanical/memory gate passed, but long-term identity quality failed; this is not a general memory_safe tier or never-OOM guarantee, and same-seed whole-chain warm repeats, cross-prompt/material coverage, other GPUs, higher resolutions/reference counts, and desktop VRAM pressure still require separate gates"
+    },
+    "persistent_first_frame_identity_reference": {
+      "status": "implemented with a continuation-only dedicated identity image, single-reference or scene-plus-identity strategies, and an optional fixed injection interval; two unseen 32-second chains passed local mechanical/VRAM screens, but rhythm adherence, one multi-person framing seam, and lip-sync evidence remain unresolved; default off",
+      "input": "first_frame_reuse, persistent_identity_image, persistent_identity_strategy, and persistent_identity_interval are appended to MiniMaxH3LongVideoConditioningT8; segment0_only plus single_reference plus interval 1 are backward-compatible defaults",
+      "behavior": "segment 0 always keeps first_frame as the exact keyframe; on continuation, single_reference prefers the dedicated identity crop and falls back to the full first frame, while scene_plus_identity emits the full scene and crop as two non-timeline references alongside motion keyframes and the marked continuation-audio window; interval N injects only on continuation segments 1, 1+N, 1+2N, and so on",
+      "compatibility": "old input/widget prefixes and missing API values preserve segment0_only plus single_reference; the dedicated image is ignored unless persistent mode is active and never changes segment 0; no stable node, sampling math, global ComfyUI object, model, or full-history state is changed",
+      "fail_closed": "persistent mode requires first_frame, scene_plus_identity additionally requires persistent_identity_image, actual persistent plus user reference image count is capped at nine, and explicit FL2VA with references is rejected in favor of auto/Hybrid",
+      "cost_boundary": "one or two additional image-reference blocks and reference-image VAE encodes per continuation can increase sequence length, runtime, and VRAM or overconstrain motion",
+      "validated_face_visible_three_seed_probe": {
+        "controlled_input": "same source identity and face-visible low-motion prompt; base seeds 2608096001/2/3; FL2VA INT8, Standard four-step LoRA, Qwen3-VL NVFP4, both H3 VAEs, 736x416, 124-frame window, 22-frame AV context, Stock plus native DynamicVRAM 2GiB headroom, independent cold processes and unload_all_models",
+        "execution": "six chains and 12/12 prompts completed without OOM, retry or cache reuse; every pair retained byte-identical accepted segment-0 MP4 and AV-context hashes and changed only segment 1",
+        "media": "all six final files decode to exact 144-frame/6.000-second 24fps video plus exact 6.000-second 32kHz audio; the primary face was detected on all 60 continuation frames in each mode",
+        "identity_signal": "pooled persistent-minus-legacy InsightFace cosine mean +0.0424474 and median +0.0268420; 45/60 frames higher; seed means -0.0020399/+0.0699808/+0.0594012, so two seeds clearly improve and one is approximately neutral/slightly negative",
+        "resource_signal": "whole-device peak deltas -336.46/+294.12/-43.20MiB change sign and do not define fixed overhead; torch peak deltas +122.29/+120.61/+877.19MiB; runtime deltas +5.03/+3.61/+21.17s; post-15-second occupancy delta 0MiB in every pair",
+        "quality_result": "directionally positive short-chain identity evidence with no obvious hard cut or new face artifact; low-motion prompt cannot rule out motion suppression and does not prove deep-chain identity, audio, or human preference"
+      },
+      "validated_motion_rich_three_seed_probe": {
+        "controlled_input": "same source identity with continuous football tosses and wide arm motion; base seeds 2608097001/2/3; all model, sampling, canvas, context, cold-process and release controls match the low-motion matrix",
+        "execution": "six independent cold chains and 12/12 prompts completed without OOM, retry or cache reuse; every pair retained byte-identical accepted segment-0 MP4 and AV-context hashes and changed only segment 1; all final media are exact 144-frame/6.000-second video and 6.000-second 32kHz audio",
+        "identity_signal": "legacy detected 59/60 and persistent 60/60 continuation faces; across 59 paired detections cosine mean/median delta +0.0269638/+0.0196597 with 38/59 higher; seed means -0.0254073/+0.0292898/+0.0796427, so one seed regressed and two improved",
+        "motion_signal": "persistent-over-legacy temporal-MAD ratios 0.9658/1.1970/1.0030, flow-P90 ratios 0.8405/1.3747/1.0159 and normalized face-center-path ratios 1.1084/1.2221/1.1541; contact sheets show active ball and arm motion in both modes, rejecting an obvious systematic short-chain freeze but not subtler action suppression or prompt-adherence differences",
+        "resource_signal": "whole-device peak deltas +549.93/-378.29/-169.03MiB change sign; torch peak deltas +122.29/+133.10/+120.60MiB are consistently positive; runtime deltas +15.08/-15.14/+8.89s and post-15-second occupancy delta 0MiB in every pair",
+        "report": "artifacts/long-video-generation-check/identity-anchor-motion-rich-multiseed-analysis/REPORT.md"
+      },
+      "validated_intermediate_eight_segment_probe": {
+        "controlled_input": "one source and base seed 2608097101; matched prompt/model/sampling, 736x416, 124-frame window, 22-frame AV context, Stock plus native DynamicVRAM 2GiB, unload_all_models, two independent cold processes, 32 seconds/eight segments per mode",
+        "execution": "16/16 segment prompts completed without OOM, retry or cache reuse; both manifests revision 8; segment-0 MP4/context tensors byte-identical, all seven continuation MP4 hashes changed; both final files exact 768-frame/32.000-second video and 32.000-second 32kHz audio",
+        "identity_signal": "60 paired detected continuation samples have persistent-minus-legacy cosine mean/median +0.1008925/+0.0844391 with 53/60 higher and six of seven segment medians higher, but persistent itself falls from 0.6133849 in continuation 1 to 0.1336433 in continuation 7 and visual timeline review confirms both modes drift away from the source",
+        "motion_signal": "persistent-over-legacy flow-P90 ratios reach 0.5904 in one late segment; late contact strips retain active football and arm motion, so no literal freeze is seen, but lower action amplitude/trajectory remains a material warning",
+        "seam_audio_signal": "video seam MAD median/max legacy 0.04871/0.08773 versus persistent 0.06791/0.08125; maximum absolute adjacent half-second audio level gap 4.10/3.93dB, descriptive NCC median 0.250/0.267 and first-to-last above-8kHz energy change -11.23/-4.73dB; no blind listening, ASR, speaker or lip-sync test",
+        "resource_signal": "persistent-minus-legacy whole-device peak +84.54MiB, torch peak +122.29MiB, runtime +61.91s, persistent minimum free 3321.63MiB and post-15-second occupancy delta 0MiB",
+        "decision": "intermediate gate failed on identity depth and retains a motion-suppression warning; deny the three-seed 60-second matrix, keep default off and redesign identity conditioning first",
+        "report": "artifacts/long-video-generation-check/identity-anchor-intermediate-8segment-ab-seed2608097101/analysis/REPORT.md"
+      },
+      "validated_identity_crop_motion_rich_three_seed_probe": {
+        "controlled_input": "same motion-rich source/prompt, base seeds 2608097001/2/3, model/sampling/canvas/context/release controls, and independent cold processes as the earlier two-strategy matrix; a fixed 640x640 source crop resized to 512x512 was the continuation-only identity image",
+        "execution": "three new crop-only chains completed 6/6 prompts without OOM, retry, or cache reuse; segment-0 video and AV-tail hashes matched both existing baselines in every seed",
+        "identity_signal": "crop-minus-legacy pooled cosine mean/median +0.0827160/+0.0984536 with 54/59 paired detections higher and all three seed medians positive; crop-minus-full-scene +0.0557522/+0.0990135 with 47/59 higher, but seed 2608097003 mean/median regressed",
+        "decision": "crop-only improves legacy across these seeds but is not uniformly better than the full-scene single reference",
+        "report": "artifacts/long-video-generation-check/identity-anchor-crop-motion-rich-multiseed-analysis/REPORT.md"
+      },
+      "validated_scene_plus_identity_motion_rich_three_seed_probe": {
+        "execution": "three independent scene-plus-crop chains completed 6/6 prompts without OOM, retry, or cache reuse and preserved byte-identical segment 0; combined four-way contacts show active football/arm motion without an obvious new hard cut, freeze, or face artifact",
+        "identity_signal": "scene-plus-crop minus legacy pooled mean/median +0.1127789/+0.1162798 with 56/59 higher; minus full-scene +0.0845382/+0.0945541 with 52/60 higher; every seed median is positive and absolute per-seed medians stay within 0.02 of the better single strategy",
+        "resource_signal": "whole-device peaks 11994.73-12105.79MiB, minimum free 4273.71-4384.77MiB, Torch peaks 3734.91-3747.41MiB, runtime 208.39-213.92s, post-15-second occupancy 1231.63MiB",
+        "boundary": "the strategy was selected on these same seeds, so the result is a development gate rather than unbiased generalization evidence",
+        "report": "artifacts/long-video-generation-check/identity-anchor-scene-plus-crop-motion-rich-multiseed-analysis/REPORT.md"
+      },
+      "validated_scene_plus_identity_intermediate_eight_segment_probe": {
+        "controlled_input": "one independent 32-second/eight-segment cold chain with base seed 2608097101 and the same FL2VA INT8, Standard four-step LoRA, NVFP4 CLIP, dual VAE, 736x416, 124/22, Stock+DynamicVRAM h2, and unload_all_models controls",
+        "execution": "8/8 distinct prompts succeeded once without OOM, retry, or cache reuse; manifest revision 8 has output frame counts 124/102/102/102/102/102/102/32; segment-0 video and AV-tail hashes match both baselines; final video and audio are exact 768 frames/32.000 seconds",
+        "identity_signal": "continuation medians 0.6989496/0.6388768/0.6441070/0.6092270/0.7367208/0.6013633/0.5735967, last/first ratio 0.8206553; scene-plus-crop minus legacy pooled mean/median +0.4294471/+0.4666961 with 57/58 higher; minus full-scene +0.3377138/+0.3580239 with 59/63 higher; all seven segment medians beat both baselines",
+        "motion_signal": "scene-plus-crop/legacy temporal-MAD ratios 0.9859/0.7698/1.1782/0.9821/0.6467/1.0029/0.8669 and flow-P90 ratios 1.0732/0.5459/0.8749/0.8972/0.5382/0.8393/0.8280; flagged two-fps strips retain active ball, arm, and pose changes, so no literal freeze is seen but the predeclared 0.70 relative-motion floor fails",
+        "seam_audio_signal": "video seam MAD median/max 0.04459/0.07521; maximum adjacent half-second audio level gap 3.59dB, descriptive NCC median 0.390, first-to-last above-8kHz energy change -13.65dB; manual timeline/worst-seam review found no obvious new hard cut",
+        "resource_signal": "whole-device peak 12473.43MiB, minimum free 3906.07MiB, Torch peak 3747.61MiB, runtime 961.84s, post-15-second occupancy 1231.63MiB; one chain cannot establish a general no-leak or memory-safe tier",
+        "decision": "fixed-case mechanical, identity-depth, relative-audio, and 512MiB screens pass, but the composite gate fails on motion; keep Experimental/default-off and require unseen multi-seed/multi-source 32-second replication plus motion-regression work before any 60-second matrix",
+        "report": "artifacts/long-video-generation-check/identity-anchor-scene-plus-crop-intermediate-8segment-seed2608097101/analysis/REPORT.md"
+      },
+      "validated_interval_two_development_probe": {
+        "execution": "one matched 32-second/eight-segment development chain completed 8/8 prompts once without OOM, retry, or cache reuse; exact 768-frame/32-second media; runtime 825.92 seconds; whole-device peak/minimum-free/Torch peak 12744.43/3635.07/3735.12MiB; post-15-second occupancy 1231.63MiB",
+        "identity_signal": "continuation medians 0.69895/0.28768/0.41731/0.26741/0.70076/0.49031/0.36701 and last/first ratio 0.52509, below the every-segment scene-plus-identity ratio 0.82066",
+        "motion_signal": "versus legacy, temporal-MAD ratios 0.9859/0.9079/0.9982/0.7292/0.5244/0.7383/0.9453 and flow-P90 ratios 1.0732/0.8020/0.8921/0.6483/0.4571/0.6525/1.0473; failures occur on both due and skipped segments",
+        "decision": "fixed cadence reduction is not a validated motion-constraint solution; keep interval 1 as the workflow/default behavior and expose larger intervals only as a clearly labeled Experimental control"
+      },
+      "validated_unseen_32_second_cases": {
+        "shared_controls": "new source images, prompts and base seeds not used to select the strategy; 736x416, 124-frame window, 22-frame AV context, four-step Stock plus DynamicVRAM h2, interval 1, unload_all_models; each chain eight segments and exact 768-frame/32-second A/V",
+        "qipao_drum_dance": "8/8 once without OOM/retry/cache; runtime 872.95s, peak/minimum-free/Torch 12170.76/4208.74/3726.08MiB, post15 1231.63MiB; manual timeline retained the woman, qipao, courtyard and active fan dance without an obvious worst-seam cut; identity face sampling was sparse but continuation last/first ratio was 0.93654; audio max level gap 2.68dB and final-minus-first high-frequency ratio -3.41dB; requested 120 BPM versus descriptive 104.17 BPM estimate fails strict rhythm adherence",
+        "two_women_dialogue": "8/8 once without OOM/retry/cache; runtime 862.41s, peak/minimum-free/Torch 12227.57/4151.93/3738.38MiB, post15 1231.63MiB; both source identities were simultaneously detected in all 80 sampled frames, but segment 6 to 7 jumps from full-body to close framing; verified faster-whisper-small.en found both target phrases with best WER 0 while largely repeating them; mouth/audio proxy correlations 0.042/-0.008 with 85.4/27.1 percent detection coverage are not trained SyncNet evidence and do not establish lip sync",
+        "duration_policy": "the user retains arbitrary/60-second capability, but this validation cycle uses 32 seconds as the complete-chain gate for typical approximately 30-second work and does not require new 60-second rendering"
+      },
+      "validation_boundary": "the scene-plus-identity redesign now has one development 32-second chain plus two unseen-source 32-second mechanical/VRAM passes, but the fixed interval-2 experiment still fails motion, the drum case misses requested BPM, the multi-person case has a material framing seam, and lip sync remains unproven; keep default off and do not claim identity lock, action preservation, seamlessness, rhythm fidelity, lip-sync stability, memory safety, cross-GPU support, or high-resolution 32-second validation"
+    },
+    "validated_context_size_matrix": {
+      "contexts_compared": [5, 22],
+      "controlled_parameters": "same bit-identical accepted segment-0 MP4 and AV tail tensors within each resolution; same prompt, paired seed, FL2VA INT8 model, Standard Turbo LoRA, four-step sampling, render window, duration and DynamicVRAM arguments",
+      "resolutions": [[736, 416], [1056, 608]],
+      "repeat_protocol": "three paired seeds; alternating order; three independent cold starts per context; one same-process primer then three warm runs per context; 0.10-second VRAM polling; no explicit /free between warm trials",
+      "determinism_evidence": "segment-0 MP4 plus video/audio tail tensors were bit-identical within each resolution; all six matching context+seed cold/warm candidates were bit-identical",
+      "vram_evidence_0p3m": "cold 5/22 absolute peak means 15279.5/15224.0MiB with paired 22-minus-5 differences +96.6/-78.3/-184.9MiB; sampler pool means 3189.9/3495.3MiB; warm minimum margin 97.6MiB and 5/6 trials below 512MiB",
+      "vram_evidence_0p6m": "cold 5/22 absolute peak means 15739.0/15724.2MiB with paired 22-minus-5 differences -752.0/+10.8/+696.7MiB; sampler pool means 5753.4/6381.2MiB; warm minimum margin 33.6MiB and 6/6 trials below 512MiB",
+      "runtime_evidence": "5-frame cold/warm means were 86.53/69.27s versus 93.08/78.01s at 736x416, and 200.29/187.89s versus 230.38/218.40s at 1056x608",
+      "quality_evidence": "at 736x416 the three-seed 22-frame mean video MAD/SSIM and audio level/NCC were better; at 1056x608 5-frame mean MAD/SSIM was more continuous but may suppress motion, while 22-frame audio level/NCC was materially better and one seed showed a clear video boundary change",
+      "decision": "5-frame context is fast_context_5_experimental because runtime and sampler-pool savings repeat, but no absolute device-peak advantage repeats; 22 frames remains the current balanced default candidate; neither passes the 512MiB memory_safe gate"
+    },
+    "validated_39_frame_gate": {
+      "resolution": [736, 416],
+      "context_frames": 39,
+      "controlled_parameters": "same bit-identical accepted segment-0 MP4 and AV tail tensors as the 5/22-frame 0.3M controls; same three seeds, prompt, FL2VA INT8 model, Standard Turbo LoRA, four-step sampling and DynamicVRAM arguments",
+      "repeat_protocol": "three isolated cold starts and one same-process primer followed by three warm runs; 0.10-second VRAM polling; no explicit /free between warm trials",
+      "determinism_evidence": "all six runs succeeded; each matching seed's cold/warm candidate MP4 was bit-identical; 5/22/39 accepted segment-0 MP4 and video/audio tail tensor hashes were identical",
+      "vram_evidence": "cold/warm sampler-pool means 3799.32/3798.63MiB, about 303-304MiB above 22 frames; warm minimum free margin 77.35MiB and 3/3 trials below the 512MiB gate",
+      "runtime_evidence": "cold/warm means 101.65/87.38 seconds, about 8.56/9.37 seconds slower than 22 frames",
+      "quality_evidence": "manual contact-sheet inspection found one continuous low-motion boundary, one visible pose/framing jump, and one severe identity/shot discontinuity; mean video MAD/SSIM 0.08801/0.68411 versus 0.00839/0.95501 at 22 frames; audio NCC was higher but mean absolute level change remained 10.27dB",
+      "decision": "context_39_high_risk_experimental only; not a quality tier and not memory_safe",
+      "0p6m_decision": "not executed under the unchanged policy because the measured 0.6M/22-frame warm control already failed the 512MiB gate in all six trials and reached only 33.6MiB free; this is a predeclared safety-gate denial, not proof that 0.6M/39 must OOM"
+    },
+    "current_novram_limit": "On ComfyUI a464ac335, core EmptyMiniMaxH3LatentAV -> VAEDecodeAudio independently reproduces a CUDA-input/CPU-filter mismatch under --novram; the same audio VAE succeeds with DynamicVRAM enabled, so this is not attributed to the T8 AV Decode node",
+    "file_composition": "streaming H.264/AAC re-encode bounded to one video frame plus one segment PCM; exact absolute audio sample accounting; optional duration-preserving cosine boundary bridge",
+    "single_case_ab": "direct 22-frame sampler latent and 22-frame video-VAE re-encode were close; one last frame was materially worse; VAE re-encode was not promoted",
+    "status": "P1 generation, accepted-state, total-duration resume, initial P4 composition, and an explicit P2 background auto-queue/pause/resume/cancel/retry/release executor are implemented experimentally; model-free controls, one 256x256 one-step probe, one 736x416 four-step 60-second/14-segment strong-release background chain, a two-segment three-policy three-cold/three-warm matrix, repeated post-acceptance hard-kill recovery, same-queue dual-chain isolation, same-host Windows/NTFS process ownership/manifest serialization, the local on-disk schema-1 to schema-2 migration contract, eight acceptance-transaction fault-injection cases, two real-process transaction killpoints repeated across three rounds, and three same-prompt base-seed cold-start 60-second chains passed their mechanical/memory gates; all three long timelines showed facial-age/identity drift. The default-off full-first-frame strategy failed its 32-second identity-depth gate. A dedicated identity crop plus scene-and-identity dual-reference redesign then passed three development-seed short probes and strongly improved identity through one fixed 32-second/eight-segment chain, but failed the predeclared relative-motion floor; it remains default-off and the 60-second matrix is denied pending unseen multi-seed/multi-source intermediate replication and motion-regression work. Same-seed whole-chain warm repeats, cross-prompt multi-material quality, blind listening, arbitrary-instruction/power-loss recovery, cross-GPU/high-resolution profiles, complete released-version upgrade/downgrade matrices, network/shared-filesystem locking, true GPU parallelism, and any general memory_safe tier remain unresolved"
+  },
+  "experimental_speech": {
+    "category": "T8/MiniMax H3/Speech/Experimental",
+    "nodes": [
+      "MiniMaxH3VoiceProfileT8",
+      "MiniMaxH3SpeechPlanT8",
+      "MiniMaxH3SpeechConditioningT8",
+      "MiniMaxH3SpeechDecodeT8",
+      "MiniMaxH3SpeechVerifyT8",
+      "MiniMaxH3SpeechAssembleT8",
+      "MiniMaxH3DialogueScriptT8",
+      "MiniMaxH3DialogueTurnSelectT8",
+      "MiniMaxH3SpeechFinalizeT8",
+      "MiniMaxH3SpeechStudioT8"
+    ],
+    "positioning": "experimental audio-first use of the joint H3 AV model; not deterministic phoneme TTS and not a high-fidelity-clone claim",
+    "generation_models": "reuses connected H3 MODEL, Qwen3-VL CLIP, video VAE, and audio VAE; no hidden loader and no additional speech-generation checkpoint",
+    "modes": ["described_voice via T2VA", "reference_voice via Ref2VA"],
+    "dialogue_strategy": "two or three profiles are planned as independent per-turn generations, then assembled on an absolute-sample timeline; unverified joint multi-speaker generation is not exposed as stable",
+    "reference_contract": "explicit rights confirmation; 2-15 second bounded reference; 32kHz stereo CPU profile; attenuation-only preprocessing; in-workflow memory only",
+    "default_quality_probe": {
+      "steps": 20,
+      "sampler": "res_multistep",
+      "scheduler": "simple",
+      "canvas": [32, 32]
+    },
+    "node_default_release_policy": "clear_execution_cache",
+    "optional_verification": {
+      "asr": "lazy CPU faster-whisper; verify or exact ordered-target trim; model path is explicit and no model is downloaded silently",
+      "speaker": "lazy CPU WavLMForXVector cosine report; any threshold is dataset-dependent and report_cosine never gates output",
+      "peak": "final attenuation-only peak limiter, default -1 dBFS",
+      "release_policies": {
+        "keep_loaded": "keeps Comfy model cache intact",
+        "clear_execution_cache": "clears execution cache but is not proven to unload only H3 weights",
+        "unload_all_models": "strong global ComfyUI unload with an explicit global-side-effect report"
+      }
+    },
+    "api_examples": [
+      "examples/speech_described_api.json",
+      "examples/speech_reference_clone_api.json",
+      "examples/speech_dialogue_two_speaker_api.json"
+    ],
+    "frontend_workflows": [
+      "examples/workflows/H3_Speech_Described_Stock20_EXP.json",
+      "examples/workflows/H3_Speech_Reference_Clone_Stock20_EXP.json",
+      "examples/workflows/H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json"
+    ],
+    "validation_report": "docs/SPEECH_VALIDATION_REPORT.md",
+    "validated_real_probe": {
+      "date": "2026-08-10",
+      "hardware": "RTX 4060 Ti 16GiB; Windows; ComfyUI cbbc9dab1",
+      "checkpoint": "FL2VA pruned INT8, Qwen3-VL NVFP4, H3 video/audio VAEs",
+      "described_voice": "10.125s English sample; exact faster-whisper transcript; repeated same-seed PCM was identical",
+      "reference_voice": "ASR exact-target alignment reduced a 10.125s raw Ref2VA result with unrelated lead-in to a 4.465s exact transcript; same-seed aligned PCM repeated identically",
+      "speaker_signal": "one same-reference generated sample scored WavLM cosine 0.949587 while one deliberately different male control scored 0.484272; preliminary single-pair evidence only",
+      "dialogue": "two independently generated and aligned turns assembled to 9.81s with exact combined English transcript; the two located turn spans had WavLM cosine 0.247203",
+      "peak_limit": "current live Comfy node changed the clipped 324000-frame described sample from 0dBFS/4 clipped samples to -0.999854dBFS/0 clipped samples without changing length",
+      "whole_device_peak_mib_range": [16262.2, 16315.7],
+      "minimum_observed_headroom_mib_range": [64.0, 117.5],
+      "release_observation": "after explicit unload_all_models, the isolated server torch pool returned to 32-64MiB within 15 seconds",
+      "decision": "mechanically usable EXP prototype; 16GiB memory_safe label denied because observed headroom is below the 512MiB project gate"
+    },
+    "unvalidated_or_denied": [
+      "Chinese and multilingual ASR/CER",
+      "multi-speaker identity across a representative speaker set and blind ABX",
+      "calibrated emotion, rate, pitch, or acting intensity",
+      "joint multi-speaker generation",
+      "long-text continuity, cancellation, crash resume, ADR timing, and realtime streaming",
+      "three-cold plus three-warm staircase testing",
+      "a 16GiB memory_safe or never-OOM tier"
+    ],
+    "status": "P0 described/reference/dialogue mechanical probes and P1 native nodes implemented; remains Experimental"
+  },
+  "experimental_visual_reference_strength": {
+    "node": "MiniMaxH3VisualReferenceStrengthEXPT8",
+    "category": "T8/MiniMax H3/Conditioning/Experimental",
+    "conditioning_key": "minimax_visual_cond_noise_aug",
+    "h3_payload_key": "visual_cond_noise_aug",
+    "default": 0.999,
+    "range": [0.0, 1.0],
+    "step": 0.001,
+    "scope": "one global value for all MiniMax H3 image, video, video_audio, and visual-keyframe conditioning rows; audio conditioning is unchanged",
+    "behavior": "copies CONDITIONING metadata with node_helpers.conditioning_set_values; it does not alter MODEL, latent, VAE, text, audio strength, sampler, scheduler, sigmas, or DiT call count",
+    "visual_requirement": "rejects CONDITIONING without image/video/video_audio refs or minimax_keyframes",
+    "recommended_ab": [0.999, 0.995, 0.99, 0.98, 0.95],
+    "warnings": [
+      "experimental and may only mitigate overly smooth or waxy reference texture; improvement is not guaranteed",
+      "lower values can weaken identity, action, composition, and first/last-frame retention",
+      "0.950 and below are aggressive experiments",
+      "current ComfyUI H3 payload exposes one global value rather than a separate value per reference"
+    ],
+    "api_example": "examples/ref2va_visual_reference_strength_exp_api.json",
+    "frontend_workflow": "examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json",
+    "validated_real_probe": {
+      "date": "2026-08-10",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
+      "controls": "full Ref2VA INT8, Qwen3-VL NVFP4, both H3 VAEs, no LoRA, 736x416, 124 frames, 20 steps, seed 2608102201, dual_clock_euler/native_flow, shifts 12/3",
+      "matrix": ["no node", 0.999, 0.995, 0.99, 0.98, 0.95],
+      "default_equivalence": "decoded 124-frame RGB video and 325632-sample float32 audio were exactly equal between no-node and explicit 0.999; both maximum absolute errors were 0",
+      "repeatability": "two explicit 0.950 runs decoded to identical video and audio; both maximum absolute errors were 0",
+      "device_peak_mib_range": [16017.422, 16344.617],
+      "minimum_observed_headroom_mib_range": [34.883, 362.078],
+      "perceptual_decision": "single-case A/B proves the control is effective but does not establish a winning de-wax value; 0.995-0.950 changed pose, expression, motion or composition, and 0.950 had the largest output difference while its face high-pass proxy was lower than 0.999",
+      "evidence": "artifacts/ref2va-visual-strength-check/strength_matrix_summary.json"
+    },
+    "status": "implemented and real-model matrix-validated as an isolated EXP post-conditioning node; stable Conditioning and sampling paths remain unchanged"
   },
   "vram_validation": {
     "tool": "tools/validate_h3_vram.py",

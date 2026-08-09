@@ -47,6 +47,19 @@ DISABLE_DYNAMIC_VRAM_FLAGS = {
     "--cpu",
 }
 
+# These outputs are literal projections of the orchestrator's same-named inputs. Resolve only
+# values whose node contract guarantees identity; computed outputs such as length, prompt and seed
+# must remain links because their runtime values depend on the accepted manifest and segment plan.
+LITERAL_OUTPUT_INPUTS = {
+    "MiniMaxH3LongVideoOrchestratorT8": {
+        16: "steps",
+        17: "shift_video",
+        18: "shift_audio",
+        19: "sampler_name",
+        20: "scheduler",
+    },
+}
+
 
 class ValidationError(RuntimeError):
     pass
@@ -73,9 +86,26 @@ def _is_link(value: Any, node_ids: set[str]) -> bool:
     )
 
 
-def _direct_input(node: dict[str, Any], name: str, node_ids: set[str]) -> Any:
+def _direct_input(
+    node: dict[str, Any],
+    name: str,
+    node_ids: set[str],
+    prompt: dict[str, dict[str, Any]] | None = None,
+) -> Any:
     value = node.get("inputs", {}).get(name)
-    return None if _is_link(value, node_ids) else value
+    if not _is_link(value, node_ids):
+        return value
+    if prompt is None:
+        return None
+
+    source_id, source_slot = str(value[0]), value[1]
+    source = prompt[source_id]
+    source_map = LITERAL_OUTPUT_INPUTS.get(source["class_type"], {})
+    source_input_name = source_map.get(source_slot)
+    if source_input_name is None:
+        return None
+    source_value = source.get("inputs", {}).get(source_input_name)
+    return None if _is_link(source_value, node_ids) else source_value
 
 
 def load_api_prompt(path: Path) -> dict[str, dict[str, Any]]:
@@ -119,9 +149,9 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
             unets.append({
                 "node_id": node_id,
                 "class_type": class_type,
-                "name": _direct_input(node, "unet_name", node_ids)
-                or _direct_input(node, "ckpt_name", node_ids),
-                "weight_dtype": _direct_input(node, "weight_dtype", node_ids),
+                "name": _direct_input(node, "unet_name", node_ids, prompt)
+                or _direct_input(node, "ckpt_name", node_ids, prompt),
+                "weight_dtype": _direct_input(node, "weight_dtype", node_ids, prompt),
             })
 
     loras = []
@@ -132,25 +162,25 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
             loras.append({
                 "node_id": node_id,
                 "class_type": class_type,
-                "name": _direct_input(node, "lora_name", node_ids),
-                "strength_model": _direct_input(node, "strength_model", node_ids),
+                "name": _direct_input(node, "lora_name", node_ids, prompt),
+                "strength_model": _direct_input(node, "strength_model", node_ids, prompt),
             })
 
     conditioning = []
     for class_type in ("MiniMaxH3AudioConditioningT8", "MiniMaxH3StillConditioningT8"):
         for node_id, node in by_type.get(class_type, []):
-            width = _direct_input(node, "width", node_ids)
-            height = _direct_input(node, "height", node_ids)
-            length = _direct_input(node, "length", node_ids)
+            width = _direct_input(node, "width", node_ids, prompt)
+            height = _direct_input(node, "height", node_ids, prompt)
+            length = _direct_input(node, "length", node_ids, prompt)
             entry = {
                 "node_id": node_id,
                 "class_type": class_type,
                 "width": width,
                 "height": height,
                 "length": length,
-                "task_type": _direct_input(node, "task_type", node_ids),
-                "audio_mode": _direct_input(node, "audio_mode", node_ids),
-                "target_mode": _direct_input(node, "target_mode", node_ids),
+                "task_type": _direct_input(node, "task_type", node_ids, prompt),
+                "audio_mode": _direct_input(node, "audio_mode", node_ids, prompt),
+                "target_mode": _direct_input(node, "target_mode", node_ids, prompt),
             }
             if isinstance(width, int) and isinstance(height, int):
                 entry["pixel_area"] = width * height
@@ -164,19 +194,19 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
         sampling.append({
             "node_id": node_id,
             "class_type": class_type,
-            "steps": _direct_input(node, "steps", node_ids),
-            "video_steps": _direct_input(node, "video_steps", node_ids),
-            "audio_steps": _direct_input(node, "audio_steps", node_ids),
-            "shift_video": _direct_input(node, "shift_video", node_ids),
-            "shift_audio": _direct_input(node, "shift_audio", node_ids),
-            "scheduler": _direct_input(node, "scheduler", node_ids),
-            "sampler_name": _direct_input(node, "sampler_name", node_ids),
+            "steps": _direct_input(node, "steps", node_ids, prompt),
+            "video_steps": _direct_input(node, "video_steps", node_ids, prompt),
+            "audio_steps": _direct_input(node, "audio_steps", node_ids, prompt),
+            "shift_video": _direct_input(node, "shift_video", node_ids, prompt),
+            "shift_audio": _direct_input(node, "shift_audio", node_ids, prompt),
+            "scheduler": _direct_input(node, "scheduler", node_ids, prompt),
+            "sampler_name": _direct_input(node, "sampler_name", node_ids, prompt),
         })
 
     seeds = []
     for node_id, node in prompt.items():
         for key in ("noise_seed", "seed"):
-            value = _direct_input(node, key, node_ids)
+            value = _direct_input(node, key, node_ids, prompt)
             if isinstance(value, int):
                 seeds.append({"node_id": node_id, "input": key, "value": value})
 

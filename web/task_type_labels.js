@@ -1,6 +1,9 @@
 import { app } from "../../scripts/app.js";
 
-const NODE_ID = "MiniMaxH3AudioConditioningT8";
+const NODE_IDS = new Set([
+    "MiniMaxH3AudioConditioningT8",
+    "MiniMaxH3LongVideoConditioningT8",
+]);
 
 // Keep the backend/API values unchanged. Only the widget-facing strings are
 // localized so existing API prompts and old workflows remain compatible.
@@ -49,7 +52,7 @@ function localizeTaskTypeWidget(node) {
 app.registerExtension({
     name: "minimax-h3-audio-t8.task-type-labels",
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== NODE_ID) {
+        if (!NODE_IDS.has(nodeData.name)) {
             return;
         }
 

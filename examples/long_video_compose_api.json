@@ -1,0 +1,16 @@
+{
+  "1": {
+    "inputs": {
+      "chain_id": "h3_accepted_demo",
+      "filename_prefix": "H3_Long_Video",
+      "require_final_segment": true,
+      "audio_seam_policy": "cosine_bridge",
+      "bridge_ms": 5.0,
+      "crf": 18
+    },
+    "class_type": "MiniMaxH3LongVideoComposeAcceptedT8",
+    "_meta": {
+      "title": "Compose a contiguous accepted manifest without loading the whole movie as tensors"
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load full H3 Ref2VA INT8 model"}
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "5": {
+    "inputs": {"image": "replace_with_reference_image.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Replace with the Ref2VA reference image"}
+  },
+  "6": {
+    "inputs": {
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "prompt": "Use <Picture 1> as the visual reference. A natural cinematic portrait in soft window light, realistic skin pores, individual hair strands, detailed lace and fabric weave, subtle human motion, stable identity and composition. Natural room ambience, no music.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_images.ref_image_0": ["5", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Existing H3 Ref2VA conditioning (unchanged)"}
+  },
+  "7": {
+    "inputs": {
+      "positive": ["6", 0],
+      "reference_strength": 0.99
+    },
+    "class_type": "MiniMaxH3VisualReferenceStrengthEXPT8",
+    "_meta": {
+      "title": "EXP: test 0.999 -> 0.995 -> 0.990; <=0.950 may damage identity/endpoints"
+    }
+  },
+  "8": {
+    "inputs": {
+      "model": ["1", 0],
+      "av_latent": ["6", 1],
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Existing sampler settings; not modified by the EXP node"}
+  },
+  "9": {
+    "inputs": {"noise_seed": 2608102201},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Fixed A/B seed"}
+  },
+  "10": {
+    "inputs": {"model": ["8", 0], "conditioning": ["7", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "11": {
+    "inputs": {
+      "noise": ["9", 0],
+      "guider": ["10", 0],
+      "sampler": ["8", 1],
+      "sigmas": ["8", 2],
+      "latent_image": ["6", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample Ref2VA with fixed controls"}
+  },
+  "12": {
+    "inputs": {
+      "av_latent": ["11", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode H3 AV output"}
+  },
+  "13": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_T8/Ref2VA_visual_strength_EXP",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["12", 0],
+      "audio": ["12", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save synchronized comparison MP4"}
+  }
+}

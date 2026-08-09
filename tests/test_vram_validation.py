@@ -98,6 +98,48 @@ def test_analysis_identifies_control_inputs_treatment_and_non_four_step_warning(
     }
 
 
+def test_analysis_resolves_sampling_literals_projected_by_long_video_orchestrator():
+    prompt = make_prompt(steps=12)
+    prompt["0"] = {
+        "class_type": "MiniMaxH3LongVideoOrchestratorT8",
+        "inputs": {
+            "steps": 4,
+            "shift_video": 12.0,
+            "shift_audio": 3.0,
+            "sampler_name": "dual_clock_euler",
+            "scheduler": "native_flow",
+        },
+    }
+    prompt["4"]["inputs"].update({
+        "steps": ["0", 16],
+        "shift_video": ["0", 17],
+        "shift_audio": ["0", 18],
+        "sampler_name": ["0", 19],
+        "scheduler": ["0", 20],
+    })
+
+    analysis = analyze_prompt(prompt)
+    sampler = next(
+        item for item in analysis["treatment"]["sampling"]
+        if item["class_type"] == "MiniMaxH3DualClockSamplerT8"
+    )
+
+    assert sampler == {
+        "node_id": "4",
+        "class_type": "MiniMaxH3DualClockSamplerT8",
+        "steps": 4,
+        "video_steps": None,
+        "audio_steps": None,
+        "shift_video": 12.0,
+        "shift_audio": 3.0,
+        "scheduler": "native_flow",
+        "sampler_name": "dual_clock_euler",
+    }
+    assert "dual_clock_non_turbo_step_count" not in {
+        item["code"] for item in analysis["risks"]
+    }
+
+
 def test_load_api_prompt_rejects_frontend_workflow(tmp_path):
     path = tmp_path / "frontend.json"
     path.write_text(json.dumps({"nodes": [], "links": []}), encoding="utf-8")

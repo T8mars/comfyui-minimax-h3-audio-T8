@@ -1,0 +1,101 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load H3 FL2VA pruned INT8"}
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Reuse the standard H3 Qwen3-VL encoder"}
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "5": {
+    "inputs": {
+      "voice_mode": "described_voice",
+      "speaker_id": "narrator",
+      "voice_description": "an adult woman with a natural warm mid-low voice, close conversational presence, clear diction, restrained emotion, and realistic human micro-pauses",
+      "language": "English",
+      "rights_confirmed": false,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 0.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8",
+    "_meta": {"title": "Describe a synthetic voice; no clone reference"}
+  },
+  "6": {
+    "inputs": {
+      "text": "The lantern is still burning. We can begin when you're ready.",
+      "language": "English",
+      "acting_direction": "quiet, sincere, intimate, and naturally paced",
+      "emotion": "tender",
+      "emotion_intensity": 0.6,
+      "space": "studio",
+      "chunking": "single_segment",
+      "target_units": 18,
+      "max_units": 24,
+      "voice_profile": ["5", 0]
+    },
+    "class_type": "MiniMaxH3SpeechPlanT8",
+    "_meta": {"title": "Keep spoken text separate from performance direction"}
+  },
+  "7": {
+    "inputs": {
+      "segment_index": 0,
+      "seed": 2608099001,
+      "render_seconds": 10.0,
+      "resolution": 32,
+      "steps": 20,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "trim_mode": "none",
+      "verify_mode": "off",
+      "asr_model_directory": "",
+      "asr_language": "English",
+      "min_similarity": 0.85,
+      "unload_asr_after_verify": true,
+      "speaker_check_mode": "off",
+      "speaker_model_directory": "",
+      "min_speaker_similarity": 0.86,
+      "unload_speaker_after_verify": true,
+      "peak_limit_dbfs": -1.0,
+      "release_policy": "unload_all_models",
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "voice_profile": ["5", 0],
+      "speech_plan": ["6", 0]
+    },
+    "class_type": "MiniMaxH3SpeechStudioT8",
+    "_meta": {"title": "Native H3 Speech Studio; globally unload Comfy models afterward"}
+  },
+  "8": {
+    "inputs": {
+      "audio": ["7", 0],
+      "filename_prefix": "MiniMaxH3_T8_Speech/described_stock20"
+    },
+    "class_type": "SaveAudio",
+    "_meta": {"title": "Save generated speech"}
+  }
+}

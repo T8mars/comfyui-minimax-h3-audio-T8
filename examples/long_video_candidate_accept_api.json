@@ -1,0 +1,176 @@
+{
+  "1": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_video_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "2": {
+    "inputs": {"vae_name": "replace_with_minimax_h3_audio_vae.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "replace_with_qwen3vl_minimax_h3.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "4": {
+    "inputs": {
+      "unet_name": "replace_with_native_minimax_h3_diffusion_model.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load native H3 diffusion model"}
+  },
+  "5": {
+    "inputs": {
+      "lora_name": "replace_with_minimax_h3_turbo_4step_comfyui.safetensors",
+      "strength_model": 1.0,
+      "model": ["4", 0]
+    },
+    "class_type": "LoraLoaderBypassModelOnly",
+    "_meta": {"title": "H3 Turbo 4-step LoRA"}
+  },
+  "6": {
+    "inputs": {
+      "chain_id": "h3_accepted_demo",
+      "segment_index": 0,
+      "new_duration_seconds": 4.25,
+      "context_frames": 22,
+      "minimum_render_frames": 124,
+      "timeline_start_seconds": -1.0,
+      "is_final_segment": false
+    },
+    "class_type": "MiniMaxH3LongVideoPlannerT8",
+    "_meta": {"title": "Set segment_index and mark only the last segment final"}
+  },
+  "7": {
+    "inputs": {
+      "chain_id": ["6", 0],
+      "segment_index": ["6", 1]
+    },
+    "class_type": "MiniMaxH3LongVideoAcceptedContextLoadT8",
+    "_meta": {"title": "Load only the accepted parent"}
+  },
+  "8": {
+    "inputs": {
+      "model": ["5", 0],
+      "clip": ["3", 0],
+      "video_vae": ["1", 0],
+      "audio_vae": ["2", 0],
+      "context": ["7", 0],
+      "segment_index": ["6", 1],
+      "context_frames": ["6", 3],
+      "context_audio": "video_and_audio",
+      "prompt": "A continuous cinematic shot. Preserve subject identity, motion, lighting, camera trajectory, and synchronized ambience.",
+      "width": 736,
+      "height": 416,
+      "length": ["6", 2],
+      "task_type": "auto",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s"
+    },
+    "class_type": "MiniMaxH3LongVideoConditioningT8",
+    "_meta": {"title": "Generate from accepted bounded context"}
+  },
+  "9": {
+    "inputs": {
+      "model": ["8", 0],
+      "av_latent": ["8", 2],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Stable T8 dual-clock sampler"}
+  },
+  "10": {
+    "inputs": {"noise_seed": ["17", 0]},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Change this seed to re-roll the current candidate"}
+  },
+  "11": {
+    "inputs": {"model": ["9", 0], "conditioning": ["8", 1]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "CFG-disabled basic guider"}
+  },
+  "12": {
+    "inputs": {
+      "noise": ["10", 0],
+      "guider": ["11", 0],
+      "sampler": ["9", 1],
+      "sigmas": ["9", 2],
+      "latent_image": ["8", 2]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample one bounded H3 segment"}
+  },
+  "13": {
+    "inputs": {
+      "av_latent": ["12", 0],
+      "video_vae": ["1", 0],
+      "audio_vae": ["2", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode current segment only"}
+  },
+  "14": {
+    "inputs": {
+      "frames": ["13", 0],
+      "start_seconds": ["6", 4],
+      "duration_seconds": ["6", 5],
+      "fps": 24.0,
+      "audio": ["13", 1]
+    },
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "_meta": {"title": "Remove reconstructed head context from AV"}
+  },
+  "15": {
+    "inputs": {
+      "frames": ["14", 0],
+      "audio": ["14", 1],
+      "av_latent": ["12", 0],
+      "chain_id": ["6", 0],
+      "segment_index": ["6", 1],
+      "timeline_start_seconds": ["6", 6],
+      "save_context": ["6", 8],
+      "parent_candidate_id": ["7", 2],
+      "parent_manifest_revision": ["7", 3],
+      "candidate_id": "",
+      "model_id": "replace_with_model_and_lora_id",
+      "sampling_summary": "4-step dual_clock_euler/native_flow shift12/3",
+      "prompt": ["8", 4],
+      "seed": ["17", 0],
+      "bit_depth": 8,
+      "crf": 18
+    },
+    "class_type": "MiniMaxH3LongVideoCandidateSaveT8",
+    "_meta": {"title": "Atomically save a candidate; accepted history is unchanged"}
+  },
+  "16": {
+    "inputs": {
+      "candidate_json_path": ["15", 0],
+      "accept_candidate": false,
+      "replace_policy": "reject_existing",
+      "strict_chain_identity": true
+    },
+    "class_type": "MiniMaxH3LongVideoAcceptCandidateT8",
+    "_meta": {"title": "Preview first; toggle accept_candidate only after review"}
+  },
+  "17": {
+    "inputs": {"value": 123456789},
+    "class_type": "PrimitiveInt",
+    "_meta": {"title": "One seed shared by RandomNoise and candidate audit"}
+  }
+}

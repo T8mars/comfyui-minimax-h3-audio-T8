@@ -1,0 +1,161 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader"
+  },
+  "5": {
+    "inputs": {
+      "voice_mode": "described_voice",
+      "speaker_id": "alice",
+      "voice_description": "an adult woman with a warm clear mid-low voice, intimate natural diction, and restrained emotion",
+      "language": "English",
+      "rights_confirmed": false,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 0.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "6": {
+    "inputs": {
+      "voice_mode": "described_voice",
+      "speaker_id": "bruno",
+      "voice_description": "an older adult man with a deep weathered baritone, calm chest resonance, and deliberate human pacing",
+      "language": "English",
+      "rights_confirmed": false,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 0.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "7": {
+    "inputs": {
+      "script": "{\"turns\":[{\"speaker_id\":\"alice\",\"text\":\"You came back before the rain.\",\"direction\":\"soft relief after a long wait\",\"emotion\":\"tender\",\"emotion_intensity\":0.65,\"pause_before_seconds\":0.0,\"pan\":-0.22},{\"speaker_id\":\"bruno\",\"text\":\"I promised I would find the road home.\",\"direction\":\"tired but quietly reassuring\",\"emotion\":\"relieved\",\"emotion_intensity\":0.7,\"pause_before_seconds\":0.35,\"pan\":0.22}]}",
+      "script_format": "json",
+      "default_language": "English",
+      "default_space": "living_room",
+      "voice_profiles.voice_profile_0": ["5", 0],
+      "voice_profiles.voice_profile_1": ["6", 0]
+    },
+    "class_type": "MiniMaxH3DialogueScriptT8"
+  },
+  "8": {
+    "inputs": {"dialogue_plan": ["7", 0], "turn_index": 0},
+    "class_type": "MiniMaxH3DialogueTurnSelectT8"
+  },
+  "9": {
+    "inputs": {"dialogue_plan": ["7", 0], "turn_index": 1},
+    "class_type": "MiniMaxH3DialogueTurnSelectT8"
+  },
+  "10": {
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "voice_profile": ["8", 0],
+      "speech_plan": ["8", 1],
+      "segment_index": 0,
+      "seed": 2608101001,
+      "render_seconds": 10.0,
+      "resolution": 32,
+      "steps": 20,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "trim_mode": "none",
+      "verify_mode": "trim_exact_target",
+      "asr_model_directory": "faster-whisper-small.en-d1d751a5",
+      "asr_language": "English",
+      "min_similarity": 0.85,
+      "unload_asr_after_verify": true,
+      "speaker_check_mode": "off",
+      "speaker_model_directory": "",
+      "min_speaker_similarity": 0.86,
+      "unload_speaker_after_verify": true,
+      "peak_limit_dbfs": -1.0,
+      "release_policy": "keep_loaded"
+    },
+    "class_type": "MiniMaxH3SpeechStudioT8"
+  },
+  "11": {
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "voice_profile": ["9", 0],
+      "speech_plan": ["9", 1],
+      "segment_index": 0,
+      "seed": 2608101002,
+      "render_seconds": 10.0,
+      "resolution": 32,
+      "steps": 20,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "trim_mode": "none",
+      "verify_mode": "trim_exact_target",
+      "asr_model_directory": "faster-whisper-small.en-d1d751a5",
+      "asr_language": "English",
+      "min_similarity": 0.85,
+      "unload_asr_after_verify": true,
+      "speaker_check_mode": "off",
+      "speaker_model_directory": "",
+      "min_speaker_similarity": 0.86,
+      "unload_speaker_after_verify": true,
+      "peak_limit_dbfs": -1.0,
+      "release_policy": "keep_loaded"
+    },
+    "class_type": "MiniMaxH3SpeechStudioT8"
+  },
+  "12": {
+    "inputs": {
+      "speech_plan": ["7", 0],
+      "output_sample_rate": 32000,
+      "crossfade_seconds": 0.06,
+      "peak_limit_dbfs": -1.0,
+      "audio_segments.audio_segment_0": ["10", 0],
+      "audio_segments.audio_segment_1": ["11", 0]
+    },
+    "class_type": "MiniMaxH3SpeechAssembleT8"
+  },
+  "13": {
+    "inputs": {
+      "audio": ["12", 0],
+      "release_policy": "unload_all_models"
+    },
+    "class_type": "MiniMaxH3SpeechFinalizeT8"
+  },
+  "14": {
+    "inputs": {
+      "audio": ["13", 0],
+      "filename_prefix": "MiniMaxH3_T8_Speech/dialogue_two_speaker_stock20"
+    },
+    "class_type": "SaveAudio"
+  }
+}
