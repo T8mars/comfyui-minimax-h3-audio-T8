@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 36
+    assert len(ids) == 48
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -75,7 +75,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         long_video_schema = schemas[ids.index(long_video_id)]
         assert long_video_schema.is_experimental is True
         assert long_video_schema.category == "T8/MiniMax H3/Long Video/Experimental"
-    assert ids[-3:-1] == [
+    assert ids[33:35] == [
         "MiniMaxH3SpeechFinalizeT8",
         "MiniMaxH3SpeechStudioT8",
     ]
@@ -91,8 +91,20 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3DialogueTurnSelectT8",
         "MiniMaxH3SpeechFinalizeT8",
         "MiniMaxH3SpeechStudioT8",
+        "MiniMaxH3SpeechGuardT8",
+        "MiniMaxH3SpeechVRAMPreflightT8",
+        "MiniMaxH3VoiceLibrarySaveT8",
+        "MiniMaxH3VoiceLibraryLoadT8",
+        "MiniMaxH3VoiceLibraryDeleteT8",
+        "MiniMaxH3SpeechPerformanceT8",
+        "MiniMaxH3SpeechADRFitT8",
+        "MiniMaxH3SpeechLongFormStartT8",
+        "MiniMaxH3SpeechLongFormAcceptT8",
+        "MiniMaxH3SpeechLongFormControlT8",
+        "MiniMaxH3SpeechLongFormComposeT8",
+        "MiniMaxH3JointDialogueConditioningT8",
     }
-    assert ids[-11:-1] == [
+    assert ids[25:35] == [
         "MiniMaxH3VoiceProfileT8",
         "MiniMaxH3SpeechPlanT8",
         "MiniMaxH3SpeechConditioningT8",
@@ -104,7 +116,21 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpeechFinalizeT8",
         "MiniMaxH3SpeechStudioT8",
     ]
-    assert ids[-1] == "MiniMaxH3VisualReferenceStrengthEXPT8"
+    assert ids[35] == "MiniMaxH3VisualReferenceStrengthEXPT8"
+    assert ids[36:] == [
+        "MiniMaxH3SpeechGuardT8",
+        "MiniMaxH3SpeechVRAMPreflightT8",
+        "MiniMaxH3VoiceLibrarySaveT8",
+        "MiniMaxH3VoiceLibraryLoadT8",
+        "MiniMaxH3VoiceLibraryDeleteT8",
+        "MiniMaxH3SpeechPerformanceT8",
+        "MiniMaxH3SpeechADRFitT8",
+        "MiniMaxH3SpeechLongFormStartT8",
+        "MiniMaxH3SpeechLongFormAcceptT8",
+        "MiniMaxH3SpeechLongFormControlT8",
+        "MiniMaxH3SpeechLongFormComposeT8",
+        "MiniMaxH3JointDialogueConditioningT8",
+    ]
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",

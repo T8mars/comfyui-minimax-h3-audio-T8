@@ -381,8 +381,9 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 MiniMaxH3LongVideoOrchestratorT8,
                 MiniMaxH3LongVideoBackgroundStartT8,
                 MiniMaxH3LongVideoAutoQueueT8,
-                *SPEECH_NODE_CLASSES,
-                MiniMaxH3VisualReferenceStrengthEXPT8]
+                *SPEECH_NODE_CLASSES[:10],
+                MiniMaxH3VisualReferenceStrengthEXPT8,
+                *SPEECH_NODE_CLASSES[10:]]
 
 
 def comfy_entrypoint():

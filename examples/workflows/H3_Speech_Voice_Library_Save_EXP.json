@@ -1,0 +1,269 @@
+{
+  "id": "7c41dcf8-af07-46f9-93a6-25872bf3e846",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadAudio",
+      "title": "Load Audio",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "speech_reference.flac"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3VoiceProfileT8",
+      "title": "MiniMax H3 Voice Profile / 音色资料 (EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        502
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "voice_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "voice_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "speaker_id",
+          "type": "STRING",
+          "widget": {
+            "name": "speaker_id"
+          },
+          "link": null
+        },
+        {
+          "name": "voice_description",
+          "type": "STRING",
+          "widget": {
+            "name": "voice_description"
+          },
+          "link": null
+        },
+        {
+          "name": "language",
+          "type": "COMBO",
+          "widget": {
+            "name": "language"
+          },
+          "link": null
+        },
+        {
+          "name": "rights_confirmed",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "rights_confirmed"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_start_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_start_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "reference_duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "highpass_60hz",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "highpass_60hz"
+          },
+          "link": null
+        },
+        {
+          "name": "peak_limit_minus_3_dbfs",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "peak_limit_minus_3_dbfs"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_audio",
+          "type": "AUDIO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "prepared_reference_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3VoiceProfileT8"
+      },
+      "widgets_values": [
+        "reference_voice",
+        "licensed_voice",
+        "the same adult speaker as the connected licensed reference, with natural clear diction",
+        "English",
+        true,
+        0.0,
+        10.0,
+        true,
+        true
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3VoiceLibrarySaveT8",
+      "title": "MiniMax H3 Voice Library Save / 保存音色 (EXP/T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "library_name",
+          "type": "STRING",
+          "widget": {
+            "name": "library_name"
+          },
+          "link": null
+        },
+        {
+          "name": "replace_existing",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "replace_existing"
+          },
+          "link": null
+        },
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3VoiceLibrarySaveT8"
+      },
+      "widgets_values": [
+        "my_licensed_voice",
+        false
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      9,
+      "AUDIO"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      2,
+      "H3_T8_VOICE_PROFILE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Speech Voice Library Save EXP"
+  },
+  "version": 0.4
+}

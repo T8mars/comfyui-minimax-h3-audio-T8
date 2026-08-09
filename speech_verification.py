@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import threading
 from typing import Mapping
+import unicodedata
 
 import numpy as np
 import torch
@@ -74,11 +75,26 @@ def transcript_metrics(expected: str, heard: str) -> dict:
     expected_units = normalized_asr_units(expected)
     heard_units = normalized_asr_units(heard)
     distance = _levenshtein(expected_units, heard_units)
+    expected_nfkc = unicodedata.normalize("NFKC", str(expected or "")).casefold()
+    heard_nfkc = unicodedata.normalize("NFKC", str(heard or "")).casefold()
+    expected_characters = [character for character in expected_nfkc if character.isalnum()]
+    heard_characters = [character for character in heard_nfkc if character.isalnum()]
+    character_distance = _levenshtein(expected_characters, heard_characters)
+    contains_cjk = bool(
+        re.search(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]", expected_nfkc)
+    )
+    primary_name = "CER" if contains_cjk else "WER"
     return {
         "expected_units": len(expected_units),
         "heard_units": len(heard_units),
         "edit_distance": distance,
         "word_or_character_error_rate": distance / max(1, len(expected_units)),
+        "primary_metric": primary_name,
+        "primary_error_rate": distance / max(1, len(expected_units)),
+        "character_error_rate": character_distance / max(1, len(expected_characters)),
+        "character_edit_distance": character_distance,
+        "expected_characters": len(expected_characters),
+        "heard_characters": len(heard_characters),
         "normalized_similarity": max(
             0.0,
             1.0 - distance / max(1, len(expected_units), len(heard_units)),

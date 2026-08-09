@@ -1,7 +1,7 @@
 # MiniMax H3 T8 Experimental Speech Validation Report
 
 Validation date: 2026-08-10
-Speech checkpoint: 1.8.0; included in plugin release 1.9.0
+Speech checkpoint: 1.10.0 reliability/long-form expansion
 ComfyUI commit: `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`
 Status: Experimental; this report does not establish a stable TTS, high-fidelity voice clone,
 or 16GiB memory-safe tier.
@@ -41,6 +41,9 @@ they remain optional plugin dependencies and are not distributable project asset
 - [faster-whisper small.en](https://huggingface.co/Systran/faster-whisper-small.en), revision
   `d1d751a5f8271d482d14ca55d9e2deeebbae577f`, runtime directory
   `F:\AI-T8-video-onekey\ComfyUI\models\TTS\faster-whisper-small.en-d1d751a5`;
+- [faster-whisper multilingual small](https://huggingface.co/Systran/faster-whisper-small), revision
+  `536b0662742c02347bc0e980a01041f333bce120`, runtime directory
+  `F:\AI-T8-video-onekey\ComfyUI\models\TTS\faster-whisper-small-multilingual-536b0662`;
 - [Microsoft WavLM Base Plus Speaker Verification](https://huggingface.co/microsoft/wavlm-base-plus-sv), revision
   `feb593a6c23c1cc3d9510425c29b0a14d2b07b1e`, runtime directory
   `F:\AI-T8-video-onekey\ComfyUI\models\TTS\wavlm-base-plus-sv-feb593a6`.
@@ -131,6 +134,102 @@ fresh isolated ComfyUI runtime with ASR and speaker QA disabled:
 The node completed in 0.625s and preserved sample count and sample rate. Unit tests also verify
 that the limiter never boosts an already quiet signal.
 
+## 1.10 reliability and creator-workflow expansion
+
+### Upstream failure guard
+
+`Speech Studio` now arms a prompt-lifecycle guard before Conditioning. Normal Finalize completion
+disarms it. If the prompt ends first, the guard requests the configured release policy through the
+same Comfy queue mechanism and writes a recovery event under
+`output/minimax_h3_t8/speech_recovery`.
+
+A real Stock20 prompt completed sampling and was then forced to fail in ASR before Finalize. Prompt
+`f02cc595-8c46-4101-8df7-d5efff1c3c7c` produced an
+`abnormal_prompt_end_before_finalize` recovery event with `unload_all_models` and
+`release_requested=true`; after 15 seconds the isolated device reported about 15.9GiB free and a
+32MiB torch pool. A successful Chinese prompt did not create an abnormal event. Current ComfyUI
+also globally unloads on recognized CUDA OOM. These observations close the tested non-OOM/cancel
+gap; they do not guarantee callback execution after process termination, driver reset, power loss,
+or on untested ComfyUI releases.
+
+### Multilingual text metrics
+
+A pinned multilingual faster-whisper small CTranslate2 directory is installed at
+`ComfyUI/models/TTS/faster-whisper-small-multilingual-536b0662`. The new validation tool reports WER
+for space-delimited languages and raw Unicode CER for CJK. It deliberately does not normalize
+simplified and traditional Chinese into the same character.
+
+One Chinese Stock20 sentence completed. Expected `夜色很安静，我们现在可以开始了。`; transcript
+`夜色很安靜,我们现在可以开始了`; raw CER 1/14 = 7.14%. This is a useful plumbing probe but fails the
+pre-registered minimum of 30 H3 samples per language. No stable Chinese or multilingual claim is
+allowed.
+
+### Ten-speaker identity distribution and ABX package
+
+Ten distinct speakers from the licensed LibriSpeech test-clean split each produced one Ref2VA
+Stock20 target sentence. WavLM evaluation generated 10 genuine and 90 impostor scores:
+
+- genuine range: 0.91315-0.98267;
+- impostor 95th percentile: 0.885771;
+- impostor maximum: 0.897372;
+- 10/10 genuine scores exceeded the impostor 95th-percentile threshold.
+
+A randomized 30-file blind ABX package, listener sheet, and separate answer key were created. No
+human listener has completed it, and there is only one generated sentence per speaker. Therefore
+this is population-level machine evidence, not a high-fidelity-clone claim.
+
+### Prompt-level performance controls and deterministic ADR
+
+A same-seed seven-case Stock20 matrix compared slow/natural/fast pace, low/natural/high pitch and
+low/natural/high energy. Every generation succeeded, but all monotonic gates failed:
+
+| Control | Ordered measurements | Result |
+|---|---|---|
+| pace words/s | 2.0258 / 2.0110 / 2.0110 | failed |
+| median F0 Hz | 105.263 / 100.629 / 100.000 | failed |
+| RMS dBFS | -17.498 / -17.577 / -17.833 | failed |
+
+Emotion/intensity has no independent perceptual classifier or human rating matrix. Pace, pitch,
+energy and intensity remain `uncalibrated_prompt_direction`; they are not numeric acoustic controls.
+
+The separate ADR node provides deterministic operations: exact-sample refuse/pad-trim/bounded
+phase-vocoder fit and optional pitch shift. Unit and real workflow probes reached zero output-sample
+error and rejected rates outside the explicit range. Sample-exact duration is not phoneme alignment
+or lip-sync evidence.
+
+The explicit persistent voice path also completed a live isolated-server Save -> Load -> recoverable
+Delete cycle. Save/Load are output nodes so standalone maintenance workflows execute; same-name
+replacement remains opt-in, and Delete moved the entry to local trash instead of erasing it.
+
+### Durable long-form state and completed-chunk preview
+
+The long-form path atomically writes a CPU safetensors chunk and SHA-256 before advancing its
+manifest, also writes a playable FLAC, and returns that FLAC to the node UI. The Start/Resume node
+uses the durable manifest hash as its ComfyUI cache fingerprint, so requeueing the same workflow
+advances rather than replaying a cached segment.
+
+- A real 32-second, four-segment Stock20 chain composed to exactly 1,024,000 samples at 32kHz. Full
+  ASR WER was 21.43%, so exact duration did not pass the strict long-text accuracy gate.
+- A separate four-segment workflow was queued four times. Accepted count advanced 1/4, 2/4, 3/4,
+  4/4 with no stale cache; every per-segment text similarity was 1.0. Final crossfaded output was
+  513,280 samples (16.04s), matching its accepted timeline.
+- Synthetic state matrices covered 32 seconds (8 chunks), 2 minutes (30 chunks), and 10 minutes
+  (150 chunks). Every accepted chunk survived an in-memory session discard, SHA verification and
+  restart-style resume; final sample counts were exact and cooperative cancel/clear worked.
+
+The 2/10-minute matrix validates persistence mechanics only. Real H3 voice continuity, spectral
+drift and identity over those durations remain untested. `request_cancel` is checked between
+segments; use ComfyUI Stop for the currently running sampler. The UI preview is completed-chunk
+preview, not token/frame realtime streaming.
+
+### Joint multi-speaker denial
+
+Two 2-speaker Joint Ref2VA Stock20 probes completed mechanically. Both generated the requested
+sentences plus substantial unrequested speech. WER was 2.25 before prompt tightening and 2.375
+after tightening. Speaker attribution was therefore not evaluated further. Joint remains an
+explicitly denied EXP path; independent-turn generation and exact-sample assembly remain the
+recommended dialogue design.
+
 ## VRAM and release observations
 
 | Probe | Runtime | Whole-device peak |
@@ -152,19 +251,25 @@ With explicit `unload_all_models`, the isolated ComfyUI process's reported torch
 32-64MiB within 15s after successful completion. `clear_execution_cache` did not prove H3-only
 weight unloading. `unload_all_models` is global and may evict every ComfyUI model.
 
-The Finalize node is downstream. If sampling raises or OOMs before Finalize, ComfyUI aborts the
-graph and the release request does not run. This version therefore has no finally-level global
-release guarantee for upstream failures.
+Three separate cold processes succeeded with peaks 16284.6/16299.3/16284.2MiB and only
+80.7-95.8MiB free. Three same-process `keep_loaded` runs also succeeded; peak range was 78.56MiB,
+but minimum free headroom reached about 16.72MiB and the baseline residency increased by about
+15143MiB from first to last. This is a material residency staircase even though the peak ceiling
+did not stair-step. `keep_loaded` is therefore not a safe 16GiB default.
+
+The lifecycle guard now covers the tested upstream non-OOM/cancel exit before Finalize. Recognized
+OOM cleanup still relies on current ComfyUI's global OOM handler. Cross-GPU behavior remains
+unvalidated.
 
 ## Mechanical verification
 
-- Full project suite: `173 passed`.
+- Full project suite: `204 passed` (four upstream Triton deprecation warnings only).
 - Ruff: all checks passed.
 - ComfyUI CPU whitelist import: passed.
-- Live isolated `/object_info`: all 10 speech nodes found; Studio category and eight outputs
-  correct; `peak_limit_dbfs` present.
-- Three API examples and three ComfyUI 0.4 frontend workflows parse and are covered by structural
-  tests; the frontend files also passed live isolated `/object_info` input/output type validation.
+- Live isolated `/object_info`: all 22 speech nodes found; Studio category/eight outputs and new
+  guard, preflight, persistence, ADR, long-form and Joint schemas loaded.
+- Twelve speech ComfyUI 0.4 frontend workflows and their API prompts were generated; placeholder
+  references remain intentionally unresolved until users supply licensed audio.
 
 Raw WebSocket events, 0.1s telemetry samples, server logs, and probe prompts remain under the
 gitignored `artifacts/speech-generation-check` directory. Generated audio remains under the normal
@@ -174,14 +279,15 @@ ComfyUI `output/MiniMaxH3_T8_Speech` directory and is not part of the repository
 
 The following remain unvalidated or explicitly denied:
 
-- Chinese and other multilingual WER/CER;
-- at least 10 licensed speakers, impostor calibration, and blind ABX;
-- calibrated emotion/intensity/rate/pitch controls;
-- joint multi-speaker generation and stable overlapping dialogue;
-- 32s/2min/10min continuity, accepted-state resume, cancellation, and crash recovery;
-- ADR exact-duration fitting and real-time streaming;
-- three cold plus three warm runs and a continuous three-job staircase test;
-- cross-GPU/high-resolution profiles;
+- 30 H3 samples per language for Chinese and other multilingual WER/CER;
+- at least three human listeners completing ABX, with multiple generated sentences per speaker;
+- calibrated emotion/intensity/rate/pitch controls (the first acoustic monotonic matrix failed);
+- stable Joint multi-speaker generation and overlapping-dialogue attribution (current probe denied);
+- real H3 2min/10min continuity, identity and spectrum drift;
+- active-sampler background hard cancellation and token/frame realtime streaming;
+- ADR phoneme alignment and visual lip synchronization;
+- persistent-library cross-process/network-share/privacy-lifecycle stress;
+- cross-GPU/high-resolution profiles and three-cold/three-warm repeats on another GPU;
 - a 16GiB memory-safe tier.
 
 These gates remain tracked in `roadmap.md`. Reference-voice use requires actual consent or another

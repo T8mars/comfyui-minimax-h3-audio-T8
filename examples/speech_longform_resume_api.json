@@ -1,0 +1,91 @@
+{
+  "1": {
+    "inputs": {"unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors", "weight_dtype": "default"},
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {"clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "type": "minimax", "device": "default"},
+    "class_type": "CLIPLoader"
+  },
+  "3": {"inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"}, "class_type": "VAELoader"},
+  "4": {"inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"}, "class_type": "VAELoader"},
+  "5": {
+    "inputs": {
+      "voice_mode": "described_voice",
+      "speaker_id": "longform_narrator",
+      "voice_description": "an adult narrator with a natural warm mid-low voice, clear diction, steady identity and restrained delivery",
+      "language": "English",
+      "rights_confirmed": false,
+      "reference_start_seconds": 0.0,
+      "reference_duration_seconds": 0.0,
+      "highpass_60hz": true,
+      "peak_limit_minus_3_dbfs": true
+    },
+    "class_type": "MiniMaxH3VoiceProfileT8"
+  },
+  "6": {
+    "inputs": {
+      "text": "The first section begins in a quiet room. The second section keeps the same calm rhythm. The third section continues without changing speakers. The final section closes the demonstration.",
+      "language": "English",
+      "acting_direction": "calm, consistent narration with clear diction and natural micro-pauses",
+      "emotion": "neutral",
+      "emotion_intensity": 0.4,
+      "space": "studio",
+      "chunking": "language_aware",
+      "target_units": 8,
+      "max_units": 12,
+      "voice_profile": ["5", 0]
+    },
+    "class_type": "MiniMaxH3SpeechPlanT8"
+  },
+  "7": {
+    "inputs": {"job_id": "speech_longform_demo_001", "speech_plan": ["6", 0]},
+    "class_type": "MiniMaxH3SpeechLongFormStartT8"
+  },
+  "8": {
+    "inputs": {
+      "seed": 2608108001,
+      "render_seconds": 8.0,
+      "resolution": 32,
+      "steps": 20,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "trim_mode": "none",
+      "verify_mode": "trim_exact_target",
+      "asr_model_directory": "faster-whisper-small-multilingual-536b0662",
+      "asr_language": "English",
+      "min_similarity": 0.8,
+      "unload_asr_after_verify": true,
+      "speaker_check_mode": "off",
+      "speaker_model_directory": "",
+      "min_speaker_similarity": 0.86,
+      "unload_speaker_after_verify": true,
+      "peak_limit_dbfs": -1.0,
+      "release_policy": "unload_all_models",
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "voice_profile": ["7", 1],
+      "speech_plan": ["6", 0],
+      "segment_index": ["7", 2]
+    },
+    "class_type": "MiniMaxH3SpeechStudioT8"
+  },
+  "9": {
+    "inputs": {
+      "replace_existing": false,
+      "session": ["7", 0],
+      "speech_plan": ["6", 0],
+      "segment_index": ["7", 2],
+      "audio": ["8", 0],
+      "transcript": ["8", 4],
+      "text_similarity": ["8", 5],
+      "speaker_similarity": ["8", 6],
+      "accepted": ["8", 7]
+    },
+    "class_type": "MiniMaxH3SpeechLongFormAcceptT8"
+  }
+}
