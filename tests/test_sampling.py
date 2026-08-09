@@ -273,6 +273,9 @@ def test_setup_detects_current_and_legacy_h3_audio_velocity_protocols():
 def test_current_comfy_h3_audio_scale_access_accepts_custom_sampling():
     from comfy.model_base import MiniMaxH3
 
+    if not hasattr(MiniMaxH3, "audio_scale"):
+        pytest.skip("This ComfyUI build uses the legacy H3 audio-velocity protocol.")
+
     sampling = MiniMaxH3FlowSampling(FakeModelConfig())
     holder = types.SimpleNamespace(
         latent_shapes=[(1, 24, 1, 1, 1), (1, 32, 2, 1)],
