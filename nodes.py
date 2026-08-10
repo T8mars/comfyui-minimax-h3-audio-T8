@@ -4,6 +4,7 @@ from comfy_api.latest import ComfyExtension, io
 
 from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av_output
 from .conditioning import build_conditioning
+from .nodes_dialogue_audio_exp import DIALOGUE_AUDIO_NODE_CLASSES
 from .nodes_multirate_exp import MiniMaxH3MultiRateSamplerEXPT8
 from .nodes_long_video_exp import (
     MiniMaxH3LongVideoConditioningT8,
@@ -385,7 +386,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SPEECH_NODE_CLASSES[:10],
                 MiniMaxH3VisualReferenceStrengthEXPT8,
                 *SPEECH_NODE_CLASSES[10:],
-                *SOURCE_AV_NODE_CLASSES]
+                *SOURCE_AV_NODE_CLASSES,
+                *DIALOGUE_AUDIO_NODE_CLASSES]
 
 
 def comfy_entrypoint():

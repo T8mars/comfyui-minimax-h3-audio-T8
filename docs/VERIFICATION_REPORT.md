@@ -5,10 +5,60 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.9.0 checkpoint was verified on 2026-08-10 against ComfyUI `0.31.0` at
+The current 1.12.0 checkpoint was verified on 2026-08-10 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.12.0 experimental dialogue-safe audio checkpoint
+
+Three nodes were appended after the prior 51-node inventory. No old node ID, order, default,
+schema prefix, or execution path changed:
+
+- `MiniMaxH3DialogueBoundaryAnalyzerT8` performs read-only local CPU faster-whisper analysis. It
+  returns a boundary only for exactly one contiguous exact normalized target sequence; zero or
+  multiple exact spans are rejected. Signal energy after the boundary is reported as activity,
+  not classified as speech.
+- `MiniMaxH3DialogueSafeMasterT8` requires an upstream accepted boolean and independent stems. It
+  places verified speech on an exact sample timeline and preserves full-duration music, ambience,
+  and SFX after speech ends. Strict is the default fit policy; loop/pad/trim only occur when the
+  user explicitly selects and receives a report for them.
+- `MiniMaxH3TimedAudioBedLockT8` is a two-pass H3 helper. It encodes an independent dialogue-free
+  background bed, preserves the input video stream/mask, and applies a 40Hz audio mask with a
+  default zero-denoise tail. Existing audio masks are caps, so the node never increases generation
+  freedom in an already constrained interval.
+
+Model-free boundary, mixing, mask, immutability, strict-fit, explicit-fit, and registration tests
+passed. A real FL2VA pruned INT8, Qwen3-VL NVFP4, H3 Audio VAE, 256x256, 124-frame, stable
+dual-clock four-step forward also passed. The standard 124-frame Audio Window encoded to 206 audio
+latent steps against the AV clock's 207, so strict mode deliberately failed and `fit_reported`
+explicitly zero-padded one step. Comparing saved audio latents before and after sampling at the
+2.0-second/step-80 lock boundary produced:
+
+| Region | Mean absolute change | Maximum absolute change |
+|---|---:|---:|
+| editable head, steps 0–79 | 0.502230 | 2.402396 |
+| locked tail, steps 80–206 | 1.81e-8 | 2.38e-7 |
+
+The locked tail therefore remained within `1e-6` absolute tolerance across four sampler steps,
+while the head materially changed. This establishes the latent-mask endpoint mechanically, not
+decoded perceptual quality. The same Audio VAE decoded both latents to 165,600 samples at 32kHz.
+The first 100ms after the 2.0-second boundary still had a 0.34177 maximum difference, and decoder
+influence decayed through roughly 2.3 seconds; later 100ms windows were approximately `3.97e-4` or
+lower in maximum difference. A latent boundary is therefore not a sample-exact audio cut and is
+not advertised as seamless.
+
+The read-only analyzer was also run against two prior real Joint-dialogue failures using the local
+multilingual small model. When unwanted words interrupted the expected sequence, it returned
+`target_not_found`. When 17 unwanted units preceded one contiguous exact target, it returned
+7.00–9.72 seconds with `clean_exact=false`; it did not auto-trim or accept the mixed result.
+
+Automatic source separation remains deliberately absent. The installed `audio_separator` Python
+package has no selected local model, and common vocal/music separators are not evidence of safe
+target-dialogue removal from a master containing intentional singing, music, ambience, and SFX.
+Synthetic known-stem leakage/damage tests, real H3 mixes, and listening gates are required before
+any separator can become an opt-in experiment. No speech-stop, mouth-stop, seamless-tail,
+source-separation, or 16GiB `memory_safe` claim is made.
 
 ## 1.9.0 experimental visual-reference strength checkpoint
 
