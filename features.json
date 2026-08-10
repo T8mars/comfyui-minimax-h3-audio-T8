@@ -64,7 +64,10 @@
     "MiniMaxH3SpeechLongFormAcceptT8",
     "MiniMaxH3SpeechLongFormControlT8",
     "MiniMaxH3SpeechLongFormComposeT8",
-    "MiniMaxH3JointDialogueConditioningT8"
+    "MiniMaxH3JointDialogueConditioningT8",
+    "MiniMaxH3SourceMediaWindowT8",
+    "MiniMaxH3SourceAVPrepareT8",
+    "MiniMaxH3AVLatentSeparateT8"
   ],
   "sampling": {
     "algorithm": "selectable sampler and scheduler with a backward-compatible dual-clock default",
@@ -530,6 +533,66 @@
       "a 16GiB memory_safe or never-OOM tier"
     ],
     "status": "guarded failure cleanup, durable long-form accepted state, exact-sample ADR, explicit voice persistence, validation harnesses and creator workflows implemented; quality-sensitive capabilities remain Experimental or denied as stated"
+  },
+  "experimental_source_av": {
+    "category": "T8/MiniMax H3/Source AV/Experimental",
+    "nodes": [
+      "MiniMaxH3SourceMediaWindowT8",
+      "MiniMaxH3SourceAVPrepareT8",
+      "MiniMaxH3AVLatentSeparateT8"
+    ],
+    "positioning": "H3-specific source-video repaint and AV stream routing; independent implementation inspired by the product direction, not copied from or dependent on ComfyUI-PT_H3ConcatAVLatent",
+    "media_window_contract": {
+      "target_fps": 24,
+      "frame_grid": "17n+5",
+      "audio_sample_rate": 32000,
+      "short_video_policies": ["strict", "hold_last_frame"],
+      "short_audio_policies": ["strict", "pad_silence"],
+      "scope": "IMAGE input is already resident; not streaming decode and not a low-memory long-video implementation"
+    },
+    "latent_contract": {
+      "video": "[B,24,T,H/16,W/16], B=1, T=5n+2",
+      "audio": "[B,32,2,T40], B=1",
+      "clock": "audio T must equal round((17n+5)*40/24) after an explicit fit policy",
+      "stream_modes": ["lock", "remix", "regenerate"],
+      "audio_fit_policies": [
+        "strict",
+        "trim_to_video",
+        "pad_to_video_generate_tail",
+        "fit_to_video_generate_tail"
+      ],
+      "metadata": "video metadata is authoritative; non-conflicting audio metadata is merged; conflicting keys are reported",
+      "mask": "input masks are preserved as constraints and multiplied by the explicit stream mode strength; padded audio tail receives mask 1"
+    },
+    "compatibility": "all prior 48 node IDs, ordering and defaults are unchanged; the three Source AV EXP nodes are appended",
+    "api_example": "examples/source_video_repaint_api.json",
+    "frontend_workflow": "examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json",
+    "validated": [
+      "CPU tensor contract, temporal inverse, dtype normalization, explicit audio trim/pad and input immutability",
+      "noise-mask and metadata preservation",
+      "isolated ComfyUI registration and API-to-frontend workflow conversion",
+      "one real-model mechanical full chain: voiced source media through both H3 VAEs, source AV prepare, one-step FL2VA INT8 sampling, both decoders and 24fps H.264 plus 32kHz stereo AAC output"
+    ],
+    "validated_real_probe": {
+      "date": "2026-08-10",
+      "environment": "RTX 4060 Ti 16GiB; Windows; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
+      "models": "FL2VA pruned INT8, Qwen3-VL NVFP4, H3 video VAE FP16 and audio VAE FP32",
+      "source": "voiced 2560x1440 24fps input windowed to 256x256, 124 frames",
+      "sampler": "one-step mechanical acceptance probe; not a perceptual-quality test",
+      "output": "124 frames at 24fps, H.264, 5.166667s video; 32kHz stereo AAC, 5.167s audio",
+      "minimum_observed_headroom_mib": 44.52,
+      "decision": "mechanical chain passed; 16GiB memory_safe is denied because headroom is below the 512MiB gate",
+      "local_evidence": "artifacts/source-av-real-forward/source_video_repaint_1step_00001_.mp4"
+    },
+    "unvalidated_or_denied": [
+      "denoise strength as a calibrated or linear redraw weight",
+      "real H3 source-video perceptual quality, identity preservation and prompt adherence",
+      "16GiB memory_safe or never-OOM claim",
+      "arbitrary non-24fps or non-17n+5 latent windows",
+      "file-backed streaming source decode and long-video repaint integration",
+      "precise spatial inpainting"
+    ],
+    "status": "mechanical EXP implementation and one real-model one-step end-to-end path passed; denoise, perceptual quality and full VRAM matrix remain required, and the observed 44.52MiB minimum headroom denies a 16GiB memory_safe tier"
   },
   "experimental_visual_reference_strength": {
     "node": "MiniMaxH3VisualReferenceStrengthEXPT8",
