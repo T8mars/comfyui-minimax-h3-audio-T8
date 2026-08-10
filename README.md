@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.11.0`，共注册
-51 个节点，覆盖原生音画条件、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.12.0`，共注册
+54 个节点，覆盖原生音画条件、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -30,7 +30,9 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
 
-`1.11.0` 保留此前48个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的 Source AV
+`1.12.0` 保留此前51个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的
+Dialogue Safe Audio EXP 节点；旧工作流不会自动运行 ASR、改变联合 latent、分离混合音轨或
+替换最终音频。`1.11.0` 保留此前48个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的 Source AV
 EXP 节点；旧工作流不会自动读取来源视频、改变 latent 或启用重绘 mask。`1.10.0` 保留此前36个节点的 ID、顺序、默认值和旧接线，只在其后追加12个语音可靠性/
 创作 EXP 节点；旧工作流不会自动启用异常全局卸载、持久音色库、长文本或 Joint 多人。
 `1.9.0` 只在原35个节点之后追加一个视觉参考强度 EXP 后置节点；原节点 ID、顺序、默认值和
@@ -95,6 +97,9 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Speech Assemble / 语音合成 (EXP/T8) | 以绝对 sample 时间轴合并多段、停顿、重叠、淡化、声像和增益 |
 | MiniMax H3 Dialogue Script / 对白脚本 (EXP/T8) | 把2–3个角色的普通文本或 JSON 变成逐 turn 对白计划 |
 | MiniMax H3 Dialogue Turn Select / 对白段选择 (EXP/T8) | 逐 turn 选择正确角色档案和单段语音计划，避免把未验证联合多人模式当稳定能力 |
+| MiniMax H3 Dialogue Boundary Analyzer / 对白边界分析 (EXP/T8) | 本地 CPU ASR 仅在出现唯一、连续、精确目标词序列时报告边界；重复目标或被插话打断时拒绝猜测 |
+| MiniMax H3 Dialogue Safe Master / 对白安全混音 (EXP/T8) | 把已验收的独立对白 stem 与独立音乐、环境和 SFX 组成完整时长母带，不在对白结束处截断背景声 |
+| MiniMax H3 Timed Background Bed Lock / 分时背景底轨锁定 (EXP/T8) | 两遍 H3 路线：用独立完整背景底轨替换音频 latent，并在显式对白边界后锁住底轨尾段 |
 | MiniMax H3 Speech Finalize / 语音完成与释放 (EXP/T8) | AUDIO 直通后执行 keep/cache-clear/全局卸载策略，并明确报告作用域 |
 | MiniMax H3 Speech Studio / 语音工作台 (EXP/T8) | GraphBuilder 一站式串起条件、stock采样、音频解码、校验和释放 |
 | MiniMax H3 Speech Abnormal-Exit Guard / 异常释放保护 (EXP/T8) | 在条件节点前登记 prompt 生命周期；异常、取消或非 OOM 错误令 Finalize 未执行时补发释放请求 |
@@ -195,6 +200,50 @@ API 示例：`examples/ref2va_visual_reference_strength_exp_api.json`；可拖�
 `0.995～0.950` 会改变姿态、表情、动作轨迹或构图，`0.950` 的输出偏移最大，面部高频代理还
 低于 `0.999`。因此节点只适合受控 A/B；不能把某个默认值宣传成稳定修复。当前矩阵的最小
 显存余量约35MiB，远低于项目512MiB安全门槛，也不能据此称16GB安全档。
+
+## EXP：对白结束后保留完整背景声
+
+这里处理的是一个与普通语音裁切不同的问题：H3 的最终音频往往是对白、音乐、环境声和音效的
+同一条立体声母带。如果模型在目标台词之后继续念叨，直接把整条母带裁到台词结束会同时删除
+后续音乐、环境和音效；当前节点不会用这种方式假装修复成功。
+
+`1.12.0` 提供三层、默认拒绝猜测的实验能力：
+
+1. `Dialogue Boundary Analyzer` 使用用户本地的 faster-whisper，在且仅在 ASR 中找到一个连续、
+   完整且唯一的目标词序列时报告边界。目标重复两次、目标被额外台词插断或未找到时都不选
+   “第一个/最后一个”；尾部能量只报告“还有信号”，不会把音乐或音效误判成语音。
+2. 推荐的确定性路线是“对白 stem 与背景 stem 分开生成/准备”。`Dialogue Safe Master` 要求
+   上游传入已验收的独立对白，并将独立音乐、环境和 SFX 放到目标 sample 时间线上。默认
+   `strict` 不会暗中循环、补零或截断任何已连接 stem；只有用户显式选择策略才会调整。最终
+   母带保持完整时长，对白结束后背景 stem 继续存在。
+3. 如果创作流程必须走联合 H3，可使用两遍生成：先准备一条不含对白、完整时长的背景底轨，
+   再由 `Timed Background Bed Lock` 编码成音频 latent；边界之前允许 H3 生成对白，边界之后
+   默认 `tail_denoise_strength=0` 锁住背景底轨。它保留原视频流和已有视频 mask；已有音频 mask
+   只作为上限，不会被节点偷偷放宽。
+
+真实机械探针使用当前 FL2VA pruned INT8、256×256、124帧、稳定双时钟4步。标准124帧 Audio
+Window 经真实音频 VAE 编码得到206步，而联合 H3 时钟需要207步，因此 `strict` 会正确拒绝；
+示例显式使用 `fit_reported`，记录补1个零 latent 步。4步采样后，2秒前可编辑头部相对底轨
+latent 的平均绝对变化为 `0.50223`，2秒后锁定尾部的最大绝对误差为 `2.38e-7`，在 `1e-6`
+绝对容差内保持。解码对照同时发现音频 VAE 的时间感受野会让边界后最初约0.3秒仍受头部变化
+影响；从2.3秒起100ms窗的最大差异降到约 `3.97e-4` 或更低。这证明 mask 机械生效，但不是
+“样本级硬切”“绝对无接缝”或主观质量保证。
+
+边界分析也在此前真实 Joint 两人失败样本上复测：一个样本的目标台词被额外内容插断，节点
+返回 `target_not_found`；另一个样本在17个多余词后出现唯一完整目标，节点报告7.00–9.72秒、
+`clean_exact=false`，而不是自动裁切或验收。ASR 会漏掉含混、非词汇人声，因此报告不是模型
+真值。
+
+当前没有集成自动源分离。机器虽安装了 `audio_separator` 包，但没有已选择/校验的分离权重；
+常见 vocal separator 以音乐人声/伴奏分离为目标，不等价于“只移除目标人物的额外对白”，还
+可能删除原本想保留的歌声或损伤音乐/SFX。必须先用合成可知真值与真实 H3 混音建立泄漏、
+音乐损伤和听评门槛，未过门槛前不会靠模型名猜一个默认分离器。
+
+示例：`examples/dialogue_safe_master_api.json`、
+`examples/workflows/H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
+`examples/dialogue_timed_bed_lock_api.json`、
+`examples/workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
+底轨必须是不含对白的独立完整背景，而不是已混合的 H3 最终母带。
 
 ## EXP：原生语音、参考音色与逐句对白
 
@@ -886,8 +935,8 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 
 ## 示例与测试
 
-可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑，
-以及以下长视频示例位于 `examples/workflows/`：
+可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑、
+对白安全分轨母带、两遍 H3 分时背景底轨锁定，以及以下长视频示例位于 `examples/workflows/`：
 
 - `H3_Long_Video_22F_EXP.json`：手工逐段续写基线。
 - `H3_Long_Video_Accepted_22F_EXP.json`：候选预览、接受和可恢复状态链。
@@ -897,7 +946,9 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 
 API 示例见 `examples/audio_lock_api.json`、
 `examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
-`examples/still_image_edit_api.json`。替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
+`examples/still_image_edit_api.json`；对白安全音频另见
+`examples/dialogue_safe_master_api.json` 与 `examples/dialogue_timed_bed_lock_api.json`。
+替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
 输入图像和音频文件名后即可使用；
 保存节点使用已安装的 VideoHelperSuite。
 

@@ -1,0 +1,152 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {"title": "Load H3 FL2VA pruned INT8"}
+  },
+  "2": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["1", 0],
+      "lora_name": "minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+      "strength_model": 1.0
+    },
+    "_meta": {"title": "Load the existing Standard H3 four-step LoRA"}
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {"title": "Reuse H3 Qwen3-VL text encoder"}
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "6": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "replace_with_full_duration_background_bed.wav"},
+    "_meta": {"title": "Independent music + ambience + SFX bed; it must contain no dialogue"}
+  },
+  "7": {
+    "class_type": "MiniMaxH3AudioWindowT8",
+    "inputs": {
+      "audio": ["6", 0],
+      "scene_start_seconds": 0.0,
+      "scene_duration_seconds": 5.1666666667,
+      "warmup_seconds": 0.0,
+      "cooldown_seconds": 0.0,
+      "ensure_minimum_context": true
+    },
+    "_meta": {"title": "Normalize bed to a 124-frame H3 window"}
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": ["3", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0],
+      "prompt": "A quiet cinematic room. A person says exactly and only <d>The light is on.</d> After the final word the person stays silent and closes their mouth. Soft music, room ambience, and subtle sound effects continue naturally to the end.",
+      "width": 736,
+      "height": 416,
+      "length": ["7", 1],
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s"
+    },
+    "_meta": {"title": "Generate dialogue only in the editable head interval"}
+  },
+  "9": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {"value": 2.0},
+    "_meta": {"title": "Verified/planned dialogue end; latent lock is ceil-quantized to 40Hz"}
+  },
+  "10": {
+    "class_type": "MiniMaxH3TimedAudioBedLockT8",
+    "inputs": {
+      "av_latent": ["8", 1],
+      "background_audio": ["7", 0],
+      "audio_vae": ["5", 0],
+      "tail_lock_start_seconds": ["9", 0],
+      "head_denoise_strength": 1.0,
+      "tail_denoise_strength": 0.0,
+      "transition_seconds": 0.0,
+      "audio_latent_fit_policy": "fit_reported"
+    },
+    "_meta": {"title": "Two-pass lock; normal 124F audio VAE encoding needs one reported pad step"}
+  },
+  "11": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": ["2", 0],
+      "av_latent": ["10", 0],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "_meta": {"title": "Existing stable 4V/4A dual-clock defaults"}
+  },
+  "12": {
+    "class_type": "RandomNoise",
+    "inputs": {"noise_seed": 2608105101}
+  },
+  "13": {
+    "class_type": "BasicGuider",
+    "inputs": {"model": ["11", 0], "conditioning": ["8", 0]}
+  },
+  "14": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["12", 0],
+      "guider": ["13", 0],
+      "sampler": ["11", 1],
+      "sigmas": ["11", 2],
+      "latent_image": ["10", 0]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": ["14", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0]
+    }
+  },
+  "16": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": ["15", 0],
+      "audio": ["15", 1],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_T8_DialogueSafe/timed_background_bed_lock",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {"title": "Save full AV result; do not trim the master at the dialogue end"}
+  }
+}

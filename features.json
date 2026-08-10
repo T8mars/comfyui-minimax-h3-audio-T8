@@ -67,8 +67,68 @@
     "MiniMaxH3JointDialogueConditioningT8",
     "MiniMaxH3SourceMediaWindowT8",
     "MiniMaxH3SourceAVPrepareT8",
-    "MiniMaxH3AVLatentSeparateT8"
+    "MiniMaxH3AVLatentSeparateT8",
+    "MiniMaxH3DialogueBoundaryAnalyzerT8",
+    "MiniMaxH3DialogueSafeMasterT8",
+    "MiniMaxH3TimedAudioBedLockT8"
   ],
+  "experimental_dialogue_safe_audio": {
+    "category": "T8/MiniMax H3/Speech/Experimental",
+    "nodes": [
+      "MiniMaxH3DialogueBoundaryAnalyzerT8",
+      "MiniMaxH3DialogueSafeMasterT8",
+      "MiniMaxH3TimedAudioBedLockT8"
+    ],
+    "problem": "H3 may generate extra unrequested speech after the requested line while the same stereo master still contains wanted music, ambience, and sound effects; trimming the whole master at the speech boundary destroys those wanted sounds.",
+    "boundary_analyzer": {
+      "behavior": "local CPU faster-whisper reports a boundary only when exactly one contiguous exact normalized target sequence is present",
+      "ambiguous_repetition": "rejected rather than selecting the first or last occurrence",
+      "audio_mutation": false,
+      "tail_energy": "reported only as signal activity, never classified as speech"
+    },
+    "safe_master": {
+      "required_inputs": "an already verified independent speech stem plus optional independent full-duration music, ambience, and SFX stems",
+      "duration": "sample-exact at 32kHz, 44.1kHz, or 48kHz",
+      "default_fit_policy": "strict; no stem is silently looped, padded, or trimmed",
+      "guarantee": "the final master is not truncated at the speech end"
+    },
+    "timed_background_bed_lock": {
+      "workflow": "two-pass H3 helper using an independent full-duration background bed",
+      "boundary": "ceil-quantized to the 40Hz H3 audio latent grid so locking never begins earlier than requested",
+      "default_tail_denoise": 0.0,
+      "default_transition_seconds": 0.0,
+      "default_fit_policy": "strict",
+      "mask_contract": "video stream remains unchanged; an existing audio noise mask is a cap, so the node does not increase generation freedom",
+      "real_four_step_probe": {
+        "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
+        "model": "FL2VA pruned INT8; Qwen3-VL NVFP4; H3 Audio VAE",
+        "canvas_and_window": "256x256; 124 frames; 4-step stable dual clock",
+        "audio_fit": "Audio Window encoded to T=206 versus AV target T=207; strict rejected and fit_reported explicitly zero-padded one latent step",
+        "boundary": "2.0 seconds / audio latent step 80",
+        "editable_head_mean_abs_change": 0.5022301078,
+        "locked_tail_max_abs_change": 0.0000002384185791,
+        "locked_tail_allclose_atol_1e_6": true,
+        "decoded_boundary_observation": "H3 Audio VAE temporal context produced material difference for roughly the first 0.3 seconds after the latent boundary; later windows were near-equal but not bit-identical"
+      },
+      "status": "real four-step H3 sampling validated the locked latent endpoint within 1e-6; decoded perceptual quality and seamlessness remain unvalidated"
+    },
+    "api_examples": [
+      "examples/dialogue_safe_master_api.json",
+      "examples/dialogue_timed_bed_lock_api.json"
+    ],
+    "frontend_workflows": [
+      "examples/workflows/H3_Dialogue_Safe_Master_EXP.json",
+      "examples/workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json"
+    ],
+    "scientific_limits": [
+      "No source separation is performed; an already mixed H3 master cannot be safely repaired by these nodes alone.",
+      "Music-vocal separators are not assumed to be dialogue removers and may remove intentional singing or damage music/SFX.",
+      "A 40Hz latent boundary is not a sample-exact decoded speech endpoint because the audio VAE has temporal context.",
+      "Prompt directions and latent locking do not guarantee that the visible character stops mouth motion.",
+      "No 16GiB memory_safe claim is made."
+    ],
+    "compatibility": "all prior 51 node IDs, ordering, defaults, and execution paths are unchanged; three opt-in EXP nodes are appended"
+  },
   "sampling": {
     "algorithm": "selectable sampler and scheduler with a backward-compatible dual-clock default",
     "default_steps": 4,

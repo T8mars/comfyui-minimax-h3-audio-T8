@@ -75,6 +75,16 @@ the explicit dual-clock Euler/native-flow defaults. Lock mode routes the clean
 Conditioning `mux_audio` to the final MP4; remix and reference-only route decoded
 model audio instead. Upload or select a source file in `Load Audio` before queuing.
 
+Version 1.12.0 also installs two opt-in dialogue-safe audio workflows without changing any old
+workflow: `H3_Dialogue_Safe_Master_EXP.json` accepts already independent speech/music/ambience/SFX
+stems and keeps the background running after verified speech ends;
+`H3_Dialogue_Timed_Background_Bed_Lock_EXP.json` is a two-pass H3 graph that locks an independent
+dialogue-free background bed after an explicit 40Hz latent boundary. The first path is sample-exact
+stem assembly. The second path is not source separation or a sample-exact cut: the real H3 Audio
+VAE encoded a standard 124-frame window to 206 steps against the 207-step AV clock, so the example
+explicitly selects `fit_reported`, and its decoder showed roughly 0.3 seconds of temporal influence
+after the latent boundary. Both workflows use placeholders that must be replaced before queuing.
+
 The project also includes the isolated experimental long-video workflow
 `examples/workflows/H3_Long_Video_22F_EXP.json` and API graph
 `examples/long_video_segment_api.json`. They plan and execute one bounded segment

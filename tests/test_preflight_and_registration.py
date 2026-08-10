@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 51
+    assert len(ids) == 54
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -131,10 +131,15 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpeechLongFormComposeT8",
         "MiniMaxH3JointDialogueConditioningT8",
     ]
-    assert ids[48:] == [
+    assert ids[48:51] == [
         "MiniMaxH3SourceMediaWindowT8",
         "MiniMaxH3SourceAVPrepareT8",
         "MiniMaxH3AVLatentSeparateT8",
+    ]
+    assert ids[51:] == [
+        "MiniMaxH3DialogueBoundaryAnalyzerT8",
+        "MiniMaxH3DialogueSafeMasterT8",
+        "MiniMaxH3TimedAudioBedLockT8",
     ]
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
@@ -149,10 +154,21 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert visual_strength.is_experimental is True
     assert visual_strength.category == "T8/MiniMax H3/Conditioning/Experimental"
 
-    for source_av_id in ids[48:]:
+    for source_av_id in ids[48:51]:
         source_av_schema = schemas[ids.index(source_av_id)]
         assert source_av_schema.is_experimental is True
         assert source_av_schema.category == "T8/MiniMax H3/Source AV/Experimental"
+
+    for dialogue_audio_id in ids[51:]:
+        dialogue_audio_schema = schemas[ids.index(dialogue_audio_id)]
+        assert dialogue_audio_schema.is_experimental is True
+        assert dialogue_audio_schema.category == "T8/MiniMax H3/Speech/Experimental"
+
+    timed_bed = schemas[ids.index("MiniMaxH3TimedAudioBedLockT8")]
+    timed_inputs = {item.id: item for item in timed_bed.inputs}
+    assert timed_inputs["tail_denoise_strength"].default == 0.0
+    assert timed_inputs["transition_seconds"].default == 0.0
+    assert timed_inputs["audio_latent_fit_policy"].default == "strict"
 
     source_media = schemas[ids.index("MiniMaxH3SourceMediaWindowT8")]
     media_inputs = {item.id: item for item in source_media.inputs}
@@ -984,3 +1000,92 @@ def test_frontend_still_edit_workflow_uses_native_22_frame_ref2va_target():
             or link_type == "*"
         )
         assert target["inputs"][target_slot]["type"] == link_type
+
+
+def test_dialogue_safe_master_examples_require_verified_independent_stems():
+    root = Path(__file__).resolve().parents[1]
+    api = json.loads((root / "examples" / "dialogue_safe_master_api.json").read_text(
+        encoding="utf-8"
+    ))
+    analyzer = next(
+        node for node in api.values()
+        if node["class_type"] == "MiniMaxH3DialogueBoundaryAnalyzerT8"
+    )
+    master = next(
+        node for node in api.values()
+        if node["class_type"] == "MiniMaxH3DialogueSafeMasterT8"
+    )
+    analyzer_id = next(key for key, value in api.items() if value is analyzer)
+    assert master["inputs"]["speech_accepted"] == [analyzer_id, 2]
+    assert master["inputs"]["music_fit_policy"] == "strict"
+    assert master["inputs"]["ambience_fit_policy"] == "strict"
+    assert master["inputs"]["sfx_fit_policy"] == "strict"
+    assert master["inputs"]["target_duration_seconds"] == 10.0
+    load_titles = {
+        node.get("_meta", {}).get("title", "")
+        for node in api.values()
+        if node["class_type"] == "LoadAudio"
+    }
+    assert any("independent speech stem" in title for title in load_titles)
+    assert any("music stem" in title for title in load_titles)
+    assert any("ambience stem" in title for title in load_titles)
+    assert any("SFX stem" in title for title in load_titles)
+
+    frontend = json.loads(
+        (root / "examples" / "workflows" / "H3_Dialogue_Safe_Master_EXP.json")
+        .read_text(encoding="utf-8")
+    )
+    nodes = {node["id"]: node for node in frontend["nodes"]}
+    assert frontend["last_node_id"] == max(nodes)
+    assert frontend["last_link_id"] == max(link[0] for link in frontend["links"])
+    assert {
+        "MiniMaxH3DialogueBoundaryAnalyzerT8",
+        "MiniMaxH3DialogueSafeMasterT8",
+    } <= {node["type"] for node in nodes.values()}
+    for link_id, source, output_slot, target, input_slot, link_type in frontend["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type
+
+
+def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice():
+    root = Path(__file__).resolve().parents[1]
+    api = json.loads((root / "examples" / "dialogue_timed_bed_lock_api.json").read_text(
+        encoding="utf-8"
+    ))
+    ids_by_type = {
+        value["class_type"]: key
+        for key, value in api.items()
+    }
+    timed_id = ids_by_type["MiniMaxH3TimedAudioBedLockT8"]
+    timed = api[timed_id]
+    sampler_setup = api[ids_by_type["MiniMaxH3DualClockSamplerT8"]]
+    sampler = api[ids_by_type["SamplerCustomAdvanced"]]
+    boundary_id = ids_by_type["PrimitiveFloat"]
+
+    assert timed["inputs"]["tail_lock_start_seconds"] == [boundary_id, 0]
+    assert timed["inputs"]["tail_denoise_strength"] == 0.0
+    assert timed["inputs"]["transition_seconds"] == 0.0
+    assert timed["inputs"]["audio_latent_fit_policy"] == "fit_reported"
+    assert sampler_setup["inputs"]["av_latent"] == [timed_id, 0]
+    assert sampler["inputs"]["latent_image"] == [timed_id, 0]
+    assert sampler_setup["inputs"]["steps"] == 4
+
+    frontend = json.loads(
+        (root / "examples" / "workflows" / "H3_Dialogue_Timed_Background_Bed_Lock_EXP.json")
+        .read_text(encoding="utf-8")
+    )
+    nodes = {node["id"]: node for node in frontend["nodes"]}
+    timed_frontend = next(
+        node for node in nodes.values()
+        if node["type"] == "MiniMaxH3TimedAudioBedLockT8"
+    )
+    assert timed_frontend["widgets_values"] == [1.0, 0.0, 0.0, "fit_reported"]
+    assert frontend["last_node_id"] == max(nodes)
+    assert frontend["last_link_id"] == max(link[0] for link in frontend["links"])
+    for link_id, source, output_slot, target, input_slot, link_type in frontend["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type

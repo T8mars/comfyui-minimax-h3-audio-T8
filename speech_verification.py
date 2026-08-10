@@ -55,6 +55,16 @@ def normalized_asr_units(text: str) -> list[str]:
     return _UNIT_PATTERN.findall(str(text or "").lower().replace("’", "'"))
 
 
+def _word_unit_stream(words: list[dict]) -> tuple[list[str], list[int]]:
+    heard_units: list[str] = []
+    owners: list[int] = []
+    for word_index, word in enumerate(words):
+        units = normalized_asr_units(word.get("word", ""))
+        heard_units.extend(units)
+        owners.extend([word_index] * len(units))
+    return heard_units, owners
+
+
 def _levenshtein(expected: list[str], heard: list[str]) -> int:
     row = list(range(len(heard) + 1))
     for expected_index, expected_unit in enumerate(expected, 1):
@@ -102,26 +112,40 @@ def transcript_metrics(expected: str, heard: str) -> dict:
     }
 
 
-def exact_target_word_bounds(words: list[dict], expected: str) -> tuple[float, float] | None:
+def exact_target_word_spans(words: list[dict], expected: str) -> list[dict]:
     expected_units = normalized_asr_units(expected)
     if not expected_units:
         raise ValueError("expected_text cannot be empty")
-    heard_units: list[str] = []
-    owners: list[int] = []
-    for word_index, word in enumerate(words):
-        units = normalized_asr_units(word.get("word", ""))
-        heard_units.extend(units)
-        owners.extend([word_index] * len(units))
+    heard_units, owners = _word_unit_stream(words)
     if len(heard_units) < len(expected_units):
-        return None
+        return []
+    spans = []
     for start in range(len(heard_units) - len(expected_units) + 1):
         end = start + len(expected_units)
         if heard_units[start:end] != expected_units:
             continue
-        first = words[owners[start]]
-        last = words[owners[end - 1]]
-        return float(first["start"]), float(last["end"])
-    return None
+        first_word_index = owners[start]
+        last_word_index = owners[end - 1]
+        first = words[first_word_index]
+        last = words[last_word_index]
+        spans.append(
+            {
+                "start_seconds": float(first["start"]),
+                "end_seconds": float(last["end"]),
+                "start_unit_index": start,
+                "end_unit_index": end,
+                "start_word_index": first_word_index,
+                "end_word_index": last_word_index + 1,
+            }
+        )
+    return spans
+
+
+def exact_target_word_bounds(words: list[dict], expected: str) -> tuple[float, float] | None:
+    spans = exact_target_word_spans(words, expected)
+    if not spans:
+        return None
+    return spans[0]["start_seconds"], spans[0]["end_seconds"]
 
 
 def _candidate_asr_roots() -> list[Path]:
@@ -316,6 +340,158 @@ def _transcribe(
         "duration_seconds": float(info.duration),
         "words": words,
     }
+
+
+def analyze_dialogue_boundary(
+    audio: Mapping,
+    expected_text: str,
+    asr_model_directory: str,
+    language: str = "auto",
+    beam_size: int = 5,
+    cpu_threads: int = 8,
+    unload_after_analyze: bool = True,
+    tail_activity_threshold_dbfs: float = -45.0,
+):
+    waveform, sample_rate = validate_audio(audio, "dialogue_mix")
+    expected_text = str(expected_text or "").strip()
+    if not expected_text:
+        raise ValueError("expected_text cannot be empty")
+    if language not in ASR_LANGUAGE_CODES:
+        raise ValueError(f"unsupported ASR language: {language}")
+    if not 1 <= int(beam_size) <= 20:
+        raise ValueError("beam_size must be between 1 and 20")
+    if not 1 <= int(cpu_threads) <= 64:
+        raise ValueError("cpu_threads must be between 1 and 64")
+    if not -120.0 <= float(tail_activity_threshold_dbfs) <= 0.0:
+        raise ValueError("tail_activity_threshold_dbfs must be between -120 and 0")
+
+    model_path = resolve_asr_model_directory(asr_model_directory)
+    with _ASR_LOCK:
+        model, reused = _load_asr_model(model_path, int(cpu_threads))
+        released = False
+        try:
+            result = _transcribe(model, audio, language, int(beam_size))
+        finally:
+            if unload_after_analyze:
+                released = _release_asr_model()
+
+    words = result["words"]
+    heard_units, _owners = _word_unit_stream(words)
+    spans = exact_target_word_spans(words, expected_text)
+    unique_target_found = len(spans) == 1
+    start_seconds = 0.0
+    end_seconds = 0.0
+    before_units: list[str] = []
+    after_units: list[str] = []
+    tail_signal = {
+        "measured": False,
+        "warning": "No unique exact ASR target boundary was available.",
+    }
+    if unique_target_found:
+        span = spans[0]
+        start_seconds = span["start_seconds"]
+        end_seconds = span["end_seconds"]
+        before_units = heard_units[: span["start_unit_index"]]
+        after_units = heard_units[span["end_unit_index"] :]
+        end_sample = min(waveform.shape[-1], round(end_seconds * sample_rate))
+        tail = waveform.detach().to(device="cpu", dtype=torch.float32)[..., end_sample:]
+        if tail.numel():
+            rms = float(tail.square().mean().sqrt())
+            threshold = 10.0 ** (float(tail_activity_threshold_dbfs) / 20.0)
+            active_ratio = float((tail.abs().mean(dim=1) >= threshold).float().mean())
+            tail_signal = {
+                "measured": True,
+                "start_sample": end_sample,
+                "sample_count": int(tail.shape[-1]),
+                "duration_seconds": tail.shape[-1] / sample_rate,
+                "rms_dbfs": 20.0 * math.log10(max(rms, 1e-12)),
+                "activity_threshold_dbfs": float(tail_activity_threshold_dbfs),
+                "samples_above_threshold_ratio": active_ratio,
+                "is_not_a_speech_classifier": True,
+            }
+        else:
+            tail_signal = {
+                "measured": True,
+                "start_sample": end_sample,
+                "sample_count": 0,
+                "duration_seconds": 0.0,
+                "rms_dbfs": -240.0,
+                "activity_threshold_dbfs": float(tail_activity_threshold_dbfs),
+                "samples_above_threshold_ratio": 0.0,
+                "is_not_a_speech_classifier": True,
+            }
+
+    clean_exact = unique_target_found and not before_units and not after_units
+    if len(spans) == 0:
+        status = "target_not_found"
+    elif len(spans) > 1:
+        status = "ambiguous_multiple_exact_targets"
+    elif clean_exact:
+        status = "clean_exact_target"
+    else:
+        status = "unique_target_with_lexical_extras"
+    metrics = transcript_metrics(expected_text, result["text"])
+    report = {
+        "schema": "minimax_h3_t8_dialogue_boundary_v1",
+        "status": status,
+        "unique_exact_target_found": unique_target_found,
+        "clean_exact_target": clean_exact,
+        "exact_target_span_count": len(spans),
+        "expected_text": expected_text,
+        "transcript": result["text"],
+        "transcript_metrics": metrics,
+        "target_bounds": (
+            {
+                "start_seconds": start_seconds,
+                "end_seconds": end_seconds,
+                "start_sample": round(start_seconds * sample_rate),
+                "end_sample": round(end_seconds * sample_rate),
+            }
+            if unique_target_found
+            else None
+        ),
+        "lexical_extras": {
+            "before_units": before_units,
+            "after_units": after_units,
+            "before_count": len(before_units),
+            "after_count": len(after_units),
+        },
+        "tail_signal_activity": tail_signal,
+        "asr": {
+            "engine": "faster-whisper",
+            "device": "cpu",
+            "compute_type": "int8",
+            "model_directory": str(model_path),
+            "model_reused": reused,
+            "detected_language": result["language"],
+            "language_probability": result["language_probability"],
+            "unload": {
+                "requested": bool(unload_after_analyze),
+                "released": bool(released),
+                "scope": "optional_cpu_asr_only",
+            },
+        },
+        "claims": {
+            "audio_was_modified": False,
+            "boundary_is_exact_model_ground_truth": False,
+            "tail_energy_proves_speech": False,
+        },
+        "limitations": [
+            "The boundary is accepted only when ASR finds exactly one contiguous exact target-unit sequence.",
+            "ASR can miss mumbling or hallucinated non-lexical vocalization.",
+            "Tail energy reports signal activity, not whether that signal is speech, music, ambience, or effects.",
+        ],
+    }
+    return (
+        result["text"],
+        bool(unique_target_found),
+        bool(clean_exact),
+        float(start_seconds),
+        float(end_seconds),
+        int(len(before_units)),
+        int(len(after_units)),
+        _json(report),
+    )
 
 
 def _trim_audio_to_bounds(

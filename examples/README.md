@@ -34,6 +34,22 @@ Still Preflight 输出检查报告。需要把 LoadImage 的占位文件名替�
   时间轴合成的双人对白。它没有使用未经验证的单次联合多人生成；两个分支都会占用同一 H3，
   由 ComfyUI 串行执行，最后一个 Finalize 才做全局卸载。
 
+对白结束后保留完整背景声提供两套独立示例：
+
+- `dialogue_safe_master_api.json` / `workflows/H3_Dialogue_Safe_Master_EXP.json`：输入已验收的
+  独立对白、音乐、环境和 SFX stems；本地 ASR 只有在整条对白 stem 恰好包含一个完整目标时
+  才把 `clean_exact` 接给安全混音。默认 strict 要求三个背景 stem 已经是完整目标时长，最终
+  母带不会随对白结束而截断。
+- `dialogue_timed_bed_lock_api.json` /
+  `workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`：两遍 H3 路线。输入一条不含对白的
+  完整背景底轨，2秒前允许 H3 生成，2秒后以0 denoise锁住底轨 latent。标准124帧窗口的真实
+  Audio VAE 会产生206步而联合时钟需要207步，所以示例有意使用 `fit_reported` 并报告补1步；
+  这不是静默时长修正。
+
+两者都不能把已混合的 H3 母带自动拆成人声、音乐和音效。前者是 sample 精确分轨合成；后者
+只有40Hz latent边界，并且真实解码探针在边界后约0.3秒观察到 VAE 时间感受野影响。不要把
+它们描述成源分离、无接缝硬切或角色闭嘴保证。
+
 三类语音功能也分别提供 ComfyUI 0.4 画布工作流：
 
 - `workflows/H3_Speech_Described_Stock20_EXP.json`：描述音色单句，默认不运行可选 QA；
@@ -71,6 +87,8 @@ Still Preflight 输出检查报告。需要把 LoadImage 的占位文件名替�
 - `H3_Speech_Described_Stock20_EXP.json`：描述音色的 stock20 实验语音；
 - `H3_Speech_Reference_Clone_Stock20_EXP.json`：有授权参考音色、ASR裁切与speaker报告；
 - `H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json`：两角色逐turn生成、sample级合成并统一释放。
+- `H3_Dialogue_Safe_Master_EXP.json`：唯一精确目标边界检查后，把独立 stems 合成完整时长母带；
+- `H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`：两遍 H3 的40Hz分时背景底轨锁定。
 
 三份音画画布工作流使用相同 seed、prompt、EMA LoRA 和输出设置，便于直接比较。它们已写入
 当前 T8 安装中实际存在的非裁剪 H3 INT8 基模、NVFP4 H3 文本编码器和两套 VAE 文件名，

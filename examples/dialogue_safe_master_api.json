@@ -1,0 +1,73 @@
+{
+  "1": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "replace_with_verified_speech_stem.wav"},
+    "_meta": {"title": "Load an independent speech stem; do not use a mixed H3 master"}
+  },
+  "2": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "replace_with_exact_duration_music_bed.wav"},
+    "_meta": {"title": "Load exact-duration music stem"}
+  },
+  "3": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "replace_with_exact_duration_ambience.wav"},
+    "_meta": {"title": "Load exact-duration ambience stem"}
+  },
+  "4": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "replace_with_exact_duration_sound_effects.wav"},
+    "_meta": {"title": "Load exact-duration SFX stem"}
+  },
+  "5": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {"value": "The light is on."},
+    "_meta": {"title": "Exact expected dialogue"}
+  },
+  "6": {
+    "class_type": "MiniMaxH3DialogueBoundaryAnalyzerT8",
+    "inputs": {
+      "audio": ["1", 0],
+      "expected_text": ["5", 0],
+      "asr_model_directory": "faster-whisper-small-multilingual-536b0662",
+      "language": "auto",
+      "beam_size": 5,
+      "cpu_threads": 8,
+      "unload_after_analyze": true,
+      "tail_activity_threshold_dbfs": -45.0
+    },
+    "_meta": {"title": "Require one unique exact target; repeated or extra words are rejected"}
+  },
+  "7": {
+    "class_type": "MiniMaxH3DialogueSafeMasterT8",
+    "inputs": {
+      "speech_audio": ["1", 0],
+      "speech_accepted": ["6", 2],
+      "target_duration_seconds": 10.0,
+      "speech_start_seconds": 0.0,
+      "output_sample_rate": 32000,
+      "music_fit_policy": "strict",
+      "ambience_fit_policy": "strict",
+      "sfx_fit_policy": "strict",
+      "loop_crossfade_seconds": 0.25,
+      "speech_gain_db": 0.0,
+      "music_gain_db": 0.0,
+      "ambience_gain_db": 0.0,
+      "sfx_gain_db": 0.0,
+      "duck_background": 0.25,
+      "peak_limit_dbfs": -1.0,
+      "music_audio": ["2", 0],
+      "ambience_audio": ["3", 0],
+      "sfx_audio": ["4", 0]
+    },
+    "_meta": {"title": "Build 10s master; dialogue ends but music, ambience and SFX continue"}
+  },
+  "8": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": ["7", 0],
+      "filename_prefix": "MiniMaxH3_T8_DialogueSafe/dialogue_safe_master"
+    },
+    "_meta": {"title": "Save full-duration master"}
+  }
+}
