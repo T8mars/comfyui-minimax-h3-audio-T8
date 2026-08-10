@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 48
+    assert len(ids) == 51
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -117,7 +117,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpeechStudioT8",
     ]
     assert ids[35] == "MiniMaxH3VisualReferenceStrengthEXPT8"
-    assert ids[36:] == [
+    assert ids[36:48] == [
         "MiniMaxH3SpeechGuardT8",
         "MiniMaxH3SpeechVRAMPreflightT8",
         "MiniMaxH3VoiceLibrarySaveT8",
@@ -131,6 +131,11 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpeechLongFormComposeT8",
         "MiniMaxH3JointDialogueConditioningT8",
     ]
+    assert ids[48:] == [
+        "MiniMaxH3SourceMediaWindowT8",
+        "MiniMaxH3SourceAVPrepareT8",
+        "MiniMaxH3AVLatentSeparateT8",
+    ]
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",
@@ -143,6 +148,26 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     visual_strength = schemas[ids.index("MiniMaxH3VisualReferenceStrengthEXPT8")]
     assert visual_strength.is_experimental is True
     assert visual_strength.category == "T8/MiniMax H3/Conditioning/Experimental"
+
+    for source_av_id in ids[48:]:
+        source_av_schema = schemas[ids.index(source_av_id)]
+        assert source_av_schema.is_experimental is True
+        assert source_av_schema.category == "T8/MiniMax H3/Source AV/Experimental"
+
+    source_media = schemas[ids.index("MiniMaxH3SourceMediaWindowT8")]
+    media_inputs = {item.id: item for item in source_media.inputs}
+    assert media_inputs["length"].default == 124
+    assert media_inputs["short_video_policy"].default == "strict"
+    assert media_inputs["short_audio_policy"].default == "pad_silence"
+    assert media_inputs["source_audio"].optional is True
+
+    source_prepare = schemas[ids.index("MiniMaxH3SourceAVPrepareT8")]
+    source_inputs = {item.id: item for item in source_prepare.inputs}
+    assert source_inputs["video_mode"].default == "remix"
+    assert source_inputs["video_denoise_strength"].default == 0.5
+    assert source_inputs["audio_mode"].default == "lock"
+    assert source_inputs["audio_fit_policy"].default == "fit_to_video_generate_tail"
+    assert source_inputs["dtype_device_policy"].default == "match_video"
 
     voice_profile = schemas[ids.index("MiniMaxH3VoiceProfileT8")]
     rights = next(item for item in voice_profile.inputs if item.id == "rights_confirmed")

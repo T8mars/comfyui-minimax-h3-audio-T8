@@ -1,0 +1,162 @@
+{
+  "1": {
+    "inputs": {"file": "replace_with_source_video.mp4"},
+    "class_type": "LoadVideo",
+    "_meta": {"title": "Load source video"}
+  },
+  "2": {
+    "inputs": {"video": ["1", 0]},
+    "class_type": "GetVideoComponents",
+    "_meta": {"title": "Extract source frames, audio and FPS"}
+  },
+  "3": {
+    "inputs": {
+      "source_fps": ["2", 2],
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "start_seconds": 0.0,
+      "short_video_policy": "strict",
+      "short_audio_policy": "pad_silence",
+      "frames": ["2", 0],
+      "source_audio": ["2", 1]
+    },
+    "class_type": "MiniMaxH3SourceMediaWindowT8",
+    "_meta": {"title": "Normalize source to H3 24fps / 17n+5 / 32kHz"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "5": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "6": {
+    "inputs": {"pixels": ["3", 0], "vae": ["4", 0]},
+    "class_type": "VAEEncode",
+    "_meta": {"title": "Encode source video latent"}
+  },
+  "7": {
+    "inputs": {"audio": ["3", 1], "vae": ["5", 0]},
+    "class_type": "VAEEncodeAudio",
+    "_meta": {"title": "Encode source audio latent"}
+  },
+  "8": {
+    "inputs": {
+      "video_mode": "remix",
+      "video_denoise_strength": 0.5,
+      "audio_mode": "lock",
+      "audio_denoise_strength": 0.35,
+      "audio_fit_policy": "fit_to_video_generate_tail",
+      "dtype_device_policy": "match_video",
+      "video_latent": ["6", 0],
+      "audio_latent": ["7", 0]
+    },
+    "class_type": "MiniMaxH3SourceAVPrepareT8",
+    "_meta": {"title": "Remix source picture and preserve source audio"}
+  },
+  "9": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load H3 FL2VA model"}
+  },
+  "10": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "11": {
+    "inputs": {
+      "prompt": "Restyle the source video as a cinematic scene while preserving its action, timing and original sound.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["10", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Build H3 prompt conditioning; use Source AV latent for sampling"}
+  },
+  "12": {
+    "inputs": {
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": ["9", 0],
+      "av_latent": ["8", 0]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "H3 source-video dual-clock setup"}
+  },
+  "13": {
+    "inputs": {"noise_seed": 2608103001},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Noise"}
+  },
+  "14": {
+    "inputs": {"model": ["12", 0], "conditioning": ["11", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "15": {
+    "inputs": {
+      "noise": ["13", 0],
+      "guider": ["14", 0],
+      "sampler": ["12", 1],
+      "sigmas": ["12", 2],
+      "latent_image": ["8", 0]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample source AV repaint"}
+  },
+  "16": {
+    "inputs": {
+      "av_latent": ["15", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode repainted video and audio"}
+  },
+  "17": {
+    "inputs": {
+      "images": ["16", 0],
+      "fps": 24.0,
+      "audio": ["16", 1],
+      "bit_depth": 8
+    },
+    "class_type": "CreateVideo",
+    "_meta": {"title": "Create synchronized source repaint"}
+  },
+  "18": {
+    "inputs": {
+      "video": ["17", 0],
+      "filename_prefix": "MiniMaxH3/source_video_repaint",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {"title": "Save source video repaint"}
+  }
+}

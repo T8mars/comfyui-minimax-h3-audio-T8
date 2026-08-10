@@ -1,11 +1,11 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.10.0`，共注册
-48 个节点，覆盖原生音画条件、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.11.0`，共注册
+51 个节点，覆盖原生音画条件、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
-节点按稳定性与用途分为六个菜单：
+节点按稳定性与用途分为七个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
@@ -15,6 +15,7 @@
 | `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 对已有 H3 视觉参考/关键帧 Conditioning 设置全局参考强度，不修改采样链 |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
+| `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -29,7 +30,8 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
 
-`1.10.0` 保留此前36个节点的 ID、顺序、默认值和旧接线，只在其后追加12个语音可靠性/
+`1.11.0` 保留此前48个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的 Source AV
+EXP 节点；旧工作流不会自动读取来源视频、改变 latent 或启用重绘 mask。`1.10.0` 保留此前36个节点的 ID、顺序、默认值和旧接线，只在其后追加12个语音可靠性/
 创作 EXP 节点；旧工作流不会自动启用异常全局卸载、持久音色库、长文本或 Joint 多人。
 `1.9.0` 只在原35个节点之后追加一个视觉参考强度 EXP 后置节点；原节点 ID、顺序、默认值和
 旧工作流接线不变，只有用户主动插入节点时才写入实验字段。`1.8.0` 只在原25个节点之后追加10个实验性语音节点；旧节点顺序不变，原工作流不会自动进入
@@ -103,6 +105,9 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Speech Long Form Start/Accept/Control/Compose (EXP/T8) | 原子 accepted manifest、断点恢复、合作式取消、分段可播放预览、哈希校验和最终精确时间线合成 |
 | MiniMax H3 Joint Dialogue Conditioning / 多人同段条件 (EXP/T8) | 2–3人 Ref2VA 同段实验；真实两人探针质量门槛失败，不是稳定推荐路径 |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
+| MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
+| MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
+| MiniMax H3 AV Latent Separate / 联合潜空间拆分 (EXP/T8) | 不调用VAE即可校验、拆出H3视频/音频latent并保留各自mask |
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -117,6 +122,54 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | `Hybrid` | 关键帧与参考媒体混合生成 |
 
 中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
+
+## EXP：来源视频音画重绘
+
+`1.11.0` 新增的 Source AV 链不是时间轴上的视频拼接器，而是把已有视频与声音规范化、VAE编码
+后作为 H3 的起始联合 AV latent。它支持以下实验组合：
+
+该方向受到 `ptmaster/ComfyUI-PT_H3ConcatAVLatent` 的产品思路启发，但本项目没有复制、打包或
+依赖该仓库代码；实现基于 ComfyUI 原生 GPL AV latent 契约与本项目已有的校验、mask和时间轴
+基础设施独立完成。当前 ComfyUI 已自带通用 `LTXVConcatAVLatent`，本项目新增的是 H3 专用的
+媒体规范化、严格时钟检查、双流模式和风险报告，而不是重复注册一个无校验的通用包装器。
+
+- `video=remix, audio=lock`：重绘画面，尽量保留来源音频 latent；
+- `video=lock, audio=remix/regenerate`：尽量保留画面，重绘或重生声音；
+- 双流 `remix`：画面和声音分别使用自己的 denoise mask；
+- `regenerate`：对应流的 mask 为1，但在真实矩阵通过前不把它描述成完全摆脱来源信息。
+
+推荐连接：
+
+1. Core `Load Video -> Get Video Components`；
+2. frames、audio、fps 进入 `Source Media Window`，选择画布、起点和124帧窗口；
+3. 输出 frames/audio 分别进入标准 `VAE Encode` 与 `VAE Encode Audio`；
+4. 两个 latent 进入 `Source AV Prepare`；
+5. 使用它的 `av_latent` 替换 `SamplerCustomAdvanced.latent_image`，同时接到双时钟节点的
+   `av_latent`；Conditioning 仍只负责 prompt 和媒体条件；
+6. sampler 输出继续使用现有 `AV Decode -> Create Video -> Save Video`。
+
+`Source Media Window` 会把目标帧数向上对齐到 `17n+5`，按来源 fps 选择最接近的帧，并输出
+精确时长的32kHz双声道音频。视频不足默认拒绝；用户显式选择 `hold_last_frame` 才会保持末帧。
+音频不足默认补静音并写入报告；不连接音频时会生成报告标记的静音轨，供 Audio VAE 构造合法
+联合 latent。这个节点接收的完整 IMAGE 已经在内存中，因此不能把它称为长视频流式或低内存解码。
+
+`Source AV Prepare` 严格要求视频 `[1,24,T,H,W]`、音频 `[1,32,2,T40]`、视频
+`T=5n+2`，并校验音频长度是否等于 `round((17n+5)*40/24)`。音频不一致时只能按用户选择的
+`strict`、裁切或补零生成尾部策略处理，不会静默修改。视频元数据优先保留，非冲突音频元数据
+会合并，冲突字段和所有时间调整都会写入 report。
+
+当前没有证据证明 `0.25/0.5/0.75` 会形成视觉上严格单调或线性的重绘权重，也没有完成真实
+H3画质、身份、动作、音频保真和16GB显存矩阵。因此三个节点均为 EXP，不标 `memory_safe`、
+“任意视频”或“精准局部重绘”。API与前端示例分别为：
+
+- `examples/source_video_repaint_api.json`；
+- `examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json`。
+
+本机已用真实来源有声视频、FL2VA pruned INT8、Qwen3-VL NVFP4 与双 H3 VAE 完成一次
+256×256、124帧、1步机械整链检查；结果成功保存为24fps H.264 + 32kHz stereo AAC，视频与
+音频时长均约5.167秒。该探针只证明加载、双VAE、latent组装、采样、双解码和封装能连通，
+不证明1步画质。运行期间整卡最低空闲仅44.52MiB，远低于512MiB安全门槛，所以16GB环境
+仍属于高风险实验档；在多模式、多强度、三冷三暖及质量矩阵完成前不提供显存安全承诺。
 
 ## EXP：视觉参考强度（Ref2VA 纹理 A/B）
 
