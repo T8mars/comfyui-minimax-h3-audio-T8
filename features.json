@@ -70,7 +70,9 @@
     "MiniMaxH3AVLatentSeparateT8",
     "MiniMaxH3DialogueBoundaryAnalyzerT8",
     "MiniMaxH3DialogueSafeMasterT8",
-    "MiniMaxH3TimedAudioBedLockT8"
+    "MiniMaxH3TimedAudioBedLockT8",
+    "MiniMaxH3KeyframePlanT8Advanced",
+    "MiniMaxH3MultiKeyframeConditioningT8Advanced"
   ],
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -653,6 +655,70 @@
       "precise spatial inpainting"
     ],
     "status": "mechanical EXP implementation and one real-model one-step end-to-end path passed; denoise, perceptual quality and full VRAM matrix remain required, and the observed 44.52MiB minimum headroom denies a 16GiB memory_safe tier"
+  },
+  "experimental_multikeyframe_advanced": {
+    "category": "T8/MiniMax H3/Conditioning/Experimental",
+    "nodes": [
+      "MiniMaxH3KeyframePlanT8Advanced",
+      "MiniMaxH3MultiKeyframeConditioningT8Advanced"
+    ],
+    "positioning": "isolated Advanced extension for FL2VA first/last-frame workflows; the stable MiniMaxH3AudioConditioningT8 node, its inputs, defaults, outputs, and sampling math are unchanged",
+    "timeline": {
+      "middle_keyframes": "1 to 7 enabled images in addition to the stable first and last frames",
+      "total_keyframe_limit": 9,
+      "position_modes": ["frame", "seconds", "percent_0_to_100"],
+      "frame_rate": 24,
+      "duplicate_or_endpoint_policy": "fail closed; middle plans cannot replace frame 0 or the final frame",
+      "ordering": "resolved frame order controls Picture ordinal order and packed H3 condition-row order"
+    },
+    "strength_contract": {
+      "name": "raw visual_noise_aug per keyframe",
+      "default": 0.999,
+      "range": [0.0, 1.0],
+      "meaning": "the MiniMax H3 raw visual conditioning noise augmentation applied independently to both the selected condition latent and its matching packed condition timestep rows",
+      "not_claimed": "not a calibrated linear similarity percentage and not guaranteed to improve identity or texture",
+      "nonuniform_route": "only a cloned MODEL is patched; source-contract guards reject unsupported H3 internals rather than silently falling back to one global value"
+    },
+    "compatibility": {
+      "empty_plan": "with all endpoint/reference raw augmentation values at 0.999, calls the stable conditioning path and returns the original MODEL without an Advanced patch",
+      "current_core": "uses a scoped extra_conds repair on the cloned MODEL for interior packed positions; no global PackedLayout monkey patch",
+      "future_core": "if PackedLayout begins accepting native arbitrary-position keyframes, this version refuses execution until the full extra_conds/ref/audio/per-keyframe-augmentation contract is revalidated; it does not guess compatibility from a version string",
+      "hybrid_refs": "keeps keyframe latents before image, video, video_audio and audio reference latents in layout order",
+      "fail_closed_conflicts": [
+        "external global MiniMax H3 PackedLayout patch",
+        "unrecognized MODEL extra_conds or diffusion _forward patch",
+        "stacking with the Long Video experimental model patch"
+      ]
+    },
+    "examples": {
+      "api": "examples/multikeyframe_advanced_api.json",
+      "frontend": "examples/workflows/H3_MultiKeyframe_Advanced_EXP.json"
+    },
+    "validation_report": "docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md",
+    "validated_real_probe": {
+      "date": "2026-08-11",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0/cbbc9dab1; SageAttention; disable-smart-memory; native allocator",
+      "models": "FL2VA pruned INT8, Qwen3-VL NVFP4, H3 video FP16 VAE and audio FP32 VAE; no LoRA",
+      "nonuniform_case": "256x256, 22 frames, first + two middle + last, raw augs 0.999/0.999/0.995/0.999, one dual-clock step; completed with exact video/audio media contracts and 202.82MiB minimum headroom",
+      "memory_matrix": "736x416, 124 frames, 0/1/3/5 middle anchors, three cold plus three warm each: 24/24 generation and media passes, 672.95MiB worst headroom, no material warm-baseline staircase",
+      "maximum_plan_probe": "seven middle anchors plus endpoints, 736x416, 124 frames, one step: success, exact 124-frame 24fps video and finite 32kHz stereo decoded audio, 1819.42MiB headroom",
+      "stock20_quality": "three materials x three seeds x five anchors: 42/45 global position-proxy hits within target plus/minus two frames, all 27 middle anchors hit, 9/9 strict order, zero catastrophic-jump proxies, median target SSIM 0.890919",
+      "per_keyframe_raw_pilot": "changing only frame-62 raw aug across 0.999/0.995/0.990/0.980/0.950 left other anchors stable but produced rho=0.70 and non-strict monotonicity; the predeclared rho>=0.8 strength gate failed",
+      "compatibility": "real non-dual res_multistep/simple, Block Cache uniform and nonuniform, KJ memory-efficient Sage, and Hybrid image/video/video-audio/audio probes passed mechanically",
+      "turbo_decision": "the new FL2V four-step LoRA executed but its inspected sample melted/smeared; Stock20 remains the recommended Advanced quality route",
+      "safety_decision": "some successful compatibility cases had only 202.82-227.37MiB headroom, below the 512MiB project gate; no 16GiB memory_safe claim",
+      "miswire_probe": "Advanced positive intentionally connected to the original unpatched MODEL failed closed instead of silently moving middle anchors to frame zero"
+    },
+    "unvalidated_or_denied": [
+      "16GiB memory_safe or never-OOM claim",
+      "reference-strength linearity or perceptual monotonicity; the first controlled pilot failed the rho>=0.8 gate",
+      "DINO/face identity, motion, lip-sync, audio subjective quality and formal blind evaluation",
+      "the full three-material x three-seed x three-position per-keyframe raw-augmentation matrix",
+      "stacking with Long Video or third-party Motion Context/global H3 patches",
+      "stable Turbo four-step quality; the current inspected FL2V four-step sample failed perceptual quality",
+      "1080p, 0.6M/362-frame and cross-GPU safety profiles"
+    ],
+    "status": "isolated Advanced implementation passed current-core mechanics, 24-run memory/media matrix, maximum seven-middle-anchor probe, Hybrid/cache/Sage compatibility and a limited Stock20 position-quality matrix; raw-strength calibration, Turbo quality, formal identity/blind evaluation and 16GiB safety remain denied or unproven"
   },
   "experimental_visual_reference_strength": {
     "node": "MiniMaxH3VisualReferenceStrengthEXPT8",

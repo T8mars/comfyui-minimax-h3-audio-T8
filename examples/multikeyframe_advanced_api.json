@@ -1,0 +1,165 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load full H3 FL2VA model"}
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "5": {
+    "inputs": {"image": "replace_with_first_frame.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Replace: first frame"}
+  },
+  "6": {
+    "inputs": {"image": "replace_with_middle_frame_1.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Replace: middle frame at 33%"}
+  },
+  "7": {
+    "inputs": {"image": "replace_with_middle_frame_2.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Replace: middle frame at 67%"}
+  },
+  "8": {
+    "inputs": {"image": "replace_with_last_frame.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Replace: last frame"}
+  },
+  "9": {
+    "inputs": {
+      "image": ["6", 0],
+      "position_mode": "percent",
+      "position": 33.0,
+      "visual_noise_aug": 0.999,
+      "resize_mode": "center_crop",
+      "enabled": true
+    },
+    "class_type": "MiniMaxH3KeyframePlanT8Advanced",
+    "_meta": {"title": "Advanced middle keyframe 1"}
+  },
+  "10": {
+    "inputs": {
+      "previous_plan": ["9", 0],
+      "image": ["7", 0],
+      "position_mode": "percent",
+      "position": 67.0,
+      "visual_noise_aug": 0.999,
+      "resize_mode": "center_crop",
+      "enabled": true
+    },
+    "class_type": "MiniMaxH3KeyframePlanT8Advanced",
+    "_meta": {"title": "Advanced middle keyframe 2"}
+  },
+  "11": {
+    "inputs": {
+      "model": ["1", 0],
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0],
+      "prompt": "Follow <Picture 1>, <Picture 2>, <Picture 3>, and <Picture 4> in chronological order. A coherent cinematic camera move with continuous character identity and natural motion. Detailed ambience and sound effects, no extra dialogue.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "auto",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame_noise_aug": 0.999,
+      "last_frame_noise_aug": 0.999,
+      "reference_visual_noise_aug": 0.999,
+      "first_frame": ["5", 0],
+      "last_frame": ["8", 0],
+      "keyframe_plan": ["10", 0]
+    },
+    "class_type": "MiniMaxH3MultiKeyframeConditioningT8Advanced",
+    "_meta": {
+      "title": "Advanced multi-keyframe FL2VA; raw strengths are experimental"
+    }
+  },
+  "12": {
+    "inputs": {
+      "model": ["11", 0],
+      "av_latent": ["11", 2],
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Stable sampler; Advanced only patches the cloned MODEL"}
+  },
+  "13": {
+    "inputs": {"noise_seed": 2608111201},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Fixed validation seed"}
+  },
+  "14": {
+    "inputs": {"model": ["12", 0], "conditioning": ["11", 1]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "15": {
+    "inputs": {
+      "noise": ["13", 0],
+      "guider": ["14", 0],
+      "sampler": ["12", 1],
+      "sigmas": ["12", 2],
+      "latent_image": ["11", 2]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Sample Advanced multi-keyframe H3"}
+  },
+  "16": {
+    "inputs": {
+      "av_latent": ["15", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode H3 AV output"}
+  },
+  "17": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_T8/MultiKeyframe_Advanced",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["16", 0],
+      "audio": ["16", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save synchronized Advanced comparison MP4"}
+  }
+}

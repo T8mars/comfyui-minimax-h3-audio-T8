@@ -1018,6 +1018,11 @@ def patch_long_video_model(model):
         raise ValueError("model is not a ComfyUI MODEL patcher")
     patched = model.clone()
     original = patched.get_model_object("extra_conds")
+    if getattr(original, "_t8_multikeyframe_patch_version", None) is not None:
+        raise ValueError(
+            "MiniMax H3 Long Video Conditioning and Multi-Keyframe Advanced cannot be "
+            "stacked until their patch order has been validated"
+        )
     if getattr(original, "_t8_long_video_patch_version", None) == LONG_VIDEO_PATCH_VERSION:
         return patched
 

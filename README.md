@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.12.0`，共注册
-54 个节点，覆盖原生音画条件、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.13.0`，共注册
+56 个节点，覆盖原生音画条件、隔离的多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -12,7 +12,7 @@
 | `T8/MiniMax H3/Audio` | 稳定 | 音画条件、音频处理、预检、双时钟采样与 AV 解码 |
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
-| `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 对已有 H3 视觉参考/关键帧 Conditioning 设置全局参考强度，不修改采样链 |
+| `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度，以及首帧、尾帧与多个中间关键帧的隔离 Advanced 时间线 |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
@@ -30,7 +30,9 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
 
-`1.12.0` 保留此前51个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的
+`1.13.0` 保留此前54个节点的 ID、顺序、默认值和旧接线，只在末尾追加2个字面以
+`Advanced` 结尾的多关键帧 EXP 节点；旧工作流不会创建中间关键帧、克隆 MODEL 或修改 H3
+内部条件行。只有用户主动接入 Advanced 计划时才启用局部能力探针和补丁。`1.12.0` 保留此前51个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的
 Dialogue Safe Audio EXP 节点；旧工作流不会自动运行 ASR、改变联合 latent、分离混合音轨或
 替换最终音频。`1.11.0` 保留此前48个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的 Source AV
 EXP 节点；旧工作流不会自动读取来源视频、改变 latent 或启用重绘 mask。`1.10.0` 保留此前36个节点的 ID、顺序、默认值和旧接线，只在其后追加12个语音可靠性/
@@ -109,6 +111,8 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Speech ADR Exact Fit / 配音精确时长 (EXP/T8) | 拒绝、补裁或有界相位声码器变速，并可确定性移调；输出精确到 sample，不声称口型同步 |
 | MiniMax H3 Speech Long Form Start/Accept/Control/Compose (EXP/T8) | 原子 accepted manifest、断点恢复、合作式取消、分段可播放预览、哈希校验和最终精确时间线合成 |
 | MiniMax H3 Joint Dialogue Conditioning / 多人同段条件 (EXP/T8) | 2–3人 Ref2VA 同段实验；真实两人探针质量门槛失败，不是稳定推荐路径 |
+| MiniMax H3 Keyframe Plan / 中间关键帧计划 (Advanced) | 链式加入一个中间图像，使用帧/秒/百分比定位，并记录该帧的原始视觉 `noise_aug` |
+| MiniMax H3 Multi-Keyframe Conditioning / 多关键帧条件 (Advanced) | 在独立 MODEL 克隆上组装首帧、1–7张中间帧、尾帧及可选 Hybrid 参考；不修改稳定 Conditioning |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
@@ -175,6 +179,55 @@ H3画质、身份、动作、音频保真和16GB显存矩阵。因此三个节�
 音频时长均约5.167秒。该探针只证明加载、双VAE、latent组装、采样、双解码和封装能连通，
 不证明1步画质。运行期间整卡最低空闲仅44.52MiB，远低于512MiB安全门槛，所以16GB环境
 仍属于高风险实验档；在多模式、多强度、三冷三暖及质量矩阵完成前不提供显存安全承诺。
+
+## Advanced：首尾帧 + 多个中间关键帧
+
+`MiniMax H3 Keyframe Plan (Advanced)` 与 `MiniMax H3 Multi-Keyframe Conditioning
+(Advanced)` 是一条完全独立的 FL2VA/Hybrid 实验路线。稳定
+`MiniMaxH3AudioConditioningT8` 没有增加输入、改变默认值或修改执行路径；已有工作流继续按
+原方式运行。Advanced 路线当前要求同时连接首帧与尾帧，并可链式加入 1～7 张中间图，位置可用
+24fps 绝对帧、秒或 `0～100` 百分比表达。重复位置、首尾端点、越界和无法识别的底层补丁会直接
+报错，不会静默改成别的位置。
+
+推荐接线：
+
+1. 多个 `Keyframe Plan Advanced` 按时间顺序或任意顺序链起来，最终由节点解析后排序；
+2. MODEL、CLIP、双 VAE、首帧、尾帧和最终 plan 接入 `Multi-Keyframe Conditioning Advanced`；
+3. Advanced 输出的 `model` 接双时钟节点，`positive` 接 `BasicGuider`，`av_latent` 同时接双时钟
+   节点与 `SamplerCustomAdvanced.latent_image`；解码和保存继续使用原节点；
+4. 如果还连接普通图片/视频/音频参考，使用 `Hybrid`，提示词中的 Picture/Video/Audio 序号仍按
+   节点报告的媒体顺序编写。
+
+每个时间线关键帧的 `visual_noise_aug` 是 MiniMax H3 底层原始混噪参数，不是“参考强度百分比”。
+默认先用 `0.999`；更低数值可能削弱锚点，也可能改变动作、身份或构图。非统一数值只会在克隆的
+MODEL 上同时作用于对应条件 latent 的混噪与对应 packed timestep 行；如果当前 ComfyUI 的内部
+契约不能被验证，节点会 fail closed。普通非时间线视觉参考目前仍共用
+`reference_visual_noise_aug`，并不是每张普通参考图独立控制。
+
+本机真实检查使用 RTX 4060 Ti 16GB、FL2VA pruned INT8、Qwen NVFP4 与双VAE。736×416、
+124帧、1步下，0/1/3/5张中间帧各完成3次冷启动和3次暖运行，共24/24成功；每个视频都是
+124帧/24fps，独立音频均为finite 32kHz stereo，连续运行没有显存基线阶梯增长。该矩阵最差
+余量672.95MiB；最大7张中间帧（连同首尾共9张）的单次上限探针也成功，余量1819.42MiB。
+这些只是机械/内存证据，不能推导任意配置安全；另一条256×256、22帧、非统一raw值探针仅余
+202.82MiB，非双时钟、Block Cache兼容探针也低于512MiB，所以仍不标16GB `memory_safe`。
+
+Stock20质量检查覆盖3类素材×3个seed、每条首/25%/50%/75%/尾共45个锚点：42/45在自动
+全局相似度代理中命中目标±2帧，全部27个中间锚点命中，9/9顺序正确，未检出黑白/灾难跳变代理。
+这是自动代理加人工查看，不等于身份、动作或盲评保证。单独改变中间一帧的
+`[0.999, 0.995, 0.990, 0.980, 0.950]` 时，其他锚点基本稳定，证明不是全局覆盖；但目标相似度
+Spearman `rho=0.70`，未达到预设 `0.8` 门槛且不严格单调。因此示例继续默认全部 `0.999`，
+该字段只称 raw EXP，不称线性参考强度。4步 FL2V Turbo机械可运行，但当前样本明显融化，
+Advanced质量推荐仍是Stock20；加速档需要独立质量验证。
+
+报告中的 `added_rows_vs_target_video_rows_percent` 只是 DiT packed视觉条件行比例，不是显存
+百分比；它不包含CLIP图像处理、普通refs、VAE峰值、allocator/offload行为或attention的非线性交互。
+Advanced节点也不允许与本项目Long Video MODEL补丁或第三方全局Motion Context/PackedLayout
+补丁叠加。完整边界、矩阵和否决项见
+[`docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md`](docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md)。
+
+API 示例：`examples/multikeyframe_advanced_api.json`；可拖入画布的示例：
+`examples/workflows/H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
+中间节点均默认 `0.999`，低值只建议在固定素材/seed/采样设置下做A/B。
 
 ## EXP：视觉参考强度（Ref2VA 纹理 A/B）
 

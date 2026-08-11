@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 54
+    assert len(ids) == 56
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -136,11 +136,19 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SourceAVPrepareT8",
         "MiniMaxH3AVLatentSeparateT8",
     ]
-    assert ids[51:] == [
+    assert ids[51:54] == [
         "MiniMaxH3DialogueBoundaryAnalyzerT8",
         "MiniMaxH3DialogueSafeMasterT8",
         "MiniMaxH3TimedAudioBedLockT8",
     ]
+    assert ids[54:] == [
+        "MiniMaxH3KeyframePlanT8Advanced",
+        "MiniMaxH3MultiKeyframeConditioningT8Advanced",
+    ]
+    for multikeyframe_id in ids[54:]:
+        multikeyframe_schema = schemas[ids.index(multikeyframe_id)]
+        assert multikeyframe_schema.is_experimental is True
+        assert multikeyframe_schema.category == "T8/MiniMax H3/Conditioning/Experimental"
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",
@@ -159,7 +167,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         assert source_av_schema.is_experimental is True
         assert source_av_schema.category == "T8/MiniMax H3/Source AV/Experimental"
 
-    for dialogue_audio_id in ids[51:]:
+    for dialogue_audio_id in ids[51:54]:
         dialogue_audio_schema = schemas[ids.index(dialogue_audio_id)]
         assert dialogue_audio_schema.is_experimental is True
         assert dialogue_audio_schema.category == "T8/MiniMax H3/Speech/Experimental"
@@ -383,6 +391,94 @@ def test_dual_clock_example_uses_one_coherent_sampling_setup():
         for value in node["inputs"].values():
             if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
                 assert value[0] in node_ids
+
+
+def test_multikeyframe_advanced_api_is_isolated_and_wired_to_the_cloned_model():
+    path = Path(__file__).resolve().parents[1] / "examples" / "multikeyframe_advanced_api.json"
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+
+    plan_ids = [
+        node_id for node_id, node in workflow.items()
+        if node["class_type"] == "MiniMaxH3KeyframePlanT8Advanced"
+    ]
+    assert len(plan_ids) == 2
+    assert workflow[plan_ids[1]]["inputs"]["previous_plan"] == [plan_ids[0], 0]
+    assert [workflow[node_id]["inputs"]["position"] for node_id in plan_ids] == [33.0, 67.0]
+    assert [workflow[node_id]["inputs"]["visual_noise_aug"] for node_id in plan_ids] == [
+        0.999,
+        0.999,
+    ]
+
+    conditioning_id = next(
+        node_id for node_id, node in workflow.items()
+        if node["class_type"] == "MiniMaxH3MultiKeyframeConditioningT8Advanced"
+    )
+    conditioning = workflow[conditioning_id]
+    assert conditioning["inputs"]["keyframe_plan"] == [plan_ids[1], 0]
+    assert conditioning["inputs"]["first_frame_noise_aug"] == 0.999
+    assert conditioning["inputs"]["last_frame_noise_aug"] == 0.999
+
+    sampler_id = next(
+        node_id for node_id, node in workflow.items()
+        if node["class_type"] == "MiniMaxH3DualClockSamplerT8"
+    )
+    sampler = workflow[sampler_id]
+    assert sampler["inputs"]["model"] == [conditioning_id, 0]
+    assert sampler["inputs"]["av_latent"] == [conditioning_id, 2]
+
+    guider = next(node for node in workflow.values() if node["class_type"] == "BasicGuider")
+    assert guider["inputs"]["conditioning"] == [conditioning_id, 1]
+    sample = next(
+        node for node in workflow.values() if node["class_type"] == "SamplerCustomAdvanced"
+    )
+    assert sample["inputs"]["latent_image"] == [conditioning_id, 2]
+
+    node_ids = set(workflow)
+    for node in workflow.values():
+        for value in node["inputs"].values():
+            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                assert value[0] in node_ids
+
+
+def test_multikeyframe_advanced_frontend_workflow_is_consistent_and_opt_in():
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "examples" / "workflows" / "H3_MultiKeyframe_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert len(nodes) == len(workflow["nodes"])
+
+    types = [node["type"] for node in workflow["nodes"]]
+    assert types.count("MiniMaxH3KeyframePlanT8Advanced") == 2
+    assert types.count("MiniMaxH3MultiKeyframeConditioningT8Advanced") == 1
+    assert "MiniMaxH3AudioConditioningT8" not in types
+    assert not any(node_type.startswith("MiniMaxH3LongVideo") for node_type in types)
+    assert not any(node_type.startswith("MiniMaxH3Motion") for node_type in types)
+
+    plans = [
+        node for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3KeyframePlanT8Advanced"
+    ]
+    assert [node["widgets_values"][1] for node in plans] == [33.0, 67.0]
+    assert [node["widgets_values"][2] for node in plans] == [0.999, 0.999]
+    assert plans[1]["inputs"][6]["name"] == "previous_plan"
+    assert plans[1]["inputs"][6]["link"] is not None
+
+    conditioning = next(
+        node for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3MultiKeyframeConditioningT8Advanced"
+    )
+    assert conditioning["inputs"][21]["name"] == "first_frame"
+    assert conditioning["inputs"][22]["name"] == "last_frame"
+    assert conditioning["inputs"][23]["name"] == "keyframe_plan"
+    assert all(conditioning["inputs"][index]["link"] is not None for index in (21, 22, 23))
+
+    for link_id, source, output_slot, target, input_slot, _ in workflow["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
 
 
 def test_long_video_api_example_is_isolated_retry_safe_and_trimmed():

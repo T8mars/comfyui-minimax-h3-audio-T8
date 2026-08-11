@@ -1,7 +1,7 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.12.0"
-description = "MiniMax H3 audio, dialogue-safe stem mastering and timed background-bed locking, source-video AV repaint preparation, guarded speech workflows, dual-clock sampling, resumable long-video orchestration, and Ref2VA editing nodes for ComfyUI"
+version = "1.13.0"
+description = "MiniMax H3 audio, isolated Advanced multi-keyframe conditioning, dialogue-safe mastering, source-video AV repaint preparation, guarded speech workflows, dual-clock sampling, resumable long-video orchestration, and Ref2VA editing nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
