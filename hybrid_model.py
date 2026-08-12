@@ -15,6 +15,8 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 
+from .vram_policy import apply_vram_policy
+
 
 HYBRID_PLAN_TYPE = "H3_T8_HYBRID_PLAN"
 HYBRID_ARTIFACT_TYPE = "H3_T8_HYBRID_ARTIFACT"
@@ -993,15 +995,19 @@ def load_hybrid_model(
     mode: str,
     weight_dtype: str,
     artifact: dict[str, Any] | None = None,
+    vram_policy: dict[str, Any] | None = None,
 ):
-    import comfy.sd
-
     started = time.perf_counter()
     base = Path(base_path).resolve()
     model_options = _weight_model_options(weight_dtype)
+    policy_report = (
+        None if vram_policy is None else apply_vram_policy(vram_policy)
+    )
+    import comfy.sd
+
     if mode == "base_only":
         model = comfy.sd.load_diffusion_model(str(base), model_options=model_options)
-        return model, {
+        report = {
             "mode": mode,
             "base_file_name": base.name,
             "weight_dtype": weight_dtype,
@@ -1009,6 +1015,9 @@ def load_hybrid_model(
             "load_seconds": time.perf_counter() - started,
             "warnings": ["Base-only control: no reference-capability fusion was applied."],
         }
+        if policy_report is not None:
+            report["vram_policy"] = policy_report
+        return model, report
     if mode != "apply_artifact_exp":
         raise ValueError(f"unsupported hybrid loader mode: {mode!r}")
     if artifact is None:
@@ -1035,7 +1044,7 @@ def load_hybrid_model(
     ]
     if name_warning:
         warnings.append(name_warning)
-    return patched, {
+    report = {
         "mode": mode,
         "base_file_name": base.name,
         "base_sha256": base_sha,
@@ -1048,6 +1057,9 @@ def load_hybrid_model(
         "load_seconds": time.perf_counter() - started,
         "warnings": warnings,
     }
+    if policy_report is not None:
+        report["vram_policy"] = policy_report
+    return patched, report
 
 
 def artifact_output_root(models_dir: str | os.PathLike[str]) -> Path:

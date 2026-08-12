@@ -32,6 +32,7 @@ from .nodes_still_exp import (
 from .nodes_speech_exp import SPEECH_NODE_CLASSES
 from .nodes_source_av_exp import SOURCE_AV_NODE_CLASSES
 from .nodes_visual_reference_exp import MiniMaxH3VisualReferenceStrengthEXPT8
+from .nodes_vram_policy_advanced import VRAM_POLICY_ADVANCED_NODE_CLASSES
 from .preflight import run_preflight
 from .prompt_tags import prepare_prompt
 from .sampling import (
@@ -391,7 +392,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SOURCE_AV_NODE_CLASSES,
                 *DIALOGUE_AUDIO_NODE_CLASSES,
                 *MULTIKEYFRAME_ADVANCED_NODE_CLASSES,
-                *HYBRID_MODEL_ADVANCED_NODE_CLASSES]
+                *HYBRID_MODEL_ADVANCED_NODE_CLASSES,
+                *VRAM_POLICY_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():

@@ -10,7 +10,6 @@ import uuid
 from typing import Callable
 
 import folder_paths
-import torch
 
 from .long_video_background import ComfyQueueRuntime, RELEASE_POLICIES
 
@@ -203,32 +202,43 @@ def vram_preflight(minimum_headroom_mib: float = 512.0) -> dict:
         ),
     }
     try:
-        import comfy.model_management as model_management
-        from comfy.cli_args import args
+        from .vram_policy import runtime_snapshot
 
-        device = model_management.get_torch_device()
+        snapshot = runtime_snapshot()
+        gpu = snapshot.get("gpu", {})
+        comfy_state = snapshot.get("comfy", {})
+        free_mib = gpu.get("whole_device_free_mib")
         result.update(
             {
-                "device": str(device),
-                "dynamic_vram_enabled": bool(getattr(model_management, "aimdo_enabled", False)),
-                "configured_vram_headroom_gib": float(getattr(args, "vram_headroom", 0.0) or 0.0),
-                "reserve_vram_gib": getattr(args, "reserve_vram", None),
+                "device": gpu.get("device", "unknown"),
+                "dynamic_vram_enabled": bool(
+                    comfy_state.get("dynamic_vram_enabled", False)
+                ),
+                "configured_vram_headroom_gib": comfy_state.get(
+                    "startup_vram_headroom_gib", 0.0
+                ),
+                "reserve_vram_gib": comfy_state.get("startup_reserve_vram_gib"),
+                "effective_extra_reserved_vram_gib": comfy_state.get(
+                    "extra_reserved_vram_gib"
+                ),
+                "runtime": snapshot,
             }
         )
-        if getattr(device, "type", None) == "cuda" and torch.cuda.is_available():
-            free_bytes, total_bytes = torch.cuda.mem_get_info(device)
-            free_mib = free_bytes / (1024**2)
+        if free_mib is not None:
             result.update(
                 {
-                    "whole_device_free_mib": free_mib,
-                    "whole_device_total_mib": total_bytes / (1024**2),
-                    "torch_allocated_mib": torch.cuda.memory_allocated(device) / (1024**2),
-                    "torch_reserved_mib": torch.cuda.memory_reserved(device) / (1024**2),
-                    "current_gate_pass": free_mib >= float(minimum_headroom_mib),
+                    "whole_device_free_mib": float(free_mib),
+                    "whole_device_total_mib": gpu.get("whole_device_total_mib"),
+                    "torch_allocated_mib": gpu.get("torch_allocated_mib"),
+                    "torch_reserved_mib": gpu.get("torch_reserved_mib"),
+                    "current_gate_pass": float(free_mib)
+                    >= float(minimum_headroom_mib),
                 }
             )
         else:
-            result.update({"current_gate_pass": False, "reason": "CUDA device unavailable"})
+            result.update(
+                {"current_gate_pass": False, "reason": "CUDA telemetry unavailable"}
+            )
     except Exception as error:
         result.update(
             {

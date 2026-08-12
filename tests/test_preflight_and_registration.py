@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 59
+    assert len(ids) == 60
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -149,15 +149,19 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         multikeyframe_schema = schemas[ids.index(multikeyframe_id)]
         assert multikeyframe_schema.is_experimental is True
         assert multikeyframe_schema.category == "T8/MiniMax H3/Conditioning/Experimental"
-    assert ids[56:] == [
+    assert ids[56:59] == [
         "MiniMaxH3HybridPairInspectorT8Advanced",
         "MiniMaxH3HybridArtifactBuilderT8Advanced",
         "MiniMaxH3HybridModelLoaderT8Advanced",
     ]
-    for hybrid_id in ids[56:]:
+    for hybrid_id in ids[56:59]:
         hybrid_schema = schemas[ids.index(hybrid_id)]
         assert hybrid_schema.is_experimental is True
         assert hybrid_schema.category == "T8/MiniMax H3/Models/Experimental"
+    assert ids[59:] == ["MiniMaxH3VRAMPolicyT8Advanced"]
+    vram_schema = schemas[59]
+    assert vram_schema.is_experimental is True
+    assert vram_schema.category == "T8/MiniMax H3/Models/Experimental"
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",

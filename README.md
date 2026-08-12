@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.14.0`，共注册
-59 个节点，覆盖原生音画条件、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.15.0`，共注册
+60 个节点，覆盖原生音画条件、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -13,7 +13,7 @@
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
 | `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度，以及首帧、尾帧与多个中间关键帧的隔离 Advanced 时间线 |
-| `T8/MiniMax H3/Models/Experimental` | 实验 | 严格模型配对检查、曲线重基的小型 Hybrid artifact 构建和 stock-loader 混合 MODEL |
+| `T8/MiniMax H3/Models/Experimental` | 实验 | 显存/VBAR策略、严格模型配对检查、曲线重基的小型 Hybrid artifact 构建和 stock-loader 混合 MODEL |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
@@ -30,6 +30,10 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
+
+`1.15.0` 保留 `1.14.0` 的59个节点 ID、顺序、默认值和旧接线，只在末尾追加1个字面以
+`Advanced` 结尾的 VRAM/VBAR 策略节点；Hybrid Loader 仅在末尾新增可选 policy 输入，旧工作流
+不连接时不会清理模型、修改全局预留或改变 stock loader 行为。
 
 `1.14.0` 保留 `1.13.0` 的56个节点 ID、顺序、默认值和旧接线，只在末尾追加3个字面以
 `Advanced` 结尾的 Hybrid Model EXP 节点；未连接时不会检查第二份 checkpoint、构建 artifact、
@@ -119,6 +123,7 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Hybrid Pair Inspector / 混合模型配对检查 (Advanced) | 在分配GPU前校验精确FL2VA/Ref2VA pruned pair、完整SHA-256、曲线、tensor合同、recipe和预计artifact大小 |
 | MiniMax H3 Hybrid Artifact Builder / 小型混合补丁构建 (Advanced) | 把Ref2VA所选AdaLN模态行曲线重基到FL2VA基底，原子生成约13.84～83.06MiB的内容寻址target-slice artifact |
 | MiniMax H3 Hybrid Model Loader / 混合模型加载 (Advanced) | 继续使用ComfyUI stock diffusion loader加载FL2VA，再给克隆MODEL应用小型offset-set patch；保留DynamicVRAM/VBAR路径 |
+| MiniMax H3 VRAM Policy / VBAR显存预留策略 (Advanced) | 默认只报告；显式连接Hybrid Loader后在模型加载前设置ComfyUI总预留与AIMDO simple headroom，并报告主机commit边界 |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
@@ -179,6 +184,40 @@ Pareto候选，不足以宣布去油、身份更准或优于原生Ref2VA。精�
 生成盲评包与`matrix_summary.json/csv`，并可选使用本地ASR、InsightFace和WavLM；不会自动下载模型。
 详细记录见
 [Hybrid Model Advanced 验证报告](docs/HYBRID_MODEL_ADVANCED_VALIDATION.md)。
+
+## Advanced：显存预留与 DynamicVRAM/VBAR 策略
+
+`MiniMax H3 VRAM Policy (Advanced)` 是一份有类型的策略计划，不是独立执行的万能通配节点。
+默认 `report_only` 只报告当前整卡空闲、PyTorch池、ComfyUI预留、AIMDO状态和主机commit余量；
+只有把 `vram_policy` 输出连接到 `Hybrid Model Loader` 新增的可选末尾输入后，才会在 stock 模型
+加载前应用。未连接时 Loader 的调用、输出MODEL和旧工作流路径不变。
+
+提供两种显式实验策略：
+
+- `fixed_total_reserved_exp`：设置一个总预留值；示例从2.0GiB开始；
+- `external_usage_plus_margin_exp`：先显式全局卸载ComfyUI模型，再用整卡已用显存加用户余量计算，
+  并受最大预留上限约束。为了不把ComfyUI缓存模型误当成外部程序占用，此模式强制要求
+  `clean_before_load=true`。
+
+本实现与 `ComfyUI-ReservedVRAM` 的产品方向相同，但没有复制其代码，也没有调用
+`aimdo_control.init(...)`。本机 `comfy-aimdo 0.4.13` 的 `init` 在库已加载时还会写入
+`nvml_pressure`；本节点只调用底层 `lib.set_simple_vram_headroom(...)`，同时更新当前ComfyUI的
+总预留。它不会再次初始化设备，也不会修改启动参数 `--vram-headroom`。
+
+预留显存能让ComfyUI/VBAR更早减少GPU权重驻留，降低贴着16GiB上限运行时被其他进程或瞬时分配
+顶穿的概率，但不能推出“虚拟内存足够就不会OOM”。VBAR管理的是模型权重页；activation、attention
+workspace、VAE/CLIP、CUDA上下文、其他GPU进程、pin memory和系统commit仍可能失败，VBAR本身也有
+OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。策略在进程内持续有效，直到再次修改
+或重启ComfyUI。
+
+新示例为：
+
+- `examples/hybrid_model_vbar_headroom_api.json`；
+- `examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
+
+示例使用2.0GiB固定总预留、显式全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
+门槛。当前仍必须通过真实三冷三暖与连续任务矩阵后，才能讨论16GiB `memory_safe`；节点报告始终把
+`memory_safe_claim`保持为false。
 
 ## EXP：来源视频音画重绘
 

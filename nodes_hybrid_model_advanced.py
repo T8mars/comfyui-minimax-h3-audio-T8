@@ -20,6 +20,10 @@ from .hybrid_model import (
     pair_report_text,
     pretty_json,
 )
+from .vram_policy import (
+    VRAM_POLICY_TYPE,
+    policy_descriptor_fingerprint,
+)
 
 
 CATEGORY = "T8/MiniMax H3/Models/Experimental"
@@ -27,6 +31,7 @@ QUALITY_BASE_DEFAULT = "minimax_h3_fl2va_pruned_int8_convrot.safetensors"
 REFERENCE_OVERLAY_DEFAULT = "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
 HybridPlanIO = io.Custom(HYBRID_PLAN_TYPE)
 HybridArtifactIO = io.Custom(HYBRID_ARTIFACT_TYPE)
+VRAMPolicyIO = io.Custom(VRAM_POLICY_TYPE)
 
 
 def _diffusion_models() -> list[str]:
@@ -225,18 +230,33 @@ class MiniMaxH3HybridModelLoaderT8Advanced(io.ComfyNode):
                     advanced=True,
                 ),
                 HybridArtifactIO.Input("hybrid_artifact", optional=True),
+                VRAMPolicyIO.Input(
+                    "vram_policy",
+                    optional=True,
+                    tooltip=(
+                        "Optional T8 policy applied before the stock diffusion-model load."
+                    ),
+                ),
             ],
             outputs=[io.Model.Output("model"), io.String.Output("report_json")],
             is_experimental=True,
         )
 
     @classmethod
-    def execute(cls, quality_base, mode, weight_dtype, hybrid_artifact=None):
+    def execute(
+        cls,
+        quality_base,
+        mode,
+        weight_dtype,
+        hybrid_artifact=None,
+        vram_policy=None,
+    ):
         model, report = load_hybrid_model(
             _resolve_diffusion_model(quality_base),
             mode,
             weight_dtype,
             hybrid_artifact,
+            vram_policy,
         )
         return io.NodeOutput(model, pretty_json(report))
 
@@ -247,6 +267,7 @@ class MiniMaxH3HybridModelLoaderT8Advanced(io.ComfyNode):
         mode,
         weight_dtype,
         hybrid_artifact=None,
+        vram_policy=None,
     ):
         try:
             paths: list[str | Path] = [_resolve_diffusion_model(quality_base)]
@@ -261,7 +282,13 @@ class MiniMaxH3HybridModelLoaderT8Advanced(io.ComfyNode):
                 )
                 artifact_sha = str(hybrid_artifact.get("artifact_sha256", "unknown"))
             files = file_stat_fingerprint(paths)
-            return f"{mode}:{weight_dtype}:{artifact_sha}:{files}"
+            if vram_policy is None:
+                policy_fingerprint = "none"
+            else:
+                policy_fingerprint = policy_descriptor_fingerprint(vram_policy)
+            return (
+                f"{mode}:{weight_dtype}:{artifact_sha}:{policy_fingerprint}:{files}"
+            )
         except (KeyError, OSError, TypeError, ValueError) as exc:
             return f"unresolved:{type(exc).__name__}:{exc}"
 

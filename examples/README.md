@@ -34,6 +34,13 @@ reference类型选择要实验的AdaLN模态行，不负责判断哪个recipe质
 对照，逐路全局释放模型，并输出hash、显存、盲评包、`matrix_summary.json/csv`；可选本地ASR、
 InsightFace和WavLM都必须由用户显式指定，工具不会下载模型。
 
+`hybrid_model_vbar_headroom_api.json` 与
+`workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` 在同一Stock20 Hybrid图前增加
+`MiniMaxH3VRAMPolicyT8Advanced`，并把有类型的policy直接连接到Loader。示例固定总预留2.0GiB、
+显式全局卸载、要求DynamicVRAM、检查512MiB当前余量与16GiB主机commit余量。全局卸载不是H3专属；
+policy只调节ComfyUI总预留和AIMDO simple headroom，不改变启动时每设备`--vram-headroom`。它用于
+受控A/B与降低权重驻留压力，不承诺虚拟内存足够即可避免所有OOM。
+
 三份实验性语音 API prompt 复用现有 H3 模型对象，不在节点内部重复加载模型：
 
 - `speech_described_api.json`：描述音色的单句英文语音。当前 stock 20步基线使用

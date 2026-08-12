@@ -75,7 +75,8 @@
     "MiniMaxH3MultiKeyframeConditioningT8Advanced",
     "MiniMaxH3HybridPairInspectorT8Advanced",
     "MiniMaxH3HybridArtifactBuilderT8Advanced",
-    "MiniMaxH3HybridModelLoaderT8Advanced"
+    "MiniMaxH3HybridModelLoaderT8Advanced",
+    "MiniMaxH3VRAMPolicyT8Advanced"
   ],
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -833,6 +834,40 @@
       "quality_decision": "minimal video-only/audio-only routing and the mixed-reference recipe remain research Pareto candidates; one material/seed, no completed blind panel and <512MiB headroom deny best-quality, de-wax, max-reference or 16GiB memory_safe labels"
     },
     "status": "isolated P0 implementation, exact artifact construction, Conditioning-aware minimal modality routing, resumable matrix tooling and visual/audio/mixed Stock20 pilots passed; broader multi-material quality, combination and repeat-memory gates remain Experimental and incomplete"
+  },
+  "experimental_vram_policy_advanced": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "node": "MiniMaxH3VRAMPolicyT8Advanced",
+    "positioning": "side-effect-free policy planner whose typed output is optionally consumed by the Advanced Hybrid Loader before ComfyUI's stock diffusion-model load; all previous 59 node IDs and old workflows remain unchanged",
+    "modes": [
+      "report_only",
+      "fixed_total_reserved_exp",
+      "external_usage_plus_margin_exp"
+    ],
+    "application_contract": {
+      "default": "report_only performs no cleanup or global mutation",
+      "fixed": "sets the total ComfyUI EXTRA_RESERVED_VRAM and, when DynamicVRAM is active, AIMDO simple headroom",
+      "external_auto": "requires explicit global model cleanup, then measures whole-device usage plus a user margin and applies a user cap",
+      "ordering": "the policy is a typed Loader input, so application precedes stock model loading instead of relying on an independent output-node branch",
+      "aimdo": "uses lib.set_simple_vram_headroom directly and never calls control.init, avoiding an implicit nvml_pressure reset on comfy-aimdo 0.4.13",
+      "startup_headroom": "does not reinitialize devices or change the startup --vram-headroom value"
+    },
+    "telemetry": [
+      "whole-device free/total/used VRAM",
+      "PyTorch allocated/reserved",
+      "effective ComfyUI extra reserve",
+      "DynamicVRAM/AIMDO state and package version",
+      "Windows commit limit/headroom or Linux CommitLimit/Committed_AS"
+    ],
+    "safety_boundaries": [
+      "global cleanup is explicit and unloads every ComfyUI model, not H3 only",
+      "the process-global policy persists until changed again or ComfyUI restarts",
+      "VBAR manages model-weight pages but does not make activations, attention workspaces, VAE/CLIP allocations, CUDA context, other GPU users, pinned RAM, or system commit infallible",
+      "memory_safe and never-OOM remain false until controlled real cold/warm generation passes the existing 512MiB gate"
+    ],
+    "api_example": "examples/hybrid_model_vbar_headroom_api.json",
+    "frontend_workflow": "examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
+    "status": "implementation and deterministic policy/ordering/fail-closed tests passed; controlled real 16GiB A/B validation pending"
   },
   "vram_validation": {
     "tool": "tools/validate_h3_vram.py",
