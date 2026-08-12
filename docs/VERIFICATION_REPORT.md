@@ -5,10 +5,32 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.14.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
+The current 1.16.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.16.0 Hybrid artifact maintenance checkpoint (2026-08-12)
+
+One isolated Advanced output node was appended after the previous 60-node prefix. Its default
+`inspect_only` path performs no writes. Every mutating action requires explicit confirmation and a
+positive operation epoch. The implementation derives one exact content-addressed path from a fully
+verified Hybrid plan and can quarantine/restore a complete artifact pair, recover an interrupted
+pair move, or quarantine sufficiently old build residue. It never scans or deletes source diffusion
+checkpoints and does not unload MODEL cache or release VRAM.
+
+Transactions use same-volume atomic moves plus fsynced atomic journals containing exact source and
+recycle paths, byte sizes, SHA-256 values, phase, and moved count. Symbolic links, path escape,
+noncanonical manifests, malformed phase/count pairs, incomplete artifact-pair journals, duplicates,
+and hash/size changes fail closed. A Windows subprocess was killed after the artifact moved but before
+the sidecar moved; explicit recovery archived the aged dead-owner lock and restored a valid pair.
+Windows PID liveness now uses process handles and exit codes instead of `os.kill(pid, 0)`.
+
+The frontend and API examples ship in safe inspection mode. The dedicated contract and limitations
+are recorded in `docs/HYBRID_ARTIFACT_MAINTENANCE.md`.
+All 327 project tests, Ruff, compileall, 67 example-JSON parses, and `git diff --check` pass. The
+stable `sampling.py` SHA-256 remains
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
 
 ## 1.14.0 Advanced hybrid-model checkpoint (2026-08-12)
 

@@ -34,6 +34,14 @@ reference类型选择要实验的AdaLN模态行，不负责判断哪个recipe质
 对照，逐路全局释放模型，并输出hash、显存、盲评包、`matrix_summary.json/csv`；可选本地ASR、
 InsightFace和WavLM都必须由用户显式指定，工具不会下载模型。
 
+`hybrid_artifact_maintenance_api.json` 与
+`workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json` 默认都是
+`inspect_only + confirm=false + epoch=0`，只报告严格plan对应的artifact/sidecar、锁、temp与事务状态。
+隔离、还原、过期构建残留处理和中断恢复必须显式确认并使用正整数epoch；同一事务的还原/恢复复用
+相同epoch，新隔离必须换新值。隔离只是把校验过的文件移动到同卷`_recycle`，不会永久删除、扫描
+任意模型目录、卸载已加载MODEL或释放显存。完整合同见
+`docs/HYBRID_ARTIFACT_MAINTENANCE.md`。
+
 `hybrid_model_vbar_headroom_api.json` 与
 `workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` 在同一Stock20 Hybrid图前增加
 `MiniMaxH3VRAMPolicyT8Advanced`，并把有类型的policy直接连接到Loader。示例固定总预留4.0GiB、

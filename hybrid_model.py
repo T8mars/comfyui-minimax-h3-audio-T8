@@ -24,6 +24,14 @@ ARTIFACT_SCHEMA = "t8.minimax_h3.hybrid_artifact.v1"
 PLAN_SCHEMA = "t8.minimax_h3.hybrid_plan.v1"
 ALGORITHM = "curve_affine_rebase_fp64_target_slice_set_v1"
 ATTACHMENT_KEY = "t8_minimax_h3_hybrid_recipe_v1"
+ARTIFACT_MAINTENANCE_SCHEMA = "t8.minimax_h3.hybrid_artifact_maintenance.v1"
+ARTIFACT_MAINTENANCE_ACTIONS = (
+    "inspect_only",
+    "quarantine_artifact_exp",
+    "restore_quarantined_exp",
+    "quarantine_stale_build_residue_exp",
+    "recover_interrupted_exp",
+)
 
 BLOCK_COUNT = 50
 CURVE_SHAPE = (1025, 8)
@@ -569,6 +577,9 @@ def _artifact_identity(plan: dict[str, Any]) -> dict[str, Any]:
 @contextmanager
 def _artifact_lock(path: Path):
     lock_path = path.with_suffix(path.suffix + ".lock")
+    maintenance_lock_path = path.with_suffix(path.suffix + ".maintenance.lock")
+    if maintenance_lock_path.exists():
+        raise RuntimeError(f"hybrid artifact maintenance is active: {maintenance_lock_path}")
     payload = canonical_json({"pid": os.getpid(), "created_unix": time.time(), "target": path.name})
     try:
         descriptor = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -583,12 +594,22 @@ def _artifact_lock(path: Path):
             ) from exc
         raise RuntimeError(f"hybrid artifact is already being built: {lock_path}") from exc
     try:
+        if maintenance_lock_path.exists():
+            os.close(descriptor)
+            descriptor = -1
+            lock_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"hybrid artifact maintenance began before the build lock settled: {maintenance_lock_path}"
+            )
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            descriptor = -1
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
         yield
     finally:
+        if descriptor >= 0:
+            os.close(descriptor)
         try:
             lock_path.unlink()
         except FileNotFoundError:
@@ -923,6 +944,701 @@ def validate_artifact_descriptor(artifact: dict[str, Any]) -> dict[str, Any]:
         "manifest": manifest,
         "cache_hit": bool(artifact.get("cache_hit", False)),
     }
+
+
+def _maintenance_plan_context(
+    plan: dict[str, Any],
+    output_root: str | os.PathLike[str],
+    operation_epoch: int,
+) -> dict[str, Any]:
+    if not isinstance(plan, dict) or plan.get("schema") != PLAN_SCHEMA:
+        raise ValueError("hybrid_plan is not a MiniMax H3 T8 plan")
+    if not plan.get("compatible"):
+        raise ValueError("hybrid plan is not compatible: " + "; ".join(plan.get("errors", [])))
+    if plan.get("verification") != "full_sha256":
+        raise ValueError("hybrid artifact maintenance requires full SHA-256 verification")
+    epoch = int(operation_epoch)
+    if epoch < 0:
+        raise ValueError("operation_epoch must be non-negative")
+    identity = _artifact_identity(plan)
+    fingerprint = sha256_bytes(canonical_json(identity).encode("utf-8"))
+    root = Path(output_root).resolve()
+    raw_artifact_path = artifact_path_for_plan(plan, root)
+    raw_sidecar_path = raw_artifact_path.with_suffix(raw_artifact_path.suffix + ".json")
+    if raw_artifact_path.exists() and raw_artifact_path.is_symlink():
+        raise ValueError("hybrid artifact maintenance refuses an artifact symbolic link")
+    if raw_sidecar_path.exists() and raw_sidecar_path.is_symlink():
+        raise ValueError("hybrid artifact maintenance refuses a sidecar symbolic link")
+    artifact_path = raw_artifact_path.resolve()
+    if artifact_path.parent != root:
+        raise ValueError("hybrid artifact path escaped the standard artifact directory")
+    if artifact_path.suffix != ".safetensors" or not artifact_path.name.startswith("h3_t8_"):
+        raise ValueError("hybrid artifact path does not match the content-addressed naming contract")
+    sidecar_path = artifact_path.with_suffix(artifact_path.suffix + ".json")
+    operation_key = sha256_bytes(
+        canonical_json(
+            {
+                "schema": ARTIFACT_MAINTENANCE_SCHEMA,
+                "fingerprint": fingerprint,
+                "operation_epoch": epoch,
+            }
+        ).encode("utf-8")
+    )[:24]
+    raw_transaction_root = root / "_maintenance_transactions"
+    raw_recycle_root = root / "_recycle"
+    raw_recycle_fingerprint_root = raw_recycle_root / fingerprint[:16]
+    raw_recycle_dir = raw_recycle_fingerprint_root / operation_key
+    for label, internal in (
+        ("transaction", raw_transaction_root),
+        ("recycle", raw_recycle_root),
+        ("recycle fingerprint", raw_recycle_fingerprint_root),
+        ("recycle transaction", raw_recycle_dir),
+    ):
+        if internal.exists() and internal.is_symlink():
+            raise ValueError(
+                f"hybrid artifact {label} directory may not be a symbolic link"
+            )
+    transaction_root = raw_transaction_root.resolve()
+    recycle_root = raw_recycle_root.resolve()
+    recycle_dir = raw_recycle_dir.resolve()
+    for label, internal in (
+        ("transaction", transaction_root),
+        ("recycle", recycle_root),
+        ("recycle transaction", recycle_dir),
+    ):
+        try:
+            internal.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(f"hybrid artifact {label} path escaped its standard root") from exc
+    return {
+        "root": root,
+        "artifact_path": artifact_path,
+        "sidecar_path": sidecar_path,
+        "build_lock_path": artifact_path.with_suffix(artifact_path.suffix + ".lock"),
+        "maintenance_lock_path": artifact_path.with_suffix(
+            artifact_path.suffix + ".maintenance.lock"
+        ),
+        "identity": identity,
+        "fingerprint": fingerprint,
+        "operation_epoch": epoch,
+        "operation_key": operation_key,
+        "transaction_root": transaction_root,
+        "transaction_path": transaction_root / f"{operation_key}.json",
+        "recycle_root": recycle_root,
+        "recycle_dir": recycle_dir,
+    }
+
+
+def _assert_safe_internal_directory(path: Path, root: Path, *, create: bool) -> None:
+    if path.exists() and path.is_symlink():
+        raise ValueError(f"hybrid artifact internal directory may not be a symlink: {path}")
+    if create:
+        path.mkdir(parents=True, exist_ok=True)
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError as exc:
+        raise ValueError(f"hybrid artifact internal path escaped its standard root: {path}") from exc
+
+
+def _assert_safe_maintenance_file(path: Path, root: Path) -> None:
+    resolved = path.resolve()
+    if resolved.parent != root.resolve():
+        raise ValueError(f"hybrid artifact maintenance source escaped its standard root: {path}")
+    if path.exists() and path.is_symlink():
+        raise ValueError(f"hybrid artifact maintenance refuses symbolic links: {path}")
+    if path.exists() and not path.is_file():
+        raise ValueError(f"hybrid artifact maintenance source is not a regular file: {path}")
+
+
+def _file_fact(path: Path) -> dict[str, Any]:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return {"exists": False, "path": str(path)}
+    return {
+        "exists": True,
+        "path": str(path),
+        "size_bytes": int(stat.st_size),
+        "mtime_unix": float(stat.st_mtime),
+        "age_seconds": max(0.0, time.time() - float(stat.st_mtime)),
+        "is_file": path.is_file(),
+        "is_symlink": path.is_symlink(),
+    }
+
+
+def _load_maintenance_journal(context: dict[str, Any]) -> dict[str, Any] | None:
+    path = context["transaction_path"]
+    if not path.exists():
+        return None
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(
+            "hybrid artifact maintenance journal must be a regular non-symlink file"
+        )
+    value = _load_sidecar(path)
+    if value.get("schema") != ARTIFACT_MAINTENANCE_SCHEMA:
+        raise ValueError("hybrid artifact maintenance journal schema is unsupported")
+    for key in ("fingerprint", "operation_epoch", "operation_key"):
+        if value.get(key) != context[key]:
+            raise ValueError(f"hybrid artifact maintenance journal {key} mismatch")
+    action = value.get("action")
+    if action not in {
+        "quarantine_artifact_exp",
+        "quarantine_stale_build_residue_exp",
+    }:
+        raise ValueError("hybrid artifact maintenance journal action is unsupported")
+    items = value.get("items")
+    if not isinstance(items, list) or not items:
+        raise ValueError("hybrid artifact maintenance journal has no items")
+    allowed_phases = {
+        "prepared",
+        "moving_to_recycle",
+        "quarantined",
+        "restoring_to_active",
+        "restored",
+        "recovered_active",
+    }
+    if value.get("phase") not in allowed_phases:
+        raise ValueError("hybrid artifact maintenance journal phase is unsupported")
+    moved_count = value.get("moved_count")
+    if not isinstance(moved_count, int) or not 0 <= moved_count <= len(items):
+        raise ValueError("hybrid artifact maintenance journal moved_count is invalid")
+    phase = value["phase"]
+    phase_count_is_valid = (
+        (phase == "prepared" and moved_count == 0)
+        or (phase in {"moving_to_recycle", "restoring_to_active"} and 1 <= moved_count <= len(items))
+        or (
+            phase in {"quarantined", "restored", "recovered_active"}
+            and moved_count == len(items)
+        )
+    )
+    if not phase_count_is_valid:
+        raise ValueError("hybrid artifact maintenance journal phase/count mismatch")
+    allowed_exact = {
+        context["artifact_path"].name,
+        context["sidecar_path"].name,
+        context["build_lock_path"].name,
+    }
+    allowed_prefixes = (
+        context["artifact_path"].name + ".tmp-",
+        context["sidecar_path"].name + ".tmp-",
+    )
+    seen_sources: set[str] = set()
+    seen_recycle: set[str] = set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError("hybrid artifact maintenance journal item is not an object")
+        source = Path(str(item.get("source", ""))).resolve()
+        recycle = Path(str(item.get("recycle", ""))).resolve()
+        if source.parent != context["root"]:
+            raise ValueError("hybrid artifact maintenance journal source escaped the artifact root")
+        if source.name not in allowed_exact and not source.name.startswith(allowed_prefixes):
+            raise ValueError("hybrid artifact maintenance journal source name is outside the contract")
+        if recycle.parent != context["recycle_dir"] or recycle.name != source.name:
+            raise ValueError("hybrid artifact maintenance recycle path is outside the transaction")
+        if str(source).casefold() in seen_sources or str(recycle).casefold() in seen_recycle:
+            raise ValueError("hybrid artifact maintenance journal contains duplicate paths")
+        seen_sources.add(str(source).casefold())
+        seen_recycle.add(str(recycle).casefold())
+        digest = item.get("sha256")
+        if not isinstance(digest, str) or len(digest) != 64:
+            raise ValueError("hybrid artifact maintenance journal item SHA-256 is invalid")
+        if not isinstance(item.get("size_bytes"), int) or item["size_bytes"] < 0:
+            raise ValueError("hybrid artifact maintenance journal item size is invalid")
+    if action == "quarantine_artifact_exp":
+        expected_sources = {
+            str(context["artifact_path"]).casefold(),
+            str(context["sidecar_path"]).casefold(),
+        }
+        if seen_sources != expected_sources:
+            raise ValueError(
+                "hybrid artifact-pair quarantine journal must contain exactly the "
+                "artifact and sidecar"
+            )
+    return value
+
+
+def _write_maintenance_journal(context: dict[str, Any], journal: dict[str, Any]) -> None:
+    _assert_safe_internal_directory(
+        context["transaction_root"], context["root"], create=True
+    )
+    _write_json_atomic(context["transaction_path"], journal)
+
+
+def _journal_item(path: Path, recycle_dir: Path) -> dict[str, Any]:
+    if not path.is_file() or path.is_symlink():
+        raise ValueError(f"hybrid artifact maintenance requires a regular source file: {path}")
+    return {
+        "source": str(path.resolve()),
+        "recycle": str((recycle_dir / path.name).resolve()),
+        "size_bytes": int(path.stat().st_size),
+        "sha256": sha256_file(path, use_cache=False),
+    }
+
+
+def _verify_journal_item(item: dict[str, Any], *, at_recycle: bool) -> None:
+    path = Path(item["recycle"] if at_recycle else item["source"])
+    if not path.is_file() or path.is_symlink():
+        raise ValueError(f"hybrid artifact maintenance transaction file is missing or unsafe: {path}")
+    if int(path.stat().st_size) != item["size_bytes"]:
+        raise ValueError(f"hybrid artifact maintenance transaction size mismatch: {path}")
+    if sha256_file(path, use_cache=False) != item["sha256"]:
+        raise ValueError(f"hybrid artifact maintenance transaction SHA-256 mismatch: {path}")
+
+
+def _pid_is_running(pid: Any) -> bool | None:
+    try:
+        value = int(pid)
+    except (TypeError, ValueError):
+        return None
+    if value <= 0:
+        return None
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        process_query_limited_information = 0x1000
+        still_active = 259
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        open_process = kernel32.OpenProcess
+        open_process.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        open_process.restype = wintypes.HANDLE
+        get_exit_code = kernel32.GetExitCodeProcess
+        get_exit_code.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        get_exit_code.restype = wintypes.BOOL
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = [wintypes.HANDLE]
+        close_handle.restype = wintypes.BOOL
+        handle = open_process(process_query_limited_information, False, value)
+        if not handle:
+            error = ctypes.get_last_error()
+            if error == 87:  # ERROR_INVALID_PARAMETER: no process with this PID.
+                return False
+            if error == 5:  # ERROR_ACCESS_DENIED: a live protected process may own it.
+                return True
+            return None
+        try:
+            exit_code = wintypes.DWORD()
+            if not get_exit_code(handle, ctypes.byref(exit_code)):
+                return None
+            return int(exit_code.value) == still_active
+        finally:
+            close_handle(handle)
+    try:
+        os.kill(value, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return None
+    return True
+
+
+def _lock_owner_state(path: Path) -> dict[str, Any]:
+    fact = _file_fact(path)
+    if not fact["exists"]:
+        return {**fact, "owner_pid": None, "owner_running": None}
+    if fact["is_symlink"] or not fact["is_file"]:
+        return {
+            **fact,
+            "owner_pid": None,
+            "owner_running": None,
+            "payload_error": "maintenance lock must be a regular non-symlink file",
+        }
+    try:
+        value = _load_sidecar(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return {
+            **fact,
+            "owner_pid": None,
+            "owner_running": None,
+            "payload_error": f"{type(exc).__name__}: {exc}",
+        }
+    pid = value.get("pid")
+    return {**fact, "owner_pid": pid, "owner_running": _pid_is_running(pid)}
+
+
+@contextmanager
+def _maintenance_lock(
+    context: dict[str, Any],
+    *,
+    allow_stale_build_lock: bool,
+    stale_after_seconds: float,
+    recover_stale_maintenance_lock: bool,
+):
+    lock_path = context["maintenance_lock_path"]
+    archived_stale_lock: str | None = None
+    payload = canonical_json(
+        {
+            "pid": os.getpid(),
+            "created_unix": time.time(),
+            "operation_key": context["operation_key"],
+        }
+    )
+    try:
+        descriptor = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        state = _lock_owner_state(lock_path)
+        recoverable = (
+            recover_stale_maintenance_lock
+            and not state.get("is_symlink", False)
+            and state.get("age_seconds", 0.0) >= stale_after_seconds
+            and state.get("owner_running") is not True
+        )
+        if not recoverable:
+            raise RuntimeError(f"hybrid artifact maintenance is already active: {lock_path}") from exc
+        _assert_safe_internal_directory(
+            context["transaction_root"], context["root"], create=True
+        )
+        stale_path = context["transaction_path"].with_suffix(".stale-maintenance-lock")
+        if stale_path.exists():
+            raise RuntimeError(f"stale maintenance-lock archive already exists: {stale_path}") from exc
+        os.replace(lock_path, stale_path)
+        archived_stale_lock = str(stale_path)
+        descriptor = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        build_lock_state = _lock_owner_state(context["build_lock_path"])
+        if build_lock_state["exists"]:
+            allowed = (
+                allow_stale_build_lock
+                and not build_lock_state.get("is_symlink", False)
+                and build_lock_state.get("age_seconds", 0.0) >= stale_after_seconds
+                and build_lock_state.get("owner_running") is not True
+            )
+            if not allowed:
+                raise RuntimeError(
+                    f"hybrid artifact build lock is active or not proven stale: {context['build_lock_path']}"
+                )
+        yield archived_stale_lock
+    finally:
+        lock_path.unlink(missing_ok=True)
+
+
+def _new_maintenance_journal(
+    context: dict[str, Any], action: str, paths: Sequence[Path]
+) -> dict[str, Any]:
+    return {
+        "schema": ARTIFACT_MAINTENANCE_SCHEMA,
+        "fingerprint": context["fingerprint"],
+        "operation_epoch": context["operation_epoch"],
+        "operation_key": context["operation_key"],
+        "action": action,
+        "created_unix": time.time(),
+        "updated_unix": time.time(),
+        "phase": "prepared",
+        "moved_count": 0,
+        "items": [_journal_item(path, context["recycle_dir"]) for path in paths],
+    }
+
+
+def _move_journal_to_recycle(
+    context: dict[str, Any], journal: dict[str, Any]
+) -> None:
+    _assert_safe_internal_directory(context["recycle_dir"], context["root"], create=True)
+    for index, item in enumerate(journal["items"]):
+        source = Path(item["source"])
+        recycle = Path(item["recycle"])
+        if source.exists() and recycle.exists():
+            raise ValueError("hybrid artifact maintenance found both active and recycled copies")
+        if source.exists():
+            _verify_journal_item(item, at_recycle=False)
+            os.replace(source, recycle)
+        elif not recycle.exists():
+            raise ValueError("hybrid artifact maintenance transaction lost a source file")
+        _verify_journal_item(item, at_recycle=True)
+        journal["phase"] = "moving_to_recycle"
+        journal["moved_count"] = index + 1
+        journal["updated_unix"] = time.time()
+        _write_maintenance_journal(context, journal)
+    journal["phase"] = "quarantined"
+    journal["updated_unix"] = time.time()
+    _write_maintenance_journal(context, journal)
+
+
+def _move_journal_to_active(
+    context: dict[str, Any], journal: dict[str, Any], *, terminal_phase: str
+) -> None:
+    for index, item in enumerate(journal["items"]):
+        source = Path(item["source"])
+        recycle = Path(item["recycle"])
+        if source.exists() and recycle.exists():
+            raise ValueError("hybrid artifact maintenance found both active and recycled copies")
+        if recycle.exists():
+            _verify_journal_item(item, at_recycle=True)
+            os.replace(recycle, source)
+        elif not source.exists():
+            raise ValueError("hybrid artifact maintenance transaction lost both file copies")
+        _verify_journal_item(item, at_recycle=False)
+        journal["phase"] = "restoring_to_active"
+        journal["moved_count"] = index + 1
+        journal["updated_unix"] = time.time()
+        _write_maintenance_journal(context, journal)
+    journal["phase"] = terminal_phase
+    journal["updated_unix"] = time.time()
+    _write_maintenance_journal(context, journal)
+    try:
+        context["recycle_dir"].rmdir()
+    except OSError:
+        pass
+
+
+def _active_artifact_validation(context: dict[str, Any]) -> dict[str, Any]:
+    descriptor = validate_artifact_descriptor(
+        {
+            "schema": HYBRID_ARTIFACT_TYPE,
+            "path": str(context["artifact_path"]),
+        }
+    )
+    if descriptor["manifest"].get("identity") != context["identity"]:
+        raise ValueError("active hybrid artifact identity does not match the exact plan")
+    return descriptor
+
+
+def inspect_hybrid_artifact_maintenance(
+    plan: dict[str, Any],
+    output_root: str | os.PathLike[str],
+    operation_epoch: int = 0,
+) -> dict[str, Any]:
+    context = _maintenance_plan_context(plan, output_root, operation_epoch)
+    artifact_exists = context["artifact_path"].is_file()
+    sidecar_exists = context["sidecar_path"].is_file()
+    validation: dict[str, Any]
+    if artifact_exists and sidecar_exists:
+        try:
+            descriptor = _active_artifact_validation(context)
+            validation = {
+                "state": "valid_active_pair",
+                "artifact_sha256": descriptor["artifact_sha256"],
+                "payload_bytes": descriptor["manifest"]["payload_bytes"],
+            }
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            validation = {
+                "state": "invalid_active_pair",
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+    elif artifact_exists or sidecar_exists:
+        validation = {"state": "incomplete_active_pair"}
+    else:
+        validation = {"state": "missing_active_pair"}
+    temp_paths = sorted(
+        {
+            *context["root"].glob(context["artifact_path"].name + ".tmp-*"),
+            *context["root"].glob(context["sidecar_path"].name + ".tmp-*"),
+        },
+        key=lambda value: value.name,
+    ) if context["root"].is_dir() else []
+    try:
+        journal = _load_maintenance_journal(context)
+        journal_report = None if journal is None else {
+            "action": journal["action"],
+            "phase": journal["phase"],
+            "moved_count": journal["moved_count"],
+            "item_count": len(journal["items"]),
+            "path": str(context["transaction_path"]),
+        }
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        journal_report = {"error": f"{type(exc).__name__}: {exc}"}
+    build_lock = _lock_owner_state(context["build_lock_path"])
+    maintenance_lock = _lock_owner_state(context["maintenance_lock_path"])
+    return {
+        "schema": ARTIFACT_MAINTENANCE_SCHEMA,
+        "mode": "inspect_only",
+        "mutation_performed": False,
+        "memory_safe_claim": False,
+        "artifact_path": str(context["artifact_path"]),
+        "sidecar_path": str(context["sidecar_path"]),
+        "fingerprint": context["fingerprint"],
+        "operation_epoch": context["operation_epoch"],
+        "operation_key": context["operation_key"],
+        "validation": validation,
+        "build_lock": build_lock,
+        "maintenance_lock": maintenance_lock,
+        "temporary_files": [_file_fact(path) for path in temp_paths],
+        "transaction": journal_report,
+        "warnings": [
+            "Inspection is side-effect free; quarantine/restore/recovery require explicit confirmation and a positive epoch.",
+            "Quarantine is recoverable file movement, not secure erasure and not a model-cache unload.",
+        ],
+    }
+
+
+def _stale_build_residue_paths(
+    context: dict[str, Any], stale_after_seconds: float
+) -> list[Path]:
+    candidates: list[Path] = []
+    artifact_exists = context["artifact_path"].is_file()
+    sidecar_exists = context["sidecar_path"].is_file()
+    if artifact_exists != sidecar_exists:
+        candidates.append(context["artifact_path"] if artifact_exists else context["sidecar_path"])
+    if context["build_lock_path"].is_file():
+        candidates.append(context["build_lock_path"])
+    if context["root"].is_dir():
+        candidates.extend(context["root"].glob(context["artifact_path"].name + ".tmp-*"))
+        candidates.extend(context["root"].glob(context["sidecar_path"].name + ".tmp-*"))
+    unique = sorted({path.resolve() for path in candidates}, key=lambda value: value.name)
+    if not unique:
+        raise ValueError("no incomplete hybrid artifact build residue exists for this exact plan")
+    for path in unique:
+        _assert_safe_maintenance_file(path, context["root"])
+        age = time.time() - path.stat().st_mtime
+        if age < stale_after_seconds:
+            raise ValueError(
+                f"hybrid artifact build residue is not stale enough ({age:.1f}s < {stale_after_seconds:.1f}s): {path}"
+            )
+    lock_state = _lock_owner_state(context["build_lock_path"])
+    if lock_state["exists"] and lock_state.get("owner_running") is True:
+        raise ValueError("hybrid artifact build-lock owner is still running")
+    return unique
+
+
+def maintain_hybrid_artifact(
+    plan: dict[str, Any],
+    output_root: str | os.PathLike[str],
+    action: str,
+    confirm_action: bool,
+    operation_epoch: int,
+    stale_after_minutes: float = 60.0,
+) -> dict[str, Any]:
+    if action not in ARTIFACT_MAINTENANCE_ACTIONS:
+        raise ValueError(f"unsupported hybrid artifact maintenance action: {action!r}")
+    context = _maintenance_plan_context(plan, output_root, operation_epoch)
+    if action == "inspect_only":
+        return inspect_hybrid_artifact_maintenance(plan, output_root, operation_epoch)
+    if not bool(confirm_action):
+        raise ValueError("mutating hybrid artifact maintenance requires confirm_action=true")
+    if context["operation_epoch"] <= 0:
+        raise ValueError("mutating hybrid artifact maintenance requires operation_epoch > 0")
+    stale_after_seconds = max(60.0, float(stale_after_minutes) * 60.0)
+    recover_lock = action in {
+        "quarantine_stale_build_residue_exp",
+        "recover_interrupted_exp",
+    }
+    allow_build_lock = action == "quarantine_stale_build_residue_exp"
+    with _maintenance_lock(
+        context,
+        allow_stale_build_lock=allow_build_lock,
+        stale_after_seconds=stale_after_seconds,
+        recover_stale_maintenance_lock=recover_lock,
+    ) as archived_stale_lock:
+        journal = _load_maintenance_journal(context)
+        if action == "quarantine_artifact_exp":
+            if journal is not None:
+                if journal["action"] != action:
+                    raise ValueError("operation_epoch was already used by another maintenance action")
+                if journal["phase"] == "quarantined":
+                    for item in journal["items"]:
+                        _verify_journal_item(item, at_recycle=True)
+                    performed = False
+                elif journal["phase"] in {"restored", "recovered_active"}:
+                    raise ValueError("operation_epoch is already complete; increment it for a new quarantine")
+                else:
+                    raise ValueError("maintenance transaction is incomplete; run recover_interrupted_exp")
+            else:
+                descriptor = _active_artifact_validation(context)
+                journal = _new_maintenance_journal(
+                    context,
+                    action,
+                    [context["artifact_path"], context["sidecar_path"]],
+                )
+                if journal["items"][0]["sha256"] != descriptor["artifact_sha256"]:
+                    raise ValueError("active artifact changed between validation and transaction preparation")
+                _write_maintenance_journal(context, journal)
+                _move_journal_to_recycle(context, journal)
+                performed = True
+        elif action == "quarantine_stale_build_residue_exp":
+            if journal is not None:
+                if journal["action"] != action:
+                    raise ValueError("operation_epoch was already used by another maintenance action")
+                if journal["phase"] == "quarantined":
+                    for item in journal["items"]:
+                        _verify_journal_item(item, at_recycle=True)
+                    performed = False
+                elif journal["phase"] == "recovered_active":
+                    raise ValueError("operation_epoch is already recovered; increment it to quarantine again")
+                else:
+                    raise ValueError("maintenance transaction is incomplete; run recover_interrupted_exp")
+            else:
+                paths = _stale_build_residue_paths(context, stale_after_seconds)
+                journal = _new_maintenance_journal(context, action, paths)
+                _write_maintenance_journal(context, journal)
+                _move_journal_to_recycle(context, journal)
+                performed = True
+        elif action == "restore_quarantined_exp":
+            if journal is None or journal.get("action") != "quarantine_artifact_exp":
+                raise ValueError("no exact quarantined artifact transaction exists for this epoch")
+            if journal["phase"] == "restored":
+                for item in journal["items"]:
+                    _verify_journal_item(item, at_recycle=False)
+                performed = False
+            elif journal["phase"] != "quarantined":
+                raise ValueError("maintenance transaction is incomplete; run recover_interrupted_exp")
+            else:
+                if context["artifact_path"].exists() or context["sidecar_path"].exists():
+                    raise ValueError("active artifact path is occupied; refusing to overwrite during restore")
+                _move_journal_to_active(context, journal, terminal_phase="restored")
+                _active_artifact_validation(context)
+                performed = True
+        else:
+            if journal is None:
+                raise ValueError("no exact maintenance transaction exists for recovery")
+            if journal["phase"] in {"quarantined", "restored", "recovered_active"}:
+                raise ValueError("maintenance transaction is already terminal and needs no recovery")
+            _move_journal_to_active(context, journal, terminal_phase="recovered_active")
+            if journal["action"] == "quarantine_artifact_exp":
+                _active_artifact_validation(context)
+            performed = True
+
+    after = inspect_hybrid_artifact_maintenance(plan, output_root, operation_epoch)
+    return {
+        **after,
+        "mode": action,
+        "mutation_performed": performed,
+        "archived_stale_maintenance_lock": archived_stale_lock,
+        "transaction": {
+            "action": journal["action"],
+            "phase": journal["phase"],
+            "moved_count": journal["moved_count"],
+            "item_count": len(journal["items"]),
+            "path": str(context["transaction_path"]),
+        },
+    }
+
+
+def artifact_maintenance_fingerprint(
+    plan: dict[str, Any],
+    output_root: str | os.PathLike[str],
+    action: str,
+    operation_epoch: int,
+) -> str:
+    try:
+        context = _maintenance_plan_context(plan, output_root, operation_epoch)
+        paths = [
+            context["artifact_path"],
+            context["sidecar_path"],
+            context["build_lock_path"],
+            context["maintenance_lock_path"],
+            context["transaction_path"],
+        ]
+        if context["root"].is_dir():
+            paths.extend(context["root"].glob(context["artifact_path"].name + ".tmp-*"))
+            paths.extend(context["root"].glob(context["sidecar_path"].name + ".tmp-*"))
+        return sha256_bytes(
+            canonical_json(
+                {
+                    "action": action,
+                    "operation_epoch": int(operation_epoch),
+                    "plan_fingerprint": plan.get("plan_fingerprint"),
+                    "files": file_stat_fingerprint(paths),
+                }
+            ).encode("utf-8")
+        )
+    except (KeyError, OSError, TypeError, ValueError) as exc:
+        return f"unresolved:{type(exc).__name__}:{exc}"
 
 
 def _weight_model_options(weight_dtype: str) -> dict[str, Any]:

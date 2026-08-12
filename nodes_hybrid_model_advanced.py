@@ -6,17 +6,20 @@ import folder_paths
 from comfy_api.latest import io
 
 from .hybrid_model import (
+    ARTIFACT_MAINTENANCE_ACTIONS,
     AUTO_PROFILE,
     HYBRID_ARTIFACT_TYPE,
     HYBRID_PLAN_TYPE,
     PROFILE_SPECS,
     artifact_output_root,
+    artifact_maintenance_fingerprint,
     artifact_path_for_plan,
     build_hybrid_artifact,
     file_stat_fingerprint,
     conditioning_reference_fingerprint,
     inspect_checkpoint_pair,
     load_hybrid_model,
+    maintain_hybrid_artifact,
     pair_report_text,
     pretty_json,
 )
@@ -293,8 +296,107 @@ class MiniMaxH3HybridModelLoaderT8Advanced(io.ComfyNode):
             return f"unresolved:{type(exc).__name__}:{exc}"
 
 
+class MiniMaxH3HybridArtifactMaintenanceT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3HybridArtifactMaintenanceT8Advanced",
+            display_name=(
+                "MiniMax H3 Hybrid Artifact Maintenance / 混合补丁安全维护 (Advanced)"
+            ),
+            description=(
+                "Inspects one exact content-addressed Hybrid artifact by default. Explicit "
+                "actions can move a verified artifact pair or stale build residue into a "
+                "recoverable quarantine, restore a quarantined pair, or recover an interrupted "
+                "transaction. It never scans or deletes diffusion checkpoints."
+            ),
+            category=CATEGORY,
+            inputs=[
+                HybridPlanIO.Input("hybrid_plan"),
+                io.Combo.Input(
+                    "action",
+                    options=list(ARTIFACT_MAINTENANCE_ACTIONS),
+                    default="inspect_only",
+                    tooltip=(
+                        "inspect_only has no side effects. Every other action requires explicit "
+                        "confirmation and a positive, single-use operation epoch."
+                    ),
+                ),
+                io.Boolean.Input(
+                    "confirm_action",
+                    default=False,
+                    tooltip=(
+                        "Required for mutation. Files are moved inside models/h3_hybrid_artifacts/"
+                        "_recycle instead of being permanently deleted."
+                    ),
+                ),
+                io.Int.Input(
+                    "operation_epoch",
+                    default=0,
+                    min=0,
+                    max=0x7FFFFFFF,
+                    tooltip=(
+                        "Use a new positive value for each quarantine. Reuse the same value to "
+                        "restore or recover that exact transaction."
+                    ),
+                ),
+                io.Float.Input(
+                    "stale_after_minutes",
+                    default=60.0,
+                    min=1.0,
+                    max=10080.0,
+                    step=1.0,
+                    advanced=True,
+                    tooltip=(
+                        "Only stale build-residue and stale maintenance-lock recovery use this "
+                        "age gate. A lock whose owner is still running is refused."
+                    ),
+                ),
+            ],
+            outputs=[
+                io.Boolean.Output("mutation_performed"),
+                io.String.Output("artifact_path"),
+                io.String.Output("report_json"),
+            ],
+            is_output_node=True,
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(
+        cls, hybrid_plan, action, confirm_action, operation_epoch, stale_after_minutes
+    ):
+        report = maintain_hybrid_artifact(
+            hybrid_plan,
+            artifact_output_root(folder_paths.models_dir),
+            action,
+            confirm_action,
+            operation_epoch,
+            stale_after_minutes,
+        )
+        return io.NodeOutput(
+            bool(report["mutation_performed"]),
+            report["artifact_path"],
+            pretty_json(report),
+        )
+
+    @classmethod
+    def fingerprint_inputs(
+        cls, hybrid_plan, action, confirm_action, operation_epoch, stale_after_minutes
+    ):
+        return artifact_maintenance_fingerprint(
+            hybrid_plan,
+            artifact_output_root(folder_paths.models_dir),
+            f"{action}:{bool(confirm_action)}:{float(stale_after_minutes):.6f}",
+            operation_epoch,
+        )
+
+
 HYBRID_MODEL_ADVANCED_NODE_CLASSES = [
     MiniMaxH3HybridPairInspectorT8Advanced,
     MiniMaxH3HybridArtifactBuilderT8Advanced,
     MiniMaxH3HybridModelLoaderT8Advanced,
+]
+HYBRID_MODEL_MAINTENANCE_ADVANCED_NODE_CLASSES = [
+    MiniMaxH3HybridArtifactMaintenanceT8Advanced,
 ]

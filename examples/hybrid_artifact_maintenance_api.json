@@ -1,0 +1,24 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3HybridPairInspectorT8Advanced",
+    "inputs": {
+      "quality_base": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "reference_overlay": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "profile": "blocks_25_49_video_audio_exp",
+      "verification": "full_sha256"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3HybridArtifactMaintenanceT8Advanced",
+    "inputs": {
+      "hybrid_plan": [
+        "1",
+        0
+      ],
+      "action": "inspect_only",
+      "confirm_action": false,
+      "operation_epoch": 0,
+      "stale_after_minutes": 60.0
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.15.1`，共注册
-60 个节点，覆盖原生音画条件、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.16.0`，共注册
+61 个节点，覆盖原生音画条件、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -30,6 +30,12 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
+
+`1.16.0` 保留 `1.15.1` 的60个节点ID、顺序、输入、默认值和旧接线，只在末尾追加一个
+Hybrid Artifact Maintenance Advanced输出节点。默认`inspect_only`不创建事务目录、不移动文件；
+所有变更都要求`confirm_action=true`和正整数`operation_epoch`。节点只处理由严格Hybrid plan
+推导出的`models/h3_hybrid_artifacts`内容寻址文件，使用可恢复隔离区与原子事务日志，不扫描或
+删除diffusion checkpoint，也不负责卸载MODEL或释放显存。
 
 `1.15.1` 保留 `1.15.0` 的60个节点 ID、顺序和旧接线；只把新VRAM策略节点的固定值建议与
 示例从未过512MiB门槛的2.0GiB改为三冷三暖通过的4.0GiB，并把固定模式示例改为不执行全局
@@ -128,6 +134,7 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Hybrid Artifact Builder / 小型混合补丁构建 (Advanced) | 把Ref2VA所选AdaLN模态行曲线重基到FL2VA基底，原子生成约13.84～83.06MiB的内容寻址target-slice artifact |
 | MiniMax H3 Hybrid Model Loader / 混合模型加载 (Advanced) | 继续使用ComfyUI stock diffusion loader加载FL2VA，再给克隆MODEL应用小型offset-set patch；保留DynamicVRAM/VBAR路径 |
 | MiniMax H3 VRAM Policy / VBAR显存预留策略 (Advanced) | 默认只报告；显式连接Hybrid Loader后在模型加载前设置ComfyUI总预留与AIMDO simple headroom，并报告主机commit边界 |
+| MiniMax H3 Hybrid Artifact Maintenance / 混合补丁安全维护 (Advanced) | 默认只检查精确artifact状态；可显式隔离、还原、恢复中断事务或处理过期构建残留，永不永久删除源checkpoint |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
@@ -188,6 +195,24 @@ Pareto候选，不足以宣布去油、身份更准或优于原生Ref2VA。精�
 生成盲评包与`matrix_summary.json/csv`，并可选使用本地ASR、InsightFace和WavLM；不会自动下载模型。
 详细记录见
 [Hybrid Model Advanced 验证报告](docs/HYBRID_MODEL_ADVANCED_VALIDATION.md)。
+
+## Advanced：Hybrid artifact安全维护
+
+`MiniMax H3 Hybrid Artifact Maintenance (Advanced)`不接受任意路径，而是连接同一个严格
+`Hybrid Pair Inspector`的plan，重新推导唯一内容寻址路径。安全默认工作流是：
+
+1. `inspect_only + confirm=false + epoch=0`：只校验artifact/sidecar、内嵌manifest、SHA、锁、temp
+   和已有事务，连内部事务目录都不会创建；
+2. `quarantine_artifact_exp`：完整校验后，把artifact和sidecar移到同卷`_recycle`，每移动一个文件
+   都原子更新并fsync事务日志；同一epoch重复执行只返回已完成状态；
+3. `restore_quarantined_exp`：使用同一epoch把完整隔离对还原，活动路径已被占用时拒绝覆盖；
+4. `recover_interrupted_exp`：当进程在两文件移动之间被终止时，按日志中逐文件SHA恢复到活动目录；
+5. `quarantine_stale_build_residue_exp`：只处理该plan对应、超过年龄门槛且锁owner未被证明仍活着的
+   孤立artifact/sidecar、build lock与匹配temp，隔离后Builder可安全重建。
+
+它没有永久删除动作；符号链接、越界路径、非canonical manifest、损坏journal、哈希或大小不一致
+均fail closed。隔离区仍占磁盘，用户应先审核再手动做最终清理。此节点不会清Comfy执行缓存、卸载
+已加载MODEL或释放VRAM。安全说明见[Hybrid Artifact维护文档](docs/HYBRID_ARTIFACT_MAINTENANCE.md)。
 
 ## Advanced：显存预留与 DynamicVRAM/VBAR 策略
 

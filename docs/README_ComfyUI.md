@@ -68,6 +68,15 @@ patch quantized weights in the same way.
 
 ## Ready-to-import workflows
 
+Version 1.16.0 retains all 60 Version 1.15.1 node IDs and appends one isolated
+Hybrid Artifact Maintenance Advanced output node. Its API and frontend examples
+default to side-effect-free inspection. Mutating actions require explicit confirmation and a
+positive operation epoch; verified files are moved to a recoverable same-volume quarantine, not
+permanently deleted. Exact path derivation, atomic fsynced journals, per-file SHA-256, stale-owner
+checks, tampered-journal refusal, and a real worker-process kill/recovery test guard the feature.
+It never scans source checkpoints, unloads a MODEL, or releases VRAM. See
+`docs/HYBRID_ARTIFACT_MAINTENANCE.md`.
+
 Version 1.15.1 retains all 60 Version 1.15.0 node IDs and updates the opt-in
 `H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
 connects a reportable 4.0 GiB total-reserve policy directly to the Hybrid Loader, guaranteeing that

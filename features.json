@@ -76,7 +76,8 @@
     "MiniMaxH3HybridPairInspectorT8Advanced",
     "MiniMaxH3HybridArtifactBuilderT8Advanced",
     "MiniMaxH3HybridModelLoaderT8Advanced",
-    "MiniMaxH3VRAMPolicyT8Advanced"
+    "MiniMaxH3VRAMPolicyT8Advanced",
+    "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
   ],
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -834,6 +835,41 @@
       "quality_decision": "minimal video-only/audio-only routing and the mixed-reference recipe remain research Pareto candidates; one material/seed, no completed blind panel and <512MiB headroom deny best-quality, de-wax, max-reference or 16GiB memory_safe labels"
     },
     "status": "isolated P0 implementation, exact artifact construction, Conditioning-aware minimal modality routing, resumable matrix tooling and visual/audio/mixed Stock20 pilots passed; broader multi-material quality, combination and repeat-memory gates remain Experimental and incomplete"
+  },
+  "experimental_hybrid_artifact_maintenance": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "node": "MiniMaxH3HybridArtifactMaintenanceT8Advanced",
+    "positioning": "appended after all previous 60 node IDs; default inspect-only path is side-effect free and old workflows do not instantiate it",
+    "actions": [
+      "inspect_only",
+      "quarantine_artifact_exp",
+      "restore_quarantined_exp",
+      "quarantine_stale_build_residue_exp",
+      "recover_interrupted_exp"
+    ],
+    "mutation_contract": {
+      "confirmation": "every mutating action requires confirm_action=true and operation_epoch>0",
+      "epoch": "one positive epoch identifies one transaction; reuse it only to replay, restore or recover, and increment it for a new quarantine",
+      "scope": "the exact content-addressed artifact path is derived from a fully verified Hybrid plan under models/h3_hybrid_artifacts",
+      "quarantine": "verified files are atomically moved on the same volume into an internal _recycle transaction directory; there is no permanent-delete action",
+      "journal": "an fsynced atomic journal records source/recycle paths, SHA-256, byte size, phase and moved count after each file movement",
+      "restore": "only a complete exact artifact-pair quarantine can be restored, and occupied active paths are never overwritten",
+      "recovery": "an interrupted multi-file movement is reconciled back to the active paths using the same epoch and per-file hashes"
+    },
+    "stale_build_residue": {
+      "exact_scope": "only the plan-derived artifact, sidecar, build lock and matching temp-file prefixes are candidates",
+      "age_gate": "default 60 minutes and never less than 60 seconds",
+      "owner_gate": "a build lock whose PID is proven running is refused",
+      "result": "residue is quarantined for inspection and the Builder may then rebuild; source diffusion checkpoints are not scanned or touched"
+    },
+    "hard_boundaries": [
+      "symbolic links, paths outside the standard artifact root, malformed journals, hash/size mismatches and noncanonical artifact manifests fail closed",
+      "quarantine is recoverable housekeeping, not secure deletion, MODEL cache unloading, VRAM release or a memory_safe guarantee",
+      "a real process kill can still leave a stale maintenance lock; explicit recovery archives only a sufficiently old lock whose owner is not proven alive"
+    ],
+    "api_example": "examples/hybrid_artifact_maintenance_api.json",
+    "frontend_workflow": "examples/workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json",
+    "status": "implemented with inspect, quarantine, idempotent replay, restore, tampered-journal refusal, a real subprocess kill between pair moves, stale-lock recovery and stale build-residue rebuild tests; remains Advanced/Experimental"
   },
   "experimental_vram_policy_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",

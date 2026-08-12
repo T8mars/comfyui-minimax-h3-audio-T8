@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
+import time
 
 import pytest
 from safetensors.torch import save_file
@@ -311,6 +315,308 @@ def test_artifact_builder_refuses_to_overwrite_an_orphan(tmp_path, monkeypatch):
     assert orphan.read_bytes() == b"do-not-overwrite"
 
 
+def test_artifact_maintenance_inspection_is_side_effect_free(tmp_path, monkeypatch):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    artifact_path = Path(artifact["path"])
+    sidecar_path = Path(artifact["sidecar_path"])
+    before = (
+        artifact_path.read_bytes(),
+        sidecar_path.read_bytes(),
+        artifact_path.stat().st_mtime_ns,
+        sidecar_path.stat().st_mtime_ns,
+    )
+
+    report = hybrid.maintain_hybrid_artifact(
+        plan,
+        tmp_path / "artifacts",
+        "inspect_only",
+        False,
+        0,
+        60.0,
+    )
+
+    assert report["mutation_performed"] is False
+    assert report["validation"]["state"] == "valid_active_pair"
+    assert report["transaction"] is None
+    assert before == (
+        artifact_path.read_bytes(),
+        sidecar_path.read_bytes(),
+        artifact_path.stat().st_mtime_ns,
+        sidecar_path.stat().st_mtime_ns,
+    )
+    assert not (tmp_path / "artifacts" / "_recycle").exists()
+    assert not (tmp_path / "artifacts" / "_maintenance_transactions").exists()
+
+
+def test_artifact_maintenance_requires_confirmation_and_positive_epoch(tmp_path, monkeypatch):
+    _artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    with pytest.raises(ValueError, match="confirm_action=true"):
+        hybrid.maintain_hybrid_artifact(
+            plan, tmp_path / "artifacts", "quarantine_artifact_exp", False, 1
+        )
+    with pytest.raises(ValueError, match="operation_epoch > 0"):
+        hybrid.maintain_hybrid_artifact(
+            plan, tmp_path / "artifacts", "quarantine_artifact_exp", True, 0
+        )
+
+
+def test_artifact_maintenance_quarantine_replay_and_restore_are_transactional(
+    tmp_path, monkeypatch
+):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    artifact_path = Path(artifact["path"])
+    sidecar_path = Path(artifact["sidecar_path"])
+
+    quarantined = hybrid.maintain_hybrid_artifact(
+        plan, tmp_path / "artifacts", "quarantine_artifact_exp", True, 11
+    )
+    assert quarantined["mutation_performed"] is True
+    assert quarantined["transaction"]["phase"] == "quarantined"
+    assert not artifact_path.exists()
+    assert not sidecar_path.exists()
+
+    replay = hybrid.maintain_hybrid_artifact(
+        plan, tmp_path / "artifacts", "quarantine_artifact_exp", True, 11
+    )
+    assert replay["mutation_performed"] is False
+    assert replay["transaction"]["phase"] == "quarantined"
+
+    restored = hybrid.maintain_hybrid_artifact(
+        plan, tmp_path / "artifacts", "restore_quarantined_exp", True, 11
+    )
+    assert restored["mutation_performed"] is True
+    assert restored["transaction"]["phase"] == "restored"
+    assert artifact_path.is_file()
+    assert sidecar_path.is_file()
+    hybrid.validate_artifact_descriptor(artifact)
+
+    restore_replay = hybrid.maintain_hybrid_artifact(
+        plan, tmp_path / "artifacts", "restore_quarantined_exp", True, 11
+    )
+    assert restore_replay["mutation_performed"] is False
+
+
+def test_artifact_maintenance_recovers_after_process_like_interruption(
+    tmp_path, monkeypatch
+):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    artifact_path = Path(artifact["path"])
+    sidecar_path = Path(artifact["sidecar_path"])
+    real_replace = hybrid.os.replace
+
+    def interrupt_before_sidecar_move(source, destination):
+        source_path = Path(source).resolve()
+        destination_path = Path(destination).resolve()
+        if source_path == sidecar_path.resolve() and "_recycle" in destination_path.parts:
+            raise SystemExit("simulated hard interruption")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(hybrid.os, "replace", interrupt_before_sidecar_move)
+    with pytest.raises(SystemExit, match="simulated hard interruption"):
+        hybrid.maintain_hybrid_artifact(
+            plan, tmp_path / "artifacts", "quarantine_artifact_exp", True, 12
+        )
+    assert not artifact_path.exists()
+    assert sidecar_path.is_file()
+
+    monkeypatch.setattr(hybrid.os, "replace", real_replace)
+    recovered = hybrid.maintain_hybrid_artifact(
+        plan, tmp_path / "artifacts", "recover_interrupted_exp", True, 12
+    )
+    assert recovered["mutation_performed"] is True
+    assert recovered["transaction"]["phase"] == "recovered_active"
+    assert artifact_path.is_file()
+    assert sidecar_path.is_file()
+    hybrid.validate_artifact_descriptor(artifact)
+
+
+def test_artifact_maintenance_recovers_after_actual_worker_kill(
+    tmp_path, monkeypatch
+):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    artifact_path = Path(artifact["path"])
+    sidecar_path = Path(artifact["sidecar_path"])
+    output_root = tmp_path / "artifacts"
+    plan_path = tmp_path / "maintenance-plan.json"
+    contract_path = tmp_path / "maintenance-contract.json"
+    ready_path = tmp_path / "maintenance-worker.ready"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+    contract_path.write_text(
+        json.dumps(
+            {
+                "profile_specs": hybrid.PROFILE_SPECS,
+                "curve_shape": hybrid.CURVE_SHAPE,
+                "modality_rows": hybrid.MODALITY_ROWS,
+                "modality_index": hybrid.MODALITY_INDEX,
+                "base_sha256": plan["source"]["base_sha256"],
+                "overlay_sha256": plan["source"]["overlay_sha256"],
+                "base_curve_sha256": plan["source"]["base_curve_sha256"],
+                "overlay_curve_sha256": plan["source"]["overlay_curve_sha256"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    worker = Path(__file__).with_name("multiprocess_hybrid_maintenance_worker.py")
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            str(worker),
+            "--plan",
+            str(plan_path),
+            "--contract",
+            str(contract_path),
+            "--output-root",
+            str(output_root),
+            "--ready",
+            str(ready_path),
+            "--epoch",
+            "15",
+            "--hold-seconds",
+            "60",
+        ],
+        cwd=str(Path(__file__).resolve().parents[3]),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        creationflags=creation_flags,
+    )
+    try:
+        deadline = time.monotonic() + 30.0
+        while not ready_path.is_file() and process.poll() is None:
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.02)
+        if not ready_path.is_file():
+            stdout, stderr = process.communicate(timeout=5.0)
+            pytest.fail(
+                "hybrid maintenance worker did not reach the kill point: "
+                f"stdout={stdout!r}, stderr={stderr!r}"
+            )
+        process.kill()
+        process.wait(timeout=10.0)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=10.0)
+
+    assert not artifact_path.exists()
+    assert sidecar_path.is_file()
+    context = hybrid._maintenance_plan_context(plan, output_root, 15)
+    assert context["maintenance_lock_path"].is_file()
+    old = time.time() - 7200.0
+    os.utime(context["maintenance_lock_path"], (old, old))
+    recovered = hybrid.maintain_hybrid_artifact(
+        plan, output_root, "recover_interrupted_exp", True, 15, 1.0
+    )
+    assert recovered["transaction"]["phase"] == "recovered_active"
+    assert recovered["archived_stale_maintenance_lock"] is not None
+    assert artifact_path.is_file()
+    assert sidecar_path.is_file()
+    hybrid.validate_artifact_descriptor(artifact)
+
+
+def test_artifact_maintenance_rejects_tampered_journal_contract(
+    tmp_path, monkeypatch
+):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    root = tmp_path / "artifacts"
+    hybrid.maintain_hybrid_artifact(
+        plan, root, "quarantine_artifact_exp", True, 14
+    )
+    context = hybrid._maintenance_plan_context(plan, root, 14)
+    journal_path = context["transaction_path"]
+    original = json.loads(journal_path.read_text(encoding="utf-8"))
+
+    invalid_count = copy.deepcopy(original)
+    invalid_count["moved_count"] = 0
+    journal_path.write_text(json.dumps(invalid_count), encoding="utf-8")
+    with pytest.raises(ValueError, match="phase/count mismatch"):
+        hybrid.maintain_hybrid_artifact(
+            plan, root, "restore_quarantined_exp", True, 14
+        )
+
+    incomplete_pair = copy.deepcopy(original)
+    incomplete_pair["items"] = incomplete_pair["items"][:1]
+    incomplete_pair["moved_count"] = 1
+    journal_path.write_text(json.dumps(incomplete_pair), encoding="utf-8")
+    with pytest.raises(ValueError, match="must contain exactly"):
+        hybrid.maintain_hybrid_artifact(
+            plan, root, "restore_quarantined_exp", True, 14
+        )
+
+    journal_path.unlink()
+    journal_path.mkdir()
+    with pytest.raises(ValueError, match="regular non-symlink file"):
+        hybrid.maintain_hybrid_artifact(
+            plan, root, "restore_quarantined_exp", True, 14
+        )
+    journal_path.rmdir()
+
+    journal_path.write_text(json.dumps(original), encoding="utf-8")
+    restored = hybrid.maintain_hybrid_artifact(
+        plan, root, "restore_quarantined_exp", True, 14
+    )
+    assert restored["transaction"]["phase"] == "restored"
+    hybrid.validate_artifact_descriptor(artifact)
+
+
+def test_artifact_maintenance_rejects_internal_directory_symlink(
+    tmp_path, monkeypatch
+):
+    _artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    root = tmp_path / "artifacts"
+    external = tmp_path / "external-transactions"
+    external.mkdir()
+    transaction_root = root / "_maintenance_transactions"
+    try:
+        transaction_root.symlink_to(external, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"directory symlink creation is unavailable: {exc}")
+    with pytest.raises(ValueError, match="may not be a symbolic link"):
+        hybrid.maintain_hybrid_artifact(
+            plan, root, "inspect_only", False, 0
+        )
+
+
+def test_stale_build_residue_is_quarantined_without_deletion_and_can_rebuild(
+    tmp_path, monkeypatch
+):
+    artifact, plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    artifact_path = Path(artifact["path"])
+    sidecar_path = Path(artifact["sidecar_path"])
+    sidecar_path.unlink()
+    lock_path = artifact_path.with_suffix(artifact_path.suffix + ".lock")
+    lock_path.write_text(
+        json.dumps({"pid": 999999999, "created_unix": time.time() - 7200}),
+        encoding="utf-8",
+    )
+    old = time.time() - 7200
+    os.utime(artifact_path, (old, old))
+    os.utime(lock_path, (old, old))
+
+    report = hybrid.maintain_hybrid_artifact(
+        plan,
+        tmp_path / "artifacts",
+        "quarantine_stale_build_residue_exp",
+        True,
+        13,
+        1.0,
+    )
+    assert report["mutation_performed"] is True
+    assert report["transaction"]["item_count"] == 2
+    assert not artifact_path.exists()
+    assert not lock_path.exists()
+    recycled = list((tmp_path / "artifacts" / "_recycle").rglob("*"))
+    assert any(path.name == artifact_path.name for path in recycled)
+    assert any(path.name == lock_path.name for path in recycled)
+
+    rebuilt = hybrid.build_hybrid_artifact(plan, tmp_path / "artifacts")
+    assert rebuilt["cache_hit"] is False
+    assert artifact_path.is_file()
+    assert sidecar_path.is_file()
+
+
 def test_artifact_applies_offset_set_to_clone_and_attaches_provenance(tmp_path, monkeypatch):
     artifact, _plan = _build_tiny_artifact(tmp_path, monkeypatch)
     original = _FakePatcher()
@@ -501,3 +807,56 @@ def test_hybrid_mixed_reference_examples_are_auto_routed_and_importable():
     assert {"LoadImage", "LoadAudio"}.issubset(
         {node["type"] for node in nodes.values()}
     )
+
+
+def test_hybrid_artifact_maintenance_examples_are_safe_and_link_consistent():
+    root = Path(__file__).resolve().parents[1]
+    api = json.loads(
+        (root / "examples" / "hybrid_artifact_maintenance_api.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    inspector_id = next(
+        node_id
+        for node_id, node in api.items()
+        if node["class_type"] == "MiniMaxH3HybridPairInspectorT8Advanced"
+    )
+    maintenance = next(
+        node
+        for node in api.values()
+        if node["class_type"] == "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
+    )
+    assert maintenance["inputs"] == {
+        "hybrid_plan": [inspector_id, 0],
+        "action": "inspect_only",
+        "confirm_action": False,
+        "operation_epoch": 0,
+        "stale_after_minutes": 60.0,
+    }
+
+    workflow = json.loads(
+        (
+            root
+            / "examples"
+            / "workflows"
+            / "H3_Hybrid_Artifact_Maintenance_Advanced.json"
+        ).read_text(encoding="utf-8")
+    )
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    links = {link[0]: link for link in workflow["links"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(links)
+    assert nodes[2]["type"] == "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
+    assert nodes[2]["widgets_values"] == ["inspect_only", False, 0, 60.0]
+    assert not any(
+        value in {"quarantine_artifact_exp", "restore_quarantined_exp"}
+        for node in nodes.values()
+        for value in node.get("widgets_values", [])
+        if isinstance(value, str)
+    )
+    for node in nodes.values():
+        for input_value in node.get("inputs", []):
+            link_id = input_value.get("link")
+            if link_id is not None:
+                assert link_id in links
+                assert links[link_id][3] == node["id"]
