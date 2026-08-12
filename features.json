@@ -77,7 +77,8 @@
     "MiniMaxH3HybridArtifactBuilderT8Advanced",
     "MiniMaxH3HybridModelLoaderT8Advanced",
     "MiniMaxH3VRAMPolicyT8Advanced",
-    "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
+    "MiniMaxH3HybridArtifactMaintenanceT8Advanced",
+    "MiniMaxH3HybridCompatibilityAuditT8Advanced"
   ],
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -870,6 +871,48 @@
     "api_example": "examples/hybrid_artifact_maintenance_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json",
     "status": "implemented with inspect, quarantine, idempotent replay, restore, tampered-journal refusal, a real subprocess kill between pair moves, stale-lock recovery and stale build-residue rebuild tests; remains Advanced/Experimental"
+  },
+  "experimental_hybrid_compatibility_audit": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "node": "MiniMaxH3HybridCompatibilityAuditT8Advanced",
+    "positioning": "appended after the previous 61 node IDs; passes through the exact same MODEL object and changes no stable node, sampler math, default, or old workflow",
+    "recommended_order": "Hybrid Loader -> optional LoRA -> SageAttention -> Block Cache or Long Video or MultiKeyframe -> sampler setup -> Compatibility Audit -> BasicGuider",
+    "modes": [
+      "report_only",
+      "block_hard_conflicts"
+    ],
+    "audits": [
+      "canonical Hybrid attachment identity, fingerprint, recipe and all expected offset-set entries",
+      "Hybrid-before-LoRA ordering plus any later AdaLN patch overlapping selected Hybrid rows",
+      "complete MiniMax H3 Block Cache boundary replacements and both wrapper groups",
+      "all-block MiniMax SageAttention replacement with unknown or partial attention patches rejected",
+      "Long Video and MultiKeyframe scoped MODEL/Conditioning pairing and mutual exclusion",
+      "stock, stable dual-clock/native AV, experimental multi-rate or unknown custom sampling route",
+      "applied VRAM-policy provenance, DynamicVRAM/VBAR state, current whole-device VRAM and host commit headroom"
+    ],
+    "enforcement_contract": {
+      "default": "report_only never blocks and returns the identical MODEL object",
+      "strict": "block_hard_conflicts raises only for mechanically established identity, patch, ordering, wrapper, scoped-conditioning or configured memory-gate failures",
+      "cache": "runtime memory and patch stacks are re-audited on every execution through a non-cacheable fingerprint"
+    },
+    "hard_boundaries": [
+      "a mechanically compatible patch stack is not proof that a Hybrid recipe improves visual quality, reference identity, audio, or oiliness",
+      "the 512MiB VRAM and 16GiB host-commit values are configurable current-state gates, not predicted denoising peaks",
+      "VBAR pages model weights but cannot eliminate activation, attention-workspace, VAE/CLIP, CUDA-context, pinning, other-process, driver or host-commit OOM",
+      "AdaLN-overlapping LoRA remains blocked until a controlled quality and numerical matrix calibrates that exact LoRA/base/artifact combination"
+    ],
+    "api_example": "examples/hybrid_compatibility_audit_api.json",
+    "frontend_workflow": "examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
+    "validated_real_probe": {
+      "date": "2026-08-12",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; isolated GPU service with this plugin, T8 H3 Block Cache and KJNodes",
+      "graph": "FL2VA pruned INT8 plus 27.69MiB Hybrid artifact -> KJ MiniMax H3 SageAttention -> T8 H3 Block Cache -> stable dual clock -> strict Compatibility Audit -> BasicGuider",
+      "controls": "4GiB applied T8 VRAM policy; Qwen3-VL NVFP4; both H3 VAEs; 10A.jpg; 256x256; 22 frames; one joint step",
+      "result": "strict audit and generation succeeded in 64.91 seconds; 22 decoded PNG frames; Block Cache 0/1 and 5.4MiB CPU cache",
+      "coarse_minimum_headroom_mib": 825.456,
+      "decision": "real plugin-combination mechanics passed; one short one-step probe does not validate perceptual quality, cache benefit, long-window memory or universal 16GiB safety"
+    },
+    "status": "339 project tests, Ruff, compileall, all example JSON, isolated import, 62-node object-info, userdata visibility and one real strict Hybrid+Sage+BlockCache+VBAR integration probe passed; remains Advanced/Experimental"
   },
   "experimental_vram_policy_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",

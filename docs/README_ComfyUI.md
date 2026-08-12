@@ -68,6 +68,26 @@ patch quantized weights in the same way.
 
 ## Ready-to-import workflows
 
+Version 1.17.0 retains all 61 Version 1.16.0 node IDs and appends one isolated
+`MiniMaxH3HybridCompatibilityAuditT8Advanced` node. Put it after every MODEL-changing node and
+sampler setup, then route its passthrough MODEL to `BasicGuider`. Connecting final H3 Conditioning
+also verifies Long Video/MultiKeyframe pairing and actual reference modalities.
+
+The default `report_only` mode never blocks and returns the exact same MODEL object. The optional
+`block_hard_conflicts` mode rejects invalid Hybrid offset-set identity, Hybrid/LoRA order or AdaLN
+overlap, incomplete Block Cache/Sage contracts, Long Video/MultiKeyframe conflicts, mismatched
+Conditioning, and configured current-VRAM/host-commit gate failures. It recognizes stock, stable
+dual-clock/native AV and EXP multi-rate sampling without changing sampler mathematics.
+
+When a T8 VRAM policy is connected to the Hybrid Loader, a small policy-application provenance
+attachment now follows MODEL clones. `require_applied_vram_policy=true` distinguishes a real fixed/
+auto reserve from missing or report-only policy. Current 512 MiB VRAM and 16 GiB host-commit gates
+are not peak predictions. Passing the audit is mechanical compatibility only; quality, de-waxing,
+reference identity and universal 16 GiB safety remain unproven, and `memory_safe_claim=false`.
+See `docs/HYBRID_COMPATIBILITY_AUDIT.md` and import
+`H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
+`hybrid_compatibility_audit_api.json`.
+
 Version 1.16.0 retains all 60 Version 1.15.1 node IDs and appends one isolated
 Hybrid Artifact Maintenance Advanced output node. Its API and frontend examples
 default to side-effect-free inspection. Mutating actions require explicit confirmation and a

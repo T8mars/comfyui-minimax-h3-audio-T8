@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.16.0`，共注册
-61 个节点，覆盖原生音画条件、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.17.0`，共注册
+62 个节点，覆盖原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -13,7 +13,7 @@
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
 | `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度，以及首帧、尾帧与多个中间关键帧的隔离 Advanced 时间线 |
-| `T8/MiniMax H3/Models/Experimental` | 实验 | 显存/VBAR策略、严格模型配对检查、曲线重基的小型 Hybrid artifact 构建和 stock-loader 混合 MODEL |
+| `T8/MiniMax H3/Models/Experimental` | 实验 | 显存/VBAR策略、严格模型配对、Hybrid artifact构建/维护、stock-loader混合MODEL与最终patch-stack兼容审计 |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
@@ -30,6 +30,13 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
+
+`1.17.0` 保留 `1.16.0` 的61个节点ID、顺序、输入、默认值和旧接线，只在末尾追加一个
+`Hybrid Compatibility Audit Advanced`节点。它放在所有MODEL补丁与采样设置之后、`BasicGuider`
+之前，默认`report_only`并返回同一个MODEL对象；检查Hybrid offset-set、LoRA顺序/AdaLN重叠、
+Block Cache、Sage、Long Video、多关键帧、采样协议以及VRAM/VBAR policy provenance。旧工作流不
+创建该节点时行为完全不变。机械通过不等于质量胜出或显存安全，报告始终保持
+`memory_safe_claim=false`。
 
 `1.16.0` 保留 `1.15.1` 的60个节点ID、顺序、输入、默认值和旧接线，只在末尾追加一个
 Hybrid Artifact Maintenance Advanced输出节点。默认`inspect_only`不创建事务目录、不移动文件；
@@ -135,6 +142,7 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Hybrid Model Loader / 混合模型加载 (Advanced) | 继续使用ComfyUI stock diffusion loader加载FL2VA，再给克隆MODEL应用小型offset-set patch；保留DynamicVRAM/VBAR路径 |
 | MiniMax H3 VRAM Policy / VBAR显存预留策略 (Advanced) | 默认只报告；显式连接Hybrid Loader后在模型加载前设置ComfyUI总预留与AIMDO simple headroom，并报告主机commit边界 |
 | MiniMax H3 Hybrid Artifact Maintenance / 混合补丁安全维护 (Advanced) | 默认只检查精确artifact状态；可显式隔离、还原、恢复中断事务或处理过期构建残留，永不永久删除源checkpoint |
+| MiniMax H3 Hybrid Compatibility Audit / 混合模型组合兼容审计 (Advanced) | MODEL原样直通；审计Hybrid/LoRA/BlockCache/Sage/长视频/多关键帧/采样/VBAR组合，默认只报告、可选阻断硬冲突 |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
@@ -213,6 +221,41 @@ Pareto候选，不足以宣布去油、身份更准或优于原生Ref2VA。精�
 它没有永久删除动作；符号链接、越界路径、非canonical manifest、损坏journal、哈希或大小不一致
 均fail closed。隔离区仍占磁盘，用户应先审核再手动做最终清理。此节点不会清Comfy执行缓存、卸载
 已加载MODEL或释放VRAM。安全说明见[Hybrid Artifact维护文档](docs/HYBRID_ARTIFACT_MAINTENANCE.md)。
+
+## Advanced：Hybrid组合兼容审计
+
+`MiniMax H3 Hybrid Compatibility Audit (Advanced)`应放在最终MODEL链末端：
+
+```text
+Hybrid Loader -> 可选LoRA -> 可选Sage -> Block Cache/Long Video/MultiKeyframe
+              -> 稳定或EXP采样设置 -> Compatibility Audit -> BasicGuider
+```
+
+可选`positive`输入用于核对Long Video/多关键帧的MODEL与Conditioning是否成对，并读取真实参考
+模态。默认`report_only`即使发现问题也不阻断，且输出与输入是同一个MODEL对象；显式选择
+`block_hard_conflicts`才会在已证明的机械冲突上报错。节点检查：
+
+- Hybrid attachment身份、fingerprint、recipe、payload和全部offset-set条目；
+- `Hybrid -> LoRA`顺序，以及后加LoRA是否覆盖所选AdaLN行；
+- H3 Block Cache首/末block replacement和两个wrapper是否完整；
+- Sage是否覆盖全部H3 blocks，未知attention forward patch会拒绝；
+- Long Video与多关键帧的局部patch版本、Conditioning配对和双向互斥；
+- stock、稳定双时钟/native AV、EXP多速率或未知采样路由；
+- Loader记录的VRAM策略是否真实应用，以及执行当下整卡空闲、DynamicVRAM和主机commit。
+
+Hybrid Loader现在只把必要的策略应用事实作为轻量MODEL附件随clone传递，不携带完整遥测树。
+`require_applied_vram_policy=true`会拒绝未连接策略或`report_only`策略。512MiB与16GiB是可配置的
+当前态门槛，不是下一次denoise峰值预测。通过审计只表示已知patch合同没有硬冲突，不能证明某个
+recipe去油、画质更高、参考更准、音频更好或16GB不会OOM；AdaLN重叠LoRA在该精确组合完成数值与
+质量矩阵前会被严格模式阻断。
+
+示例：
+
+- `examples/hybrid_compatibility_audit_api.json`；
+- `examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
+
+完整合同与issue code见
+[Hybrid Compatibility Audit文档](docs/HYBRID_COMPATIBILITY_AUDIT.md)。
 
 ## Advanced：显存预留与 DynamicVRAM/VBAR 策略
 

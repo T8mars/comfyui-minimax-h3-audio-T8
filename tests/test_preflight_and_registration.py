@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 61
+    assert len(ids) == 62
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -162,7 +162,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     vram_schema = schemas[59]
     assert vram_schema.is_experimental is True
     assert vram_schema.category == "T8/MiniMax H3/Models/Experimental"
-    assert ids[60:] == ["MiniMaxH3HybridArtifactMaintenanceT8Advanced"]
+    assert ids[60] == "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
     maintenance_schema = schemas[60]
     assert maintenance_schema.is_experimental is True
     assert maintenance_schema.is_output_node is True
@@ -170,6 +170,16 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     maintenance_inputs = {item.id: item for item in maintenance_schema.inputs}
     assert maintenance_inputs["action"].default == "inspect_only"
     assert maintenance_inputs["confirm_action"].default is False
+    assert ids[61:] == ["MiniMaxH3HybridCompatibilityAuditT8Advanced"]
+    compatibility_schema = schemas[61]
+    assert compatibility_schema.is_experimental is True
+    assert compatibility_schema.is_output_node is False
+    assert compatibility_schema.category == "T8/MiniMax H3/Models/Experimental"
+    compatibility_inputs = {item.id: item for item in compatibility_schema.inputs}
+    assert compatibility_inputs["enforcement"].default == "report_only"
+    assert compatibility_inputs["require_applied_vram_policy"].default is False
+    assert compatibility_inputs["positive"].optional is True
+
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",
         "MiniMaxH3LongVideoAutoQueueT8",

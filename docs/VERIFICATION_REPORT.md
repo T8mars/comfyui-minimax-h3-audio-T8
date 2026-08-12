@@ -5,10 +5,55 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.16.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
+The current 1.17.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.17.0 Hybrid patch-stack compatibility checkpoint (2026-08-12)
+
+One isolated Advanced node was appended after the previous 61-node prefix. The node returns the
+exact input MODEL object and defaults to `report_only`. Its optional strict mode blocks proven
+Hybrid identity/offset-set failures, Hybrid-before-LoRA order violations, later selected-AdaLN
+overlap, partial or foreign Block Cache/Sage patches, Long Video/MultiKeyframe patch or Conditioning
+mismatch, and configured current-VRAM/host-commit gate failures. It recognizes stable dual-clock/
+native AV, EXP multi-rate, stock and unknown sampling routes without modifying sampling math.
+
+The Hybrid Loader now attaches only the immutable policy-application provenance needed downstream:
+schema/fingerprint/mode, whether the policy was applied, cleanup scope, reserve target, ComfyUI and
+AIMDO setter routes, gate results, and `memory_safe_claim=false`. Full before/after telemetry is not
+retained on MODEL. Clones inherit the attachment through ComfyUI's native ModelPatcher contract.
+
+Deterministic validation covered:
+
+- all 100 canonical Hybrid operations for the 25–49 video+audio recipe;
+- nonselected attention/MLP LoRA acceptance, selected AdaLN overlap, wrong order, missing and
+  duplicate set entries;
+- complete and incomplete H3 Block Cache markers, full/partial/foreign Sage attention patches;
+- Long Video and MultiKeyframe MODEL/Conditioning pairing and mutual exclusion;
+- policy missing/report-only/applied states, low whole-device VRAM and low host commit;
+- stock, stable dual-clock and EXP multi-rate sampling identification;
+- API and frontend routing through Audit before BasicGuider, all link directions, and the unchanged
+  previous 61-node prefix.
+
+The complete project suite reports **339 passed**. Ruff, compileall, all example JSON parsing,
+`git diff --check`, and an isolated CPU ComfyUI whitelist import passed. A live isolated server
+reported 62 plugin nodes; `/object_info/MiniMaxH3HybridCompatibilityAuditT8Advanced` confirmed the
+five required inputs, optional Conditioning, defaults, three outputs, category and EXP status. The
+new frontend workflow was visible through `/userdata`.
+
+A real RTX 4060 Ti 16 GiB integration probe then used the exact FL2VA pruned INT8 base, existing
+27.69 MiB Hybrid artifact, 4 GiB T8 VRAM policy, KJ MiniMax H3 SageAttention, T8 H3 Block Cache,
+stable dual-clock setup, Qwen3-VL NVFP4 and both H3 VAEs at 256×256, 22 frames and one joint step.
+Strict audit mode remained in the MODEL path before BasicGuider and the prompt completed in 64.91
+seconds, saving all 22 frames. Logs proved the direct AIMDO 4 GiB route and Block Cache `0/1` with a
+5.4 MiB CPU cache. Coarse polling observed 825.46 MiB minimum whole-device free VRAM. This is a
+mechanical integration probe, not a quality comparison or a universal 16 GiB safety result.
+
+The node therefore always reports `quality_validated=false` and `memory_safe_claim=false`. VBAR
+pages weights but does not bound activations, attention workspaces, VAE/CLIP, CUDA context, pinned
+memory, other processes, drivers, or host commit. Detailed usage and issue codes are in
+`docs/HYBRID_COMPATIBILITY_AUDIT.md`.
 
 ## 1.16.0 Hybrid artifact maintenance checkpoint (2026-08-12)
 

@@ -24,6 +24,7 @@ ARTIFACT_SCHEMA = "t8.minimax_h3.hybrid_artifact.v1"
 PLAN_SCHEMA = "t8.minimax_h3.hybrid_plan.v1"
 ALGORITHM = "curve_affine_rebase_fp64_target_slice_set_v1"
 ATTACHMENT_KEY = "t8_minimax_h3_hybrid_recipe_v1"
+VRAM_POLICY_ATTACHMENT_KEY = "t8_minimax_h3_vram_policy_apply_v1"
 ARTIFACT_MAINTENANCE_SCHEMA = "t8.minimax_h3.hybrid_artifact_maintenance.v1"
 ARTIFACT_MAINTENANCE_ACTIONS = (
     "inspect_only",
@@ -1706,6 +1707,35 @@ def apply_artifact_to_model(model, artifact: dict[str, Any]):
     return patched, attachment
 
 
+def _attach_vram_policy_provenance(model: Any, policy_report: dict[str, Any] | None) -> bool:
+    """Attach only the immutable application facts needed by downstream audits."""
+    if policy_report is None:
+        return False
+    keys = (
+        "schema",
+        "policy_fingerprint",
+        "mode",
+        "applied",
+        "cleanup_performed",
+        "target_reserved_gib",
+        "dynamic_vram_route",
+        "model_management_route",
+        "current_gate_pass",
+        "commit_gate_pass",
+        "memory_safe_claim",
+    )
+    attachment = {key: policy_report.get(key) for key in keys if key in policy_report}
+    setter = getattr(model, "set_attachments", None)
+    if callable(setter):
+        setter(VRAM_POLICY_ATTACHMENT_KEY, attachment)
+        return True
+    attachments = getattr(model, "attachments", None)
+    if isinstance(attachments, dict):
+        attachments[VRAM_POLICY_ATTACHMENT_KEY] = attachment
+        return True
+    return False
+
+
 def load_hybrid_model(
     base_path: str | os.PathLike[str],
     mode: str,
@@ -1723,6 +1753,7 @@ def load_hybrid_model(
 
     if mode == "base_only":
         model = comfy.sd.load_diffusion_model(str(base), model_options=model_options)
+        policy_attachment_written = _attach_vram_policy_provenance(model, policy_report)
         report = {
             "mode": mode,
             "base_file_name": base.name,
@@ -1733,6 +1764,7 @@ def load_hybrid_model(
         }
         if policy_report is not None:
             report["vram_policy"] = policy_report
+            report["vram_policy_attachment_written"] = policy_attachment_written
         return model, report
     if mode != "apply_artifact_exp":
         raise ValueError(f"unsupported hybrid loader mode: {mode!r}")
@@ -1754,6 +1786,7 @@ def load_hybrid_model(
         name_warning = None
     model = comfy.sd.load_diffusion_model(str(base), model_options=model_options)
     patched, attachment = apply_artifact_to_model(model, descriptor)
+    policy_attachment_written = _attach_vram_policy_provenance(patched, policy_report)
     warnings = [
         "Experimental static AdaLN fusion; it is not reference-only routing and has no proven quality-winning preset.",
         "Apply Turbo LoRA only after this node; AdaLN-overlapping patches require an explicit compatibility check.",
@@ -1775,6 +1808,7 @@ def load_hybrid_model(
     }
     if policy_report is not None:
         report["vram_policy"] = policy_report
+        report["vram_policy_attachment_written"] = policy_attachment_written
     return patched, report
 
 
