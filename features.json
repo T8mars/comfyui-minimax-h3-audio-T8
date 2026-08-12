@@ -72,7 +72,10 @@
     "MiniMaxH3DialogueSafeMasterT8",
     "MiniMaxH3TimedAudioBedLockT8",
     "MiniMaxH3KeyframePlanT8Advanced",
-    "MiniMaxH3MultiKeyframeConditioningT8Advanced"
+    "MiniMaxH3MultiKeyframeConditioningT8Advanced",
+    "MiniMaxH3HybridPairInspectorT8Advanced",
+    "MiniMaxH3HybridArtifactBuilderT8Advanced",
+    "MiniMaxH3HybridModelLoaderT8Advanced"
   ],
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -753,6 +756,83 @@
       "evidence": "artifacts/ref2va-visual-strength-check/strength_matrix_summary.json"
     },
     "status": "implemented and real-model matrix-validated as an isolated EXP post-conditioning node; stable Conditioning and sampling paths remain unchanged"
+  },
+  "experimental_hybrid_model_advanced": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "nodes": [
+      "MiniMaxH3HybridPairInspectorT8Advanced",
+      "MiniMaxH3HybridArtifactBuilderT8Advanced",
+      "MiniMaxH3HybridModelLoaderT8Advanced"
+    ],
+    "positioning": "isolated P0 research path for testing whether selected Ref2VA pruned AdaLN modality rows can improve reference adherence while retaining more FL2VA quality; it does not modify or replace the stock loader or any existing T8 node",
+    "validated_pair": {
+      "quality_base": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "quality_base_sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a",
+      "reference_overlay": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "reference_overlay_sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
+      "family": "pruned curve only; full/pruned mixing, full INT8 and unknown experimental checkpoints are rejected"
+    },
+    "artifact": {
+      "algorithm": "affine rebase from the Ref2VA curve basis into the FL2VA curve basis, computed in FP64",
+      "storage": "content-addressed FP16 target slices plus ModelPatcher offset set operations",
+      "directory": "ComfyUI/models/h3_hybrid_artifacts",
+      "payload_range_mib": [13.84, 83.06],
+      "runtime": "the quality base is loaded by ComfyUI's stock diffusion loader; the second complete checkpoint is not loaded into the runtime MODEL"
+    },
+    "profiles": [
+      "blocks_25_49_video_audio_exp",
+      "blocks_25_49_all_modalities_exp",
+      "blocks_25_49_video_exp",
+      "blocks_25_49_audio_exp",
+      "blocks_0_49_video_audio_exp",
+      "blocks_0_49_all_modalities_exp",
+      "auto_match_reference_modalities_exp"
+    ],
+    "conditioning_aware_routing": {
+      "visual_only": "blocks_25_49_video_exp",
+      "audio_only": "blocks_25_49_audio_exp",
+      "video_audio_or_mixed": "blocks_25_49_video_audio_exp",
+      "fail_closed": "keyframes alone, no extra reference, unknown kinds and malformed Conditioning are rejected",
+      "boundary": "minimal modality matching only; it is not a trained best-quality selector"
+    },
+    "hard_boundaries": [
+      "static video/audio row replacement also changes target-stream modulation and is not reference-only routing",
+      "final AdaLN, output heads and the FL2VA curve table remain on the quality base",
+      "Hybrid must precede LoRA; an existing patch on a selected AdaLN tensor is rejected",
+      "no profile is called best, high-quality or max-reference before controlled A/B and blind review",
+      "no 16GiB memory_safe or never-OOM claim before the 512MiB whole-device headroom and repeat-run gates pass"
+    ],
+    "api_example": "examples/hybrid_model_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+    "api_examples": [
+      "examples/hybrid_model_advanced_api.json",
+      "examples/hybrid_model_audio_reference_api.json",
+      "examples/hybrid_model_mixed_reference_api.json"
+    ],
+    "frontend_workflows": [
+      "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+      "examples/workflows/H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json",
+      "examples/workflows/H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
+    ],
+    "matrix_tool": {
+      "path": "tools/run_hybrid_model_matrix.py",
+      "behavior": "resumable sequential FL2VA/Ref2VA/Hybrid controls with global release between treatments, workflow/output hashes, blind package and matrix_summary JSON/CSV",
+      "optional_local_metrics": ["faster-whisper ASR", "InsightFace", "WavLM X-Vector"],
+      "downloads_models": false
+    },
+    "validation_report": "docs/HYBRID_MODEL_ADVANCED_VALIDATION.md",
+    "validated_real_probe": {
+      "date": "2026-08-12",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0/cbbc9dab1; isolated sequential service",
+      "artifact": "blocks 25-49 video+audio, 29,030,400-byte payload, 100 offset-set operations, curve-table relative error 4.9343e-5, maximum effective-modulation reconstruction error 2.3021e-5",
+      "dynamic_contract": "stock cached factory, ModelPatcherDynamic, normal clone, non-dynamic delegate and same-device deepclone retained all 100 patch entries and provenance",
+      "mechanical": "256x256, 22 frames, one dual-clock step completed and emitted 22-frame 24fps video plus 32kHz stereo audio; whole-device peak 12,872.8MiB",
+      "stock20_matrix": "15 follow-up run records across visual, audio-only and visual-plus-audio references completed at 124 frames; all outputs had 32kHz stereo audio and no OOM/clipping",
+      "mixed_reference_signal": "one visual-plus-audio seed: Hybrid face cosine 0.523 versus FL/Ref 0.449/0.443; WavLM cosine 0.868 versus FL/Ref 0.467/0.945; all normalized ASR word streams matched the target",
+      "minimum_followup_headroom_mib": 41.337,
+      "quality_decision": "minimal video-only/audio-only routing and the mixed-reference recipe remain research Pareto candidates; one material/seed, no completed blind panel and <512MiB headroom deny best-quality, de-wax, max-reference or 16GiB memory_safe labels"
+    },
+    "status": "isolated P0 implementation, exact artifact construction, Conditioning-aware minimal modality routing, resumable matrix tooling and visual/audio/mixed Stock20 pilots passed; broader multi-material quality, combination and repeat-memory gates remain Experimental and incomplete"
   },
   "vram_validation": {
     "tool": "tools/validate_h3_vram.py",

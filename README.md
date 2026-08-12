@@ -1,11 +1,11 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.13.0`，共注册
-56 个节点，覆盖原生音画条件、隔离的多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.14.0`，共注册
+59 个节点，覆盖原生音画条件、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
-节点按稳定性与用途分为七个菜单：
+节点按稳定性与用途分为八个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
@@ -13,6 +13,7 @@
 | `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
 | `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度，以及首帧、尾帧与多个中间关键帧的隔离 Advanced 时间线 |
+| `T8/MiniMax H3/Models/Experimental` | 实验 | 严格模型配对检查、曲线重基的小型 Hybrid artifact 构建和 stock-loader 混合 MODEL |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
@@ -30,7 +31,9 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
 
-`1.13.0` 保留此前54个节点的 ID、顺序、默认值和旧接线，只在末尾追加2个字面以
+`1.14.0` 保留 `1.13.0` 的56个节点 ID、顺序、默认值和旧接线，只在末尾追加3个字面以
+`Advanced` 结尾的 Hybrid Model EXP 节点；未连接时不会检查第二份 checkpoint、构建 artifact、
+克隆 MODEL 或改变任何旧工作流。`1.13.0` 保留此前54个节点的 ID、顺序、默认值和旧接线，只在末尾追加2个字面以
 `Advanced` 结尾的多关键帧 EXP 节点；旧工作流不会创建中间关键帧、克隆 MODEL 或修改 H3
 内部条件行。只有用户主动接入 Advanced 计划时才启用局部能力探针和补丁。`1.12.0` 保留此前51个节点的 ID、顺序、默认值和旧接线，只在末尾追加3个完全隔离的
 Dialogue Safe Audio EXP 节点；旧工作流不会自动运行 ASR、改变联合 latent、分离混合音轨或
@@ -113,6 +116,9 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Joint Dialogue Conditioning / 多人同段条件 (EXP/T8) | 2–3人 Ref2VA 同段实验；真实两人探针质量门槛失败，不是稳定推荐路径 |
 | MiniMax H3 Keyframe Plan / 中间关键帧计划 (Advanced) | 链式加入一个中间图像，使用帧/秒/百分比定位，并记录该帧的原始视觉 `noise_aug` |
 | MiniMax H3 Multi-Keyframe Conditioning / 多关键帧条件 (Advanced) | 在独立 MODEL 克隆上组装首帧、1–7张中间帧、尾帧及可选 Hybrid 参考；不修改稳定 Conditioning |
+| MiniMax H3 Hybrid Pair Inspector / 混合模型配对检查 (Advanced) | 在分配GPU前校验精确FL2VA/Ref2VA pruned pair、完整SHA-256、曲线、tensor合同、recipe和预计artifact大小 |
+| MiniMax H3 Hybrid Artifact Builder / 小型混合补丁构建 (Advanced) | 把Ref2VA所选AdaLN模态行曲线重基到FL2VA基底，原子生成约13.84～83.06MiB的内容寻址target-slice artifact |
+| MiniMax H3 Hybrid Model Loader / 混合模型加载 (Advanced) | 继续使用ComfyUI stock diffusion loader加载FL2VA，再给克隆MODEL应用小型offset-set patch；保留DynamicVRAM/VBAR路径 |
 | MiniMax H3 Visual Reference Strength (EXP/T8) | 在现有 H3 positive Conditioning 后写入全局视觉参考强度；可能缓解过度平滑/蜡感，也可能削弱身份、构图和首尾帧 |
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
@@ -131,6 +137,48 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | `Hybrid` | 关键帧与参考媒体混合生成 |
 
 中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
+
+## Advanced：FL2VA × Ref2VA 小型混合模型实验
+
+`1.14.0` 没有照搬“同时 mmap 两份完整模型再拼 state dict”的 loader。默认路线依次连接：
+
+1. `Hybrid Pair Inspector` 对两份用户已有 checkpoint 做完整 SHA-256 与结构检查；
+2. `Hybrid Artifact Builder` 只读取选定 Ref2VA AdaLN 行，生成小型内容寻址 artifact；
+3. `Hybrid Model Loader` 用 ComfyUI 原生 loader 加载 FL2VA，再把 artifact 应用到克隆 MODEL；
+4. 如需 LoRA，必须接在 Hybrid Loader **之后**；示例为隔离变量而使用 Stock20、无 LoRA。
+
+P0 只接受以下精确文件，文件名相同但哈希不同也会拒绝：
+
+- `minimax_h3_fl2va_pruned_int8_convrot.safetensors`：
+  `e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a`；
+- `minimax_h3_ref2va_pruned_int8_convrot.safetensors`：
+  `9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779`。
+
+Builder 默认把 artifact 放在 ComfyUI 标准模型目录 `models/h3_hybrid_artifacts/`，不会覆盖源模型，
+也不会生成另一份约19.5GiB的完整融合 checkpoint。默认
+`blocks_25_49_video_audio_exp` artifact 为27.69MiB、100个精确offset-set操作；完整实物构建的
+曲线拟合相对误差为`4.9343e-5`，最差已保存调制重构误差为`2.3021e-5`。当前 DynamicVRAM
+实测仍产出原生`ModelPatcherDynamic`，普通clone、non-dynamic delegate与同设备deepclone均保留
+patch和来源报告。
+
+这些 recipe 都使用中性 `_exp` 名称。当前 ComfyUI 只有video/text/audio三种AdaLN tag，视觉
+参考和目标视频共用video行，音频参考和目标音频共用audio行；所以静态替换不是“只改参考通路”，
+也不能先验保证“FL2VA质量 + Ref2VA全部参考能力”。`base_only`是明确的stock FL2VA对照；
+`header_only_exp`只作诊断，永远不能授权artifact构建。
+
+Inspector 的 `auto_match_reference_modalities_exp` 可读取现有 Conditioning：额外图片/视频只选
+video行，独立音频只选audio行，有声视频或图像+音频组合选video+audio行；仅有首尾关键帧、没有
+额外reference或遇到未知reference类型时会拒绝，不会猜测“最佳配置”。这只是最小模态路由，
+不是经过训练的质量自动选择。
+
+真实Stock20顺序矩阵已覆盖视觉、音频和图像+音频参考，共15路成功生成。混合参考单案例中，
+25～49 video+audio Hybrid的人脸余弦中位数为0.523，FL2VA/Ref2VA对照为0.449/0.443；说话人余弦
+为0.868，介于FL2VA的0.467与Ref2VA的0.945之间，三路ASR均为零词错。这是值得继续多seed盲评的
+Pareto候选，不足以宣布去油、身份更准或优于原生Ref2VA。精确显存轮询的最差余量只有41.34MiB，
+因此所有Hybrid示例继续禁止标16GB `memory_safe`。可恢复矩阵工具会顺序释放模型、校验输出hash、
+生成盲评包与`matrix_summary.json/csv`，并可选使用本地ASR、InsightFace和WavLM；不会自动下载模型。
+详细记录见
+[Hybrid Model Advanced 验证报告](docs/HYBRID_MODEL_ADVANCED_VALIDATION.md)。
 
 ## EXP：来源视频音画重绘
 
@@ -989,17 +1037,24 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 ## 示例与测试
 
 可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑、
-对白安全分轨母带、两遍 H3 分时背景底轨锁定，以及以下长视频示例位于 `examples/workflows/`：
+对白安全分轨母带、两遍 H3 分时背景底轨锁定、Hybrid Model Advanced Stock20，以及以下长视频示例位于 `examples/workflows/`：
 
 - `H3_Long_Video_22F_EXP.json`：手工逐段续写基线。
 - `H3_Long_Video_Accepted_22F_EXP.json`：候选预览、接受和可恢复状态链。
 - `H3_Long_Video_Auto_Resume_22F_EXP.json`：总时长编排与人工审核后自动恢复。
 - `H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
 - `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
+- `H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
+- `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
+  最小audio-row实验profile。
+- `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
+  实验profile；仍需用户盲评，不能视为最佳profile。
 
 API 示例见 `examples/audio_lock_api.json`、
 `examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
-`examples/still_image_edit_api.json`；对白安全音频另见
+`examples/still_image_edit_api.json`、`examples/hybrid_model_advanced_api.json`、
+`examples/hybrid_model_audio_reference_api.json`与`examples/hybrid_model_mixed_reference_api.json`；
+对白安全音频另见
 `examples/dialogue_safe_master_api.json` 与 `examples/dialogue_timed_bed_lock_api.json`。
 替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
 输入图像和音频文件名后即可使用；

@@ -1,4 +1,4 @@
-# MiniMax-H3 Turbo 4-step LoRA â€” ComfyUI conversion
+# MiniMax-H3 Turbo 4-step LoRA ¡ª ComfyUI conversion
 
 The converter lives in the project-local `tools/` directory. Model weights are
 kept outside this code repository and installed through ComfyUI's standard
@@ -28,7 +28,7 @@ The bypass loader can therefore fail at runtime on a pruned model.
 3. Add **Load LoRA (Bypass, Model Only) (for debugging)** after **Load Diffusion
    Model**. Connect its model output wherever the diffusion model was connected.
 4. Start with LoRA strength `1.0`. The upstream discussion reports that values
-   around `1.5â€“2.2` can look stronger, but that is an empirical preference, not
+   around `1.5¨C2.2` can look stronger, but that is an empirical preference, not
    part of the trained LoRA math.
 5. Use **MiniMax H3 Dual-Clock Sampler (T8)** from
    `custom_nodes/minimax-h3-audio-T8`, with `steps=4`, video shift `12`, and
@@ -59,6 +59,24 @@ updates when it materializes them into BF16 weights, and it cannot faithfully
 patch quantized weights in the same way.
 
 ## Ready-to-import workflows
+
+Version 1.14.0 adds the opt-in
+`examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
+`examples/hybrid_model_advanced_api.json`. Audio-only and mixed-reference variants are provided as
+`H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
+`H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
+`hybrid_model_audio_reference_api.json`, and `hybrid_model_mixed_reference_api.json`.
+The graph strictly hashes the exact validated FL2VA/
+Ref2VA pruned pair, builds or reuses a 27.69 MiB curve-rebased target-slice artifact under
+`ComfyUI/models/h3_hybrid_artifacts`, and then applies it to a MODEL loaded through ComfyUI's stock
+diffusion loader. It does not create a second full fused checkpoint. Keep the order Hybrid Loader ¡ú
+optional LoRA. `auto_match_reference_modalities_exp` reads the connected Conditioning and selects the
+smallest video/audio modality-row recipe for actual extra references; this is not a best-quality selector.
+The resumable sequential matrix tool writes blind-review media and `matrix_summary.json/csv`, with optional
+local-only ASR, face and speaker signals. Fifteen real Stock20 follow-up runs completed, but the minimum
+whole-device headroom was only 41.34 MiB; no recipe is yet a proven quality winner, reference-only route,
+de-wax fix, or universal 16 GB safe tier. See
+`docs/HYBRID_MODEL_ADVANCED_VALIDATION.md` for the exact hashes and current pilot limits.
 
 Three base sampler-comparison frontend workflows are installed under
 `ComfyUI/user/default/workflows/MiniMax H3 T8/`: stable 4/4, experimental 4/8,
@@ -437,8 +455,8 @@ compatible until ComfyUI or a separately validated local workaround resolves the
 $sourceDir = '<path-to-source-loras>'
 $outputDir = '<path-to-converted-loras>'
 python .\tools\convert_minimax_h3_lora_for_comfyui.py `
-  "$sourceDir\minimax_h3_turbo_4æ­¥åŠ é€Ÿ.safetensors" `
-  "$sourceDir\minimax_h3_turbo_4æ­¥åŠ é€Ÿema.safetensors" `
+  "$sourceDir\minimax_h3_turbo_4²½¼ÓËÙ.safetensors" `
+  "$sourceDir\minimax_h3_turbo_4²½¼ÓËÙema.safetensors" `
   --output-dir $outputDir
 ```
 

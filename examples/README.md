@@ -21,6 +21,19 @@ Still Preflight 输出检查报告。需要把 LoadImage 的占位文件名替�
 `minimax_visual_cond_noise_aug`，不修改模型、latent 或采样设置。示例默认0.990用于观察差异；
 正式 A/B 应固定其他所有变量，先比较无节点/0.999，再测试0.995、0.990、0.980、0.950。
 
+三份Hybrid Model Advanced API prompt使用相同的严格pair、stock loader和Stock20控制链：
+
+- `hybrid_model_advanced_api.json`：显式视觉参考profile，便于受控矩阵逐项覆盖recipe；
+- `hybrid_model_audio_reference_api.json`：独立参考音频，Inspector连接Conditioning并使用
+  `auto_match_reference_modalities_exp`，当前会解析成最小audio-row profile；
+- `hybrid_model_mixed_reference_api.json`：参考图与参考音频组合，自动解析成video+audio-row profile。
+
+后两份示例中的图像/音频文件名都是占位符，必须替换为用户有权使用的素材。自动模式只按真实
+reference类型选择要实验的AdaLN模态行，不负责判断哪个recipe质量最好；无额外reference或未知
+类型会明确拒绝。`tools/run_hybrid_model_matrix.py`可从这些API顺序生成FL2VA、Ref2VA和Hybrid
+对照，逐路全局释放模型，并输出hash、显存、盲评包、`matrix_summary.json/csv`；可选本地ASR、
+InsightFace和WavLM都必须由用户显式指定，工具不会下载模型。
+
 三份实验性语音 API prompt 复用现有 H3 模型对象，不在节点内部重复加载模型：
 
 - `speech_described_api.json`：描述音色的单句英文语音。当前 stock 20步基线使用
@@ -89,6 +102,9 @@ Still Preflight 输出检查报告。需要把 LoadImage 的占位文件名替�
 - `H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json`：两角色逐turn生成、sample级合成并统一释放。
 - `H3_Dialogue_Safe_Master_EXP.json`：唯一精确目标边界检查后，把独立 stems 合成完整时长母带；
 - `H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`：两遍 H3 的40Hz分时背景底轨锁定。
+- `H3_Hybrid_Model_Advanced_Stock20_EXP.json`：显式视觉参考Hybrid profile的Stock20实验链；
+- `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：自动audio-row Hybrid参考音频链；
+- `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：自动video+audio-row图像与音频混合参考链。
 
 三份音画画布工作流使用相同 seed、prompt、EMA LoRA 和输出设置，便于直接比较。它们已写入
 当前 T8 安装中实际存在的非裁剪 H3 INT8 基模、NVFP4 H3 文本编码器和两套 VAE 文件名，

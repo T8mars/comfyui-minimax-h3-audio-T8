@@ -1,0 +1,175 @@
+{
+  "1": {
+    "inputs": {
+      "quality_base": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "reference_overlay": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "profile": "blocks_25_49_video_audio_exp",
+      "verification": "full_sha256"
+    },
+    "class_type": "MiniMaxH3HybridPairInspectorT8Advanced",
+    "_meta": {
+      "title": "1. Strictly inspect the exact FL2VA/Ref2VA pruned pair"
+    }
+  },
+  "2": {
+    "inputs": {
+      "hybrid_plan": ["1", 0]
+    },
+    "class_type": "MiniMaxH3HybridArtifactBuilderT8Advanced",
+    "_meta": {
+      "title": "2. Build or reuse the small content-addressed artifact"
+    }
+  },
+  "3": {
+    "inputs": {
+      "quality_base": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "mode": "apply_artifact_exp",
+      "weight_dtype": "default",
+      "hybrid_artifact": ["2", 0]
+    },
+    "class_type": "MiniMaxH3HybridModelLoaderT8Advanced",
+    "_meta": {
+      "title": "3. Stock FL2VA loader + small Hybrid patch (EXP)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load the existing H3 Qwen3-VL encoder"
+    }
+  },
+  "5": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load H3 video VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load H3 audio VAE"
+    }
+  },
+  "7": {
+    "inputs": {
+      "image": "replace_with_reference_image.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Replace with a licensed reference image"
+    }
+  },
+  "8": {
+    "inputs": {
+      "clip": ["4", 0],
+      "video_vae": ["5", 0],
+      "audio_vae": ["6", 0],
+      "prompt": "Use <Picture 1> as the visual reference. A natural cinematic portrait in soft window light, realistic skin pores, individual hair strands, detailed cloth weave, stable identity and composition, subtle human motion. Natural room ambience, no music.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_images.ref_image_0": ["7", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {
+      "title": "Existing H3 Conditioning (unchanged)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "model": ["3", 0],
+      "av_latent": ["8", 1],
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {
+      "title": "Stock20 quality-control sampling; no Turbo LoRA"
+    }
+  },
+  "10": {
+    "inputs": {
+      "noise_seed": 2608125201
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "Fixed A/B seed"
+    }
+  },
+  "11": {
+    "inputs": {
+      "model": ["9", 0],
+      "conditioning": ["8", 0]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "Basic guider"
+    }
+  },
+  "12": {
+    "inputs": {
+      "noise": ["10", 0],
+      "guider": ["11", 0],
+      "sampler": ["9", 1],
+      "sigmas": ["9", 2],
+      "latent_image": ["8", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "Sample the experimental Hybrid model"
+    }
+  },
+  "13": {
+    "inputs": {
+      "av_latent": ["12", 0],
+      "video_vae": ["5", 0],
+      "audio_vae": ["6", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {
+      "title": "Decode synchronized H3 video and audio"
+    }
+  },
+  "14": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_T8/Hybrid_Model_Advanced_EXP",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["13", 0],
+      "audio": ["13", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Save synchronized EXP result"
+    }
+  }
+}

@@ -5,10 +5,45 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.12.0 checkpoint was verified on 2026-08-10 against ComfyUI `0.31.0` at
+The current 1.14.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.14.0 Advanced hybrid-model checkpoint (2026-08-12)
+
+Three isolated Advanced nodes were appended after the previous 56-node prefix: exact pair
+inspection, content-addressed small-artifact construction, and a stock-loader-based Hybrid MODEL.
+The stable Conditioning, dual-clock and multi-rate samplers, Long Video, MultiKeyframe, and all old
+node schemas were not modified.
+
+The exact local FL2VA/Ref2VA pruned pair passed full SHA-256 and 932-tensor contract validation. The
+default blocks-25-to-49 video+audio artifact is 29,030,400 bytes with 100 offset-set operations and
+SHA-256 `fcb4cdcc5dbb9742af6163654da7246783dbffb045c6dd32d99a6c42772cd0ab`.
+Its curve-table relative fit error is `4.9343e-5`, and its worst saved effective-modulation
+reconstruction error is `2.3021e-5`.
+
+Real DynamicVRAM loading retained `ModelPatcherDynamic`, the stock cached factory, clone,
+non-dynamic delegate, and same-device deepclone behavior. A 256x256/22-frame/one-step real H3 chain
+completed with 50 patched tensor keys and 100 patch entries. One controlled 736x416/124-frame/
+Stock20 pilot then completed FL2VA, Hybrid, and stock Ref2VA at whole-device peaks
+12932.8/12684.9/12883.2 MiB. This single run does not establish a material memory benefit or a
+quality winner.
+
+Follow-up development added Conditioning-aware minimal modality matching, a resumable sequential
+matrix tool, local-only optional ASR/InsightFace/WavLM metrics, blind-review packages, and dedicated
+audio-only plus visual-and-audio workflows. Fifteen Stock20 run records across visual, audio-only,
+and mixed references all completed. In the one mixed-reference seed, Hybrid face/WavLM cosine was
+0.523/0.868 versus FL2VA 0.449/0.467 and Ref2VA 0.443/0.945; all normalized ASR word streams matched
+the target. These are research signals, not universal identity thresholds. The later precision
+matrix reached only 41.34 MiB minimum whole-device headroom, so it supersedes the earlier pilot for
+the safety decision and explicitly denies a 16 GB `memory_safe` label. Full evidence is in
+`docs/HYBRID_MODEL_ADVANCED_VALIDATION.md`.
+
+All 291 project tests, Ruff, compileall, 63 example-JSON parses, and `git diff --check` pass. An
+isolated whitelist server imports the plugin in 0.0 seconds, exposes all 59 T8 nodes, and reports
+the three new nodes under `T8/MiniMax H3/Models/Experimental`. All three Hybrid frontend examples
+were copied byte-for-byte to `user/default/workflows/MiniMax H3 T8/`.
 
 ## 1.12.0 experimental dialogue-safe audio checkpoint
 
@@ -37,8 +72,8 @@ explicitly zero-padded one step. Comparing saved audio latents before and after 
 
 | Region | Mean absolute change | Maximum absolute change |
 |---|---:|---:|
-| editable head, steps 0â€“79 | 0.502230 | 2.402396 |
-| locked tail, steps 80â€“206 | 1.81e-8 | 2.38e-7 |
+| editable head, steps 0¨C79 | 0.502230 | 2.402396 |
+| locked tail, steps 80¨C206 | 1.81e-8 | 2.38e-7 |
 
 The locked tail therefore remained within `1e-6` absolute tolerance across four sampler steps,
 while the head materially changed. This establishes the latent-mask endpoint mechanically, not
@@ -51,7 +86,7 @@ not advertised as seamless.
 The read-only analyzer was also run against two prior real Joint-dialogue failures using the local
 multilingual small model. When unwanted words interrupted the expected sequence, it returned
 `target_not_found`. When 17 unwanted units preceded one contiguous exact target, it returned
-7.00â€“9.72 seconds with `clean_exact=false`; it did not auto-trim or accept the mixed result.
+7.00¨C9.72 seconds with `clean_exact=false`; it did not auto-trim or accept the mixed result.
 
 Automatic source separation remains deliberately absent. The installed `audio_separator` Python
 package has no selected local model, and common vocal/music separators are not evidence of safe
@@ -897,10 +932,10 @@ arbitrary-length, seamless, or no-OOM claim is made.
 
 | File | Size | SHA-256 |
 |---|---:|---|
-| `minimax_h3_turbo_4æ­¥åŠ é€Ÿ.safetensors` | 779,849,991 | `9344cd958f8d354da03dd00b7d462933eb5d0cbf11e56a25d8e9911bb971160e` |
-| `minimax_h3_turbo_4æ­¥åŠ é€Ÿ_comfyui.safetensors` | 779,858,752 | `35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b` |
-| `minimax_h3_turbo_4æ­¥åŠ é€Ÿema.safetensors` | 779,849,991 | `8a1265e81e5368ab0e52cbb990aee3cb59b28b91fdfa415ef8dbabf81aef890e` |
-| `minimax_h3_turbo_4æ­¥åŠ é€Ÿema_comfyui.safetensors` | 779,858,752 | `b07ab477437c6a525dfdaf11107722aad609975ac172f3b577a7a87b228ff7b3` |
+| `minimax_h3_turbo_4²½¼ÓËÙ.safetensors` | 779,849,991 | `9344cd958f8d354da03dd00b7d462933eb5d0cbf11e56a25d8e9911bb971160e` |
+| `minimax_h3_turbo_4²½¼ÓËÙ_comfyui.safetensors` | 779,858,752 | `35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b` |
+| `minimax_h3_turbo_4²½¼ÓËÙema.safetensors` | 779,849,991 | `8a1265e81e5368ab0e52cbb990aee3cb59b28b91fdfa415ef8dbabf81aef890e` |
+| `minimax_h3_turbo_4²½¼ÓËÙema_comfyui.safetensors` | 779,858,752 | `b07ab477437c6a525dfdaf11107722aad609975ac172f3b577a7a87b228ff7b3` |
 
 ## Checks passed
 
