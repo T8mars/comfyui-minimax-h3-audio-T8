@@ -20,7 +20,7 @@ import uuid
 
 
 SCHEMA_VERSION = 1
-TOOL_VERSION = "1.0.0"
+TOOL_VERSION = "1.1.0"
 MIB = 1024**2
 TERMINAL_EVENTS = {"execution_success", "execution_error", "execution_interrupted"}
 SAMPLER_TYPES = {
@@ -39,6 +39,7 @@ SCHEDULER_TYPES = {
     "MiniMaxH3SigmaShift",
     "KSamplerSelect",
 }
+VRAM_POLICY_NODE_TYPE = "MiniMaxH3VRAMPolicyT8Advanced"
 DISABLE_DYNAMIC_VRAM_FLAGS = {
     "--disable-dynamic-vram",
     "--gpu-only",
@@ -203,6 +204,29 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
             "sampler_name": _direct_input(node, "sampler_name", node_ids, prompt),
         })
 
+    vram_policies = []
+    for node_id, node in by_type.get(VRAM_POLICY_NODE_TYPE, []):
+        vram_policies.append({
+            "node_id": node_id,
+            "class_type": VRAM_POLICY_NODE_TYPE,
+            "mode": _direct_input(node, "mode", node_ids, prompt),
+            "fixed_total_reserved_gib": _direct_input(
+                node, "fixed_total_reserved_gib", node_ids, prompt
+            ),
+            "external_margin_gib": _direct_input(
+                node, "external_margin_gib", node_ids, prompt
+            ),
+            "maximum_reserved_gib": _direct_input(
+                node, "maximum_reserved_gib", node_ids, prompt
+            ),
+            "clean_before_load": _direct_input(
+                node, "clean_before_load", node_ids, prompt
+            ),
+            "require_dynamic_vram": _direct_input(
+                node, "require_dynamic_vram", node_ids, prompt
+            ),
+        })
+
     seeds = []
     for node_id, node in prompt.items():
         for key in ("noise_seed", "seed"):
@@ -243,21 +267,22 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
             "message": "Dual-clock and external scheduler nodes coexist in the API prompt.",
         })
 
-    sampling_node_ids = {
+    treatment_node_ids = {
         node_id
         for node_id, node in prompt.items()
         if node["class_type"] in SAMPLER_TYPES | SCHEDULER_TYPES
+        or node["class_type"] == VRAM_POLICY_NODE_TYPE
     }
     non_sampling_literals = []
     non_sampling_links = []
     for node_id, node in sorted(prompt.items()):
-        if node_id in sampling_node_ids:
+        if node_id in treatment_node_ids:
             continue
         literals = {}
         for name, value in sorted(node.get("inputs", {}).items()):
             if _is_link(value, node_ids):
                 source_id = str(value[0])
-                if source_id not in sampling_node_ids:
+                if source_id not in treatment_node_ids:
                     non_sampling_links.append({
                         "source_id": source_id,
                         "source_slot": value[1],
@@ -290,6 +315,7 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
     treatment = {
         "sampling": sorted(sampling, key=lambda item: item["node_id"]),
+        "vram_policy": sorted(vram_policies, key=lambda item: item["node_id"]),
     }
     return {
         "node_count": len(prompt),
@@ -387,6 +413,86 @@ def make_ab_prompts(
             "cannot build a trustworthy stock control workflow."
         )
     return stock, dual
+
+
+def make_vram_policy_prompts(
+    prompt: dict[str, dict[str, Any]],
+    *,
+    mode: str = "fixed_total_reserved_exp",
+    fixed_total_reserved_gib: float = 2.0,
+    external_margin_gib: float = 1.0,
+    maximum_reserved_gib: float = 8.0,
+    clean_before_load: bool = False,
+    require_dynamic_vram: bool = True,
+    minimum_current_headroom_mib: float = 512.0,
+    minimum_commit_headroom_gib: float = 16.0,
+    block_when_commit_below_gate: bool = True,
+    policy_epoch: int = 0,
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Build a strict single-variable baseline/policy pair for the Advanced loader."""
+    modes = {
+        "report_only",
+        "fixed_total_reserved_exp",
+        "external_usage_plus_margin_exp",
+    }
+    if mode not in modes:
+        raise ValidationError(f"Unsupported VRAM policy mode: {mode!r}")
+    if mode == "external_usage_plus_margin_exp" and not clean_before_load:
+        raise ValidationError(
+            "external_usage_plus_margin_exp requires clean_before_load=true"
+        )
+    if any(node["class_type"] == VRAM_POLICY_NODE_TYPE for node in prompt.values()):
+        raise ValidationError("The source workflow already contains a T8 VRAM Policy node.")
+    loaders = [
+        (node_id, node)
+        for node_id, node in prompt.items()
+        if node["class_type"] == "MiniMaxH3HybridModelLoaderT8Advanced"
+    ]
+    if len(loaders) != 1:
+        raise ValidationError(
+            "VRAM Policy A/B generation requires exactly one "
+            "MiniMaxH3HybridModelLoaderT8Advanced node."
+        )
+    loader_id, source_loader = loaders[0]
+    if "vram_policy" in source_loader.get("inputs", {}):
+        raise ValidationError("The source Hybrid Loader already has a vram_policy input.")
+
+    baseline = copy.deepcopy(prompt)
+    treatment = copy.deepcopy(prompt)
+    numeric_ids = [int(node_id) for node_id in treatment if node_id.isdigit()]
+    next_id = max(numeric_ids, default=0) + 1
+    while str(next_id) in treatment:
+        next_id += 1
+    policy_id = str(next_id)
+    treatment[policy_id] = {
+        "class_type": VRAM_POLICY_NODE_TYPE,
+        "inputs": {
+            "mode": mode,
+            "fixed_total_reserved_gib": float(fixed_total_reserved_gib),
+            "external_margin_gib": float(external_margin_gib),
+            "maximum_reserved_gib": float(maximum_reserved_gib),
+            "clean_before_load": bool(clean_before_load),
+            "require_dynamic_vram": bool(require_dynamic_vram),
+            "minimum_current_headroom_mib": float(minimum_current_headroom_mib),
+            "minimum_commit_headroom_gib": float(minimum_commit_headroom_gib),
+            "block_when_commit_below_gate": bool(block_when_commit_below_gate),
+            "policy_epoch": int(policy_epoch),
+        },
+        "_meta": {
+            "title": "VRAM Policy A/B treatment (Advanced; process-global EXP)"
+        },
+    }
+    treatment[loader_id]["inputs"]["vram_policy"] = [policy_id, 0]
+
+    baseline_analysis = analyze_prompt(baseline)
+    treatment_analysis = analyze_prompt(treatment)
+    if baseline_analysis["controls"] != treatment_analysis["controls"]:
+        raise ValidationError(
+            "Generated VRAM Policy pair changed non-treatment workflow controls."
+        )
+    if baseline_analysis["treatment"] == treatment_analysis["treatment"]:
+        raise ValidationError("Generated VRAM Policy treatment was not detected.")
+    return baseline, treatment
 
 
 def dynamic_vram_evidence(
@@ -905,6 +1011,12 @@ def print_analysis(analysis: dict[str, Any]) -> None:
             f"Sampling: {item['class_type']} / steps={item['steps']} "
             f"video_steps={item['video_steps']} audio_steps={item['audio_steps']}"
         )
+    for item in analysis["treatment"].get("vram_policy", []):
+        print(
+            f"VRAM Policy: mode={item['mode']} / "
+            f"fixed={item['fixed_total_reserved_gib']} GiB / "
+            f"clean_before_load={item['clean_before_load']}"
+        )
     for risk in analysis["risks"]:
         print(f"[{risk['severity'].upper()}] {risk['code']}: {risk['message']}")
 
@@ -1016,6 +1128,51 @@ def make_parser() -> argparse.ArgumentParser:
     pair_parser.add_argument("--steps", type=int, default=4)
     pair_parser.add_argument("--output-dir", type=Path, required=True)
     pair_parser.add_argument("--prefix")
+
+    policy_pair_parser = subparsers.add_parser(
+        "make-policy-pair",
+        help=(
+            "Create a controlled baseline and Advanced VRAM Policy API pair from one "
+            "Hybrid Advanced prompt."
+        ),
+    )
+    policy_pair_parser.add_argument("workflow", type=Path)
+    policy_pair_parser.add_argument("--output-dir", type=Path, required=True)
+    policy_pair_parser.add_argument("--prefix")
+    policy_pair_parser.add_argument(
+        "--mode",
+        choices=[
+            "report_only",
+            "fixed_total_reserved_exp",
+            "external_usage_plus_margin_exp",
+        ],
+        default="fixed_total_reserved_exp",
+    )
+    policy_pair_parser.add_argument("--fixed-total-reserved-gib", type=float, default=2.0)
+    policy_pair_parser.add_argument("--external-margin-gib", type=float, default=1.0)
+    policy_pair_parser.add_argument("--maximum-reserved-gib", type=float, default=8.0)
+    policy_pair_parser.add_argument(
+        "--clean-before-load",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    policy_pair_parser.add_argument(
+        "--require-dynamic-vram",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    policy_pair_parser.add_argument(
+        "--minimum-current-headroom-mib", type=float, default=512.0
+    )
+    policy_pair_parser.add_argument(
+        "--minimum-commit-headroom-gib", type=float, default=16.0
+    )
+    policy_pair_parser.add_argument(
+        "--block-when-commit-below-gate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    policy_pair_parser.add_argument("--policy-epoch", type=int, default=0)
     return parser
 
 
@@ -1034,6 +1191,34 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Dual treatment: {dual_path.resolve()}")
             print(
                 "Both prompts retain the same model, LoRA, conditioning, seed, latent and outputs."
+            )
+            return 0
+
+        if args.command == "make-policy-pair":
+            prompt = load_api_prompt(args.workflow)
+            baseline, policy = make_vram_policy_prompts(
+                prompt,
+                mode=args.mode,
+                fixed_total_reserved_gib=args.fixed_total_reserved_gib,
+                external_margin_gib=args.external_margin_gib,
+                maximum_reserved_gib=args.maximum_reserved_gib,
+                clean_before_load=args.clean_before_load,
+                require_dynamic_vram=args.require_dynamic_vram,
+                minimum_current_headroom_mib=args.minimum_current_headroom_mib,
+                minimum_commit_headroom_gib=args.minimum_commit_headroom_gib,
+                block_when_commit_below_gate=args.block_when_commit_below_gate,
+                policy_epoch=args.policy_epoch,
+            )
+            prefix = _safe_label(args.prefix or args.workflow.stem)
+            baseline_path = args.output_dir / f"{prefix}-baseline.json"
+            policy_path = args.output_dir / f"{prefix}-{_safe_label(args.mode)}.json"
+            write_json(baseline_path, baseline)
+            write_json(policy_path, policy)
+            print(f"Baseline: {baseline_path.resolve()}")
+            print(f"Policy treatment: {policy_path.resolve()}")
+            print(
+                "Both prompts retain identical model, conditioning, sampling, seed, latent "
+                "and output controls; only the typed Loader policy dependency differs."
             )
             return 0
 

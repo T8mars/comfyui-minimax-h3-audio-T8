@@ -1250,3 +1250,32 @@ No full perceptual H3 comparison across the additional sampler/scheduler matrix 
 change. The regression proves routing, backward compatibility, and protocol selection; users should
 compare alternative numerical methods against the preserved default with controlled seeds before
 adopting them for production.
+
+## Version 1.15.1 Advanced VRAM Policy real 16GiB matrix (2026-08-12)
+
+The new strict `make-policy-pair` route kept the FL2VA pruned INT8 base, 27.69MiB Hybrid artifact,
+Qwen3-VL NVFP4 encoder, both H3 VAEs, reference image, 736x416 canvas, 124 frames, Stock20 sampler,
+seed and output chain fixed. DynamicVRAM was proven by the startup log on ComfyUI `cbbc9dab1` with
+comfy-aimdo 0.4.13.
+
+| Treatment | Peak | Minimum headroom | Result |
+|---|---:|---:|---|
+| No policy, cold | 16,337.621 MiB | 41.879 MiB | success, 512MiB gate failed |
+| Fixed 2GiB, cold | 16,036.414 MiB | 343.086 MiB | effective, gate failed |
+| Fixed 3GiB, cold | 15,850.672 MiB | 528.828 MiB | marginal pass only |
+| Fixed 4GiB, worst of three cold | 15,351.383 MiB | 1,028.117 MiB | pass |
+| Fixed 4GiB, worst of three warm | 14,978.085 MiB | 1,401.415 MiB | pass |
+
+All nine measured runs succeeded. The three warm baselines had at most a 12.25MiB positive
+consecutive increase, below the 256MiB staircase threshold, and the warm peak range was
+198.635MiB. All three warm outputs passed the 736x416, 124-frame, 24fps and 32kHz stereo media
+contracts. Decoded same-seed video and PCM hashes were identical across no-policy, 2GiB, 3GiB and
+4GiB treatments, so the memory policy did not alter the generated numerical result.
+
+The post-matrix host snapshot retained 209.651GiB commit headroom from a 252.834GiB limit. Version
+1.15.1 therefore changes the fixed-policy widget suggestion and supplied workflow from 2GiB plus
+global cleanup to 4GiB without global cleanup. This is a conservative starting point only for the
+exact validated 16GiB workflow. It is not a universal `memory_safe` or `never_oom` tier: 0.6M/362
+frames, 1080p, long video, speech, other GPUs, concurrent CUDA processes, pinning and lower host
+commit remain unvalidated. Detailed evidence is in `docs/VRAM_POLICY_ADVANCED_VALIDATION.md`; local
+machine-readable records are under the ignored `artifacts/vram-policy-validation/` directory.

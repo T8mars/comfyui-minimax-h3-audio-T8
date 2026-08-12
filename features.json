@@ -863,15 +863,31 @@
       "global cleanup is explicit and unloads every ComfyUI model, not H3 only",
       "the process-global policy persists until changed again or ComfyUI restarts",
       "VBAR manages model-weight pages but does not make activations, attention workspaces, VAE/CLIP allocations, CUDA context, other GPU users, pinned RAM, or system commit infallible",
-      "memory_safe and never-OOM remain false until controlled real cold/warm generation passes the existing 512MiB gate"
+      "the validated 4GiB starting point is scoped to one exact 16GiB Hybrid Stock20 workflow; memory_safe and never-OOM remain false outside that scope"
     ],
     "api_example": "examples/hybrid_model_vbar_headroom_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
-    "status": "implementation and deterministic policy/ordering/fail-closed tests passed; controlled real 16GiB A/B validation pending"
+    "validated_real_probe": {
+      "date": "2026-08-12",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; comfy-aimdo 0.4.13; DynamicVRAM explicitly enabled",
+      "controls": "FL2VA pruned INT8 plus 27.69MiB Hybrid blocks25-49 video+audio artifact; Qwen3-VL NVFP4; both H3 VAEs; 10A.jpg; 736x416; 124 frames; Stock20; dual_clock_euler/native_flow",
+      "baseline": "no policy succeeded but peaked at 16337.621MiB with only 41.879MiB headroom",
+      "reserve_sweep": {
+        "2GiB": "16036.414MiB peak; 343.086MiB headroom; failed the 512MiB gate",
+        "3GiB": "15850.672MiB peak; 528.828MiB headroom; passed by only 16.828MiB and is not recommended",
+        "4GiB": "three cold plus three warm runs all succeeded; worst cold headroom 1028.117MiB, worst warm headroom 1401.415MiB"
+      },
+      "warm_staircase": "maximum positive consecutive baseline increase 12.25MiB, below the 256MiB threshold; warm peak range 198.635MiB",
+      "media": "all three warm outputs were 736x416, 124 frames at 24fps with 32kHz stereo audio; same-seed no-policy/2/3/4GiB decoded video and PCM hashes were identical",
+      "host_commit_snapshot": "127.834GiB RAM; 252.834GiB commit limit; 209.651GiB commit headroom after the matrix",
+      "local_evidence": "artifacts/vram-policy-validation/summary.json",
+      "decision": "4.0GiB with clean_before_load=false is a validated conservative starting point for this exact workflow, not a universal memory-safe tier"
+    },
+    "status": "implementation, deterministic ordering/fail-closed tests, strict policy-pair tooling and one exact 16GiB reserve sweep plus three-cold/three-warm matrix passed; cross-workload and cross-GPU memory safety remain unproven"
   },
   "vram_validation": {
     "tool": "tools/validate_h3_vram.py",
-    "modes": ["inspect", "make-pair", "run", "compare"],
+    "modes": ["inspect", "make-pair", "make-policy-pair", "run", "compare"],
     "telemetry": [
       "ComfyUI node and progress events",
       "device VRAM baseline and peak",

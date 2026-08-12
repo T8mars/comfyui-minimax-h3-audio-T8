@@ -240,10 +240,10 @@
     "class_type": "MiniMaxH3VRAMPolicyT8Advanced",
     "inputs": {
       "mode": "fixed_total_reserved_exp",
-      "fixed_total_reserved_gib": 2.0,
+      "fixed_total_reserved_gib": 4.0,
       "external_margin_gib": 1.0,
       "maximum_reserved_gib": 8.0,
-      "clean_before_load": true,
+      "clean_before_load": false,
       "require_dynamic_vram": true,
       "minimum_current_headroom_mib": 512.0,
       "minimum_commit_headroom_gib": 16.0,

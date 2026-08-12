@@ -42,10 +42,15 @@ class MiniMaxH3VRAMPolicyT8Advanced(io.ComfyNode):
                 ),
                 io.Float.Input(
                     "fixed_total_reserved_gib",
-                    default=2.0,
+                    default=4.0,
                     min=0.0,
                     max=16.0,
                     step=0.1,
+                    tooltip=(
+                        "4.0 GiB is the validated conservative starting point for the exact "
+                        "RTX 4060 Ti 16 GiB, 736x416, 124-frame Hybrid Stock20 workflow. "
+                        "It is not a universal safe value; re-measure other GPUs and workloads."
+                    ),
                 ),
                 io.Float.Input(
                     "external_margin_gib",

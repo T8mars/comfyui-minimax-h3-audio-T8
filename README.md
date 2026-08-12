@@ -1,6 +1,6 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.15.0`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.15.1`，共注册
 60 个节点，覆盖原生音画条件、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
@@ -30,6 +30,10 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
+
+`1.15.1` 保留 `1.15.0` 的60个节点 ID、顺序和旧接线；只把新VRAM策略节点的固定值建议与
+示例从未过512MiB门槛的2.0GiB改为三冷三暖通过的4.0GiB，并把固定模式示例改为不执行全局
+卸载。旧工作流没有该节点或不连接policy时，行为仍完全不变。
 
 `1.15.0` 保留 `1.14.0` 的59个节点 ID、顺序、默认值和旧接线，只在末尾追加1个字面以
 `Advanced` 结尾的 VRAM/VBAR 策略节点；Hybrid Loader 仅在末尾新增可选 policy 输入，旧工作流
@@ -194,7 +198,8 @@ Pareto候选，不足以宣布去油、身份更准或优于原生Ref2VA。精�
 
 提供两种显式实验策略：
 
-- `fixed_total_reserved_exp`：设置一个总预留值；示例从2.0GiB开始；
+- `fixed_total_reserved_exp`：设置一个总预留值；当前16GiB Hybrid Stock20示例使用本机验证过的
+  4.0GiB保守起点；
 - `external_usage_plus_margin_exp`：先显式全局卸载ComfyUI模型，再用整卡已用显存加用户余量计算，
   并受最大预留上限约束。为了不把ComfyUI缓存模型误当成外部程序占用，此模式强制要求
   `clean_before_load=true`。
@@ -215,9 +220,15 @@ OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。�
 - `examples/hybrid_model_vbar_headroom_api.json`；
 - `examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
 
-示例使用2.0GiB固定总预留、显式全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
-门槛。当前仍必须通过真实三冷三暖与连续任务矩阵后，才能讨论16GiB `memory_safe`；节点报告始终把
-`memory_safe_claim`保持为false。
+示例使用4.0GiB固定总预留、不做全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
+门槛。RTX 4060 Ti 16GiB、736×416、124帧、Hybrid Stock20真实A/B中，未启用策略最低余量
+41.879MiB；2GiB为343.086MiB、3GiB为528.828MiB。4GiB三冷三暖全部成功，最差冷态余量
+1028.117MiB、最差暖态余量1401.415MiB，连续暖态基线上升最大12.25MiB；同seed基线与
+2/3/4GiB的124帧解码视频和PCM哈希逐位一致。完整证据见
+[VRAM Policy Advanced验证报告](docs/VRAM_POLICY_ADVANCED_VALIDATION.md)。
+
+这只证明该GPU和该工作流的4GiB起点通过项目门槛，不覆盖0.6M/362帧、1080p、长视频、语音、
+其他GPU或并发CUDA程序，因此节点报告仍把`memory_safe_claim`和`never_oom`保持为false。
 
 ## EXP：来源视频音画重绘
 
@@ -1113,8 +1124,9 @@ python -m pytest -q .\custom_nodes\minimax-h3-audio-T8
 
 项目提供独立诊断工具 `tools/validate_h3_vram.py`，用于排查 H3 工作流在
 DynamicVRAM/VBAR、`LoraLoaderBypassModelOnly` 和双时钟采样组合下的 OOM。工具不修改
-采样数学或模型权重，可完成 API 工作流静态检查、生成 stock Euler/双时钟严格 A/B、按节点
-和采样进度记录显存曲线，以及比较两次运行的控制变量与峰值增量。
+采样数学或模型权重，可完成 API 工作流静态检查、生成 stock Euler/双时钟严格 A/B、生成
+Hybrid Loader未启用/启用VRAM Policy的严格单变量A/B、按节点和采样进度记录显存曲线，以及
+比较两次运行的控制变量与峰值增量。
 
 第一轮稳定 Turbo 对照必须统一为 4 步、相同模型/LoRA/Prompt/seed/尺寸/帧数，并建议关闭
 预览。完整命令、判定规则和限制见 [显存验证方法](docs/VRAM_VALIDATION.md)。在取得真实 OOM

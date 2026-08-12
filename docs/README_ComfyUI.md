@@ -68,13 +68,18 @@ patch quantized weights in the same way.
 
 ## Ready-to-import workflows
 
-Version 1.15.0 retains the Version 1.14.0 Hybrid workflows and adds the opt-in
+Version 1.15.1 retains all 60 Version 1.15.0 node IDs and updates the opt-in
 `H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
-connects a reportable 2.0 GiB total-reserve policy directly to the Hybrid Loader, guaranteeing that
+connects a reportable 4.0 GiB total-reserve policy directly to the Hybrid Loader, guaranteeing that
 ComfyUI reserve and AIMDO simple headroom are set before the stock diffusion-model load. The policy
 uses a direct AIMDO setter, does not reinitialize devices or alter startup `--vram-headroom`, and
-labels global cleanup explicitly. It reduces weight-residency pressure but cannot guarantee that
-non-weight CUDA allocations or host commit will never OOM.
+does not globally unload models in this fixed-policy example.
+
+On the exact RTX 4060 Ti 16 GiB, 736x416, 124-frame Hybrid Stock20 validation graph, the 4.0 GiB
+setting passed three cold and three warm runs with at least 1028.117 MiB and 1401.415 MiB headroom,
+respectively. Decoded same-seed video and PCM matched the no-policy baseline bit-for-bit. This does
+not generalize to other resolutions, frame counts, GPUs, concurrent CUDA users, or host-commit
+conditions; `memory_safe` and `never_oom` remain false.
 
 Version 1.14.0 added the opt-in
 `examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and

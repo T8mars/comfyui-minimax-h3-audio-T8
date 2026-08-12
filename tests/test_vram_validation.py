@@ -12,6 +12,7 @@ from h3_audio_t8_pkg.tools.validate_h3_vram import (
     dynamic_vram_evidence,
     load_api_prompt,
     make_ab_prompts,
+    make_vram_policy_prompts,
     summarize_samples,
 )
 
@@ -197,6 +198,83 @@ def test_make_ab_prompts_rewires_all_dual_outputs_and_preserves_controls():
     assert stock[guider["inputs"]["model"][0]]["class_type"] == "MiniMaxH3SigmaShift"
     assert stock[sampler["inputs"]["sampler"][0]]["class_type"] == "KSamplerSelect"
     assert stock[sampler["inputs"]["sigmas"][0]]["class_type"] == "BasicScheduler"
+
+
+def make_hybrid_prompt():
+    prompt = make_prompt(steps=20, width=736, seed=2608125201)
+    prompt["1"] = {
+        "class_type": "MiniMaxH3HybridModelLoaderT8Advanced",
+        "inputs": {
+            "quality_base": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+            "mode": "base_only",
+            "weight_dtype": "default",
+        },
+    }
+    return prompt
+
+
+def test_make_vram_policy_prompts_preserves_controls_and_wires_loader():
+    baseline, policy = make_vram_policy_prompts(
+        make_hybrid_prompt(),
+        fixed_total_reserved_gib=2.0,
+        clean_before_load=False,
+    )
+
+    policy_nodes = [
+        (node_id, node)
+        for node_id, node in policy.items()
+        if node["class_type"] == "MiniMaxH3VRAMPolicyT8Advanced"
+    ]
+    assert len(policy_nodes) == 1
+    policy_id, policy_node = policy_nodes[0]
+    assert policy_node["inputs"]["mode"] == "fixed_total_reserved_exp"
+    assert policy_node["inputs"]["fixed_total_reserved_gib"] == 2.0
+    assert policy_node["inputs"]["clean_before_load"] is False
+    assert policy["1"]["inputs"]["vram_policy"] == [policy_id, 0]
+    assert "vram_policy" not in baseline["1"]["inputs"]
+
+    baseline_analysis = analyze_prompt(baseline)
+    policy_analysis = analyze_prompt(policy)
+    assert baseline_analysis["controls"] == policy_analysis["controls"]
+    assert baseline_analysis["treatment"]["vram_policy"] == []
+    assert policy_analysis["treatment"]["vram_policy"][0]["mode"] == (
+        "fixed_total_reserved_exp"
+    )
+    assert baseline_analysis["treatment"] != policy_analysis["treatment"]
+
+
+def test_vram_policy_pair_is_comparable_and_rejects_ambiguous_sources():
+    baseline, policy = make_vram_policy_prompts(make_hybrid_prompt())
+    first = make_report(baseline, label="baseline", peak_delta=15 * 1024 * MIB)
+    second = make_report(policy, label="policy", peak_delta=14 * 1024 * MIB)
+    comparison = compare_reports(first, second)
+    assert comparison["comparable"] is True
+    assert comparison["treatment_changed"] is True
+    assert comparison["verdict"] == "second_run_has_lower_peak"
+
+    existing = make_hybrid_prompt()
+    existing["1"]["inputs"]["vram_policy"] = ["99", 0]
+    with pytest.raises(ValidationError, match="already has a vram_policy"):
+        make_vram_policy_prompts(existing)
+
+    ambiguous = make_hybrid_prompt()
+    ambiguous["8"] = {
+        "class_type": "MiniMaxH3HybridModelLoaderT8Advanced",
+        "inputs": {
+            "quality_base": "other.safetensors",
+            "mode": "base_only",
+            "weight_dtype": "default",
+        },
+    }
+    with pytest.raises(ValidationError, match="requires exactly one"):
+        make_vram_policy_prompts(ambiguous)
+
+    with pytest.raises(ValidationError, match="requires clean_before_load=true"):
+        make_vram_policy_prompts(
+            make_hybrid_prompt(),
+            mode="external_usage_plus_margin_exp",
+            clean_before_load=False,
+        )
 
 
 def test_sample_summary_attributes_peak_to_node_and_uses_median_baseline():

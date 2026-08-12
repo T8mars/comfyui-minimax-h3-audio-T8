@@ -5,6 +5,7 @@ import gc
 import hashlib
 import importlib.metadata
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -26,6 +27,7 @@ GIB = 1024**3
 MIB = 1024**2
 _POLICY_LOCK = threading.RLock()
 _LAST_SIMPLE_HEADROOM_BYTES: int | None = None
+logger = logging.getLogger(__name__)
 
 
 def canonical_json(value: Any) -> str:
@@ -464,6 +466,15 @@ def apply_vram_policy(policy: dict[str, Any]) -> dict[str, Any]:
             warnings.append(
                 "DynamicVRAM was enabled but simple headroom could not be synchronized."
             )
+        logger.info(
+            "MiniMax H3 T8 VRAM policy applied: mode=%s target=%.3f GiB "
+            "comfy_route=%s dynamic_route=%s cleanup=%s",
+            validated["mode"],
+            target_gib,
+            route,
+            dynamic_route,
+            cleanup_performed,
+        )
         return {
             "schema": "t8.minimax_h3.vram_policy_apply_report.v1",
             "policy_fingerprint": validated["fingerprint"],

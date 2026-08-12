@@ -1158,10 +1158,10 @@
       },
       "widgets_values": [
         "fixed_total_reserved_exp",
-        2.0,
+        4.0,
         1.0,
         8.0,
-        true,
+        false,
         true,
         512.0,
         16.0,

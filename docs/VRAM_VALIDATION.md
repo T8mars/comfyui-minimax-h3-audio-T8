@@ -73,6 +73,25 @@ $tool = 'F:\AI-T8-video-onekey\ComfyUI\custom_nodes\minimax-h3-audio-T8\tools\va
 stock 对照只用于显存归因。它对四步 H3 音频的数值积分不等价，不能用其音频质量评价双时钟
 算法。
 
+### 2.1 生成VRAM Policy严格A/B
+
+从包含一个`MiniMaxH3HybridModelLoaderT8Advanced`且尚未连接policy的API工作流生成基线与策略图：
+
+```powershell
+& $python $tool make-policy-pair '.\hybrid_api.json' `
+  --fixed-total-reserved-gib 4.0 `
+  --no-clean-before-load `
+  --output-dir '.\artifacts\vram-validation\policy-pair'
+```
+
+工具只新增`MiniMaxH3VRAMPolicyT8Advanced`并把有类型的输出接到Hybrid Loader末尾可选输入；
+模型、artifact、Conditioning、采样、seed、latent与输出控制保持一致。已有policy、多个Hybrid Loader
+或无法保持控制变量一致时会拒绝生成。固定模式不需要全局卸载；只有
+`external_usage_plus_margin_exp`强制`clean_before_load=true`。
+
+策略设置是进程级持久状态。严格冷态A/B必须每个处理使用全新ComfyUI进程；暖态连续任务应在
+同一进程改变seed，确认模型缓存复用时峰值和运行前基线没有阶梯增长。
+
 ## 3. 执行并记录
 
 ```powershell
@@ -156,3 +175,26 @@ VBAR，导致模型权重额外常驻”的假设。
 模型缓存顺序或工作流替换时连带改变的节点，均可能造成一边刚好成功、另一边刚好失败。
 本检查点只是一台 RTX 4060 Ti 16 GiB 上的一次暖缓存序列。下一轮应在每次重启 ComfyUI 后
 交换运行顺序重复，并优先取得反馈用户“官方可跑/替换后 OOM”两份 API 工作流及完整 traceback。
+
+## 2026-08-12 Advanced VRAM Policy检查点
+
+严格控制工作流使用FL2VA pruned INT8、27.69MiB Hybrid blocks25-49 video+audio artifact、
+Qwen3-VL NVFP4、双H3 VAE、`10A.jpg`、736×416、124帧、20步双时钟和固定seed。0.1秒遥测结果：
+
+| 处理 | 设备峰值 | 最低余量 | 判定 |
+|---|---:|---:|---|
+| 无policy冷态 | 16,337.621 MiB | 41.879 MiB | 成功但未过512MiB门槛 |
+| 固定2GiB冷态 | 16,036.414 MiB | 343.086 MiB | 有效但未过门槛 |
+| 固定3GiB冷态 | 15,850.672 MiB | 528.828 MiB | 仅多16.828MiB，不推荐 |
+| 固定4GiB三次冷态最差 | 15,351.383 MiB | 1,028.117 MiB | 通过 |
+| 固定4GiB三次暖态最差 | 14,978.085 MiB | 1,401.415 MiB | 通过 |
+
+4GiB三次暖态运行前基线的最大正向连续增加仅12.25MiB，低于256MiB阶梯阈值；暖态峰值范围
+198.635MiB。三份暖态输出均为736×416、124帧、24fps、32kHz双声道。同seed无policy、2GiB、
+3GiB和4GiB的解码BGR帧哈希与PCM哈希分别只有一个唯一值，说明策略没有改变生成数值结果。
+
+矩阵结束后的主机快照为127.834GiB RAM、252.834GiB commit limit、209.651GiB commit headroom。
+这支持本机该工作流使用4GiB作为保守起点，不支持“虚拟内存足够就不会OOM”：0.6M/362帧、
+1080p、长视频、语音、其他GPU、并发CUDA程序、pin memory与不同系统commit状态都未覆盖。
+完整记录见`artifacts/vram-policy-validation/summary.json`和
+`docs/VRAM_POLICY_ADVANCED_VALIDATION.md`。

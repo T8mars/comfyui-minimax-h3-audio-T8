@@ -275,8 +275,8 @@ def test_vram_policy_api_example_orders_policy_before_loader():
     policy_id, policy = by_type["MiniMaxH3VRAMPolicyT8Advanced"]
     _loader_id, loader = by_type["MiniMaxH3HybridModelLoaderT8Advanced"]
     assert policy["inputs"]["mode"] == "fixed_total_reserved_exp"
-    assert policy["inputs"]["fixed_total_reserved_gib"] == 2.0
-    assert policy["inputs"]["clean_before_load"] is True
+    assert policy["inputs"]["fixed_total_reserved_gib"] == 4.0
+    assert policy["inputs"]["clean_before_load"] is False
     assert policy["inputs"]["require_dynamic_vram"] is True
     assert loader["inputs"]["vram_policy"] == [policy_id, 0]
 
@@ -307,10 +307,10 @@ def test_vram_policy_frontend_workflow_is_link_consistent_and_isolated():
     )
     assert policy["widgets_values"] == [
         "fixed_total_reserved_exp",
-        2.0,
+        4.0,
         1.0,
         8.0,
-        True,
+        False,
         True,
         512.0,
         16.0,
