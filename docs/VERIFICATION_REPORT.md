@@ -40,10 +40,83 @@ matrix reached only 41.34 MiB minimum whole-device headroom, so it supersedes th
 the safety decision and explicitly denies a 16 GB `memory_safe` label. Full evidence is in
 `docs/HYBRID_MODEL_ADVANCED_VALIDATION.md`.
 
-All 291 project tests, Ruff, compileall, 63 example-JSON parses, and `git diff --check` pass. An
+All 305 project tests, Ruff, compileall, 63 example-JSON parses, and `git diff --check` pass. An
 isolated whitelist server imports the plugin in 0.0 seconds, exposes all 59 T8 nodes, and reports
 the three new nodes under `T8/MiniMax H3/Models/Experimental`. All three Hybrid frontend examples
 were copied byte-for-byte to `user/default/workflows/MiniMax H3 T8/`.
+
+## 10Eros curve-pruned Turbo LoRA checkpoint (2026-08-10)
+
+An independent Experimental acceleration LoRA was generated for the exact fine-tuned curve-pruned
+checkpoint `10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors`. No ComfyUI node, stable sampler,
+workflow contract, or input model was modified. The result is a LoRA, not a fused 40GB checkpoint.
+
+The immutable inputs were locked and re-hashed after publication:
+
+| Role | Bytes | SHA-256 |
+|---|---:|---|
+| 10Eros pruned BF16 main | 40,225,724,112 | `f82cc3f723b080e7ae94a7c98f95aa989e387618d0bdc940133dfbd9f432c062` |
+| existing ComfyUI Standard Turbo LoRA | 779,858,752 | `35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b` |
+| full FL2VA time-embedder reference | 34,038,892,334 | `7ad4c73e6e378b822ffd1629f27f632d3787d95f5e468e3af958f98c58df96a5` |
+
+Only the reference checkpoint's four FP32 `time_embedder` tensors were read. Its quantized
+Transformer weights were not used. The target's `adaln_t_table [1025,8]` has raw SHA-256
+`ac8727cdec52137c73878d004de5bd2a0e19227e8311e29ab3b68f328310e34e` and is bit-identical to
+the installed official pruned FL2VA table.
+
+Static target inspection found 208/259 directly compatible attention/MLP adapters and 51
+incompatible AdaLN adapters whose source A is `[16,2688]` while the pruned target consumes eight
+curve coordinates. `tools/convert_minimax_h3_turbo_for_pruned_curve.py` therefore retained the 208
+direct adapters byte-for-byte and fit each AdaLN response over `t_j=j/1024` with
+`pinv([adaln_t_table,1])`. It stored `[16,8]` A as BF16, retained B exactly, and stored the mandatory
+output-space intercept as FP32 `.diff_b=B@c`. A no-intercept conversion is explicitly rejected:
+prior read-only measurement showed that it loses roughly 94%-99.8% of the AdaLN Turbo response.
+
+The converter has no force/overwrite option. It validates a same-directory unique `.partial`, uses
+non-overwriting publication, and re-hashes all three inputs after both outputs are complete. Five
+focused tests cover native four-step times, exact curve interpolation, the required affine
+intercept, output-space error algebra, and overwrite refusal.
+
+Generated outputs:
+
+| Output | Bytes | Tensors | SHA-256 |
+|---|---:|---:|---|
+| `minimax_h3_turbo_4step_10ErosMax_test4_pruned_curveproj1025_exp_v001.safetensors` | 794,888,696 | 569 | `6c2f38d45dfa3fc282a48de3171b6946a5e6d46e13f832c43b93734f6d12edf5` |
+| `minimax_h3_turbo_4step_10ErosMax_test4_pruned_core208_ablation_v001.safetensors` | 620,286,192 | 416 | `1af864dcc864d998b342472cc53248cfbdc58b6c54294220e8b2e650600c63ff` |
+
+Independent current-ComfyUI parsing resolved the curve output as 259 `WeightAdapterBase` objects
+plus 51 regular bias-diff patches and consumed 569/569 source keys. Every target weight and bias
+shape matched the 10Eros checkpoint. The core ablation resolved 208 adapters and consumed 416/416
+keys. The 416 direct tensors and all 51 projected-module B tensors were `torch.equal` to the source.
+No `.partial` remained. Stored projection errors were:
+
+| Metric | Relative error |
+|---|---:|
+| 1025-point aggregate | `9.57255e-5` |
+| native four-step aggregate, including visual/audio conditioning times | `1.58861e-4` |
+| worst native-four module | `5.85406e-4` |
+
+A live same-prompt/same-seed smoke then used ComfyUI 0.31.0 at `cbbc9dab1`, an RTX 4060 Ti 16GB,
+the 40GB BF16 10Eros main, NVFP4 Qwen3-VL, both H3 VAEs, bypass LoRA strength 1.0, 256x256,
+124 frames, T2VA, four-step `dual_clock_euler + native_flow`, shifts 12/3, and seed `2608104101`.
+The running server had SageAttention enabled. Both curve and core208 prompts completed successfully:
+
+| Treatment | Runtime | Video | Decoded audio | Local faster-whisper |
+|---|---:|---|---|---|
+| curveproj1025 | 357.84s | 124 frames; six-frame screen coherent | stereo 32kHz; 162,816 samples; RMS 0.01879; peak 0.15245; finite; 0% clipping | `Today, the rain finally stopped.` |
+| core208 | 288.58s | 124 frames; six-frame screen coherent | stereo 32kHz; 162,816 samples; RMS 0.01222; peak 0.12440; finite; 0% clipping | `Today the rain finally stopped` |
+
+The pair's full-video RGB MAD was 5.615/255 and decoded-audio correlation was 0.719. This proves
+that the projected AdaLN route is active rather than behaviorally equivalent to dropping the 51
+modules. It does not prove that either treatment is perceptually superior. Sparse polling observed
+up to 14,869MiB whole-device use, but this was not a peak-telemetry harness.
+
+This checkpoint passes structural conversion, current ComfyUI consumption, one real four-step AV
+execution, finite/non-clipped audio, intelligible target speech, and a six-frame no-melt screen. It
+does **not** pass the planned 20-step anchor, four-step no-LoRA negative control, Stock-attention
+control, high-resolution matrix, held-out prompts/seeds, blind listening, identity, or lip-sync
+gates. The LoRA remains Experimental and exact-checkpoint-specific. Detailed sidecars are next to
+the local generated outputs and are intentionally not tracked by Git.
 
 ## 1.12.0 experimental dialogue-safe audio checkpoint
 
@@ -72,8 +145,8 @@ explicitly zero-padded one step. Comparing saved audio latents before and after 
 
 | Region | Mean absolute change | Maximum absolute change |
 |---|---:|---:|
-| editable head, steps 0¨C79 | 0.502230 | 2.402396 |
-| locked tail, steps 80¨C206 | 1.81e-8 | 2.38e-7 |
+| editable head, steps 0â€“79 | 0.502230 | 2.402396 |
+| locked tail, steps 80â€“206 | 1.81e-8 | 2.38e-7 |
 
 The locked tail therefore remained within `1e-6` absolute tolerance across four sampler steps,
 while the head materially changed. This establishes the latent-mask endpoint mechanically, not
@@ -86,7 +159,7 @@ not advertised as seamless.
 The read-only analyzer was also run against two prior real Joint-dialogue failures using the local
 multilingual small model. When unwanted words interrupted the expected sequence, it returned
 `target_not_found`. When 17 unwanted units preceded one contiguous exact target, it returned
-7.00¨C9.72 seconds with `clean_exact=false`; it did not auto-trim or accept the mixed result.
+7.00â€“9.72 seconds with `clean_exact=false`; it did not auto-trim or accept the mixed result.
 
 Automatic source separation remains deliberately absent. The installed `audio_separator` Python
 package has no selected local model, and common vocal/music separators are not evidence of safe
@@ -932,10 +1005,10 @@ arbitrary-length, seamless, or no-OOM claim is made.
 
 | File | Size | SHA-256 |
 |---|---:|---|
-| `minimax_h3_turbo_4²½¼ÓËÙ.safetensors` | 779,849,991 | `9344cd958f8d354da03dd00b7d462933eb5d0cbf11e56a25d8e9911bb971160e` |
-| `minimax_h3_turbo_4²½¼ÓËÙ_comfyui.safetensors` | 779,858,752 | `35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b` |
-| `minimax_h3_turbo_4²½¼ÓËÙema.safetensors` | 779,849,991 | `8a1265e81e5368ab0e52cbb990aee3cb59b28b91fdfa415ef8dbabf81aef890e` |
-| `minimax_h3_turbo_4²½¼ÓËÙema_comfyui.safetensors` | 779,858,752 | `b07ab477437c6a525dfdaf11107722aad609975ac172f3b577a7a87b228ff7b3` |
+| `minimax_h3_turbo_4æ­¥åŠ é€Ÿ.safetensors` | 779,849,991 | `9344cd958f8d354da03dd00b7d462933eb5d0cbf11e56a25d8e9911bb971160e` |
+| `minimax_h3_turbo_4æ­¥åŠ é€Ÿ_comfyui.safetensors` | 779,858,752 | `35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b` |
+| `minimax_h3_turbo_4æ­¥åŠ é€Ÿema.safetensors` | 779,849,991 | `8a1265e81e5368ab0e52cbb990aee3cb59b28b91fdfa415ef8dbabf81aef890e` |
+| `minimax_h3_turbo_4æ­¥åŠ é€Ÿema_comfyui.safetensors` | 779,858,752 | `b07ab477437c6a525dfdaf11107722aad609975ac172f3b577a7a87b228ff7b3` |
 
 ## Checks passed
 

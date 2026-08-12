@@ -1,4 +1,4 @@
-# MiniMax-H3 Turbo 4-step LoRA ¡ª ComfyUI conversion
+# MiniMax-H3 Turbo 4-step LoRA â€” ComfyUI conversion
 
 The converter lives in the project-local `tools/` directory. Model weights are
 kept outside this code repository and installed through ComfyUI's standard
@@ -20,6 +20,14 @@ basis, while this LoRA was trained against the original 2688-dimensional
 AdaLN input. The other 208 adapter modules match, but 51 AdaLN adapters do not.
 The bypass loader can therefore fail at runtime on a pruned model.
 
+One exact-checkpoint-specific Experimental exception was completed on 2026-08-10 for
+`10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors` with SHA-256
+`f82cc3f723b080e7ae94a7c98f95aa989e387618d0bdc940133dfbd9f432c062`. Its dedicated
+`curveproj1025` LoRA converts all 51 AdaLN adapters to the target's 8-dimensional curve basis and
+adds the required bias deltas. This does not make the original 518-tensor LoRA generally compatible
+with pruned models, and the converted file must not be used on a different checkpoint merely because
+its filename also contains `pruned`.
+
 ## Install and connect
 
 1. Copy either converted `*_comfyui.safetensors` file to
@@ -28,7 +36,7 @@ The bypass loader can therefore fail at runtime on a pruned model.
 3. Add **Load LoRA (Bypass, Model Only) (for debugging)** after **Load Diffusion
    Model**. Connect its model output wherever the diffusion model was connected.
 4. Start with LoRA strength `1.0`. The upstream discussion reports that values
-   around `1.5¨C2.2` can look stronger, but that is an empirical preference, not
+   around `1.5â€“2.2` can look stronger, but that is an empirical preference, not
    part of the trained LoRA math.
 5. Use **MiniMax H3 Dual-Clock Sampler (T8)** from
    `custom_nodes/minimax-h3-audio-T8`, with `steps=4`, video shift `12`, and
@@ -69,7 +77,7 @@ Version 1.14.0 adds the opt-in
 The graph strictly hashes the exact validated FL2VA/
 Ref2VA pruned pair, builds or reuses a 27.69 MiB curve-rebased target-slice artifact under
 `ComfyUI/models/h3_hybrid_artifacts`, and then applies it to a MODEL loaded through ComfyUI's stock
-diffusion loader. It does not create a second full fused checkpoint. Keep the order Hybrid Loader ¡ú
+diffusion loader. It does not create a second full fused checkpoint. Keep the order Hybrid Loader â†’
 optional LoRA. `auto_match_reference_modalities_exp` reads the connected Conditioning and selects the
 smallest video/audio modality-row recipe for actual extra references; this is not a best-quality selector.
 The resumable sequential matrix tool writes blind-review media and `matrix_summary.json/csv`, with optional
@@ -455,14 +463,44 @@ compatible until ComfyUI or a separately validated local workaround resolves the
 $sourceDir = '<path-to-source-loras>'
 $outputDir = '<path-to-converted-loras>'
 python .\tools\convert_minimax_h3_lora_for_comfyui.py `
-  "$sourceDir\minimax_h3_turbo_4²½¼ÓËÙ.safetensors" `
-  "$sourceDir\minimax_h3_turbo_4²½¼ÓËÙema.safetensors" `
+  "$sourceDir\minimax_h3_turbo_4æ­¥åŠ é€Ÿ.safetensors" `
+  "$sourceDir\minimax_h3_turbo_4æ­¥åŠ é€Ÿema.safetensors" `
   --output-dir $outputDir
 ```
 
 The converter is strict: it checks the MiniMax-H3 metadata, all 259 expected
 adapter modules, all 518 tensor names/shapes/dtypes, and bitwise tensor equality
 after saving. It writes through a temporary file and never changes the sources.
+
+For the exact 10Eros curve-pruned checkpoint, use the separate no-overwrite tool rather than the
+generic prefix converter:
+
+```powershell
+$sourceLora = '<path-to-converted-LightX2V-LoRA>'
+$targetModel = '<path-to-exact-pruned-model>'
+$timeReference = '<path-to-full-FL2VA-time-reference>'
+$outputLora = '<new-output-path>'
+$coreAblation = '<optional-new-core208-output-path>'
+python .\tools\convert_minimax_h3_turbo_for_pruned_curve.py `
+  --lora $sourceLora `
+  --pruned-model $targetModel `
+  --time-embedder-reference $timeReference `
+  --output $outputLora `
+  --core208-output $coreAblation `
+  --expected-lora-sha256 35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b `
+  --expected-pruned-model-sha256 f82cc3f723b080e7ae94a7c98f95aa989e387618d0bdc940133dfbd9f432c062 `
+  --expected-time-reference-sha256 7ad4c73e6e378b822ffd1629f27f632d3787d95f5e468e3af958f98c58df96a5 `
+  --expected-table-sha256 ac8727cdec52137c73878d004de5bd2a0e19227e8311e29ab3b68f328310e34e
+```
+
+The main output has 259 A/B adapters plus 51 FP32 `.diff_b` tensors (569 tensors total). The tool
+keeps the 208 directly compatible adapters and every AdaLN B bit-identical, fits the 51 A tensors
+over the 1025-point time curve with an affine intercept, refuses existing outputs, validates readback,
+and re-hashes all three inputs after publication. The generated SHA-256 is
+`6c2f38d45dfa3fc282a48de3171b6946a5e6d46e13f832c43b93734f6d12edf5`. Use the bypass loader at
+strength 1.0 first. The current evidence is one 256x256/124-frame four-step AV smoke plus static
+validation, not a high-resolution or multi-seed quality release. Generated model files and local
+sidecars remain outside Git; see `VERIFICATION_REPORT.md` for the durable public summary.
 
 ## Variant choice
 
