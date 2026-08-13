@@ -45,7 +45,37 @@ The stable default sampler has also been run against the H3-era legacy ComfyUI
 Both runs produced 22/22 byte-identical PNG frames; their 32kHz stereo audio correlation was
 0.999688 with 36.12dB SNR and a one-int16-LSB maximum difference. This is evidence for the stable
 `dual_clock_euler` legacy velocity branch only, not a blanket claim for every Advanced route or
-every historical ComfyUI release.
+every historical ComfyUI release. Separately, the current `1.18.2@c7f5080` plugin imported into
+that exact legacy snapshot without traceback: all 86 plugin node IDs and all 24 appended Advanced
+schemas appeared in `/object_info`. A real Trajectory Advanced follow-up then completed full, 2+2
+split and save/load/resume at 256x256x22 in 3/3 GPU prompts; the final checkpoint pair was byte-exact.
+Minimum headroom was only 94.153MiB, below the 512MiB project gate. This closes only that short
+Advanced trajectory route. Four model-free/no-write API graphs also passed: Environment Audit, all
+seven Studio/Prompt/Repair-planning nodes, both local Context IR nodes and both Reel plan/no-write
+nodes. Qwen Prefix Cache report-only, `memory_lru_exp` wrapper installation and Stats passed. A
+follow-up then used a native 48-frame reference video and completed OFF, cache prime and real HIT plus
+full A/V generation. Stats recorded one miss and one hit; HIT was 21.80% faster than OFF, but output
+was non-exact (mean video SSIM 0.950934, audio correlation 0.953028) and minimum headroom was only
+334.508MiB. This is one short-route compatibility result, not a lossless or 16GiB-safe claim.
+AV Decode Safety decoded 22 frames
+and audio; Activation Chunk correctly refused the old unknown H3 source contract before sampling.
+The four Repair execution nodes then consumed an already persisted real-chain plan with acceptance
+off; Bind, Stage, Accept and Compose completed, the source manifest plus all 27 accepted assets stayed
+unchanged, and only a new base-rollback validation render was written. An isolated two-segment fixture
+then exercised `accept_repair=true` and repair-overlay composition on
+the same old core. Replacement index 1 and unselected index 0 were preserved, the base manifest and
+accepted asset hashes remained unchanged, and the output contained 44 video frames. Its AAC stream
+duration was 58,688 samples versus 58,667 logical samples (+21), while decoding returned codec padding;
+this is mechanical transaction evidence, not sample-exact delivery or real-H3 repair quality.
+Scheduled Audio Injection also
+completed both its default `report_only` and actual `scheduled_injection` 256x256x22 one-step routes;
+each emitted 22 frames plus audio, but minimum whole-device headroom was only 15.685/97.335MiB and the
+apply pass does not prove speech suppression. All 24 newly appended
+Advanced node IDs therefore have route-specific execution or explicit fail-closed evidence on this
+exact old core. The scope remains bounded: Qwen covers one short reference-video route, Activation
+refused application, Repair acceptance used an isolated fixture, and Scheduled Audio retains a
+negative quality result. Other modes, arbitrary legacy releases and general 16GiB safety are not
+implied.
 
 All file mutations are opt-in: repair acceptance, Reel Delivery composition and trajectory
 checkpoint saving default false. Scheduled drive-audio injection defaults to bypass because its
@@ -67,6 +97,10 @@ Its 736x416x124 and 256x256x362 full-versus-2+2 final AV latents were bit-exact;
 three-warm matrix completed 18/18 prompts and 6/6 paired comparisons. The 362-frame full run left only
 520.51MiB, and paired warm split+resume was not faster than full, so this still does not establish a
 universal 16GiB safety or throughput benefit. AV Decode likewise has no tiled-equivalence claim.
+On current ComfyUI `v0.32.0-16@ddbaa8752`, a separate six-prompt recheck completed full, split and
+resume at both 124 and 362 frames; each full/resume checkpoint pair had an identical SHA-256. Full-run
+headroom was 749.019/548.502MiB respectively. The 362 result remains a close 256x256-only pass, not a
+higher-resolution or general 16GiB safety tier.
 The Qwen prefix cache now has three fresh-process cold pairs and three same-process warm pairs:
 every hit arm was faster (paired mean 11.97%/11.01%), but outputs remained non-bit-exact, one warm
 audio pair dropped to 0.2323 correlation, and minimum headroom was only 75.63/168.08MiB. It stays
@@ -136,13 +170,20 @@ identical across runs. Each result was exact 348 frames,
 1920x1088 file delivery mechanics, not native H3 1080p generation quality. Two local FFmpeg 7.1
 Windows builds showed nondeterministic failures when auto-thread decoding the same high-resolution
 H.264 bytes, while single-thread FFmpeg and PyAV/libavcodec 62 repeated decoding passed. The claim is
-therefore scoped to the explicit single-thread validation contract; other players, non-Windows
-filesystems and FFmpeg builds remain open.
+therefore scoped to the explicit single-thread validation contract; other players and untested
+FFmpeg builds remain open. A separate Ubuntu 24.04.4 WSL2 run used a Linux kernel, ext4 `/tmp`,
+Linux FFmpeg 7.0.2 and PyAV 18.1.0 against the same production Reel module. Two H.264/AAC clips plus
+one FLAC lane produced exact 66 frames and 132,000 logical 48kHz samples. A repeat reused the video
+and audio phases and preserved the output SHA-256; source hashes stayed unchanged, no orphan
+temporary file remained, a real POSIX lock contender timed out, and the lock was reacquired after
+the holder exited. This closes one low-resolution Linux/POSIX mechanical route, not bare-metal
+Linux, macOS, high-resolution Linux, arbitrary FFmpeg builds or cross-GPU behavior.
 
 Selective Repair additionally survived six hard-kill boundaries on an isolated 14-segment,
 60-second accepted chain without changing the base manifest or 27 accepted assets. A real H3
 segment-7 replacement composed to exact 1,440-frame/1,920,000-sample outputs, but the outgoing
-boundary regressed because segment 8 still depended on the original segment 7. Accept and compose
+boundary regressed because segment 8 still depended on the original segment 7: adjacent-frame SSIM
+fell from 0.932967 to 0.803963 and the repaired outgoing audio level gap reached 19.396dB. Accept and compose
 now remove only exact-destination `.*.tmp` files while holding their OS locks. A rebuilt copy of the
 same real 14-segment chain repeated all six process kills: expected exit codes, durable markers,
 base/27-asset immutability and retries passed; the half-copy and mid-audio orphans were both reported

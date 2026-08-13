@@ -1573,6 +1573,18 @@ remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
   PyAV 16/libavcodec 62 passed repeated full-frame decoding. This closes the explicit local
   single-thread derived-1080p delivery contract, not native H3 1080p generation quality, arbitrary
   player/decoder behavior or cross-platform support.
+- A separate Ubuntu 24.04.4 WSL2 probe ran the production Reel module under Linux
+  `6.18.33.2-microsoft-standard-WSL2` on ext4 `/tmp`, with Python 3.12.3, PyAV 18.1.0 and the Linux
+  John Van Sickle FFmpeg 7.0.2 static build. Two 128x96 H.264/AAC clips and one FLAC lane composed to
+  exact 66 frames and 132,000 logical 48kHz samples. The resumed run reported both phases reused,
+  kept their hashes and mtimes unchanged, and reproduced the final SHA-256
+  `a50eab77ea13b17e4d9f046615ccb9fa5e35c14f12b4093e0c7b297a1b5ac2c8`. Source hashes stayed
+  unchanged and no matching temporary file remained. A real second POSIX `flock` contender timed
+  out while another process held the project lock, then the same lock was reacquired after that
+  process terminated. Local evidence is
+  `artifacts/reel-delivery-linux-wsl/reel_linux_wsl_ext4_summary.json`. This closes one WSL2
+  Linux/POSIX low-resolution mechanical path, not native bare-metal Linux, macOS, high-resolution
+  Linux, arbitrary FFmpeg builds or cross-GPU execution.
 - External-kill probes found and fixed two production defects: a Windows FFmpeg handle could make
   temporary cleanup mask the primary failure, and an interrupted audio mix could leave an
   unvalidated official stage file. Audio now validates a temporary WAV before atomic replacement;
@@ -1611,6 +1623,14 @@ remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
   requirements; restart resume, wrapper stacks, other samplers and cross-GPU behavior remain refused or
   unverified. Local raw evidence is summarized in ignored artifact
   `artifacts/trajectory-validation/trajectory_validation_summary_v2.json`.
+- The same implementation was then rechecked on the current ComfyUI
+  `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5fdf`. Full, split and resume at both
+  124 and 362 frames completed 6/6 real prompts. Full and resumed checkpoints were byte-identical in
+  each pair: `88A5A71D...FFA1BD` for 124 and `863C80A3...D47A7` for 362. Full-run whole-device
+  headroom was 749.019MiB at 736x416x124 and 548.502MiB at 256x256x362. The latter is only
+  36.502MiB above the 512MiB project gate and does not establish a higher-resolution or universal
+  16GiB safety tier. Raw evidence is in ignored artifact
+  `artifacts/trajectory-validation/trajectory_current_core_matrix.json`.
 - Stable dual-clock legacy compatibility was exercised against an isolated official ComfyUI
   `0.30.0` snapshot at commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`, before native
   `ModelSamplingAV`. The legacy and current `cbbc9dab1` processes used the same plugin worktree,
@@ -1619,6 +1639,74 @@ remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
   samples; PCM correlation was 0.999688, SNR 36.12dB and maximum difference one int16 LSB. This proves
   the stable `dual_clock_euler` legacy velocity branch on that exact H3-era build, not every older
   ComfyUI release or every Advanced route.
+- A separate current-plugin import/schema probe then attached `1.18.2@c7f5080` to that exact legacy
+  snapshot and queried `/object_info`. The process logged the plugin import with no traceback; all
+  86 expected plugin node IDs and all 24 appended Advanced node schemas were present. This closes
+  import and schema construction. Raw evidence is
+  in ignored artifact `artifacts/legacy-comfy-validation/legacy_v1182_import_summary.json`.
+- Trajectory Advanced was then exercised rather than inferred from its schema. On the same legacy
+  snapshot, a 256x256x22 four-step full prompt, two-step split/save prompt and load/resume prompt all
+  completed on the RTX 4060 Ti. Full and resumed checkpoint SHA-256 were both
+  `F4EB6674...93C326D`. Full/split/resume durations were 18.688/6.641/10.297 seconds and their
+  whole-device headroom was only 100.136/99.823/94.153MiB. This is a numerical compatibility pass
+  for one short Advanced route and an explicit failure of the 512MiB memory-safety gate; it is not
+  evidence for other Advanced nodes or universal legacy support. Raw evidence is in ignored artifact
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_trajectory_summary.json`.
+- A CPU-only old-core pass then executed four read-only/model-free/no-write API graphs: Environment Audit
+  (1/1 node), Studio/Prompt/Repair planning (7/7 dependency-forced nodes) and local Context IR
+  validation/compiler (2/2 nodes), plus Reel plan/no-write compose (2/2 nodes). All 4/4 prompts
+  completed without traceback, external upload or media mutation.
+  Raw evidence is in ignored artifact
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_model_free_summary.json`.
+- Qwen Prefix Cache first loaded the real NVFP4 encoder on the legacy core. Both report-only and
+  `memory_lru_exp` wrapper-install paths plus Stats completed. A follow-up then encoded the same
+  native 48-frame reference-video prefix twice in one process and recorded exactly one miss, one hit,
+  one 110.744MiB CPU entry and no disk writes. OFF/HIT full A/V prompts both succeeded at
+  256x256x22/one step; HIT took 19.281 seconds versus 24.657 seconds (-21.80%) and reduced observed
+  peak by 434.238MiB in this ordering. The output was explicitly non-exact: 22-frame mean/min SSIM
+  was 0.950934/0.944633 and 32kHz stereo audio correlation was 0.953028. The four-prompt minimum
+  headroom was only 334.508MiB, so the 512MiB safety gate failed. This proves one short old-core real
+  HIT route, not losslessness, repeatability, broad material quality or 16GiB safety. Raw evidence is
+  in ignored artifacts `artifacts/legacy-comfy-validation/legacy_v1182_advanced_qwen_contract_summary.json`
+  and `artifacts/legacy-comfy-validation/legacy_v1182_advanced_qwen_real_hit_summary.json`.
+- AV Decode Safety was exercised in `decode_regular`, not only preflight: a 256x256x22 one-step H3
+  latent produced 22 PNG frames and an audio file. Whole-device headroom was only 69.588MiB. The same
+  graph with Activation Chunk `apply_exp` then stopped at that node before sampling with the intended
+  `unknown ComfyUI H3 source contract` error. This is a verified compatibility pass for AV Decode
+  Safety and a verified fail-closed incompatibility for Activation Chunk; its source hash was not
+  weakened to force a run. Raw evidence is in ignored artifact
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_activation_decode_summary.json`.
+- The four Repair execution nodes were then run against an already persisted real 14-segment chain.
+  Bind and Stage read the verified plan/assets, Accept remained false, and Compose produced only a new
+  base-rollback validation render. The source manifest SHA-256 remained
+  `4C2EEC42...5EC037E` and all 27 accepted assets remained unchanged. This proves the bounded
+  accept-off/rollback path, not accepted-overlay mutation or crash recovery on the old core. Raw
+  evidence is in ignored artifact
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_repair_execution_summary.json`.
+- A separate isolated two-segment fixture then exercised the old-core write path with
+  `accept_repair=true` and `repair_overlay` composition. All five helper/Bind/Stage/Accept/Compose
+  nodes executed, replacement index 1 and unselected index 0 were represented in the overlay, and
+  the base manifest plus all original accepted-asset hashes remained unchanged. The composed file
+  decoded 44 video frames. Its AAC stream duration was 58,688 samples versus 58,667 logical samples
+  (+21), while the decoder returned 59,392 samples including codec padding; this is not labeled
+  sample-exact. It proves transaction mechanics on a synthetic fixture, not real-H3 repair quality or
+  old-core crash recovery. Raw evidence is in ignored artifact
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_repair_accept_summary.json`.
+- Scheduled Audio Injection first ran in its default `report_only` mode on a real
+  256x256x22 one-step H3 chain. It emitted 22 PNG frames and one audio file, but peaked at
+  16,363.815MiB with only 15.685MiB whole-device headroom. The actual `scheduled_injection` apply
+  route was then exercised on the same bounded profile and also emitted 22 frames plus audio; it
+  peaked at 16,282.165MiB with 97.335MiB headroom. Both are execution-contract passes and strong
+  failures of the 512MiB safety gate. The apply pass does not prove that injection suppresses
+  unwanted speech; the controlled current-core A/B below already rejected that quality claim. Raw
+  evidence is in ignored artifacts
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_scheduled_audio_summary.json` and
+  `artifacts/legacy-comfy-validation/legacy_v1182_advanced_scheduled_audio_apply_summary.json`.
+  Together, all 24 newly appended Advanced IDs now have route-specific execution or explicit
+  fail-closed evidence on this exact legacy core. The evidence is deliberately bounded: Qwen covers
+  one short reference-video hit, Activation refused application, Repair acceptance used a synthetic
+  fixture, and Scheduled Audio retains a negative quality result. This is not blanket compatibility for all
+  modes, old releases or 16GiB.
 
 ### Negative scheduled-audio result
 
@@ -1650,11 +1738,26 @@ music, ambience or effects.
 Remaining gates include activation behavior on non-fused precision/backends (the current INT8
 memory-optimization hypothesis is rejected), repeated multi-material Qwen video-reference behavior,
 Stock20 cache blind interpretation and multi-GPU behavior, repair-cascade continuity,
-Reel cross-platform filesystem/FFmpeg behavior, an alternative
+Reel bare-metal Linux/macOS and high-resolution non-Windows filesystem/FFmpeg behavior, an alternative
 architecture-aware tiled-VAE remedy, and external-provider quality/privacy deployment. Trajectory
 v2 has closed the exact local 124/362 numerical, disk-budget and 124-frame repeat gates, but wrapper
 owners, restart resume, alternate samplers, higher-resolution 362-frame use, cross-GPU and universal
 16GiB safety remain refused or unverified. The stable sampler now has one exact older-ComfyUI real
-probe, while wider Advanced-node compatibility with older releases is still unknown. This machine
-exposes only one RTX 4060 Ti, so genuine cross-GPU execution cannot be certified locally. Version
+probe, current 1.18.2 import/schema construction passed there, and one short Trajectory Advanced GPU
+route is numerically exact but fails the memory headroom gate. The remaining new Advanced IDs now also
+have bounded route evidence: twelve model-free/no-write nodes executed, Qwen completed a real video-
+reference cache hit and A/V pair, AV Decode Safety decoded real media, Repair completed real-chain
+accept-off rollback plus isolated-fixture accept-overlay composition, Scheduled Audio completed both report-only and apply generation, and Activation
+Chunk explicitly rejected the old source contract.
+This closes node-ID route coverage only; broader modes and behavior on other older releases remain
+unknown.
+The registered Ubuntu 22.04 distribution still lacks its `ext4.vhdx`, while the Ubuntu 24.04.4
+distribution intermittently failed its normal user systemd session with `E_UNEXPECTED`. Running the
+isolated probe as root after terminating the WSL instance succeeded on the existing filesystem and is
+counted only as the bounded WSL2/Linux result above; no distribution was rebuilt and Docker remained
+unused.
+This machine exposes only one RTX 4060 Ti, so genuine cross-GPU
+execution cannot be certified locally. Cross-GPU execution was explicitly removed from the current
+validation scope on 2026-08-14; it remains an unverified future profile and is not implied by this
+closure. Version
 1.18.2 therefore keeps `memory_safe_claim=false` and `quality_guarantee=false`.

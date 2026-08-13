@@ -337,7 +337,8 @@
       "AAC encoder padding means the report's sample accounting is the requested mix boundary, not a lossless PCM-container claim",
       "crossfade is a deterministic pixel blend, not optical-flow interpolation",
       "the 50 clip paths in the scale soak are hardlinks to one fixture; separate synthetic-codec and real-H3 probes close local mechanics rather than perceptual editing quality",
-      "derived 1920x1088 mechanics do not prove native H3 1080p generation quality; cross-platform FFmpeg/filesystem matrices remain pending",
+      "derived 1920x1088 mechanics do not prove native H3 1080p generation quality; the Ubuntu WSL2 probe is low-resolution and does not close bare-metal Linux, macOS or high-resolution non-Windows matrices",
+      "Ubuntu 24.04.4 WSL2 on ext4 /tmp passed one bounded Linux/POSIX mechanical route; its normal user systemd session was intermittently unavailable, so the probe ran in the existing distribution as root without rebuilding it",
       "two local FFmpeg 7.1 Windows builds showed nondeterministic automatic-thread decode errors on byte-identical high-resolution files; only the explicit single-thread FFmpeg plus PyAV/libavcodec 62 repeated paths passed, so arbitrary player behavior is not claimed"
     ],
     "validated": [
@@ -348,11 +349,12 @@
       "default 1000-unit MP4 timebase reproduced +11/-29/-32 logical-sample errors at 32/44.1/48kHz for a 58-frame plan; LCM timescales 96000/88200/48000 reduced all three to zero",
       "three real 256x256x22 H3 clips produced exact 58-frame/116000-sample output; three distinct real 736x416x124 H3 clips produced exact 348-frame/696000-sample 14.5-second output with a 10.51MiB transition-tail estimate",
       "both real-H3 probes preserved sources, reused verified phases and produced stable repeated output hashes",
-      "a derived-1920x1088 auto-threaded probe exposed one native crash and 3/3 streams with strict-decoder H.264 errors; scoped single-thread x264 plus versioned phase-and-final strict decode then passed three independent projects with 348 frames, 696000 exact logical samples, identical phase/final hashes and no orphan temporary files"
+      "a derived-1920x1088 auto-threaded probe exposed one native crash and 3/3 streams with strict-decoder H.264 errors; scoped single-thread x264 plus versioned phase-and-final strict decode then passed three independent projects with 348 frames, 696000 exact logical samples, identical phase/final hashes and no orphan temporary files",
+      "Ubuntu 24.04.4 WSL2 with Linux FFmpeg 7.0.2 and PyAV 18.1.0 on ext4 /tmp composed two H.264/AAC clips plus one FLAC lane to exact 66 frames and 132000 logical samples; repeat phase hashes and mtimes plus final SHA matched, sources were unchanged, no temp survived, POSIX lock contention was rejected and the lock was reacquired after holder exit"
     ],
     "api_example": "examples/reel_delivery_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Reel_Delivery_Advanced.json",
-    "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing and real-H3 256/736px plus derived-1920x1088 delivery gates passed; cross-platform behavior remains pending"
+    "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing, real-H3 256/736px and derived-1920x1088 gates plus one low-resolution Ubuntu WSL2/ext4 Linux route passed; bare-metal Linux, macOS and high-resolution non-Windows behavior remain pending"
   },
   "experimental_trajectory_probe_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
@@ -376,7 +378,7 @@
     "scientific_limits": [
       "same-process identity intentionally prevents a ComfyUI restart from pretending to reproduce an identical live ModelPatcher stack",
       "disk checkpoints trade GPU recomputation for host storage and I/O; the validated paired warm route was not faster than a full run",
-      "the 362-frame 256x256 full run left only 520.511MiB, so the local pass cannot be promoted to a universal 16GiB or higher-resolution memory-safe claim",
+      "the historical 362-frame 256x256 full run left 520.511MiB and the current ddbaa875 recheck left 548.502MiB, so neither local pass can be promoted to a universal 16GiB or higher-resolution memory-safe claim",
       "checkpoint bytes depend on spatial and temporal latent dimensions together; frame count alone is not a disk-budget predictor",
       "unsupported samplers and patches_replace wrappers fail closed rather than silently resume from a mathematically different state"
     ],
@@ -384,13 +386,15 @@
       "real 736x416x124 and 256x256x362 stable four-step full versus 2+2 final video/audio latents were bit-exact with max_abs=0",
       "124-frame three-cold plus three-warm matrix completed 18/18 full/split/resume prompts and 6/6 paired checkpoint SHA-256 comparisons",
       "124 repeat minimum whole-device headroom was 587.147MiB; 362 one-off full minimum was 520.511MiB, only 8.511MiB above the project gate",
+      "current ComfyUI ddbaa875 recheck completed 6/6 full/split/resume prompts across 124 and 362 frames; both full/resume checkpoint SHA-256 pairs were identical, with full-run headroom 749.019MiB and 548.502MiB",
+      "legacy ComfyUI 0.30.0 at 563b98eef completed 3/3 real 256x256x22 full/split/resume prompts and produced a byte-identical full/resume checkpoint pair; minimum headroom was only 94.153MiB",
       "three warm pairs averaged about 70.75s full versus 72.30s split plus resume; no throughput benefit is claimed",
       "actual final checkpoint sizes were about 4.10MiB at 736x416x124 and 2.66MiB at 256x256x362",
       "any non-empty patches_replace wrapper is refused because hidden per-execution state cannot be proven resumable"
     ],
     "api_example": "examples/trajectory_probe_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json",
-    "status": "Trajectory v2 direct-transport numerical, 124/362-frame, disk-budget and 124-frame three-cold/three-warm repeat gates passed for the exact local profile; speed benefit, restart resume, wrappers, other samplers, cross-GPU and universal 16GiB safety remain denied or unverified"
+    "status": "Trajectory v2 direct-transport numerical, 124/362-frame, disk-budget and 124-frame three-cold/three-warm repeat gates passed for the exact local profile and were rechecked on current ddbaa875; speed benefit, restart resume, wrappers, other samplers, cross-GPU and universal 16GiB safety remain denied or unverified"
   },
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
@@ -471,7 +475,68 @@
       "current_commit": "cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44",
       "controls": "same plugin worktree, same FL2VA pruned INT8/Qwen NVFP4/dual VAE files, same 256x256x22 one-step T2VA workflow and seed",
       "result": "both processes succeeded; 22/22 PNG frames were byte-identical; 32kHz stereo 29600-sample audio correlation was 0.999688 with 36.12dB SNR and one-int16-LSB maximum difference",
-      "scope": "proves the stable dual_clock_euler legacy protocol on one exact H3-era ComfyUI build, not every Advanced node or every older release"
+      "scope": "proves the stable dual_clock_euler legacy protocol on one exact H3-era ComfyUI build, not every Advanced node or every older release",
+      "current_plugin_import_schema": {
+        "plugin_commit": "c7f5080e4e626bdaccaf4ac35971c33ca221d63a",
+        "expected_plugin_nodes": 86,
+        "present_plugin_nodes": 86,
+        "advanced_nodes_checked": 24,
+        "advanced_schema_errors": 0,
+        "traceback": false,
+        "scope": "closes import and schema construction; broad Advanced GPU execution on the legacy core remains only partially tested"
+      },
+      "advanced_gpu_probe": {
+        "route": "Trajectory Advanced stable dual-clock full versus 2+2 save/load/resume",
+        "profile": "RTX 4060 Ti 16GiB; 256x256x22; four steps; one fixed seed",
+        "prompts_passed": "3/3",
+        "full_resume_checkpoint_bit_exact": true,
+        "minimum_headroom_mib": 94.153,
+        "scope": "numerical compatibility pass for this short route; fails the 512MiB safety gate and does not cover other Advanced nodes"
+      },
+      "advanced_model_free_execution": {
+        "prompts_passed": "4/4",
+        "advanced_nodes_executed": 12,
+        "routes": "Environment Audit; all seven Studio/Prompt/Repair-planning nodes; both local Context IR nodes; Reel plan plus no-write compose",
+        "external_upload": false,
+        "media_mutation": false,
+        "scope": "read-only/model-free/no-write old-core execution evidence"
+      },
+      "advanced_qwen_contract_execution": {
+        "routes": "report_only and memory_lru_exp wrapper installation plus Stats",
+        "prompts_passed": "2/2",
+        "visual_reference_encoded": true,
+        "real_hit_followup": "native 48-frame video reference; four prompts succeeded; one 110.744MiB entry; one miss plus one hit; full HIT 19.281s versus OFF 24.657s",
+        "output_comparison": "non-exact; 22-frame SSIM mean/min 0.950934/0.944633; 32kHz stereo audio correlation 0.953028",
+        "minimum_headroom_mib": 334.508,
+        "scope": "one short old-core real-hit route; no lossless, repeatability, broad-quality or 16GiB-safe claim"
+      },
+      "advanced_activation_decode_execution": {
+        "av_decode_safety": "decode_regular produced 22 frames and audio; minimum headroom 69.588MiB",
+        "activation_chunk": "apply_exp refused before sampling with unknown ComfyUI H3 source contract",
+        "scope": "verified AV Decode Safety compatibility and verified fail-closed Activation Chunk incompatibility; source hash contract was not weakened"
+      },
+      "advanced_repair_execution": {
+        "repair_nodes_executed": 4,
+        "route": "Bind and Stage from a persisted real-chain plan; Accept false; base-rollback Compose",
+        "base_manifest_unchanged": true,
+        "accepted_assets_unchanged": 27,
+        "accept_overlay_followup": "isolated two-segment fixture accepted replacement index 1, preserved unselected index 0 plus all base hashes, and composed 44 frames",
+        "audio_delivery_boundary": "AAC stream duration 58688 versus 58667 logical samples (+21); decoder returned 59392 including codec padding",
+        "scope": "bounded real-chain accept-off plus synthetic-fixture accept-overlay evidence; does not prove real-H3 repair quality or old-core crash recovery"
+      },
+      "advanced_scheduled_audio_execution": {
+        "modes": ["report_only", "scheduled_injection"],
+        "profile": "RTX 4060 Ti 16GiB; 256x256x22; one step",
+        "result": "both succeeded; each produced 22 decoded frames and one audio file",
+        "minimum_headroom_mib": 15.685,
+        "apply_headroom_mib": 97.335,
+        "scope": "report and apply execution-contract passes but 512MiB safety-gate failures; the current-core controlled A/B still rejects a speech-suppression claim"
+      },
+      "advanced_old_core_coverage_summary": {
+        "advanced_ids_with_execution_or_explicit_fail_closed_evidence": 24,
+        "advanced_ids_total": 24,
+        "scope": "all newly appended Advanced IDs have bounded route evidence on exact ComfyUI 0.30.0 only; Activation apply is fail-closed, Repair accept-overlay is synthetic-fixture evidence, and Qwen/Scheduled quality claims remain refused"
+      }
     },
     "custom_audio_scale": 1.0
   },

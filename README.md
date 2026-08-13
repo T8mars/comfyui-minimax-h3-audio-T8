@@ -63,6 +63,11 @@ AV Decode Safety默认只预检，不把当前空闲显存或输出tensor估算�
 本机两个FFmpeg 7.1 Windows构建的自动解码线程对同一1080p码流会随机失败；单线程FFmpeg及
 PyAV/libavcodec 62重复解码均通过。因此这里只证明该版本化单线程验证合同，不外推其他平台或
 播放器的多线程解码器。
+另在Ubuntu 24.04.4 WSL2的Linux内核与ext4 `/tmp`上，使用Linux FFmpeg 7.0.2、PyAV 18.1.0
+直接执行同一份Reel产品代码：两段H.264/AAC加一条FLAC lane得到精确66帧、132,000个48kHz
+逻辑采样，第二次执行复用视频/音频阶段且输出SHA-256一致；来源哈希不变、无孤儿临时文件，
+真实POSIX锁竞争被拒绝并在持锁进程结束后可重新取得。该结果关闭一条Linux/POSIX低分辨率
+机械路线，不等于裸机Linux、macOS、高分辨率、任意FFmpeg构建或跨GPU通过。
 
 验证期间ComfyUI先更新到`v0.32.0-15@86aedfd9`，Llama/Qwen新增合并投影、固定KV、预取和原地
 残差路径。Qwen缓存现显式在无梯度推理上下文执行，并把直接调用的`TransformerBlock.forward`
@@ -124,7 +129,27 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 当前插件随后在 H3 初始期 ComfyUI `0.30.0@563b98eef` 和当前 `cbbc9dab1` 上使用同一
 256×256×22、一阶、同seed工作流完成真实配对：22张PNG逐字节一致，32kHz双声道音频相关
 0.999688、SNR 36.12dB、最大差一个16-bit PCM步长。该证据只覆盖稳定
-`dual_clock_euler`默认路线，不等同于所有Advanced节点或任意旧版本均兼容。
+`dual_clock_euler`默认路线。另用当前`1.18.2@c7f5080`插件在同一旧版快照做了完整导入/schema
+探针：86/86个插件节点和其中24/24个Advanced节点均出现在`/object_info`，没有导入traceback。
+随后再真实执行Trajectory Advanced的256×256×22四步full、2+2 split和save/load/resume：3/3
+prompt成功，两份最终checkpoint逐字节一致。三段最低整卡余量仅94.153MiB，未过512MiB门槛。
+Environment Audit、Studio/Prompt/Repair规划、本地Context IR和Reel只规划不写入的4张API图也全部
+执行成功，覆盖另外12个Advanced节点；Qwen Prefix Cache先通过report-only、`memory_lru_exp`包装安装与
+Stats，随后又以48帧真实参考视频完成OFF/MISS→HIT及完整A/V对照：缓存为1 miss+1 hit，HIT较OFF
+快21.80%，但输出非逐位一致（视频SSIM均值0.950934、音频相关0.953028），且最低余量334.508MiB，
+所以只证明该短链兼容，不证明无损或16GB安全。AV Decode Safety真实解码成功22帧
+和音频，而Activation Chunk在应用前正确拒绝旧H3未知源码合同。Repair的Bind/Stage/Accept/Compose
+四节点使用已持久化真实链执行成功：`accept_repair=false`，原manifest及27个accepted素材哈希保持不变，
+只在忽略的验证目录生成一个base-rollback成片。随后隔离的两段fixture又完成`accept_repair=true`与
+repair-overlay合成：替换索引1、保留索引0、原manifest/accepted素材不变、输出44帧；AAC流时长比
+58,667逻辑样本多21样本且解码含padding，所以不宣称sample-exact或真实H3修复质量。
+Scheduled Audio Injection的默认`report_only`与实际
+`scheduled_injection`路线均完成真实256×256×22一阶生成并输出22帧和音频；两者最低余量分别只有
+15.685MiB和97.335MiB，且这不证明注入能抑制多余说话。
+至此新增的24/24个Advanced节点都在该精确旧core上取得了执行或明确fail-closed证据，但证据强度按
+路线受限：Qwen只测一条短视频参考、Activation拒绝应用、Repair接受仅为隔离fixture、Scheduled
+质量结论仍为否决。它不代表
+所有模式、任意旧版本或16GB安全。
 
 ## 项目目录
 
@@ -362,6 +387,9 @@ seed、调度或生成状态。
 约4.10/2.66MiB；体积取决于空间与时间latent共同大小，帧数不能单独预测磁盘成本。暖态三组
 `split+resume`总耗时均值约72.30秒，full约70.75秒，没有吞吐收益证据。所有`patches_replace`
 仍拒绝，保存默认关闭，重启续跑与跨GPU均不支持。
+当前ComfyUI `v0.32.0-16@ddbaa8752`又独立完成124/362两档的full、split和resume共6个真实prompt；
+两档full与resume最终checkpoint SHA-256分别完全一致。124/362 full整卡余量为749.019/
+548.502MiB；362仍只比512MiB门槛高36.502MiB，而且该档仅为256×256，因此不扩大16GiB安全声明。
 
 `AV Decode Safety`真实128×128×22普通解码已输出22帧及finite 32kHz音频。源码/行为探针进一步
 确认当前H3 Video VAE默认内部tile为256像素：大于该边界时，`decode_regular`也会进入内部空间分块；
