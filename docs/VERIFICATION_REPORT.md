@@ -50,6 +50,62 @@ seconds, saving all 22 frames. Logs proved the direct AIMDO 4 GiB route and Bloc
 5.4 MiB CPU cache. Coarse polling observed 825.46 MiB minimum whole-device free VRAM. This is a
 mechanical integration probe, not a quality comparison or a universal 16 GiB safety result.
 
+A second, higher-scope matrix on 2026-08-13 kept the same Hybrid/Sage/Block Cache/4 GiB/strict-audit
+stack but ran 736x416, 124 frames and Stock20. Three fresh ComfyUI processes and three subsequent
+same-process warm prompts all completed. Block Cache reported 6/20 hits and a 117.7 MiB CPU cache
+on every run. Cold headroom was 992.80/806.70/766.38 MiB; warm headroom was
+953.45/1004.89/791.33 MiB. Warm baselines were 15157.41/15060.25/15143.19 MiB, with only an
+82.94 MiB maximum positive consecutive movement. Six 124-frame PNG sequences and six 32 kHz stereo
+FLAC files were byte-identical for the fixed seed. This passes the exact local mechanical and
+repeatability gate, but no same-current-stack Cache OFF run or perceptual comparison was performed;
+quality, generalized speed benefit, other workloads/GPUs and universal memory safety remain open.
+
+The same exact stack was then run with Block Cache removed: three cold and three warm OFF prompts,
+plus three interleaved warm ON prompts in the third process. OFF/ON mean full-workflow times were
+169.93/129.19 seconds (23.98% saving); sampler times were 146.24/105.31 seconds (27.99% saving).
+All ON runs again cached 6/20 forwards. OFF and ON were each internally exact-repeatable, and the
+new ON decoded pixels/PCM exactly matched the prior ON matrix. OFF versus ON was not bit-exact:
+mean/minimum-frame SSIM was 0.8432/0.7577, uint8 MAE 10.37, audio correlation 0.9207 and audio
+SNR 7.99 dB. One OFF cold run left only 239.40 MiB, below the 512 MiB gate. The exact local
+performance benefit is therefore verified, while perceptual non-inferiority, multi-material/seed
+quality and general 16 GiB safety remain open; a blinded A/B package was generated locally.
+
+A further three-material/two-seed extension completed ten additional prompts. Five valid warm
+performance pairs, including the earlier warm portrait seed, showed 22.05-28.47% end-to-end
+saving (24.35% mean) and 27.94-33.05% sampler saving (29.07% mean), with 6-7/20 hits. Reversing
+ON/OFF execution order did not remove the benefit. Across six quality pairs, mean video SSIM was
+0.7020 with a 0.5192-0.9373 pair range and 0.4774 minimum frame; audio correlation averaged
+0.9329 with a 0.8792-0.9806 range. No pair was bit-exact. The new matrix's minimum headroom was
+1333.64 MiB, but the earlier cold OFF minimum remains 239.40 MiB. One human reviewer scored the
+randomized package before reveal: six video ties and six audio ties. All B clips were perceived
+as slightly lighter, but B represented Cache OFF in the first three pairs and Cache ON in the
+last three; decoded YAVG/SATAVG checks also found no treatment-consistent B-side direction.
+This passes only an exact-profile single-reviewer subjective smoke screen. The wider automated
+differences than threshold 0.08, limited panel and prior cold memory result still deny lossless,
+statistical non-inferiority, universal-threshold, quality-validated, or 16 GiB safety claims.
+
+A conservative-threshold follow-up tested 0.08/0.10 on the two most divergent pairs, then ran
+0.08 across all three materials and two seeds. Threshold 0.10 produced non-monotonic superhero
+audio degradation and was not promoted. All six 0.08 runs succeeded with 3-4/20 hits. Five valid
+warm comparisons saved 9.05-14.38% end-to-end (12.35% mean) and 12.20-18.39% sampler time
+(15.10% mean). Video SSIM averaged 0.8598 (pair range 0.6013-0.9840; minimum frame 0.5294), and
+audio correlation averaged 0.9635 (range 0.8883-0.9927). Both proxies improved over 0.12 in all
+six pairs, while the difficult superhero case remained materially different. Minimum warm
+headroom was 2434.52 MiB, but the prior 239.40 MiB cold OFF observation remains the safety limit.
+A verified randomized OFF-versus-0.08 six-pair package was scored by one human reviewer before
+reveal. Video produced one threshold-0.08 win, five ties and no Cache-OFF win; the reviewer saw a
+slight difference in real-person material and no discernible difference in animated material.
+Audio produced five ties and one low-confidence Cache-OFF win. That sole audio win occurred in
+superhero seed 2, whose two tracks were already measured as effectively silent, so it is not
+robust evidence that Cache OFF sounds better. No overall preference was inferred because the
+reviewer did not explicitly score it.
+
+The earlier anonymous model-side sparse-frame review recorded six low-confidence visual ties,
+no gross sampled-frame collapse and zero clipping in all 12 tracks, but did not listen. Together,
+these results pass only an exact-profile, single-reviewer subjective smoke screen. They do not
+prove statistical perceptual non-inferiority or losslessness. No defaults changed; 0.08 remains
+an opt-in quality-first candidate rather than a universal recommendation.
+
 The node therefore always reports `quality_validated=false` and `memory_safe_claim=false`. VBAR
 pages weights but does not bound activations, attention workspaces, VAE/CLIP, CUDA context, pinned
 memory, other processes, drivers, or host commit. Detailed usage and issue codes are in

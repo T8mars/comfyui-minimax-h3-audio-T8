@@ -912,7 +912,50 @@
       "coarse_minimum_headroom_mib": 825.456,
       "decision": "real plugin-combination mechanics passed; one short one-step probe does not validate perceptual quality, cache benefit, long-window memory or universal 16GiB safety"
     },
-    "status": "339 project tests, Ruff, compileall, all example JSON, isolated import, 62-node object-info, userdata visibility and one real strict Hybrid+Sage+BlockCache+VBAR integration probe passed; remains Advanced/Experimental"
+    "validated_stock20_cache_hit_matrix": {
+      "date": "2026-08-13",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; DynamicVRAM/AIMDO 0.4.13; three fresh-process cold plus three same-process warm runs",
+      "controls": "FL2VA pruned INT8 plus 27.69MiB Hybrid artifact; KJ all-block H3 Sage; T8 H3 Block Cache threshold 0.12 on CPU; stable dual-clock Stock20; 4GiB applied policy; strict audit; Qwen NVFP4; both H3 VAEs; 10A.jpg; 736x416; 124 frames; fixed seed",
+      "result": "6/6 succeeded; every run cached 6/20 forwards with a 117.7MiB CPU cache; 744 PNG frames and six FLAC files were saved",
+      "minimum_headroom_mib": 766.38,
+      "warm_baseline_mib": [15157.41, 15060.25, 15143.19],
+      "maximum_positive_warm_baseline_increase_mib": 82.94,
+      "repeatability": "all six 124-frame PNG sequences and all six 32kHz stereo FLAC files were byte-identical",
+      "decision": "exact local mechanical/repeatability/headroom gate passed"
+    },
+    "validated_stock20_cache_on_off_control": {
+      "date": "2026-08-13",
+      "controls": "same Hybrid/Sage/4GiB/strict-audit Stock20 fixed-seed stack at 736x416x124; OFF removes only MiniMaxH3BlockCacheT8; three cold and three warm OFF runs plus three same-process interleaved warm ON runs",
+      "performance": "warm end-to-end mean 169.93s OFF versus 129.19s ON, 23.98% saving; sampler mean 146.24s OFF versus 105.31s ON, 27.99% saving; every ON run cached 6/20 with 117.7MiB CPU cache",
+      "repeatability": "OFF decoded pixels/PCM were exact across six runs; paired ON was exact across three runs and exactly matched the prior ON decoded media",
+      "difference": "OFF versus ON is not bit-exact: mean/minimum-frame SSIM 0.8432/0.7577, uint8 MAE 10.37, audio correlation 0.9207 and audio SNR 7.99dB",
+      "memory": "OFF cold headroom 239.40/1143.39/1288.00MiB and warm minimum 2154.58MiB; one cold run failed the 512MiB gate",
+      "decision": "performance benefit passes for the exact local profile; the later six-pair single-reviewer screen passes only a subjective smoke gate; statistical perceptual non-inferiority, cross-GPU and universal 16GiB safety remain unproven"
+    },
+    "validated_stock20_cache_multimaterial_control": {
+      "date": "2026-08-13",
+      "scope": "portrait, high-frequency mechanical dragon and rooftop superhero visual references; two seeds per material; 736x416x124 Stock20; five new ON/OFF pairs plus the prior portrait pair",
+      "performance": "five valid warm pairs saved 22.05-28.47% end-to-end, mean 24.35%, and 27.94-33.05% sampler time, mean 29.07%; ON skipped 6-7/20 forwards; reversed order retained the benefit",
+      "difference": "six quality pairs: video mean SSIM 0.7020, pair range 0.5192-0.9373, minimum frame 0.4774; audio correlation mean 0.9329, range 0.8792-0.9806; no pair bit-exact",
+      "memory": "new ten-prompt matrix minimum headroom 1333.64MiB, while the preceding cold OFF matrix remains the limiting 239.40MiB observation",
+      "blind_review": "one human reviewer scored the randomized package before reveal: video 6 ties and audio 6 ties; overall preference was not inferred",
+      "human_blind_reveal": "B was Cache OFF in the first three pairs and Cache ON in the last three; the reviewer saw every B clip as slightly lighter, but decoded YAVG was higher for B in only 1/6 and SATAVG lower in 4/6, so the observation is not treatment-consistent",
+      "candidate_positioning": "threshold 0.12 is at most an exact-profile performance-first EXP candidate; threshold 0.08 remains the quality-first candidate because all six automated video/audio proxies were closer to Cache OFF",
+      "decision": "cross-material performance and one single-reviewer subjective smoke screen pass; losslessness, statistical perceptual non-inferiority, universal threshold recommendation, quality validation, cross-GPU and general 16GiB safety remain unproven"
+    },
+    "validated_stock20_cache_threshold_008_control": {
+      "date": "2026-08-13",
+      "scope": "threshold 0.08 across portrait, mechanical dragon and rooftop superhero, two seeds each; warm 736x416x124 Stock20; exact prior OFF controls",
+      "performance": "six runs succeeded with 3-4/20 hits; five valid warm pairs saved 9.05-14.38% end-to-end, mean 12.35%, and 12.20-18.39% sampler time, mean 15.10%",
+      "difference": "video SSIM mean 0.8598, pair range 0.6013-0.9840, minimum frame 0.5294; audio correlation mean 0.9635, range 0.8883-0.9927; video and audio proxies improved over threshold 0.12 in all six pairs but remain non-exact",
+      "threshold_010_probe": "two sensitive pairs showed higher speed but superhero audio correlation regressed non-monotonically to 0.6678; 0.10 is not recommendation evidence",
+      "memory": "six warm 0.08 runs minimum headroom 2434.52MiB; earlier cold OFF 239.40MiB remains the limiting observation",
+      "blind_review": "randomized OFF-versus-0.08 six-pair package was fully scored for video and audio by one human reviewer before reveal; overall preference was not inferred",
+      "model_blind_review": "the earlier anonymous sparse-frame screen recorded six low-confidence visual ties and no gross sampled-frame collapse; 12 tracks had zero clipping, there was no listening, and superhero seed 2 was effectively silent",
+      "human_blind_reveal": "video: threshold 0.08 won 1, Cache OFF won 0, ties 5; audio: threshold 0.08 won 0, Cache OFF won 1, ties 5; the sole audio win was low-confidence and came from the effectively silent sixth pair; reviewer reported slight real-person differences and no discernible animated-material difference",
+      "decision": "0.08 passes an exact-profile single-reviewer subjective smoke screen and remains an opt-in quality-first candidate; no existing workflow/node default changed; statistical perceptual non-inferiority, losslessness, universal threshold, cross-GPU and general 16GiB safety remain unproven"
+    },
+    "status": "339 project tests, Ruff, compileall, all example JSON, isolated import, 62-node object-info, cache-hit, same-stack OFF/ON, three-material/two-seed and conservative-threshold performance/proxy matrices plus separate threshold-0.12 and threshold-0.08 six-pair single-reviewer blind screens passed; broader perceptual validation and general memory safety remain Advanced/Experimental"
   },
   "experimental_vram_policy_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",

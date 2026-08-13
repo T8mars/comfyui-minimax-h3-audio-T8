@@ -88,6 +88,64 @@ See `docs/HYBRID_COMPATIBILITY_AUDIT.md` and import
 `H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
 `hybrid_compatibility_audit_api.json`.
 
+A follow-up exact-profile matrix on 2026-08-13 used 736x416, 124 frames,
+Stock20, the 27.69 MiB Hybrid artifact, KJ H3 Sage, default-threshold T8 H3
+Block Cache, the 4 GiB policy, and strict audit. Three fresh-process cold runs
+and three same-process warm runs all succeeded and each cached 6/20 forwards.
+Worst whole-device headroom was 766.38 MiB, maximum positive warm-baseline
+movement was 82.94 MiB, and all six 124-frame PNG sequences plus FLAC files
+were byte-identical. This passes only the exact local mechanical/repeatability
+gate; cache-off quality, multiple materials/seeds, other GPUs, and universal
+memory safety remain unproven.
+
+A same-stack Cache OFF control then completed three cold and three warm runs,
+with three interleaved warm OFF/ON pairs in one process. Mean end-to-end time
+fell from 169.93 s OFF to 129.19 s ON (23.98%); sampler time fell from 146.24 s
+to 105.31 s (27.99%), with 6/20 cache hits each time. The treatment was not
+bit-exact: mean video SSIM was 0.8432 (minimum frame 0.7577), uint8 MAE was
+10.37, and audio correlation/SNR were 0.9207/7.99 dB. One OFF cold run left
+only 239.40 MiB, below the 512 MiB gate. This proves a repeatable performance
+benefit only for this exact local profile. The later six-pair human screen is
+single-reviewer evidence only, and `memory_safe_claim=false` remains unchanged.
+
+The follow-up was extended to three visual material classes with two seeds each:
+portrait, high-frequency mechanical dragon, and a rooftop superhero scene. Five
+warm controlled pairs saved 22.05-28.47% end-to-end (24.35% mean) and
+27.94-33.05% sampler time (29.07% mean), with 6-7/20 hits. Across all six
+quality pairs, video SSIM ranged from 0.5192 to 0.9373 (0.7020 mean; minimum
+single frame 0.4774), while audio correlation ranged from 0.8792 to 0.9806
+(0.9329 mean). No pair was bit-exact. One human reviewer then scored the
+randomized package as six video ties and six audio ties. The reviewer saw every
+B side as slightly lighter, but B mapped to Cache OFF in the first three pairs
+and Cache ON in the last three. Decoded signal statistics also found B brighter
+in only 1/6 pairs and slightly less saturated in 4/6, so the observation is not
+attributable to threshold 0.12. This is a single-reviewer smoke screen, not
+statistical perceptual non-inferiority or a universal default recommendation.
+
+A follow-up calibrated 0.08 and 0.10 on the two most divergent pairs, then
+extended the more conservative 0.08 setting to the complete three-material,
+two-seed matrix. Threshold 0.10 showed a non-monotonic superhero-audio
+regression and is not recommendation evidence. At 0.08, five valid warm pairs
+saved 9.05-14.38% end-to-end (12.35% mean) and 12.20-18.39% sampler time
+(15.10% mean), with 3-4/20 hits. Six-pair video SSIM averaged 0.8598 (pair
+range 0.6013-0.9840; minimum frame 0.5294), and audio correlation averaged
+0.9635 (range 0.8883-0.9927). Both proxies improved over 0.12 in all six pairs,
+but difficult cases remain materially different. The randomized OFF-versus-0.08
+package was then scored by one human reviewer before reveal. Video favored 0.08
+once with five ties and no Cache-OFF win; the reviewer saw a slight difference
+in real-person material and no discernible difference in animated material.
+Audio produced five ties and one low-confidence Cache-OFF preference in the
+effectively silent sixth pair. This passes only a single-reviewer subjective
+smoke screen. No node or legacy workflow default changed.
+
+An additional anonymous model-side review sampled six timestamps per side plus
+each pair's maximum-difference frame. It found no black frame or sampled-frame
+structural collapse and recorded six visual ties. Objective checks found no
+clipping in 12 audio tracks, but no human listening was performed and both
+superhero-seed-2 tracks were effectively silent. This low-confidence screen
+did not by itself establish motion/audio non-inferiority. The subsequent human
+screen above still does not prove statistical non-inferiority or losslessness.
+
 Version 1.16.0 retains all 60 Version 1.15.1 node IDs and appends one isolated
 Hybrid Artifact Maintenance Advanced output node. Its API and frontend examples
 default to side-effect-free inspection. Mutating actions require explicit confirmation and a

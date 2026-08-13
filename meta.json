@@ -3,7 +3,7 @@
   "version": "1.17.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
-  "validated_on": "2026-08-12",
+  "validated_on": "2026-08-13",
   "validated_comfyui_commit": "cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44",
   "python": "3.10+",
   "external_runtime_dependencies": [],
