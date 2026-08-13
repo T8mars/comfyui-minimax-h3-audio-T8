@@ -13,6 +13,10 @@ from h3_audio_t8_pkg.nodes_reel_delivery_advanced import (
 from h3_audio_t8_pkg.reel_delivery_advanced import (
     build_reel_delivery_plan,
     compose_reel_delivery,
+    _cleanup_orphan_temporary_files,
+    _reel_execution_lock,
+    _cleanup_temporary,
+    _unlink_with_retry,
     validate_reel_plan,
 )
 
@@ -47,8 +51,12 @@ def _configure(monkeypatch, tmp_path):
     output.mkdir()
     input_dir.mkdir()
     temp.mkdir()
-    monkeypatch.setattr(delivery.folder_paths, "get_output_directory", lambda: str(output))
-    monkeypatch.setattr(delivery.folder_paths, "get_input_directory", lambda: str(input_dir))
+    monkeypatch.setattr(
+        delivery.folder_paths, "get_output_directory", lambda: str(output)
+    )
+    monkeypatch.setattr(
+        delivery.folder_paths, "get_input_directory", lambda: str(input_dir)
+    )
     monkeypatch.setattr(delivery.folder_paths, "get_temp_directory", lambda: str(temp))
     return input_dir, output
 
@@ -149,7 +157,9 @@ def test_reel_plan_rejects_path_escape_and_oversized_transition(monkeypatch, tmp
         )
 
 
-def test_reel_compose_requires_confirmation_then_streams_and_resumes(monkeypatch, tmp_path):
+def test_reel_compose_requires_confirmation_then_streams_and_resumes(
+    monkeypatch, tmp_path
+):
     plan, first, second, _output = _plan(monkeypatch, tmp_path)
     first_hash = plan["clips"][0]["source_sha256"]
     second_hash = plan["clips"][1]["source_sha256"]
@@ -207,6 +217,67 @@ def test_reel_compose_requires_confirmation_then_streams_and_resumes(monkeypatch
     assert third_report["audio"]["resumed"] is True
     state = json.loads(Path(third_report["state_path"]).read_text(encoding="utf-8"))
     assert state["video_crf"] == 17
+
+
+def test_temporary_cleanup_retries_transient_windows_lock(monkeypatch, tmp_path):
+    target = tmp_path / "locked.tmp"
+    target.write_bytes(b"partial")
+    original_unlink = Path.unlink
+    attempts = 0
+
+    def transient_lock(path, *args, **kwargs):
+        nonlocal attempts
+        if path == target and attempts < 2:
+            attempts += 1
+            raise PermissionError("simulated transient Windows handle")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", transient_lock)
+    assert _unlink_with_retry(target, timeout_seconds=1.0, retry_seconds=0.001) is True
+    assert attempts == 2
+    assert not target.exists()
+
+
+def test_temporary_cleanup_preserves_primary_error_when_lock_outlives_budget(
+    monkeypatch, tmp_path
+):
+    target = tmp_path / "locked.tmp"
+    target.write_bytes(b"partial")
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.reel_delivery_advanced._unlink_with_retry",
+        lambda _path: False,
+    )
+    with pytest.raises(RuntimeError, match="primary failure") as captured:
+        try:
+            raise RuntimeError("primary failure")
+        except RuntimeError as captured_error:
+            _cleanup_temporary(target, captured_error)
+            raise
+    assert any("remained locked" in note for note in captured.value.__notes__)
+
+
+def test_orphan_cleanup_covers_all_reel_temporary_types(tmp_path):
+    prefix = "Reel"
+    names = [
+        ".Reel.token.mp4.tmp",
+        "..Reel.token.video.mp4.tmp",
+        "..Reel.token.wav.tmp",
+        ".Reel.token.filters.txt",
+        ".Reel.state.json.token.tmp",
+    ]
+    for name in names:
+        (tmp_path / name).write_bytes(b"orphan")
+    (tmp_path / "unrelated.tmp").write_bytes(b"keep")
+    assert _cleanup_orphan_temporary_files(tmp_path, prefix) == sorted(names)
+    assert not any((tmp_path / name).exists() for name in names)
+    assert (tmp_path / "unrelated.tmp").is_file()
+
+
+def test_reel_execution_lock_rejects_concurrent_same_project(tmp_path):
+    with _reel_execution_lock(tmp_path):
+        with pytest.raises(TimeoutError, match="project is busy"):
+            with _reel_execution_lock(tmp_path, timeout_seconds=0.01):
+                raise AssertionError("a second project owner must not enter")
 
 
 def test_reel_nodes_are_append_only_safe_defaults():

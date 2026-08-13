@@ -1,10 +1,11 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-08-13",
   "validated_comfyui_commit": "cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44",
+  "validated_legacy_comfyui_commit": "563b98eefbe643a4cd510ee7f0b43e79880d5a3f",
   "python": "3.10+",
   "external_runtime_dependencies": [],
   "optional_runtime_dependencies": [

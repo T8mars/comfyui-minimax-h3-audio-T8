@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+from contextlib import contextmanager
 from fractions import Fraction
 import hashlib
 import json
@@ -11,6 +12,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import sys
 from typing import Any, Mapping
 
 import numpy as np
@@ -80,7 +82,9 @@ def _resolve_media(value: Any) -> Path:
     }
     for prefix, getter in prefixes.items():
         if text.lower().startswith(prefix):
-            path = (Path(getter()).resolve() / text[len(prefix) :].lstrip("/\\")).resolve()
+            path = (
+                Path(getter()).resolve() / text[len(prefix) :].lstrip("/\\")
+            ).resolve()
             break
     else:
         path = Path(text).resolve()
@@ -111,7 +115,9 @@ def _probe_media(path: Path) -> dict[str, Any]:
                 raise ValueError(f"video frame rate is unavailable: {path}")
             fps = float(rate)
             if abs(fps - FPS) > 1e-6:
-                raise ValueError(f"Reel Delivery currently requires exact 24fps input: {path}")
+                raise ValueError(
+                    f"Reel Delivery currently requires exact 24fps input: {path}"
+                )
             frame_count = int(video.frames or 0)
             if frame_count <= 0:
                 frame_count = sum(1 for _ in container.decode(video))
@@ -172,7 +178,9 @@ def _event_plan(
     trim_out_raw = raw.get("trim_out_seconds")
     if trim_out_raw is None:
         if source_duration is None:
-            raise ValueError("trim_out_seconds is required when source duration is unavailable")
+            raise ValueError(
+                "trim_out_seconds is required when source duration is unavailable"
+            )
         trim_out = float(source_duration)
     else:
         trim_out = _time(trim_out_raw, "trim_out_seconds")
@@ -250,7 +258,9 @@ def build_reel_delivery_plan(
         if width is None:
             width, height = probe["width"], probe["height"]
         elif (probe["width"], probe["height"]) != (width, height):
-            raise ValueError("all reel clips must have the same dimensions; implicit resize is disabled")
+            raise ValueError(
+                "all reel clips must have the same dimensions; implicit resize is disabled"
+            )
         trim_in = _time(raw.get("trim_in_seconds", 0.0), "trim_in_seconds")
         source_duration = probe["frame_count"] / FPS
         trim_out = (
@@ -260,8 +270,14 @@ def build_reel_delivery_plan(
         )
         start_frame = round(trim_in * FPS)
         end_frame = round(trim_out * FPS)
-        if start_frame < 0 or end_frame <= start_frame or end_frame > probe["frame_count"]:
-            raise ValueError(f"clip {index} trim is outside exact source frame boundaries")
+        if (
+            start_frame < 0
+            or end_frame <= start_frame
+            or end_frame > probe["frame_count"]
+        ):
+            raise ValueError(
+                f"clip {index} trim is outside exact source frame boundaries"
+            )
         selected_frames = end_frame - start_frame
         transition_seconds = _time(
             raw.get("crossfade_to_next_seconds", 0.0),
@@ -299,7 +315,9 @@ def build_reel_delivery_plan(
         }
         if item["include_source_audio"] and not probe["has_audio"]:
             item["include_source_audio"] = False
-            warnings.append(f"clip {item['id']} has no source audio; source lane disabled")
+            warnings.append(
+                f"clip {item['id']} has no source audio; source lane disabled"
+            )
         clips.append(item)
         cumulative_frame = timeline_end
         previous_transition = transition_frames
@@ -343,8 +361,12 @@ def build_reel_delivery_plan(
                 "trim_out_seconds": clip["trim_out_seconds"],
                 "duration_seconds": duration,
                 "gain_db": clip["source_audio_gain_db"],
-                "fade_in_samples": round(clip["transition_in_frames"] / FPS * sample_rate),
-                "fade_out_samples": round(clip["transition_out_frames"] / FPS * sample_rate),
+                "fade_in_samples": round(
+                    clip["transition_in_frames"] / FPS * sample_rate
+                ),
+                "fade_out_samples": round(
+                    clip["transition_out_frames"] / FPS * sample_rate
+                ),
                 "source_probe": clip["source_probe"],
             }
         )
@@ -368,7 +390,9 @@ def build_reel_delivery_plan(
             raise ValueError(f"audio lane {lane_id} events must be a list")
         for event_index, raw_event in enumerate(lane_events):
             if not isinstance(raw_event, Mapping):
-                raise ValueError(f"audio event {lane_id}/{event_index} must be an object")
+                raise ValueError(
+                    f"audio event {lane_id}/{event_index} must be an object"
+                )
             events.append(
                 _event_plan(
                     raw_event,
@@ -380,10 +404,14 @@ def build_reel_delivery_plan(
                 )
             )
     if len(events) > MAX_AUDIO_EVENTS:
-        raise ValueError(f"Reel Delivery supports at most {MAX_AUDIO_EVENTS} audio events")
+        raise ValueError(
+            f"Reel Delivery supports at most {MAX_AUDIO_EVENTS} audio events"
+        )
     if validated_timeline is not None:
         if len(clips) != validated_timeline["shot_count"]:
-            raise ValueError("connected Studio Timeline shot count does not match reel clips")
+            raise ValueError(
+                "connected Studio Timeline shot count does not match reel clips"
+            )
         if total_frames != validated_timeline["total_frames"]:
             warnings.append(
                 "reel trims/transitions change the Studio Timeline total frame count; "
@@ -407,7 +435,9 @@ def build_reel_delivery_plan(
         "transition_buffer_estimate_mib": transition_buffer_mib,
         "maximum_transition_buffer_mib": max_buffer,
         "timeline_hash": (
-            validated_timeline["timeline_hash"] if validated_timeline is not None else None
+            validated_timeline["timeline_hash"]
+            if validated_timeline is not None
+            else None
         ),
         "warnings": warnings,
         "streaming_memory_contract": (
@@ -433,6 +463,7 @@ def validate_reel_plan(value: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError(f"reel source changed after planning: {path}")
     return result
 
+
 def _reel_root(project_id: str) -> Path:
     root = (
         Path(folder_paths.get_output_directory()).resolve()
@@ -446,8 +477,126 @@ def _reel_root(project_id: str) -> Path:
     return root
 
 
+def _unlink_with_retry(
+    path: Path,
+    *,
+    timeout_seconds: float = 15.0,
+    retry_seconds: float = 0.05,
+) -> bool:
+    """Remove a temporary file after transient Windows handle release delays."""
+    deadline = time.monotonic() + max(0.0, float(timeout_seconds))
+    while True:
+        try:
+            path.unlink(missing_ok=True)
+            return True
+        except FileNotFoundError:
+            return True
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(max(0.0, float(retry_seconds)))
+
+
+def _cleanup_temporary(path: Path, active_error: BaseException | None = None) -> None:
+    if _unlink_with_retry(path):
+        return
+    message = f"temporary file remained locked after bounded cleanup: {path}"
+    if active_error is not None:
+        add_note = getattr(active_error, "add_note", None)
+        if callable(add_note):
+            add_note(message)
+        return
+    raise PermissionError(message)
+
+
+@contextmanager
+def _reel_execution_lock(root: Path, *, timeout_seconds: float = 5.0):
+    lock_path = root / "reel_delivery.lock.v1"
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    handle = os.fdopen(descriptor, "r+b", buffering=0)
+    if os.fstat(descriptor).st_size == 0:
+        handle.write(b"\0")
+        handle.flush()
+        os.fsync(descriptor)
+    acquired = False
+    deadline = time.monotonic() + max(0.0, float(timeout_seconds))
+    try:
+        while not acquired:
+            handle.seek(0)
+            if os.name == "nt":
+                import msvcrt
+
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    acquired = True
+                except OSError:
+                    acquired = False
+            else:
+                import fcntl
+
+                try:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    acquired = True
+                except BlockingIOError:
+                    acquired = False
+            if acquired:
+                break
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Reel Delivery project is busy: {root}. Retry after the other compose finishes."
+                )
+            time.sleep(0.05)
+        payload = json.dumps(
+            {"pid": os.getpid(), "acquired_unix": time.time()},
+            sort_keys=True,
+        ).encode("utf-8")
+        handle.seek(0)
+        handle.write(payload)
+        handle.truncate(len(payload))
+        handle.flush()
+        os.fsync(handle.fileno())
+        yield
+    finally:
+        if acquired:
+            handle.seek(0)
+            if os.name == "nt":
+                import msvcrt
+
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
+def _cleanup_orphan_temporary_files(root: Path, safe_prefix: str) -> list[str]:
+    patterns = (
+        f".{safe_prefix}.*.mp4.tmp",
+        f"..{safe_prefix}.*.mp4.tmp",
+        f"..{safe_prefix}.*.wav.tmp",
+        f".{safe_prefix}.*.filters.txt",
+        f".{safe_prefix}.state.json.*.tmp",
+    )
+    candidates: dict[str, Path] = {}
+    for pattern in patterns:
+        for path in root.glob(pattern):
+            if path.is_file() and not path.is_symlink():
+                candidates[path.name] = path
+    removed: list[str] = []
+    for name, path in sorted(candidates.items()):
+        if not _unlink_with_retry(path):
+            raise RuntimeError(
+                f"orphan Reel Delivery temporary file is still locked: {path}"
+            )
+        removed.append(name)
+    return removed
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
-    descriptor, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
     temporary = Path(name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -456,8 +605,7 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        _cleanup_temporary(temporary, sys.exc_info()[1])
 
 
 def _interruption_check() -> None:
@@ -488,7 +636,9 @@ def _selected_frames(clip: Mapping[str, Any]):
 def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, Any]:
     import av
 
-    descriptor, name = tempfile.mkstemp(prefix=f".{path.stem}.", suffix=".mp4.tmp", dir=path.parent)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".mp4.tmp", dir=path.parent
+    )
     os.close(descriptor)
     temporary = Path(name)
     encoded = 0
@@ -510,23 +660,37 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
                         try:
                             heads.append(next(source))
                         except StopIteration as error:
-                            raise ValueError("clip ended during the declared visual crossfade") from error
+                            raise ValueError(
+                                "clip ended during the declared visual crossfade"
+                            ) from error
                     if len(previous_tail) != transition_in:
-                        raise RuntimeError("visual transition tail contract is inconsistent")
-                    for index, (outgoing, incoming) in enumerate(zip(previous_tail, heads)):
+                        raise RuntimeError(
+                            "visual transition tail contract is inconsistent"
+                        )
+                    for index, (outgoing, incoming) in enumerate(
+                        zip(previous_tail, heads)
+                    ):
                         weight = (index + 1) / (transition_in + 1)
-                        blended = np.rint(
-                            outgoing.astype(np.float32) * (1.0 - weight)
-                            + incoming.astype(np.float32) * weight
-                        ).clip(0, 255).astype(np.uint8)
+                        blended = (
+                            np.rint(
+                                outgoing.astype(np.float32) * (1.0 - weight)
+                                + incoming.astype(np.float32) * weight
+                            )
+                            .clip(0, 255)
+                            .astype(np.uint8)
+                        )
                         output.mux(
-                            stream.encode(av.VideoFrame.from_ndarray(blended, format="rgb24"))
+                            stream.encode(
+                                av.VideoFrame.from_ndarray(blended, format="rgb24")
+                            )
                         )
                         encoded += 1
                 elif previous_tail:
                     for array in previous_tail:
                         output.mux(
-                            stream.encode(av.VideoFrame.from_ndarray(array, format="rgb24"))
+                            stream.encode(
+                                av.VideoFrame.from_ndarray(array, format="rgb24")
+                            )
                         )
                         encoded += 1
                 tail_count = int(clip["transition_out_frames"])
@@ -536,7 +700,9 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
                     if len(pending) > tail_count:
                         output.mux(
                             stream.encode(
-                                av.VideoFrame.from_ndarray(pending.popleft(), format="rgb24")
+                                av.VideoFrame.from_ndarray(
+                                    pending.popleft(), format="rgb24"
+                                )
                             )
                         )
                         encoded += 1
@@ -545,7 +711,9 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
                 if clip_index + 1 == len(plan["clips"]):
                     for array in previous_tail:
                         output.mux(
-                            stream.encode(av.VideoFrame.from_ndarray(array, format="rgb24"))
+                            stream.encode(
+                                av.VideoFrame.from_ndarray(array, format="rgb24")
+                            )
                         )
                         encoded += 1
                     previous_tail = []
@@ -559,8 +727,7 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        _cleanup_temporary(temporary, sys.exc_info()[1])
     return {
         "frame_count": encoded,
         "peak_transition_tail_frames": peak_tail_frames,
@@ -592,7 +759,9 @@ def _run_process(args: list[str], log_path: Path) -> None:
             raise
     if process.returncode:
         tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
-        raise RuntimeError(f"FFmpeg failed with exit code {process.returncode}:\n{tail}")
+        raise RuntimeError(
+            f"FFmpeg failed with exit code {process.returncode}:\n{tail}"
+        )
 
 
 def _audio_filter(plan: Mapping[str, Any]) -> tuple[list[str], str]:
@@ -631,73 +800,96 @@ def _audio_filter(plan: Mapping[str, Any]) -> tuple[list[str], str]:
     return inputs, ";\n".join(filters)
 
 
-def _compose_audio(plan: Mapping[str, Any], path: Path, log_path: Path) -> dict[str, Any]:
+def _compose_audio(
+    plan: Mapping[str, Any], path: Path, log_path: Path
+) -> dict[str, Any]:
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("FFmpeg is required for Reel Delivery audio mixing")
     total_seconds = int(plan["total_samples"]) / int(plan["sample_rate"])
-    if not plan["audio_events"]:
-        args = [
-            ffmpeg,
-            "-hide_banner",
-            "-nostdin",
-            "-y",
-            "-f",
-            "lavfi",
-            "-i",
-            f"anullsrc=r={plan['sample_rate']}:cl=stereo",
-            "-t",
-            f"{total_seconds:.9f}",
-            "-c:a",
-            "pcm_f32le",
-            str(path),
-        ]
-        _run_process(args, log_path)
-    else:
-        inputs, filters = _audio_filter(plan)
-        filter_path = path.with_suffix(".filters.txt")
-        filter_path.write_text(filters, encoding="utf-8")
-        try:
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".wav.tmp", dir=path.parent
+    )
+    os.close(descriptor)
+    temporary = Path(name)
+    try:
+        if not plan["audio_events"]:
             args = [
                 ffmpeg,
                 "-hide_banner",
                 "-nostdin",
                 "-y",
-                *inputs,
-                "-filter_complex_script",
-                str(filter_path),
-                "-map",
-                "[aout]",
+                "-f",
+                "lavfi",
+                "-i",
+                f"anullsrc=r={plan['sample_rate']}:cl=stereo",
+                "-t",
+                f"{total_seconds:.9f}",
                 "-c:a",
                 "pcm_f32le",
-                str(path),
+                "-f",
+                "wav",
+                str(temporary),
             ]
             _run_process(args, log_path)
-        finally:
-            if filter_path.exists():
-                filter_path.unlink()
-    peak = 0.0
-    samples = 0
-    import av
+        else:
+            inputs, filters = _audio_filter(plan)
+            filter_path = path.with_suffix(".filters.txt")
+            filter_path.write_text(filters, encoding="utf-8")
+            try:
+                args = [
+                    ffmpeg,
+                    "-hide_banner",
+                    "-nostdin",
+                    "-y",
+                    *inputs,
+                    "-filter_complex_script",
+                    str(filter_path),
+                    "-map",
+                    "[aout]",
+                    "-c:a",
+                    "pcm_f32le",
+                    "-f",
+                    "wav",
+                    str(temporary),
+                ]
+                _run_process(args, log_path)
+            finally:
+                _cleanup_temporary(filter_path, sys.exc_info()[1])
+        peak = 0.0
+        samples = 0
+        import av
 
-    with av.open(str(path), mode="r") as container:
-        stream = container.streams.audio[0]
-        resampler = av.AudioResampler(
-            format="fltp",
-            layout="stereo",
-            rate=int(plan["sample_rate"]),
-        )
-        for frame in container.decode(stream):
-            for converted in resampler.resample(frame):
+        with av.open(str(temporary), mode="r") as container:
+            stream = container.streams.audio[0]
+            resampler = av.AudioResampler(
+                format="fltp",
+                layout="stereo",
+                rate=int(plan["sample_rate"]),
+            )
+            for frame in container.decode(stream):
+                for converted in resampler.resample(frame):
+                    array = converted.to_ndarray()
+                    peak = max(
+                        peak,
+                        float(np.max(np.abs(array))) if array.size else 0.0,
+                    )
+                    samples += int(array.shape[1])
+            for converted in resampler.resample(None):
                 array = converted.to_ndarray()
-                peak = max(peak, float(np.max(np.abs(array))) if array.size else 0.0)
+                peak = max(
+                    peak,
+                    float(np.max(np.abs(array))) if array.size else 0.0,
+                )
                 samples += int(array.shape[1])
-        for converted in resampler.resample(None):
-            array = converted.to_ndarray()
-            peak = max(peak, float(np.max(np.abs(array))) if array.size else 0.0)
-            samples += int(array.shape[1])
-    if samples < int(plan["total_samples"]):
-        raise RuntimeError("mixed audio is shorter than the reel sample boundary")
+        if samples < int(plan["total_samples"]):
+            raise RuntimeError("mixed audio is shorter than the reel sample boundary")
+        with temporary.open("r+b") as handle:
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        _cleanup_temporary(temporary, sys.exc_info()[1])
     return {
         "decoded_samples": samples,
         "used_samples": int(plan["total_samples"]),
@@ -710,7 +902,8 @@ def _valid_phase_file(state: Mapping[str, Any], key: str, path: Path) -> bool:
     expected = state.get(key)
     return bool(expected and path.is_file() and _sha256_file(path) == expected)
 
-def compose_reel_delivery(
+
+def _compose_reel_delivery_unlocked(
     reel_plan: Mapping[str, Any],
     confirm_compose: bool,
     filename_prefix: str,
@@ -787,11 +980,17 @@ def compose_reel_delivery(
         raise ValueError(
             f"mixed audio peak {peak:.6f} exceeds 1.0; reduce gains or select normalize_peak"
         )
-    gain = min(1.0, 0.98 / peak) if peak_policy == "normalize_peak" and peak > 0.98 else 1.0
+    gain = (
+        min(1.0, 0.98 / peak)
+        if peak_policy == "normalize_peak" and peak > 0.98
+        else 1.0
+    )
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("FFmpeg is required for Reel Delivery final mux")
-    descriptor, name = tempfile.mkstemp(prefix=f".{safe_prefix}.", suffix=".mp4.tmp", dir=root)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{safe_prefix}.", suffix=".mp4.tmp", dir=root
+    )
     os.close(descriptor)
     temporary = Path(name)
     try:
@@ -830,8 +1029,7 @@ def compose_reel_delivery(
             os.fsync(handle.fileno())
         os.replace(temporary, output_path)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        _cleanup_temporary(temporary, sys.exc_info()[1])
     state.update(
         {
             "phase": "complete",
@@ -868,3 +1066,35 @@ def compose_reel_delivery(
         "final_container_bit_exact_claim": False,
     }
     return str(output_path), report
+
+
+def compose_reel_delivery(
+    reel_plan: Mapping[str, Any],
+    confirm_compose: bool,
+    filename_prefix: str,
+    crf: int,
+    peak_policy: str,
+) -> tuple[str, dict[str, Any]]:
+    plan = validate_reel_plan(reel_plan)
+    if not confirm_compose:
+        return _compose_reel_delivery_unlocked(
+            plan, confirm_compose, filename_prefix, crf, peak_policy
+        )
+    safe_prefix = _safe_id(filename_prefix, "filename_prefix")
+    root = _reel_root(plan["project_id"])
+    with _reel_execution_lock(root):
+        removed = _cleanup_orphan_temporary_files(root, safe_prefix)
+        output_path, report = _compose_reel_delivery_unlocked(
+            plan, confirm_compose, safe_prefix, crf, peak_policy
+        )
+    report = dict(report)
+    report["orphan_temporary_files_removed_before_run"] = removed
+    report["project_lock_contract"] = (
+        "one compose per project root; the OS releases the lock after process termination"
+    )
+    report["cancel_contract"] = (
+        "ComfyUI interruption terminates FFmpeg and attempts bounded temporary cleanup; "
+        "after process or external kill, the next same-project run removes orphan temporary "
+        "files under the OS lock and reuses only hash-verified phase artifacts"
+    )
+    return output_path, report

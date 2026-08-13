@@ -40,19 +40,77 @@ The audit reports cumulative process I/O/page-fault and pinned-memory/GPU-health
 `fits/fits_with_thrashing/unsafe/unknown` classification. A single audit snapshot never proves
 that the current workflow caused the observed cumulative reads.
 
+The stable default sampler has also been run against the H3-era legacy ComfyUI
+`0.30.0@563b98eef` and current `cbbc9dab1` using the same plugin, model files, workflow and seed.
+Both runs produced 22/22 byte-identical PNG frames; their 32kHz stereo audio correlation was
+0.999688 with 36.12dB SNR and a one-int16-LSB maximum difference. This is evidence for the stable
+`dual_clock_euler` legacy velocity branch only, not a blanket claim for every Advanced route or
+every historical ComfyUI release.
+
 All file mutations are opt-in: repair acceptance, Reel Delivery composition and trajectory
 checkpoint saving default false. Scheduled drive-audio injection defaults to bypass because its
 first real A/B did not stop ASR-detected extra tail speech. AV Decode Safety defaults to preflight
 only, and its current-headroom report is not a future VAE peak prediction. Current H3 regular decode
 also uses internal 256-pixel tiles on larger canvases, while explicit tile controls are ignored by
 the H3 first-stage alias; missing global tile coordinates are therefore high-risk in either mode.
+A validation-only direct full-canvas spatial-coordinate substitution was then tested on three
+736x416 source reconstructions. The 256x256 one-tile control was bit-exact, but all three tiled
+cases lost SSIM/PSNR and worsened seam ratios with visible grid/ghost artifacts, so that direct
+remedy was rejected and was not merged.
 The supplied workflows in
 `examples/workflows` retain these safe defaults.
 
 The bounded verification record is in `VERIFICATION_REPORT.md`. A 736x416x124 controlled A/B rejects
-activation chunking as a memory optimization for the current fused TensorWise INT8 path. Small AV
-decode and 2+2 trajectory probes close only bounded execution/numerical gates; they do not establish
-16GiB safety, tiled equivalence, throughput benefit or perceptual non-inferiority.
+activation chunking as a memory optimization for the current fused TensorWise INT8 path. The final
+Trajectory v2 contract uses Load.resume_noise for direct internal-x-sigma transport, not DisableNoise.
+Its 736x416x124 and 256x256x362 full-versus-2+2 final AV latents were bit-exact; the 124-frame three-cold/
+three-warm matrix completed 18/18 prompts and 6/6 paired comparisons. The 362-frame full run left only
+520.51MiB, and paired warm split+resume was not faster than full, so this still does not establish a
+universal 16GiB safety or throughput benefit. AV Decode likewise has no tiled-equivalence claim.
+The Qwen prefix cache now has three fresh-process cold pairs and three same-process warm pairs:
+every hit arm was faster (paired mean 11.97%/11.01%), but outputs remained non-bit-exact, one warm
+audio pair dropped to 0.2323 correlation, and minimum headroom was only 75.63/168.08MiB. It stays
+report-only EXP and is not a lossless, VRAM-saving, or 16GiB-safe feature.
+The exact short multi-reference and video-reference mechanics are now also exercised. Two image
+references produced real cold and warm hits from a 60.70MiB entry and reduced elapsed time by
+6.04%/6.87%, but video SSIM mean/minimum were 0.91869/0.91130, audio correlation was 0.95956 and
+minimum headroom was 311.85MiB. A native 48-frame, 2-second, 24fps video-reference full A/V pair hit
+a 110.74MiB entry and reduced elapsed time by 13.81% and peak device use by 166.31MiB, while leaving
+only 145.15/311.46MiB OFF/HIT headroom; its video SSIM mean/minimum were 0.95093/0.94463 and audio
+correlation was 0.95303. Both paths are non-exact one-step probes, not perceptual, fixed-speedup or
+16GiB-safety evidence.
+A further same-process warm matrix covered three two-image material combinations and two seeds each.
+All 6/6 pairs produced real hits and every HIT arm was faster, with a mean elapsed-time change of
+-11.09%. Video SSIM averaged 0.9314 across pairs with a 0.8531 minimum frame; audio correlation
+averaged 0.9771. Post-pair process private memory had no 256MiB upward staircase, but whole-device
+headroom fell to 111.93MiB. The one-step contact sheet is unsuitable for perceptual acceptance, so
+human non-inferiority at a useful generation profile remains open.
+A Stock20 follow-up used one seed from each of the same three material combinations and
+conditioning-only primes. All 3/3 full HIT arms were real and faster, averaging -5.00% elapsed time,
+but full diffusion amplified the numerical difference: video SSIM averaged 0.8227 across pairs
+(pair range 0.6790-0.9073, minimum frame 0.6052), while audio correlation averaged 0.7188 and ranged
+from 0.2603 to 0.9894. Minimum headroom was 190.68MiB. These automated quality and safety results do
+not pass promotion; the cache remains report-only pending blind review and independent hardware.
+
+Version 1.18.1 adds no node or schema. It hardens Reel Delivery around external termination:
+the mixed PCM stage is validated in a temporary file before atomic replacement, one OS advisory
+lock serializes a project root, and the next run removes only matching orphan temporary files before
+reusing hash-verified phases. A Windows/NTFS 30-minute soak completed 50 independently addressed
+clip paths, dialogue/music/ambience/SFX lanes, 43,200 frames and 86,400,000 48kHz samples. Recovery
+also completed after killing the audio FFmpeg child, final-mux FFmpeg child and parent Python process.
+The 50 clip paths were hardlinks to one small fixture, so that soak alone did not prove codec diversity.
+A separate Windows/NTFS composition then mixed synthetic H.264/AAC, HEVC/MP3 and VP9/Opus 128x96
+24fps sources plus WAV/FLAC/Opus/AAC lanes. It produced exactly 132 frames, a 264,000-sample plan and
+5.500-second output stream; source hashes stayed unchanged, the repeat reused both phases and the
+output hash stayed stable. This closes local synthetic codec mechanics, not real-H3 content diversity,
+high-resolution throughput or non-Windows behavior.
+
+Selective Repair additionally survived six hard-kill boundaries on an isolated 14-segment,
+60-second accepted chain without changing the base manifest or 27 accepted assets. A real H3
+segment-7 replacement composed to exact 1,440-frame/1,920,000-sample outputs, but the outgoing
+boundary regressed because segment 8 still depended on the original segment 7. Two kill points also
+left retry-safe orphan temporary files. Cascading dependent-segment regeneration, crash-clean temp
+cleanup, blind quality review and cross-platform filesystems remain open.
 
 ## Install and connect
 

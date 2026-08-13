@@ -5,7 +5,7 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.18.0 checkpoint was verified on 2026-08-13 against ComfyUI `0.31.0` at
+The current 1.18.1 checkpoint was verified on 2026-08-13 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
@@ -1403,7 +1403,7 @@ frames, 1080p, long video, speech, other GPUs, concurrent CUDA processes, pinnin
 commit remain unvalidated. Detailed evidence is in `docs/VRAM_POLICY_ADVANCED_VALIDATION.md`; local
 machine-readable records are under the ignored `artifacts/vram-policy-validation/` directory.
 
-## Version 1.18.0 recommended-route implementation and bounded validation (2026-08-13)
+## Version 1.18.0/1.18.1 recommended-route implementation and bounded validation (2026-08-13)
 
 Version 1.18.0 preserves the preceding 62 node registrations, schemas, defaults and stable sampler
 math, then appends 24 Advanced/Experimental nodes. The added routes are isolated environment
@@ -1420,10 +1420,47 @@ remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
 ### Real bounded probes
 
 - The installed 32B Qwen3-VL NVFP4 encoder completed same-reference/new-prompt cache hits, two-entry
-  LRU eviction and a 64MiB oversize refusal. One 512x512x22, one-step final A/V comparison measured
-  14.719 seconds with a hit versus 19.985 seconds with caching off. Video SSIM mean/minimum was
-  0.9777/0.9720; audio correlation was 0.9581 with 7.51dB SNR. This is not bit-exact and is not a
-  perceptual non-inferiority matrix.
+  LRU eviction and a 64MiB oversize refusal. The repeat matrix then ran three fresh-process cold
+  pairs and three same-process warm pairs. Every cache-hit arm was faster: paired mean elapsed time
+  changed by -11.97% cold and -11.01% warm, while warm process private memory showed no upward
+  staircase. The outputs were not bit-exact. Across the six paired details, decoded video SSIM mean
+  was about 0.9819 and the minimum was 0.92460; one warm audio pair fell to correlation 0.23234.
+  Whole-device minimum headroom was only 75.63MiB cold and 168.08MiB warm, so the 512MiB safety gate
+  and perceptual non-inferiority gate both failed. This closes the exact repeated timing probe only;
+  it does not establish a lossless cache, fixed speedup, VRAM optimization or 16GiB-safe profile.
+- A two-image reference, 256x256x22, one-step full A/V pair closed the short multi-reference
+  mechanical route. Both fresh-process cold and same-process warm HIT arms reported one real hit
+  after one miss with a 60.7043MiB entry. Elapsed time changed by -6.04% cold and -6.87% warm. The
+  paired outputs were non-exact: decoded video SSIM mean/minimum were 0.918691/0.911305 and audio
+  correlation was 0.959562 with 10.63dB SNR. Minimum whole-device headroom was 311.85MiB, so this
+  route failed the 512MiB gate and does not establish perceptual non-inferiority.
+- A native ComfyUI `LoadVideo` plus `GetVideoComponents` route read a real 512x512, 48-frame,
+  2-second, 24fps source and exercised Ref2VA video-reference prefix reuse. Conditioning-only cold
+  and warm HIT arms reported real hits from a 110.7443MiB entry and changed elapsed time by
+  -9.54%/-10.87%. A full one-process OFF/HIT A/V pair changed elapsed time by -13.81% and peak device
+  use by -166.31MiB, but left only 145.15/311.46MiB OFF/HIT headroom. Its 22 decoded frames were
+  non-exact with SSIM mean/minimum 0.950934/0.944633; finite 32kHz stereo audio correlation was
+  0.953029 with 9.91dB SNR. This establishes the exact short video-reference mechanism only, not a
+  fixed performance benefit, perceptual equivalence or a 16GiB-safe configuration.
+- The follow-up two-image multi-material matrix used portrait/mechanical, mechanical/city-character
+  and city-character/portrait combinations with two seeds each in one warm isolated process. All
+  6/6 pairs completed their media contracts, recorded one real hit after one miss, and had a faster
+  HIT arm. Mean elapsed-time change was -11.09%, ranging from -26.46% to -5.38%. Paired video SSIM
+  averaged 0.931408 across cases, with pair means from 0.859847 to 0.978290 and a minimum frame of
+  0.853100. Audio correlation averaged 0.977138, ranging from 0.966095 to 0.984150. Post-pair process
+  private memory showed at most a 59.91MiB positive step, below the 256MiB staircase threshold, but
+  whole-device headroom fell to 111.93MiB. The one-step contact sheet is visibly too degraded for a
+  perceptual-quality decision; this closes automated multi-material repetition, not human
+  non-inferiority, useful-profile quality, fixed speedup or 16GiB safety.
+- The useful-profile follow-up replaced the one-step final branches with Stock20 while reducing each
+  prime to the Qwen conditioning/statistics chain. One seed from each material combination produced
+  3/3 real hits and all HIT arms were faster, with a mean elapsed-time change of -5.00% and range
+  -6.22% to -3.62%. Full diffusion amplified the cached-versus-uncached numerical difference: video
+  SSIM averaged 0.822721 across the three pairs, pair means ranged from 0.678955 to 0.907300 and the
+  minimum frame was 0.605222. Audio correlation averaged 0.718805 and ranged from 0.260251 to
+  0.989405. Whole-device minimum headroom was 190.68MiB. This does not pass automated quality or
+  512MiB safety gates; a blinded package is required for subjective interpretation, but cannot
+  convert these data into a lossless, generally non-inferior or 16GiB-safe claim.
 - H3 MLP activation chunking completed one real 256x256x22, one-step native-versus-chunked smoke;
   all 22 decoded PNG frames and decoded PCM were identical. A controlled FL2VA pruned INT8,
   736x416x124, one-step A/B then rejected it as a memory optimization for this backend. Cold
@@ -1434,21 +1471,81 @@ remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
   theoretical full-fc1 activation proxy does not apply. No 362-frame extension is justified for
   an INT8 memory-saving claim; other precision/backend research remains separate and unverified.
 - Two real 256x256x22, one-step H3 Studio shots were selected and bound into the non-destructive
-  repair path. The repair executor keeps the accepted manifest and unselected segment files
-  unchanged, accepts into an independent overlay and supports base rollback.
+  repair path. A subsequent isolated 14-segment/60-second accepted chain retained all 27 accepted
+  media/context assets and the original manifest through six forced process exits: after accepted
+  copy, during accepted copy, after primary replacement, after backup, during audio composition and
+  after replacement. All six retries recovered. A real H3 segment-7 replacement produced 102 frames
+  and 136,000 samples; overlay and rollback both composed to exactly 1,440 frames and 1,920,000
+  samples. This did not prove seamless middle replacement: incoming adjacent-frame SSIM was
+  0.940863 versus base 0.944997, but outgoing SSIM fell to 0.803963 versus base 0.932967 and the
+  repaired audio boundary gap was 19.396dB because the next segment still derives from the original
+  context. Two killpoints also left recoverable orphan temporary files. The executor is therefore
+  transaction-safe for these tested boundaries, but not crash-clean or continuity-safe.
 - Reel Delivery completed a real two-clip, three-audio-event composition with 42 requested frames
   and 84,000 requested 48kHz samples. A second execution reused verified video/audio phases.
+- The 1.18.1 Reel scale probe completed exactly 1,800 seconds from 50 independently addressed
+  36-second clip paths and four dialogue/music/ambience/SFX events. The decoded output contained
+  43,200 video frames and 86,400,000 48kHz samples; source hashes stayed unchanged, and a repeat
+  compose reused both verified phase files. Peak process-tree working set was 870.53MiB and peak
+  private bytes were 2,880.78MiB; these are one-run observations, not a cross-platform bound. The
+  50 paths were hardlinks to one 64x64 H.264 fixture, so this closes the mechanical timeline-scale
+  gate but not codec/content diversity or high-resolution throughput.
+- A separate Windows/NTFS codec-diversity probe composed three distinct 128x96, exact-24fps synthetic
+  sources in one reel: H.264/AAC MP4, HEVC/MP3 MKV and VP9/Opus WebM. Four file lanes used PCM WAV,
+  FLAC, Opus and AAC at 32/44.1/48kHz input rates. The output matched the 132-frame plan, covered the
+  264,000 requested 48kHz samples and reported an exact 5.500-second audio stream. All source hashes
+  stayed unchanged; the second execution reused both verified phases, returned the same path and kept
+  the output SHA-256 stable. AAC decoding exposed 192 padding samples while stream duration remained
+  exact, confirming that the stream-time contract—not raw decoder padding—is the valid one-sample
+  assertion. PyAV emitted a non-fatal Opus packet-header diagnostic while still decoding all 96,000
+  source samples. This closes local synthetic codec/container mechanics, not real-H3 material
+  diversity, higher-resolution throughput or cross-platform behavior.
+- External-kill probes found and fixed two production defects: a Windows FFmpeg handle could make
+  temporary cleanup mask the primary failure, and an interrupted audio mix could leave an
+  unvalidated official stage file. Audio now validates a temporary WAV before atomic replacement;
+  bounded retry preserves the primary error; one OS advisory lock serializes a project; and the next
+  run removes only matching orphan temporaries before reusing hash-verified phases. Recovery passed
+  after killing the audio FFmpeg child, final-mux FFmpeg child and parent Python process. Each resumed
+  output matched the baseline delivery SHA-256 and left no matching temporary file.
 - Regular AV decode completed with the installed H3 video/audio VAEs at 128x128x22 in about 2.4
   seconds, emitting 22 PNG frames and finite 32kHz audio. Source and behavior inspection then showed
   that current H3 regular decode internally tiles above 256 pixels, while its public decode_tiled
-  entrypoint aliases regular decode and ignores explicit tile controls. Decoder token coordinates
-  currently have no full-frame dimensions/tile offsets. The Advanced report therefore classifies
-  either decode mode above that boundary as high-risk; no tiled-equivalence or peak claim follows.
-- A real four-step 256x256x22 trajectory compared a normal full run with a 2+2 split. Decoded video
-  frames were byte-identical. Video/audio latent maximum absolute errors were
-  7.152557e-7/2.384186e-7; decoded audio correlation was 0.9999995076 and SNR 60.07dB. The route is
-  numerically equivalent within the measured floating-point tolerance, not bit-exact. Any
-  non-empty `patches_replace` is refused because hidden per-execution state is not proven resumable.
+  entrypoint aliases regular decode and ignores explicit tile controls. A validation-only spatial
+  coordinate patch kept the existing temporal chunk contract and replaced only tile-local spatial
+  coordinates with full-canvas dimensions and offsets. Its 256x256 one-tile control was bit-exact,
+  but all three 736x416 eight-tile source-reconstruction cases regressed: mean source SSIM changed by
+  -0.0828, mean PSNR by -1.141dB, and neither x nor y seam ratio improved in any case. The direct
+  global-coordinate substitution is therefore rejected and was not added to product code. The
+  Advanced report continues to classify tiled H3 decode as high-risk; a different trained or
+  architecture-aware remedy would require a new controlled validation.
+- The original 256x256x22 probe exposed a non-bit-exact resume reconstruction. Trajectory v2 therefore
+  uses a dedicated cloned sampling object whose noise/inverse-noise scaling directly transports the
+  saved internal `x_sigma`; Load emits the required `resume_noise`, and second-stage DisableNoise is no
+  longer valid. On RTX 4060 Ti 16GiB with FL2VA pruned INT8, Qwen NVFP4, both H3 VAEs and stable four-step
+  dual-clock Euler, 736x416x124 and 256x256x362 full-versus-2+2 final video/audio latents were bit-exact
+  (`max_abs=0`). Shapes were `[1,24,37,26,46]`/`[1,32,2,207]` and
+  `[1,24,107,16,16]`/`[1,32,2,603]` respectively.
+- The 124-frame repeat gate used three new-process cold cycles and three same-process warm cycles. All
+  18 full/split/resume prompts succeeded, and all six paired final checkpoints had identical SHA-256.
+  Warm full-run peaks were 15450.58/15430.43/15358.13MiB with no upward staircase; the entire repeat
+  matrix minimum headroom was 587.15MiB. The 362 full run peaked at 15858.99MiB and left only 520.51MiB,
+  just 8.51MiB above the 512MiB gate. This passes the exact local numerical/repeatability gate but not a
+  universal 16GiB or higher-resolution safety claim.
+- The 124/362 final checkpoint files were about 4.10/2.66MiB because the lower-resolution 362-frame
+  spatial latent is smaller; frame count alone does not determine disk cost. Across the three warm
+  pairs, full averaged about 70.75s and split+resume about 72.30s, so no throughput benefit is claimed.
+  Same-process MODEL/SAMPLER identity, full-schedule matching and empty `patches_replace` remain hard
+  requirements; restart resume, wrapper stacks, other samplers and cross-GPU behavior remain refused or
+  unverified. Local raw evidence is summarized in ignored artifact
+  `artifacts/trajectory-validation/trajectory_validation_summary_v2.json`.
+- Stable dual-clock legacy compatibility was exercised against an isolated official ComfyUI
+  `0.30.0` snapshot at commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`, before native
+  `ModelSamplingAV`. The legacy and current `cbbc9dab1` processes used the same plugin worktree,
+  FL2VA pruned INT8, Qwen NVFP4, both H3 VAEs, 256x256x22 one-step workflow and seed. Both completed;
+  all 22 PNG frames were byte-identical. Both audio outputs were finite 32kHz stereo with 29,600
+  samples; PCM correlation was 0.999688, SNR 36.12dB and maximum difference one int16 LSB. This proves
+  the stable `dual_clock_euler` legacy velocity branch on that exact H3-era build, not every older
+  ComfyUI release or every Advanced route.
 
 ### Negative scheduled-audio result
 
@@ -1468,7 +1565,7 @@ music, ambience or effects.
   ComfyUI listener PID, takes before/after deltas and screens `fits`, `fits_with_thrashing`,
   `unsafe` or `unknown`. The 64GiB read threshold is a conservative screen, not a disk benchmark.
 
-- 436 project tests passed.
+- 442 project tests passed.
 - Python compileall passed.
 - 89 API/frontend example JSON files parsed.
 - the append-only registration contract contains 86 nodes;
@@ -1478,9 +1575,13 @@ music, ambience or effects.
   so verification deliberately did not rely on that wrapper.
 
 Remaining gates include activation behavior on non-fused precision/backends (the current INT8
-memory-optimization hypothesis is rejected), repeated 32B cache cold/warm and host-memory measurements,
-long-chain repair quality and crash killpoints,
-30-minute Reel soak, tiled VAE equivalence, external-provider quality/privacy deployment, and
-trajectory throughput/disk-budget matrices. Cross-GPU, 1080p and older-ComfyUI compatibility remain
-unknown. Version 1.18.0 therefore keeps `memory_safe_claim=false` and
-`quality_guarantee=false`.
+memory-optimization hypothesis is rejected), repeated multi-material Qwen video-reference behavior,
+Stock20 cache blind interpretation and multi-GPU behavior, repair-cascade continuity and orphan cleanup,
+Reel real-H3/high-resolution diversity and cross-platform filesystem/FFmpeg behavior, an alternative
+architecture-aware tiled-VAE remedy, and external-provider quality/privacy deployment. Trajectory
+v2 has closed the exact local 124/362 numerical, disk-budget and 124-frame repeat gates, but wrapper
+owners, restart resume, alternate samplers, higher-resolution 362-frame use, cross-GPU and universal
+16GiB safety remain refused or unverified. The stable sampler now has one exact older-ComfyUI real
+probe, while wider Advanced-node compatibility with older releases is still unknown. This machine
+exposes only one RTX 4060 Ti, so genuine cross-GPU execution cannot be certified locally. Version
+1.18.1 therefore keeps `memory_safe_claim=false` and `quality_guarantee=false`.

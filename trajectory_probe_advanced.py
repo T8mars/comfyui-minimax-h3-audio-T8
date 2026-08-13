@@ -17,11 +17,60 @@ from comfy.nested_tensor import NestedTensor
 import folder_paths
 
 from .core import nested_av_parts
+from .sampling import MiniMaxH3FlowSampling
 
 
-TRAJECTORY_SCHEMA = "t8.minimax_h3.trajectory_probe.v1"
+TRAJECTORY_SCHEMA = "t8.minimax_h3.trajectory_probe.v2"
 CHECKPOINT_METADATA_KEY = "h3_t8_trajectory_contract"
 SUPPORTED_SAMPLER_FUNCTION = "sample_minimax_h3_dual_clock_euler"
+
+
+class MiniMaxH3TrajectorySampling(MiniMaxH3FlowSampling):
+    """Keep nonzero-sigma checkpoints in the sampler's internal x_sigma space."""
+
+    h3_t8_trajectory_transport = True
+
+    def noise_scaling(self, sigma, noise, latent_image, max_denoise=False):
+        # This Advanced-only transport always starts a complete run at sigma=1,
+        # where CONST would return the unscaled noise, and resumes by supplying
+        # the saved internal x_sigma as ``noise``. Returning it directly avoids
+        # a numerically lossy sigma*x + (1-sigma)*x reconstruction at resume.
+        return noise
+
+    def inverse_noise_scaling(self, sigma, latent):
+        return latent
+
+
+def prepare_trajectory_model(model: Any):
+    original = model.get_model_object("model_sampling")
+    if isinstance(original, MiniMaxH3TrajectorySampling):
+        return model
+    if not isinstance(original, MiniMaxH3FlowSampling):
+        raise ValueError(
+            "Trajectory Probe requires the T8 stable dual_clock_euler MODEL output"
+        )
+    if float(getattr(original, "noise_scale", 1.0)) != 1.0:
+        raise ValueError("Trajectory Probe requires model_sampling noise_scale=1")
+    sampling = MiniMaxH3TrajectorySampling(model.model.model_config)
+    sampling.set_parameters(shift=float(original.shift))
+    if hasattr(original, "noise_scale"):
+        sampling.set_noise_scale(original.noise_scale)
+    clone = model.clone()
+    clone.add_object_patch("model_sampling", sampling)
+    return clone
+
+
+class TrajectoryResumeNoise:
+    """Return the internal checkpoint x_sigma as both flow initialization terms."""
+
+    def __init__(self, seed: int = 0):
+        self.seed = int(seed)
+
+    def generate_noise(self, input_latent: Mapping[str, Any]):
+        samples = input_latent["samples"]
+        if getattr(samples, "is_nested", False):
+            return NestedTensor(tuple(item.detach().clone() for item in samples.unbind()))
+        return samples.detach().clone()
 
 
 def canonical_json(value: Any) -> str:
@@ -58,6 +107,8 @@ def _model_identity(model: Any) -> dict[str, Any]:
     sampling = model.get_model_object("model_sampling")
     if not isinstance(sampling, comfy.model_sampling.CONST):
         raise ValueError("Trajectory Probe requires a CONST flow sampling model")
+    if not isinstance(sampling, MiniMaxH3TrajectorySampling):
+        raise ValueError("use the trajectory_model output emitted by Trajectory Probe")
     options = getattr(model, "model_options", {})
     transformer = options.get("transformer_options", {}) if isinstance(options, Mapping) else {}
     wrappers = transformer.get("wrappers", {}) if isinstance(transformer, Mapping) else {}
@@ -113,16 +164,24 @@ def build_trajectory_probe(
     split_step: int,
     maximum_checkpoint_mib: float,
     av_latent: Mapping[str, Any],
+    noise_seed: int = 0,
 ) -> tuple[dict[str, Any], torch.Tensor, torch.Tensor]:
     if not isinstance(sigmas, torch.Tensor) or sigmas.ndim != 1 or sigmas.numel() < 3:
         raise ValueError("sigmas must be a one-dimensional schedule with at least two steps")
     if not torch.isfinite(sigmas).all().item():
         raise ValueError("sigmas contain non-finite values")
+    if float(sigmas[0].detach().cpu()) != 1.0 or float(sigmas[-1].detach().cpu()) != 0.0:
+        raise ValueError("Trajectory Probe requires a complete sigma schedule from 1 to 0")
     step = int(split_step)
     total_steps = int(sigmas.numel() - 1)
     if step < 1 or step >= total_steps:
         raise ValueError(f"split_step must be between 1 and {total_steps - 1}")
     video, audio = nested_av_parts(dict(av_latent))
+    if av_latent.get("noise_mask") is not None:
+        raise ValueError(
+            "Trajectory Probe currently refuses noise_mask because exact resume would also "
+            "need the original pre-split inpaint state"
+        )
     checkpoint_mib = (
         video.numel() * video.element_size() + audio.numel() * audio.element_size()
     ) / (1024**2)
@@ -147,11 +206,16 @@ def build_trajectory_probe(
         "latent_dtypes": [str(video.dtype), str(audio.dtype)],
         "estimated_checkpoint_mib": checkpoint_mib,
         "maximum_checkpoint_mib": limit,
-        "resume_noise_contract": "use ComfyUI DisableNoise with low_sigmas and loaded checkpoint latent",
+        "noise_seed": int(noise_seed),
+        "checkpoint_space": "internal_x_sigma_direct_transport",
+        "resume_noise_contract": (
+            "connect Trajectory Checkpoint Load resume_noise and checkpoint_latent to the "
+            "second SamplerCustomAdvanced; the trajectory sampling model transports "
+            "internal x_sigma without reconstruction"
+        ),
         "scope": "same ComfyUI process and exact ModelPatcher patches_uuid",
         "full_run_equivalence_claim": (
-            "mechanically valid only for T8 dual_clock_euler without wrappers; real H3 "
-            "split-versus-full numerical validation is still required"
+            "requires real H3 split-versus-full validation for every published frame/step profile"
         ),
     }
     identity["contract_hash"] = _hash_json(identity)
@@ -196,6 +260,7 @@ def _resolve_checkpoint(value: str) -> Path:
     if root not in path.parents or path.is_symlink():
         raise ValueError("trajectory checkpoint path must stay inside its output directory")
     return path
+
 
 def save_trajectory_checkpoint(
     trajectory_contract: Mapping[str, Any],
@@ -311,7 +376,11 @@ def load_trajectory_checkpoint(
         "contract_hash": validated["contract_hash"],
         "resume_step": validated["split_step"],
         "remaining_steps": validated["total_steps"] - validated["split_step"],
-        "use_disable_noise": True,
+        "use_disable_noise": False,
+        "resume_noise_output_required": True,
+        "noise_seed": int(validated.get("noise_seed", 0)),
+        "checkpoint_space": validated.get("checkpoint_space"),
+        "legacy_disable_noise_contract_detected": False,
         "same_process_model_identity_verified": True,
     }
     return latent, report, sigmas[int(validated["split_step"]) :]

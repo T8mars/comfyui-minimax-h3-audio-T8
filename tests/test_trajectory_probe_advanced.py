@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -12,6 +15,9 @@ from h3_audio_t8_pkg.trajectory_probe_advanced import (
     build_trajectory_probe,
     load_trajectory_checkpoint,
     save_trajectory_checkpoint,
+    prepare_trajectory_model,
+    MiniMaxH3TrajectorySampling,
+    TrajectoryResumeNoise,
 )
 
 
@@ -67,7 +73,7 @@ def _setup():
         3.0,
     )
     model.patches_uuid = "session-a"
-    return model, sampler, sigmas, latent
+    return prepare_trajectory_model(model), sampler, sigmas, latent
 
 
 def test_probe_splits_exactly_and_refuses_stateful_or_oversize():
@@ -83,9 +89,21 @@ def test_probe_splits_exactly_and_refuses_stateful_or_oversize():
     assert torch.equal(high, sigmas[:3])
     assert torch.equal(low, sigmas[2:])
     assert contract["split_step"] == 2
-    assert contract["resume_noise_contract"].startswith("use ComfyUI DisableNoise")
+    assert contract["schema"].endswith(".v2")
+    assert contract["checkpoint_space"] == "internal_x_sigma_direct_transport"
+    assert "without reconstruction" in contract["resume_noise_contract"]
     with pytest.raises(ValueError, match="exceeds gate"):
         build_trajectory_probe(model, sampler, sigmas, 2, 0.001, latent)
+
+    partial = sigmas.clone()
+    partial[0] = 0.99
+    with pytest.raises(ValueError, match="complete sigma schedule"):
+        build_trajectory_probe(model, sampler, partial, 2, 4096, latent)
+
+    masked = dict(latent)
+    masked["noise_mask"] = torch.ones(1)
+    with pytest.raises(ValueError, match="refuses noise_mask"):
+        build_trajectory_probe(model, sampler, sigmas, 2, 4096, masked)
 
     class StatefulSampler:
         sampler_function = staticmethod(lambda: None)
@@ -138,7 +156,9 @@ def test_checkpoint_requires_confirmation_and_same_session_identity(monkeypatch,
         sampler,
         sigmas,
     )
-    assert load_report["use_disable_noise"] is True
+    assert load_report["use_disable_noise"] is False
+    assert load_report["resume_noise_output_required"] is True
+    assert load_report["legacy_disable_noise_contract_detected"] is False
     assert torch.equal(remaining, sigmas[2:])
     original_video, original_audio = latent["samples"].unbind()
     loaded_video, loaded_audio = loaded["samples"].unbind()
@@ -172,6 +192,22 @@ def test_checkpoint_rejects_sigma_or_metadata_tampering(monkeypatch, tmp_path):
         load_trajectory_checkpoint(path, model, sampler, changed)
 
 
+def test_resume_noise_preserves_internal_checkpoint_at_nonzero_sigma():
+    model, _sampler, _sigmas, latent = _setup()
+    sampling = model.get_model_object("model_sampling")
+    assert isinstance(sampling, MiniMaxH3TrajectorySampling)
+    noise = TrajectoryResumeNoise(123).generate_noise(latent)
+    checkpoint = latent["samples"]
+    assert noise is not checkpoint
+    noise_video, noise_audio = noise.unbind()
+    video, audio = checkpoint.unbind()
+    sigma = torch.tensor(0.75)
+    assert torch.equal(sampling.noise_scaling(sigma, noise_video, video), video)
+    assert torch.equal(sampling.noise_scaling(sigma, noise_audio, audio), audio)
+    assert torch.equal(sampling.inverse_noise_scaling(sigma, video), video)
+    assert TrajectoryResumeNoise(123).seed == 123
+
+
 def test_trajectory_nodes_are_explicit_and_experimental():
     schemas = [node.define_schema() for node in TRAJECTORY_PROBE_ADVANCED_NODE_CLASSES]
     assert [schema.node_id for schema in schemas] == [
@@ -180,5 +216,64 @@ def test_trajectory_nodes_are_explicit_and_experimental():
         "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
     ]
     assert all(schema.is_experimental for schema in schemas)
+    assert [item.id for item in schemas[0].outputs][-1] == "trajectory_model"
+    assert [item.id for item in schemas[2].outputs] == [
+        "checkpoint_latent",
+        "remaining_sigmas",
+        "report_json",
+        "resume_noise",
+    ]
     save_inputs = {item.id: item for item in schemas[1].inputs}
     assert save_inputs["confirm_save"].default is False
+
+def test_trajectory_examples_route_the_direct_transport_contract():
+    project_root = Path(__file__).resolve().parents[1]
+    api = json.loads(
+        (project_root / "examples" / "trajectory_probe_advanced_api.json").read_text(
+            encoding="utf-8-sig"
+        )
+    )
+    assert api["7"]["inputs"]["noise_seed"] == api["8"]["inputs"]["noise_seed"]
+    assert api["9"]["inputs"]["model"] == ["7", 4]
+    assert api["10"]["inputs"]["sigmas"] == ["7", 1]
+    assert api["11"]["inputs"]["confirm_save"] is False
+
+    workflow = json.loads(
+        (
+            project_root
+            / "examples"
+            / "workflows"
+            / "H3_Trajectory_Probe_Advanced_EXP.json"
+        ).read_text(encoding="utf-8-sig")
+    )
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    assert len(nodes) == 18
+    assert len(workflow["links"]) == 35
+    assert all(
+        isinstance(link, list)
+        and len(link) >= 6
+        and all(isinstance(link[index], int) for index in range(5))
+        for link in workflow["links"]
+    )
+
+    def source(target_id, input_index):
+        return next(
+            (link[1], link[2])
+            for link in workflow["links"]
+            if link[3] == target_id and link[4] == input_index
+        )
+
+    assert source(13, 0) == (7, 0)
+    assert source(13, 6) == (17, 0)
+    assert source(8, 0) == (13, 4)
+    assert source(16, 0) == (15, 3)
+    assert source(16, 3) == (15, 1)
+    assert source(16, 4) == (15, 0)
+    assert nodes[14]["widgets_values"][-1] is False
+    assert [nodes[node_id]["mode"] for node_id in (11, 12, 15, 16)] == [2, 2, 2, 2]
+
+    for link_id, source_id, output_index, target_id, input_index, _kind in workflow[
+        "links"
+    ]:
+        assert nodes[target_id]["inputs"][input_index]["link"] == link_id
+        assert link_id in (nodes[source_id]["outputs"][output_index].get("links") or [])

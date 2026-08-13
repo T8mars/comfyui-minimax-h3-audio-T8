@@ -1,60 +1,876 @@
 {
-  "id": "ee267ffc-8fb8-4629-8258-0ecb7ea71e46",
-  "revision": 0,
-  "last_node_id": 3,
-  "last_link_id": 2,
+  "id": "d42d6f0e-7e73-4e86-bc76-044ec9024404",
+  "revision": 1,
+  "last_node_id": 18,
+  "last_link_id": 35,
   "nodes": [
     {
       "id": 1,
-      "type": "MiniMaxH3TrajectoryProbeT8Advanced",
-      "title": "Connect stable Dual Clock MODEL/SAMPLER/SIGMAS and AV latent",
+      "type": "UNETLoader",
       "pos": [
         0,
         0
       ],
       "size": [
-        430,
-        330
+        320,
+        82
       ],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [
         {
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoraLoaderBypassModelOnly",
+      "pos": [
+        360,
+        0
+      ],
+      "size": [
+        380,
+        106
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
           "name": "model",
           "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "lora_name"
+          },
           "link": null
         },
         {
-          "name": "sampler",
-          "type": "SAMPLER",
+          "name": "strength_model",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength_model"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        170
+      ],
+      "size": [
+        320,
+        106
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          },
           "link": null
         },
         {
-          "name": "sigmas",
-          "type": "SIGMAS",
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          },
           "link": null
+        },
+        {
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        330
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            32
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        450
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "pos": [
+        360,
+        170
+      ],
+      "size": [
+        470,
+        520
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "name": "task_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "task_type"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_denoise_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "audio_denoise_strength"
+          },
+          "link": null
+        },
+        {
+          "name": "add_source_as_reference",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "add_source_as_reference"
+          },
+          "link": null
+        },
+        {
+          "name": "prompt_primary_audio_ordinal",
+          "type": "INT",
+          "widget": {
+            "name": "prompt_primary_audio_ordinal"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_prompt_tags",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_prompt_tags"
+          },
+          "link": null
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_video_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "reference_video_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            14
+          ]
         },
         {
           "name": "av_latent",
           "type": "LATENT",
+          "links": [
+            6,
+            10,
+            19
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "A natural cinematic close-up of a ceramic robot turning its head once. Quiet room ambience, one soft mechanical click, no speech, no music.",
+        736,
+        416,
+        124,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "STABLE 4-step setup (feeds Trajectory Probe)",
+      "pos": [
+        880,
+        -20
+      ],
+      "size": [
+        390,
+        190
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 6
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
           "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            8,
+            17,
+            24,
+            28
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            9,
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        4,
+        12.0,
+        3.0
+      ]
+    },
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [
+        1770,
+        -20
+      ],
+      "size": [
+        230,
+        70
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            16,
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": [],
+      "title": "Guider MUST use trajectory_model"
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [
+        1770,
+        100
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        123456789,
+        "fixed"
+      ],
+      "title": "Random noise uses the shared seed"
+    },
+    {
+      "id": 10,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        2050,
+        -20
+      ],
+      "size": [
+        290,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 15
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 16
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 17
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 18
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": [],
+      "title": "Stage 1: high_sigmas (first 2 steps)"
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3AVDecodeT8",
+      "pos": [
+        3740,
+        -20
+      ],
+      "size": [
+        280,
+        120
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 31
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 32
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": [],
+      "title": "Stage 2 decode (disabled by default)"
+    },
+    {
+      "id": 12,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        4080,
+        -20
+      ],
+      "size": [
+        430,
+        500
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 34
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 35,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3/trajectory_resume",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "title": "Resume output (disabled by default)"
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3TrajectoryProbeT8Advanced",
+      "title": "Split 4 steps into 2+2; emits trajectory_model",
+      "pos": [
+        1280,
+        -60
+      ],
+      "size": [
+        440,
+        330
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 7
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 8
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 9
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 10
         },
         {
           "name": "split_step",
           "type": "INT",
+          "link": null,
           "widget": {
             "name": "split_step"
-          },
-          "link": null
+          }
         },
         {
           "name": "maximum_checkpoint_mib",
           "type": "FLOAT",
+          "link": null,
           "widget": {
             "name": "maximum_checkpoint_mib"
-          },
-          "link": null
+          }
+        },
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "link": 12,
+          "widget": {
+            "name": "noise_seed"
+          }
         }
       ],
       "outputs": [
@@ -62,13 +878,15 @@
           "name": "trajectory_contract",
           "type": "H3_T8_TRAJECTORY_PROBE",
           "links": [
-            1
+            20
           ]
         },
         {
           "name": "high_sigmas",
           "type": "SIGMAS",
-          "links": null
+          "links": [
+            18
+          ]
         },
         {
           "name": "low_sigmas",
@@ -79,6 +897,14 @@
           "name": "report_json",
           "type": "STRING",
           "links": null
+        },
+        {
+          "name": "trajectory_model",
+          "type": "MODEL",
+          "links": [
+            13,
+            23
+          ]
         }
       ],
       "properties": {
@@ -87,50 +913,51 @@
       },
       "widgets_values": [
         2,
-        4096
+        4096,
+        123456789
       ]
     },
     {
-      "id": 2,
+      "id": 14,
       "type": "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
-      "title": "Connect first-stage sampled latent; saving is opt-in",
+      "title": "Stage 1 checkpoint: opt-in atomic save",
       "pos": [
-        520,
-        0
+        2390,
+        -20
       ],
       "size": [
-        390,
-        250
+        430,
+        260
       ],
       "flags": {},
-      "order": 1,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
           "name": "trajectory_contract",
           "type": "H3_T8_TRAJECTORY_PROBE",
-          "link": 1
+          "link": 20
         },
         {
           "name": "latent",
           "type": "LATENT",
-          "link": null
+          "link": 21
         },
         {
           "name": "checkpoint_name",
           "type": "STRING",
+          "link": null,
           "widget": {
             "name": "checkpoint_name"
-          },
-          "link": null
+          }
         },
         {
           "name": "confirm_save",
           "type": "BOOLEAN",
+          "link": null,
           "widget": {
             "name": "confirm_save"
-          },
-          "link": null
+          }
         }
       ],
       "outputs": [
@@ -138,7 +965,7 @@
           "name": "checkpoint_path",
           "type": "STRING",
           "links": [
-            2
+            22
           ]
         },
         {
@@ -152,62 +979,73 @@
         "Node name for S&R": "MiniMaxH3TrajectoryCheckpointSaveT8Advanced"
       },
       "widgets_values": [
-        "h3_probe",
+        "h3_trajectory_probe",
         false
       ]
     },
     {
-      "id": 3,
+      "id": 15,
       "type": "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
-      "title": "Same-process resume only; second sampler must use DisableNoise",
+      "title": "Stage 2 load (enable after explicit save)",
       "pos": [
-        1040,
-        0
+        2890,
+        -20
       ],
       "size": [
         430,
-        260
+        280
       ],
       "flags": {},
-      "order": 2,
+      "order": 13,
       "mode": 2,
       "inputs": [
         {
           "name": "checkpoint_path",
           "type": "STRING",
-          "link": 2
+          "link": 22
         },
         {
           "name": "model",
           "type": "MODEL",
-          "link": null
+          "link": 23
         },
         {
           "name": "sampler",
           "type": "SAMPLER",
-          "link": null
+          "link": 24
         },
         {
           "name": "sigmas",
           "type": "SIGMAS",
-          "link": null
+          "link": 25
         }
       ],
       "outputs": [
         {
           "name": "checkpoint_latent",
           "type": "LATENT",
-          "links": null
+          "links": [
+            30
+          ]
         },
         {
           "name": "remaining_sigmas",
           "type": "SIGMAS",
-          "links": null
+          "links": [
+            29
+          ]
         },
         {
           "name": "report_json",
           "type": "STRING",
           "links": null
+        },
+        {
+          "name": "resume_noise",
+          "type": "NOISE",
+          "links": [
+            26
+          ]
         }
       ],
       "properties": {
@@ -215,6 +1053,134 @@
         "Node name for S&R": "MiniMaxH3TrajectoryCheckpointLoadT8Advanced"
       },
       "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "SamplerCustomAdvanced",
+      "title": "Stage 2: resume_noise + remaining_sigmas (disabled)",
+      "pos": [
+        3380,
+        -20
+      ],
+      "size": [
+        300,
+        190
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 26
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 27
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 28
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 29
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PrimitiveInt",
+      "title": "One seed shared by RandomNoise and Probe contract",
+      "pos": [
+        880,
+        240
+      ],
+      "size": [
+        330,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "value",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            11,
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        123456789,
+        "fixed"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "Trajectory v2 usage and safety / 使用说明",
+      "pos": [
+        1280,
+        390
+      ],
+      "size": [
+        3100,
+        350
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 两阶段使用（默认不会写文件）\n\n1. 保持 Stage 2 的 Load、Sampler、Decode、Video Combine 为 **Never/disabled**；先把 `confirm_save` 打开，执行 Stage 1，得到 checkpoint。\n2. 仍在同一个 ComfyUI 进程内，启用 Stage 2 四个节点。Load 必须同时连接 Probe 的 `trajectory_model`、原 sampler 和完整 sigmas；第二个 Sampler 必须使用 Load 的 `resume_noise`、`remaining_sigmas` 和 `checkpoint_latent`。\n3. Probe 输出的 `trajectory_model` 必须同时进入 BasicGuider 和 Checkpoint Load。不要把稳定 sampler 的原 MODEL 混回去。\n\n## 已验证边界\n\n- 仅支持稳定 `dual_clock_euler + native_flow`、完整 sigma `1→0` 和同进程恢复。\n- `patches_replace`、MODEL wrappers、noise_mask/inpaint、不同进程/不同 MODEL 身份会明确拒绝。\n- 本机 RTX 4060 Ti 16GB：736×416×124 与 256×256×362 的 full 对 2+2 最终 A/V latent 均逐位一致；这不是跨 GPU 或任意插件组合保证。"
+      ]
     }
   ],
   "links": [
@@ -224,28 +1190,346 @@
       0,
       2,
       0,
-      "H3_T8_TRAJECTORY_PROBE"
+      "MODEL"
     ],
     [
       2,
       2,
       0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
       3,
       0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      4,
+      0,
+      6,
+      1,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      6,
+      6,
+      1,
+      7,
+      1,
+      "LATENT"
+    ],
+    [
+      7,
+      7,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      8,
+      7,
+      1,
+      13,
+      1,
+      "SAMPLER"
+    ],
+    [
+      9,
+      7,
+      2,
+      13,
+      2,
+      "SIGMAS"
+    ],
+    [
+      10,
+      6,
+      1,
+      13,
+      3,
+      "LATENT"
+    ],
+    [
+      11,
+      17,
+      0,
+      9,
+      0,
+      "INT"
+    ],
+    [
+      12,
+      17,
+      0,
+      13,
+      6,
+      "INT"
+    ],
+    [
+      13,
+      13,
+      4,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      6,
+      0,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      15,
+      9,
+      0,
+      10,
+      0,
+      "NOISE"
+    ],
+    [
+      16,
+      8,
+      0,
+      10,
+      1,
+      "GUIDER"
+    ],
+    [
+      17,
+      7,
+      1,
+      10,
+      2,
+      "SAMPLER"
+    ],
+    [
+      18,
+      13,
+      1,
+      10,
+      3,
+      "SIGMAS"
+    ],
+    [
+      19,
+      6,
+      1,
+      10,
+      4,
+      "LATENT"
+    ],
+    [
+      20,
+      13,
+      0,
+      14,
+      0,
+      "H3_T8_TRAJECTORY_PROBE"
+    ],
+    [
+      21,
+      10,
+      0,
+      14,
+      1,
+      "LATENT"
+    ],
+    [
+      22,
+      14,
+      0,
+      15,
+      0,
       "STRING"
+    ],
+    [
+      23,
+      13,
+      4,
+      15,
+      1,
+      "MODEL"
+    ],
+    [
+      24,
+      7,
+      1,
+      15,
+      2,
+      "SAMPLER"
+    ],
+    [
+      25,
+      7,
+      2,
+      15,
+      3,
+      "SIGMAS"
+    ],
+    [
+      26,
+      15,
+      3,
+      16,
+      0,
+      "NOISE"
+    ],
+    [
+      27,
+      8,
+      0,
+      16,
+      1,
+      "GUIDER"
+    ],
+    [
+      28,
+      7,
+      1,
+      16,
+      2,
+      "SAMPLER"
+    ],
+    [
+      29,
+      15,
+      1,
+      16,
+      3,
+      "SIGMAS"
+    ],
+    [
+      30,
+      15,
+      0,
+      16,
+      4,
+      "LATENT"
+    ],
+    [
+      31,
+      16,
+      0,
+      11,
+      0,
+      "LATENT"
+    ],
+    [
+      32,
+      4,
+      0,
+      11,
+      1,
+      "VAE"
+    ],
+    [
+      33,
+      5,
+      0,
+      11,
+      2,
+      "VAE"
+    ],
+    [
+      34,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      11,
+      1,
+      12,
+      1,
+      "AUDIO"
     ]
   ],
-  "groups": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "H3 loaders + Turbo LoRA",
+      "bounding": [
+        -40,
+        -80,
+        820,
+        700
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Trajectory Stage 1: split + atomic checkpoint",
+      "bounding": [
+        840,
+        -100,
+        2030,
+        470
+      ],
+      "color": "#7d4b9e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Trajectory Stage 2: same-process exact resume (disabled by default)",
+      "bounding": [
+        2850,
+        -100,
+        1710,
+        470
+      ],
+      "color": "#9e6d3f",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Read before use",
+      "bounding": [
+        1240,
+        350,
+        3180,
+        430
+      ],
+      "color": "#555555",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.8,
+      "scale": 0.58,
       "offset": [
-        120,
-        120
+        80,
+        180
       ]
     },
-    "workflow_title": "MiniMax H3 Trajectory Probe Advanced EXP"
+    "ue_links": [],
+    "workflow_title": "MiniMax H3 Trajectory Probe v2 Advanced EXP"
   },
   "version": 0.4
 }

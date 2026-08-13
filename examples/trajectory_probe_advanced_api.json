@@ -93,7 +93,8 @@
         1
       ],
       "split_step": 2,
-      "maximum_checkpoint_mib": 4096
+      "maximum_checkpoint_mib": 4096,
+      "noise_seed": 2608133001
     }
   },
   "8": {
@@ -106,8 +107,8 @@
     "class_type": "BasicGuider",
     "inputs": {
       "model": [
-        "6",
-        0
+        "7",
+        4
       ],
       "conditioning": [
         "5",

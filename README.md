@@ -1,6 +1,6 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.18.0`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.18.1`，共注册
 86 个节点，覆盖只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
@@ -43,6 +43,11 @@ Studio层增加可审查 Context IR、可视时间轴、已接受长视频manife
 同进程Trajectory Probe只接受稳定双时钟Euler并拒绝wrapper/`patches_replace`；Scheduled Audio
 Injection首轮真实A/B没有消除尾部额外语音，因此保持默认旁路，不能宣传为“闭嘴修复”。
 AV Decode Safety默认只预检，不把当前空闲显存或输出tensor估算伪装成VAE峰值预测。
+
+`1.18.1` 不增加或改动节点接口，只加固 Reel Delivery 的异常边界：音频阶段先写临时文件，
+完成样本数与峰值校验后才原子替换正式阶段文件；同一项目通过进程级OS锁串行；FFmpeg或宿主
+进程被强杀后，下一次同项目执行只复用哈希验证通过的阶段，并在锁内清理本节点命名空间中的
+孤儿临时文件。它不会清理其他项目或其他节点文件，也不把本机Windows结果外推为跨平台保证。
 
 Studio规划本身不会加载模型、自动排队、覆盖已接受媒体或宣称其他后端原生支持H3音频。
 超过单段362帧的纯视觉镜头可显式拆段；带精确对白的长镜头拒绝自动断句，要求创作者先按
@@ -91,6 +96,10 @@ schema 顺序和数值路径保持不变。`1.3.3` 在稳定双时钟节点末�
 手动选择，也不会对新版 ComfyUI 再次应用音频 carry/scale。本版本还兼容
 VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/音频 VAE，并把画布
 像素面积上限放宽到 `1920×1088 = 2,088,960`；超过旧 0.98M 档只提示显存风险，不再阻止执行。
+当前插件随后在 H3 初始期 ComfyUI `0.30.0@563b98eef` 和当前 `cbbc9dab1` 上使用同一
+256×256×22、一阶、同seed工作流完成真实配对：22张PNG逐字节一致，32kHz双声道音频相关
+0.999688、SNR 36.12dB、最大差一个16-bit PCM步长。该证据只覆盖稳定
+`dual_clock_euler`默认路线，不等同于所有Advanced节点或任意旧版本均兼容。
 
 ## 项目目录
 
@@ -183,7 +192,7 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | T8 Context IR Prompt Compiler / IR提示词编译 (Advanced) | 将已审查IR编译进既有Prompt Packet；远端不能控制路径、模型、节点、采样或改写精确对白 |
 | MiniMax H3 Reel Delivery Plan/Compose / 成片交付 (Advanced) | 指纹化24fps文件片段、有限crossfade和音频lane，显式确认后以有界内存原子重编码MP4 |
 | MiniMax H3 Trajectory Probe / 采样轨迹探针 (Advanced) | 只拆稳定双时钟Euler sigma，绑定同进程MODEL/SAMPLER，并拒绝wrapper与patches_replace |
-| MiniMax H3 Trajectory Checkpoint Save/Load / 轨迹保存续跑 (Advanced) | 显式保存联合latent并校验完整合同；第二阶段必须使用DisableNoise，重启后不会伪装成同一模型栈 |
+| MiniMax H3 Trajectory Checkpoint Save/Load / 轨迹保存续跑 (Advanced) | 显式保存联合latent并校验完整合同；第二阶段必须使用Load输出的resume_noise，重启后不会伪装成同一模型栈 |
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -233,8 +242,24 @@ fail closed，不覆盖、不叠套，默认`report_only`。真实256×256×22�
 真实ComfyUI小型Llama探针中，完整因果前向与“缓存前缀KV+新后缀”在`2e-6`容差内一致；本机
 32B Qwen NVFP4已完成同参考/改prompt命中、两条LRU淘汰和64MiB超预算拒绝。一个
 512×512×22、1步最终A/V对照中，命中为14.719秒、关闭缓存为19.985秒，但视频SSIM均值
-0.9777、音频相关0.9581，并非bit-exact。默认仍为`report_only`；三冷三暖、感知非劣与跨GPU
-主机内存验证未完成，不能外推固定加速比例。需要观察命中时可接`Qwen Prefix Cache Stats`。
+0.9777、音频相关0.9581，并非bit-exact。随后三组全新进程冷配对和三组同进程暖配对中，命中端
+每次都更快，配对平均分别约11.97%和11.01%；但六组结果仍不逐位一致，视频SSIM最低0.9246，
+一组暖态音频相关仅0.2323，冷/暖最低整卡余量也只有75.63/168.08MiB，均未过512MiB门槛。
+双图参考的冷/暖OFF对HIT短链随后都取得真实命中，60.70MiB缓存条目的耗时分别
+下降6.04%/6.87%；视频SSIM均值/最低为0.91869/0.91130，音频相关0.95956，仍非逐位一致，
+最低余量311.85MiB。另一条使用ComfyUI原生`LoadVideo`/`GetVideoComponents`读取48帧、2秒、24fps
+真实视频参考的完整A/V配对也命中110.74MiB条目，耗时下降13.81%，峰值低166.31MiB；
+但OFF/HIT仅余下145.15/311.46MiB，视频SSIM均值/最低为0.95093/0.94463，音频相关0.95303。
+又完成了真人×机械、机械×城市角色、城市角色×真人三组双图组合×2 seed的同进程暖态矩阵：
+6/6真实命中且HIT均更快，平均耗时变化-11.09%；视频SSIM的组均值0.9314、最低单帧0.8531，
+音频相关均值0.9771。六组后进程private memory最大正向跳发为59.91MiB，未见256MiB阶梯，
+但最差整卡余量仅111.93MiB，而且1步画面不足以做感知结论。
+同三类素材各取1个seed的Stock20对照也已完成：3/3真实命中且HIT更快，平均耗时变化-5.00%；
+但视频SSIM组均值只有0.8227，组间0.6790～0.9073、最低单帧0.6052；音频相关均值0.7188，
+组间0.2603～0.9894，最低显存余量190.68MiB。这说明缓存数值差异会被完整扩散链放大，自动质量门不通过。
+因此默认仍为`report_only`：只能称精确短链的多图/视频参考机械路线已打通，不能称无损、显存优化、
+16GB安全或固定加速；多素材自动重复已完成，Stock20非劣性尚需人类盲评但已有明显自动风险，跨GPU主机内存仍需验证。需要观察命中时可接
+`Qwen Prefix Cache Stats`。
 
 ### 3. Studio：角色、声音、镜头和局部重做
 
@@ -256,6 +281,21 @@ fail closed，不覆盖、不叠套，默认`report_only`。真实256×256×22�
 7. `Reel Delivery Plan -> Compose`处理已经落盘的24fps片段与对白/音乐/环境/SFX文件lane。
    当前要求同尺寸、精确24fps，crossfade是像素混合而非运动插帧；Compose默认不执行，开启后
    H.264/AAC重编码且不是bit-exact。CRF变化会强制重做视频阶段，完整哈希一致才会恢复旧阶段。
+   本机Windows/NTFS已完成30分钟、50个独立路径片段、4类音频lane的机械压力测试：输出
+   43,200帧和86,400,000个48kHz采样（精确1,800秒），来源哈希不变，重复运行复用已验证阶段。
+   同时覆盖音频FFmpeg、最终mux FFmpeg及宿主Python进程强杀后的恢复；50个路径使用同一小型
+   fixture的硬链接，因此证明的是时间线规模、内存/磁盘和恢复合同，不是多编码器/多素材质量。
+   后续本机同一条实验成片又混用H.264/AAC、HEVC/MP3和VP9/Opus三种128×96、24fps合成素材，
+   并叠加WAV/FLAC/Opus/AAC四类lane；结果精确132帧、计划264,000个48kHz采样和5.500秒流时长，
+   来源哈希不变，二次执行复用视频/音频阶段且输出哈希稳定。这关闭了本机合成素材的编码多样性机械门；
+   真实H3多素材、高分辨率吞吐和非Windows文件系统仍未验证。
+
+Repair执行器另在隔离的14段/60秒已接受链上覆盖了6个进程强杀点，重试后原manifest与27个
+已接受资产哈希均保持不变；一个真实H3第7段重做也成功写入overlay并合成为精确1440帧/
+1,920,000 samples。不过当前重做不会自动级联重生成依赖它的后续段：该探针的进入边界接近原片，
+退出边界SSIM却从原链约0.933降至0.804。强杀发生在候选复制或音频合成中途还会留下本节点命名
+空间内的孤儿临时文件，虽然重试正确但尚未做到crash-clean。因此相邻段必须单独复核；不能宣传
+无缝局部重做，后续需增加级联重生成或明确的退出边界阻断。
 
 `Prompt Compiler`还可输出`wan_2_2`、`ltx_video`和`generic_cinematic`文本包。除MiniMax H3外，
 声音计划只保存在`audio_prompt` sidecar和JSON报告中，不能据此宣称相应后端原生生成音频。所有
@@ -269,16 +309,25 @@ OpenAI-compatible视觉请求必须同时选择外部模式并开启确认；API
 `Studio Timeline`执行后会在节点中显示只读彩色时间轴；这是前端预览，不改变工作流JSON、
 seed、调度或生成状态。
 
-`Trajectory Probe`只用于稳定双时钟Euler的同进程诊断。真实256×256×22、四步full与2+2 split
-探针中，解码视频帧逐位一致；video/audio latent最大绝对误差为`7.16e-7/2.39e-7`，音频相关
-`0.9999995076`、SNR约`60.07dB`，所以只能写“浮点容差内数值等价”，不能写bit-exact。所有
-`patches_replace`均拒绝，保存默认关闭，第二阶段必须使用`DisableNoise`。
+`Trajectory Probe`只用于稳定双时钟Euler的同进程诊断。最终v2使用专用trajectory MODEL与Load
+节点输出的`resume_noise`直接传递内部`x_sigma`，不再用`DisableNoise`重建中间状态。RTX 4060 Ti
+16GiB、FL2VA pruned INT8、Qwen NVFP4和双H3 VAE的四步2+2验证中，736×416×124与
+256×256×362的full/续跑最终video、audio latent均逐位一致，最大误差为0。124帧另完成3个
+全新进程冷周期和3个同进程暖周期：18/18个full/split/resume prompt成功，6/6对最终checkpoint
+逐位一致；暖态full峰值无阶梯增长。124重复矩阵最低整卡余量587.15MiB；362单次full最低
+520.51MiB，只比512MiB门槛高8.51MiB，故仍不能宣传通用16GiB安全。124和362最终checkpoint
+约4.10/2.66MiB；体积取决于空间与时间latent共同大小，帧数不能单独预测磁盘成本。暖态三组
+`split+resume`总耗时均值约72.30秒，full约70.75秒，没有吞吐收益证据。所有`patches_replace`
+仍拒绝，保存默认关闭，重启续跑与跨GPU均不支持。
 
 `AV Decode Safety`真实128×128×22普通解码已输出22帧及finite 32kHz音频。源码/行为探针进一步
 确认当前H3 Video VAE默认内部tile为256像素：大于该边界时，`decode_regular`也会进入内部空间分块；
 公开`decode_tiled(...)`则委托普通解码并忽略传入的tile/overlap。因此当前core若缺少full-frame
 维度与tile offset坐标合同，Advanced会把任一边大于256的普通或显式tiled解码报告为high-risk，
-严格模式直接阻断。稳定AV Decode节点保持不变；完整坐标修复前不声称显式tiled更省显存或视觉等价。
+严格模式直接阻断。验证进程中曾直接把每个空间tile改为整图坐标：256×256单tile控制逐位一致，
+但736×416的真人、线稿与平滑物体3/3重建均退化，平均SSIM下降0.0828、PSNR下降1.141dB，且
+x/y接缝比没有一例改善，肉眼出现栅格和重影。这条直接修法已被否决，没有合入核心或稳定节点；
+它也不能证明经过训练或不同架构的修复一定失败。当前仍不声称显式tiled更省显存或视觉等价。
 计划式驱动音频注入的真实A/B同样给出负结论：基线额外语音约
 2.26秒开始，完整强度处理后仍约2.10秒开始，因此它不是对白终止器；保留它只是为了受控研究完整
 驱动音频latent重锚，默认旁路。

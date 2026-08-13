@@ -7,6 +7,8 @@ from .trajectory_probe_advanced import (
     canonical_json,
     load_trajectory_checkpoint,
     save_trajectory_checkpoint,
+    prepare_trajectory_model,
+    TrajectoryResumeNoise,
 )
 
 
@@ -40,12 +42,14 @@ class MiniMaxH3TrajectoryProbeT8Advanced(io.ComfyNode):
                     max=65536.0,
                     step=64.0,
                 ),
+                io.Int.Input("noise_seed", default=0, min=0, max=0xffffffffffffffff),
             ],
             outputs=[
                 TrajectoryIO.Output("trajectory_contract"),
                 io.Sigmas.Output("high_sigmas"),
                 io.Sigmas.Output("low_sigmas"),
                 io.String.Output("report_json"),
+                io.Model.Output("trajectory_model"),
             ],
         )
 
@@ -58,16 +62,25 @@ class MiniMaxH3TrajectoryProbeT8Advanced(io.ComfyNode):
         av_latent,
         split_step,
         maximum_checkpoint_mib,
+        noise_seed,
     ):
+        trajectory_model = prepare_trajectory_model(model)
         contract, high, low = build_trajectory_probe(
-            model,
+            trajectory_model,
             sampler,
             sigmas,
             split_step,
             maximum_checkpoint_mib,
             av_latent,
+            noise_seed,
         )
-        return io.NodeOutput(contract, high, low, canonical_json(contract))
+        return io.NodeOutput(
+            contract,
+            high,
+            low,
+            canonical_json(contract),
+            trajectory_model,
+        )
 
 
 class MiniMaxH3TrajectoryCheckpointSaveT8Advanced(io.ComfyNode):
@@ -113,8 +126,9 @@ class MiniMaxH3TrajectoryCheckpointLoadT8Advanced(io.ComfyNode):
             node_id="MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
             display_name="MiniMax H3 Trajectory Checkpoint Load / 轨迹续跑 (Advanced)",
             description=(
-                "Loads a hash-bound same-session checkpoint and emits the remaining sigmas. "
-                "Connect ComfyUI DisableNoise for the second SamplerCustomAdvanced stage."
+                "Loads an internal-x_sigma checkpoint produced through Trajectory Probe trajectory_model. "
+                "Connect checkpoint_latent, remaining_sigmas, resume_noise, and the same "
+                "trajectory_model to the second SamplerCustomAdvanced stage."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -129,6 +143,7 @@ class MiniMaxH3TrajectoryCheckpointLoadT8Advanced(io.ComfyNode):
                 io.Latent.Output("checkpoint_latent"),
                 io.Sigmas.Output("remaining_sigmas"),
                 io.String.Output("report_json"),
+                io.Noise.Output("resume_noise"),
             ],
         )
 
@@ -140,7 +155,12 @@ class MiniMaxH3TrajectoryCheckpointLoadT8Advanced(io.ComfyNode):
             sampler,
             sigmas,
         )
-        return io.NodeOutput(latent, remaining, canonical_json(report))
+        return io.NodeOutput(
+            latent,
+            remaining,
+            canonical_json(report),
+            TrajectoryResumeNoise(report.get("noise_seed", 0)),
+        )
 
     @classmethod
     def fingerprint_inputs(cls, checkpoint_path, **_kwargs):
