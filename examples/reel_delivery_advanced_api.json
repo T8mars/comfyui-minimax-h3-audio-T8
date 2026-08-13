@@ -1,0 +1,31 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3ReelDeliveryPlanT8Advanced",
+    "inputs": {
+      "project_id": "h3_reel_demo",
+      "reel_json": "{\"clips\":[{\"id\":\"shot_1\",\"path\":\"output:replace_with_shot_1.mp4\",\"trim_in_seconds\":0,\"crossfade_to_next_seconds\":0.25},{\"id\":\"shot_2\",\"path\":\"output:replace_with_shot_2.mp4\",\"trim_in_seconds\":0}],\"audio_lanes\":[{\"id\":\"music\",\"role\":\"music\",\"events\":[{\"id\":\"bed\",\"path\":\"input:replace_with_music.wav\",\"start_seconds\":0,\"gain_db\":-12}]}]}",
+      "sample_rate": 48000,
+      "maximum_transition_seconds": 1,
+      "maximum_transition_buffer_mib": 512
+    },
+    "_meta": {
+      "title": "Replace file placeholders; planning only reads and fingerprints sources"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3ReelDeliveryComposeT8Advanced",
+    "inputs": {
+      "reel_plan": [
+        "1",
+        0
+      ],
+      "confirm_compose": false,
+      "filename_prefix": "H3_Reel",
+      "crf": 18,
+      "peak_policy": "block_if_clipping"
+    },
+    "_meta": {
+      "title": "Review the plan, then explicitly enable composition"
+    }
+  }
+}

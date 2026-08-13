@@ -1,0 +1,211 @@
+{
+  "id": "b512c955-11a3-4405-8ee6-d86a01070ed8",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3ScheduledDriveAudioInjectionT8Advanced",
+      "title": "Insert in place of Dual Clock setup; report-only default",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        460,
+        650
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "start_percent",
+          "type": "FLOAT",
+          "widget": {
+            "name": "start_percent"
+          },
+          "link": null
+        },
+        {
+          "name": "end_percent",
+          "type": "FLOAT",
+          "widget": {
+            "name": "end_percent"
+          },
+          "link": null
+        },
+        {
+          "name": "strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength"
+          },
+          "link": null
+        },
+        {
+          "name": "envelope",
+          "type": "COMBO",
+          "widget": {
+            "name": "envelope"
+          },
+          "link": null
+        },
+        {
+          "name": "injection_seed",
+          "type": "INT",
+          "widget": {
+            "name": "injection_seed"
+          },
+          "link": null
+        },
+        {
+          "name": "lock_final_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "lock_final_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "name": "allow_unverified_patch_stack",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_unverified_patch_stack"
+          },
+          "link": null
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": null
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ScheduledDriveAudioInjectionT8Advanced"
+      },
+      "widgets_values": [
+        4,
+        12,
+        3,
+        "report_only",
+        0,
+        1,
+        1,
+        "constant",
+        2608132201,
+        false,
+        "native_flow",
+        false
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Scheduled Audio Injection Advanced EXP"
+  },
+  "version": 0.4
+}

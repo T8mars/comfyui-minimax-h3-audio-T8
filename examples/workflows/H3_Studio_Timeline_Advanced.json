@@ -1,0 +1,762 @@
+{
+  "id": "c3ca6760-03a2-45ed-8609-3c2199b4d2df",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3UnifiedCastT8Advanced",
+      "title": "One reusable character continuity contract",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "cast_json",
+          "type": "STRING",
+          "widget": {
+            "name": "cast_json"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_identity",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_identity"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cast",
+          "type": "H3_T8_UNIFIED_CAST",
+          "links": [
+            1,
+            6
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3UnifiedCastT8Advanced"
+      },
+      "widgets_values": [
+        "[{\"id\":\"hero\",\"name\":\"Lin\",\"visual_identity\":\"oval face, short black hair, small scar above the left eyebrow\",\"wardrobe_default\":\"dark blue field jacket\",\"forbidden_changes\":[\"face geometry\",\"scar side\"]}]",
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SoundCanvasT8Advanced",
+      "title": "Keep rain after speech; forbid invented extra dialogue",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        256
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "events_json",
+          "type": "STRING",
+          "widget": {
+            "name": "events_json"
+          },
+          "link": null
+        },
+        {
+          "name": "total_duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "total_duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "no_unrequested_speech",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "no_unrequested_speech"
+          },
+          "link": null
+        },
+        {
+          "name": "allow_dialogue_overlap",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_dialogue_overlap"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sound_canvas",
+          "type": "H3_T8_SOUND_CANVAS",
+          "links": [
+            2,
+            7
+          ]
+        },
+        {
+          "name": "h3_audio_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SoundCanvasT8Advanced"
+      },
+      "widgets_values": [
+        "[{\"id\":\"rain\",\"role\":\"ambience\",\"start_seconds\":0,\"end_seconds\":10,\"description\":\"steady rain on a metal roof\"},{\"id\":\"line\",\"role\":\"dialogue\",\"start_seconds\":0.5,\"end_seconds\":2.5,\"speaker_id\":\"hero\",\"exact_text\":\"We leave now.\"}]",
+        10.0,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3StudioTimelineT8Advanced",
+      "title": "Compile deterministic H3 17n+5 shot windows",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        528
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "project_id",
+          "type": "STRING",
+          "widget": {
+            "name": "project_id"
+          },
+          "link": null
+        },
+        {
+          "name": "shots_json",
+          "type": "STRING",
+          "widget": {
+            "name": "shots_json"
+          },
+          "link": null
+        },
+        {
+          "name": "default_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "default_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "default_duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "default_duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "default_aspect_ratio",
+          "type": "STRING",
+          "widget": {
+            "name": "default_aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "base_seed",
+          "type": "INT",
+          "widget": {
+            "name": "base_seed"
+          },
+          "link": null
+        },
+        {
+          "name": "seed_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "seed_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "split_long_shots",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "split_long_shots"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_exact_dialogue",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_exact_dialogue"
+          },
+          "link": null
+        },
+        {
+          "name": "cast",
+          "type": "H3_T8_UNIFIED_CAST",
+          "link": 1
+        },
+        {
+          "name": "sound_canvas",
+          "type": "H3_T8_SOUND_CANVAS",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "timeline",
+          "type": "H3_T8_STUDIO_TIMELINE",
+          "links": [
+            3,
+            4
+          ]
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3StudioTimelineT8Advanced"
+      },
+      "widgets_values": [
+        "station_demo",
+        "[{\"id\":\"departure\",\"prompt\":\"Lin walks through an old railway station\",\"duration_seconds\":5,\"cast_ids\":[\"hero\"],\"creative_brief\":{\"camera\":\"slow shoulder-height tracking shot\",\"lighting\":\"cold dawn light\"}},{\"id\":\"train\",\"prompt\":\"A train enters through rain and steam\",\"duration_seconds\":4}]",
+        "minimax_h3",
+        5.0,
+        "16:9",
+        26081301,
+        "increment",
+        true,
+        true
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3StudioShotSelectT8Advanced",
+      "title": "Expose one shot to existing Conditioning and Sampler nodes",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "timeline",
+          "type": "H3_T8_STUDIO_TIMELINE",
+          "link": 3
+        },
+        {
+          "name": "shot_index",
+          "type": "INT",
+          "widget": {
+            "name": "shot_index"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_packet",
+          "type": "H3_T8_PROMPT_PACKET",
+          "links": null
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "shot_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3StudioShotSelectT8Advanced"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SelectiveSegmentRepairT8Advanced",
+      "title": "Plan only the failed shot; do not overwrite accepted media",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        390,
+        502
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "timeline",
+          "type": "H3_T8_STUDIO_TIMELINE",
+          "link": 4
+        },
+        {
+          "name": "selection_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "selection_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "manual_indices",
+          "type": "STRING",
+          "widget": {
+            "name": "manual_indices"
+          },
+          "link": null
+        },
+        {
+          "name": "quality_report_json",
+          "type": "STRING",
+          "widget": {
+            "name": "quality_report_json"
+          },
+          "link": null
+        },
+        {
+          "name": "thresholds_json",
+          "type": "STRING",
+          "widget": {
+            "name": "thresholds_json"
+          },
+          "link": null
+        },
+        {
+          "name": "repair_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "repair_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "prompt_addendum",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt_addendum"
+          },
+          "link": null
+        },
+        {
+          "name": "seed_stride",
+          "type": "INT",
+          "widget": {
+            "name": "seed_stride"
+          },
+          "link": null
+        },
+        {
+          "name": "context_before_frames",
+          "type": "INT",
+          "widget": {
+            "name": "context_before_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "context_after_frames",
+          "type": "INT",
+          "widget": {
+            "name": "context_after_frames"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "repair_plan",
+          "type": "H3_T8_REPAIR_PLAN",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "repair_plan_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SelectiveSegmentRepairT8Advanced"
+      },
+      "widgets_values": [
+        "manual",
+        "1",
+        "{\"segments\":[]}",
+        "{\"identity\":{\"min\":0.75}}",
+        "auto",
+        "Preserve the accepted character identity and station geography.",
+        1009,
+        22,
+        22
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3RepairSegmentSelectT8Advanced",
+      "title": "Expose one repair take; acceptance remains manual",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "repair_plan",
+          "type": "H3_T8_REPAIR_PLAN",
+          "link": 5
+        },
+        {
+          "name": "repair_index",
+          "type": "INT",
+          "widget": {
+            "name": "repair_index"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "repair_mode",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "repair_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3RepairSegmentSelectT8Advanced"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3PromptCompilerT8Advanced",
+      "title": "Compiler-only Wan example: audio remains sidecar metadata",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        528
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "backend"
+          },
+          "link": null
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "duration_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "aspect_ratio",
+          "type": "STRING",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "dialogue",
+          "type": "STRING",
+          "widget": {
+            "name": "dialogue"
+          },
+          "link": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "negative_prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_exact_dialogue",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_exact_dialogue"
+          },
+          "link": null
+        },
+        {
+          "name": "cast",
+          "type": "H3_T8_UNIFIED_CAST",
+          "link": 6
+        },
+        {
+          "name": "sound_canvas",
+          "type": "H3_T8_SOUND_CANVAS",
+          "link": 7
+        },
+        {
+          "name": "cast_ids",
+          "type": "STRING",
+          "widget": {
+            "name": "cast_ids"
+          },
+          "link": null
+        },
+        {
+          "name": "creative_brief_json",
+          "type": "STRING",
+          "widget": {
+            "name": "creative_brief_json"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_packet",
+          "type": "H3_T8_PROMPT_PACKET",
+          "links": null
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "audio_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptCompilerT8Advanced"
+      },
+      "widgets_values": [
+        "Lin waits under the station canopy while rain falls behind her.",
+        "wan_2_2",
+        5.0,
+        "16:9",
+        "",
+        "identity drift, waxy skin",
+        true,
+        "hero",
+        "{\"camera\":\"locked medium shot\"}"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      3,
+      9,
+      "H3_T8_UNIFIED_CAST"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      10,
+      "H3_T8_SOUND_CANVAS"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      0,
+      "H3_T8_STUDIO_TIMELINE"
+    ],
+    [
+      4,
+      3,
+      0,
+      5,
+      0,
+      "H3_T8_STUDIO_TIMELINE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      0,
+      "H3_T8_REPAIR_PLAN"
+    ],
+    [
+      6,
+      1,
+      0,
+      7,
+      7,
+      "H3_T8_UNIFIED_CAST"
+    ],
+    [
+      7,
+      2,
+      0,
+      7,
+      8,
+      "H3_T8_SOUND_CANVAS"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Studio Timeline Advanced"
+  },
+  "version": 0.4
+}

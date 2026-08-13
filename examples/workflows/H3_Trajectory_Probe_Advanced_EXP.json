@@ -1,0 +1,251 @@
+{
+  "id": "ee267ffc-8fb8-4629-8258-0ecb7ea71e46",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3TrajectoryProbeT8Advanced",
+      "title": "Connect stable Dual Clock MODEL/SAMPLER/SIGMAS and AV latent",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        430,
+        330
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "split_step",
+          "type": "INT",
+          "widget": {
+            "name": "split_step"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_checkpoint_mib",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_checkpoint_mib"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trajectory_contract",
+          "type": "H3_T8_TRAJECTORY_PROBE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "high_sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "low_sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3TrajectoryProbeT8Advanced"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
+      "title": "Connect first-stage sampled latent; saving is opt-in",
+      "pos": [
+        520,
+        0
+      ],
+      "size": [
+        390,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "trajectory_contract",
+          "type": "H3_T8_TRAJECTORY_PROBE",
+          "link": 1
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "checkpoint_name",
+          "type": "STRING",
+          "widget": {
+            "name": "checkpoint_name"
+          },
+          "link": null
+        },
+        {
+          "name": "confirm_save",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "confirm_save"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "checkpoint_path",
+          "type": "STRING",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3TrajectoryCheckpointSaveT8Advanced"
+      },
+      "widgets_values": [
+        "h3_probe",
+        false
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
+      "title": "Same-process resume only; second sampler must use DisableNoise",
+      "pos": [
+        1040,
+        0
+      ],
+      "size": [
+        430,
+        260
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 2,
+      "inputs": [
+        {
+          "name": "checkpoint_path",
+          "type": "STRING",
+          "link": 2
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "checkpoint_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "remaining_sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3TrajectoryCheckpointLoadT8Advanced"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "H3_T8_TRAJECTORY_PROBE"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Trajectory Probe Advanced EXP"
+  },
+  "version": 0.4
+}

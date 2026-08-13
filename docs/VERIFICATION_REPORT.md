@@ -5,7 +5,7 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.17.0 checkpoint was verified on 2026-08-12 against ComfyUI `0.31.0` at
+The current 1.18.0 checkpoint was verified on 2026-08-13 against ComfyUI `0.31.0` at
 `cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence below was
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
@@ -1402,3 +1402,85 @@ exact validated 16GiB workflow. It is not a universal `memory_safe` or `never_oo
 frames, 1080p, long video, speech, other GPUs, concurrent CUDA processes, pinning and lower host
 commit remain unvalidated. Detailed evidence is in `docs/VRAM_POLICY_ADVANCED_VALIDATION.md`; local
 machine-readable records are under the ignored `artifacts/vram-policy-validation/` directory.
+
+## Version 1.18.0 recommended-route implementation and bounded validation (2026-08-13)
+
+Version 1.18.0 preserves the preceding 62 node registrations, schemas, defaults and stable sampler
+math, then appends 24 Advanced/Experimental nodes. The added routes are isolated environment
+auditing, H3 MLP activation chunking, bounded Qwen visual-reference prefix caching, Studio planning
+and repair execution, reviewed Context IR, file-level Reel Delivery, scheduled drive-audio latent
+injection, AV decode safety, and same-process trajectory checkpoints.
+
+The safety defaults are intentional: audits and optimization patches default to report-only,
+external IR upload requires a separate explicit confirmation, Reel composition and repair
+acceptance default false, scheduled audio injection defaults to bypass, AV decode defaults to
+preflight-only, and trajectory persistence defaults false. The stable `sampling.py` SHA-256
+remained `111da5e52b28f2424f57b36f88db63e3ea02b538a8cdfdea1c8ad2f122ad7bb5`.
+
+### Real bounded probes
+
+- The installed 32B Qwen3-VL NVFP4 encoder completed same-reference/new-prompt cache hits, two-entry
+  LRU eviction and a 64MiB oversize refusal. One 512x512x22, one-step final A/V comparison measured
+  14.719 seconds with a hit versus 19.985 seconds with caching off. Video SSIM mean/minimum was
+  0.9777/0.9720; audio correlation was 0.9581 with 7.51dB SNR. This is not bit-exact and is not a
+  perceptual non-inferiority matrix.
+- H3 MLP activation chunking completed one real 256x256x22, one-step native-versus-chunked smoke;
+  all 22 decoded PNG frames and decoded PCM were identical. A controlled FL2VA pruned INT8,
+  736x416x124, one-step A/B then rejected it as a memory optimization for this backend. Cold
+  baseline/chunk256 measured 39.188/39.875s and 16049.30/16337.62MiB device peak (chunking was
+  +288.32MiB); warm baseline/chunk256 measured 32.109/31.437s and 16006.74/16016.04MiB absolute
+  peak, with controlled peak deltas differing by only -22.88MiB, below the 128MiB material gate.
+  All four runs left less than 512MiB. The detected TensorWise INT8 path fuses SwiGLU, so the
+  theoretical full-fc1 activation proxy does not apply. No 362-frame extension is justified for
+  an INT8 memory-saving claim; other precision/backend research remains separate and unverified.
+- Two real 256x256x22, one-step H3 Studio shots were selected and bound into the non-destructive
+  repair path. The repair executor keeps the accepted manifest and unselected segment files
+  unchanged, accepts into an independent overlay and supports base rollback.
+- Reel Delivery completed a real two-clip, three-audio-event composition with 42 requested frames
+  and 84,000 requested 48kHz samples. A second execution reused verified video/audio phases.
+- Regular AV decode completed with the installed H3 video/audio VAEs at 128x128x22 in about 2.4
+  seconds, emitting 22 PNG frames and finite 32kHz audio. Source and behavior inspection then showed
+  that current H3 regular decode internally tiles above 256 pixels, while its public decode_tiled
+  entrypoint aliases regular decode and ignores explicit tile controls. Decoder token coordinates
+  currently have no full-frame dimensions/tile offsets. The Advanced report therefore classifies
+  either decode mode above that boundary as high-risk; no tiled-equivalence or peak claim follows.
+- A real four-step 256x256x22 trajectory compared a normal full run with a 2+2 split. Decoded video
+  frames were byte-identical. Video/audio latent maximum absolute errors were
+  7.152557e-7/2.384186e-7; decoded audio correlation was 0.9999995076 and SNR 60.07dB. The route is
+  numerically equivalent within the measured floating-point tolerance, not bit-exact. Any
+  non-empty `patches_replace` is refused because hidden per-execution state is not proven resumable.
+
+### Negative scheduled-audio result
+
+The scheduled drive-audio route was tested rather than presumed effective. A controlled
+256x256x124, four-step FL2VA/Turbo run detected extra speech at approximately 2.26 seconds in the
+baseline. Full-strength scheduled injection still detected extra speech from approximately 2.10
+seconds. Therefore the feature remains default-off EXP and cannot be described as an unwanted
+speech suppressor. It acts on the complete supplied audio latent and cannot isolate dialogue from
+music, ambience or effects.
+
+### Regression and remaining release gates
+
+- Environment Audit now exposes cumulative process RSS/private/pagefile, page-fault and I/O
+  counters, pinned-memory state and optional NVML temperature, power, clocks and thermal
+  throttling. A point-in-time audit deliberately classifies this as
+  `fits_current_snapshot_thrashing_unmeasured`; `validate_h3_vram.py run` resolves a local
+  ComfyUI listener PID, takes before/after deltas and screens `fits`, `fits_with_thrashing`,
+  `unsafe` or `unknown`. The 64GiB read threshold is a conservative screen, not a disk benchmark.
+
+- 436 project tests passed.
+- Python compileall passed.
+- 89 API/frontend example JSON files parsed.
+- the append-only registration contract contains 86 nodes;
+- the Studio Timeline frontend passed Node syntax checking and renders untrusted labels with DOM
+  `textContent`, not `innerHTML`.
+- Ruff passed using the available standalone executable. The embedded Python wrapper remains broken,
+  so verification deliberately did not rely on that wrapper.
+
+Remaining gates include activation behavior on non-fused precision/backends (the current INT8
+memory-optimization hypothesis is rejected), repeated 32B cache cold/warm and host-memory measurements,
+long-chain repair quality and crash killpoints,
+30-minute Reel soak, tiled VAE equivalence, external-provider quality/privacy deployment, and
+trajectory throughput/disk-budget matrices. Cross-GPU, 1080p and older-ComfyUI compatibility remain
+unknown. Version 1.18.0 therefore keeps `memory_safe_claim=false` and
+`quality_guarantee=false`.

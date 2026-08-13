@@ -1,0 +1,386 @@
+{
+  "id": "4941dba5-ea74-4d4e-b086-21738e0c73f6",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "Load H3 FL2VA pruned INT8",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "unet_name",
+          "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'Comfy-hunyuan_video_image_to_video_720p_bf16.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'LongCat_TI2V_comfy_bf16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'Phantom-Wan-1_3B_fp16.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'acestep_v1.5_turbo.safetensors', 'acestep_v1.5_xl_sft_bf16.safetensors', 'acestep_v1.5_xl_turbo_bf16.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'boogu_image_base_fp8_scaled.safetensors', 'boogu_image_edit_fp8_scaled.safetensors', 'boogu_image_turbo_fp8_scaled.safetensors', 'comfy-hunyuan_video_v2_replace_image_to_video_720p_bf16.safetensors', 'comfy-wan2.1_i2v_480p_14B_bf16 .safetensors', 'comfy-wan2.1_i2v_720p_14B_bf16.safetensors', 'comfy-wan2.1_t2v_1.3B_bf16.safetensors', 'comfy-wan2.1_t2v_14B_bf16.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'hunyuan_video_accvid-t2v-5-steps_fp8_e4m3fn.safetensors', 'hunyuan_video_custom_720p_fp8_scaled.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'svdq-fp4_r128-z-image-turbo.safetensors', 'svdq-int4_r128-z-image-turbo.safetensors', 'svdq-int4_r256-z-image-turbo.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors', 'z_image_turbo_bf16.safetensors']",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3ActivationChunkT8Advanced",
+      "title": "Report first; switch to apply_exp only after review",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        502
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_rows",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_rows"
+          },
+          "link": null
+        },
+        {
+          "name": "block_start",
+          "type": "INT",
+          "widget": {
+            "name": "block_start"
+          },
+          "link": null
+        },
+        {
+          "name": "block_end",
+          "type": "INT",
+          "widget": {
+            "name": "block_end"
+          },
+          "link": null
+        },
+        {
+          "name": "preserve_short_path",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "preserve_short_path"
+          },
+          "link": null
+        },
+        {
+          "name": "expected_width",
+          "type": "INT",
+          "widget": {
+            "name": "expected_width"
+          },
+          "link": null
+        },
+        {
+          "name": "expected_height",
+          "type": "INT",
+          "widget": {
+            "name": "expected_height"
+          },
+          "link": null
+        },
+        {
+          "name": "expected_length",
+          "type": "INT",
+          "widget": {
+            "name": "expected_length"
+          },
+          "link": null
+        },
+        {
+          "name": "expected_single_image_references",
+          "type": "INT",
+          "widget": {
+            "name": "expected_single_image_references"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ActivationChunkT8Advanced"
+      },
+      "widgets_values": [
+        "report_only",
+        256,
+        0,
+        49,
+        true,
+        736,
+        416,
+        124,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3EnvironmentAuditT8Advanced",
+      "title": "Inspect the clone-local activation-chunk stack",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        722
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "workload_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "workload_profile"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "name": "model_family",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_family"
+          },
+          "link": null
+        },
+        {
+          "name": "model_precision",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_precision"
+          },
+          "link": null
+        },
+        {
+          "name": "attention_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "attention_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "cache_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "decode_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "decode_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "dynamic_vram_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "dynamic_vram_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_media_count",
+          "type": "INT",
+          "widget": {
+            "name": "reference_media_count"
+          },
+          "link": null
+        },
+        {
+          "name": "middle_keyframe_count",
+          "type": "INT",
+          "widget": {
+            "name": "middle_keyframe_count"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_current_headroom_mib",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_current_headroom_mib"
+          },
+          "link": null
+        },
+        {
+          "name": "enforcement",
+          "type": "COMBO",
+          "widget": {
+            "name": "enforcement"
+          },
+          "link": null
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "no_known_blocker",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3EnvironmentAuditT8Advanced"
+      },
+      "widgets_values": [
+        "general",
+        736,
+        416,
+        124,
+        "fl2va",
+        "int8_convrot",
+        "stock",
+        "none",
+        "regular",
+        "auto_detect",
+        0,
+        0,
+        512.0,
+        "report_only"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      14,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Activation Chunk Advanced"
+  },
+  "version": 0.4
+}

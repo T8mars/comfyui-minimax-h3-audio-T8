@@ -1,19 +1,20 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.17.0`，共注册
-62 个节点，覆盖原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.18.0`，共注册
+86 个节点，覆盖只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
-节点按稳定性与用途分为八个菜单：
+节点按稳定性与用途分为九个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
 | `T8/MiniMax H3/Audio` | 稳定 | 音画条件、音频处理、预检、双时钟采样与 AV 解码 |
-| `T8/MiniMax H3/Audio/Experimental` | 实验 | 视频宏步/音频微步的多速率联合采样 |
+| `T8/MiniMax H3/Audio/Experimental` | 实验 | 多速率联合采样、计划式驱动音频注入与显式安全 AV 解码 |
 | `T8/MiniMax H3/Still/Experimental` | 实验 | Ref2VA 静态图像条件、预检与候选帧解码 |
-| `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度，以及首帧、尾帧与多个中间关键帧的隔离 Advanced 时间线 |
-| `T8/MiniMax H3/Models/Experimental` | 实验 | 显存/VBAR策略、严格模型配对、Hybrid artifact构建/维护、stock-loader混合MODEL与最终patch-stack兼容审计 |
+| `T8/MiniMax H3/Conditioning/Experimental` | 实验 | 全局视觉参考强度、多关键帧，以及有界 Qwen 视觉参考前缀缓存 |
+| `T8/MiniMax H3/Models/Experimental` | 实验 | 只读环境审计、MLP激活分块、显存/VBAR策略、Hybrid工具与严格的同进程采样轨迹探针 |
+| `T8/MiniMax H3/Studio/Experimental` | 实验 | 参考语义IR、统一角色、声音画布、多后端提示词、可视时间轴、非破坏性局部重做执行和成片交付 |
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
@@ -30,6 +31,23 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 阻止整个插件加载，也不会暗中下载模型。当前真实生成验证基线为 ComfyUI `0.31.0`、提交
 `cbbc9dab1`，运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA
 仍需按具体任务自行安装。
+
+`1.18.0` 完整保留 `1.17.0` 的62个节点ID、顺序、输入、默认值和旧接线，只在末尾追加24个
+Advanced/Experimental节点。`Environment Audit`只读报告当前 H3 core、已知修复、wrapper、
+DynamicVRAM和请求负载；`MLP Activation Chunk`只在克隆MODEL上分块token-local MLP，attention
+不变且遇到已有`dit/double_block`所有者立即拒绝；`Qwen Reference Prefix Cache`只缓存严格视觉
+参考因果前缀的CPU KV，prompt后缀仍逐次计算、音频-only自动旁路、默认`report_only`。
+
+Studio层增加可审查 Context IR、可视时间轴、已接受长视频manifest上的非破坏性repair overlay，
+以及按文件流式处理的Reel Delivery。Repair和Reel只在显式接受/确认后写新文件，不改原片。
+同进程Trajectory Probe只接受稳定双时钟Euler并拒绝wrapper/`patches_replace`；Scheduled Audio
+Injection首轮真实A/B没有消除尾部额外语音，因此保持默认旁路，不能宣传为“闭嘴修复”。
+AV Decode Safety默认只预检，不把当前空闲显存或输出tensor估算伪装成VAE峰值预测。
+
+Studio规划本身不会加载模型、自动排队、覆盖已接受媒体或宣称其他后端原生支持H3音频。
+超过单段362帧的纯视觉镜头可显式拆段；带精确对白的长镜头拒绝自动断句，要求创作者先按
+语言语义划分。所有新节点未连接时旧工作流行为不变；当前仍不授予普遍`memory_safe`、
+bit-exact、精确语音时序或质量提升声明。
 
 `1.17.0` 保留 `1.16.0` 的61个节点ID、顺序、输入、默认值和旧接线，只在末尾追加一个
 `Hybrid Compatibility Audit Advanced`节点。它放在所有MODEL补丁与采样设置之后、`BasicGuider`
@@ -147,6 +165,25 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | MiniMax H3 Source Media Window / 来源视频窗口 (EXP/T8) | 把已有IMAGE/AUDIO按24fps、`17n+5`和32kHz裁为严格同步的短窗口；不是文件流式解码 |
 | MiniMax H3 Source AV Prepare / 来源音画重绘准备 (EXP/T8) | 严格校验并组装视频/音频latent，保留元数据与mask，显式处理时钟差并提供双流lock/remix/regenerate |
 | MiniMax H3 AV Latent Separate / 联合潜空间拆分 (EXP/T8) | 不调用VAE即可校验、拆出H3视频/音频latent并保留各自mask |
+| MiniMax H3 Environment Audit / 环境兼容审计 (Advanced) | 只读检查core修复、wrapper归属、DynamicVRAM、当前显存/主机状态和请求负载；默认只报告 |
+| MiniMax H3 MLP Activation Chunk / MLP激活分块 (Advanced) | 仅在克隆MODEL上分块token-local MLP；attention不变，未知core或已有double-block owner时拒绝 |
+| MiniMax H3 Qwen Reference Prefix Cache / 参考前缀缓存 (Advanced) | 有界CPU LRU复用完全相同的视觉参考因果前缀；prompt仍重算，音频-only自动旁路 |
+| MiniMax H3 Qwen Prefix Cache Stats / 前缀缓存统计 (Advanced) | 报告命中、未命中、条目数、CPU MiB和超限拒绝，不写磁盘 |
+| MiniMax H3 Unified Cast / 统一角色表 (Advanced) | 把角色身份、服装、行为规则、禁止变化和参考槽位编译为确定性文本合同，不加载识别模型 |
+| MiniMax H3 Sound Canvas / 声音画布 (Advanced) | 在绝对时间上规划对白、音乐、环境和SFX；对白结束后只禁止额外语音，不截断完整声音床 |
+| T8 Video Prompt Compiler / 多后端提示词编译 (Advanced) | 输出H3、Wan 2.2、LTX-Video或通用视觉提示包；非H3音频始终作为sidecar，不虚构原生支持 |
+| MiniMax H3 Studio Timeline / 创作时间轴 (Advanced) | 将多镜头量化为独立`17n+5`窗口、确定性seed和绝对时间；长视觉镜头可显式拆段 |
+| MiniMax H3 Studio Shot Select / 镜头选择 (Advanced) | 从时间轴输出单镜头prompt、negative、length和seed，连接现有Conditioning/Sampler |
+| MiniMax H3 Selective Segment Repair / 选择性分段重做 (Advanced) | 根据显式索引或质量证据生成非破坏性重做列表，不删除、覆盖或自动接受媒体 |
+| MiniMax H3 Repair Segment Select / 重做段选择 (Advanced) | 输出一个重做项的prompt、length、seed与策略；最终接受仍由用户或既有manifest节点完成 |
+| MiniMax H3 Selective Repair Bind/Stage/Accept/Compose (Advanced) | 把重做项绑定到不可变manifest修订，暂存、显式接受为独立overlay并可回退到原成片 |
+| MiniMax H3 Scheduled Drive Audio Injection (Advanced) | 对完整驱动音频latent做计划式重复锚定；默认旁路，不能只控制语音或保证消除额外念叨 |
+| MiniMax H3 AV Decode Safety / 音视频安全解码 (Advanced) | 检查联合latent、VAE角色、时间网格、有限值和当前资源；默认只预检，tiled路径单独标EXP |
+| T8 Context IR Provider / 参考语义理解 (Advanced) | 默认只校验本地IR；外部视觉服务需显式确认，仅上传抽样JPEG和用户文本，不上传原始音频 |
+| T8 Context IR Prompt Compiler / IR提示词编译 (Advanced) | 将已审查IR编译进既有Prompt Packet；远端不能控制路径、模型、节点、采样或改写精确对白 |
+| MiniMax H3 Reel Delivery Plan/Compose / 成片交付 (Advanced) | 指纹化24fps文件片段、有限crossfade和音频lane，显式确认后以有界内存原子重编码MP4 |
+| MiniMax H3 Trajectory Probe / 采样轨迹探针 (Advanced) | 只拆稳定双时钟Euler sigma，绑定同进程MODEL/SAMPLER，并拒绝wrapper与patches_replace |
+| MiniMax H3 Trajectory Checkpoint Save/Load / 轨迹保存续跑 (Advanced) | 显式保存联合latent并校验完整合同；第二阶段必须使用DisableNoise，重启后不会伪装成同一模型栈 |
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -161,6 +198,103 @@ VideoHelperSuite 的延迟 `AUDIO Mapping`，用 H3 latent 契约识别视频/�
 | `Hybrid` | 关键帧与参考媒体混合生成 |
 
 中文仅用于前端显示，后端和 API 仍提交原有英文枚举，因此旧工作流与 API JSON 无需修改。
+
+## Advanced：环境、低峰值复用与 Studio 创作层
+
+### 1. 先审计，再决定是否启用实验优化
+
+`Environment Audit Advanced`是只读输出节点。它检查当前ComfyUI H3源码合同、若干已知修复
+是否存在、H3 wrapper归属、DynamicVRAM/VBAR状态、当前整卡余量和所填负载，但**不是峰值预测器**。
+`status=pass`只代表没有发现已知硬阻断，不代表该配置必然不OOM。默认`report_only`不修改设置、
+不卸载模型、不下载依赖，也不接管任何全局H3类。
+
+审计报告还包含当前ComfyUI进程RSS/private/pagefile、page faults、累计磁盘读写、pinned-memory
+开关/当前量和可选NVML温度、功耗、频率与热降频。单点计数只是当前快照，不能把累计270GiB读取
+误判为本次任务；配套`tools/validate_h3_vram.py run`会对本地ComfyUI服务计算运行前后差分，并
+保守分类为`fits / fits_with_thrashing / unsafe / unknown`。当前高读取筛查阈值为64GiB且不是
+存储基准，也不把“能跑完”自动写成“可用”。
+
+`MLP Activation Chunk Advanced`仅把每个H3 block中token-local MLP按行分块，attention仍处理完整
+packed序列。节点只补丁克隆MODEL；当前如发现Block Cache或其他`dit/double_block`所有者会
+fail closed，不覆盖、不叠套，默认`report_only`。真实256×256×22小链保持逐帧PNG与PCM一致；
+随后FL2VA pruned INT8、736×416×124、1步受控A/B给出否决结果：chunk256冷态整卡峰值比baseline
+高约288.32MiB，暖态只低约22.88MiB（未过128MiB实质差异阈值），耗时也无稳定收益。内核探针
+同时确认当前TensorWise INT8已融合SwiGLU，未分块的大fc1激活代理不适用。因此该节点**不推荐用于
+当前INT8路径省显存**，只保留给其他精度/后端的EXP研究；`memory_safe_claim=false`保持不变。
+
+### 2. Qwen视觉参考前缀缓存
+
+推荐连接为`CLIP Loader -> Qwen Reference Prefix Cache -> 原有H3 Conditioning`。同一组参考图/
+参考视频但多次修改文字提示时，H3的Qwen输入具有严格“参考在前、prompt在后”的因果结构；节点
+只缓存完全相同视觉前缀的每层KV与前缀最终hidden，prompt后缀仍逐次计算。缓存是有界CPU LRU，
+默认1条/1024MiB、从不写盘；超过预算只拒绝保存该条，不无限增长。音频-only参考没有视觉计算，
+会自动旁路；token权重、schedule/hooks、非原生H3 CLIP或未知core均旁路或拒绝。
+
+真实ComfyUI小型Llama探针中，完整因果前向与“缓存前缀KV+新后缀”在`2e-6`容差内一致；本机
+32B Qwen NVFP4已完成同参考/改prompt命中、两条LRU淘汰和64MiB超预算拒绝。一个
+512×512×22、1步最终A/V对照中，命中为14.719秒、关闭缓存为19.985秒，但视频SSIM均值
+0.9777、音频相关0.9581，并非bit-exact。默认仍为`report_only`；三冷三暖、感知非劣与跨GPU
+主机内存验证未完成，不能外推固定加速比例。需要观察命中时可接`Qwen Prefix Cache Stats`。
+
+### 3. Studio：角色、声音、镜头和局部重做
+
+建议顺序：
+
+1. `Unified Cast`定义角色ID、稳定外观、默认服装和禁止变化；它只是文本合同，不做人脸识别。
+2. `Sound Canvas`在绝对时间上列出对白、音乐、环境和SFX。开启
+   `no_unrequested_speech`时，提示会明确要求对白结束后不再念叨，但继续指定的背景音乐、环境和
+   音效；它不截断最终混合音轨，也不假装能从已有混音中分离stems。
+3. `Studio Timeline`把镜头JSON编译成24fps、每段`17n+5`的H3窗口和确定性seed。超过362帧的
+   纯视觉镜头可拆成连续parts；含精确对白的长镜头拒绝自动断句，避免破坏中文/多语言语义。
+4. `Studio Shot Select`输出一个镜头的prompt、negative、length和seed，直接接现有Conditioning、
+   RandomNoise与Sampler；它不隐藏加载器或采样器。
+5. `Selective Segment Repair -> Repair Segment Select`只列出需要重做的镜头，支持手工索引、失败
+   状态或预先给定阈值；不选中的片段不进入计划，节点不删除、覆盖或自动接受任何媒体。
+6. 需要真正替换已接受长视频片段时，再连接`Repair Bind -> Stage -> Accept -> Compose`。Bind把
+   重做项锁到原manifest修订和源文件哈希；Stage只预览验证；Accept默认false并写独立overlay；
+   Compose可选择`base_rollback`忽略overlay，原manifest和原segment始终不变。
+7. `Reel Delivery Plan -> Compose`处理已经落盘的24fps片段与对白/音乐/环境/SFX文件lane。
+   当前要求同尺寸、精确24fps，crossfade是像素混合而非运动插帧；Compose默认不执行，开启后
+   H.264/AAC重编码且不是bit-exact。CRF变化会强制重做视频阶段，完整哈希一致才会恢复旧阶段。
+
+`Prompt Compiler`还可输出`wan_2_2`、`ltx_video`和`generic_cinematic`文本包。除MiniMax H3外，
+声音计划只保存在`audio_prompt` sidecar和JSON报告中，不能据此宣称相应后端原生生成音频。所有
+编译器输出仍是生成式方向，不保证逐帧时间、逐字对白、角色一致性或最终质量。
+
+`Context IR Provider`默认`validate_local`，只做schema与控制权边界校验。外部
+OpenAI-compatible视觉请求必须同时选择外部模式并开启确认；API key只从指定环境变量读取，
+最多上传32张显式抽样/缩小的JPEG与用户主动提供的transcript，原始音频不上传。远端返回中的
+路径、URL、节点、模型、采样器、seed、steps和凭据会递归拒绝；精确对白必须逐字保持。
+
+`Studio Timeline`执行后会在节点中显示只读彩色时间轴；这是前端预览，不改变工作流JSON、
+seed、调度或生成状态。
+
+`Trajectory Probe`只用于稳定双时钟Euler的同进程诊断。真实256×256×22、四步full与2+2 split
+探针中，解码视频帧逐位一致；video/audio latent最大绝对误差为`7.16e-7/2.39e-7`，音频相关
+`0.9999995076`、SNR约`60.07dB`，所以只能写“浮点容差内数值等价”，不能写bit-exact。所有
+`patches_replace`均拒绝，保存默认关闭，第二阶段必须使用`DisableNoise`。
+
+`AV Decode Safety`真实128×128×22普通解码已输出22帧及finite 32kHz音频。源码/行为探针进一步
+确认当前H3 Video VAE默认内部tile为256像素：大于该边界时，`decode_regular`也会进入内部空间分块；
+公开`decode_tiled(...)`则委托普通解码并忽略传入的tile/overlap。因此当前core若缺少full-frame
+维度与tile offset坐标合同，Advanced会把任一边大于256的普通或显式tiled解码报告为high-risk，
+严格模式直接阻断。稳定AV Decode节点保持不变；完整坐标修复前不声称显式tiled更省显存或视觉等价。
+计划式驱动音频注入的真实A/B同样给出负结论：基线额外语音约
+2.26秒开始，完整强度处理后仍约2.10秒开始，因此它不是对白终止器；保留它只是为了受控研究完整
+驱动音频latent重锚，默认旁路。
+
+API与可导入前端示例：
+
+- `examples/environment_audit_advanced_api.json` / `examples/workflows/H3_Environment_Audit_Advanced.json`
+- `examples/activation_chunk_advanced_api.json` / `examples/workflows/H3_Activation_Chunk_Advanced.json`
+- `examples/qwen_prefix_cache_advanced_api.json` / `examples/workflows/H3_Qwen_Prefix_Cache_Advanced.json`
+- `examples/studio_timeline_advanced_api.json` / `examples/workflows/H3_Studio_Timeline_Advanced.json`
+- `examples/context_ir_provider_advanced_api.json` / `examples/workflows/H3_Context_IR_Provider_Advanced.json`
+- `examples/selective_repair_execution_advanced_api.json` / `examples/workflows/H3_Selective_Repair_Execution_Advanced.json`
+- `examples/reel_delivery_advanced_api.json` / `examples/workflows/H3_Reel_Delivery_Advanced.json`
+- `examples/scheduled_audio_injection_advanced_api.json` / `examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json`
+- `examples/av_decode_safety_advanced_api.json` / `examples/workflows/H3_AV_Decode_Safety_Advanced.json`
+- `examples/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
 
 ## Advanced：FL2VA × Ref2VA 小型混合模型实验
 

@@ -20,7 +20,7 @@ import uuid
 
 
 SCHEMA_VERSION = 1
-TOOL_VERSION = "1.1.0"
+TOOL_VERSION = "1.2.0"
 MIB = 1024**2
 TERMINAL_EVENTS = {"execution_success", "execution_error", "execution_interrupted"}
 SAMPLER_TYPES = {
@@ -40,6 +40,7 @@ SCHEDULER_TYPES = {
     "KSamplerSelect",
 }
 VRAM_POLICY_NODE_TYPE = "MiniMaxH3VRAMPolicyT8Advanced"
+ACTIVATION_CHUNK_NODE_TYPE = "MiniMaxH3ActivationChunkT8Advanced"
 DISABLE_DYNAMIC_VRAM_FLAGS = {
     "--disable-dynamic-vram",
     "--gpu-only",
@@ -227,6 +228,20 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
             ),
         })
 
+    activation_chunks = []
+    for node_id, node in by_type.get(ACTIVATION_CHUNK_NODE_TYPE, []):
+        activation_chunks.append({
+            "node_id": node_id,
+            "class_type": ACTIVATION_CHUNK_NODE_TYPE,
+            "mode": _direct_input(node, "mode", node_ids, prompt),
+            "chunk_rows": _direct_input(node, "chunk_rows", node_ids, prompt),
+            "block_start": _direct_input(node, "block_start", node_ids, prompt),
+            "block_end": _direct_input(node, "block_end", node_ids, prompt),
+            "preserve_short_path": _direct_input(
+                node, "preserve_short_path", node_ids, prompt
+            ),
+        })
+
     seeds = []
     for node_id, node in prompt.items():
         for key in ("noise_seed", "seed"):
@@ -271,7 +286,10 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
         node_id
         for node_id, node in prompt.items()
         if node["class_type"] in SAMPLER_TYPES | SCHEDULER_TYPES
-        or node["class_type"] == VRAM_POLICY_NODE_TYPE
+        or node["class_type"] in {
+            VRAM_POLICY_NODE_TYPE,
+            ACTIVATION_CHUNK_NODE_TYPE,
+        }
     }
     non_sampling_literals = []
     non_sampling_links = []
@@ -316,6 +334,9 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
     treatment = {
         "sampling": sorted(sampling, key=lambda item: item["node_id"]),
         "vram_policy": sorted(vram_policies, key=lambda item: item["node_id"]),
+        "activation_chunk": sorted(
+            activation_chunks, key=lambda item: item["node_id"]
+        ),
     }
     return {
         "node_count": len(prompt),
@@ -495,6 +516,76 @@ def make_vram_policy_prompts(
     return baseline, treatment
 
 
+def make_activation_chunk_prompts(
+    prompt: dict[str, dict[str, Any]],
+    *,
+    chunk_rows: int = 256,
+    block_start: int = 0,
+    block_end: int = 49,
+    preserve_short_path: bool = True,
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Build a single-variable report-only/apply pair for MLP activation chunking."""
+    if chunk_rows < 16 or chunk_rows > 65536:
+        raise ValidationError("Activation chunk_rows must be between 16 and 65536.")
+    if block_start < 0 or block_end < block_start or block_end > 49:
+        raise ValidationError("Activation block range must be within 0..49.")
+    matches = [
+        (node_id, node)
+        for node_id, node in prompt.items()
+        if node["class_type"] == ACTIVATION_CHUNK_NODE_TYPE
+    ]
+    if len(matches) != 1:
+        raise ValidationError(
+            "Activation Chunk A/B generation requires exactly one "
+            f"{ACTIVATION_CHUNK_NODE_TYPE} node."
+        )
+    node_id, source = matches[0]
+    if "model" not in source.get("inputs", {}):
+        raise ValidationError("Activation Chunk node is missing its MODEL input.")
+    prompt_ids = set(prompt)
+    consumers = [
+        (target_id, name)
+        for target_id, node in prompt.items()
+        for name, value in node.get("inputs", {}).items()
+        if _is_link(value, prompt_ids)
+        and str(value[0]) == node_id
+        and value[1] == 0
+    ]
+    if not consumers:
+        raise ValidationError(
+            "Activation Chunk MODEL output is unused; cannot build a meaningful A/B pair."
+        )
+
+    baseline = copy.deepcopy(prompt)
+    treatment = copy.deepcopy(prompt)
+    shared = {
+        "chunk_rows": int(chunk_rows),
+        "block_start": int(block_start),
+        "block_end": int(block_end),
+        "preserve_short_path": bool(preserve_short_path),
+    }
+    baseline[node_id]["inputs"].update(shared)
+    treatment[node_id]["inputs"].update(shared)
+    baseline[node_id]["inputs"]["mode"] = "report_only"
+    treatment[node_id]["inputs"]["mode"] = "apply_exp"
+    baseline[node_id].setdefault("_meta", {})["title"] = (
+        "Activation Chunk A/B control: report only"
+    )
+    treatment[node_id].setdefault("_meta", {})["title"] = (
+        f"Activation Chunk A/B treatment: {chunk_rows} rows"
+    )
+
+    baseline_analysis = analyze_prompt(baseline)
+    treatment_analysis = analyze_prompt(treatment)
+    if baseline_analysis["controls"] != treatment_analysis["controls"]:
+        raise ValidationError(
+            "Generated Activation Chunk pair changed non-treatment workflow controls."
+        )
+    if baseline_analysis["treatment"] == treatment_analysis["treatment"]:
+        raise ValidationError("Generated Activation Chunk treatment was not detected.")
+    return baseline, treatment
+
+
 def dynamic_vram_evidence(
     system_stats: dict[str, Any] | None,
     log_text: str | None = None,
@@ -613,6 +704,98 @@ def _device_sample(stats: dict[str, Any], device_index: int) -> dict[str, Any]:
     }
 
 
+def _resolve_local_server_pid(server: str) -> int | None:
+    parsed = urlparse(server)
+    if parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        return None
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        import psutil
+
+        matches = {
+            int(connection.pid)
+            for connection in psutil.net_connections(kind="tcp")
+            if connection.pid is not None
+            and connection.status == psutil.CONN_LISTEN
+            and connection.laddr
+            and int(connection.laddr.port) == port
+        }
+    except Exception:
+        return None
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _process_sample(pid: int | None) -> dict[str, Any]:
+    if pid is None:
+        return {}
+    try:
+        import psutil
+
+        process = psutil.Process(pid)
+        memory = process.memory_info()
+        io = process.io_counters()
+        return {
+            "server_pid": pid,
+            "process_rss_bytes": int(getattr(memory, "rss", 0)),
+            "process_private_bytes": getattr(memory, "private", None),
+            "process_pagefile_bytes": getattr(memory, "pagefile", None),
+            "process_page_faults": getattr(memory, "num_page_faults", None),
+            "process_read_bytes": getattr(io, "read_bytes", None),
+            "process_write_bytes": getattr(io, "write_bytes", None),
+            "process_thread_count": process.num_threads(),
+        }
+    except Exception as error:
+        return {"process_telemetry_error": f"{type(error).__name__}: {error}"}
+
+
+def _nvml_sample(device_index: int) -> dict[str, Any]:
+    try:
+        import pynvml
+
+        pynvml.nvmlInit()
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(device_index)
+            throttle = int(pynvml.nvmlDeviceGetCurrentClocksThrottleReasons(handle))
+            thermal_mask = int(
+                getattr(pynvml, "nvmlClocksThrottleReasonHwThermalSlowdown", 0)
+            ) | int(getattr(pynvml, "nvmlClocksThrottleReasonSwThermalSlowdown", 0))
+            return {
+                "gpu_temperature_c": pynvml.nvmlDeviceGetTemperature(
+                    handle, pynvml.NVML_TEMPERATURE_GPU
+                ),
+                "gpu_power_mw": pynvml.nvmlDeviceGetPowerUsage(handle),
+                "gpu_sm_clock_mhz": pynvml.nvmlDeviceGetClockInfo(
+                    handle, pynvml.NVML_CLOCK_SM
+                ),
+                "gpu_memory_clock_mhz": pynvml.nvmlDeviceGetClockInfo(
+                    handle, pynvml.NVML_CLOCK_MEM
+                ),
+                "gpu_throttle_reasons_raw": throttle,
+                "gpu_thermal_throttling": bool(throttle & thermal_mask),
+            }
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception as error:
+        return {"gpu_health_telemetry_error": f"{type(error).__name__}: {error}"}
+
+
+def _optional_int_values(
+    samples: list[dict[str, Any]], key: str
+) -> list[int]:
+    return [
+        int(item[key])
+        for item in samples
+        if isinstance(item.get(key), (int, float))
+    ]
+
+
+def _counter_delta(samples: list[dict[str, Any]], key: str) -> int | None:
+    values = _optional_int_values(samples, key)
+    if len(values) < 2:
+        return None
+    return max(0, values[-1] - values[0])
+
+
 async def _poll_stats(
     session,
     server: str,
@@ -622,6 +805,7 @@ async def _poll_stats(
     state: dict[str, Any],
     samples: list[dict[str, Any]],
     stop: asyncio.Event,
+    server_pid: int | None,
 ) -> None:
     while not stop.is_set():
         try:
@@ -636,6 +820,8 @@ async def _poll_stats(
                 "progress_value": state.get("progress_value"),
                 "progress_max": state.get("progress_max"),
             })
+            sample.update(_process_sample(server_pid))
+            sample.update(_nvml_sample(device_index))
             samples.append(sample)
         except Exception as exc:  # Keep the model run alive if one telemetry poll fails.
             samples.append({
@@ -664,6 +850,9 @@ def summarize_samples(samples: list[dict[str, Any]]) -> dict[str, Any]:
         if baseline else valid[0]["torch_pool_used_bytes"]
     peak_global = max(valid, key=lambda item: item["vram_used_bytes"])
     peak_torch = max(valid, key=lambda item: item["torch_pool_used_bytes"])
+    read_delta = _counter_delta(valid, "process_read_bytes")
+    fault_delta = _counter_delta(valid, "process_page_faults")
+    elapsed = max(float(item.get("elapsed_seconds", 0.0)) for item in valid)
 
     grouped: dict[tuple[str | None, str | None], list[dict[str, Any]]] = defaultdict(list)
     for item in valid:
@@ -684,6 +873,24 @@ def summarize_samples(samples: list[dict[str, Any]]) -> dict[str, Any]:
         })
     per_node.sort(key=lambda item: item["peak_vram_used_bytes"], reverse=True)
 
+    private_values = _optional_int_values(valid, "process_private_bytes")
+    rss_values = _optional_int_values(valid, "process_rss_bytes")
+    ram_free_values = _optional_int_values(valid, "ram_free_bytes")
+    temperatures = _optional_int_values(valid, "gpu_temperature_c")
+    powers = _optional_int_values(valid, "gpu_power_mw")
+    sm_clocks = _optional_int_values(valid, "gpu_sm_clock_mhz")
+    thermal_samples = sum(item.get("gpu_thermal_throttling") is True for item in valid)
+    high_io_threshold = 64 * 1024**3
+    low_ram_threshold = 8 * 1024**3
+    if thermal_samples or (ram_free_values and min(ram_free_values) < low_ram_threshold):
+        resource_behavior = "unsafe"
+    elif read_delta is not None and read_delta >= high_io_threshold:
+        resource_behavior = "fits_with_thrashing"
+    elif read_delta is None or fault_delta is None:
+        resource_behavior = "unknown"
+    else:
+        resource_behavior = "fits"
+
     return {
         "sample_count": len(valid),
         "telemetry_error_count": len(samples) - len(valid),
@@ -702,6 +909,26 @@ def summarize_samples(samples: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "peak_torch_node_id": peak_torch.get("node_id"),
         "peak_torch_node_type": peak_torch.get("node_type"),
+        "process_read_delta_bytes": read_delta,
+        "process_write_delta_bytes": _counter_delta(valid, "process_write_bytes"),
+        "process_page_fault_delta": fault_delta,
+        "process_peak_rss_bytes": max(rss_values) if rss_values else None,
+        "process_peak_private_bytes": max(private_values) if private_values else None,
+        "minimum_ram_free_bytes": min(ram_free_values) if ram_free_values else None,
+        "average_process_read_bytes_per_second": (
+            None if read_delta is None or elapsed <= 0 else read_delta / elapsed
+        ),
+        "maximum_gpu_temperature_c": max(temperatures) if temperatures else None,
+        "maximum_gpu_power_w": max(powers) / 1000.0 if powers else None,
+        "minimum_gpu_sm_clock_mhz": min(sm_clocks) if sm_clocks else None,
+        "maximum_gpu_sm_clock_mhz": max(sm_clocks) if sm_clocks else None,
+        "thermal_throttle_sample_count": thermal_samples,
+        "resource_behavior": resource_behavior,
+        "resource_behavior_thresholds": {
+            "high_process_read_bytes": high_io_threshold,
+            "low_ram_free_bytes": low_ram_threshold,
+        },
+        "resource_behavior_note": "Process I/O counters include the ComfyUI process as a whole and may include cached I/O. The classification is a conservative screening heuristic, not a storage benchmark or memory-safe guarantee.",
         "per_node": per_node,
     }
 
@@ -758,6 +985,7 @@ async def collect_run(
     stop = asyncio.Event()
     terminal: dict[str, Any] | None = None
     server_snapshot: dict[str, Any] | None = None
+    server_pid = _resolve_local_server_pid(server)
 
     timeout = aiohttp.ClientTimeout(total=None, connect=15, sock_connect=15, sock_read=None)
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -772,6 +1000,7 @@ async def collect_run(
                 state,
                 samples,
                 stop,
+                server_pid,
             ))
             try:
                 await asyncio.sleep(baseline_seconds)
@@ -1025,6 +1254,7 @@ def print_runtime(runtime: dict[str, Any]) -> None:
     summary = runtime.get("summary", {})
     print(f"Status: {runtime.get('status')}")
     print(f"Duration: {runtime.get('duration_seconds')} s")
+    print(f"Resource behavior: {summary.get('resource_behavior')}")
     print(f"Baseline VRAM used: {_mib(summary.get('baseline_vram_used_bytes'))}")
     print(f"Peak VRAM used: {_mib(summary.get('peak_vram_used_bytes'))}")
     print(
@@ -1037,6 +1267,17 @@ def print_runtime(runtime: dict[str, Any]) -> None:
         f"type={summary.get('peak_vram_node_type')} "
         f"progress={summary.get('peak_vram_progress_value')}/"
         f"{summary.get('peak_vram_progress_max')}"
+    )
+    print(
+        "Process I/O: "
+        f"read={_mib(summary.get('process_read_delta_bytes'))} "
+        f"faults={summary.get('process_page_fault_delta')} "
+        f"peak_private={_mib(summary.get('process_peak_private_bytes'))}"
+    )
+    print(
+        "GPU health: "
+        f"max_temp={summary.get('maximum_gpu_temperature_c')}C "
+        f"thermal_samples={summary.get('thermal_throttle_sample_count')}"
     )
     terminal = runtime.get("terminal_event") or {}
     if terminal.get("type") == "execution_error":
@@ -1173,12 +1414,53 @@ def make_parser() -> argparse.ArgumentParser:
         default=True,
     )
     policy_pair_parser.add_argument("--policy-epoch", type=int, default=0)
+
+    activation_pair_parser = subparsers.add_parser(
+        "make-activation-pair",
+        help=(
+            "Create controlled report-only and apply-exp prompts from one "
+            "Activation Chunk workflow."
+        ),
+    )
+    activation_pair_parser.add_argument("workflow", type=Path)
+    activation_pair_parser.add_argument("--output-dir", type=Path, required=True)
+    activation_pair_parser.add_argument("--prefix")
+    activation_pair_parser.add_argument("--chunk-rows", type=int, default=256)
+    activation_pair_parser.add_argument("--block-start", type=int, default=0)
+    activation_pair_parser.add_argument("--block-end", type=int, default=49)
+    activation_pair_parser.add_argument(
+        "--preserve-short-path",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = make_parser().parse_args(argv)
     try:
+        if args.command == "make-activation-pair":
+            prompt = load_api_prompt(args.workflow)
+            baseline, treatment = make_activation_chunk_prompts(
+                prompt,
+                chunk_rows=args.chunk_rows,
+                block_start=args.block_start,
+                block_end=args.block_end,
+                preserve_short_path=args.preserve_short_path,
+            )
+            prefix = _safe_label(args.prefix or args.workflow.stem)
+            baseline_path = args.output_dir / f"{prefix}-activation-baseline.json"
+            treatment_path = args.output_dir / f"{prefix}-activation-chunk.json"
+            write_json(baseline_path, baseline)
+            write_json(treatment_path, treatment)
+            print(f"Activation baseline: {baseline_path.resolve()}")
+            print(f"Activation treatment: {treatment_path.resolve()}")
+            print(
+                "Both prompts retain identical model, conditioning, sampling, seed and "
+                "outputs; only Activation Chunk mode changes."
+            )
+            return 0
+
         if args.command == "make-pair":
             prompt = load_api_prompt(args.workflow)
             stock, dual = make_ab_prompts(prompt, steps=args.steps)

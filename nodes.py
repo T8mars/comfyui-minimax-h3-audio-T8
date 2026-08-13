@@ -1,10 +1,30 @@
 from __future__ import annotations
 
 from comfy_api.latest import ComfyExtension, io
+from .nodes_activation_chunk_advanced import ACTIVATION_CHUNK_ADVANCED_NODE_CLASSES
+from .nodes_av_decode_safety_advanced import AV_DECODE_SAFETY_ADVANCED_NODE_CLASSES
+from .nodes_context_ir_advanced import CONTEXT_IR_ADVANCED_NODE_CLASSES
+from .nodes_qwen_prefix_cache_advanced import (
+    QWEN_PREFIX_CACHE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_repair_execution_advanced import (
+    REPAIR_EXECUTION_ADVANCED_NODE_CLASSES,
+)
+from .nodes_reel_delivery_advanced import (
+    REEL_DELIVERY_ADVANCED_NODE_CLASSES,
+)
+from .nodes_scheduled_audio_injection_advanced import (
+    SCHEDULED_AUDIO_INJECTION_ADVANCED_NODE_CLASSES,
+)
+from .nodes_studio_advanced import STUDIO_ADVANCED_NODE_CLASSES
+from .nodes_trajectory_probe_advanced import (
+    TRAJECTORY_PROBE_ADVANCED_NODE_CLASSES,
+)
 
 from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av_output
 from .conditioning import build_conditioning
 from .nodes_dialogue_audio_exp import DIALOGUE_AUDIO_NODE_CLASSES
+from .nodes_environment_audit_advanced import ENVIRONMENT_AUDIT_ADVANCED_NODE_CLASSES
 from .nodes_hybrid_compatibility_advanced import (
     HYBRID_COMPATIBILITY_ADVANCED_NODE_CLASSES,
 )
@@ -401,7 +421,17 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *HYBRID_MODEL_ADVANCED_NODE_CLASSES,
                 *VRAM_POLICY_ADVANCED_NODE_CLASSES,
                 *HYBRID_MODEL_MAINTENANCE_ADVANCED_NODE_CLASSES,
-                *HYBRID_COMPATIBILITY_ADVANCED_NODE_CLASSES]
+                *HYBRID_COMPATIBILITY_ADVANCED_NODE_CLASSES,
+                *ENVIRONMENT_AUDIT_ADVANCED_NODE_CLASSES,
+                *ACTIVATION_CHUNK_ADVANCED_NODE_CLASSES,
+                *QWEN_PREFIX_CACHE_ADVANCED_NODE_CLASSES,
+                *STUDIO_ADVANCED_NODE_CLASSES,
+                *REPAIR_EXECUTION_ADVANCED_NODE_CLASSES,
+                *SCHEDULED_AUDIO_INJECTION_ADVANCED_NODE_CLASSES,
+                *AV_DECODE_SAFETY_ADVANCED_NODE_CLASSES,
+                *CONTEXT_IR_ADVANCED_NODE_CLASSES,
+                *REEL_DELIVERY_ADVANCED_NODE_CLASSES,
+                *TRAJECTORY_PROBE_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():

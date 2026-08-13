@@ -9,8 +9,10 @@ from h3_audio_t8_pkg.tools.validate_h3_vram import (
     ValidationError,
     analyze_prompt,
     compare_reports,
+    _counter_delta,
     dynamic_vram_evidence,
     load_api_prompt,
+    make_activation_chunk_prompts,
     make_ab_prompts,
     make_vram_policy_prompts,
     summarize_samples,
@@ -213,6 +215,67 @@ def make_hybrid_prompt():
     return prompt
 
 
+def make_activation_prompt():
+    prompt = make_prompt(steps=4, width=736, seed=2608131801)
+    prompt["8"] = {
+        "class_type": "MiniMaxH3ActivationChunkT8Advanced",
+        "inputs": {
+            "model": ["2", 0],
+            "mode": "report_only",
+            "chunk_rows": 512,
+            "block_start": 0,
+            "block_end": 49,
+            "preserve_short_path": True,
+            "expected_width": 736,
+            "expected_height": 608,
+            "expected_length": 362,
+            "expected_single_image_references": 0,
+        },
+    }
+    prompt["4"]["inputs"]["model"] = ["8", 0]
+    return prompt
+
+
+def test_make_activation_chunk_prompts_isolates_mode_as_treatment():
+    baseline, treatment = make_activation_chunk_prompts(
+        make_activation_prompt(), chunk_rows=256, block_start=5, block_end=44
+    )
+
+    assert baseline["8"]["inputs"]["mode"] == "report_only"
+    assert treatment["8"]["inputs"]["mode"] == "apply_exp"
+    assert treatment["8"]["inputs"]["chunk_rows"] == 256
+    assert treatment["8"]["inputs"]["block_start"] == 5
+    assert treatment["8"]["inputs"]["block_end"] == 44
+
+    baseline_analysis = analyze_prompt(baseline)
+    treatment_analysis = analyze_prompt(treatment)
+    assert baseline_analysis["controls"] == treatment_analysis["controls"]
+    assert baseline_analysis["treatment"] != treatment_analysis["treatment"]
+    assert treatment_analysis["treatment"]["activation_chunk"][0]["mode"] == (
+        "apply_exp"
+    )
+
+    first = make_report(baseline, label="baseline", peak_delta=12 * 1024 * MIB)
+    second = make_report(treatment, label="chunked", peak_delta=11 * 1024 * MIB)
+    comparison = compare_reports(first, second)
+    assert comparison["comparable"] is True
+    assert comparison["treatment_changed"] is True
+    assert comparison["verdict"] == "second_run_has_lower_peak"
+
+
+def test_make_activation_chunk_prompts_rejects_ambiguous_or_unused_node():
+    prompt = make_activation_prompt()
+    prompt["9"] = duplicate = json.loads(json.dumps(prompt["8"]))
+    duplicate["inputs"]["model"] = ["2", 0]
+    with pytest.raises(ValidationError, match="exactly one"):
+        make_activation_chunk_prompts(prompt)
+
+    unused = make_activation_prompt()
+    unused["4"]["inputs"]["model"] = ["2", 0]
+    with pytest.raises(ValidationError, match="MODEL output is unused"):
+        make_activation_chunk_prompts(unused)
+
+
 def test_make_vram_policy_prompts_preserves_controls_and_wires_loader():
     baseline, policy = make_vram_policy_prompts(
         make_hybrid_prompt(),
@@ -316,6 +379,45 @@ def test_sample_summary_attributes_peak_to_node_and_uses_median_baseline():
     assert summary["peak_vram_node_type"] == "SamplerCustomAdvanced"
     assert summary["peak_vram_progress_value"] == 3
     assert summary["per_node"][0]["sample_count"] == 2
+
+
+def test_sample_summary_classifies_high_run_io_as_thrashing():
+    samples = [
+        {
+            "phase": "baseline",
+            "elapsed_seconds": 0.0,
+            "vram_used_bytes": 100 * MIB,
+            "torch_pool_used_bytes": 20 * MIB,
+            "ram_free_bytes": 32 * 1024**3,
+            "process_read_bytes": 1024,
+            "process_page_faults": 10,
+            "process_private_bytes": 4 * 1024**3,
+            "gpu_temperature_c": 50,
+            "gpu_power_mw": 100000,
+            "gpu_sm_clock_mhz": 1800,
+        },
+        {
+            "phase": "running",
+            "elapsed_seconds": 10.0,
+            "vram_used_bytes": 900 * MIB,
+            "torch_pool_used_bytes": 700 * MIB,
+            "ram_free_bytes": 24 * 1024**3,
+            "process_read_bytes": 65 * 1024**3 + 1024,
+            "process_page_faults": 2010,
+            "process_private_bytes": 8 * 1024**3,
+            "gpu_temperature_c": 70,
+            "gpu_power_mw": 200000,
+            "gpu_sm_clock_mhz": 1500,
+        },
+    ]
+    summary = summarize_samples(samples)
+    assert summary["resource_behavior"] == "fits_with_thrashing"
+    assert summary["process_read_delta_bytes"] == 65 * 1024**3
+    assert summary["process_page_fault_delta"] == 2000
+    assert summary["process_peak_private_bytes"] == 8 * 1024**3
+    assert summary["maximum_gpu_temperature_c"] == 70
+    assert summary["maximum_gpu_power_w"] == 200.0
+    assert _counter_delta(samples, "missing") is None
 
 
 def test_comparison_accepts_sampler_treatment_change_but_rejects_control_change():

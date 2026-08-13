@@ -1,0 +1,44 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3ContextIRProviderT8Advanced",
+    "inputs": {
+      "provider_mode": "validate_local",
+      "local_context_ir_json": "{\"context\":{\"scene\":\"A rain-soaked railway platform\",\"camera\":\"slow push-in\",\"lighting\":\"cold dawn light\",\"continuity\":\"keep the red umbrella\"}}",
+      "creative_brief": "A commuter waits for the first train.",
+      "exact_dialogue": "We leave now.",
+      "audio_transcript": "",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "provider_model": "gpt-4.1-mini",
+      "api_key_env": "OPENAI_API_KEY",
+      "confirm_external_upload": false,
+      "maximum_visual_frames": 8,
+      "maximum_image_edge": 768,
+      "jpeg_quality": 85,
+      "timeout_seconds": 120,
+      "maximum_response_bytes": 262144
+    },
+    "_meta": {
+      "title": "Local schema validation only; no network or upload"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3ContextIRPromptCompilerT8Advanced",
+    "inputs": {
+      "context_ir": [
+        "1",
+        0
+      ],
+      "prompt": "A restrained cinematic close-up of the commuter.",
+      "backend": "minimax_h3",
+      "duration_seconds": 5.167,
+      "aspect_ratio": "16:9",
+      "dialogue": "We leave now.",
+      "negative_prompt": "identity drift, waxy skin",
+      "strict_exact_dialogue": true,
+      "cast_ids": ""
+    },
+    "_meta": {
+      "title": "Compile reviewed semantic IR; exact dialogue is immutable"
+    }
+  }
+}

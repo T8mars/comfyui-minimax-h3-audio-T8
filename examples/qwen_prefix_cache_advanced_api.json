@@ -1,0 +1,27 @@
+{
+  "1": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {"title": "Load the existing H3 Qwen3-VL encoder once"}
+  },
+  "2": {
+    "class_type": "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+    "inputs": {
+      "clip": ["1", 0],
+      "mode": "report_only",
+      "max_entries": 1,
+      "maximum_cache_mib": 1024.0,
+      "cache_epoch": 0
+    },
+    "_meta": {"title": "Bounded visual-reference prefix cache; report-only by default"}
+  },
+  "3": {
+    "class_type": "MiniMaxH3QwenPrefixCacheStatsT8Advanced",
+    "inputs": {"cache_handle": ["2", 1]},
+    "_meta": {"title": "Inspect bounded CPU cache state"}
+  }
+}

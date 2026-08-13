@@ -1,0 +1,47 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {"title": "Load H3 FL2VA pruned INT8"}
+  },
+  "2": {
+    "class_type": "MiniMaxH3ActivationChunkT8Advanced",
+    "inputs": {
+      "model": ["1", 0],
+      "mode": "report_only",
+      "chunk_rows": 256,
+      "block_start": 0,
+      "block_end": 49,
+      "preserve_short_path": true,
+      "expected_width": 736,
+      "expected_height": 416,
+      "expected_length": 124,
+      "expected_single_image_references": 0
+    },
+    "_meta": {"title": "Report first; switch to apply_exp only after review"}
+  },
+  "3": {
+    "class_type": "MiniMaxH3EnvironmentAuditT8Advanced",
+    "inputs": {
+      "workload_profile": "general",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "model_family": "fl2va",
+      "model_precision": "int8_convrot",
+      "attention_backend": "stock",
+      "cache_backend": "none",
+      "decode_mode": "regular",
+      "dynamic_vram_mode": "auto_detect",
+      "reference_media_count": 0,
+      "middle_keyframe_count": 0,
+      "minimum_current_headroom_mib": 512.0,
+      "enforcement": "report_only",
+      "model": ["2", 0]
+    },
+    "_meta": {"title": "Inspect the clone-local activation-chunk stack"}
+  }
+}

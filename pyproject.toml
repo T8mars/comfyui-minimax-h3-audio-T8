@@ -1,7 +1,7 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.17.0"
-description = "MiniMax H3 audio, Hybrid patch-stack compatibility auditing, recoverable Hybrid-artifact maintenance, guarded Advanced VRAM/VBAR policy and hybrid-model experiments, multi-keyframe timelines, dialogue-safe mastering, source-video AV repaint preparation, speech workflows, dual-clock sampling, resumable long-video orchestration, and Ref2VA editing nodes for ComfyUI"
+version = "1.18.0"
+description = "MiniMax H3 Studio planning, bounded Qwen reference-prefix caching, activation chunking, environment auditing, audio, Hybrid experiments, multi-keyframe timelines, dialogue-safe mastering, speech, dual-clock sampling, resumable long video, and Ref2VA editing nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }

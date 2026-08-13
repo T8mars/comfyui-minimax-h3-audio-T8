@@ -1,0 +1,80 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3UnifiedCastT8Advanced",
+    "inputs": {
+      "cast_json": "[{\"id\":\"hero\",\"name\":\"Lin\",\"visual_identity\":\"oval face, short black hair, small scar above the left eyebrow\",\"wardrobe_default\":\"dark blue field jacket\",\"forbidden_changes\":[\"face geometry\",\"scar side\"]}]",
+      "strict_identity": true
+    },
+    "_meta": {"title": "One reusable character continuity contract"}
+  },
+  "2": {
+    "class_type": "MiniMaxH3SoundCanvasT8Advanced",
+    "inputs": {
+      "events_json": "[{\"id\":\"rain\",\"role\":\"ambience\",\"start_seconds\":0,\"end_seconds\":10,\"description\":\"steady rain on a metal roof\"},{\"id\":\"line\",\"role\":\"dialogue\",\"start_seconds\":0.5,\"end_seconds\":2.5,\"speaker_id\":\"hero\",\"exact_text\":\"We leave now.\"}]",
+      "total_duration_seconds": 10.0,
+      "no_unrequested_speech": true,
+      "allow_dialogue_overlap": false
+    },
+    "_meta": {"title": "Keep rain after speech; forbid invented extra dialogue"}
+  },
+  "3": {
+    "class_type": "MiniMaxH3StudioTimelineT8Advanced",
+    "inputs": {
+      "project_id": "station_demo",
+      "shots_json": "[{\"id\":\"departure\",\"prompt\":\"Lin walks through an old railway station\",\"duration_seconds\":5,\"cast_ids\":[\"hero\"],\"creative_brief\":{\"camera\":\"slow shoulder-height tracking shot\",\"lighting\":\"cold dawn light\"}},{\"id\":\"train\",\"prompt\":\"A train enters through rain and steam\",\"duration_seconds\":4}]",
+      "default_backend": "minimax_h3",
+      "default_duration_seconds": 5.0,
+      "default_aspect_ratio": "16:9",
+      "base_seed": 26081301,
+      "seed_policy": "increment",
+      "split_long_shots": true,
+      "strict_exact_dialogue": true,
+      "cast": ["1", 0],
+      "sound_canvas": ["2", 0]
+    },
+    "_meta": {"title": "Compile deterministic H3 17n+5 shot windows"}
+  },
+  "4": {
+    "class_type": "MiniMaxH3StudioShotSelectT8Advanced",
+    "inputs": {"timeline": ["3", 0], "shot_index": 0},
+    "_meta": {"title": "Expose one shot to existing Conditioning and Sampler nodes"}
+  },
+  "5": {
+    "class_type": "MiniMaxH3SelectiveSegmentRepairT8Advanced",
+    "inputs": {
+      "timeline": ["3", 0],
+      "selection_policy": "manual",
+      "manual_indices": "1",
+      "quality_report_json": "{\"segments\":[]}",
+      "thresholds_json": "{\"identity\":{\"min\":0.75}}",
+      "repair_mode": "auto",
+      "prompt_addendum": "Preserve the accepted character identity and station geography.",
+      "seed_stride": 1009,
+      "context_before_frames": 22,
+      "context_after_frames": 22
+    },
+    "_meta": {"title": "Plan only the failed shot; do not overwrite accepted media"}
+  },
+  "6": {
+    "class_type": "MiniMaxH3RepairSegmentSelectT8Advanced",
+    "inputs": {"repair_plan": ["5", 0], "repair_index": 0},
+    "_meta": {"title": "Expose one repair take; acceptance remains manual"}
+  },
+  "7": {
+    "class_type": "MiniMaxH3PromptCompilerT8Advanced",
+    "inputs": {
+      "prompt": "Lin waits under the station canopy while rain falls behind her.",
+      "backend": "wan_2_2",
+      "duration_seconds": 5.0,
+      "aspect_ratio": "16:9",
+      "dialogue": "",
+      "negative_prompt": "identity drift, waxy skin",
+      "strict_exact_dialogue": true,
+      "cast": ["1", 0],
+      "sound_canvas": ["2", 0],
+      "cast_ids": "hero",
+      "creative_brief_json": "{\"camera\":\"locked medium shot\"}"
+    },
+    "_meta": {"title": "Compiler-only Wan example: audio remains sidecar metadata"}
+  }
+}

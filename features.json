@@ -78,8 +78,285 @@
     "MiniMaxH3HybridModelLoaderT8Advanced",
     "MiniMaxH3VRAMPolicyT8Advanced",
     "MiniMaxH3HybridArtifactMaintenanceT8Advanced",
-    "MiniMaxH3HybridCompatibilityAuditT8Advanced"
+    "MiniMaxH3HybridCompatibilityAuditT8Advanced",
+    "MiniMaxH3EnvironmentAuditT8Advanced",
+    "MiniMaxH3ActivationChunkT8Advanced",
+    "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+    "MiniMaxH3QwenPrefixCacheStatsT8Advanced",
+    "MiniMaxH3UnifiedCastT8Advanced",
+    "MiniMaxH3SoundCanvasT8Advanced",
+    "MiniMaxH3PromptCompilerT8Advanced",
+    "MiniMaxH3StudioTimelineT8Advanced",
+    "MiniMaxH3StudioShotSelectT8Advanced",
+    "MiniMaxH3SelectiveSegmentRepairT8Advanced",
+    "MiniMaxH3RepairSegmentSelectT8Advanced",
+    "MiniMaxH3SelectiveRepairBindT8Advanced",
+    "MiniMaxH3SelectiveRepairStageT8Advanced",
+    "MiniMaxH3SelectiveRepairAcceptT8Advanced",
+    "MiniMaxH3SelectiveRepairComposeT8Advanced",
+    "MiniMaxH3ScheduledDriveAudioInjectionT8Advanced",
+    "MiniMaxH3AVDecodeSafetyT8Advanced",
+    "MiniMaxH3ContextIRProviderT8Advanced",
+    "MiniMaxH3ContextIRPromptCompilerT8Advanced",
+    "MiniMaxH3ReelDeliveryPlanT8Advanced",
+    "MiniMaxH3ReelDeliveryComposeT8Advanced",
+    "MiniMaxH3TrajectoryProbeT8Advanced",
+    "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
+    "MiniMaxH3TrajectoryCheckpointLoadT8Advanced"
   ],
+  "experimental_environment_audit_advanced": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "nodes": ["MiniMaxH3EnvironmentAuditT8Advanced"],
+    "behavior": [
+      "read-only source-contract, known-fix ancestry, wrapper ownership, DynamicVRAM, loaded-model residency and host-resource audit",
+      "reports cumulative process RSS/private/pagefile/page-fault/I/O counters, pinned-memory mode and optional NVML temperature/power/clocks; the run validator computes before/after deltas and classifies fits, fits_with_thrashing, unsafe or unknown",
+      "report_only by default; never patches, unloads, downloads or changes global settings",
+      "pass means no known blocker, not a peak-memory or quality guarantee"
+    ],
+    "validated": [
+      "current ComfyUI cbbc9dab1 capability probe",
+      "known/supported/unknown separation and fail-closed enforcement tests",
+      "regular H3 decode above the internal 256-pixel tile boundary is classified high-risk when tile-global decoder coordinates are absent",
+      "86-node append-only registration contract"
+    ],
+    "status": "implemented Advanced read-only snapshot plus run-validator thrashing telemetry; cumulative snapshot counters do not prove one workload's cost, and peak prediction remains out of scope"
+  },
+  "experimental_activation_chunk_advanced": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "nodes": ["MiniMaxH3ActivationChunkT8Advanced"],
+    "behavior": [
+      "clone-local token-row chunking of only the H3 block MLP path",
+      "attention remains full packed-sequence attention",
+      "unknown core or any existing dit/double_block replacement refuses apply_exp",
+      "report_only is the default and short rows can retain the exact native callback path"
+    ],
+    "validated": [
+      "CPU formula equivalence within 2e-6",
+      "native short-path bit equality",
+      "noncontiguous segment and competing-owner refusal",
+      "real 256x256x22 one-step H3 smoke: activation-chunk versus native produced 22/22 byte-identical PNG frames and decoded PCM SHA-256 equality",
+      "real FL2VA pruned INT8 736x416x124 cold A/B: chunk256 raised whole-device peak by 288.32MiB and changed runtime 39.188s to 39.875s",
+      "same-process warm A/B: chunk256 changed peak by -22.88MiB, below the 128MiB material threshold, and changed runtime 32.109s to 31.437s",
+      "TensorWise INT8 backend probe reports fused SwiGLU and expected_memory_benefit=low_or_none_on_detected_int8_fused_path"
+    ],
+    "status": "implemented Advanced EXP, but rejected as a memory optimization for the validated TensorWise INT8 FL2VA path; other precisions/backends remain unverified and memory_safe_claim=false"
+  },
+  "experimental_qwen_reference_prefix_cache_advanced": {
+    "category": "T8/MiniMax H3/Conditioning/Experimental",
+    "nodes": [
+      "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+      "MiniMaxH3QwenPrefixCacheStatsT8Advanced"
+    ],
+    "behavior": [
+      "bounded CPU-memory LRU for an exact native H3 visual-reference causal prefix",
+      "prompt suffix is always recomputed and audio-only references bypass",
+      "no disk persistence, no core-file patch and no mutation of the input CLIP",
+      "unknown core, token weights, schedules/hooks and non-native H3 CLIP fail closed or bypass"
+    ],
+    "validated": [
+      "real current ComfyUI tiny-Llama full-forward versus prefix-KV suffix-forward equivalence within 2e-6",
+      "prompt-independent/reference-sensitive fingerprint tests",
+      "real 32B NVFP4 same-reference prompt change hit, two-entry LRU eviction and 64MiB oversize refusal",
+      "512x512x22 one-step final A/V comparison: hit 14.719s versus off 19.985s; video SSIM mean/min 0.9777/0.9720; audio correlation 0.9581 and SNR 7.51dB",
+      "LRU eviction, oversize refusal and report-only identity"
+    ],
+    "status": "implemented Advanced EXP; real 32B hit/eviction/oversize and one final A/V pair are complete, but outputs are not bit-exact and perceptual non-inferiority, repeated cold/warm matrices and cross-GPU host-memory validation remain pending"
+  },
+  "experimental_studio_advanced": {
+    "category": "T8/MiniMax H3/Studio/Experimental",
+    "nodes": [
+      "MiniMaxH3UnifiedCastT8Advanced",
+      "MiniMaxH3SoundCanvasT8Advanced",
+      "MiniMaxH3PromptCompilerT8Advanced",
+      "MiniMaxH3StudioTimelineT8Advanced",
+      "MiniMaxH3StudioShotSelectT8Advanced",
+      "MiniMaxH3SelectiveSegmentRepairT8Advanced",
+      "MiniMaxH3RepairSegmentSelectT8Advanced"
+    ],
+    "behavior": [
+      "text-only unified cast, explicit dialogue/music/ambience/SFX sound canvas and deterministic prompt packets",
+      "H3 24fps 17n+5 shot windows with explicit long visual-shot splitting and author-required long-dialogue boundaries",
+      "MiniMax H3, Wan 2.2, LTX-Video and generic visual compiler backends; non-H3 audio remains sidecar metadata",
+      "selective repair creates a plan only and never deletes, overwrites or automatically accepts media"
+    ],
+    "validated": [
+      "deterministic hashes/order/seeds and legal H3 frame grids",
+      "extra-speech guard preserves requested non-speech beds",
+      "non-destructive manual/status/threshold repair selection and source-timeline immutability",
+      "read-only frontend timeline renders the backend preview through DOM text nodes rather than HTML injection",
+      "two real 256x256x22 one-step H3 shots were selected and bound to the repair path"
+    ],
+    "status": "implemented compiler/planning layer; no hidden model loading, queueing, exact-timing or quality guarantee"
+  },
+  "experimental_selective_repair_execution_advanced": {
+    "category": "T8/MiniMax H3/Studio/Experimental",
+    "nodes": [
+      "MiniMaxH3SelectiveRepairBindT8Advanced",
+      "MiniMaxH3SelectiveRepairStageT8Advanced",
+      "MiniMaxH3SelectiveRepairAcceptT8Advanced",
+      "MiniMaxH3SelectiveRepairComposeT8Advanced"
+    ],
+    "behavior": [
+      "binds one repair-plan item to an exact accepted-manifest revision and source asset hash",
+      "requires the repair candidate to preserve frame count, absolute video/sample boundaries, dimensions, model identity and sampling summary",
+      "preview/stage writes no accepted state; explicit accept writes an atomic independent repair overlay with backup and idempotent retry",
+      "the original accepted manifest and original segment files are never modified; base_rollback ignores the overlay without deleting it",
+      "overlay composition decodes one video frame plus one segment of PCM at a time"
+    ],
+    "validated": [
+      "model-free two-segment accepted chain with one repaired segment",
+      "base manifest byte identity and unselected source-file SHA-256 before/after accept and compose",
+      "idempotent accept, overlay composition, exact 44-frame/sample accounting and base rollback",
+      "real Studio Timeline integration: two selected 256x256x22 one-step H3 shots, seeds 26081301/26081302, each with 22 frames and 29600 stereo samples at 32kHz"
+    ],
+    "scientific_limits": [
+      "the final H.264/AAC delivery is re-encoded and is not claimed bit-exact",
+      "adjacent repair takes are not implicitly context-chained; bind and review them independently",
+      "the executor does not load models, auto-queue, auto-accept or choose quality winners",
+      "real long-chain repair quality, crash killpoints and cross-platform filesystem behavior remain to be validated"
+    ],
+    "api_example": "examples/selective_repair_execution_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Selective_Repair_Execution_Advanced.json",
+    "status": "implemented Advanced non-destructive overlay executor; real large-chain and forced-crash validation remain pending"
+  },
+  "experimental_scheduled_drive_audio_injection_advanced": {
+    "category": "T8/MiniMax H3/Audio/Experimental",
+    "nodes": ["MiniMaxH3ScheduledDriveAudioInjectionT8Advanced"],
+    "behavior": [
+      "report_only is the default and returns the unchanged AV latent with the existing dual-clock sampler contract",
+      "scheduled_injection encodes the supplied drive audio once, uses deterministic fixed noise and re-anchors the complete audio latent on the audio sigma path",
+      "start/end percent, constant/fade envelopes and strength are explicit; optional final latent lock is off by default",
+      "mux_audio passes through final_audio or drive_audio unchanged for preserving a complete external speech/music/ambience/SFX master",
+      "known patches_replace, LongVideo and MultiKeyframe stacks fail closed unless the user explicitly accepts an unverified combination"
+    ],
+    "scientific_limits": [
+      "the mechanism controls the complete supplied drive-audio latent and cannot isolate speech from music or effects",
+      "it cannot remove only unrequested generated speech while preserving newly generated background sound",
+      "final latent lock is not bit-exact PCM; use mux_audio when unchanged source samples are required",
+      "one controlled real H3 A/B did not prevent ASR-detected extra tail speech, so no unwanted-speech suppression claim is allowed",
+      "lip-sync, background preservation across diverse content, repeated memory behavior and cross-GPU behavior remain unverified"
+    ],
+    "validated": [
+      "256x256x124, FL2VA pruned INT8 plus FL2V Turbo four-step LoRA, fixed seed on RTX 4060 Ti 16GiB",
+      "baseline extra speech began at 2.26s; full-strength scheduled injection still produced extra speech from 2.10s",
+      "baseline/treatment peak device use 15554/15409MiB in one warm pair; this is not a 512MiB safety-margin matrix"
+    ],
+    "api_example": "examples/scheduled_audio_injection_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json",
+    "status": "implemented as default-off EXP; the first real A/B rejected an unwanted-tail-speech suppression claim"
+  },
+  "experimental_av_decode_safety_advanced": {
+    "category": "T8/MiniMax H3/Audio/Experimental",
+    "nodes": ["MiniMaxH3AVDecodeSafetyT8Advanced"],
+    "behavior": [
+      "preflight_only is the default and performs no VAE decode",
+      "validates nested H3 AV latent layout, VAE roles, finite values, temporal grid and current whole-device headroom",
+      "decode_regular preserves the stable decode entrypoint, but current H3 uses the same internal 256-pixel spatial tiling above that boundary",
+      "decode_tiled_exp is opt-in; current H3 first-stage aliases it to regular decode and ignores requested tile size/overlap controls",
+      "never unloads models, VAEs or global ComfyUI caches"
+    ],
+    "scientific_limits": [
+      "the output tensor estimate excludes VAE weights, intermediate activations, tiling blends, allocator fragmentation and save-node copies",
+      "current free VRAM is not a future VAE peak-memory prediction",
+      "the current core constructs decoder token coordinates per tile without full-frame dimensions/offsets; canvases wider or taller than 256 are high-risk even in regular mode",
+      "regular and explicit tiled video decode are not assumed visually equivalent and may introduce seams or coordinate artifacts",
+      "neither report_only nor a passing preflight is a memory-safe guarantee"
+    ],
+    "validated": [
+      "real installed H3 video/audio VAE regular decode at 128x128x22 completed in about 2.4 seconds",
+      "the real probe emitted 22 PNG frames plus finite 32kHz audio"
+    ],
+    "api_example": "examples/av_decode_safety_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_AV_Decode_Safety_Advanced.json",
+    "status": "implemented Advanced safety gate with source/behavior detection for H3 internal tiling; current >256px decode is reported high-risk until global tile coordinates are fixed and A/B validated"
+  },
+  "experimental_context_ir_provider_advanced": {
+    "category": "T8/MiniMax H3/Studio/Experimental",
+    "nodes": [
+      "MiniMaxH3ContextIRProviderT8Advanced",
+      "MiniMaxH3ContextIRPromptCompilerT8Advanced"
+    ],
+    "default_contract": "validate_local performs schema validation only, uses no network and uploads no media",
+    "external_provider_contract": [
+      "requires openai_compatible_visual plus confirm_external_upload=true",
+      "reads the API key only from an uppercase environment-variable name and never serializes the value",
+      "sends at most 32 explicitly sampled/downscaled JPEG frames plus a user-supplied transcript; raw audio is never uploaded",
+      "clear-text HTTP is accepted only for loopback providers"
+    ],
+    "authority_boundary": [
+      "remote output is restricted to scene, action, camera, lighting, style, continuity and notes",
+      "paths, URLs, node IDs, checkpoints, model paths, samplers, schedulers, seeds, steps and credentials are rejected recursively",
+      "exact dialogue cannot be rewritten and the reviewed IR compiles through the existing T8 Prompt Packet contract",
+      "sampled-frame analysis is not full video understanding and transcript input is not full music/SFX understanding"
+    ],
+    "api_example": "examples/context_ir_provider_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Context_IR_Provider_Advanced.json",
+    "status": "implemented Advanced provider adapter with privacy and control-authority tests; no provider quality or cross-provider claim"
+  },
+  "experimental_reel_delivery_advanced": {
+    "category": "T8/MiniMax H3/Studio/Experimental",
+    "nodes": [
+      "MiniMaxH3ReelDeliveryPlanT8Advanced",
+      "MiniMaxH3ReelDeliveryComposeT8Advanced"
+    ],
+    "plan_contract": [
+      "read-only plan fingerprints every source and accepts media only inside ComfyUI input/output/temp",
+      "currently requires exact 24fps and identical dimensions; implicit frame-rate conversion and resize are refused",
+      "supports exact-frame trims, bounded adjacent visual crossfades, source audio and dialogue/music/ambience/SFX file lanes",
+      "transition tail memory is estimated and gated before composition"
+    ],
+    "compose_contract": [
+      "confirm_compose defaults false and no output media is written without explicit confirmation",
+      "video retains only one transition tail plus one current decoded frame; audio uses bounded FFmpeg streams",
+      "video and audio phases are written independently, fingerprinted and reused after interruption only when their hashes match",
+      "active FFmpeg is terminated on ComfyUI interruption and the active atomic temp output is removed",
+      "block_if_clipping is the default; normalize_peak and allow_clipping require explicit selection"
+    ],
+    "scientific_limits": [
+      "the MP4 is H.264/AAC re-encoded and is not bit-exact to source media",
+      "AAC encoder padding means the report's sample accounting is the requested mix boundary, not a lossless PCM-container claim",
+      "crossfade is a deterministic pixel blend, not optical-flow interpolation",
+      "30-minute/50-clip/four-lane soak, force-kill recovery and cross-platform FFmpeg matrices remain pending"
+    ],
+    "api_example": "examples/reel_delivery_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Reel_Delivery_Advanced.json",
+    "status": "implemented Advanced file-level delivery with a real two-clip, three-event, 42-frame/84000-sample plan, compose and phase-resume test"
+  },
+  "experimental_trajectory_probe_advanced": {
+    "category": "T8/MiniMax H3/Models/Experimental",
+    "nodes": [
+      "MiniMaxH3TrajectoryProbeT8Advanced",
+      "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
+      "MiniMaxH3TrajectoryCheckpointLoadT8Advanced"
+    ],
+    "scope": [
+      "supports only the stateless T8 stable dual_clock_euler sampler; native multistep, multi-rate and unknown stateful samplers are refused",
+      "binds the checkpoint to the exact same-process ModelPatcher patches_uuid, sampler identity, complete sigma schedule, split step and AV latent layout",
+      "wrapper stacks are refused because a split can reset hidden per-execution state",
+      "the second SamplerCustomAdvanced stage must use ComfyUI DisableNoise and the emitted remaining sigmas"
+    ],
+    "persistence": [
+      "confirm_save defaults false",
+      "checkpoint size is estimated and gated before sampling; the actual latent is checked again before writing",
+      "video/audio latent tensors and the full sigma schedule are written atomically to safetensors inside ComfyUI output",
+      "load validates schema, contract hash, MODEL identity, SAMPLER identity, sigma hash, stored sigma values and latent shapes"
+    ],
+    "scientific_limits": [
+      "same-process identity intentionally prevents a ComfyUI restart from pretending to reproduce an identical live ModelPatcher stack",
+      "disk checkpoints can trade GPU recomputation for host storage and I/O; they are not a general memory optimization",
+      "one small real split-versus-full H3 trajectory is numerically equivalent within measured floating-point tolerance but not bit-exact",
+      "throughput benefit and repeated disk-budget matrices remain pending",
+      "unsupported samplers fail closed rather than silently resume from a mathematically different state"
+    ],
+    "validated": [
+      "real 256x256x22 four-step full versus 2+2 split H3 run produced byte-identical decoded video frames",
+      "decoded audio correlation 0.9999995076 and SNR 60.07dB; latent max absolute errors were 7.16e-7 video and 2.39e-7 audio",
+      "any non-empty patches_replace wrapper is refused because hidden per-execution state cannot be proven resumable"
+    ],
+    "api_example": "examples/trajectory_probe_advanced_api.json",
+    "frontend_workflow": "examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json",
+    "status": "implemented Advanced contract/save/load path with one real small-chain numerical-equivalence smoke; repeated, throughput and wrapper-specific matrices remain pending"
+  },
   "experimental_dialogue_safe_audio": {
     "category": "T8/MiniMax H3/Speech/Experimental",
     "nodes": [

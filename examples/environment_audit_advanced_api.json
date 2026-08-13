@@ -1,0 +1,22 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3EnvironmentAuditT8Advanced",
+    "inputs": {
+      "workload_profile": "hybrid",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "model_family": "fl2va",
+      "model_precision": "int8_convrot",
+      "attention_backend": "auto_detect",
+      "cache_backend": "auto_detect",
+      "decode_mode": "regular",
+      "dynamic_vram_mode": "auto_detect",
+      "reference_media_count": 2,
+      "middle_keyframe_count": 0,
+      "minimum_current_headroom_mib": 512.0,
+      "enforcement": "report_only"
+    },
+    "_meta": {"title": "Read-only H3 environment and workload audit"}
+  }
+}

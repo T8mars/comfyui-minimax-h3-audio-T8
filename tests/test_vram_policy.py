@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,6 +10,7 @@ import pytest
 from h3_audio_t8_pkg import hybrid_model as hybrid
 from h3_audio_t8_pkg import vram_policy as vram
 from h3_audio_t8_pkg.speech_reliability import vram_preflight
+from h3_audio_t8_pkg.vram_policy import process_resource_snapshot
 
 
 def snapshot(*, free_mib=12288.0, total_mib=16384.0, commit_gib=96.0):
@@ -279,6 +281,17 @@ def test_vram_policy_api_example_orders_policy_before_loader():
     assert policy["inputs"]["clean_before_load"] is False
     assert policy["inputs"]["require_dynamic_vram"] is True
     assert loader["inputs"]["vram_policy"] == [policy_id, 0]
+
+
+def test_process_resource_snapshot_exposes_cumulative_counters_without_mutation():
+    resource = process_resource_snapshot()
+    assert resource["pid"] == os.getpid()
+    if resource["available"]:
+        assert resource["rss_mib"] > 0
+        assert resource["read_bytes"] is None or resource["read_bytes"] >= 0
+        assert resource["page_faults"] is None or resource["page_faults"] >= 0
+    else:
+        assert "inspection_error" in resource
 
 
 def test_vram_policy_frontend_workflow_is_link_consistent_and_isolated():

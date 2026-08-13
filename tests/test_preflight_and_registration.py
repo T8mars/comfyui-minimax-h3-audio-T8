@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 62
+    assert len(ids) == 86
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -170,15 +170,113 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     maintenance_inputs = {item.id: item for item in maintenance_schema.inputs}
     assert maintenance_inputs["action"].default == "inspect_only"
     assert maintenance_inputs["confirm_action"].default is False
-    assert ids[61:] == ["MiniMaxH3HybridCompatibilityAuditT8Advanced"]
+    assert ids[61:73] == [
+        "MiniMaxH3HybridCompatibilityAuditT8Advanced",
+        "MiniMaxH3EnvironmentAuditT8Advanced",
+        "MiniMaxH3ActivationChunkT8Advanced",
+        "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+        "MiniMaxH3QwenPrefixCacheStatsT8Advanced",
+        "MiniMaxH3UnifiedCastT8Advanced",
+        "MiniMaxH3SoundCanvasT8Advanced",
+        "MiniMaxH3PromptCompilerT8Advanced",
+        "MiniMaxH3StudioTimelineT8Advanced",
+        "MiniMaxH3StudioShotSelectT8Advanced",
+        "MiniMaxH3SelectiveSegmentRepairT8Advanced",
+        "MiniMaxH3RepairSegmentSelectT8Advanced",
+    ]
+    assert ids[73:77] == [
+        "MiniMaxH3SelectiveRepairBindT8Advanced",
+        "MiniMaxH3SelectiveRepairStageT8Advanced",
+        "MiniMaxH3SelectiveRepairAcceptT8Advanced",
+        "MiniMaxH3SelectiveRepairComposeT8Advanced",
+    ]
+    assert ids[77] == "MiniMaxH3ScheduledDriveAudioInjectionT8Advanced"
     compatibility_schema = schemas[61]
+    assert ids[78] == "MiniMaxH3AVDecodeSafetyT8Advanced"
+    av_decode_schema = schemas[78]
+    assert av_decode_schema.is_experimental is True
+    assert av_decode_schema.category == "T8/MiniMax H3/Audio/Experimental"
+    av_decode_inputs = {item.id: item for item in av_decode_schema.inputs}
+    assert av_decode_inputs["mode"].default == "preflight_only"
+    assert av_decode_inputs["enforcement"].default == "report_only"
+    assert ids[79:81] == [
+        "MiniMaxH3ContextIRProviderT8Advanced",
+        "MiniMaxH3ContextIRPromptCompilerT8Advanced",
+    ]
+    for context_ir_schema in schemas[79:81]:
+        assert context_ir_schema.is_experimental is True
+        assert context_ir_schema.category == "T8/MiniMax H3/Studio/Experimental"
     assert compatibility_schema.is_experimental is True
+    assert ids[81:83] == [
+        "MiniMaxH3ReelDeliveryPlanT8Advanced",
+        "MiniMaxH3ReelDeliveryComposeT8Advanced",
+    ]
+    for reel_schema in schemas[81:83]:
+        assert reel_schema.is_experimental is True
+        assert reel_schema.category == "T8/MiniMax H3/Studio/Experimental"
     assert compatibility_schema.is_output_node is False
+    assert ids[83:86] == [
+        "MiniMaxH3TrajectoryProbeT8Advanced",
+        "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
+        "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
+    ]
+    for trajectory_schema in schemas[83:86]:
+        assert trajectory_schema.is_experimental is True
+        assert trajectory_schema.category == "T8/MiniMax H3/Models/Experimental"
     assert compatibility_schema.category == "T8/MiniMax H3/Models/Experimental"
     compatibility_inputs = {item.id: item for item in compatibility_schema.inputs}
     assert compatibility_inputs["enforcement"].default == "report_only"
     assert compatibility_inputs["require_applied_vram_policy"].default is False
     assert compatibility_inputs["positive"].optional is True
+
+    environment_schema = schemas[62]
+    assert environment_schema.is_experimental is True
+    assert environment_schema.is_output_node is True
+    assert environment_schema.category == "T8/MiniMax H3/Models/Experimental"
+    environment_inputs = {item.id: item for item in environment_schema.inputs}
+    assert environment_inputs["enforcement"].default == "report_only"
+    assert environment_inputs["model"].optional is True
+    assert environment_inputs["positive"].optional is True
+
+
+    activation_schema = schemas[63]
+    assert activation_schema.is_experimental is True
+    assert activation_schema.is_output_node is False
+    assert activation_schema.category == "T8/MiniMax H3/Models/Experimental"
+    activation_inputs = {item.id: item for item in activation_schema.inputs}
+    assert activation_inputs["mode"].default == "report_only"
+    assert activation_inputs["chunk_rows"].default == 256
+    assert activation_inputs["preserve_short_path"].default is True
+
+    qwen_schema = schemas[64]
+    assert qwen_schema.is_experimental is True
+    assert qwen_schema.category == "T8/MiniMax H3/Conditioning/Experimental"
+    qwen_inputs = {item.id: item for item in qwen_schema.inputs}
+    assert qwen_inputs["mode"].default == "report_only"
+    qwen_stats_schema = schemas[65]
+    assert qwen_stats_schema.is_experimental is True
+    assert qwen_stats_schema.is_output_node is True
+    assert qwen_stats_schema.category == "T8/MiniMax H3/Conditioning/Experimental"
+    studio_schemas = schemas[66:73]
+    assert len(studio_schemas) == 7
+    assert all(schema.is_experimental for schema in studio_schemas)
+    assert all(schema.category == "T8/MiniMax H3/Studio/Experimental" for schema in studio_schemas)
+    timeline_inputs = {item.id: item for item in studio_schemas[3].inputs}
+    assert timeline_inputs["split_long_shots"].default is True
+    repair_inputs = {item.id: item for item in studio_schemas[5].inputs}
+    assert repair_inputs["selection_policy"].default == "manual"
+    assert repair_inputs["repair_mode"].default == "auto"
+    repair_execution_schemas = schemas[73:77]
+    assert all(schema.is_experimental for schema in repair_execution_schemas)
+    assert all(
+        schema.category == "T8/MiniMax H3/Studio/Experimental"
+        for schema in repair_execution_schemas
+    )
+    assert repair_execution_schemas[2].is_output_node is True
+    assert repair_execution_schemas[3].is_output_node is True
+    accept_inputs = {item.id: item for item in repair_execution_schemas[2].inputs}
+    assert accept_inputs["accept_repair"].default is False
+    assert accept_inputs["replace_existing"].default is False
 
     assert ids[23:25] == [
         "MiniMaxH3LongVideoBackgroundStartT8",

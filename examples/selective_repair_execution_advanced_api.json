@@ -1,0 +1,43 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3SelectiveRepairBindT8Advanced",
+    "inputs": {
+      "repair_plan": [
+        "0",
+        0
+      ],
+      "chain_id": "replace_with_existing_accepted_chain",
+      "repair_index": 0
+    },
+    "_meta": {
+      "title": "Connect a Selective Segment Repair plan and an existing accepted chain"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3SelectiveRepairStageT8Advanced",
+    "inputs": {
+      "repair_execution": [
+        "1",
+        0
+      ],
+      "candidate_json_path": "replace_with_generated_candidate.json"
+    },
+    "_meta": {
+      "title": "Stage only after generating and reviewing the bound replacement take"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3SelectiveRepairAcceptT8Advanced",
+    "inputs": {
+      "staged_repair": [
+        "2",
+        0
+      ],
+      "accept_repair": false,
+      "replace_existing": false
+    },
+    "_meta": {
+      "title": "Safe default: do not accept until the candidate has been reviewed"
+    }
+  }
+}

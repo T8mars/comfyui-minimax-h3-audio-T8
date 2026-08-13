@@ -1,0 +1,370 @@
+{
+  "id": "bf50b191-d171-4105-a230-eb58f4260d54",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3SelectiveRepairBindT8Advanced",
+      "title": "Connect Selective Segment Repair plan and accepted chain",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        420,
+        370
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "repair_plan",
+          "type": "H3_T8_REPAIR_PLAN",
+          "link": null
+        },
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "widget": {
+            "name": "chain_id"
+          },
+          "link": null
+        },
+        {
+          "name": "repair_index",
+          "type": "INT",
+          "widget": {
+            "name": "repair_index"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "repair_execution",
+          "type": "H3_T8_REPAIR_EXECUTION",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_start_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "parent_candidate_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "base_manifest_revision",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SelectiveRepairBindT8Advanced"
+      },
+      "widgets_values": [
+        "replace_with_existing_accepted_chain",
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SelectiveRepairStageT8Advanced",
+      "title": "Stage a generated candidate JSON; no accepted state is changed",
+      "pos": [
+        500,
+        0
+      ],
+      "size": [
+        410,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "repair_execution",
+          "type": "H3_T8_REPAIR_EXECUTION",
+          "link": 1
+        },
+        {
+          "name": "candidate_json_path",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "staged_repair",
+          "type": "H3_T8_REPAIR_STAGED",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "candidate_video_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SelectiveRepairStageT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3SelectiveRepairAcceptT8Advanced",
+      "title": "Review candidate first; accept_repair defaults false",
+      "pos": [
+        1000,
+        0
+      ],
+      "size": [
+        390,
+        250
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "staged_repair",
+          "type": "H3_T8_REPAIR_STAGED",
+          "link": 2
+        },
+        {
+          "name": "accept_repair",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_repair"
+          },
+          "link": null
+        },
+        {
+          "name": "replace_existing",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "replace_existing"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "repair_manifest_path",
+          "type": "STRING",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "accepted",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SelectiveRepairAcceptT8Advanced"
+      },
+      "widgets_values": [
+        false,
+        false
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3SelectiveRepairComposeT8Advanced",
+      "title": "Overlay is reversible; base manifest remains immutable",
+      "pos": [
+        1500,
+        0
+      ],
+      "size": [
+        430,
+        380
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "widget": {
+            "name": "chain_id"
+          },
+          "link": null
+        },
+        {
+          "name": "repair_manifest_path",
+          "type": "STRING",
+          "link": 3
+        },
+        {
+          "name": "compose_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "compose_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "require_final_segment",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "require_final_segment"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_seam_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_seam_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "bridge_ms",
+          "type": "FLOAT",
+          "widget": {
+            "name": "bridge_ms"
+          },
+          "link": null
+        },
+        {
+          "name": "crf",
+          "type": "INT",
+          "widget": {
+            "name": "crf"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output_video_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SelectiveRepairComposeT8Advanced"
+      },
+      "widgets_values": [
+        "replace_with_existing_accepted_chain",
+        "repair_overlay",
+        "H3_Selective_Repair",
+        true,
+        "cosine_bridge",
+        5,
+        18
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "H3_T8_REPAIR_EXECUTION"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "H3_T8_REPAIR_STAGED"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Selective Repair Execution Advanced"
+  },
+  "version": 0.4
+}

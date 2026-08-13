@@ -1,0 +1,151 @@
+{
+  "id": "a62d4e99-9f9c-4666-bab6-9d762d57d288",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3AVDecodeSafetyT8Advanced",
+      "title": "Insert after H3 sampling; preflight-only by default",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        430,
+        480
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_current_headroom_mib",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_current_headroom_mib"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_estimated_output_mib",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_estimated_output_mib"
+          },
+          "link": null
+        },
+        {
+          "name": "enforcement",
+          "type": "COMBO",
+          "widget": {
+            "name": "enforcement"
+          },
+          "link": null
+        },
+        {
+          "name": "video_tile_size",
+          "type": "INT",
+          "widget": {
+            "name": "video_tile_size"
+          },
+          "link": null
+        },
+        {
+          "name": "video_tile_overlap",
+          "type": "INT",
+          "widget": {
+            "name": "video_tile_overlap"
+          },
+          "link": null
+        },
+        {
+          "name": "video_tile_temporal",
+          "type": "INT",
+          "widget": {
+            "name": "video_tile_temporal"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeSafetyT8Advanced"
+      },
+      "widgets_values": [
+        "preflight_only",
+        512,
+        8192,
+        "report_only",
+        32,
+        8,
+        999
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 AV Decode Safety Advanced"
+  },
+  "version": 0.4
+}

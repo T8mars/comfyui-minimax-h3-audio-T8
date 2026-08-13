@@ -119,6 +119,83 @@ def host_memory_snapshot() -> dict[str, Any]:
     return result
 
 
+def process_resource_snapshot() -> dict[str, Any]:
+    """Read cumulative process memory, page-fault and I/O counters when psutil is available."""
+    result: dict[str, Any] = {"pid": os.getpid(), "available": False}
+    try:
+        import psutil
+
+        process = psutil.Process(os.getpid())
+        memory = process.memory_info()
+        io = process.io_counters()
+        result.update(
+            {
+                "available": True,
+                "rss_mib": int(getattr(memory, "rss", 0)) / MIB,
+                "vms_mib": int(getattr(memory, "vms", 0)) / MIB,
+                "private_mib": (
+                    None
+                    if not hasattr(memory, "private")
+                    else int(memory.private) / MIB
+                ),
+                "pagefile_mib": (
+                    None
+                    if not hasattr(memory, "pagefile")
+                    else int(memory.pagefile) / MIB
+                ),
+                "page_faults": getattr(memory, "num_page_faults", None),
+                "read_bytes": getattr(io, "read_bytes", None),
+                "write_bytes": getattr(io, "write_bytes", None),
+                "read_count": getattr(io, "read_count", None),
+                "write_count": getattr(io, "write_count", None),
+                "thread_count": process.num_threads(),
+            }
+        )
+    except Exception as error:
+        result["inspection_error"] = f"{type(error).__name__}: {error}"
+    return result
+
+
+def _nvml_health_snapshot(torch_device) -> dict[str, Any]:
+    result: dict[str, Any] = {"available": False}
+    try:
+        import pynvml
+
+        pynvml.nvmlInit()
+        try:
+            index = int(getattr(torch_device, "index", 0) or 0)
+            handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+            throttle = int(pynvml.nvmlDeviceGetCurrentClocksThrottleReasons(handle))
+            thermal_mask = int(getattr(pynvml, "nvmlClocksThrottleReasonHwThermalSlowdown", 0))
+            thermal_mask |= int(
+                getattr(pynvml, "nvmlClocksThrottleReasonSwThermalSlowdown", 0)
+            )
+            result.update(
+                {
+                    "available": True,
+                    "nvml_index": index,
+                    "index_mapping": "torch_visible_index_assumed_nvml_index",
+                    "temperature_c": pynvml.nvmlDeviceGetTemperature(
+                        handle, pynvml.NVML_TEMPERATURE_GPU
+                    ),
+                    "power_w": pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0,
+                    "sm_clock_mhz": pynvml.nvmlDeviceGetClockInfo(
+                        handle, pynvml.NVML_CLOCK_SM
+                    ),
+                    "memory_clock_mhz": pynvml.nvmlDeviceGetClockInfo(
+                        handle, pynvml.NVML_CLOCK_MEM
+                    ),
+                    "throttle_reasons_raw": throttle,
+                    "thermal_throttling": bool(throttle & thermal_mask),
+                }
+            )
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception as error:
+        result["inspection_error"] = f"{type(error).__name__}: {error}"
+    return result
+
+
 def _runtime_modules():
     import comfy.memory_management as memory_management
     import comfy.model_management as model_management
@@ -148,6 +225,8 @@ def runtime_snapshot() -> dict[str, Any]:
         "comfy": {},
         "aimdo": {},
         "host": host_memory_snapshot(),
+        "process": process_resource_snapshot(),
+        "gpu_health": {},
     }
     try:
         model_management, memory_management = _runtime_modules()
@@ -172,6 +251,10 @@ def runtime_snapshot() -> dict[str, Any]:
                     "startup_vram_headroom_gib": float(
                         getattr(args, "vram_headroom", 0.0) or 0.0
                     ),
+                    "pinned_memory_enabled": not bool(
+                        getattr(args, "disable_pinned_memory", False)
+                    ),
+                    "fast_disk_enabled": bool(getattr(args, "fast_disk", False)),
                 }
             )
         except (ImportError, AttributeError, TypeError, ValueError) as error:
@@ -190,6 +273,17 @@ def runtime_snapshot() -> dict[str, Any]:
                     "torch_reserved_mib": torch.cuda.memory_reserved(device) / MIB,
                 }
             )
+            result["gpu_health"] = _nvml_health_snapshot(device)
+        result["comfy"].update(
+            {
+                "total_pinned_memory_mib": int(
+                    getattr(model_management, "TOTAL_PINNED_MEMORY", 0)
+                ) / MIB,
+                "maximum_pinned_memory_mib": int(
+                    getattr(model_management, "MAX_PINNED_MEMORY", 0)
+                ) / MIB,
+            }
+        )
     except Exception as error:
         result["comfy"]["inspection_error"] = f"{type(error).__name__}: {error}"
 

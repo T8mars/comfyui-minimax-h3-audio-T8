@@ -1,0 +1,189 @@
+{
+  "id": "fb10dd97-0eaf-44d2-abc4-f07e5023b43b",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3EnvironmentAuditT8Advanced",
+      "title": "Read-only H3 environment and workload audit",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        696
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "workload_profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "workload_profile"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "name": "model_family",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_family"
+          },
+          "link": null
+        },
+        {
+          "name": "model_precision",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_precision"
+          },
+          "link": null
+        },
+        {
+          "name": "attention_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "attention_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "cache_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "decode_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "decode_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "dynamic_vram_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "dynamic_vram_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_media_count",
+          "type": "INT",
+          "widget": {
+            "name": "reference_media_count"
+          },
+          "link": null
+        },
+        {
+          "name": "middle_keyframe_count",
+          "type": "INT",
+          "widget": {
+            "name": "middle_keyframe_count"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_current_headroom_mib",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_current_headroom_mib"
+          },
+          "link": null
+        },
+        {
+          "name": "enforcement",
+          "type": "COMBO",
+          "widget": {
+            "name": "enforcement"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "no_known_blocker",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3EnvironmentAuditT8Advanced"
+      },
+      "widgets_values": [
+        "hybrid",
+        736,
+        416,
+        124,
+        "fl2va",
+        "int8_convrot",
+        "auto_detect",
+        "auto_detect",
+        "regular",
+        "auto_detect",
+        2,
+        0,
+        512.0,
+        "report_only"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Environment Audit Advanced"
+  },
+  "version": 0.4
+}

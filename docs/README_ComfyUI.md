@@ -28,6 +28,32 @@ adds the required bias deltas. This does not make the original 518-tensor LoRA g
 with pruned models, and the converted file must not be used on a different checkpoint merely because
 its filename also contains `pruned`.
 
+## Version 1.18 Advanced Studio and diagnostic routes
+
+Version 1.18 appends Advanced/Experimental routes without changing the existing H3 conditioning or
+stable dual-clock sampler. Start with `MiniMaxH3EnvironmentAuditT8Advanced`; it is read-only and a
+pass means only that no known blocker was found. Qwen prefix caching and MLP activation chunking
+default to report-only. Context IR uses local validation by default, and an external visual provider
+requires explicit upload confirmation while never receiving raw audio.
+The audit reports cumulative process I/O/page-fault and pinned-memory/GPU-health state; use
+`tools/validate_h3_vram.py run` for before/after workload deltas and the conservative
+`fits/fits_with_thrashing/unsafe/unknown` classification. A single audit snapshot never proves
+that the current workflow caused the observed cumulative reads.
+
+All file mutations are opt-in: repair acceptance, Reel Delivery composition and trajectory
+checkpoint saving default false. Scheduled drive-audio injection defaults to bypass because its
+first real A/B did not stop ASR-detected extra tail speech. AV Decode Safety defaults to preflight
+only, and its current-headroom report is not a future VAE peak prediction. Current H3 regular decode
+also uses internal 256-pixel tiles on larger canvases, while explicit tile controls are ignored by
+the H3 first-stage alias; missing global tile coordinates are therefore high-risk in either mode.
+The supplied workflows in
+`examples/workflows` retain these safe defaults.
+
+The bounded verification record is in `VERIFICATION_REPORT.md`. A 736x416x124 controlled A/B rejects
+activation chunking as a memory optimization for the current fused TensorWise INT8 path. Small AV
+decode and 2+2 trajectory probes close only bounded execution/numerical gates; they do not establish
+16GiB safety, tiled equivalence, throughput benefit or perceptual non-inferiority.
+
 ## Install and connect
 
 1. Copy either converted `*_comfyui.safetensors` file to

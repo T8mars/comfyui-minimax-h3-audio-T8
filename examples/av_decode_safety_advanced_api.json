@@ -1,0 +1,58 @@
+{
+  "1": {
+    "class_type": "EmptyMiniMaxH3LatentAV",
+    "inputs": {
+      "width": 128,
+      "height": 128,
+      "length": 22
+    },
+    "_meta": {
+      "title": "Small empty H3 AV latent for a decode preflight"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "Load H3 video VAE"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "Load H3 audio VAE"
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3AVDecodeSafetyT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "1",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "mode": "preflight_only",
+      "minimum_current_headroom_mib": 512,
+      "maximum_estimated_output_mib": 8192,
+      "enforcement": "report_only",
+      "video_tile_size": 32,
+      "video_tile_overlap": 8,
+      "video_tile_temporal": 999
+    },
+    "_meta": {
+      "title": "Safe default: validate only, do not decode"
+    }
+  }
+}
