@@ -167,6 +167,18 @@ def test_selective_repair_overlay_preserves_base_and_streams_composition(
     assert preview_report["repair_overlay_mutated"] is False
     assert base_manifest_path.read_bytes() == base_before
 
+    repair_root = root / "repairs" / execution["repair_plan_hash"]
+    accepted_dir = repair_root / "accepted"
+    accepted_dir.mkdir(parents=True, exist_ok=True)
+    stale_accept_temporaries = [
+        accepted_dir / ".segment_00001_repair-b.mp4.crash.tmp",
+        repair_root / ".manifest.json.crash.tmp",
+        repair_root / ".manifest.json.bak.crash.tmp",
+    ]
+    for temporary in stale_accept_temporaries:
+        temporary.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_bytes(b"abandoned")
+
     repair_manifest_path, accepted, accept_report = accept_staged_repair(
         staged,
         True,
@@ -174,6 +186,10 @@ def test_selective_repair_overlay_preserves_base_and_streams_composition(
     assert accepted is True
     assert Path(repair_manifest_path).is_file()
     assert accept_report["base_manifest_mutated"] is False
+    assert sorted(accept_report["orphan_temporary_files_removed_before_accept"]) == sorted(
+        str(path) for path in stale_accept_temporaries
+    )
+    assert not any(path.exists() for path in stale_accept_temporaries)
     assert base_manifest_path.read_bytes() == base_before
     assert _sha(unselected_path) == unselected_hash
 
@@ -181,6 +197,13 @@ def test_selective_repair_overlay_preserves_base_and_streams_composition(
     assert accepted is True
     assert same_path == repair_manifest_path
     assert idempotent["idempotent"] is True
+
+    assembled_dir = Path(repair_manifest_path).parent / "assembled"
+    assembled_dir.mkdir(parents=True, exist_ok=True)
+    stale_compose_temporary = (
+        assembled_dir / ".repair-result_overlay_r0001_none.crash.mp4.tmp"
+    )
+    stale_compose_temporary.write_bytes(b"abandoned")
 
     overlay_path, overlay_report = compose_repair_overlay(
         chain_id,
@@ -199,6 +222,10 @@ def test_selective_repair_overlay_preserves_base_and_streams_composition(
     assert overlay_report["base_manifest_mutated"] is False
     assert overlay_report["frame_count"] == 44
     assert overlay_report["audio_samples"] == round(44 / 24 * 32000)
+    assert overlay_report["orphan_temporary_files_removed_before_compose"] == [
+        str(stale_compose_temporary)
+    ]
+    assert not stale_compose_temporary.exists()
     assert _sha(unselected_path) == unselected_hash
     assert base_manifest_path.read_bytes() == base_before
     with av.open(overlay_path) as container:

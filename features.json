@@ -165,9 +165,13 @@
       "a real native 48-frame/2-second/24fps video-reference route recorded a real hit from a 110.7443MiB entry; the full OFF/HIT A/V pair reduced elapsed time by 13.81% and peak by 166.31MiB but left only 145.15/311.46MiB headroom, with video SSIM mean/min 0.95093/0.94463 and audio correlation 0.95303",
       "a three-material-combination x two-seed warm two-image matrix completed 6/6 real hits with every HIT arm faster and mean elapsed change -11.09%; video SSIM averaged 0.9314 with minimum frame 0.8531, audio correlation averaged 0.9771, post-pair private memory had no 256MiB staircase, and minimum whole-device headroom was 111.93MiB",
       "a Stock20 useful-profile follow-up with one seed per material combination completed 3/3 real faster HIT arms with mean elapsed change -5.00%, but video SSIM averaged 0.8227 with minimum frame 0.6052, audio correlation averaged 0.7188 with range 0.2603-0.9894, and minimum headroom was 190.68MiB; automated quality and safety promotion gates failed",
+      "ComfyUI v0.32.0-15 at 86aedfd9 passed the expanded Llama/Attention/TransformerBlock exact-source contract and tiny-Llama tuple-KV causal equivalence probe under explicit no-grad inference semantics",
+      "a real current-core same-process 32B NVFP4 control recorded one hit after one miss from a 108.283MiB entry; full OFF/HIT time was 13.297/9.375s, video SSIM mean/minimum 0.951217/0.924603, audio correlation 0.956522, and headroom only 116.998/337.583MiB",
+      "ComfyUI v0.32.0-16 at ddbaa8752 passed the exact-source contract, tiny-Llama equivalence probe, 447-test full regression and isolated plugin import after MiniMax projection-format detection moved before model construction",
+      "a native 48-frame video-reference full A/V control on ddbaa8752 recorded one real hit after one miss from a 110.744MiB entry; OFF/HIT time was 25.266/15.578s, video SSIM mean/minimum 0.950934/0.944633, audio correlation 0.953029, and headroom only 344.340/338.833MiB",
       "LRU eviction, oversize refusal and report-only identity"
     ],
-    "status": "implemented Advanced EXP; exact short single-image, two-image and native video-reference mechanics have real hits, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed; human blind interpretation and cross-GPU validation remain pending"
+    "status": "implemented Advanced EXP; exact old/current core source contracts and current-core real hit mechanics pass, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed; human blind interpretation and cross-GPU validation remain pending"
   },
   "experimental_studio_advanced": {
     "category": "T8/MiniMax H3/Studio/Experimental",
@@ -222,12 +226,12 @@
       "the final H.264/AAC delivery is re-encoded and is not claimed bit-exact",
       "adjacent repair takes are not implicitly context-chained; the real segment-7 probe entered near the base boundary but its outgoing SSIM fell from the base 0.9330 to 0.8040 because segment 8 still derives from the original segment 7",
       "the executor does not load models, auto-queue, auto-accept or choose quality winners",
-      "a kill during candidate copy and a kill during audio compose left namespace-scoped orphan temporary files; retry was correct but crash-clean cleanup is not yet guaranteed",
+      "exact-destination temporary cleanup is serialized by OS locks; a rebuilt real 14-segment six-kill matrix removed both the half-copy and mid-audio orphan before retry while preserving the base manifest and all 27 accepted assets",
       "cross-platform filesystem behavior, cascading dependent-segment regeneration, multi-seed quality and blind listening remain unvalidated"
     ],
     "api_example": "examples/selective_repair_execution_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Selective_Repair_Execution_Advanced.json",
-    "status": "implemented Advanced non-destructive overlay executor; 14-segment/60-second forced-crash recovery and one real H3 repair passed mechanical contracts, while orphan-temp cleanup and outgoing context continuity remain unresolved"
+    "status": "implemented Advanced non-destructive overlay executor; 14-segment/60-second six-point forced-crash recovery, exact-namespace orphan cleanup and one real H3 repair passed mechanical contracts, while outgoing context continuity remains unresolved"
   },
   "experimental_scheduled_drive_audio_injection_advanced": {
     "category": "T8/MiniMax H3/Audio/Experimental",
@@ -323,24 +327,32 @@
       "video retains only one transition tail plus one current decoded frame; audio uses bounded FFmpeg streams",
       "video and audio phases are written to temporary files, validated, atomically replaced, fingerprinted and reused after interruption only when their hashes match",
       "one OS advisory lock serializes each project root; active FFmpeg is terminated on ComfyUI interruption and matching orphan temporary files are removed on the next run",
+      "final MP4 mux uses LCM(24fps, sample_rate) as movie timescale and validates exact logical video-frame/audio-sample duration before atomic replacement",
+      "x264 is scoped to one thread at 2000000 pixels or above because local PyAV auto-threading produced native crashes and corrupt H.264; lower resolutions retain auto-threading and incompatible cached high-resolution phases are invalidated",
+      "high-resolution phase and final-mux temporary files both require the versioned ffmpeg_single_thread_xerror_v2 full-stream decode contract before atomic replacement",
       "block_if_clipping is the default; normalize_peak and allow_clipping require explicit selection"
     ],
     "scientific_limits": [
       "the MP4 is H.264/AAC re-encoded and is not bit-exact to source media",
       "AAC encoder padding means the report's sample accounting is the requested mix boundary, not a lossless PCM-container claim",
       "crossfade is a deterministic pixel blend, not optical-flow interpolation",
-      "the 50 clip paths in the scale soak are hardlinks to one fixture; a separate synthetic three-codec probe closes local container mechanics but not real-H3 content diversity or high-resolution throughput",
-      "cross-platform FFmpeg/filesystem matrices remain pending"
+      "the 50 clip paths in the scale soak are hardlinks to one fixture; separate synthetic-codec and real-H3 probes close local mechanics rather than perceptual editing quality",
+      "derived 1920x1088 mechanics do not prove native H3 1080p generation quality; cross-platform FFmpeg/filesystem matrices remain pending",
+      "two local FFmpeg 7.1 Windows builds showed nondeterministic automatic-thread decode errors on byte-identical high-resolution files; only the explicit single-thread FFmpeg plus PyAV/libavcodec 62 repeated paths passed, so arbitrary player behavior is not claimed"
     ],
     "validated": [
       "Windows/NTFS 30-minute mechanical soak: 50 independently addressed clip paths, four dialogue/music/ambience/SFX events, 43200 video frames and 86400000 requested/decoded 48kHz samples",
       "source hashes stayed unchanged and a repeat compose reused both hash-verified phase files",
       "audio-mix FFmpeg kill, final-mux FFmpeg kill and parent-Python kill recovered on the next same-project run with no surviving matching temporary file",
-      "a Windows/NTFS synthetic codec matrix mixed H.264/AAC, HEVC/MP3 and VP9/Opus clips plus WAV/FLAC/Opus/AAC lanes; exact 132 frames and 5.500-second stream, unchanged sources, phase reuse and stable resumed output passed"
+      "a Windows/NTFS synthetic codec matrix mixed H.264/AAC, HEVC/MP3 and VP9/Opus clips plus WAV/FLAC/Opus/AAC lanes; exact 132 frames and 5.500-second stream, unchanged sources, phase reuse and stable resumed output passed",
+      "default 1000-unit MP4 timebase reproduced +11/-29/-32 logical-sample errors at 32/44.1/48kHz for a 58-frame plan; LCM timescales 96000/88200/48000 reduced all three to zero",
+      "three real 256x256x22 H3 clips produced exact 58-frame/116000-sample output; three distinct real 736x416x124 H3 clips produced exact 348-frame/696000-sample 14.5-second output with a 10.51MiB transition-tail estimate",
+      "both real-H3 probes preserved sources, reused verified phases and produced stable repeated output hashes",
+      "a derived-1920x1088 auto-threaded probe exposed one native crash and 3/3 streams with strict-decoder H.264 errors; scoped single-thread x264 plus versioned phase-and-final strict decode then passed three independent projects with 348 frames, 696000 exact logical samples, identical phase/final hashes and no orphan temporary files"
     ],
     "api_example": "examples/reel_delivery_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Reel_Delivery_Advanced.json",
-    "status": "implemented Advanced file-level delivery; bounded Windows/NTFS 30-minute scale, external-kill recovery and synthetic codec/container diversity gates passed, while real-H3/high-resolution diversity and cross-platform behavior remain pending"
+    "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing and real-H3 256/736px plus derived-1920x1088 delivery gates passed; cross-platform behavior remains pending"
   },
   "experimental_trajectory_probe_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",

@@ -23,6 +23,16 @@ SUPPORTED_CORE_CONTRACTS = {
         "19bae67ffee1e8a6cf3f2b2bbd96dae540bc29da6b412d683f51dcde10e23d0e",
         "5af2c49496af674f99dbfda4d1e2bd7873ca058e22d5765f6bc5d423f261ff40",
         "490c7189de876492ccef7be6520a8dc0f9c7225225110ad6d2de5186adb76f4c",
+        "56c474d99c05d35bf5b9863bd9eeb7c54067d2c76c6b8aa111cb10612c77d33e",
+    ),
+    (
+        "bed1e84fba459099df310aed267fb2c51bbd8a768b9727767300225afe28d361",
+        "441453d9e244ac56caa2e697ac6b37afed6463c929eebc19959a54e28423ef20",
+        "be8eb446e143c6ed0c50b653390f2286db5c65ddeabfc8d991b0bd91727ce846",
+        "19bae67ffee1e8a6cf3f2b2bbd96dae540bc29da6b412d683f51dcde10e23d0e",
+        "405bfb4c0850be2ebbffe9630ef008f3b55949a1d0586c6b4f20c799dc3f96ac",
+        "0e0e3dabb4db750796cf5b69fe3646c2c8fff2ad2ea15039cc9728b88b9329ee",
+        "71b138c2606ad2a3a32d022238c78a36106347bf46317348b0810c70de4d6be9",
     )
 }
 
@@ -41,7 +51,7 @@ def _source_hash(value: Any) -> str | None:
 
 def core_contract() -> dict[str, Any]:
     try:
-        from comfy.text_encoders.llama import Attention, Llama2_
+        from comfy.text_encoders.llama import Attention, Llama2_, TransformerBlock
         from comfy.text_encoders.minimax import (
             MiniMaxH3ClipModel,
             MiniMaxH3Tokenizer,
@@ -61,6 +71,7 @@ def core_contract() -> dict[str, Any]:
         _source_hash(Qwen3VL.build_image_inputs),
         _source_hash(Llama2_.forward),
         _source_hash(Attention.forward),
+        _source_hash(TransformerBlock.forward),
     )
     names = (
         "minimax_tokenizer",
@@ -69,6 +80,7 @@ def core_contract() -> dict[str, Any]:
         "qwen_image_inputs",
         "llama_forward",
         "attention_forward",
+        "transformer_block_forward",
     )
     return {
         "supported": None not in values and values in SUPPORTED_CORE_CONTRACTS,
@@ -225,20 +237,21 @@ def build_prefix_entry(
         )
         for _ in llama.layers
     ]
-    output = llama.forward(
-        None,
-        embeds=embeds,
-        attention_mask=None,
-        past_key_values=past,
-        position_ids=position_ids,
-        deepstack_embeds=deepstack,
-        visual_pos_masks=visual_pos_masks,
-        embeds_info=embeds_info,
-        intermediate_output=None,
-        final_layer_norm_intermediate=False,
-        dtype=torch.float32,
-        num_tokens=num_tokens,
-    )
+    with torch.no_grad():
+        output = llama.forward(
+            None,
+            embeds=embeds,
+            attention_mask=None,
+            past_key_values=past,
+            position_ids=position_ids,
+            deepstack_embeds=deepstack,
+            visual_pos_masks=visual_pos_masks,
+            embeds_info=embeds_info,
+            intermediate_output=None,
+            final_layer_norm_intermediate=False,
+            dtype=torch.float32,
+            num_tokens=num_tokens,
+        )
     if len(output) < 3 or len(output[2]) != len(llama.layers):
         raise RuntimeError("Qwen prefix build did not return one KV entry per language layer")
     hidden = _cpu_detached(output[0])
@@ -303,23 +316,24 @@ def encode_suffix_from_entry(
     ).triu_(1)
     optimized_attention = optimized_attention_for_device(device, mask=True, small_input=True)
 
-    hidden = embeds
-    for layer_index, layer in enumerate(llama.layers):
-        prefix_key, prefix_value, index = entry.key_values[layer_index]
-        hidden, _ = layer(
-            x=hidden,
-            attention_mask=mask,
-            freqs_cis=freqs_cis,
-            optimized_attention=optimized_attention,
-            past_key_value=(
-                prefix_key.to(device=device),
-                prefix_value.to(device=device),
-                int(index),
-            ),
-        )
-    if llama.norm is not None:
-        hidden = llama.norm(hidden)
-    output = torch.cat((entry.hidden.to(device=device), hidden), dim=1).float()
+    with torch.no_grad():
+        hidden = embeds
+        for layer_index, layer in enumerate(llama.layers):
+            prefix_key, prefix_value, index = entry.key_values[layer_index]
+            hidden, _ = layer(
+                x=hidden,
+                attention_mask=mask,
+                freqs_cis=freqs_cis,
+                optimized_attention=optimized_attention,
+                past_key_value=(
+                    prefix_key.to(device=device),
+                    prefix_value.to(device=device),
+                    int(index),
+                ),
+            )
+        if llama.norm is not None:
+            hidden = llama.norm(hidden)
+        output = torch.cat((entry.hidden.to(device=device), hidden), dim=1).float()
     tags = torch.cat(
         (
             entry.token_tags.to(device=device),

@@ -71,6 +71,20 @@ The Qwen prefix cache now has three fresh-process cold pairs and three same-proc
 every hit arm was faster (paired mean 11.97%/11.01%), but outputs remained non-bit-exact, one warm
 audio pair dropped to 0.2323 correlation, and minimum headroom was only 75.63/168.08MiB. It stays
 report-only EXP and is not a lossless, VRAM-saving, or 16GiB-safe feature.
+ComfyUI later moved to `v0.32.0-15@86aedfd9`, adding merged projection, fixed-KV, prefetch and
+in-place residual paths to Llama/Qwen. The cache now hashes the directly invoked TransformerBlock
+contract as well as Llama and Attention, and executes prefix/suffix inference explicitly without
+autograd. A current-core CPU causal-equivalence probe passed, followed by a real same-process 32B
+NVFP4 OFF/HIT pair: the 108.283MiB entry recorded one hit after one miss, elapsed time changed from
+13.297s to 9.375s, video SSIM mean/minimum was 0.951217/0.924603 and finite 32kHz stereo audio
+correlation was 0.956522. OFF/HIT headroom was only 116.998/337.583MiB, so this proves current-core
+compatibility, not losslessness or 16GiB safety.
+ComfyUI then advanced to `v0.32.0-16@ddbaa8752`, moving MiniMax projection-format detection without
+changing the Qwen forward path used here. The exact-source contract, tiny-Llama equivalence probe,
+447-test project regression and a native 48-frame video-reference full A/V pair all passed again.
+That pair recorded a real 110.744MiB hit; OFF/HIT elapsed time was 25.266/15.578s, video SSIM
+mean/minimum was 0.950934/0.944633 and audio correlation was 0.953029. Whole-device headroom was only
+344.340/338.833MiB, so the 512MiB safety gate still failed and the result remains non-exact.
 The exact short multi-reference and video-reference mechanics are now also exercised. Two image
 references produced real cold and warm hits from a 60.70MiB entry and reduced elapsed time by
 6.04%/6.87%, but video SSIM mean/minimum were 0.91869/0.91130, audio correlation was 0.95956 and
@@ -102,15 +116,39 @@ The 50 clip paths were hardlinks to one small fixture, so that soak alone did no
 A separate Windows/NTFS composition then mixed synthetic H.264/AAC, HEVC/MP3 and VP9/Opus 128x96
 24fps sources plus WAV/FLAC/Opus/AAC lanes. It produced exactly 132 frames, a 264,000-sample plan and
 5.500-second output stream; source hashes stayed unchanged, the repeat reused both phases and the
-output hash stayed stable. This closes local synthetic codec mechanics, not real-H3 content diversity,
-high-resolution throughput or non-Windows behavior.
+output hash stayed stable. Version 1.18.2 fixes a separate MP4 timing defect without changing any node
+schema: FFmpeg's default 1000-unit movie timescale quantized a 58-frame/48kHz plan from 116,000 logical
+AAC samples to 115,968. The mux now uses `LCM(24, sample_rate)` and validates the final container header
+before atomic replacement. Isolated 32/44.1/48kHz cases all reached zero logical-sample error. Three
+real 256x256 H3 clips then produced exact 58-frame/116,000-sample output, and three distinct real
+736x416x124 H3 clips produced exact 348-frame/696,000-sample, 14.5-second output with 12-frame
+transitions. Source hashes, phase reuse and repeated output hashes remained stable. AAC decoder tail
+padding is still expected and is not a lossless-PCM claim. Local real-H3 and 736x416 delivery mechanics
+are closed. A derived-1080p follow-up placed the same three real-H3 clips into 1920x1088 canvases.
+PyAV/libx264 auto-threading first produced one native crash and then 3/3 streams with decodable H.264
+reference/CABAC errors. Reel now scopes x264 to one thread at two megapixels or above and invalidates
+old high-resolution phases lacking the exact policy marker; lower resolutions keep auto-threading.
+The production high-resolution path now applies the versioned `ffmpeg_single_thread_xerror_v2`
+contract to both the encoded phase and final mux temporary file before their atomic replacements.
+Three independent projects passed both strict decodes and their phase/final SHA-256 values were
+identical across runs. Each result was exact 348 frames,
+696,000 logical samples and 14.5 seconds; the transition-tail estimate was 71.72MiB. This proves derived
+1920x1088 file delivery mechanics, not native H3 1080p generation quality. Two local FFmpeg 7.1
+Windows builds showed nondeterministic failures when auto-thread decoding the same high-resolution
+H.264 bytes, while single-thread FFmpeg and PyAV/libavcodec 62 repeated decoding passed. The claim is
+therefore scoped to the explicit single-thread validation contract; other players, non-Windows
+filesystems and FFmpeg builds remain open.
 
 Selective Repair additionally survived six hard-kill boundaries on an isolated 14-segment,
 60-second accepted chain without changing the base manifest or 27 accepted assets. A real H3
 segment-7 replacement composed to exact 1,440-frame/1,920,000-sample outputs, but the outgoing
-boundary regressed because segment 8 still depended on the original segment 7. Two kill points also
-left retry-safe orphan temporary files. Cascading dependent-segment regeneration, crash-clean temp
-cleanup, blind quality review and cross-platform filesystems remain open.
+boundary regressed because segment 8 still depended on the original segment 7. Accept and compose
+now remove only exact-destination `.*.tmp` files while holding their OS locks. A rebuilt copy of the
+same real 14-segment chain repeated all six process kills: expected exit codes, durable markers,
+base/27-asset immutability and retries passed; the half-copy and mid-audio orphans were both reported
+before retry and absent afterward. This closes crash-clean behavior only for those Windows/NTFS
+killpoints. Cascading dependent-segment regeneration, blind quality review and cross-platform
+filesystems remain open.
 
 ## Install and connect
 

@@ -29,6 +29,8 @@ PEAK_POLICIES = ("block_if_clipping", "normalize_peak", "allow_clipping")
 FPS = 24
 MAX_CLIPS = 512
 MAX_AUDIO_EVENTS = 1024
+H264_SINGLE_THREAD_MIN_PIXELS = 2_000_000
+VIDEO_STRICT_DECODE_POLICY = "ffmpeg_single_thread_xerror_v2"
 
 
 def canonical_json(value: Any) -> str:
@@ -575,6 +577,7 @@ def _cleanup_orphan_temporary_files(root: Path, safe_prefix: str) -> list[str]:
         f".{safe_prefix}.*.mp4.tmp",
         f"..{safe_prefix}.*.mp4.tmp",
         f"..{safe_prefix}.*.wav.tmp",
+        f".{safe_prefix}.*.validation.log.tmp",
         f".{safe_prefix}.*.filters.txt",
         f".{safe_prefix}.state.json.*.tmp",
     )
@@ -633,6 +636,27 @@ def _selected_frames(clip: Mapping[str, Any]):
             yield frame.to_ndarray(format="rgb24")
 
 
+def _video_encoder_threads(width: int, height: int) -> int | str:
+    if int(width) * int(height) >= H264_SINGLE_THREAD_MIN_PIXELS:
+        return 1
+    return "auto"
+
+
+def _video_phase_policy_matches(
+    state: Mapping[str, Any], expected_encoder_threads: int | str
+) -> bool:
+    if state.get("video_encoder_threads", "auto") != expected_encoder_threads:
+        return False
+    return not (
+        expected_encoder_threads == 1
+        and (
+            state.get("video_strict_decode_validated") is not True
+            or state.get("video_strict_decode_policy")
+            != VIDEO_STRICT_DECODE_POLICY
+        )
+    )
+
+
 def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, Any]:
     import av
 
@@ -649,7 +673,14 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
             stream.width = int(plan["width"])
             stream.height = int(plan["height"])
             stream.pix_fmt = "yuv420p"
-            stream.options = {"crf": str(int(crf)), "preset": "medium"}
+            encoder_threads = _video_encoder_threads(plan["width"], plan["height"])
+            stream.options = {
+                "crf": str(int(crf)),
+                "preset": "medium",
+                **({"threads": "1"} if encoder_threads == 1 else {}),
+            }
+            if encoder_threads == 1:
+                stream.codec_context.thread_count = 1
             previous_tail: list[np.ndarray] = []
             for clip_index, clip in enumerate(plan["clips"]):
                 source = iter(_selected_frames(clip))
@@ -722,6 +753,12 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
             raise RuntimeError(
                 f"reel video encoded {encoded} frames, expected {plan['total_frames']}"
             )
+        strict_decode_validated = False
+        strict_decode_policy = None
+        if encoder_threads == 1:
+            _strict_validate_encoded_video(temporary)
+            strict_decode_validated = True
+            strict_decode_policy = VIDEO_STRICT_DECODE_POLICY
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
@@ -731,6 +768,9 @@ def _compose_video(plan: Mapping[str, Any], path: Path, crf: int) -> dict[str, A
     return {
         "frame_count": encoded,
         "peak_transition_tail_frames": peak_tail_frames,
+        "video_encoder_threads": encoder_threads,
+        "video_strict_decode_validated": strict_decode_validated,
+        "video_strict_decode_policy": strict_decode_policy,
         "video_sha256": _sha256_file(path),
     }
 
@@ -762,6 +802,52 @@ def _run_process(args: list[str], log_path: Path) -> None:
         raise RuntimeError(
             f"FFmpeg failed with exit code {process.returncode}:\n{tail}"
         )
+
+
+def _strict_validate_encoded_video(path: Path) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for strict Reel video validation")
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{path.name.lstrip('.')}.",
+        suffix=".validation.log.tmp",
+        dir=path.parent,
+    )
+    os.close(descriptor)
+    log_path = Path(name)
+    try:
+        _run_process(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-threads",
+                "1",
+                "-xerror",
+                "-err_detect",
+                "explode",
+                "-nostdin",
+                "-i",
+                str(path),
+                "-map",
+                "0:v:0",
+                "-f",
+                "null",
+                "-",
+            ],
+            log_path,
+        )
+        diagnostics = log_path.read_text(
+            encoding="utf-8", errors="replace"
+        ).strip()
+        if diagnostics:
+            raise RuntimeError(
+                "strict Reel H.264 validation reported decode errors:\n"
+                + diagnostics[-4000:]
+            )
+    finally:
+        _cleanup_temporary(log_path, sys.exc_info()[1])
 
 
 def _audio_filter(plan: Mapping[str, Any]) -> tuple[list[str], str]:
@@ -903,6 +989,70 @@ def _valid_phase_file(state: Mapping[str, Any], key: str, path: Path) -> bool:
     return bool(expected and path.is_file() and _sha256_file(path) == expected)
 
 
+def _validate_final_container(
+    path: Path,
+    plan: Mapping[str, Any],
+    movie_timescale: int,
+) -> dict[str, Any]:
+    import av
+
+    strict_decode_validated = False
+    strict_decode_policy = None
+    if _video_encoder_threads(plan["width"], plan["height"]) == 1:
+        _strict_validate_encoded_video(path)
+        strict_decode_validated = True
+        strict_decode_policy = VIDEO_STRICT_DECODE_POLICY
+
+    with av.open(str(path), mode="r") as container:
+        if not container.streams.video or not container.streams.audio:
+            raise RuntimeError("final reel container must contain video and audio streams")
+        video = container.streams.video[0]
+        audio = container.streams.audio[0]
+        if video.duration is None or video.time_base is None:
+            raise RuntimeError("final reel video duration is unavailable")
+        if audio.duration is None or audio.time_base is None:
+            raise RuntimeError("final reel audio duration is unavailable")
+        sample_rate = int(audio.rate or 0)
+        if sample_rate != int(plan["sample_rate"]):
+            raise RuntimeError(
+                f"final reel audio rate {sample_rate} does not match plan {plan['sample_rate']}"
+            )
+        video_frames_value = (
+            Fraction(int(video.duration))
+            * Fraction(video.time_base)
+            * int(plan["fps"])
+        )
+        audio_samples_value = (
+            Fraction(int(audio.duration))
+            * Fraction(audio.time_base)
+            * sample_rate
+        )
+        if video_frames_value.denominator != 1:
+            raise RuntimeError("final reel video duration is not an exact frame boundary")
+        if audio_samples_value.denominator != 1:
+            raise RuntimeError("final reel audio duration is not an exact sample boundary")
+        video_frames = int(video_frames_value)
+        audio_samples = int(audio_samples_value)
+        if video_frames != int(plan["total_frames"]):
+            raise RuntimeError(
+                f"final reel video duration is {video_frames} frames, expected {plan['total_frames']}"
+            )
+        if audio_samples != int(plan["total_samples"]):
+            raise RuntimeError(
+                f"final reel audio duration is {audio_samples} samples, expected {plan['total_samples']}"
+            )
+        return {
+            "movie_timescale": int(movie_timescale),
+            "video_duration_frames": video_frames,
+            "audio_stream_duration_samples": audio_samples,
+            "audio_stream_duration_delta_samples": audio_samples
+            - int(plan["total_samples"]),
+            "audio_codec": str(audio.codec_context.name or ""),
+            "video_strict_decode_validated": strict_decode_validated,
+            "video_strict_decode_policy": strict_decode_policy,
+        }
+
+
 def _compose_reel_delivery_unlocked(
     reel_plan: Mapping[str, Any],
     confirm_compose: bool,
@@ -930,6 +1080,9 @@ def _compose_reel_delivery_unlocked(
     audio_path = root / f".{safe_prefix}.{plan['plan_hash'][:12]}.audio.wav"
     output_path = root / f"{safe_prefix}.{plan['plan_hash'][:12]}.mp4"
     log_path = root / f"{safe_prefix}.ffmpeg.log"
+    expected_video_encoder_threads = _video_encoder_threads(
+        plan["width"], plan["height"]
+    )
     try:
         state = json.loads(state_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError):
@@ -940,12 +1093,20 @@ def _compose_reel_delivery_unlocked(
             "plan_hash": plan["plan_hash"],
             "project_id": plan["project_id"],
             "video_crf": int(crf),
+            "video_encoder_threads": expected_video_encoder_threads,
             "phase": "planned",
         }
         _atomic_json(state_path, state)
     elif state.get("video_crf") != int(crf):
         state.pop("video_sha256", None)
         state["video_crf"] = int(crf)
+        state["phase"] = "planned"
+        _atomic_json(state_path, state)
+    if not _video_phase_policy_matches(state, expected_video_encoder_threads):
+        state.pop("video_sha256", None)
+        state["video_encoder_threads"] = expected_video_encoder_threads
+        state["video_strict_decode_validated"] = False
+        state.pop("video_strict_decode_policy", None)
         state["phase"] = "planned"
         _atomic_json(state_path, state)
 
@@ -958,6 +1119,15 @@ def _compose_reel_delivery_unlocked(
     else:
         video_report = {
             "frame_count": plan["total_frames"],
+            "video_encoder_threads": state.get(
+                "video_encoder_threads", expected_video_encoder_threads
+            ),
+            "video_strict_decode_validated": state.get(
+                "video_strict_decode_validated", False
+            ),
+            "video_strict_decode_policy": state.get(
+                "video_strict_decode_policy"
+            ),
             "video_sha256": state["video_sha256"],
             "resumed": True,
         }
@@ -988,6 +1158,7 @@ def _compose_reel_delivery_unlocked(
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("FFmpeg is required for Reel Delivery final mux")
+    movie_timescale = math.lcm(int(plan["fps"]), int(plan["sample_rate"]))
     descriptor, name = tempfile.mkstemp(
         prefix=f".{safe_prefix}.", suffix=".mp4.tmp", dir=root
     )
@@ -1017,6 +1188,8 @@ def _compose_reel_delivery_unlocked(
             str(plan["total_frames"]),
             "-t",
             f"{plan['total_duration_seconds']:.9f}",
+            "-movie_timescale",
+            str(movie_timescale),
             "-movflags",
             "+faststart",
             "-f",
@@ -1024,6 +1197,11 @@ def _compose_reel_delivery_unlocked(
             str(temporary),
         ]
         _run_process(args, log_path)
+        final_container_report = _validate_final_container(
+            temporary,
+            plan,
+            movie_timescale,
+        )
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
@@ -1037,6 +1215,7 @@ def _compose_reel_delivery_unlocked(
             "output_sha256": _sha256_file(output_path),
             "peak_policy": peak_policy,
             "delivery_gain": gain,
+            "final_container": final_container_report,
         }
     )
     _atomic_json(state_path, state)
@@ -1056,6 +1235,7 @@ def _compose_reel_delivery_unlocked(
         "audio": audio_report,
         "peak_policy": peak_policy,
         "delivery_gain": gain,
+        "final_container": final_container_report,
         "source_files_mutated": False,
         "resume_contract": "valid completed video/audio phase artifacts are hash-verified and reused",
         "cancel_contract": (

@@ -11,12 +11,16 @@ from h3_audio_t8_pkg.nodes_reel_delivery_advanced import (
     REEL_DELIVERY_ADVANCED_NODE_CLASSES,
 )
 from h3_audio_t8_pkg.reel_delivery_advanced import (
+    VIDEO_STRICT_DECODE_POLICY,
     build_reel_delivery_plan,
     compose_reel_delivery,
     _cleanup_orphan_temporary_files,
     _reel_execution_lock,
     _cleanup_temporary,
+    _strict_validate_encoded_video,
     _unlink_with_retry,
+    _video_encoder_threads,
+    _video_phase_policy_matches,
     validate_reel_plan,
 )
 
@@ -184,6 +188,18 @@ def test_reel_compose_requires_confirmation_then_streams_and_resumes(
     assert output.is_file()
     assert report["frame_count"] == 42
     assert report["audio_samples"] == 84000
+    assert report["video"]["video_encoder_threads"] == "auto"
+    assert report["video"]["video_strict_decode_validated"] is False
+    assert report["video"]["video_strict_decode_policy"] is None
+    assert report["final_container"] == {
+        "movie_timescale": 48000,
+        "video_duration_frames": 42,
+        "audio_stream_duration_samples": 84000,
+        "audio_stream_duration_delta_samples": 0,
+        "audio_codec": "aac",
+        "video_strict_decode_validated": False,
+        "video_strict_decode_policy": None,
+    }
     assert report["source_files_mutated"] is False
     assert first_hash == plan["clips"][0]["source_sha256"]
     assert second_hash == plan["clips"][1]["source_sha256"]
@@ -217,6 +233,55 @@ def test_reel_compose_requires_confirmation_then_streams_and_resumes(
     assert third_report["audio"]["resumed"] is True
     state = json.loads(Path(third_report["state_path"]).read_text(encoding="utf-8"))
     assert state["video_crf"] == 17
+
+
+@pytest.mark.parametrize(
+    ("sample_rate", "expected_samples", "expected_movie_timescale"),
+    [
+        (32000, 77333, 96000),
+        (44100, 106575, 88200),
+        (48000, 116000, 48000),
+    ],
+)
+def test_reel_mux_preserves_non_millisecond_audio_boundaries(
+    monkeypatch,
+    tmp_path,
+    sample_rate,
+    expected_samples,
+    expected_movie_timescale,
+):
+    input_dir, _output = _configure(monkeypatch, tmp_path)
+    clip = input_dir / "irregular-duration.mp4"
+    _write_clip(clip, 96, 0.08, frames=58)
+    plan = build_reel_delivery_plan(
+        f"reel_exact_{sample_rate}",
+        json.dumps(
+            {"clips": [{"id": "only", "path": "input:irregular-duration.mp4"}]}
+        ),
+        sample_rate,
+        1.0,
+        64.0,
+    )
+    assert plan["total_frames"] == 58
+    assert plan["total_samples"] == expected_samples
+
+    path, report = compose_reel_delivery(
+        plan,
+        True,
+        "H3_Reel_Exact_Boundary",
+        18,
+        "block_if_clipping",
+    )
+    assert Path(path).is_file()
+    assert report["final_container"] == {
+        "movie_timescale": expected_movie_timescale,
+        "video_duration_frames": 58,
+        "audio_stream_duration_samples": expected_samples,
+        "audio_stream_duration_delta_samples": 0,
+        "audio_codec": "aac",
+        "video_strict_decode_validated": False,
+        "video_strict_decode_policy": None,
+    }
 
 
 def test_temporary_cleanup_retries_transient_windows_lock(monkeypatch, tmp_path):
@@ -262,6 +327,7 @@ def test_orphan_cleanup_covers_all_reel_temporary_types(tmp_path):
         ".Reel.token.mp4.tmp",
         "..Reel.token.video.mp4.tmp",
         "..Reel.token.wav.tmp",
+        ".Reel.token.validation.log.tmp",
         ".Reel.token.filters.txt",
         ".Reel.state.json.token.tmp",
     ]
@@ -278,6 +344,61 @@ def test_reel_execution_lock_rejects_concurrent_same_project(tmp_path):
         with pytest.raises(TimeoutError, match="project is busy"):
             with _reel_execution_lock(tmp_path, timeout_seconds=0.01):
                 raise AssertionError("a second project owner must not enter")
+
+
+def test_reel_high_resolution_uses_scoped_single_thread_x264_policy():
+    assert _video_encoder_threads(736, 416) == "auto"
+    assert _video_encoder_threads(1920, 1088) == 1
+    assert _video_encoder_threads(1088, 1920) == 1
+    assert _video_phase_policy_matches({}, "auto") is True
+    assert _video_phase_policy_matches({}, 1) is False
+    assert _video_phase_policy_matches({"video_encoder_threads": 1}, 1) is False
+    assert (
+        _video_phase_policy_matches(
+            {
+                "video_encoder_threads": 1,
+                "video_strict_decode_validated": True,
+            },
+            1,
+        )
+        is False
+    )
+    assert (
+        _video_phase_policy_matches(
+            {
+                "video_encoder_threads": 1,
+                "video_strict_decode_validated": True,
+                "video_strict_decode_policy": VIDEO_STRICT_DECODE_POLICY,
+            },
+            1,
+        )
+        is True
+    )
+
+
+def test_strict_video_validation_rejects_decoder_diagnostics(monkeypatch, tmp_path):
+    media = tmp_path / "video.mp4.tmp"
+    media.write_bytes(b"fixture")
+
+    captured_args = []
+
+    def fake_run(args, log_path):
+        captured_args.extend(args)
+        log_path.write_text("decoder error", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.reel_delivery_advanced.shutil.which",
+        lambda _name: "ffmpeg",
+    )
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.reel_delivery_advanced._run_process", fake_run
+    )
+    with pytest.raises(RuntimeError, match="decode errors"):
+        _strict_validate_encoded_video(media)
+    assert captured_args[captured_args.index("-threads") + 1] == "1"
+    assert "-xerror" in captured_args
+    assert captured_args[captured_args.index("-err_detect") + 1] == "explode"
+    assert not list(tmp_path.glob("*.validation.log.tmp"))
 
 
 def test_reel_nodes_are_append_only_safe_defaults():

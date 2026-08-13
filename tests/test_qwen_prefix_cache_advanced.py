@@ -81,6 +81,7 @@ def test_current_comfy_qwen_contract_is_known():
         "qwen_image_inputs",
         "llama_forward",
         "attention_forward",
+        "transformer_block_forward",
     }
 
 
@@ -223,12 +224,13 @@ def test_real_comfy_llama_prefix_kv_matches_full_causal_forward_on_cpu():
     prefix = torch.randn(1, 5, 16, generator=generator)
     suffix = torch.randn(1, 4, 16, generator=generator)
     full_embeds = torch.cat((prefix, suffix), dim=1)
-    full_output = model.forward(
-        None,
-        embeds=full_embeds,
-        position_ids=torch.arange(9).unsqueeze(0),
-        dtype=torch.float32,
-    )[0]
+    with torch.no_grad():
+        full_output = model.forward(
+            None,
+            embeds=full_embeds,
+            position_ids=torch.arange(9).unsqueeze(0),
+            dtype=torch.float32,
+        )[0]
 
     past = [
         (
@@ -238,13 +240,14 @@ def test_real_comfy_llama_prefix_kv_matches_full_causal_forward_on_cpu():
         )
         for _ in model.layers
     ]
-    prefix_output = model.forward(
-        None,
-        embeds=prefix,
-        position_ids=torch.arange(5).unsqueeze(0),
-        past_key_values=past,
-        dtype=torch.float32,
-    )
+    with torch.no_grad():
+        prefix_output = model.forward(
+            None,
+            embeds=prefix,
+            position_ids=torch.arange(5).unsqueeze(0),
+            past_key_values=past,
+            dtype=torch.float32,
+        )
     entry = PrefixCacheEntry(
         key="tiny",
         hidden=prefix_output[0],

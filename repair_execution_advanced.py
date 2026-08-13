@@ -291,6 +291,39 @@ def _repair_paths(root: Path, plan_hash: str) -> tuple[Path, Path]:
     return repair_root, repair_root / REPAIR_MANIFEST_NAME
 
 
+def _cleanup_atomic_temporaries(
+    target: Path,
+    *,
+    temporary_prefix: str | None = None,
+    temporary_suffix: str = ".tmp",
+) -> list[str]:
+    """Remove only abandoned atomic-write files for one exact destination.
+
+    The caller must hold the operation's OS lock. The fixed basename prefix keeps
+    cleanup inside this node's own destination namespace and avoids broad temp scans.
+    """
+
+    prefix = temporary_prefix or f".{target.name}."
+    if not prefix.startswith(".") or any(char in prefix for char in ("/", "\\")):
+        raise ValueError("Repair temporary cleanup prefix is invalid")
+    if not temporary_suffix.endswith(".tmp") or any(
+        char in temporary_suffix for char in ("/", "\\")
+    ):
+        raise ValueError("Repair temporary cleanup suffix is invalid")
+    parent = target.parent.resolve()
+    removed = []
+    for candidate in sorted(target.parent.glob(f"{prefix}*{temporary_suffix}")):
+        if candidate.parent.resolve() != parent:
+            raise ValueError("Repair temporary cleanup escaped its destination directory")
+        if candidate.is_symlink() or not candidate.is_file():
+            raise ValueError(
+                f"Repair temporary cleanup refused a non-regular file: {candidate}"
+            )
+        candidate.unlink()
+        removed.append(str(candidate))
+    return removed
+
+
 def _validate_repair_manifest(
     payload: Any, execution: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -418,6 +451,29 @@ def accept_staged_repair(
             staged,
             allow_new=True,
         )
+        safe_candidate = _safe_token(
+            candidate["candidate_id"], fallback_prefix="repair"
+        )
+        accepted_dir = repair_root / "accepted"
+        accepted_video = accepted_dir / (
+            f"segment_{int(source['index']):05d}_{safe_candidate}.mp4"
+        )
+        accepted_context = None
+        if candidate.get("context_path"):
+            accepted_context = accepted_dir / (
+                f"segment_{int(source['index']):05d}_{safe_candidate}.context.safetensors"
+            )
+        removed_temporaries = [
+            *_cleanup_atomic_temporaries(accepted_video),
+            *_cleanup_atomic_temporaries(repair_manifest_path),
+            *_cleanup_atomic_temporaries(
+                repair_manifest_path.with_name(REPAIR_MANIFEST_BACKUP_NAME)
+            ),
+        ]
+        if accepted_context is not None:
+            removed_temporaries.extend(
+                _cleanup_atomic_temporaries(accepted_context)
+            )
         key = str(int(source["index"]))
         existing = overlay["replacements"].get(key)
         if existing is not None:
@@ -438,6 +494,7 @@ def accept_staged_repair(
                         "overlay_revision": overlay["revision"],
                         "repair_manifest_path": str(repair_manifest_path),
                         "base_manifest_mutated": False,
+                        "orphan_temporary_files_removed_before_accept": removed_temporaries,
                     },
                 )
             if not replace_existing:
@@ -446,26 +503,16 @@ def accept_staged_repair(
                     "Enable replace_existing only after reviewing the new take."
                 )
 
-        safe_candidate = _safe_token(
-            candidate["candidate_id"], fallback_prefix="repair"
-        )
-        accepted_dir = repair_root / "accepted"
-        accepted_video = accepted_dir / (
-            f"segment_{int(source['index']):05d}_{safe_candidate}.mp4"
-        )
         if (
             accepted_video.exists()
             and _sha256_file(accepted_video) != candidate["video_sha256"]
         ):
             raise ValueError("Repair overlay destination collision")
         video_hash = _copy_atomic(candidate_video, accepted_video)
-        accepted_context = None
         context_hash = str(candidate.get("context_sha256", ""))
         if candidate.get("context_path"):
             source_context = _resolve_inside(root, candidate["context_path"])
-            accepted_context = accepted_dir / (
-                f"segment_{int(source['index']):05d}_{safe_candidate}.context.safetensors"
-            )
+            assert accepted_context is not None
             if (
                 accepted_context.exists()
                 and _sha256_file(accepted_context) != context_hash
@@ -537,6 +584,7 @@ def accept_staged_repair(
             "repair_candidate_id": candidate["candidate_id"],
             "base_manifest_mutated": False,
             "candidate_files_retained": True,
+            "orphan_temporary_files_removed_before_accept": removed_temporaries,
             "rollback": "Compose in base_rollback mode; the accepted base manifest was never changed.",
         },
     )

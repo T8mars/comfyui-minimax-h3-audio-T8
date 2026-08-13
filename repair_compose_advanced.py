@@ -12,6 +12,7 @@ import numpy as np
 
 from .long_video_delivery import (
     _decode_audio_exact,
+    _manifest_lock,
     _resolve_inside,
     _safe_token,
     _sha256_file,
@@ -23,11 +24,12 @@ from .repair_execution_advanced import (
     REPAIR_EXECUTION_SCHEMA,
     _base_snapshot,
     _candidate_contract_mismatches,
+    _cleanup_atomic_temporaries,
     load_repair_overlay,
 )
 
 
-def _compose_manifest(
+def _compose_manifest_unlocked(
     manifest: Mapping[str, Any],
     root: Path,
     output_path: Path,
@@ -177,6 +179,32 @@ def _compose_manifest(
         "segments": segment_reports,
         "seams": seams,
     }
+
+
+def _compose_manifest(
+    manifest: Mapping[str, Any],
+    root: Path,
+    output_path: Path,
+    audio_seam_policy: str,
+    bridge_ms: float,
+    crf: int,
+) -> dict[str, Any]:
+    with _manifest_lock(output_path.parent):
+        removed_temporaries = _cleanup_atomic_temporaries(
+            output_path,
+            temporary_prefix=f".{output_path.stem}.",
+            temporary_suffix=".mp4.tmp",
+        )
+        report = _compose_manifest_unlocked(
+            manifest,
+            root,
+            output_path,
+            audio_seam_policy,
+            bridge_ms,
+            crf,
+        )
+    report["orphan_temporary_files_removed_before_compose"] = removed_temporaries
+    return report
 
 
 def compose_repair_overlay(
