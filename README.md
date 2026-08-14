@@ -1447,6 +1447,24 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 | 1.8 | 1824×1024 |
 | 2.0 | 1920×1088 |
 
+## 高速动态质量实验（Advanced）
+
+v1.19.0 追加两个完全旁路旧工作流的实验节点：
+
+- `MiniMaxH3AVSigmaTailSubdivisionT8Advanced`：接在双时钟节点的 `sigmas` 与
+  `SamplerCustomAdvanced` 之间。默认 `report_only + extra_substeps=0`，逐位透传输入；开启实验时
+  只在base-flow时钟中插点并保留全部原始knots，同时报告video/audio sigma、真实NFE与schedule SHA。
+  Turbo增加中间时间点属于训练网格外实验，必须显式确认；每个新增点都是一次完整联合A/V DiT前向。
+- `MiniMaxH3MotionQualityAuditT8Advanced`：对已解码IMAGE帧做只读时序代理审计，可用全帧、人工静态ROI
+  或外接MASK，输出风险区间与`17n+5`合法修复窗口。它不修改成片、不加载或自动下载人脸模型，
+  也不声称已完成人脸检测、身份验证或质量改善。
+
+新的 Turbo 双时钟质量、兼容、性能和显存测试统一按视频8步/音频8步。旧4步工作流继续保留，
+用于验证向后兼容和复现历史结果，不再作为后续质量结论的统一测试标准。新示例
+`H3_Motion_Quality_Advanced_8Step_EXP.json`默认不应用sigma插点，先提供严格8步基线和只读审计。
+目前只有数学、schema、合成时序代理和工作流结构测试；尚无大模型相同NFE A/B、感知质量、身份、
+音频非劣或16GB安全证据，因此不能把这两个节点称为“修脸”“高速动态修复”或`memory_safe`。
+
 ## 示例与测试
 
 可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑、
@@ -1457,6 +1475,7 @@ H3 的展示顺序是：所有 Picture；然后每个参考视频（其声轨 Au
 - `H3_Long_Video_Auto_Resume_22F_EXP.json`：总时长编排与人工审核后自动恢复。
 - `H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
 - `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
+- `H3_Motion_Quality_Advanced_8Step_EXP.json`：Turbo双时钟8步测试基线、默认关闭的sigma尾段实验与只读质量审计。
 - `H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
 - `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
   最小audio-row实验profile。
@@ -1467,6 +1486,7 @@ API 示例见 `examples/audio_lock_api.json`、
 `examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
 `examples/still_image_edit_api.json`、`examples/hybrid_model_advanced_api.json`、
 `examples/hybrid_model_audio_reference_api.json`与`examples/hybrid_model_mixed_reference_api.json`；
+高速动态实验另见`examples/motion_quality_advanced_8step_api.json`；
 对白安全音频另见
 `examples/dialogue_safe_master_api.json` 与 `examples/dialogue_timed_bed_lock_api.json`。
 替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
@@ -1491,8 +1511,9 @@ DynamicVRAM/VBAR、`LoraLoaderBypassModelOnly` 和双时钟采样组合下的 OO
 Hybrid Loader未启用/启用VRAM Policy的严格单变量A/B、按节点和采样进度记录显存曲线，以及
 比较两次运行的控制变量与峰值增量。
 
-第一轮稳定 Turbo 对照必须统一为 4 步、相同模型/LoRA/Prompt/seed/尺寸/帧数，并建议关闭
-预览。完整命令、判定规则和限制见 [显存验证方法](docs/VRAM_VALIDATION.md)。在取得真实 OOM
+从v1.19.0开始，新的 Turbo 双时钟对照必须统一为8步、相同模型/LoRA/Prompt/seed/尺寸/帧数，
+并建议关闭预览。既有4步记录仅保留为历史与兼容证据。完整命令、判定规则和限制见
+[显存验证方法](docs/VRAM_VALIDATION.md)。在取得真实 OOM
 traceback 和有效 A/B 前，不应把高显存直接归因于双时钟节点，也不应盲目替换 INT8 旁路
 LoRA 或关闭 VBAR。
 

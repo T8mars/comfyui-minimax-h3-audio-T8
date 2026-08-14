@@ -263,12 +263,12 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
 
     dual_nodes = [item for item in sampling if item["class_type"] == "MiniMaxH3DualClockSamplerT8"]
     for item in dual_nodes:
-        if item["steps"] != 4:
+        if item["steps"] != 8:
             risks.append({
                 "code": "dual_clock_non_turbo_step_count",
                 "severity": "warning",
                 "node_id": item["node_id"],
-                "message": f"Stable Turbo comparison expects 4 steps, found {item['steps']!r}.",
+                "message": f"Current Turbo dual-clock test baseline expects 8 steps, found {item['steps']!r}.",
             })
 
     external_schedulers = [
@@ -350,7 +350,7 @@ def analyze_prompt(prompt: dict[str, dict[str, Any]]) -> dict[str, Any]:
 def make_ab_prompts(
     prompt: dict[str, dict[str, Any]],
     *,
-    steps: int = 4,
+    steps: int = 8,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     if steps < 1:
         raise ValidationError("A/B step count must be at least 1.")
@@ -1366,7 +1366,7 @@ def make_parser() -> argparse.ArgumentParser:
         ),
     )
     pair_parser.add_argument("workflow", type=Path)
-    pair_parser.add_argument("--steps", type=int, default=4)
+    pair_parser.add_argument("--steps", type=int, default=8)
     pair_parser.add_argument("--output-dir", type=Path, required=True)
     pair_parser.add_argument("--prefix")
 

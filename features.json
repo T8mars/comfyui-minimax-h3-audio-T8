@@ -102,8 +102,31 @@
     "MiniMaxH3ReelDeliveryComposeT8Advanced",
     "MiniMaxH3TrajectoryProbeT8Advanced",
     "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
-    "MiniMaxH3TrajectoryCheckpointLoadT8Advanced"
+    "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
+    "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
+    "MiniMaxH3MotionQualityAuditT8Advanced"
   ],
+  "experimental_motion_quality_advanced": {
+    "category": "T8/MiniMax H3/Quality/Experimental",
+    "nodes": [
+      "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
+      "MiniMaxH3MotionQualityAuditT8Advanced"
+    ],
+    "behavior": [
+      "future Turbo dual-clock validation uses 8 video and 8 audio denoise steps; retained 4-step examples are compatibility fixtures rather than the quality baseline",
+      "sigma-tail subdivision is report-only with zero inserted steps by default, preserves every input schedule knot, and only applies to the explicit dual_clock_euler route",
+      "Turbo subdivision is out-of-training-distribution and requires an explicit acknowledgement before apply_exp",
+      "motion-quality audit is read-only and reports proxy signals plus 17n+5-aligned repair windows; it does not claim face detection, identity verification or quality improvement"
+    ],
+    "validated": [
+      "exact 8-step Turbo profile enforcement and original-knot preservation unit tests",
+      "base-flow insertion with independent video/audio shift projection",
+      "strict refusal for invalid schedules, unsupported apply routes and unacknowledged Turbo OOD use",
+      "synthetic high-motion blur, stable sequence, ROI and mask contract tests",
+      "88-node append-only registration contract"
+    ],
+    "status": "implemented Advanced EXP mechanics; no real H3 generation, perceptual quality promotion, identity metric, face detector or 16GB memory-safe claim yet"
+  },
   "experimental_environment_audit_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
     "nodes": ["MiniMaxH3EnvironmentAuditT8Advanced"],

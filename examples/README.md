@@ -6,6 +6,11 @@
 `dual_clock_4step_api.json` 展示 H3 Turbo LoRA 的四步原生音画生成。双时钟节点同时
 替代 Sigma Shift、sampler 选择器和 scheduler，输出直接接入 `SamplerCustomAdvanced`。
 
+`motion_quality_advanced_8step_api.json` 是新的Turbo双时钟8步测试基线。它在稳定双时钟
+`sigmas`后串接默认`report_only + extra_substeps=0`的AV Sigma Tail Advanced，并在解码后串接
+只读Motion Quality Audit。导入时不会改变8步原调度；只有切换`apply_exp`、增加substeps并显式接受
+Turbo OOD才会增加完整联合A/V前向。旧四步示例继续保留为兼容fixture，不再用于新的质量结论。
+
 `multirate_exp_api.json` 展示独立 EXP 节点的 4 个视频宏步 / 8 个音频微步设置。
 `audio_steps` 是完整联合 H3 DiT 的实际调用次数；测试 4/10 时直接把它改成 10。
 
@@ -102,6 +107,8 @@ policy只调节ComfyUI总预留和AIMDO simple headroom，不改变启动时每�
 - `H3_Audio_Reference_Only_Stable_4V4A.json`：输入音频仅作为 `<Audio 1>` 参考，保存全新生成音轨；
 - `H3_Turbo_EXP_4V8A.json`：EXP 视频 4 / 音频 8；
 - `H3_Turbo_EXP_4V10A.json`：EXP 视频 4 / 音频 10。
+- `H3_Motion_Quality_Advanced_8Step_EXP.json`：未来Turbo测试统一8/8；sigma实验默认关闭，
+  解码后只读审计风险区间，不承诺人脸识别、身份验证或质量改善。
 - `H3_Still_Edit_22Frames_EXP.json`：Ref2VA 单图语义编辑，512×512、22帧、20步；
   可在 Reference Image Edit 节点点击“＋”添加最多8张附加参考图，也可切换1、5或124帧。
 - `H3_Ref2VA_Visual_Reference_Strength_EXP.json`：完整 Ref2VA 生成链中的全局视觉参考强度

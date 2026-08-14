@@ -1761,3 +1761,27 @@ execution cannot be certified locally. Cross-GPU execution was explicitly remove
 validation scope on 2026-08-14; it remains an unverified future profile and is not implied by this
 closure. Version
 1.18.2 therefore keeps `memory_safe_claim=false` and `quality_guarantee=false`.
+
+## v1.19.0 motion-quality P0 mechanical checkpoint (2026-08-14)
+
+Two append-only Experimental nodes were added after the previous 86-node registry:
+`MiniMaxH3AVSigmaTailSubdivisionT8Advanced` and `MiniMaxH3MotionQualityAuditT8Advanced`.
+The stable `sampling.py` implementation was not edited. Future Turbo dual-clock quality,
+compatibility, performance and memory tests use eight video and eight audio steps; four-step results
+and workflows remain only as historical and compatibility fixtures.
+
+The sigma node is default-off (`report_only`, zero inserted steps), preserves all original knots
+when inserting in base-flow time, reports both H3 clocks and refuses unsupported routes or
+unacknowledged Turbo schedule OOD. The audit is read-only and dependency-free; it exposes temporal
+proxy risks and legal `17n+5` repair windows without claiming face detection or identity
+verification. A new API/frontend workflow pair uses the exact 8-step baseline and leaves sigma
+insertion disabled.
+
+The complete project regression passed 461 tests; Ruff and compileall passed; all 93 tracked JSON
+files parsed, including 46 frontend workflows; and the append-only registry contains 88 unique
+nodes in exact `features.json` order. The stable `sampling.py` SHA-256 remains
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
+
+No real H3 same-NFE A/B, perceptual improvement, identity validation, audio non-inferiority,
+repeated 16GiB headroom or warm staircase gate has passed. Therefore
+`quality_guarantee=false` and `memory_safe_claim=false` remain unchanged.

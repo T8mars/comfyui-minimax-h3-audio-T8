@@ -19,7 +19,7 @@ from h3_audio_t8_pkg.tools.validate_h3_vram import (
 )
 
 
-def make_prompt(*, steps=4, width=1024, seed=123):
+def make_prompt(*, steps=8, width=1024, seed=123):
     return {
         "1": {
             "class_type": "UNETLoader",
@@ -87,7 +87,7 @@ def make_report(prompt, *, label, peak_delta, status="success"):
     }
 
 
-def test_analysis_identifies_control_inputs_treatment_and_non_four_step_warning():
+def test_analysis_identifies_control_inputs_treatment_and_non_eight_step_warning():
     analysis = analyze_prompt(make_prompt(steps=12))
 
     assert analysis["node_count"] == 7
@@ -106,7 +106,7 @@ def test_analysis_resolves_sampling_literals_projected_by_long_video_orchestrato
     prompt["0"] = {
         "class_type": "MiniMaxH3LongVideoOrchestratorT8",
         "inputs": {
-            "steps": 4,
+            "steps": 8,
             "shift_video": 12.0,
             "shift_audio": 3.0,
             "sampler_name": "dual_clock_euler",
@@ -130,7 +130,7 @@ def test_analysis_resolves_sampling_literals_projected_by_long_video_orchestrato
     assert sampler == {
         "node_id": "4",
         "class_type": "MiniMaxH3DualClockSamplerT8",
-        "steps": 4,
+        "steps": 8,
         "video_steps": None,
         "audio_steps": None,
         "shift_video": 12.0,
@@ -178,9 +178,9 @@ def test_dynamic_vram_requires_log_marker_for_proven_enabled_status():
 
 def test_make_ab_prompts_rewires_all_dual_outputs_and_preserves_controls():
     prompt = make_prompt(steps=12)
-    stock, dual = make_ab_prompts(prompt, steps=4)
+    stock, dual = make_ab_prompts(prompt, steps=8)
 
-    assert dual["4"]["inputs"]["steps"] == 4
+    assert dual["4"]["inputs"]["steps"] == 8
     assert "4" not in stock
     stock_types = {node["class_type"] for node in stock.values()}
     assert {
@@ -216,7 +216,7 @@ def make_hybrid_prompt():
 
 
 def make_activation_prompt():
-    prompt = make_prompt(steps=4, width=736, seed=2608131801)
+    prompt = make_prompt(steps=8, width=736, seed=2608131801)
     prompt["8"] = {
         "class_type": "MiniMaxH3ActivationChunkT8Advanced",
         "inputs": {

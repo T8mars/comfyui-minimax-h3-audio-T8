@@ -56,7 +56,7 @@ $tool = 'F:\AI-T8-video-onekey\ComfyUI\custom_nodes\minimax-h3-audio-T8\tools\va
 
 ```powershell
 & $python $tool make-pair '.\failing_api.json' `
-  --steps 4 `
+  --steps 8 `
   --output-dir '.\artifacts\vram-validation\pair'
 ```
 
@@ -70,7 +70,7 @@ $tool = 'F:\AI-T8-video-onekey\ComfyUI\custom_nodes\minimax-h3-audio-T8\tools\va
 采样设置是实验变量。如果双时钟的 MODEL/SAMPLER/SIGMAS 三个输出没有全部接入正式采样链，
 工具会拒绝生成，避免得到无效对照。
 
-stock 对照只用于显存归因。它对四步 H3 音频的数值积分不等价，不能用其音频质量评价双时钟
+stock 对照只用于显存归因。它对八步 H3 音频的数值积分不等价，不能用其音频质量评价双时钟
 算法。
 
 ### 2.1 生成VRAM Policy严格A/B
