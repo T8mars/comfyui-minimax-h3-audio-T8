@@ -106,8 +106,48 @@
     "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
     "MiniMaxH3MotionQualityAuditT8Advanced",
     "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
-    "MiniMaxH3MotionRepairPlanT8Advanced"
+    "MiniMaxH3MotionRepairPlanT8Advanced",
+    "MiniMaxH3FaceRefinePlanT8Advanced",
+    "MiniMaxH3FaceRefineConditioningT8Advanced",
+    "MiniMaxH3FaceRefineSamplerT8Advanced",
+    "MiniMaxH3FaceRefineStitchAuditT8Advanced"
   ],
+  "experimental_face_refine_advanced": {
+    "category": "T8/MiniMax H3/Quality/Experimental",
+    "nodes": [
+      "MiniMaxH3FaceRefinePlanT8Advanced",
+      "MiniMaxH3FaceRefineConditioningT8Advanced",
+      "MiniMaxH3FaceRefineSamplerT8Advanced",
+      "MiniMaxH3FaceRefineStitchAuditT8Advanced"
+    ],
+    "behavior": [
+      "shot-aware source-bound crop planning resets tracking and smoothing at every detected cut",
+      "the default real-person route uses the pinned MIT OpenCV Zoo YuNet 2023mar ONNX model on CPU; it never uses CUDA, downloads at runtime or persists a detector object across executions",
+      "an isolated CPU ONNX Runtime backend supports the pinned MIT deepghs anime-face v1.4 nano model as anime-only EXP; manual ROI remains dependency-free and local Ultralytics remains opt-in",
+      "video-latent injection requires exact 17n+5 temporal and spatial equality and never trims or pads",
+      "locked audio latent and the existing nested noise-mask object are preserved without re-encoding",
+      "an isolated low-denoise dual-clock node reuses the stable sampler implementation without modifying sampling.py",
+      "stitching records the real edge-clamped face offset, falls back risky frames and proves pixels outside the paste mask remain bit-exact",
+      "all outputs are review candidates; no source overwrite, automatic acceptance, identity guarantee or universal quality claim"
+    ],
+    "validated": [
+      "synthetic edge-face crop geometry and source-plan hash binding",
+      "hard-cut discovery and default refusal of multi-shot single-pass generation",
+      "exact audio tensor and nested noise-mask preservation",
+      "strict temporal/spatial mismatch refusal with no implicit fit",
+      "ellipse stitch outside-mask bit equality and extreme-candidate fallback",
+      "RTX 4060 Ti synthetic 5-frame CUDA crop, exact audio reuse, latent injection and stitch outside-mask equality probe",
+        "one real FL2VA pruned INT8 plus Qwen3-VL NVFP4 and dual-VAE 736x416x124 manual-ROI chain completed 12/12 low-denoise dual-clock steps without OOM in 176.93 seconds; strict output decode reported 124 frames at 24fps and 32kHz stereo audio, while the known aspect-distorted source limits this to mechanical evidence",
+        "pinned YuNet hash 8f2383e4... detected frontal, side-profile, occluded and 8%-of-frame far real faces in local samples while correctly exposing its pure-anime miss; pinned anime ONNX hash fd860b65... detected that anime sample through a separate YOLOv8 decoder",
+        "one automatic YuNet 736x416x124 full H3 chain completed in 171.855 seconds and saved 124 frames at 24fps with 32kHz stereo audio; whole-device peak was 15814MiB on a 16380MiB RTX 4060 Ti, leaving about 566MiB for this exact run",
+        "six repeated 124-frame YuNet passes found faces in the same 98 frames; OpenCV warmed about 761MiB of process CPU allocator pages over the first three passes, then the final three post-run RSS steps were 0.156MiB, 0.004MiB and 0.0MiB, so detector objects are released but process RSS is not promised to return to its first baseline",
+        "six repeated anime ONNX executions retained no session object and had a 78.867MiB first-to-last post-run RSS difference with a maximum 65.512MiB warm step, below the 256MiB staircase diagnostic but not proof of universal allocator release",
+        "505 project tests, full Ruff, compileall, 101 JSON documents, diff check and the stable sampling.py SHA-256 guard passed on ComfyUI 0.33.0 at 7fe8a61385",
+      "ComfyUI 0.33.0 94-node live object_info plus user-workflow visibility probe",
+      "94-node append-only registration contract"
+    ],
+      "status": "implemented Advanced EXP mechanics, default pinned CPU YuNet detection, isolated anime-only ONNX detection, real-sample probes and one fixed-profile automatic 124-frame H3 chain; broad detector precision/recall, 362-frame pressure, perceptual quality, identity and blind-review promotion remain unverified"
+  },
   "experimental_motion_quality_advanced": {
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [

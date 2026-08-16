@@ -11,6 +11,15 @@
 只读Motion Quality Audit。导入时不会改变8步原调度；只有切换`apply_exp`、增加substeps并显式接受
 Turbo OOD才会增加完整联合A/V前向。旧四步示例继续保留为兼容fixture，不再用于新的质量结论。
 
+`face_refine_advanced_api.json` 与 `workflows/H3_Face_Refine_Advanced_EXP.json` 是远景真人脸
+局部二次生成候选链。输入必须预先是精确24fps且帧数满足`17n+5`；示例直接使用原画幅帧，
+不会把竖图强压成固定横画幅。Plan默认使用固定OpenCV Zoo YuNet CPU模型，不联网、不在运行时
+下载；手工ROI与本地Ultralytics仍为显式可选项。`face_refine_anime_advanced_api.json` 与
+`workflows/H3_Face_Refine_Anime_Advanced_EXP.json`改用固定deepghs动漫nano ONNX CPU模型，
+只作为动漫域EXP入口。裁切序列进入独立低去噪双时钟H3第二遍，Stitch仅回贴脸区、异常帧回退原片、
+mask外像素必须逐位不变。最终封装复用原始`mux_audio`，第二遍生成音频被丢弃。多镜头默认
+阻断一次处理；该链只生成供人工审核的候选，不保证身份正确、稳定改善或16GB通用安全。
+
 `multirate_exp_api.json` 展示独立 EXP 节点的 4 个视频宏步 / 8 个音频微步设置。
 `audio_steps` 是完整联合 H3 DiT 的实际调用次数；测试 4/10 时直接把它改成 10。
 
@@ -109,6 +118,10 @@ policy只调节ComfyUI总预留和AIMDO simple headroom，不改变启动时每�
 - `H3_Turbo_EXP_4V10A.json`：EXP 视频 4 / 音频 10。
 - `H3_Motion_Quality_Advanced_8Step_EXP.json`：未来Turbo测试统一8/8；sigma实验默认关闭，
   解码后只读审计风险区间，不承诺人脸识别、身份验证或质量改善。
+- `H3_Face_Refine_Advanced_EXP.json`：原画幅远景真人脸crop、低去噪双时钟二次生成、原音轨
+  透传和非破坏回贴审计；默认固定YuNet CPU检测、单镜头、待人工验收。
+- `H3_Face_Refine_Anime_Advanced_EXP.json`：相同链的动漫专用EXP入口；固定anime-face nano ONNX
+  CPU检测，不把检测框当成身份验证。
 - `H3_Still_Edit_22Frames_EXP.json`：Ref2VA 单图语义编辑，512×512、22帧、20步；
   可在 Reference Image Edit 节点点击“＋”添加最多8张附加参考图，也可切换1、5或124帧。
 - `H3_Ref2VA_Visual_Reference_Strength_EXP.json`：完整 Ref2VA 生成链中的全局视觉参考强度

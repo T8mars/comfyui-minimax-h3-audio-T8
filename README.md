@@ -1,11 +1,11 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.18.2`，共注册
-86 个节点，覆盖只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.21.1`，共注册
+94 个节点，覆盖分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
-节点按稳定性与用途分为九个菜单：
+节点按稳定性与用途分为十个菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
@@ -18,6 +18,7 @@
 | `T8/MiniMax H3/Long Video/Experimental` | 实验 | 总时长分段、断点续作、候选预览/接受、后台逐段执行、原子 manifest、已接受上下文与文件级合成 |
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
+| `T8/MiniMax H3/Quality/Experimental` | 实验 | 高速动态审计、sigma因果实验、repair规划，以及远景脸局部二次生成与回贴审计 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -28,10 +29,39 @@
 将项目目录放入 ComfyUI 的 `custom_nodes/minimax-h3-audio-T8`，重启 ComfyUI 后即可在上述
 菜单中找到节点。基础节点没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
 MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `transformers`，缺少它们不会
-阻止整个插件加载，也不会暗中下载模型。当前完整回归与一条真实Qwen缓存/H3生成兼容探针使用
-ComfyUI `v0.32.0-16@ddbaa8752`；上一轮精确兼容探针为`v0.32.0-15@86aedfd9`，较大范围
-真实生成矩阵仍以`0.31.0@cbbc9dab1`为主基线。
+阻止整个插件加载，也不会暗中下载模型。Face Refine手工ROI没有额外依赖；默认真人自动检测
+延迟使用ComfyUI环境中的OpenCV `FaceDetectorYN`，动漫EXP检测延迟导入`onnxruntime`，旧的
+本地Ultralytics路线仍为显式可选项。任何检测路线都不会在执行时联网下载模型。
+
+本机已把两份固定模型放入`ComfyUI/models/face_detection`，GitHub插件仓库不分发权重：
+
+- `face_detection_yunet_2023mar.onnx`：默认真人/远景CPU检测，OpenCV Zoo MIT，SHA-256
+  `8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4`；
+- `anime_face_detect_v1.4_n.onnx`：仅供`local_anime_onnx_exp`动漫EXP路线，deepghs MIT，SHA-256
+  `fd860b650a4377046842c3cd80d01b0b408bdfbdb4acee5759630f82c6ef04a9`。
+
+目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
+来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
+当前505项完整回归、全仓Ruff、compileall、101份JSON、diff check与白名单启动使用ComfyUI
+`v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
+真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
+`0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`上完成手工ROI与
+自动YuNet各一次真实FL2VA pruned INT8、736×416×124、12步低去噪双时钟端到端执行，均
+12/12步完成且无OOM；自动链耗时171.855秒、整卡峰值15,814MiB/16,380MiB，约余566MiB。
+这只授予该固定路线的单次机械兼容，不授予真实画质、362帧、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
+
+`1.21.1` 完整保留此前90个节点的 ID、顺序、输入和稳定 `sampling.py` 数学，只在末尾追加的
+4个Face Refine Advanced节点内补齐自动检测。Plan默认使用固定哈希的YuNet真人CPU路线；纯动漫
+可显式切到隔离的ONNX Runtime EXP路线，手工ROI和本地Ultralytics仍保留。检测器对象在Plan结束
+后销毁，但OpenCV/ONNX Runtime的进程级CPU分配器可能保留已热身页面，因此报告不承诺RSS回到
+第一次执行前。规划先检测硬切并逐镜头重置轨迹和平滑，
+记录边缘钳制后的真实脸部偏移、源画面代理哈希和完整transform合同。Conditioning只替换联合
+AV latent的视频流，帧数、空间latent或17n+5时钟不一致即拒绝，锁定音频tensor和noise mask
+原样复用。Sampler复用稳定双时钟实现，只在隔离模块中截取低噪声schedule；Stitch默认在CPU
+生成候选，异常帧及相邻帧回退原图，并验证mask外像素逐位不变。全部输出都只是待人工审核的
+候选，不覆盖原片、不自动接受、不改变最终背景音乐/音效，也不承诺身份正确、所有远景脸都会
+改善、16GB普遍安全或低去噪数值已经标定。多镜头默认拒绝单次H3处理，应先拆成镜头内窗口。
 
 `1.18.0` 完整保留 `1.17.0` 的62个节点ID、顺序、输入、默认值和旧接线，只在末尾追加24个
 Advanced/Experimental节点。`Environment Audit`只读报告当前 H3 core、已知修复、wrapper、
@@ -243,6 +273,10 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Reel Delivery Plan/Compose / 成片交付 (Advanced) | 指纹化24fps文件片段、有限crossfade和音频lane，显式确认后以有界内存原子重编码MP4 |
 | MiniMax H3 Trajectory Probe / 采样轨迹探针 (Advanced) | 只拆稳定双时钟Euler sigma，绑定同进程MODEL/SAMPLER，并拒绝wrapper与patches_replace |
 | MiniMax H3 Trajectory Checkpoint Save/Load / 轨迹保存续跑 (Advanced) | 显式保存联合latent并校验完整合同；第二阶段必须使用Load输出的resume_noise，重启后不会伪装成同一模型栈 |
+| MiniMax H3 Face Refine Plan / 远景脸修复规划 (Advanced) | 在原画幅24fps、17n+5窗口中用默认YuNet真人CPU检测、动漫ONNX EXP、手工ROI或本地Ultralytics做分镜内轨迹和平滑，输出源绑定crop计划与预览 |
+| MiniMax H3 Face Refine Latent / 脸部二次生成条件 (Advanced) | 把crop序列精确编码进联合AV latent的视频流，复用锁定音频与mask，拒绝任何静默时空补齐 |
+| MiniMax H3 Face Refine Sampler / 低去噪双时钟采样 (Advanced) | 复用稳定双时钟采样实现并截取低噪声sigma尾段；denoise仅是实验参数，不是已标定修复强度 |
+| MiniMax H3 Face Refine Stitch Audit / 脸部回贴审计 (Advanced) | 按真实边缘偏移回贴ellipse/rect区域，颜色限幅、异常帧回退并证明mask外像素逐位不变；只输出待审候选 |
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -415,6 +449,26 @@ API与可导入前端示例：
 - `examples/scheduled_audio_injection_advanced_api.json` / `examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json`
 - `examples/av_decode_safety_advanced_api.json` / `examples/workflows/H3_AV_Decode_Safety_Advanced.json`
 - `examples/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
+- `examples/face_refine_advanced_api.json` / `examples/workflows/H3_Face_Refine_Advanced_EXP.json`
+- `examples/face_refine_anime_advanced_api.json` / `examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
+
+Face Refine示例故意不经过固定736×416的来源视频窗口：它要求输入已经是24fps且帧数严格满足
+`17n+5`，直接保留原始宽高比，再把脸部crop送入512×512二次H3。默认真人示例使用固定哈希的
+YuNet CPU检测；纯动漫另有`H3_Face_Refine_Anime_Advanced_EXP.json`，明确使用动漫专用EXP模型。
+两者都要求先审核Plan preview；手工ROI仍可在缺少检测依赖时使用，Ultralytics自带模型须由用户
+自行确认许可和类别。示例最终用Conditioning的`mux_audio`
+重新封装，因此H3第二遍生成的音频被丢弃，原背景音乐、环境声和音效不会随脸部回贴被截断。
+若Plan报告硬切，Conditioning默认拒绝一次处理，应先按镜头拆开。先看preview与Stitch报告，再
+人工选择是否接受；该示例没有身份识别，也不构成“远景脸一定修好”或16GB通用保证。
+
+本机真实机械探针使用FL2VA pruned INT8、Qwen3-VL NVFP4、双H3 VAE、736×416×124、12步
+低去噪双时钟和锁定原音频。手工ROI链12/12步完成、总耗时176.93秒；自动YuNet链同样12/12步
+完成、总耗时171.855秒，整卡峰值15,814MiB/16,380MiB。自动输出严格解码为124帧24fps、
+32kHz双声道，文件SHA-256为
+`56df397c0789694ef9919da2593297785d8b0a2ca4e70439261154809b0526ca`。手工链也输出124帧24fps
+H.264与32kHz双声道AAC。来源与输出解码音频均为164,864个双声道采样，相关系数0.997751，
+差异来自AAC重新编码，不能称压缩码流或PCM逐位一致。该来源取自上一轮已被非等比横向拉宽的
+盲测素材，所以本次仅证明真实H3链、回贴、封装和音频保留能完成，绝不作为脸部修复质量证据。
 
 ## Advanced：FL2VA × Ref2VA 小型混合模型实验
 

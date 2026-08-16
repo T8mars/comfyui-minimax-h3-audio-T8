@@ -1,0 +1,169 @@
+{
+  "1": {
+    "inputs": {"file": "replace_with_exact_24fps_124frame_source.mp4"},
+    "class_type": "LoadVideo",
+    "_meta": {"title": "Load exact 24fps / 124-frame source without aspect-ratio resize"}
+  },
+  "2": {
+    "inputs": {"video": ["1", 0]},
+    "class_type": "GetVideoComponents",
+    "_meta": {"title": "Extract original-aspect frames, soundtrack and FPS"}
+  },
+  "3": {
+    "inputs": {
+      "detector_mode": "local_anime_onnx_exp",
+      "detector_model": "face_detection/anime_face_detect_v1.4_n.onnx",
+      "detector_device": "cpu",
+      "confidence": 0.35,
+      "manual_roi_x": 0.30,
+      "manual_roi_y": 0.10,
+      "manual_roi_width": 0.40,
+      "manual_roi_height": 0.55,
+      "scene_cut_threshold": 0.28,
+      "max_track_jump": 0.18,
+      "max_gap_frames": 4,
+      "smoothing_radius": 2,
+      "crop_context_scale": 3.0,
+      "canvas_size": "auto_512",
+      "require_h3_grid": true,
+      "analysis_chunk_frames": 8,
+      "frames": ["2", 0],
+      "fps": ["2", 2]
+    },
+    "class_type": "MiniMaxH3FaceRefinePlanT8Advanced",
+    "_meta": {"title": "EXP anime-only CPU face plan; review preview before generation"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "5": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "6": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "7": {
+    "inputs": {
+      "prompt": "Preserve the same person's identity, expression, gaze, head pose, lighting and timing. Restore plausible natural facial structure and fine detail only; do not beautify, change makeup, age, hairstyle, mouth movement, camera motion or background. No additional speech.",
+      "width": ["3", 4],
+      "height": ["3", 5],
+      "length": ["3", 6],
+      "task_type": "T2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["6", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0],
+      "drive_audio": ["2", 1]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Create square H3 AV latent and lock the original soundtrack"}
+  },
+  "8": {
+    "inputs": {
+      "audio_policy": "require_locked",
+      "allow_multi_shot_exp": false,
+      "positive": ["7", 0],
+      "av_latent": ["7", 1],
+      "crops": ["3", 1],
+      "video_vae": ["4", 0],
+      "face_plan": ["3", 0]
+    },
+    "class_type": "MiniMaxH3FaceRefineConditioningT8Advanced",
+    "_meta": {"title": "Inject crop video latent; audio and time must remain exact"}
+  },
+  "9": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load H3 FL2VA model"}
+  },
+  "10": {
+    "inputs": {
+      "steps": 12,
+      "denoise": 0.45,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": ["9", 0],
+      "av_latent": ["8", 1]
+    },
+    "class_type": "MiniMaxH3FaceRefineSamplerT8Advanced",
+    "_meta": {"title": "Low-denoise dual-clock second pass; experimental, not calibrated"}
+  },
+  "11": {
+    "inputs": {"noise_seed": 2608163001},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Candidate seed"}
+  },
+  "12": {
+    "inputs": {"model": ["10", 0], "conditioning": ["8", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "15": {
+    "inputs": {
+      "noise": ["11", 0],
+      "guider": ["12", 0],
+      "sampler": ["10", 1],
+      "sigmas": ["10", 2],
+      "latent_image": ["8", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Generate face-refine crop candidate"}
+  },
+  "16": {
+    "inputs": {"av_latent": ["15", 0], "video_vae": ["4", 0], "audio_vae": ["5", 0]},
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode generated crop video; generated audio is intentionally discarded"}
+  },
+  "17": {
+    "inputs": {
+      "paste_region": "ellipse",
+      "feather_source_px": 12.0,
+      "blend_strength": 1.0,
+      "color_match_strength": 0.65,
+      "max_face_mean_abs_delta": 0.40,
+      "fallback_neighbor_frames": 1,
+      "processing_device": "cpu_memory_safe",
+      "base_frames": ["2", 0],
+      "refined_crops": ["16", 0],
+      "face_plan": ["3", 0]
+    },
+    "class_type": "MiniMaxH3FaceRefineStitchAuditT8Advanced",
+    "_meta": {"title": "Create review candidate; source outside mask stays bit-exact"}
+  },
+  "18": {
+    "inputs": {"images": ["17", 0], "fps": 24.0, "audio": ["7", 2], "bit_depth": 8},
+    "class_type": "CreateVideo",
+    "_meta": {"title": "Mux candidate with untouched source soundtrack"}
+  },
+  "19": {
+    "inputs": {
+      "video": ["18", 0],
+      "filename_prefix": "MiniMaxH3/face_refine_anime_advanced_candidate",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {"title": "Save candidate for manual review; never overwrite source"}
+  }
+}

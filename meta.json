@@ -1,17 +1,20 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.20.0",
+  "version": "1.21.1",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
-  "validated_on": "2026-08-14",
-  "validated_comfyui_commit": "ddbaa8752874c275290d054ee4fddd6e004f5fdf",
-  "validated_previous_comfyui_commit": "86aedfd943d36d485e5ed3cb9d962f21f73d1741",
-  "validated_earlier_comfyui_commit": "cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44",
+  "validated_on": "2026-08-16",
+  "validated_comfyui_commit": "7fe8a6138504f90ff7be82f3babf416da32876b1",
+  "validated_previous_comfyui_commit": "ddbaa8752874c275290d054ee4fddd6e004f5fdf",
+  "validated_earlier_comfyui_commit": "86aedfd943d36d485e5ed3cb9d962f21f73d1741",
   "validated_legacy_comfyui_commit": "563b98eefbe643a4cd510ee7f0b43e79880d5a3f",
   "python": "3.10+",
   "external_runtime_dependencies": [],
   "optional_runtime_dependencies": [
     "faster-whisper with a local multilingual CTranslate2 model for ASR verification/alignment",
-    "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting"
+    "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting",
+    "OpenCV with FaceDetectorYN plus the pinned local YuNet 2023mar ONNX file for the default real-person Face Refine detector; no runtime download",
+    "onnxruntime plus the pinned local deepghs anime-face v1.4 nano ONNX file for the optional anime-only EXP detector; no runtime download",
+    "ultralytics with a user-supplied locally licensed compatible face detector for the optional legacy Face Refine route; manual ROI remains dependency-free"
   ]
 }
