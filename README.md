@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.21.1`，共注册
-94 个节点，覆盖分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.22.0`，共注册
+95 个节点，覆盖32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -19,6 +19,7 @@
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
 | `T8/MiniMax H3/Quality/Experimental` | 实验 | 高速动态审计、sigma因果实验、repair规划，以及远景脸局部二次生成与回贴审计 |
+| `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -42,7 +43,7 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前505项完整回归、全仓Ruff、compileall、101份JSON、diff check与白名单启动使用ComfyUI
+当前520项完整回归、全仓Ruff、compileall、102份项目JSON、diff check与白名单启动使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`上完成手工ROI与
@@ -50,6 +51,13 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 12/12步完成且无OOM；自动链耗时171.855秒、整卡峰值15,814MiB/16,380MiB，约余566MiB。
 这只授予该固定路线的单次机械兼容，不授予真实画质、362帧、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
+
+`1.22.0` 完整保留此前94个节点的 ID、顺序、输入、默认值和稳定 `sampling.py` 数学，只在末尾
+追加 `Latent Upscale by 32`。它在像素域选择宽高均可被32整除的合法尺寸，默认以H3的
+16像素/latent合同计算；`best_aspect`只在最邻近的四组合法尺寸中选择宽高比误差最小者，并把
+请求尺寸、实际尺寸、X/Y实际倍率和比例误差写入JSON报告。任意小数倍率通常无法同时满足“精确
+倍率、精确原比例、宽高均32整除”，因此节点不会虚构零误差。H3联合AV latent只缩放视频空间轴，
+音频tensor与时钟保持原样；普通SD/SDXL latent需显式改选8像素/latent。
 
 `1.21.1` 完整保留此前90个节点的 ID、顺序、输入和稳定 `sampling.py` 数学，只在末尾追加的
 4个Face Refine Advanced节点内补齐自动检测。Plan默认使用固定哈希的YuNet真人CPU路线；纯动漫
@@ -277,6 +285,13 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Face Refine Latent / 脸部二次生成条件 (Advanced) | 把crop序列精确编码进联合AV latent的视频流，复用锁定音频与mask，拒绝任何静默时空补齐 |
 | MiniMax H3 Face Refine Sampler / 低去噪双时钟采样 (Advanced) | 复用稳定双时钟采样实现并截取低噪声sigma尾段；denoise仅是实验参数，不是已标定修复强度 |
 | MiniMax H3 Face Refine Stitch Audit / 脸部回贴审计 (Advanced) | 按真实边缘偏移回贴ellipse/rect区域，颜色限幅、异常帧回退并证明mask外像素逐位不变；只输出待审候选 |
+| Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
+
+最小可运行示例见
+[`examples/workflows/H3_Latent_Upscale_By32.json`](examples/workflows/H3_Latent_Upscale_By32.json)。
+示例使用ComfyUI普通`EmptyLatentImage`，所以显式选择8像素/latent；连接本包H3 Conditioning输出的
+联合AV latent时应保留默认16。不要把已包含首尾帧/参考图空间条件的AV latent随意放大后继续沿用
+旧尺寸Conditioning；新节点只负责latent几何与音频保持，不会自动重编码那些条件媒体。
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 

@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 94
+    assert len(ids) == 95
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -241,6 +241,10 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for face_refine_schema in schemas[90:94]:
         assert face_refine_schema.is_experimental is True
         assert face_refine_schema.category == "T8/MiniMax H3/Quality/Experimental"
+    assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
+    latent_upscale_schema = schemas[94]
+    assert latent_upscale_schema.is_experimental is False
+    assert latent_upscale_schema.category == "T8/MiniMax H3/Latent"
     sigma_tail_inputs = {item.id: item for item in schemas[86].inputs}
     assert sigma_tail_inputs["mode"].default == "report_only"
     assert sigma_tail_inputs["extra_substeps"].default == 0

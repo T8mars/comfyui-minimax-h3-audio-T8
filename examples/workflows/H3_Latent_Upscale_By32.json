@@ -1,0 +1,222 @@
+{
+  "id": "d6ba7c63-a3b2-4d60-8290-563ac2329489",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "EmptyLatentImage",
+      "title": "Runnable plain-latent example; H3 AV users connect Audio Conditioning instead",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        360,
+        126
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "batch_size",
+          "type": "INT",
+          "widget": {
+            "name": "batch_size"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        736,
+        416,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3LatentUpscaleBy32T8",
+      "title": "1.5x: requested 1104x624 -> legal best-aspect 1120x640",
+      "pos": [
+        430,
+        0
+      ],
+      "size": [
+        430,
+        226
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "upscale_method",
+          "type": "COMBO",
+          "widget": {
+            "name": "upscale_method"
+          },
+          "link": null
+        },
+        {
+          "name": "scale_by",
+          "type": "FLOAT",
+          "widget": {
+            "name": "scale_by"
+          },
+          "link": null
+        },
+        {
+          "name": "pixels_per_latent",
+          "type": "COMBO",
+          "widget": {
+            "name": "pixels_per_latent"
+          },
+          "link": null
+        },
+        {
+          "name": "alignment_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "alignment_policy"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3LatentUpscaleBy32T8"
+      },
+      "widgets_values": [
+        "bicubic",
+        1.5,
+        "8 - SD/SDXL/other",
+        "best_aspect"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "PreviewAny",
+      "title": "Preview actual dimensions, scale and aspect-ratio error",
+      "pos": [
+        930,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      2,
+      3,
+      3,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "Latent Upscale by 32 / 32整除潜空间放大 (T8)",
+    "notes": "The included EmptyLatentImage is a standard 8-pixel latent, so the example selects 8. For MiniMax H3 joint AV latent connect Audio Conditioning and keep the default 16."
+  },
+  "version": 0.4
+}

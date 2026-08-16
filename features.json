@@ -110,8 +110,28 @@
     "MiniMaxH3FaceRefinePlanT8Advanced",
     "MiniMaxH3FaceRefineConditioningT8Advanced",
     "MiniMaxH3FaceRefineSamplerT8Advanced",
-    "MiniMaxH3FaceRefineStitchAuditT8Advanced"
+    "MiniMaxH3FaceRefineStitchAuditT8Advanced",
+    "MiniMaxH3LatentUpscaleBy32T8"
   ],
+  "latent_upscale_by_32": {
+    "category": "T8/MiniMax H3/Latent",
+    "nodes": ["MiniMaxH3LatentUpscaleBy32T8"],
+    "behavior": [
+      "selects pixel-space output dimensions that are both exactly divisible by 32",
+      "best_aspect evaluates the four closest legal size pairs and reports the unavoidable residual aspect-ratio error",
+      "supports explicit 16-pixel MiniMax H3 and 8-pixel plain latent scale contracts",
+      "for nested H3 AV latent only video spatial axes are resized while audio values and timing remain unchanged",
+      "matching latent-space noise masks are resized with nearest-exact; nonmatching masks are preserved and reported instead of guessed",
+      "all unrelated latent metadata is preserved and no existing node contract is modified"
+    ],
+    "validated": [
+      "plain 4D and video 5D latent spatial resizing, 2D/3D/5D matching noise masks, nonmatching mask preservation and metadata pass-through",
+      "nested MiniMax H3 joint AV latent preserves the exact audio tensor and audio mask while resizing only video spatial axes",
+      "ComfyUI 0.33.0 whitelist live object_info exposed the 95th node with the expected schema",
+      "a live CPU API prompt resized a 736x416 plain latent by 1.5x to 1120x640 in 0.01 seconds and returned 1.0869565 percent residual aspect-ratio error",
+      "520 project tests, full Ruff, compileall, 102 project JSON documents, diff check and stable sampling.py hash guard passed"
+    ]
+  },
   "experimental_face_refine_advanced": {
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [
@@ -142,9 +162,9 @@
         "one automatic YuNet 736x416x124 full H3 chain completed in 171.855 seconds and saved 124 frames at 24fps with 32kHz stereo audio; whole-device peak was 15814MiB on a 16380MiB RTX 4060 Ti, leaving about 566MiB for this exact run",
         "six repeated 124-frame YuNet passes found faces in the same 98 frames; OpenCV warmed about 761MiB of process CPU allocator pages over the first three passes, then the final three post-run RSS steps were 0.156MiB, 0.004MiB and 0.0MiB, so detector objects are released but process RSS is not promised to return to its first baseline",
         "six repeated anime ONNX executions retained no session object and had a 78.867MiB first-to-last post-run RSS difference with a maximum 65.512MiB warm step, below the 256MiB staircase diagnostic but not proof of universal allocator release",
-        "505 project tests, full Ruff, compileall, 101 JSON documents, diff check and the stable sampling.py SHA-256 guard passed on ComfyUI 0.33.0 at 7fe8a61385",
-      "ComfyUI 0.33.0 94-node live object_info plus user-workflow visibility probe",
-      "94-node append-only registration contract"
+        "520 project tests, full Ruff, compileall, 102 project JSON documents, diff check and the stable sampling.py SHA-256 guard passed on ComfyUI 0.33.0 at 7fe8a61385",
+      "ComfyUI 0.33.0 95-node schema registration and user-workflow visibility probes",
+      "95-node append-only registration contract"
     ],
       "status": "implemented Advanced EXP mechanics, default pinned CPU YuNet detection, isolated anime-only ONNX detection, real-sample probes and one fixed-profile automatic 124-frame H3 chain; broad detector precision/recall, 362-frame pressure, perceptual quality, identity and blind-review promotion remain unverified"
   },
