@@ -8,7 +8,13 @@ import pytest
 import torch
 from comfy.ldm.minimax import model as minimax_model
 
-from h3_audio_t8_pkg.conditioning import HYBRID_KEYFRAME_SENTINEL, build_conditioning
+from h3_audio_t8_pkg.conditioning import (
+    HYBRID_KEYFRAME_SENTINEL,
+    HYBRID_LAYOUT_LEGACY_SENTINEL,
+    assert_hybrid_layout_contract,
+    build_conditioning,
+    build_packed_layout,
+)
 from h3_audio_t8_pkg.long_video import patch_long_video_model
 from h3_audio_t8_pkg.multikeyframe_advanced import (
     ACTUAL_FRAME_INDEX,
@@ -74,7 +80,7 @@ def make_model_patcher():
     base.diffusion_model = diffusion
 
     def extra_conds(_self, **kwargs):
-        layout = minimax_model.PackedLayout(
+        layout = build_packed_layout(
             7,
             37,
             8,
@@ -252,7 +258,7 @@ def test_advanced_build_adds_sorted_middle_keyframes_and_independent_augs():
     assert any("not a VRAM percentage" in warning for warning in report["warnings"])
 
 
-def test_advanced_positive_miswired_to_the_original_model_fails_closed():
+def test_advanced_positive_miswire_uses_native_layout_or_legacy_fails_closed():
     plan = append_keyframe_plan(
         None, make_image(0.4), "frame", 31, 0.999, "center_crop", True
     )
@@ -266,8 +272,22 @@ def test_advanced_positive_miswired_to_the_original_model_fails_closed():
         **_conditioning_args(),
     )
     metadata = result[1][0][1]
-    with pytest.raises(ValueError, match="only first/last keyframe anchors are supported"):
-        model.model.extra_conds(**metadata)
+    if native_middle_keyframe_support():
+        payload = model.model.extra_conds(**metadata)["minimax_payload"].cond
+        cond_starts = [
+            start
+            for start, _stop, kind in payload["layout"].segments
+            if kind == "cond"
+        ]
+        actual = [
+            float(payload["layout"].position_ids[start, 0]) for start in cond_starts
+        ]
+        assert actual == pytest.approx(
+            [7.0, 7.0 + 5 / 3 * 31, 7.0 + 5 / 3 * 123]
+        )
+    else:
+        with pytest.raises(ValueError, match="only first/last keyframe anchors are supported"):
+            model.model.extra_conds(**metadata)
 
 
 def test_reference_only_advanced_use_is_rejected_before_model_execution():
@@ -319,15 +339,20 @@ def test_hybrid_payload_preserves_visual_and_audio_reference_order():
     )
     metadata = result[1][0][1]
     refs = metadata["minimax_refs"]
-    assert [ref["kind"] for ref in refs] == [
-        HYBRID_KEYFRAME_SENTINEL,
-        HYBRID_KEYFRAME_SENTINEL,
-        HYBRID_KEYFRAME_SENTINEL,
-        "image",
-        "video_audio",
-        "audio",
-        "audio",
-    ]
+    if assert_hybrid_layout_contract() == HYBRID_LAYOUT_LEGACY_SENTINEL:
+        assert [ref["kind"] for ref in refs] == [
+            HYBRID_KEYFRAME_SENTINEL,
+            HYBRID_KEYFRAME_SENTINEL,
+            HYBRID_KEYFRAME_SENTINEL,
+            "image",
+            "video_audio",
+            "audio",
+            "audio",
+        ]
+    else:
+        assert [ref["kind"] for ref in refs] == [
+            "image", "video_audio", "audio", "audio"
+        ]
     payload = result[0].object_patches["extra_conds"](**metadata)["minimax_payload"].cond
     assert len(payload["cond_video_latents"]) == 5
     assert len(payload["cond_audio_latents"]) == 3
@@ -339,7 +364,7 @@ def test_scoped_extra_conds_patch_repairs_positions_and_payload_order():
         {
             "resolved_frame_index": 0,
             ACTUAL_FRAME_INDEX: frame,
-            "latent": torch.full((1,), float(index)),
+            "latent": torch.full((1, 24, 1, 8, 8), float(index)),
         }
         for index, frame in enumerate([0, 31, 92, 123])
     ]
@@ -391,7 +416,7 @@ def test_per_condition_rows_and_timesteps_change_only_the_selected_condition():
         {"resolved_frame_index": 0, "latent": latents[0]},
         {"resolved_frame_index": 4, "latent": latents[1]},
     ]
-    layout = minimax_model.PackedLayout(
+    layout = build_packed_layout(
         7, 2, 4, 4, 8, keyframes=keyframes, frame_count=5
     )
     times = _segment_timestep_plan(layout, 0.1, 0.2, [0.999, 0.95], 1.0)

@@ -1,0 +1,13 @@
+{
+  "schema": "t8.minimax_h3.motion_quality_repeat_selection.v1",
+  "review_completed": false,
+  "review_rationale": "",
+  "profiles": [
+    "turbo_standard8"
+  ],
+  "arms": [
+    "same_nfe_tail"
+  ],
+  "cases": ["rapid_displacement_dance"],
+  "seeds": [2608141001]
+}

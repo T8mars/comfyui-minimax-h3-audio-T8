@@ -7,6 +7,7 @@ import torch
 
 from h3_audio_t8_pkg.conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
+    HYBRID_LAYOUT_LEGACY_SENTINEL,
     assert_hybrid_layout_contract,
     build_conditioning,
 )
@@ -78,13 +79,16 @@ def test_soundtrack_pairing_uses_autogrow_ordinal_not_dense_position():
 
 
 def test_exact_keyframe_and_audio_reference_use_guarded_hybrid_payload():
-    assert_hybrid_layout_contract()
+    hybrid_route = assert_hybrid_layout_contract()
     args = base_args()
     args["first_frame"] = torch.zeros((1, 128, 128, 3))
     conditioning, _, _, _, media_map, report = build_conditioning(**args)
     metadata = conditioning[0][1]
     assert metadata["minimax_keyframes"][0]["resolved_frame_index"] == 0
-    assert metadata["minimax_refs"][0]["kind"] == HYBRID_KEYFRAME_SENTINEL
+    if hybrid_route == HYBRID_LAYOUT_LEGACY_SENTINEL:
+        assert metadata["minimax_refs"][0]["kind"] == HYBRID_KEYFRAME_SENTINEL
+    else:
+        assert [item["kind"] for item in metadata["minimax_refs"]] == ["audio"]
     tokenize_kwargs = args["clip"].tokenize_calls[0][1]
     assert [item["type"] for item in tokenize_kwargs["minimax_ref_items"]] == ["image", "audio"]
     assert json.loads(media_map)["pictures"]["1"].startswith("first_frame")

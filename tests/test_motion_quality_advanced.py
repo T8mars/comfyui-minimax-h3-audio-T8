@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 
@@ -9,13 +11,18 @@ import torch
 from h3_audio_t8_pkg.motion_quality_advanced import (
     TURBO_DUAL_CLOCK_TEST_STEPS,
     audit_motion_quality,
+    build_av_sigma_same_nfe_schedule,
     build_av_sigma_tail_schedule,
+    build_motion_repair_plan,
 )
 from h3_audio_t8_pkg.nodes_motion_quality_advanced import (
+    MiniMaxH3AVSigmaSameNFERedistributionT8Advanced,
     MiniMaxH3AVSigmaTailSubdivisionT8Advanced,
+    MiniMaxH3MotionRepairPlanT8Advanced,
     MiniMaxH3MotionQualityAuditT8Advanced,
 )
 from h3_audio_t8_pkg.sampling import native_flow_sigmas, time_shift_sigma
+from h3_audio_t8_pkg.studio_advanced import build_studio_timeline
 
 
 def _build_schedule(sigmas, **overrides):
@@ -147,6 +154,94 @@ def test_invalid_schedules_fail_closed(sigmas, match):
         _build_schedule(sigmas, profile="custom_strict")
 
 
+def _build_same_nfe(sigmas, **overrides):
+    values = {
+        "mode": "report_only",
+        "start_progress": 0.5,
+        "tail_power": 1.6,
+        "shift_video": 12.0,
+        "shift_audio": 3.0,
+        "profile": "turbo_standard8",
+        "sampling_route": "dual_clock_euler",
+        "accept_turbo_schedule_ood": False,
+    }
+    values.update(overrides)
+    return build_av_sigma_same_nfe_schedule(sigmas, **values)
+
+
+def test_same_nfe_report_only_is_exact_identity_and_reports_causal_contract():
+    sigmas = native_flow_sigmas(8, 12.0)
+    output, actual_nfe, report_json = _build_same_nfe(sigmas)
+    report = json.loads(report_json)
+
+    assert output is sigmas
+    assert actual_nfe == 8
+    assert report["same_nfe"] is True
+    assert report["applied"] is False
+    assert report["input_schedule_sha256"] == report["output_schedule_sha256"]
+    assert report["quality_validated"] is False
+    assert report["memory_safe_claim"] is False
+
+
+def test_same_nfe_apply_changes_only_interior_locations_and_keeps_both_clocks_monotonic():
+    sigmas = native_flow_sigmas(8, 12.0).to(dtype=torch.float64)
+    output, actual_nfe, report_json = _build_same_nfe(
+        sigmas,
+        mode="apply_exp",
+        accept_turbo_schedule_ood=True,
+    )
+    report = json.loads(report_json)
+    audio = time_shift_sigma(output, 12.0, 3.0)
+
+    assert output.shape == sigmas.shape
+    assert output.dtype == sigmas.dtype
+    assert output.device == sigmas.device
+    assert actual_nfe == 8
+    assert torch.equal(output[[0, -1]], sigmas[[0, -1]])
+    assert not torch.equal(output[1:-1], sigmas[1:-1])
+    assert torch.all(output[:-1] > output[1:])
+    assert torch.all(audio[:-1] > audio[1:])
+    assert report["same_nfe"] is True
+    assert report["all_original_knots_preserved"] is False
+    assert report["input_schedule_sha256"] != report["output_schedule_sha256"]
+
+
+def test_same_nfe_identity_power_is_exact_and_turbo_changes_require_ood_consent():
+    sigmas = native_flow_sigmas(8, 12.0)
+    output, actual_nfe, report_json = _build_same_nfe(
+        sigmas,
+        mode="apply_exp",
+        tail_power=1.0,
+    )
+    assert output is sigmas
+    assert actual_nfe == 8
+    assert json.loads(report_json)["noop_reason"] == "tail_power_is_identity"
+
+    with pytest.raises(ValueError, match="redistributed times"):
+        _build_same_nfe(sigmas, mode="apply_exp")
+    with pytest.raises(ValueError, match="supports only"):
+        _build_same_nfe(
+            sigmas,
+            mode="apply_exp",
+            sampling_route="native_flow_av_unverified",
+            accept_turbo_schedule_ood=True,
+        )
+
+
+def test_same_nfe_stock20_requires_exact_profile_count_but_not_turbo_consent():
+    sigmas = native_flow_sigmas(20, 12.0)
+    output, actual_nfe, report_json = _build_same_nfe(
+        sigmas,
+        mode="apply_exp",
+        profile="stock20",
+    )
+    assert output.shape == sigmas.shape
+    assert actual_nfe == 20
+    assert json.loads(report_json)["applied"] is True
+    with pytest.raises(ValueError, match="requires 20 steps"):
+        _build_same_nfe(native_flow_sigmas(8, 12.0), profile="stock20")
+
+
 def _audit(frames, **overrides):
     values = {
         "fps": 24.0,
@@ -232,6 +327,158 @@ def test_motion_audit_manual_roi_and_connected_mask_are_strict():
         )
 
 
+def _motion_timeline():
+    return build_studio_timeline(
+        "motion_repair_test",
+        json.dumps(
+            [
+                {
+                    "id": "fast_turn",
+                    "prompt": "A woman turns her head rapidly.",
+                    "duration_seconds": 22 / 24,
+                },
+                {
+                    "id": "occlusion",
+                    "prompt": "The same woman crosses behind a foreground object.",
+                    "duration_seconds": 22 / 24,
+                },
+            ]
+        ),
+        "minimax_h3",
+        22 / 24,
+        "16:9",
+        100,
+        "increment",
+        True,
+        True,
+    )
+
+
+def _audit_report(frame_count, ranges):
+    return json.dumps(
+        {
+            "schema": "minimax_h3_motion_quality_audit_t8_v1",
+            "status": "risk_detected" if ranges else "no_proxy_risk_detected",
+            "frame_count": frame_count,
+            "fps": 24.0,
+            "risk_range_count": len(ranges),
+            "risk_ranges": ranges,
+        }
+    )
+
+
+def _repair_plan(timeline, audit_report_json, **overrides):
+    values = {
+        "audit_scope": "full_timeline",
+        "single_shot_index": 0,
+        "mapping_basis": "suggested_repair_window",
+        "repair_mode": "auto",
+        "prompt_addendum": "Preserve the same identity and motion amplitude.",
+        "seed_stride": 1009,
+        "context_before_frames": 22,
+        "context_after_frames": 22,
+    }
+    values.update(overrides)
+    return build_motion_repair_plan(timeline, audit_report_json, **values)
+
+
+def test_motion_repair_plan_maps_a_boundary_window_to_two_shots_without_mutation():
+    timeline = _motion_timeline()
+    original = deepcopy(timeline)
+    audit = _audit_report(
+        44,
+        [
+            {
+                "raw_start_frame": 21,
+                "raw_end_frame": 22,
+                "suggested_repair_start_frame": 17,
+                "suggested_repair_end_frame": 26,
+                "suggested_length": 10,
+                "suggested_length_is_17n_plus_5": False,
+            }
+        ],
+    )
+    plan, repair_count, plan_json, mapping_json = _repair_plan(timeline, audit)
+    mapping = json.loads(mapping_json)
+
+    assert timeline == original
+    assert repair_count == 2
+    assert plan["selected_indices"] == [0, 1]
+    assert [item["mode"] for item in plan["repairs"]] == [
+        "full_regenerate",
+        "full_regenerate",
+    ]
+    assert plan["automatic_accept"] is False
+    assert plan["accepted_media_mutated"] is False
+    assert plan["motion_audit_link"]["human_acceptance_required"] is True
+    assert json.loads(plan_json)["repair_plan_hash"] == plan["repair_plan_hash"]
+    assert mapping["selected_shot_indices"] == [0, 1]
+    assert mapping["automatic_accept"] is False
+    unhashed = deepcopy(plan)
+    expected_hash = unhashed.pop("repair_plan_hash")
+    compact = json.dumps(
+        unhashed, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    assert hashlib.sha256(compact.encode("utf-8")).hexdigest() == expected_hash
+
+
+def test_motion_repair_plan_single_shot_offsets_local_ranges_and_no_risk_is_empty():
+    timeline = _motion_timeline()
+    risky = _audit_report(
+        22,
+        [
+            {
+                "raw_start_frame": 10,
+                "raw_end_frame": 11,
+                "suggested_repair_start_frame": 7,
+                "suggested_repair_end_frame": 15,
+            }
+        ],
+    )
+    plan, repair_count, _plan_json, mapping_json = _repair_plan(
+        timeline,
+        risky,
+        audit_scope="single_shot",
+        single_shot_index=1,
+    )
+    mapping = json.loads(mapping_json)
+    assert repair_count == 1
+    assert plan["selected_indices"] == [1]
+    assert mapping["ranges"][0]["global_mapped_start_frame"] == 29
+    assert mapping["ranges"][0]["global_mapped_end_frame"] == 37
+
+    empty, empty_count, _empty_json, empty_mapping = _repair_plan(
+        timeline,
+        _audit_report(22, []),
+        audit_scope="single_shot",
+        single_shot_index=0,
+    )
+    assert empty_count == 0
+    assert empty["repairs"] == []
+    assert json.loads(empty_mapping)["selected_shot_indices"] == []
+
+
+def test_motion_repair_plan_rejects_wrong_scope_dimensions_and_malformed_ranges():
+    timeline = _motion_timeline()
+    with pytest.raises(ValueError, match="does not match expected"):
+        _repair_plan(timeline, _audit_report(22, []), audit_scope="full_timeline")
+    with pytest.raises(ValueError, match="outside the audited frames"):
+        _repair_plan(
+            timeline,
+            _audit_report(
+                44,
+                [
+                    {
+                        "raw_start_frame": 43,
+                        "raw_end_frame": 44,
+                        "suggested_repair_start_frame": 43,
+                        "suggested_repair_end_frame": 44,
+                    }
+                ],
+            ),
+        )
+
+
 def test_new_node_schemas_are_default_off_and_appendable():
     sigma_schema = MiniMaxH3AVSigmaTailSubdivisionT8Advanced.define_schema()
     sigma_inputs = {item.id: item for item in sigma_schema.inputs}
@@ -247,6 +494,22 @@ def test_new_node_schemas_are_default_off_and_appendable():
     assert audit_schema.is_experimental is True
     assert audit_schema.is_output_node is True
     assert audit_schema.category == "T8/MiniMax H3/Quality/Experimental"
+
+    same_nfe_schema = MiniMaxH3AVSigmaSameNFERedistributionT8Advanced.define_schema()
+    same_nfe_inputs = {item.id: item for item in same_nfe_schema.inputs}
+    assert same_nfe_schema.node_id.endswith("Advanced")
+    assert same_nfe_schema.is_experimental is True
+    assert same_nfe_inputs["mode"].default == "report_only"
+    assert same_nfe_inputs["profile"].default == "turbo_standard8"
+    assert same_nfe_inputs["accept_turbo_schedule_ood"].default is False
+
+    repair_schema = MiniMaxH3MotionRepairPlanT8Advanced.define_schema()
+    repair_inputs = {item.id: item for item in repair_schema.inputs}
+    assert repair_schema.node_id.endswith("Advanced")
+    assert repair_schema.is_experimental is True
+    assert repair_schema.is_output_node is True
+    assert repair_inputs["audit_scope"].default == "single_shot"
+    assert repair_inputs["mapping_basis"].default == "suggested_repair_window"
 
 
 def test_motion_quality_examples_use_eight_step_baseline_and_safe_defaults():

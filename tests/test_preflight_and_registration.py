@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 88
+    assert len(ids) == 90
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -223,11 +223,13 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for trajectory_schema in schemas[83:86]:
         assert trajectory_schema.is_experimental is True
         assert trajectory_schema.category == "T8/MiniMax H3/Models/Experimental"
-    assert ids[86:88] == [
+    assert ids[86:90] == [
         "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
         "MiniMaxH3MotionQualityAuditT8Advanced",
+        "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
+        "MiniMaxH3MotionRepairPlanT8Advanced",
     ]
-    for motion_quality_schema in schemas[86:88]:
+    for motion_quality_schema in schemas[86:90]:
         assert motion_quality_schema.is_experimental is True
         assert motion_quality_schema.category == "T8/MiniMax H3/Quality/Experimental"
     sigma_tail_inputs = {item.id: item for item in schemas[86].inputs}
@@ -237,6 +239,15 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert sigma_tail_inputs["accept_turbo_schedule_ood"].default is False
     quality_audit_inputs = {item.id: item for item in schemas[87].inputs}
     assert quality_audit_inputs["roi_mode"].default == "full_frame"
+    same_nfe_inputs = {item.id: item for item in schemas[88].inputs}
+    assert same_nfe_inputs["mode"].default == "report_only"
+    assert same_nfe_inputs["tail_power"].default == 1.6
+    assert same_nfe_inputs["profile"].default == "turbo_standard8"
+    assert same_nfe_inputs["accept_turbo_schedule_ood"].default is False
+    motion_repair_inputs = {item.id: item for item in schemas[89].inputs}
+    assert motion_repair_inputs["audit_scope"].default == "single_shot"
+    assert motion_repair_inputs["mapping_basis"].default == "suggested_repair_window"
+    assert schemas[89].is_output_node is True
     assert compatibility_schema.category == "T8/MiniMax H3/Models/Experimental"
     compatibility_inputs = {item.id: item for item in compatibility_schema.inputs}
     assert compatibility_inputs["enforcement"].default == "report_only"

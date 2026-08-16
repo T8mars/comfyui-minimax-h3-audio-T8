@@ -14,10 +14,13 @@ from comfy.ldm.minimax import model as minimax_model
 
 from .conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
+    HYBRID_LAYOUT_LEGACY_SENTINEL,
+    NATIVE_GUIDE_PACKED_LAYOUT_SHA256,
     _encode_reference_audio,
     _resize_reference_image,
     assert_hybrid_layout_contract,
     build_conditioning,
+    build_packed_layout,
     resolve_task_type,
 )
 from .core import (
@@ -51,7 +54,10 @@ NATIVE_LAYOUT_KEY = "t8_multikeyframe_native_layout"
 FRAME_RESCALE = 5.0 / 3.0
 MAX_MIDDLE_KEYFRAMES = 7
 DEFAULT_VISUAL_NOISE_AUG = 0.999
-VALIDATED_FORWARD_SHA256 = "ec62dafa65d6eaf36c670b926a05b42503702cbd6e1e4bb9db279c0db2b4a3c5"
+VALIDATED_FORWARD_SHA256S = {
+    "ec62dafa65d6eaf36c670b926a05b42503702cbd6e1e4bb9db279c0db2b4a3c5",
+    "f40e52b23fb2f9c76ac4cac48c7a2f899e6e37d517cd801a939fff551ab89867",
+}
 RESIZE_MODES = {"center_crop", "stretch"}
 POSITION_MODES = {"frame", "seconds", "percent"}
 
@@ -209,9 +215,34 @@ def _assert_unmodified_packed_layout() -> None:
 
 def native_middle_keyframe_support() -> bool:
     _assert_unmodified_packed_layout()
-    keyframe = {"resolved_frame_index": 2, "latent": torch.zeros(1)}
+    keyframe = {
+        "resolved_frame_index": 2,
+        "latent": torch.zeros((1, 24, 1, 2, 2)),
+    }
+    parameters = inspect.signature(minimax_model.PackedLayout.__init__).parameters
+    if "frame_count" not in parameters:
+        packed_source = inspect.getsource(minimax_model.PackedLayout.__init__)
+        packed_sha256 = hashlib.sha256(packed_source.encode("utf-8")).hexdigest()
+        if packed_sha256 != NATIVE_GUIDE_PACKED_LAYOUT_SHA256:
+            raise RuntimeError(
+                "This ComfyUI build accepts a new MiniMax H3 Guide layout, but its exact "
+                "contract has not been validated by this plugin version."
+            )
+        layout = build_packed_layout(1, 2, 2, 2, 1, keyframes=[keyframe])
+        cond_segments = [
+            (start, stop) for start, stop, kind in layout.segments if kind == "cond"
+        ]
+        expected_t = 1.0 + FRAME_RESCALE * 2
+        if len(cond_segments) != 1 or not math.isclose(
+            float(layout.position_ids[cond_segments[0][0], 0]), expected_t
+        ):
+            raise RuntimeError(
+                "The native MiniMax H3 Guide position contract changed; Advanced "
+                "multi-keyframe execution was refused."
+            )
+        return True
     try:
-        minimax_model.PackedLayout(1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5)
+        build_packed_layout(1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5)
     except ValueError as exc:
         if "only first/last keyframe anchors are supported" in str(exc):
             return False
@@ -220,9 +251,8 @@ def native_middle_keyframe_support() -> bool:
             f"unknown contract: {exc}"
         ) from exc
     raise RuntimeError(
-        "This ComfyUI build accepts native middle MiniMax H3 keyframes, but the full "
-        "extra_conds/ref/audio/per-keyframe-strength contract has not been validated by "
-        "this plugin version. Advanced multi-keyframe execution was refused."
+        "This ComfyUI build accepts middle MiniMax H3 keyframes through an unknown legacy "
+        "constructor contract. Advanced multi-keyframe execution was refused."
     )
 
 
@@ -389,7 +419,7 @@ def _segment_timestep_plan(layout, t_video: float, t_audio: float, visual_augs, 
         if kind in {"cond", "ref_img"}:
             segment_times.append(max(t_video, float(visual_augs[visual_index])))
             visual_index += 1
-        elif kind == "ref_audio":
+        elif kind in {"cond_audio", "ref_audio"}:
             segment_times.append(max(t_audio, float(audio_aug)))
         elif kind in {"text", "video"}:
             segment_times.append(t_video)
@@ -424,7 +454,7 @@ def _multikeyframe_forward(
     text_len = context.shape[1]
     layout = payload.get("layout")
     if layout is None or layout.signature != (text_len, latent_t, lat_h, lat_w, audio_t):
-        layout = minimax_model.PackedLayout(
+        layout = build_packed_layout(
             text_len,
             latent_t,
             lat_h,
@@ -464,6 +494,7 @@ def _multikeyframe_forward(
         "audio": 2,
         "cond": 0,
         "ref_img": 0,
+        "cond_audio": 2,
         "ref_audio": 2,
     }
 
@@ -685,11 +716,12 @@ def patch_multikeyframe_model(model, require_per_condition_forward: bool):
                 )
             forward_source = inspect.getsource(forward_function)
             forward_sha256 = hashlib.sha256(forward_source.encode("utf-8")).hexdigest()
-            if forward_sha256 != VALIDATED_FORWARD_SHA256:
+            if forward_sha256 not in VALIDATED_FORWARD_SHA256S:
                 raise RuntimeError(
                     "This ComfyUI build does not match the validated MiniMax H3 _forward "
                     "contract required for independent per-keyframe augmentation. "
-                    f"Expected {VALIDATED_FORWARD_SHA256}, got {forward_sha256}."
+                    f"Expected one of {sorted(VALIDATED_FORWARD_SHA256S)}, got "
+                    f"{forward_sha256}."
                 )
             required_forward_contract = (
                 "layout = payload.get(\"layout\")",
@@ -1001,14 +1033,17 @@ def _build_advanced_conditioning(
     )
 
     if keyframes and real_ref_blocks:
-        assert_hybrid_layout_contract()
+        hybrid_route = assert_hybrid_layout_contract()
         ref_items = [
             {"type": "image", "data": image} for image in keyframe_images
         ] + real_ref_items
-        refs = [
-            {"kind": HYBRID_KEYFRAME_SENTINEL, "latent": keyframe["latent"]}
-            for keyframe in keyframes
-        ] + real_ref_blocks
+        if hybrid_route == HYBRID_LAYOUT_LEGACY_SENTINEL:
+            refs = [
+                {"kind": HYBRID_KEYFRAME_SENTINEL, "latent": keyframe["latent"]}
+                for keyframe in keyframes
+            ] + real_ref_blocks
+        else:
+            refs = real_ref_blocks
         tokens = clip.tokenize(conditioned_prompt, minimax_ref_items=ref_items)
     elif real_ref_blocks:
         refs = real_ref_blocks
@@ -1256,7 +1291,7 @@ def build_multikeyframe_conditioning(
         "model_cloned": True,
         "scoped_model_patch_version": MULTIKEYFRAME_PATCH_VERSION,
         "native_middle_layout_supported": native_layout,
-        "scoped_position_repair": True,
+        "scoped_position_repair": not native_layout,
         "per_condition_forward_patch": require_per_condition_forward,
         "frame_count": frame_count,
         "middle_keyframe_count": len(resolved_middle),

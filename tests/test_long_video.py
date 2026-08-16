@@ -7,8 +7,7 @@ import types
 import pytest
 import torch
 
-from comfy.ldm.minimax.model import PackedLayout
-
+from h3_audio_t8_pkg.conditioning import build_packed_layout
 from h3_audio_t8_pkg.core import empty_av_latent
 from h3_audio_t8_pkg.long_video import (
     LONG_VIDEO_CONDITIONING_KEY,
@@ -568,7 +567,7 @@ def test_local_payload_repair_handles_multiple_refs_without_global_patch():
         {
             "resolved_frame_index": 0,
             MOTION_FRAME_INDEX: offset,
-            "latent": torch.full((1,), float(index)),
+            "latent": torch.full((1, 24, 1, 8, 8), float(index)),
         }
         for index, offset in enumerate([0, 1, 5, 9, 13, 17, 18])
     ]
@@ -587,7 +586,7 @@ def test_local_payload_repair_handles_multiple_refs_without_global_patch():
             MOTION_AUDIO_END_FRAME: 22.0,
         },
     ]
-    layout = PackedLayout(
+    layout = build_packed_layout(
         text_len,
         latent_t,
         latent_h,
@@ -645,7 +644,11 @@ class _FakeModelPatcher:
 
 def test_model_patch_is_attached_only_to_clone_and_repairs_extra_conds_output():
     keyframes = [
-        {"resolved_frame_index": 0, MOTION_FRAME_INDEX: offset, "latent": torch.full((1,), float(index))}
+        {
+            "resolved_frame_index": 0,
+            MOTION_FRAME_INDEX: offset,
+            "latent": torch.full((1, 24, 1, 8, 8), float(index)),
+        }
         for index, offset in enumerate([0, 1, 5, 9, 13, 17, 18])
     ]
     refs = [
@@ -659,7 +662,7 @@ def test_model_patch_is_attached_only_to_clone_and_repairs_extra_conds_output():
     ]
 
     def extra_conds(_self, **kwargs):
-        layout = PackedLayout(
+        layout = build_packed_layout(
             7,
             37,
             8,

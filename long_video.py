@@ -14,11 +14,15 @@ import torch
 
 import folder_paths
 import node_helpers
-from comfy.ldm.minimax import model as minimax_model
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-from .conditioning import _encode_reference_audio, _resize_reference_image, resolve_task_type
+from .conditioning import (
+    _encode_reference_audio,
+    _resize_reference_image,
+    build_packed_layout,
+    resolve_task_type,
+)
 from .core import (
     AUDIO_LATENT_FPS,
     CANVAS_MULTIPLE,
@@ -1054,7 +1058,7 @@ def packed_layout_contract_probe() -> dict:
         "audio_latent": torch.zeros(1),
         MOTION_AUDIO_END_FRAME: 22.0,
     }]
-    layout = minimax_model.PackedLayout(
+    layout = build_packed_layout(
         text_len,
         latent_t,
         latent_h,

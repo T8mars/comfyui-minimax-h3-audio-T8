@@ -9,6 +9,12 @@ import torch
 import torch.nn.functional as torch_functional
 
 from .sampling import shift_sigma, time_shift_sigma
+from .studio_advanced import (
+    REPAIR_PLAN_SCHEMA,
+    STUDIO_TIMELINE_SCHEMA,
+    build_selective_repair_plan,
+    validate_timeline,
+)
 
 
 TURBO_DUAL_CLOCK_TEST_STEPS = 8
@@ -264,6 +270,310 @@ def build_av_sigma_tail_schedule(
         "memory_safe_claim": False,
     }
     return output, actual_nfe, canonical_json(report, indent=2)
+
+
+def build_av_sigma_same_nfe_schedule(
+    sigmas: torch.Tensor,
+    mode: str,
+    start_progress: float,
+    tail_power: float,
+    shift_video: float,
+    shift_audio: float,
+    profile: str,
+    sampling_route: str,
+    accept_turbo_schedule_ood: bool,
+) -> tuple[torch.Tensor, int, str]:
+    """Redistribute existing H3 sigma points without changing the NFE count."""
+    values = _validate_h3_sigmas(sigmas, profile)
+    if mode not in {"report_only", "apply_exp"}:
+        raise ValueError(f"unsupported schedule mode: {mode!r}")
+    if sampling_route not in {
+        "dual_clock_euler",
+        "native_flow_av_unverified",
+        "multirate_exp_unsupported",
+        "unknown",
+    }:
+        raise ValueError(f"unsupported sampling_route: {sampling_route!r}")
+    if not math.isfinite(start_progress) or not 0.0 <= start_progress < 1.0:
+        raise ValueError("start_progress must be finite and satisfy 0 <= value < 1")
+    if not math.isfinite(tail_power) or not 0.2 <= tail_power <= 5.0:
+        raise ValueError("tail_power must be finite and between 0.2 and 5.0")
+
+    blockers = []
+    changes_schedule = not math.isclose(tail_power, 1.0, rel_tol=0.0, abs_tol=1e-12)
+    if sampling_route != "dual_clock_euler":
+        blockers.append(
+            "P0 apply supports only the explicit dual_clock_euler route; other routes remain unverified"
+        )
+    if profile in _TURBO_PROFILES and changes_schedule and not accept_turbo_schedule_ood:
+        blockers.append(
+            "Turbo dual-clock uses the project 8-step test baseline; redistributed times are experimental OOD points"
+        )
+    applied = mode == "apply_exp" and changes_schedule
+    if applied and blockers:
+        raise ValueError("same-NFE schedule apply blocked: " + "; ".join(blockers))
+
+    output = sigmas
+    if applied:
+        base_sigmas = _inverse_shift_sigma(values, shift_video)
+        progress = 1.0 - base_sigmas
+        warped_progress = progress.clone()
+        selected = progress > start_progress
+        if bool(selected.any()):
+            normalized = (progress[selected] - start_progress) / (1.0 - start_progress)
+            warped_progress[selected] = start_progress + (1.0 - start_progress) * (
+                1.0 - torch.pow(1.0 - normalized, tail_power)
+            )
+        warped_base = 1.0 - warped_progress
+        warped_video = shift_sigma(warped_base, shift_video)
+        output = warped_video.to(device=sigmas.device, dtype=sigmas.dtype)
+
+    output_values = _validate_h3_sigmas(output, "custom_strict")
+    original_nfe = int(values.numel() - 1)
+    actual_nfe = int(output_values.numel() - 1)
+    if actual_nfe != original_nfe:
+        raise RuntimeError("internal error: same-NFE redistribution changed the model-call count")
+    if float(output_values[0]) != float(values[0]) or float(output_values[-1]) != float(values[-1]):
+        raise RuntimeError("internal error: same-NFE redistribution changed a schedule endpoint")
+
+    output_base = _inverse_shift_sigma(output_values, shift_video)
+    audio_values = time_shift_sigma(output_values, shift_video, shift_audio)
+    report = {
+        "schema": "minimax_h3_av_sigma_same_nfe_redistribution_t8_v1",
+        "status": "applied_exp" if applied else "report_only",
+        "applied": applied,
+        "noop_reason": (
+            "report_only"
+            if mode == "report_only"
+            else "tail_power_is_identity"
+            if not changes_schedule
+            else None
+        ),
+        "profile": profile,
+        "sampling_route": sampling_route,
+        "turbo_dual_clock_test_standard_steps": TURBO_DUAL_CLOCK_TEST_STEPS,
+        "turbo_schedule_ood_accepted": bool(accept_turbo_schedule_ood),
+        "shift_video": float(shift_video),
+        "shift_audio": float(shift_audio),
+        "start_progress": float(start_progress),
+        "tail_power": float(tail_power),
+        "original_nfe": original_nfe,
+        "actual_nfe": actual_nfe,
+        "same_nfe": True,
+        "endpoints_preserved": True,
+        "all_original_knots_preserved": not applied,
+        "input_schedule_sha256": _schedule_sha(values),
+        "output_schedule_sha256": _schedule_sha(output_values),
+        "base_sigmas": [float(value) for value in output_base],
+        "video_sigmas": [float(value) for value in output_values],
+        "audio_sigmas": [float(value) for value in audio_values],
+        "apply_blockers": blockers,
+        "causal_control_notice": (
+            "This route keeps the joint H3 AV model-call count fixed. It changes only existing "
+            "sigma locations and must be compared against the unchanged schedule at the same NFE."
+        ),
+        "quality_validated": False,
+        "memory_safe_claim": False,
+    }
+    return output, actual_nfe, canonical_json(report, indent=2)
+
+
+def _compact_hash(value: Any) -> str:
+    packed = json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(packed.encode("utf-8")).hexdigest()
+
+
+def build_motion_repair_plan(
+    timeline: dict[str, Any],
+    audit_report_json: str,
+    audit_scope: str,
+    single_shot_index: int,
+    mapping_basis: str,
+    repair_mode: str,
+    prompt_addendum: str,
+    seed_stride: int,
+    context_before_frames: int,
+    context_after_frames: int,
+) -> tuple[dict[str, Any], int, str, str]:
+    """Map reviewed motion-audit ranges into the existing non-destructive repair schema."""
+    timeline = validate_timeline(timeline)
+    timeline_snapshot = canonical_json(timeline)
+    if audit_scope not in {"single_shot", "full_timeline"}:
+        raise ValueError("audit_scope must be single_shot or full_timeline")
+    if mapping_basis not in {"raw_risk_range", "suggested_repair_window"}:
+        raise ValueError(
+            "mapping_basis must be raw_risk_range or suggested_repair_window"
+        )
+    try:
+        audit = json.loads(audit_report_json)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("audit_report_json must be valid JSON") from exc
+    if not isinstance(audit, dict) or audit.get("schema") != (
+        "minimax_h3_motion_quality_audit_t8_v1"
+    ):
+        raise ValueError("audit_report_json must come from MiniMax H3 Motion Quality Audit")
+    if not isinstance(audit.get("risk_ranges"), list):
+        raise ValueError("motion audit report is missing risk_ranges")
+    if int(audit.get("risk_range_count", -1)) != len(audit["risk_ranges"]):
+        raise ValueError("motion audit risk_range_count does not match risk_ranges")
+    audit_fps = float(audit.get("fps", 0.0))
+    timeline_fps = float(timeline.get("fps", 0.0))
+    if not math.isfinite(audit_fps) or abs(audit_fps - timeline_fps) > 1e-9:
+        raise ValueError(
+            f"motion audit fps {audit_fps!r} does not match timeline fps {timeline_fps!r}"
+        )
+
+    if audit_scope == "single_shot":
+        shot_index = int(single_shot_index)
+        if shot_index < 0 or shot_index >= len(timeline["shots"]):
+            raise ValueError(
+                f"single_shot_index must be between 0 and {len(timeline['shots']) - 1}"
+            )
+        shot = timeline["shots"][shot_index]
+        expected_frames = int(shot["frame_count"])
+        frame_offset = int(shot["start_frame"])
+    else:
+        shot_index = None
+        expected_frames = int(timeline["total_frames"])
+        frame_offset = 0
+    audit_frames = int(audit.get("frame_count", -1))
+    if audit_frames != expected_frames:
+        raise ValueError(
+            f"motion audit frame_count {audit_frames} does not match expected {expected_frames} "
+            f"for audit_scope={audit_scope}"
+        )
+
+    mapped_by_shot: dict[int, list[dict[str, Any]]] = {
+        index: [] for index in range(len(timeline["shots"]))
+    }
+    normalized_ranges = []
+    for range_index, item in enumerate(audit["risk_ranges"]):
+        if not isinstance(item, dict):
+            raise ValueError(f"motion audit range {range_index} must be an object")
+        raw_start = int(item.get("raw_start_frame", -1))
+        raw_end = int(item.get("raw_end_frame", -1))
+        if raw_start < 0 or raw_end < raw_start or raw_end >= audit_frames:
+            raise ValueError(f"motion audit range {range_index} is outside the audited frames")
+        if mapping_basis == "suggested_repair_window":
+            local_start = int(item.get("suggested_repair_start_frame", raw_start))
+            local_end = int(item.get("suggested_repair_end_frame", raw_end))
+        else:
+            local_start, local_end = raw_start, raw_end
+        if local_start < 0 or local_end < local_start or local_end >= audit_frames:
+            raise ValueError(f"motion audit mapped range {range_index} is invalid")
+        global_start = frame_offset + local_start
+        global_end = frame_offset + local_end
+        mapped_indices = []
+        for index, candidate in enumerate(timeline["shots"]):
+            shot_start = int(candidate["start_frame"])
+            shot_end = int(candidate["end_frame_exclusive"]) - 1
+            if global_start <= shot_end and global_end >= shot_start:
+                mapped_indices.append(index)
+                mapped_by_shot[index].append(
+                    {
+                        "range_index": range_index,
+                        "global_start_frame": global_start,
+                        "global_end_frame": global_end,
+                        "overlap_start_frame": max(global_start, shot_start),
+                        "overlap_end_frame": min(global_end, shot_end),
+                    }
+                )
+        if not mapped_indices:
+            raise RuntimeError(f"motion audit range {range_index} did not map to a timeline shot")
+        normalized_ranges.append(
+            {
+                "range_index": range_index,
+                "local_raw_start_frame": raw_start,
+                "local_raw_end_frame": raw_end,
+                "local_mapped_start_frame": local_start,
+                "local_mapped_end_frame": local_end,
+                "global_mapped_start_frame": global_start,
+                "global_mapped_end_frame": global_end,
+                "shot_indices": mapped_indices,
+            }
+        )
+
+    quality_segments = []
+    for index, shot in enumerate(timeline["shots"]):
+        overlaps = mapped_by_shot[index]
+        covered = sum(
+            value["overlap_end_frame"] - value["overlap_start_frame"] + 1
+            for value in overlaps
+        )
+        quality_segments.append(
+            {
+                "index": index,
+                "status": "failed" if overlaps else "pass",
+                "issues": ["motion_quality_proxy_risk"] if overlaps else [],
+                "scores": {
+                    "mapped_risk_range_count": len(overlaps),
+                    "mapped_risk_frame_fraction": min(
+                        1.0, covered / max(1, int(shot["frame_count"]))
+                    ),
+                },
+                "motion_audit_overlaps": overlaps,
+            }
+        )
+    plan = build_selective_repair_plan(
+        timeline,
+        canonical_json({"segments": quality_segments}),
+        "failed_status",
+        "",
+        "{}",
+        repair_mode,
+        prompt_addendum,
+        seed_stride,
+        context_before_frames,
+        context_after_frames,
+    )
+    plan.pop("repair_plan_hash", None)
+    plan["motion_audit_link"] = {
+        "audit_schema": audit["schema"],
+        "audit_report_sha256": _compact_hash(audit),
+        "audit_scope": audit_scope,
+        "single_shot_index": shot_index,
+        "mapping_basis": mapping_basis,
+        "audited_frame_count": audit_frames,
+        "mapped_range_count": len(normalized_ranges),
+        "selected_shot_indices": plan["selected_indices"],
+        "proxy_only": True,
+        "human_acceptance_required": True,
+    }
+    plan["notes"].append(
+        "Motion-audit ranges are proxy evidence. This plan still requires explicit generation, review, and acceptance."
+    )
+    plan["repair_plan_hash"] = _compact_hash(plan)
+    if canonical_json(timeline) != timeline_snapshot:
+        raise RuntimeError("motion repair mapping unexpectedly mutated the source timeline")
+
+    mapping_report = {
+        "schema": "minimax_h3_motion_repair_mapping_t8_v1",
+        "source_timeline_schema": STUDIO_TIMELINE_SCHEMA,
+        "repair_plan_schema": REPAIR_PLAN_SCHEMA,
+        "source_timeline_hash": timeline["timeline_hash"],
+        "repair_plan_hash": plan["repair_plan_hash"],
+        "audit_report_sha256": plan["motion_audit_link"]["audit_report_sha256"],
+        "audit_scope": audit_scope,
+        "mapping_basis": mapping_basis,
+        "ranges": normalized_ranges,
+        "selected_shot_indices": plan["selected_indices"],
+        "repair_count": plan["repair_count"],
+        "automatic_accept": False,
+        "source_media_mutated": False,
+        "quality_guarantee": False,
+    }
+    return (
+        plan,
+        int(plan["repair_count"]),
+        canonical_json(plan, indent=2),
+        canonical_json(mapping_report, indent=2),
+    )
 
 
 def _frame_to_gray(frame: torch.Tensor) -> torch.Tensor:

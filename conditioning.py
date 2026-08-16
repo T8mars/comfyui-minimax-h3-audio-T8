@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import math
 
@@ -29,26 +30,111 @@ from .prompt_tags import media_map_json, prepare_prompt
 
 
 HYBRID_KEYFRAME_SENTINEL = "t8_keyframe_latent"
+HYBRID_LAYOUT_LEGACY_SENTINEL = "legacy_sentinel"
+HYBRID_LAYOUT_NATIVE_CONCAT = "native_concat"
+NATIVE_GUIDE_PACKED_LAYOUT_SHA256 = (
+    "1124904e8835c6db068e61e304490d93784e6a8da6ca6b38afd93975611b3af4"
+)
+NATIVE_GUIDE_EXTRA_CONDS_SHA256 = (
+    "5a6d7d0a5963c96c12f0e04a400f6c45e8f6df632e343be6c86b6ac4ccbc8a46"
+)
 
 
-def assert_hybrid_layout_contract() -> None:
-    """Fail loudly if upstream starts packing our sentinel as a real reference.
+def build_packed_layout(
+    text_len,
+    latent_t,
+    latent_h,
+    latent_w,
+    audio_t,
+    *,
+    keyframes=None,
+    refs=None,
+    frame_count=None,
+):
+    kwargs = {"keyframes": keyframes, "refs": refs}
+    parameters = inspect.signature(PackedLayout.__init__).parameters
+    if "frame_count" in parameters:
+        kwargs["frame_count"] = frame_count
+    return PackedLayout(
+        text_len,
+        latent_t,
+        latent_h,
+        latent_w,
+        audio_t,
+        **kwargs,
+    )
 
-    Current ComfyUI replaces keyframe cond latents with the ref latent list when
-    both payloads are present. The sentinel makes that latent list start with the
-    keyframes while PackedLayout intentionally ignores its unknown ref kind.
+
+def assert_hybrid_layout_contract() -> str:
+    """Return the verified legacy or native keyframe-plus-reference route.
+
+    Old ComfyUI replaces keyframe cond latents with the ref latent list, so it needs
+    the sentinel route. Current native-guide ComfyUI concatenates both payloads and
+    must not receive sentinels, which would duplicate visual condition latents.
     """
     extra_conds_source = inspect.getsource(MiniMaxH3BaseModel.extra_conds)
-    required_contract = 'payload["cond_video_latents"] = [r["latent"] for r in refs if "latent" in r]'
-    if required_contract not in extra_conds_source:
+    extra_conds_sha256 = hashlib.sha256(extra_conds_source.encode("utf-8")).hexdigest()
+    parameters = inspect.signature(PackedLayout.__init__).parameters
+    packed_source = inspect.getsource(PackedLayout.__init__)
+    packed_sha256 = hashlib.sha256(packed_source.encode("utf-8")).hexdigest()
+
+    if extra_conds_sha256 == NATIVE_GUIDE_EXTRA_CONDS_SHA256:
+        if "frame_count" in parameters or packed_sha256 != NATIVE_GUIDE_PACKED_LAYOUT_SHA256:
+            raise RuntimeError(
+                "This ComfyUI build mixes unknown MiniMax H3 native-guide contracts; "
+                "the T8 Hybrid path was disabled."
+            )
+        keyframe = {
+            "resolved_frame_index": 2,
+            "latent": torch.zeros((1, 24, 1, 2, 2)),
+        }
+        image_ref = {
+            "kind": "image",
+            "latent_h": 2,
+            "latent_w": 2,
+            "latent": torch.zeros((1, 24, 1, 2, 2)),
+        }
+        layout = build_packed_layout(
+            1,
+            2,
+            2,
+            2,
+            1,
+            keyframes=[keyframe],
+            refs=[image_ref],
+        )
+        kinds = [kind for _start, _stop, kind in layout.segments]
+        if kinds != ["text", "cond", "ref_img", "audio", "video"]:
+            raise RuntimeError(
+                "The native MiniMax H3 Guide layout changed keyframe/reference ordering; "
+                "the T8 Hybrid path was disabled."
+            )
+        cond_start = next(start for start, _stop, kind in layout.segments if kind == "cond")
+        expected_t = 1.0 + 1.0 + (5.0 / 3.0) * 2
+        if not math.isclose(float(layout.position_ids[cond_start, 0]), expected_t):
+            raise RuntimeError(
+                "The native MiniMax H3 Guide timeline origin changed; the T8 Hybrid path "
+                "was disabled."
+            )
+        return HYBRID_LAYOUT_NATIVE_CONCAT
+
+    required_legacy_contract = (
+        'payload["cond_video_latents"] = [r["latent"] for r in refs if "latent" in r]'
+    )
+    if required_legacy_contract not in extra_conds_source or "frame_count" not in parameters:
         raise RuntimeError(
             "This ComfyUI build changed MiniMax H3 ref/keyframe latent assembly; "
             "the T8 Hybrid path is disabled until its ordering can be revalidated."
         )
 
-    keyframe = {"resolved_frame_index": 0, "latent": torch.zeros(1)}
-    baseline = PackedLayout(1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5)
-    hybrid = PackedLayout(
+    keyframe = {
+        "resolved_frame_index": 0,
+        "latent": torch.zeros((1, 24, 1, 2, 2)),
+    }
+    baseline = build_packed_layout(
+        1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5
+    )
+    hybrid = build_packed_layout(
         1,
         2,
         2,
@@ -63,6 +149,7 @@ def assert_hybrid_layout_contract() -> None:
             "This ComfyUI build changed MiniMax H3 PackedLayout reference handling; "
             "the T8 exact-keyframe + reference compatibility path is disabled to prevent corrupt conditioning."
         )
+    return HYBRID_LAYOUT_LEGACY_SENTINEL
 
 
 def resolve_task_type(task_type: str, first_frame, last_frame, has_refs: bool) -> str:
@@ -298,12 +385,15 @@ def build_conditioning(
     )
 
     if keyframes and real_ref_blocks:
-        assert_hybrid_layout_contract()
+        hybrid_route = assert_hybrid_layout_contract()
         ref_items = [{"type": "image", "data": image} for image in keyframe_images] + real_ref_items
-        refs = [
-            {"kind": HYBRID_KEYFRAME_SENTINEL, "latent": keyframe["latent"]}
-            for keyframe in keyframes
-        ] + real_ref_blocks
+        if hybrid_route == HYBRID_LAYOUT_LEGACY_SENTINEL:
+            refs = [
+                {"kind": HYBRID_KEYFRAME_SENTINEL, "latent": keyframe["latent"]}
+                for keyframe in keyframes
+            ] + real_ref_blocks
+        else:
+            refs = real_ref_blocks
         tokens = clip.tokenize(conditioned_prompt, minimax_ref_items=ref_items)
     elif real_ref_blocks:
         refs = real_ref_blocks

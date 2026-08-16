@@ -5,11 +5,15 @@ from comfy_api.latest import io
 from .motion_quality_advanced import (
     TURBO_DUAL_CLOCK_TEST_STEPS,
     audit_motion_quality,
+    build_av_sigma_same_nfe_schedule,
     build_av_sigma_tail_schedule,
+    build_motion_repair_plan,
 )
 
 
 CATEGORY = "T8/MiniMax H3/Quality/Experimental"
+StudioTimelineIO = io.Custom("H3_T8_STUDIO_TIMELINE")
+RepairPlanIO = io.Custom("H3_T8_REPAIR_PLAN")
 
 
 class MiniMaxH3AVSigmaTailSubdivisionT8Advanced(io.ComfyNode):
@@ -165,6 +169,120 @@ class MiniMaxH3AVSigmaTailSubdivisionT8Advanced(io.ComfyNode):
         )
 
 
+class MiniMaxH3AVSigmaSameNFERedistributionT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
+            display_name="MiniMax H3 AV Sigma Same-NFE / 音画同NFE重分布 (Advanced)",
+            description=(
+                "Default-off causal-control schedule. It keeps the exact joint AV model-call "
+                "count and endpoints while optionally redistributing existing base-flow times. "
+                "Turbo dual-clock validation uses eight steps and requires explicit OOD consent."
+            ),
+            category=CATEGORY,
+            inputs=[
+                io.Sigmas.Input("sigmas"),
+                io.Combo.Input(
+                    "mode",
+                    options=["report_only", "apply_exp"],
+                    default="report_only",
+                ),
+                io.Float.Input(
+                    "start_progress",
+                    default=0.5,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                ),
+                io.Float.Input(
+                    "tail_power",
+                    default=1.6,
+                    min=0.2,
+                    max=5.0,
+                    step=0.05,
+                    tooltip="1.0 is exact identity; values above 1 move existing points toward the zero-sigma tail.",
+                ),
+                io.Float.Input(
+                    "shift_video",
+                    default=12.0,
+                    min=0.01,
+                    max=100.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "shift_audio",
+                    default=3.0,
+                    min=0.01,
+                    max=100.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Combo.Input(
+                    "profile",
+                    options=[
+                        "turbo_standard8",
+                        "turbo_ema8",
+                        "turbo_fl2v8",
+                        "stock20",
+                        "custom_strict",
+                    ],
+                    default="turbo_standard8",
+                ),
+                io.Combo.Input(
+                    "sampling_route",
+                    options=[
+                        "dual_clock_euler",
+                        "native_flow_av_unverified",
+                        "multirate_exp_unsupported",
+                        "unknown",
+                    ],
+                    default="dual_clock_euler",
+                    advanced=True,
+                ),
+                io.Boolean.Input(
+                    "accept_turbo_schedule_ood",
+                    default=False,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Sigmas.Output("sigmas"),
+                io.Int.Output("actual_nfe"),
+                io.String.Output("report_json"),
+            ],
+            is_experimental=True,
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        sigmas,
+        mode,
+        start_progress,
+        tail_power,
+        shift_video,
+        shift_audio,
+        profile,
+        sampling_route,
+        accept_turbo_schedule_ood,
+    ):
+        return io.NodeOutput(
+            *build_av_sigma_same_nfe_schedule(
+                sigmas,
+                mode,
+                start_progress,
+                tail_power,
+                shift_video,
+                shift_audio,
+                profile,
+                sampling_route,
+                accept_turbo_schedule_ood,
+            )
+        )
+
+
 class MiniMaxH3MotionQualityAuditT8Advanced(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -284,7 +402,110 @@ class MiniMaxH3MotionQualityAuditT8Advanced(io.ComfyNode):
         )
 
 
+class MiniMaxH3MotionRepairPlanT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3MotionRepairPlanT8Advanced",
+            display_name="MiniMax H3 Motion Repair Plan / 动态风险重做计划 (Advanced)",
+            description=(
+                "Maps Motion Quality Audit proxy ranges into the existing non-destructive "
+                "Selective Repair Plan. It never renders, overwrites, or automatically accepts media."
+            ),
+            category=CATEGORY,
+            inputs=[
+                StudioTimelineIO.Input("timeline"),
+                io.String.Input("audit_report_json", multiline=True),
+                io.Combo.Input(
+                    "audit_scope",
+                    options=["single_shot", "full_timeline"],
+                    default="single_shot",
+                ),
+                io.Int.Input(
+                    "single_shot_index",
+                    default=0,
+                    min=0,
+                    max=100000,
+                ),
+                io.Combo.Input(
+                    "mapping_basis",
+                    options=["suggested_repair_window", "raw_risk_range"],
+                    default="suggested_repair_window",
+                ),
+                io.Combo.Input(
+                    "repair_mode",
+                    options=[
+                        "auto",
+                        "seed_retry",
+                        "prompt_tighten",
+                        "reference_refresh",
+                        "full_regenerate",
+                    ],
+                    default="auto",
+                ),
+                io.String.Input("prompt_addendum", multiline=True, default=""),
+                io.Int.Input(
+                    "seed_stride",
+                    default=1009,
+                    min=1,
+                    max=0xFFFFFFFFFFFFFFFF,
+                ),
+                io.Int.Input(
+                    "context_before_frames",
+                    default=22,
+                    min=0,
+                    max=362,
+                ),
+                io.Int.Input(
+                    "context_after_frames",
+                    default=22,
+                    min=0,
+                    max=362,
+                ),
+            ],
+            outputs=[
+                RepairPlanIO.Output("repair_plan"),
+                io.Int.Output("repair_count"),
+                io.String.Output("repair_plan_json"),
+                io.String.Output("mapping_report_json"),
+            ],
+            is_experimental=True,
+            is_output_node=True,
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        timeline,
+        audit_report_json,
+        audit_scope,
+        single_shot_index,
+        mapping_basis,
+        repair_mode,
+        prompt_addendum,
+        seed_stride,
+        context_before_frames,
+        context_after_frames,
+    ):
+        return io.NodeOutput(
+            *build_motion_repair_plan(
+                timeline,
+                audit_report_json,
+                audit_scope,
+                single_shot_index,
+                mapping_basis,
+                repair_mode,
+                prompt_addendum,
+                seed_stride,
+                context_before_frames,
+                context_after_frames,
+            )
+        )
+
+
 MOTION_QUALITY_ADVANCED_NODE_CLASSES = [
     MiniMaxH3AVSigmaTailSubdivisionT8Advanced,
     MiniMaxH3MotionQualityAuditT8Advanced,
+    MiniMaxH3AVSigmaSameNFERedistributionT8Advanced,
+    MiniMaxH3MotionRepairPlanT8Advanced,
 ]

@@ -1785,3 +1785,81 @@ nodes in exact `features.json` order. The stable `sampling.py` SHA-256 remains
 No real H3 same-NFE A/B, perceptual improvement, identity validation, audio non-inferiority,
 repeated 16GiB headroom or warm staircase gate has passed. Therefore
 `quality_guarantee=false` and `memory_safe_claim=false` remain unchanged.
+
+## v1.20.0 same-NFE matrix, repair-plan bridge and invalidated visual gate (2026-08-16)
+
+The current worktree adds `MiniMaxH3AVSigmaSameNFERedistributionT8Advanced` and
+`MiniMaxH3MotionRepairPlanT8Advanced` after the previous 88 IDs. The stable
+`sampling.py` SHA-256 remains
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
+The audit-to-repair-plan-to-Selective-Repair/Studio route passed 69 focused tests and remains
+non-destructive: generation, review and acceptance are explicit operations.
+
+A real same-NFE matrix completed 72/72 jobs: three high-motion cases, three seeds, Stock20 plus
+Standard/EMA/FL2V Turbo at eight steps, and control versus same-NFE-tail redistribution. Every run
+produced 124 video frames and finite 32kHz stereo audio with A/V duration within one frame. Six
+full strict-decode trials (three default and three single-thread) passed 432/432 decode invocations.
+The predeclared motion proxy passed 9/9 Stock20, 9/9 Standard8 and 9/9 EMA8 pairs, but 0/9 FL2V8
+pairs; the FL2V treatment is rejected. Across the 27 viable-profile pairs with complete preferences,
+the human review recorded 20 visual ties, five same-NFE-tail preferences and two control preferences;
+all 27 audio preferences were ties. The finalized complete 36-pair record contains 29 visual ties,
+five same-NFE-tail preferences, two control preferences and 36 audio ties. Five initially blank FL2V
+preference fields were recorded as ties only after the reviewer explicitly stated that omitted fields
+meant tie; the raw file hash, exact fields and authorization text are retained, and missing numeric or
+speech judgments were not imputed. This does not establish a stable perceptual advantage.
+
+The matrix cannot be promoted as face, identity or absolute visual-quality evidence. Its I2VA
+template fixed the output at 736x416 and passed first frames through non-aspect-preserving
+`crop=disabled` resize. The 3027x1531 source was changed by about 10.5% anisotropically, while both
+900x1600 portrait sources were stretched horizontally by about 3.15x relative to height. Forty-eight
+of 72 outputs therefore began with severe geometric distortion. Relative arm comparison remains a
+limited diagnostic because both arms share the same input, but the absolute face/identity and
+product-promotion gate is invalid. A corrected matrix must use source-matched canvases or reviewed
+same-aspect inputs before candidate selection.
+
+The corrected plan is now materialized under
+`artifacts/motion-quality-same-nfe-v3-aspect-safe/` without starting generation. It uses 768x384 for
+the 3027x1531 landscape source (1.156% aspect-ratio factor error) and 416x736 for each 900x1600
+portrait source (0.483% error). All 72 prompts, 36 A/B groups, asset hashes and pair fingerprints
+passed static validation. A record-by-record normalized comparison against the first matrix found
+no experimental changes beyond canvas dimensions, timeline aspect metadata and output prefix. The
+new manifest binds the original manifest SHA-256, has no run reports, keeps every record pending,
+and explicitly states `not_evaluated_aspect_safe_matrix` and `memory_safe_claim=false`.
+
+Generation was not started while the RTX 4060 Ti reported approximately 4215-4549MiB already used
+by desktop/browser/editing applications and only 11561-11895MiB free. Closing user applications is
+not an authorized test step; running on that contaminated baseline would confound both OOM behavior
+and the required whole-device headroom conclusion.
+
+On 2026-08-16 the user explicitly closed this remaining gate with the statement
+`不要再跑72个了，16GB这个没问题，我可以确认，直接通过`. No v3 generation was started. The
+project records the exact local/user workflow as operationally accepted on 16GB and records both the
+72-run rerun and three-cold/three-warm gate as `waived_by_user`, not as failed and not as measured.
+The statement, exact artifact hashes and claim boundary are stored in
+`artifacts/motion-quality-same-nfe-v3-aspect-safe/user_acceptance.json`.
+
+This user acceptance closes the project-delivery gate requested for this cycle. It does not alter
+the first matrix's measured headroom, fabricate repeat telemetry, validate the cancelled absolute
+face/identity rerun, or support a universal 16GB guarantee across GPUs, drivers, resolutions, frame
+counts, wrappers and concurrent workloads. The no-stable-quality-advantage conclusion also remains.
+
+No profile qualifies for a 16GiB safety statement. The minimum whole-device headroom observed in
+the quality pass was 66.81MiB for Stock20, 348.24MiB for Standard8, 421.86MiB for EMA8 and
+423.34MiB for FL2V8, each below the 512MiB project gate. The required three cold and three warm
+repeats were not started because no candidate passed the valid visual-review gate. The first review
+export was formally incomplete, but the finalized evidence record is complete under the reviewer's
+explicit omitted-means-tie authorization described above.
+
+On ComfyUI `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`, the full plugin regression
+passed 491 tests. Ruff, compileall and `git diff --check` passed, and a CPU whitelist-only ComfyUI
+quick start imported the plugin without traceback. The only startup version warning concerned
+`comfyui-embedded-docs 0.5.9` versus recommended 0.5.10 and is unrelated to this plugin contract.
+These results close current source/schema/regression mechanics, not the invalidated perceptual gate,
+repeated-memory gate or a universal 16GiB safety claim. `quality_guarantee=false` and
+`memory_safe_claim=false` remain unchanged.
+
+After the local ComfyUI worktree advanced to
+`7fe8a6138504f90ff7be82f3babf416da32876b1`, the complete plugin regression again passed 491 tests
+with four existing Triton deprecation warnings. Full-project Ruff, compileall and `git diff --check`
+passed, and the CPU whitelist-only ComfyUI quick start imported this plugin without traceback. No
+additional GPU generation was run because the user explicitly waived it.

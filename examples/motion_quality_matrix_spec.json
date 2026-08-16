@@ -1,0 +1,132 @@
+{
+  "schema": "t8.minimax_h3.motion_quality_matrix_spec.v1",
+  "assets": {
+    "base_model": {
+      "path": "models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors",
+      "size_bytes": 34038892334,
+      "sha256": "7ad4c73e6e378b822ffd1629f27f632d3787d95f5e468e3af958f98c58df96a5"
+    },
+    "clip": {
+      "path": "models/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "size_bytes": 15687142551,
+      "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6"
+    },
+    "video_vae": {
+      "path": "models/vae/minimax_h3_video_vae_fp16.safetensors",
+      "size_bytes": 5207808496,
+      "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522"
+    },
+    "audio_vae": {
+      "path": "models/vae/minimax_h3_audio_vae_fp32.safetensors",
+      "size_bytes": 605254808,
+      "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48"
+    },
+    "lora_standard": {
+      "path": "models/loras/minimax_h3_turbo_4步加速_comfyui.safetensors",
+      "size_bytes": 779858752,
+      "sha256": "35946f9f2957c2766e28b627c88169535249dd07a3040ce3c2c8c99951fdbc7b"
+    },
+    "lora_ema": {
+      "path": "models/loras/minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+      "size_bytes": 779858752,
+      "sha256": "b07ab477437c6a525dfdaf11107722aad609975ac172f3b577a7a87b228ff7b3"
+    },
+    "lora_fl2v": {
+      "path": "models/loras/minimax_h3_fl2v_turbo_4step_v0.1_comfyui.safetensors",
+      "size_bytes": 1956172512,
+      "sha256": "be232bed4b6e2a808e53481056d2eb1dfec064113faac9ff68c28d43d5261a07"
+    }
+  },
+  "profiles": {
+    "stock20": {
+      "base_model": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "lora_name": null,
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    },
+    "turbo_standard8": {
+      "base_model": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "lora_name": "minimax_h3_turbo_4步加速_comfyui.safetensors",
+      "strength_model": 1.0,
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    },
+    "turbo_ema8": {
+      "base_model": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "lora_name": "minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+      "strength_model": 1.0,
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    },
+    "turbo_fl2v8": {
+      "base_model": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "lora_name": "minimax_h3_fl2v_turbo_4step_v0.1_comfyui.safetensors",
+      "strength_model": 1.0,
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    }
+  },
+  "same_nfe": {
+    "start_progress": 0.5,
+    "tail_power": 1.6,
+    "notice": "Treatment moves only existing base-flow times. It adds no joint H3 model call. Turbo use remains explicit OOD."
+  },
+  "cases": [
+    {
+      "id": "rapid_displacement_dance",
+      "image": "10A.jpg",
+      "image_size_bytes": 1289954,
+      "image_sha256": "34e67512265da29076075030b62ba93ec304210a09171ff68e1f44894d15a36c",
+      "prompt": "A continuous high-speed full-body cinematic shot of the same adult woman performing a rapid lateral dance sequence with broad arm motion while the camera tracks beside her. Preserve her facial identity, natural skin texture, body motion amplitude, clothing details, coherent limbs, background ambience and synchronized footstep and fabric sounds; no dialogue.",
+      "expected_dialogue": "none",
+      "review_focus": ["face during body displacement", "limbs", "motion amplitude", "footstep and fabric sound"]
+    },
+    {
+      "id": "fast_head_turn",
+      "image": "10Db.jpg",
+      "image_size_bytes": 599694,
+      "image_sha256": "f7b59e3c3886da33a16725603a2c785dff9c619ac884d4e9220141117bb6a69c",
+      "prompt": "A continuous close cinematic shot of the same adult woman snapping her head from left to right and back while the camera makes a fast short orbit. Preserve facial identity through profile transitions, sharp eyes and natural skin texture without freezing; retain room ambience and synchronized hair and clothing movement sounds; no dialogue.",
+      "expected_dialogue": "none",
+      "review_focus": ["profile re-identification", "eyes", "skin texture", "head-motion amplitude", "unwanted speech"]
+    },
+    {
+      "id": "occlusion_whip_pan",
+      "image": "10b.jpg",
+      "image_size_bytes": 654579,
+      "image_sha256": "02a96aef052f96f493beae702f8a2b6cf007d44c712b176b7b434af15d25412d",
+      "prompt": "A single uninterrupted action shot of the same adult woman running across frame as a foreground pillar briefly occludes her and the camera performs a controlled whip-pan to reacquire her. Preserve identity after occlusion, natural facial detail, trajectory and speed; keep coherent ambience, footsteps and the pan whoosh synchronized; no dialogue.",
+      "expected_dialogue": "none",
+      "review_focus": ["post-occlusion identity", "reacquisition", "trajectory", "whip-pan blur", "audio event sync"]
+    }
+  ],
+  "seeds": [2608141001, 2608142002, 2608143003],
+  "quality_protocol": {
+    "resolution": [736, 416],
+    "frames": 124,
+    "fps": 24,
+    "arms": ["control", "same_nfe_tail"],
+    "block_cache": false,
+    "one_variable_at_a_time": true,
+    "automatic_winner_selection": false
+  },
+  "repeat_gate": {
+    "cold_repeats": 3,
+    "warm_primer": 1,
+    "warm_repeats": 3,
+    "minimum_whole_device_headroom_mib": 512,
+    "maximum_warm_staircase_mib": 256,
+    "maximum_warm_staircase_baseline_fraction": 0.02,
+    "selection": "Only profiles surviving the 72-run quality and blind-review gate; never selected automatically."
+  },
+  "scientific_limits": [
+    "The three local images must be replaced if the operator lacks review rights or wants a different identity set.",
+    "Duration equality is not lip sync; trained AV sync and human review remain required.",
+    "Proxy metrics cannot by themselves prove identity, face quality, background/SFX fidelity or preference.",
+    "A 16GB claim requires the separate three-cold/three-warm gate and cannot be inferred from one quality pass."
+  ]
+}

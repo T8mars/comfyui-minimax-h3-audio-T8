@@ -104,28 +104,46 @@
     "MiniMaxH3TrajectoryCheckpointSaveT8Advanced",
     "MiniMaxH3TrajectoryCheckpointLoadT8Advanced",
     "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
-    "MiniMaxH3MotionQualityAuditT8Advanced"
+    "MiniMaxH3MotionQualityAuditT8Advanced",
+    "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
+    "MiniMaxH3MotionRepairPlanT8Advanced"
   ],
   "experimental_motion_quality_advanced": {
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [
       "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
-      "MiniMaxH3MotionQualityAuditT8Advanced"
+      "MiniMaxH3MotionQualityAuditT8Advanced",
+      "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
+      "MiniMaxH3MotionRepairPlanT8Advanced"
     ],
     "behavior": [
       "future Turbo dual-clock validation uses 8 video and 8 audio denoise steps; retained 4-step examples are compatibility fixtures rather than the quality baseline",
       "sigma-tail subdivision is report-only with zero inserted steps by default, preserves every input schedule knot, and only applies to the explicit dual_clock_euler route",
       "Turbo subdivision is out-of-training-distribution and requires an explicit acknowledgement before apply_exp",
-      "motion-quality audit is read-only and reports proxy signals plus 17n+5-aligned repair windows; it does not claim face detection, identity verification or quality improvement"
+      "motion-quality audit is read-only and reports proxy signals plus 17n+5-aligned repair windows; it does not claim face detection, identity verification or quality improvement",
+      "same-NFE redistribution keeps the exact joint AV model-call count and endpoints so schedule location can be tested without the inserted-NFE confounder; report_only remains the default",
+      "motion repair mapping converts audit ranges into the existing non-destructive H3_T8_REPAIR_PLAN schema and still requires explicit generation, review and acceptance"
     ],
     "validated": [
       "exact 8-step Turbo profile enforcement and original-knot preservation unit tests",
       "base-flow insertion with independent video/audio shift projection",
+      "same-NFE base-flow redistribution with exact count/endpoints, independent AV clocks and Turbo OOD refusal",
       "strict refusal for invalid schedules, unsupported apply routes and unacknowledged Turbo OOD use",
       "synthetic high-motion blur, stable sequence, ROI and mask contract tests",
-      "88-node append-only registration contract"
+      "single-shot/full-timeline audit mapping, dimension checks, source immutability and no-risk empty-plan tests",
+      "72/72 real 124-frame same-NFE jobs completed across three cases, three seeds, Stock20 and three Turbo 8-step profiles; strict video decode passed 432/432 repeated invocations and every output had finite 32kHz stereo audio with A/V duration within one frame",
+      "the audit-to-repair-to-Selective-Repair/Studio non-destructive route passed 69 focused tests and remains explicit-review/explicit-accept rather than automatic replacement",
+      "Turbo FL2V same-NFE treatment failed the predeclared motion proxy in 0/9 pairs and is rejected for this experiment",
+      "Stock20, Standard8 and EMA8 blind review currently reports 20 visual ties, five same-NFE-tail preferences and two control preferences across 27 complete viable-profile pairs; all 27 audio preferences were ties, so no stable perceptual advantage is established",
+      "the finalized 36-pair review records 29 visual ties, five same-NFE-tail preferences, two control preferences and 36 audio ties; five originally blank FL2V preference fields were recorded as ties only after the user's explicit statement that every omitted preference meant tie, while missing numeric or speech fields remain missing",
+      "the first quality matrix is invalid for absolute face/identity promotion because first-frame resize forced 3027x1531 and two 900x1600 references into 736x416 without preserving aspect ratio; mechanical execution, decode, A/V duration and memory observations remain usable",
+      "an aspect-safe replacement plan now contains 72 pending prompts and 36 matched A/B groups: 768x384 for the landscape input and 416x736 for both portrait inputs, all below the 2% aspect-error guard; record-by-record comparison permits only canvas, timeline-aspect metadata and output-prefix changes, and generation has not started",
+      "the user explicitly waived the aspect-safe 72-run rerun and three-cold/three-warm gate and confirmed the exact local 16GB workflow as operationally accepted; the statement and artifact hashes are preserved without converting that confirmation into fabricated repeat telemetry or a universal memory-safe claim",
+      "ComfyUI 0f1fa67ad full regression passed 491 tests; Ruff, compileall, diff check and whitelist-only plugin startup passed",
+      "after local ComfyUI advanced to 7fe8a61385, the complete 491-test regression, full Ruff, compileall, diff check and CPU whitelist-only plugin startup all passed; no additional GPU generation was run because the user explicitly waived it",
+      "90-node append-only registration contract"
     ],
-    "status": "implemented Advanced EXP mechanics; no real H3 generation, perceptual quality promotion, identity metric, face detector or 16GB memory-safe claim yet"
+    "status": "implemented Advanced EXP mechanics, same-NFE causal-control plumbing and audit-to-repair planning; real mechanical matrix and complete authorized blind-review record exist; the user cancelled the prepared aspect-safe rerun and accepted the exact local 16GB workflow operationally, so this cycle's delivery gate is closed by explicit user acceptance rather than repeat telemetry; quality_guarantee and universal memory_safe_claim remain false"
   },
   "experimental_environment_audit_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
