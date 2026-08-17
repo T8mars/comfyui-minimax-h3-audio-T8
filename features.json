@@ -111,7 +111,13 @@
     "MiniMaxH3FaceRefineConditioningT8Advanced",
     "MiniMaxH3FaceRefineSamplerT8Advanced",
     "MiniMaxH3FaceRefineStitchAuditT8Advanced",
-    "MiniMaxH3LatentUpscaleBy32T8"
+    "MiniMaxH3LatentUpscaleBy32T8",
+    "MiniMaxH3FaceRefineParityPlanT8Advanced",
+    "MiniMaxH3FaceRefineParityLatentT8Advanced",
+    "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
+    "MiniMaxH3FaceRefineParityStitchT8Advanced",
+    "MiniMaxH3FaceRefineQualityGateT8Advanced",
+    "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced"
   ],
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
@@ -162,11 +168,71 @@
         "one automatic YuNet 736x416x124 full H3 chain completed in 171.855 seconds and saved 124 frames at 24fps with 32kHz stereo audio; whole-device peak was 15814MiB on a 16380MiB RTX 4060 Ti, leaving about 566MiB for this exact run",
         "six repeated 124-frame YuNet passes found faces in the same 98 frames; OpenCV warmed about 761MiB of process CPU allocator pages over the first three passes, then the final three post-run RSS steps were 0.156MiB, 0.004MiB and 0.0MiB, so detector objects are released but process RSS is not promised to return to its first baseline",
         "six repeated anime ONNX executions retained no session object and had a 78.867MiB first-to-last post-run RSS difference with a maximum 65.512MiB warm step, below the 256MiB staircase diagnostic but not proof of universal allocator release",
-        "520 project tests, full Ruff, compileall, 102 project JSON documents, diff check and the stable sampling.py SHA-256 guard passed on ComfyUI 0.33.0 at 7fe8a61385",
+        "the pinned YuNet integration was evaluated at IoU 0.5 on all 3226 WIDER FACE validation images and 39123 valid faces: threshold 0.35 precision/recall/F1 was 0.6223/0.6499/0.6358 while threshold 0.60 was 0.8610/0.5694/0.6855; under-16px recall fell from 0.4360 to 0.3225, so the far-face default was not changed from overall F1 alone",
+        "one aspect-safe 416x736x124 real group probe contained multiple detections in 113 frames, reset tracking at one cut and showed no sampled within-shot identity change; a separate 362-frame hard negative selected a wall lamp and a cartoon billiard-ball figure, so identity-safe multi-person tracking is denied",
+        "a five-scenario 61-frame deterministic two-person crossing matrix showed no swap for stable order, confidence-order changes, alternating order or vertical separation, but a three-frame target occlusion switched the selected track from A to B for the final 31 frames",
+        "an aspect-safe 736x416x124 full H3 matrix completed three cold and three warm runs: minimum whole-device headroom was 717.6/922.1MiB and post-run private-memory spread was 3.2/79.1MiB; one 736x416x362 cold full chain completed with 1176.2MiB total-minus-used headroom and 41311.6MiB peak process private memory",
+        "one reviewer completed all six randomized source-versus-candidate pairs before reveal: source won overall and identity 6-0, motion was tied 6/6, and candidate mean scores were 1/5 versus source 5/5 for identity, expression/mouth, temporal stability, seam and naturalness; all notes reported candidate facial distortion and repeated jitter",
+        "six real candidates had full-frame gray SSIM mean 0.9737-0.9746 but face-region SSIM mean 0.4791-0.5392, candidate/source face Laplacian median ratio 0.5493-0.6835 and face-motion-difference correlation mean 0.3581-0.4071; these are non-identity proxies and do not establish non-inferiority",
+        "532 project tests, full Ruff, compileall, 102 project JSON documents, diff check and the stable sampling.py SHA-256 guard passed on ComfyUI 0.33.0 at 7fe8a61385",
       "ComfyUI 0.33.0 95-node schema registration and user-workflow visibility probes",
       "95-node append-only registration contract"
     ],
-      "status": "implemented Advanced EXP mechanics, default pinned CPU YuNet detection, isolated anime-only ONNX detection, real-sample probes and one fixed-profile automatic 124-frame H3 chain; broad detector precision/recall, 362-frame pressure, perceptual quality, identity and blind-review promotion remain unverified"
+      "status": "implemented Advanced EXP mechanics with pinned real/anime detectors; fixed-threshold real-face detection, one real group sequence, a controlled crossing matrix, 124-frame three-cold/three-warm, one 362-frame full-chain pressure probe and six-candidate proxy summary are complete; one-reviewer reveal rejects all six current candidates 6-0 for overall and identity while motion ties, and hard false positives, a demonstrated occlusion identity swap, no identity model and no completed five-reviewer panel keep automatic acceptance, perceptual/identity promotion and universal 16GiB safety denied"
+  },
+  "experimental_face_refine_parity_advanced": {
+    "category": "T8/MiniMax H3/Quality/Experimental/Face Refine Parity",
+    "nodes": [
+      "MiniMaxH3FaceRefineParityPlanT8Advanced",
+      "MiniMaxH3FaceRefineParityLatentT8Advanced",
+      "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
+      "MiniMaxH3FaceRefineParityStitchT8Advanced",
+      "MiniMaxH3FaceRefineQualityGateT8Advanced",
+      "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced"
+    ],
+    "upstream_reference": "Carasibana/ComfyUI-H3-FaceRefine@79a97ce5ee4b393ce26313bd1280b706fe8b4f2c",
+    "behavior": [
+      "append-only isolated route; the existing four Face Refine Advanced nodes and every older workflow remain unchanged",
+      "separate reflected-Gaussian center-21 and size-51 smoothing, audited BGR input for local Ultralytics, crop factor 3 and a square crop canvas capped at 768",
+      "the plan emits a convenient best source crop for reference conditioning but explicitly denies that it proves identity",
+      "strict video-latent injection reuses the exact nested audio tensor and prior noise-mask object; it encodes the real source-frame batch directly and requires the video VAE output to match the target latent without pixel-tail duplication, trim, pad or hidden resize",
+      "per-frame denoise uses the audited upstream crop-height/crop-factor face size and maps the selected relative range to video-mask strength 0.8/0.35 with gamma 1 and 9-frame smoothing while the audio mask remains exactly zero",
+      "the stock workflow uses er_sde, simple, four steps, base denoise 0.45, FL2V Turbo strength 0.75 and seed 42 instead of introducing another sampler node",
+      "stitch uses the author's centred smoothed-face rectangle, chunk-midpoint source-feather scaling and post-warp source-coordinate colour match; pixels outside the effective mask must be bit-exact",
+      "the appended proxy quality gate accepts only continuous frame runs that simultaneously meet conservative source-relative structure, face-delta, measured-sharpness and residual-jitter thresholds; rejected frames return to the exact source tensor",
+      "the quality gate refuses candidates that changed pixels outside the Parity stitch mask, never treats codec-round-tripped pixels as an exact tensor candidate and reports that passing proxies are not identity or quality proof",
+      "the appended MANUAL512 REL baseline guard preserves the prior five node IDs and old defaults, but the recommended workflow explicitly requires crop factor 2.5, manual 512 canvas, relative_to_clip 0.8/0.35 denoise, 21/51 smoothing, locked zero-mask audio and 24/24 face-only stitch",
+      "the baseline guard passes the selected candidate tensor through unchanged and fails closed on mismatched plan/latent/denoise/stitch hashes, auto or non-512 canvas, absolute scaling, wrong denoise/stitch settings, fallback frames, nonfinite pixels, a crop-space face height below 200px or any temporal alignment beyond the declared zero/one-frame tail",
+      "the final workflow muxes the untouched original soundtrack and treats every output as a review candidate"
+    ],
+    "validated": [
+      "eleven focused parity tests cover smoothing, plan/reference output, AV latent audio reuse, zero audio mask, multi-shot refusal, stitch outside-mask equality, ghost fallback, continuous sharpness-run acceptance and non-Parity input refusal",
+      "the preceding 99-node prefix is unchanged and the quality-gate ID is appended after the original four Parity IDs",
+      "Ruff and Python compile checks passed for the new source and node wrappers",
+      "three real 736x416x124 four-step candidates completed with exact 124-frame, 24fps and 32kHz stereo media contracts",
+      "the upstream-strength FL and all-50 Hybrid candidates were visually rejected with face-region SSIM 0.46179/0.45737",
+      "changing only strengths to 0.45/0.15 raised face-region SSIM to 0.76044 and motion correlation to 0.69200, but median face-Laplacian ratio 0.50535 kept quality_promotion false",
+      "the fixed upstream four-node implementation was executed on the same local model stack: 0.8/0.35 produced face SSIM 0.49077 and motion correlation 0.42102, while the one-variable 0.45/0.15 run reached 0.77776/0.70423 but still had only 0.56297 median sharpness ratio and was rejected",
+      "the default high-strength real T8 candidate passed through the new quality gate with zero accepted-mask frames; its encoded output versus a separate source-only Comfy pass measured full/face SSIM 0.999885/0.996810 and face MAE 0.000471, with remaining difference attributable to separate H.264 encodes",
+      "the user-selected MANUAL512 REL run used manual 512x512 crops, crop factor 2.5, relative_to_clip denoise, 21/51 trajectory smoothing and the existing 24/24 stitch; source face height was 105-195px, crop magnification 1.60-1.95x and crop-space face height approximately 205-312px",
+      "the selected stack was Ref2VA pruned INT8, Qwen3-VL NVFP4, official dual VAEs, alpha8 T8 FL2V Turbo LoRA at 0.75, two identity references, locked source audio, face YOLO and er_sde/simple/4-step/denoise0.45/seed42; Comfy decoded 89 frames and the corrected node now encodes those 89 real frames directly while still discarding the one decoded internal alignment tail before final output",
+      "the selected 89-frame 320x320 24fps H.264/AAC result passed strict single-thread decode and has SHA-256 19EA5844643B962F6FD197E34705861916D69F7EA70F3E00A2DF022D6A017399; the user preferred it over source, author target, auto320 absolute, manual416 absolute and manual512 absolute in the local six-way review",
+      "a same-frame fixed-upstream mechanics probe reduced crop mean absolute error from 0.020292 to 0.00000677; maximum denoise-curve error was 0.00001423 and complete synthetic stitch mean absolute error was 0.00000117",
+      "the corrected recommended API completed in 112.48 seconds under prompt 1ed411fa-9b91-45c4-801d-7f45b3597fe5; output SHA-256 0DD8C79F95B01647F3BF345B6503C83A5860BE99BA66D8D72114BD274E9A0884 is strict-decode clean at 89 frames, decoded audio MD5 exactly matches source and selected author target, and full-video SSIM to that target improved from 0.955273 to 0.967059",
+      "all 89 per-frame SSIM values range from 0.943776 to 0.990705; the five lowest-SSIM author/T8 frame pairs were rendered for manual inspection without a new sampled-frame collapse",
+      "the user watched the complete author-target/T8-v2 side-by-side and judged both results equally good, passing subjective non-inferiority for this fixed fixture, seed and model stack",
+      "the corrected run's coarse whole-device peak was 15823/16380MiB, approximately 557MiB headroom; this only narrowly passes the fixed-run 512MiB observation and does not establish a universal 16GiB tier",
+      "550 project tests, full Ruff, compileall, 104 non-artifact JSON documents, live v2 guard schema loading and the stable sampling hash guard passed"
+    ],
+    "limits": [
+      "the exact upstream face and person detector weights are locally installed and hash-checked; the fixed upstream run used face YOLO while person fallback was disabled, and the T8 Plan still uses YuNet unless the user explicitly selects local Ultralytics",
+      "the actual source prompt and all original references must be restored by the user; the example placeholder cannot infer missing workflow metadata",
+      "fixed upstream code, T8 Parity and source files exist for the local reconstructed stack, but the author's original GGUF, embedded prompt, full references and isolated vocals are missing; the completed equal-quality review covers the reconstructed fixed stack, not the unavailable original author environment",
+      "the quality gate can prevent the tested regression by returning source frames, but no real generated frame has yet crossed the conservative gain gate and proved restorative improvement",
+      "the MANUAL512 REL selection is one user's review of one fixed local fixture and seed; the mechanical guard cannot guarantee identity, expression, temporal stability or equal quality on another input",
+      "no successful face-restoration, identity, automatic acceptance or universal 16GiB claim is granted"
+    ],
+    "status": "mechanically implemented with a corrected author-parity MANUAL512 REL v2 route and retained conservative source-fallback quality gate; BGR detection, centred mask geometry, crop-derived denoise, source-coordinate colour match and direct source-frame VAE encoding match the audited upstream mechanics, and the fixed full-video comparison passed one-user subjective non-inferiority; cross-input restoration, identity and universal quality or memory guarantees remain unproven"
   },
   "experimental_motion_quality_advanced": {
     "category": "T8/MiniMax H3/Quality/Experimental",

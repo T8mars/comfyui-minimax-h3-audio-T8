@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.22.0`，共注册
-95 个节点，覆盖32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.26.0`，共注册
+101 个节点，覆盖人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -19,6 +19,7 @@
 | `T8/MiniMax H3/Speech/Experimental` | 实验 | 描述/参考音色、ASR与身份评估、异常释放保护、逐句对白、长文本断点、ADR和显式音色库 |
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
 | `T8/MiniMax H3/Quality/Experimental` | 实验 | 高速动态审计、sigma因果实验、repair规划，以及远景脸局部二次生成与回贴审计 |
+| `T8/MiniMax H3/Quality/Experimental/Face Refine Parity` | 实验 | 隔离复现上游FaceRefine的21/51高斯轨迹、逐帧去噪、音频锁和24/24回贴，并提供MANUAL512 REL机械基线校验 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
@@ -43,14 +44,92 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前520项完整回归、全仓Ruff、compileall、102份项目JSON、diff check与白名单启动使用ComfyUI
+当前550项完整回归、全仓Ruff、compileall、104份项目JSON、diff check与白名单启动使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
-`0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`上完成手工ROI与
-自动YuNet各一次真实FL2VA pruned INT8、736×416×124、12步低去噪双时钟端到端执行，均
-12/12步完成且无OOM；自动链耗时171.855秒、整卡峰值15,814MiB/16,380MiB，约余566MiB。
-这只授予该固定路线的单次机械兼容，不授予真实画质、362帧、跨环境或通用显存结论。
+`0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
+736×416×124完整H3三冷三暖，冷/暖最低整卡余量717.6/922.1MiB，执行后private spread
+3.2/79.1MiB；另一次736×416×362冷启动链以1,176.2MiB余量完成。固定YuNet也在3,226张
+WIDER FACE验证图、39,123个有效人脸上完成集成评估：默认0.35的precision/recall为
+62.23%/64.99%，0.60为86.10%/56.94%，且`<16px`召回从43.60%降到32.25%。因此不强改默认
+阈值，仍要求人工审核Plan；这些证据不授予真实画质、多人身份安全、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
+
+`1.26.0`不增加节点，也不改变前100个节点或稳定采样数学；它修正此前新追加的
+MANUAL512 REL Parity路径，使其真正复现用户选中作者结果的关键机制：Ultralytics接收BGR而不是
+RGB、裁剪边缘仍使用作者居中的平滑脸罩、逐帧去噪按`crop height / crop_factor`取脸尺寸、回贴后在
+来源坐标做colour match，并直接把Comfy解码出的89帧交给video VAE，不再人为复制第90张像素帧。
+机械对照中，修正后裁剪平均绝对误差为`0.00000677`、去噪曲线最大误差`0.00001423`、完整回贴平均
+绝对误差`0.00000117`；这些数值来自固定上游commit的相同帧/检测器/参数对照。
+
+修正后的完整T8链在prompt `1ed411fa-9b91-45c4-801d-7f45b3597fe5`中用112.48秒完成。输出
+`face_refine_t8_author_parity_v2_seed42_00001_.mp4`严格解码为89帧320×320@24fps和32kHz双声道，
+SHA-256为`0DD8C79F95B01647F3BF345B6503C83A5860BE99BA66D8D72114BD274E9A0884`；音频PCM MD5仍与来源/
+作者目标完全一致（`26d40526bd022d7237ba183bd8777966`）。相对作者目标的全片SSIM由旧T8路径的
+`0.955273`提高到`0.967059`。本次0.1秒级轮询观察整卡峰值15,823/16,380MiB，约557MiB余量，
+89帧逐帧SSIM范围为0.943776～0.990705，最低五帧人工抽图未见新的灾难性脸崩。用户随后完整观看
+作者目标/T8 v2双栏并确认“两边效果一样好”，因此该固定素材、seed和模型链的“至少同等”人工门已通过。
+该链只刚越过512MiB本例门槛，仍不能标成通用16GB安全档，也不能把单人单例结论外推到其他输入。
+
+`1.25.0`完整保留前100个节点的ID、顺序、输入、输出和默认值，只在末尾追加
+`MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced`。推荐Face Refine Parity工作流改为用户
+完整审片后选中的`manual_512 + crop_factor=2.5 + relative_to_clip + 0.8/0.35`路线，并继续使用
+21/51轨迹平滑、锁定零音频mask、face-only回贴、dilation24、feather24、colour match1。新基线节点
+要求Plan、latent注入、逐帧去噪和Stitch四份报告属于同一次执行；任一参数、hash、fallback、非有限像素或crop内
+最小脸高低于200px都会明确拒绝。它不再通过1.24.0源相似度代理门把人工选中的候选切回原片，输出
+candidate tensor原样传递；这只是固定机械配置，不是跨素材的身份、自然度或画质保证。
+
+本机89帧fixture中，该路线把来源105～195px脸部送入约205～312px的512画布，crop实际倍率
+1.60～1.95x；结果严格解码通过，SHA-256为
+`19EA5844643B962F6FD197E34705861916D69F7EA70F3E00A2DF022D6A017399`。用户在六路完整视频中选择
+该路线为最好，因此人类审片结论覆盖了本案例中偏向absolute的源相似度代理。该次本机16GB运行虽
+成功，但最低抽样余量仅161MiB，仍不得宣传为通用16GB安全档。
+
+推荐工作流现在还锁定了该次人工选择实际使用的模型链：Ref2VA pruned INT8、Qwen3-VL NVFP4、
+官方video/audio VAE、`minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors@0.75`、
+两张身份参考图、来源音频锁定、face YOLO、`er_sde + simple + 4步 + denoise0.45 + seed42`。真实素材
+由Comfy解码为89帧，节点会显式复制最后一张crop一次形成合法90帧H3内部输入，报告该对齐动作，并在
+回贴前严格丢弃这1张内部尾帧；最终视频仍为原始89帧，绝不隐藏裁切任意有效源帧。旧工作流默认的
+`require_h3_grid=true`保持不变，只有推荐示例显式关闭它且仅接受0或1帧对齐尾巴。
+
+该推荐API已用本项目自己的6个Parity节点完成一次真实端到端执行，prompt ID
+`57741215-c23b-4a9b-87b7-7288ce175ff1`，耗时107.41秒；输出严格解码为89帧320×320@24fps和
+32kHz双声道音频，SHA-256为`B91BBE09C2AF4266EDD2975760A13749A0DB819054BE6C8118E144F0D4AF3097`。
+其解码音频MD5与源片及人工选中版本均为`26d40526bd022d7237ba183bd8777966`；视频相对人工选中版本
+SSIM为0.955273。机械链、时间轴、原声保护和配置Guard因此已实跑关闭，但“效果至少一样”仍是主观
+判断，完整双栏视频必须由用户审片，不能由SSIM替代。
+
+`1.24.0` 保留前99个节点ID、顺序、输入和默认值不变，只在末尾追加
+`MiniMaxH3FaceRefineQualityGateT8Advanced`；此前`1.23.0`追加的4个Face Refine Parity
+Advanced节点。新路线不再复用已经被盲评否决的5帧均值/统一0.45/ellipse12旧链，而是隔离实现
+中心21帧、尺寸51帧的反射Gaussian轨迹，crop factor 3、最高768方形画布、30～120px脸尺寸映射
+0.8～0.35的逐帧视频noise mask、严格为0的音频mask，以及face-only、dilation24、feather24、
+colour match1的回贴。采样示例直接使用原版机制的`er_sde + simple + 4步 + base denoise 0.45`，
+LightX2V FL2V Turbo LoRA强度0.75和seed42；最终只复用原视频完整音轨。上游face/person YOLO权重
+已安装并校验，固定上游代码的实跑实际使用face YOLO；T8 Plan仍默认使用固定YuNet，除非用户显式
+选择本地Ultralytics，因此不称身份跟踪等价。新增质量门连接在Parity Stitch后，只接受结构SSIM、
+脸区变化、实测清晰度和残差时序都通过且连续至少3帧的候选；其余帧回到源tensor。代理通过仍不是
+身份或画质证明，输出必须观看完整视频。
+API示例为`examples/face_refine_parity_advanced_api.json`；第三方MIT归属见
+`THIRD_PARTY_NOTICES.md`。
+
+本机已额外跑完三条736×416×124 T8真实候选，并直接运行固定commit上游的四个原始节点。T8
+原版0.8/0.35强度和只换all-50 Hybrid权重的两条
+均出现明显鬼脸并否决；只把强度降到0.45/0.15后，脸区SSIM由0.46179升到0.76044、动作相关升到
+0.69200，但脸部高频中位比只有0.50535，仍不能证明“修清楚”。首条采样期观测余量约433MiB，
+低于512MiB保守门。固定上游节点的0.8/0.35脸区SSIM/动作相关为0.49077/0.42102；只改成
+0.45/0.15后为0.77776/0.70423，但清晰度中位比仍只有0.56297，也被否决。默认高强度T8候选接入
+质量门后124帧全部被拒，输出在tensor阶段精确返回源片；两次独立H.264编码后相对单独源片直通的
+全画面/脸区SSIM仍为0.999885/0.996810。当前结论是：质量门能避免这条已知鬼脸回归，但尚无真实
+生成帧证明修复增益；仍需补齐上游原始GGUF、embedded prompt、完整refs和独立VOCALS后做严格盲测。
+
+`1.22.1` 不新增或修改节点契约，只追加可复现的Face Refine离线验证工具与证据：精确24fps/
+`17n+5`计划探针、随机本地A/B评审包与严格揭盲汇总、WIDER FACE固定阈值集成评估、受控人物
+交叉矩阵、六候选来源相似/时序代理，以及对应回归测试。公开标注集只在本地按
+CC-BY-NC-ND-4.0用于非商业验证，不随插件分发。首份完整单评审揭盲中，原片在总体和身份上均
+6比0胜出，动作6组全平；候选的身份、表情/嘴型、时序、接缝和自然度均值为1分，原片均为5分，
+备注一致指出候选鬼脸和脸部来回跳动。因此这6个当前候选明确否决；至少5名独立评审者的晋级门
+仍未达到，不能外推为跨素材通用结论，身份/画质晋级和自动接受继续拒绝。
 
 `1.22.0` 完整保留此前94个节点的 ID、顺序、输入、默认值和稳定 `sampling.py` 数学，只在末尾
 追加 `Latent Upscale by 32`。它在像素域选择宽高均可被32整除的合法尺寸，默认以H3的
@@ -285,6 +364,12 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Face Refine Latent / 脸部二次生成条件 (Advanced) | 把crop序列精确编码进联合AV latent的视频流，复用锁定音频与mask，拒绝任何静默时空补齐 |
 | MiniMax H3 Face Refine Sampler / 低去噪双时钟采样 (Advanced) | 复用稳定双时钟采样实现并截取低噪声sigma尾段；denoise仅是实验参数，不是已标定修复强度 |
 | MiniMax H3 Face Refine Stitch Audit / 脸部回贴审计 (Advanced) | 按真实边缘偏移回贴ellipse/rect区域，颜色限幅、异常帧回退并证明mask外像素逐位不变；只输出待审候选 |
+| MiniMax H3 Face Refine Parity Plan / 原版机制规划 (Advanced) | 隔离输出21/51 Gaussian轨迹、crop factor 3、最高768画布、最佳来源参考crop和完整审计报告 |
+| MiniMax H3 Face Refine Parity Latent / 原版机制Latent (Advanced) | 仅替换联合AV latent的视频流，严格保留音频tensor和已有mask，不做静默trim/pad |
+| MiniMax H3 Face Refine Per-Frame Denoise / 逐帧去噪 (Advanced) | 按脸尺寸逐帧生成视频noise mask，音频mask保持全零；默认0.8/0.35、30/120px、smooth9 |
+| MiniMax H3 Face Refine Parity Stitch / 原版机制回贴 (Advanced) | 默认face-only矩形、dilation24、feather24、colour match1；mask外逐位不变，只输出待审候选 |
+| MiniMax H3 Face Refine Quality Gate / 候选质量门 (Advanced) | 兼容保留的保守源片回退实验；源相似/锐度代理不能判断结构修复成功，不再作为推荐工作流出口 |
+| MiniMax H3 Face Refine MANUAL512 REL Baseline / 人工验收512相对模式基线 (Advanced) | 严格校验manual512、crop2.5、relative 0.8/0.35、21/51、音频零mask和24/24回贴后原样放行候选；不宣称通用质量保证 |
 | Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
 
 最小可运行示例见
@@ -484,6 +569,24 @@ YuNet CPU检测；纯动漫另有`H3_Face_Refine_Anime_Advanced_EXP.json`，明�
 H.264与32kHz双声道AAC。来源与输出解码音频均为164,864个双声道采样，相关系数0.997751，
 差异来自AAC重新编码，不能称压缩码流或PCM逐位一致。该来源取自上一轮已被非等比横向拉宽的
 盲测素材，所以本次仅证明真实H3链、回贴、封装和音频保留能完成，绝不作为脸部修复质量证据。
+
+后续扩展验证改用画幅安全真人舞蹈来源：124帧完整链3冷3暖全部成功，冷/暖最低余量分别为
+717.6/922.1MiB，执行后private spread为3.2/79.1MiB；单次362帧完整链在295.235秒完成，余量
+1,176.2MiB、private峰值41,311.6MiB。另一个124帧真实群像中113帧有多脸，抽样轨迹在硬切后
+重置并持续跟随同一灰衣人物；但362帧台球硬负例曾把墙灯和卡通图案当脸，且跟踪器没有身份
+模型，所以仍不能自动接受或宣传多人不串脸。
+
+5组受控双人交叉矩阵进一步确认：一般交叉和检测顺序变化未换人，但目标在交叉点遮挡3帧时，
+轨迹切换到另一人并保持到结尾，31帧跟错。六个真实二次生成候选的脸区SSIM均值仅
+0.479～0.539、Laplacian中位比0.549～0.684、动作差分相关均值0.358～0.407，没有自动非劣
+信号；这些代理不测身份，也不能代替人类盲评。
+
+固定阈值评估工具为`tools/evaluate_face_refine_yunet_wider.py`，计划/主机内存探针为
+`tools/probe_face_refine_plan.py`，匿名评审包生成器为`tools/build_face_refine_blind_review.py`。
+受控交叉审计为`tools/audit_face_refine_tracker_crossing.py`，候选代理汇总为
+`tools/summarize_face_refine_candidates.py`。
+详细分层召回、显存口径、多人限制与盲评状态见
+[`docs/FACE_REFINE_ADVANCED_VALIDATION.md`](docs/FACE_REFINE_ADVANCED_VALIDATION.md)。
 
 ## Advanced：FL2VA × Ref2VA 小型混合模型实验
 

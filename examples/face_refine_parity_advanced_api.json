@@ -1,0 +1,223 @@
+{
+  "1": {
+    "inputs": {"file": "replace_with_exact_24fps_17n_plus_5_source.mp4"},
+    "class_type": "LoadVideo",
+    "_meta": {"title": "Load one-shot source at its original aspect ratio"}
+  },
+  "2": {
+    "inputs": {"video": ["1", 0]},
+    "class_type": "GetVideoComponents",
+    "_meta": {"title": "Source frames, untouched final soundtrack and FPS"}
+  },
+  "3": {
+    "inputs": {"image": "replace_with_known_good_identity_frame_1.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Required known-good identity frame 1"}
+  },
+  "4": {
+    "inputs": {
+      "detector_mode": "local_ultralytics",
+      "detector_model": "ultralytics/bbox/face_yolov8m.pt",
+      "detector_device": "cpu",
+      "confidence": 0.35,
+      "manual_roi_x": 0.30,
+      "manual_roi_y": 0.10,
+      "manual_roi_width": 0.40,
+      "manual_roi_height": 0.55,
+      "scene_cut_threshold": 0.28,
+      "max_track_jump": 0.18,
+      "max_gap_frames": 4,
+      "center_smooth_window": 21,
+      "size_smooth_window": 51,
+      "crop_factor": 2.5,
+      "canvas_mode": "manual_512",
+      "require_h3_grid": false,
+      "analysis_chunk_frames": 8,
+      "frames": ["2", 0],
+      "fps": 24.0
+    },
+    "class_type": "MiniMaxH3FaceRefineParityPlanT8Advanced",
+    "_meta": {"title": "Human-selected baseline: Gaussian 21/51, crop factor 2.5, manual 512"}
+  },
+  "5": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 video VAE"}
+  },
+  "6": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load H3 audio VAE"}
+  },
+  "7": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load H3 CLIP"}
+  },
+  "8": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load the locally reviewed Ref2VA pruned baseline model"}
+  },
+  "9": {
+    "inputs": {
+      "lora_name": "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+      "strength_model": 0.75,
+      "model": ["8", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {"title": "LightX2V FL2V Turbo 4-step LoRA at upstream example strength 0.75"}
+  },
+  "10": {
+    "inputs": {"shift_video": 12.0, "shift_audio": 3.0, "model": ["9", 0]},
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {"title": "Native H3 video/audio sigma shift"}
+  },
+  "11": {
+    "inputs": {
+      "prompt": "PASTE_THE_SOURCE_VIDEO_PROMPT_HERE. Preserve the same identity, expression, gaze, head pose, timing, lighting and camera motion. Restore only plausible facial structure and fine detail. Do not beautify, change makeup, age, hairstyle, mouth timing, background, music or sound effects. No additional speech.",
+      "width": ["4", 5],
+      "height": ["4", 6],
+      "length": ["4", 7],
+      "task_type": "Ref2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["7", 0],
+      "video_vae": ["5", 0],
+      "audio_vae": ["6", 0],
+      "drive_audio": ["2", 1],
+      "ref_images.ref_image_0": ["3", 0],
+      "ref_images.ref_image_1": ["24", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Use the source prompt and two known-good identity references"}
+  },
+  "12": {
+    "inputs": {
+      "audio_policy": "require_locked",
+      "allow_multi_shot_exp": false,
+      "positive": ["11", 0],
+      "av_latent": ["11", 1],
+      "crops": ["4", 1],
+      "video_vae": ["5", 0],
+      "face_plan": ["4", 0]
+    },
+    "class_type": "MiniMaxH3FaceRefineParityLatentT8Advanced",
+    "_meta": {"title": "Strict crop-video latent injection; audio remains locked"}
+  },
+  "13": {
+    "inputs": {
+      "strength_small_face": 0.8,
+      "strength_large_face": 0.35,
+      "scale_mode": "relative_to_clip",
+      "face_px_small": 30.0,
+      "face_px_large": 120.0,
+      "gamma": 1.0,
+      "smooth_frames": 9,
+      "video_mask_mode": "replace_video_parity",
+      "require_locked_audio": true,
+      "av_latent": ["12", 1],
+      "face_plan": ["4", 0]
+    },
+    "class_type": "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
+    "_meta": {"title": "Per-frame video denoise; nested audio mask stays zero"}
+  },
+  "14": {
+    "inputs": {"noise_seed": 42},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Upstream example seed 42"}
+  },
+  "15": {
+    "inputs": {"model": ["10", 0], "conditioning": ["12", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Basic guider"}
+  },
+  "16": {
+    "inputs": {"sampler_name": "er_sde"},
+    "class_type": "KSamplerSelect",
+    "_meta": {"title": "Upstream sampler: er_sde"}
+  },
+  "17": {
+    "inputs": {"scheduler": "simple", "steps": 4, "denoise": 0.45, "model": ["10", 0]},
+    "class_type": "BasicScheduler",
+    "_meta": {"title": "Upstream scheduler: simple, 4 steps, base denoise 0.45"}
+  },
+  "18": {
+    "inputs": {
+      "noise": ["14", 0],
+      "guider": ["15", 0],
+      "sampler": ["16", 0],
+      "sigmas": ["17", 0],
+      "latent_image": ["13", 0]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Generate parity face-crop candidate"}
+  },
+  "19": {
+    "inputs": {"av_latent": ["18", 0], "video_vae": ["5", 0], "audio_vae": ["6", 0]},
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode refined crop video; discard generated audio"}
+  },
+  "20": {
+    "inputs": {
+      "paste_region": "face_only",
+      "mask_dilation": 24,
+      "feather_source_px": 24.0,
+      "colour_match": 1.0,
+      "blend": 1.0,
+      "undetected_frames": "fade_out",
+      "max_face_mean_abs_delta": 1.0,
+      "processing_device": "cpu_memory_safe",
+      "base_frames": ["2", 0],
+      "refined_crops": ["19", 0],
+      "face_plan": ["4", 0]
+    },
+    "class_type": "MiniMaxH3FaceRefineParityStitchT8Advanced",
+    "_meta": {"title": "Parity stitch 24/24; output is a review candidate only"}
+  },
+  "23": {
+    "inputs": {
+      "candidate_frames": ["20", 0],
+      "face_plan": ["4", 0],
+      "latent_report_json": ["12", 2],
+      "denoise_report_json": ["13", 1],
+      "stitch_report_json": ["20", 4],
+      "profile": "manual512_relative_author_parity_v2",
+      "minimum_crop_face_height_px": 200.0
+    },
+    "class_type": "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced",
+    "_meta": {"title": "Fail closed unless the human-selected MANUAL512 REL mechanics match"}
+  },
+  "21": {
+    "inputs": {"images": ["23", 0], "fps": 24.0, "audio": ["2", 1], "bit_depth": 8},
+    "class_type": "CreateVideo",
+    "_meta": {"title": "Mux untouched original soundtrack"}
+  },
+  "22": {
+    "inputs": {
+      "video": ["21", 0],
+      "filename_prefix": "MiniMaxH3/face_refine_manual512_relative_candidate",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {"title": "Save candidate for manual review; never overwrite source"}
+  },
+  "24": {
+    "inputs": {"image": "replace_with_known_good_identity_frame_2.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Required known-good identity frame 2"}
+  }
+}

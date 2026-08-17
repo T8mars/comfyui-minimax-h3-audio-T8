@@ -54,6 +54,7 @@ def local_face_detector_options() -> list[str]:
         root / "detection",
         root / "facedetection",
         root / "SVFR",
+        root / "ultralytics",
     ]
     for search_root in search_roots:
         if not search_root.is_dir():

@@ -28,6 +28,124 @@ adds the required bias deltas. This does not make the original 518-tensor LoRA g
 with pruned models, and the converted file must not be used on a different checkpoint merely because
 its filename also contains `pruned`.
 
+## Version 1.26.0 audited author-parity correction
+
+Version 1.26.0 adds no node ID and changes no stable sampler. It corrects only the newly appended
+MANUAL512 REL Parity path after a source-level, same-frame comparison with
+`Carasibana/ComfyUI-H3-FaceRefine@79a97ce5`. Ultralytics now receives BGR ndarray input; the paste mask
+uses the author's centred smoothed-face rectangle even when the crop is frame-edge clamped; per-frame
+denoise derives face size from `crop height / crop_factor`; colour matching runs after warp in source
+coordinates; and the real 89-frame batch is passed directly to the video VAE. A latent shape mismatch
+still fails closed—there is no pixel-tail duplication, latent trim, pad or hidden resize.
+
+On the fixed fixture, the post-fix crop mean absolute error against the fixed upstream node is
+`0.00000677`, maximum denoise-curve error is `0.00001423`, and complete synthetic stitch mean absolute
+error is `0.00000117`. The live package chain then completed under prompt
+`1ed411fa-9b91-45c4-801d-7f45b3597fe5` in 112.48 seconds. Output SHA-256 is
+`0DD8C79F95B01647F3BF345B6503C83A5860BE99BA66D8D72114BD274E9A0884`; strict decode reports 89 frames,
+320x320 at 24fps and 32kHz stereo audio. Decoded audio MD5 remains identical to source and author target
+(`26d40526bd022d7237ba183bd8777966`). Full-video SSIM to the selected author target improved from
+0.955273 to 0.967059. After watching the complete author-target/T8-v2 side-by-side, the user judged both
+results equally good, so the fixed fixture/seed/model-stack subjective non-inferiority gate passes. The observed
+15,823/16,380MiB whole-device peak leaves about 557MiB only for this run; cross-input quality and universal
+16GiB safety are not inferred.
+
+## Version 1.25.0 human-selected MANUAL512 REL Face Refine baseline
+
+Version 1.25.0 keeps the preceding 100 node IDs, schemas and defaults unchanged, then appends
+`MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced`. The recommended Parity example now explicitly
+uses `manual_512`, crop factor `2.5`, `relative_to_clip`, video-mask strengths `0.8/0.35`, 21/51 trajectory
+smoothing and the existing face-only 24px dilation/24px source-feather stitch. The original soundtrack
+continues through the locked zero audio mask and final source mux.
+
+The appended node is a fail-closed mechanical guard, not a quality oracle. It binds the Plan, latent injection,
+denoise and stitch reports by SHA, verifies the selected settings and requires at least 200 crop-space face pixels. It
+passes the candidate tensor through unchanged and does not route through the 1.24.0 source-similarity proxy
+gate. On the fixed 89-frame local fixture, the 512 crop produced approximately 205-312px faces from
+105-195px source faces and 1.60-1.95x crop magnification. The strict-decode output SHA-256 is
+`19EA5844643B962F6FD197E34705861916D69F7EA70F3E00A2DF022D6A017399`; the user selected it as the best
+of the six complete comparison videos. This one-fixture human choice does not establish universal identity,
+restoration quality or 16GiB safety; sampled headroom reached only 161MiB.
+
+The recommended workflow pins the actually reviewed stack: Ref2VA pruned INT8, Qwen3-VL NVFP4, the official
+video/audio VAEs, the alpha8 T8-converted FL2V Turbo LoRA at 0.75, two identity references, locked source audio,
+face YOLO, `er_sde + simple + 4 steps + denoise 0.45 + seed 42`. Comfy decoded the source as 89 frames. The
+Parity path now explicitly duplicates the final crop once for the legal 90-frame H3 internal grid, records that
+policy in the latent report, and discards exactly that one internal tail before stitching. Final media stays at the
+original 89 frames; arbitrary source-frame trimming or hidden temporal fitting remains forbidden. Existing Plan
+defaults still require a native H3 grid; only the reviewed example opts into the guarded one-frame exception.
+
+The same API was executed end to end through this package's own six Parity nodes under prompt ID
+`57741215-c23b-4a9b-87b7-7288ce175ff1` in 107.41 seconds. Strict decode produced 89 frames at 320x320/24fps
+plus 32kHz stereo audio; SHA-256 is `B91BBE09C2AF4266EDD2975760A13749A0DB819054BE6C8118E144F0D4AF3097`.
+Decoded audio MD5 is bit-identical to both source and the selected candidate (`26d40526bd022d7237ba183bd8777966`).
+Video SSIM against the selected candidate is 0.955273. This closes real mechanical execution, timeline and
+soundtrack preservation, not subjective equal-or-better quality; the full side-by-side remains the authority.
+
+## Version 1.24.0 Face Refine parity plus source-fallback quality gate
+
+Version 1.23.0 appended four Advanced node IDs after the unchanged 95-node prefix. They reproduce the
+auditable mechanics of `Carasibana/ComfyUI-H3-FaceRefine@79a97ce5`: separate reflected-Gaussian
+21-frame center and 51-frame size smoothing, crop factor 3, an automatically selected square canvas
+capped at 768, a face-size-dependent video denoise mask (0.8/0.35 at 30/120px, smoothed over 9 frames),
+an exactly zero audio mask, and face-only 24px dilation/24px source feather stitching. The example uses
+`er_sde`, `simple`, four steps, base denoise 0.45, LightX2V FL2V Turbo at 0.75 and seed 42, then muxes
+the untouched source soundtrack. Version 1.24.0 preserves those 99 IDs and appends one
+`MiniMaxH3FaceRefineQualityGateT8Advanced` node. It refuses non-Parity candidates whose pixels changed
+outside the stitch mask, then accepts only continuous runs passing conservative source-relative structure,
+face-delta, measured-sharpness and residual-jitter thresholds. Rejected frames return to the exact source
+tensor. A passing proxy still does not prove identity or restoration quality. See `THIRD_PARTY_NOTICES.md`.
+
+Real local probing has three T8 candidates. The exact 0.8/0.35 strength route and an all-50 Hybrid
+weight-only variant both produced obvious facial distortion and are rejected. A single-variable
+0.45/0.15 route was visibly less destructive and improved face-region SSIM from 0.46179 to 0.76044,
+but its median face-Laplacian ratio was only 0.50535; it remains a manual-review EXP candidate rather
+than a quality preset. The fixed upstream four-node code was also run with the same local model stack:
+0.8/0.35 measured face SSIM/motion correlation 0.49077/0.42102; 0.45/0.15 measured
+0.77776/0.70423 but retained only a 0.56297 median sharpness ratio, so it was also rejected. The exact
+face/person YOLO weights are installed and hash-checked; face YOLO participated in that run while person
+fallback was disabled. The source still lacks the author's GGUF, embedded prompt, full references and
+isolated vocals, so this is fixed-code local execution rather than the author's original environment.
+
+The default high-strength T8 candidate was then passed through the new quality gate. Its accepted-mask
+video contained zero non-black frames: all 124 generated face frames were rejected and the source tensor
+was returned. A separately encoded source-only Comfy pass versus the gated encode measured full/face SSIM
+0.999885/0.996810 and face MAE 0.000471; remaining differences are from separate H.264 encodes. This proves
+the tested regression can be contained, not that any face was restored.
+The complete local gate passes 548 tests, full Ruff, compileall, 104 non-artifact project JSON
+documents, live object-info loading of the new schema and the unchanged stable sampling hash.
+
+## Version 1.22.1 Face Refine extended validation
+
+Version 1.22.1 changes no node ID, input, output, default, model weight or stable sampling path. It adds
+offline exact-plan/host-memory probing, randomized local source-versus-candidate blind review plus strict
+reveal analysis, fixed-threshold YuNet evaluation on a user-provided local WIDER FACE validation copy,
+controlled tracker crossing and candidate proxy summarization. None downloads models or datasets at
+runtime, and WIDER images are not distributed with this plugin.
+
+On ComfyUI `0.33.0@7fe8a61385`, an aspect-safe 736x416x124 Face Refine chain completed three cold and
+three warm full-H3 runs. Minimum whole-device headroom was 717.6/922.1MiB and post-run private-memory
+spread was 3.2/79.1MiB. One 736x416x362 cold run also completed with 1176.2MiB total-minus-used headroom
+and 41311.6MiB peak process private memory. This is exact-stack execution evidence, not a universal 16GiB
+safety tier.
+
+The pinned YuNet 2023mar model was evaluated at IoU 0.5 on 3226 WIDER FACE validation images and 39123
+valid faces. The node default 0.35 threshold produced 0.6223 precision and 0.6499 recall; 0.60 produced
+0.8610 precision and 0.5694 recall, while under-16px recall fell from 0.4360 to 0.3225. The default is not
+changed from aggregate F1 alone because this feature targets far faces. A real 124-frame group clip and a
+362-frame hard negative also proved that detection/tracking is not identity-safe. One reviewer completed all
+six randomized pairs before reveal: source won overall and identity 6-0, while motion was tied in all six.
+Candidate mean scores were 1/5 for identity, expression/mouth, temporal stability, seam and naturalness versus
+5/5 for source; every note identified candidate facial distortion and repeated jitter. This rejects the current
+six candidates for the fixed source/settings, but the preregistered five-reviewer panel remains incomplete and
+the repeated source can reveal the control over time. A deterministic five-scenario crossing matrix also showed
+that three frames of target occlusion switched the geometry-only tracker from A to B for the final 31 frames.
+Six real candidate proxies also provided no automatic non-inferiority signal: face SSIM mean was 0.4791-0.5392,
+candidate/source face Laplacian median ratio was 0.5493-0.6835 and face-motion-difference correlation mean was
+0.3581-0.4071. These metrics do not measure identity or replace blind review, so automatic acceptance,
+perceptual/identity promotion, automatic acceptance and general memory safety remain denied. See
+`FACE_REFINE_ADVANCED_VALIDATION.md`.
+
 ## Version 1.18 Advanced Studio and diagnostic routes
 
 Version 1.18 appends Advanced/Experimental routes without changing the existing H3 conditioning or

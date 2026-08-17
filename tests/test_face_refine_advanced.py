@@ -23,6 +23,7 @@ from h3_audio_t8_pkg.face_refine_advanced import (
     _select_track,
     build_face_refine_plan,
     inject_face_refine_video_latent,
+    local_face_detector_options,
     setup_face_refine_sampling,
     stitch_face_refine_candidate,
 )
@@ -148,6 +149,16 @@ def test_opencv_yunet_backend_parses_boxes_landmarks_and_releases_local_model(
     assert report["effective_device"] == "cpu"
     assert report["cached_after_execute"] is False
     assert report["model_sha256"] != YUNET_2023MAR_SHA256
+
+
+def test_detector_options_include_comfy_ultralytics_face_models(monkeypatch, tmp_path):
+    model_root = tmp_path / "models"
+    model_path = model_root / "ultralytics" / "bbox" / "face_yolov8m.pt"
+    model_path.parent.mkdir(parents=True)
+    model_path.write_bytes(b"local-face-yolo")
+    monkeypatch.setattr(face_refine_module, "_model_root", lambda: model_root)
+
+    assert "ultralytics/bbox/face_yolov8m.pt" in local_face_detector_options()
 
 
 def test_anime_onnx_backend_decodes_raw_yolov8_and_runs_cpu_only(monkeypatch, tmp_path):
