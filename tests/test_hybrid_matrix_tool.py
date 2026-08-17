@@ -28,7 +28,7 @@ from h3_audio_t8_pkg.tools.validate_h3_vram import load_api_prompt
 
 
 def template_path() -> Path:
-    return Path(__file__).resolve().parents[1] / "examples" / "hybrid_model_advanced_api.json"
+    return Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "hybrid_model_advanced_api.json"
 
 
 def load_template():

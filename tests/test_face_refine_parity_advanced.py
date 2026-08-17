@@ -569,7 +569,7 @@ def test_parity_rejects_non_h3_frames_and_multi_shot_latent():
 def test_parity_examples_lock_reviewed_sampling_and_original_audio_mux():
     root = Path(__file__).resolve().parents[1]
     api = json.loads(
-        (root / "examples" / "face_refine_parity_advanced_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "face_refine_parity_advanced_api.json").read_text(
             encoding="utf-8"
         )
     )

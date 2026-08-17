@@ -106,6 +106,12 @@ that the damaged facial structure was repaired and clarified that the earlier bl
 boundary rather than proof that Face Refine could not work. This is one user acceptance on a clear-source fixture,
 not a universal restoration, identity, deblur or memory guarantee.
 
+Since 1.27.2, the current example may request a 73-frame H3 window from that same 69-frame source. Repair Job
+repeats the final source frame for four model-context positions, while Composite discards those positions and
+returns the exact 69-frame source timeline with its untouched audio. This bounded behavior applies only when the
+shortfall is at most 16 frames. Reference profiles now default to `dominant_face_auto`, which filters clearly
+smaller/lower-confidence YuNet false positives but still rejects two similarly plausible real faces.
+
 ## Version 1.26.0 audited author-parity correction
 
 Version 1.26.0 adds no node ID and changes no stable sampler. It corrects only the newly appended
@@ -529,7 +535,7 @@ conditions; `memory_safe` and `never_oom` remain false.
 
 Version 1.14.0 added the opt-in
 `examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
-`examples/hybrid_model_advanced_api.json`. Audio-only and mixed-reference variants are provided as
+`tests/fixtures/api/hybrid_model_advanced_api.json`. Audio-only and mixed-reference variants are provided as
 `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
 `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
 `hybrid_model_audio_reference_api.json`, and `hybrid_model_mixed_reference_api.json`.
@@ -572,7 +578,7 @@ after the latent boundary. Both workflows use placeholders that must be replaced
 
 The project also includes the isolated experimental long-video workflow
 `examples/workflows/H3_Long_Video_22F_EXP.json` and API graph
-`examples/long_video_segment_api.json`. They plan and execute one bounded segment
+`tests/fixtures/api/long_video_segment_api.json`. They plan and execute one bounded segment
 at a time, store only a checksummed AV latent tail, and use a cloned-MODEL object
 patch rather than a process-global MiniMax H3 monkey patch. Intermediate segments
 must preserve the sampled tail; only a Planner-marked final segment may trim it
@@ -587,14 +593,14 @@ and VRAM safety tiers are still unresolved, so the feature remains experimental.
 
 Version 1.5.0 adds a safer accepted-state route without removing that P1 example:
 
-- `examples/long_video_candidate_accept_api.json` loads only an accepted parent,
+- `tests/fixtures/api/long_video_candidate_accept_api.json` loads only an accepted parent,
   saves a non-mutating candidate, previews it with acceptance off by default, and
   promotes it through a locked, checksummed, atomic manifest only after review;
 - `examples/workflows/H3_Long_Video_Accepted_22F_EXP.json` provides the same
   review-first route as a drag-and-drop frontend workflow;
 - replacing segment N is explicit and invalidates every accepted segment after N,
   because those outputs were conditioned on the old parent chain;
-- `examples/long_video_compose_api.json` verifies the contiguous final manifest and
+- `tests/fixtures/api/long_video_compose_api.json` verifies the contiguous final manifest and
   composes it while holding only one decoded video frame and one segment PCM buffer;
 - audio sample boundaries are absolute over the 24fps timeline. The optional cosine
   bridge preserves the exact sample count and reduces an instantaneous value step,
@@ -647,7 +653,7 @@ Version 1.6.0 adds a human-reviewed total-duration resume route:
 
 - `examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` is the recommended
   frontend graph and is installed in the same ComfyUI workflow directory;
-- `examples/long_video_auto_resume_api.json` is the equivalent API graph;
+- `tests/fixtures/api/long_video_auto_resume_api.json` is the equivalent API graph;
 - one `MiniMaxH3LongVideoOrchestratorT8` input defines the total duration, a fixed
   legal H3 render window, overlap context, global/per-segment prompts, a seed policy,
   steps, video/audio shifts, sampler, and scheduler;

@@ -23,28 +23,28 @@
   "3": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "replace_with_authorized_Character_A_reference.png"
+      "image": "replace_with_clear_single_person_Character_A_reference.png"
     },
     "_meta": {
-      "title": "Authorized single-person reference for Character_A"
+      "title": "Clear single-person reference for Character_A"
     }
   },
   "4": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "replace_with_authorized_Character_B_reference.png"
+      "image": "replace_with_clear_single_person_Character_B_reference.png"
     },
     "_meta": {
-      "title": "Authorized single-person reference for Character_B"
+      "title": "Clear single-person reference for Character_B"
     }
   },
   "5": {
     "class_type": "LoadImage",
     "inputs": {
-      "image": "replace_with_authorized_Character_C_reference.png"
+      "image": "replace_with_clear_single_person_Character_C_reference.png"
     },
     "_meta": {
-      "title": "Authorized single-person reference for Character_C"
+      "title": "Clear single-person reference for Character_C"
     }
   },
   "6": {
@@ -105,11 +105,10 @@
         "3",
         0
       ],
-      "rights_confirmed": false,
-      "reference_face_policy": "require_single_face"
+      "reference_face_policy": "dominant_face_auto"
     },
     "_meta": {
-      "title": "Enable rights_confirmed only after verifying the Character_A reference"
+      "title": "Build the in-memory matching profile for Character_A"
     }
   },
   "10": {
@@ -120,11 +119,10 @@
         "4",
         0
       ],
-      "rights_confirmed": false,
-      "reference_face_policy": "require_single_face"
+      "reference_face_policy": "dominant_face_auto"
     },
     "_meta": {
-      "title": "Enable rights_confirmed only after verifying the Character_B reference"
+      "title": "Build the in-memory matching profile for Character_B"
     }
   },
   "11": {
@@ -135,11 +133,10 @@
         "5",
         0
       ],
-      "rights_confirmed": false,
-      "reference_face_policy": "require_single_face"
+      "reference_face_policy": "dominant_face_auto"
     },
     "_meta": {
-      "title": "Enable rights_confirmed only after verifying the Character_C reference"
+      "title": "Build the in-memory matching profile for Character_C"
     }
   },
   "12": {
@@ -151,7 +148,7 @@
       ]
     },
     "_meta": {
-      "title": "Merge authorized character 1 of 3"
+      "title": "Merge character 1 of 3"
     }
   },
   "13": {
@@ -167,7 +164,7 @@
       ]
     },
     "_meta": {
-      "title": "Merge authorized character 2 of 3"
+      "title": "Merge character 2 of 3"
     }
   },
   "14": {
@@ -183,7 +180,7 @@
       ]
     },
     "_meta": {
-      "title": "Merge authorized character 3 of 3"
+      "title": "Merge character 3 of 3"
     }
   },
   "15": {
@@ -622,11 +619,11 @@
         "16",
         0
       ],
-      "accept_candidate": false,
+      "accept_candidate": true,
       "overlap_policy": "reject"
     },
     "_meta": {
-      "title": "After review, toggle accept for Character_A; overlaps fail closed"
+      "title": "Accept Character_A by default; disable only for preview-only review"
     }
   },
   "37": {
@@ -884,7 +881,7 @@
         "17",
         0
       ],
-      "accept_candidate": false,
+      "accept_candidate": true,
       "overlap_policy": "reject",
       "previous_composite": [
         "36",
@@ -892,7 +889,7 @@
       ]
     },
     "_meta": {
-      "title": "After review, toggle accept for Character_B; overlaps fail closed"
+      "title": "Accept Character_B by default; disable only for preview-only review"
     }
   },
   "49": {
@@ -1150,7 +1147,7 @@
         "18",
         0
       ],
-      "accept_candidate": false,
+      "accept_candidate": true,
       "overlap_policy": "reject",
       "previous_composite": [
         "48",
@@ -1158,7 +1155,7 @@
       ]
     },
     "_meta": {
-      "title": "After review, toggle accept for Character_C; overlaps fail closed"
+      "title": "Accept Character_C by default; disable only for preview-only review"
     }
   },
   "61": {

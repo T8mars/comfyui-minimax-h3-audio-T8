@@ -515,7 +515,7 @@ def test_new_node_schemas_are_default_off_and_appendable():
 def test_motion_quality_examples_use_eight_step_baseline_and_safe_defaults():
     root = Path(__file__).resolve().parents[1]
     api = json.loads(
-        (root / "examples" / "motion_quality_advanced_8step_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "motion_quality_advanced_8step_api.json").read_text(
             encoding="utf-8"
         )
     )

@@ -145,7 +145,7 @@ def test_explicit_0999_matches_current_h3_default_visual_noise_rows_exactly():
 def test_visual_reference_strength_api_example_patches_only_positive_conditioning():
     root = Path(__file__).resolve().parents[1]
     workflow = json.loads(
-        (root / "examples" / "ref2va_visual_reference_strength_exp_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "ref2va_visual_reference_strength_exp_api.json").read_text(
             encoding="utf-8"
         )
     )

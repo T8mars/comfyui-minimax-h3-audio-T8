@@ -238,11 +238,11 @@ WIDER easy/medium/hard AP：
 
 ## 示例
 
-- API：`examples/face_refine_advanced_api.json`
+- API：`tests/fixtures/api/face_refine_advanced_api.json`
 - 前端：`examples/workflows/H3_Face_Refine_Advanced_EXP.json`
-- 动漫API：`examples/face_refine_anime_advanced_api.json`
+- 动漫API：`tests/fixtures/api/face_refine_anime_advanced_api.json`
 - 动漫前端：`examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
-- Parity+MANUAL512 REL基线API：`examples/face_refine_parity_advanced_api.json`
+- Parity+MANUAL512 REL基线API：`tests/fixtures/api/face_refine_parity_advanced_api.json`
 - Parity+MANUAL512 REL基线前端：`examples/workflows/H3_Face_Refine_Parity_Advanced_EXP.json`
 
 示例要求用户先准备精确24fps、124帧、单镜头素材。真人示例默认YuNet，动漫示例必须显式使用

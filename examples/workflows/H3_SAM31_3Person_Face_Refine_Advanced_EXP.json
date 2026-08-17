@@ -1,7 +1,7 @@
 {
   "id": "02635f43-74e1-4a28-9002-50804a4ee082",
   "revision": 0,
-  "last_node_id": 63,
+  "last_node_id": 67,
   "last_link_id": 125,
   "nodes": [
     {
@@ -113,7 +113,7 @@
     {
       "id": 3,
       "type": "LoadImage",
-      "title": "Authorized single-person reference for Character_A",
+      "title": "Clear single-person reference for Character_A",
       "pos": [
         0,
         300
@@ -154,13 +154,13 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "replace_with_authorized_Character_A_reference.png"
+        "replace_with_clear_single_person_Character_A_reference.png"
       ]
     },
     {
       "id": 4,
       "type": "LoadImage",
-      "title": "Authorized single-person reference for Character_B",
+      "title": "Clear single-person reference for Character_B",
       "pos": [
         0,
         600
@@ -201,13 +201,13 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "replace_with_authorized_Character_B_reference.png"
+        "replace_with_clear_single_person_Character_B_reference.png"
       ]
     },
     {
       "id": 5,
       "type": "LoadImage",
-      "title": "Authorized single-person reference for Character_C",
+      "title": "Clear single-person reference for Character_C",
       "pos": [
         0,
         900
@@ -248,7 +248,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "replace_with_authorized_Character_C_reference.png"
+        "replace_with_clear_single_person_Character_C_reference.png"
       ]
     },
     {
@@ -495,14 +495,14 @@
     {
       "id": 9,
       "type": "MiniMaxH3FaceCharacterProfileT8Advanced",
-      "title": "Enable rights_confirmed only after verifying the Character_A reference",
+      "title": "Build the in-memory matching profile for Character_A",
       "pos": [
         440,
         600
       ],
       "size": [
         390,
-        238
+        210
       ],
       "flags": {},
       "order": 8,
@@ -520,14 +520,6 @@
           "name": "reference_images",
           "type": "IMAGE",
           "link": 6
-        },
-        {
-          "name": "rights_confirmed",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rights_confirmed"
-          },
-          "link": null
         },
         {
           "name": "reference_face_policy",
@@ -563,21 +555,20 @@
       },
       "widgets_values": [
         "Character_A",
-        false,
-        "require_single_face"
+        "dominant_face_auto"
       ]
     },
     {
       "id": 10,
       "type": "MiniMaxH3FaceCharacterProfileT8Advanced",
-      "title": "Enable rights_confirmed only after verifying the Character_B reference",
+      "title": "Build the in-memory matching profile for Character_B",
       "pos": [
         440,
         900
       ],
       "size": [
         390,
-        238
+        210
       ],
       "flags": {},
       "order": 9,
@@ -595,14 +586,6 @@
           "name": "reference_images",
           "type": "IMAGE",
           "link": 7
-        },
-        {
-          "name": "rights_confirmed",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rights_confirmed"
-          },
-          "link": null
         },
         {
           "name": "reference_face_policy",
@@ -638,21 +621,20 @@
       },
       "widgets_values": [
         "Character_B",
-        false,
-        "require_single_face"
+        "dominant_face_auto"
       ]
     },
     {
       "id": 11,
       "type": "MiniMaxH3FaceCharacterProfileT8Advanced",
-      "title": "Enable rights_confirmed only after verifying the Character_C reference",
+      "title": "Build the in-memory matching profile for Character_C",
       "pos": [
         440,
         1200
       ],
       "size": [
         390,
-        238
+        210
       ],
       "flags": {},
       "order": 10,
@@ -670,14 +652,6 @@
           "name": "reference_images",
           "type": "IMAGE",
           "link": 8
-        },
-        {
-          "name": "rights_confirmed",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rights_confirmed"
-          },
-          "link": null
         },
         {
           "name": "reference_face_policy",
@@ -713,14 +687,13 @@
       },
       "widgets_values": [
         "Character_C",
-        false,
-        "require_single_face"
+        "dominant_face_auto"
       ]
     },
     {
       "id": 12,
       "type": "MiniMaxH3FaceCastMergeT8Advanced",
-      "title": "Merge authorized character 1 of 3",
+      "title": "Merge character 1 of 3",
       "pos": [
         880,
         300
@@ -767,7 +740,7 @@
     {
       "id": 13,
       "type": "MiniMaxH3FaceCastMergeT8Advanced",
-      "title": "Merge authorized character 2 of 3",
+      "title": "Merge character 2 of 3",
       "pos": [
         1320,
         0
@@ -819,7 +792,7 @@
     {
       "id": 14,
       "type": "MiniMaxH3FaceCastMergeT8Advanced",
-      "title": "Merge authorized character 3 of 3",
+      "title": "Merge character 3 of 3",
       "pos": [
         1760,
         0
@@ -2868,7 +2841,7 @@
     {
       "id": 36,
       "type": "MiniMaxH3MultiFaceCompositeT8Advanced",
-      "title": "After review, toggle accept for Character_A; overlaps fail closed",
+      "title": "Character_A accepted by default; disable only for preview review",
       "pos": [
         5720,
         300
@@ -2947,7 +2920,7 @@
         "Node name for S&R": "MiniMaxH3MultiFaceCompositeT8Advanced"
       },
       "widgets_values": [
-        false,
+        true,
         "reject"
       ]
     },
@@ -3863,7 +3836,7 @@
     {
       "id": 48,
       "type": "MiniMaxH3MultiFaceCompositeT8Advanced",
-      "title": "After review, toggle accept for Character_B; overlaps fail closed",
+      "title": "Character_B accepted by default; disable only for preview review",
       "pos": [
         6160,
         0
@@ -3947,7 +3920,7 @@
         "Node name for S&R": "MiniMaxH3MultiFaceCompositeT8Advanced"
       },
       "widgets_values": [
-        false,
+        true,
         "reject"
       ]
     },
@@ -4863,7 +4836,7 @@
     {
       "id": 60,
       "type": "MiniMaxH3MultiFaceCompositeT8Advanced",
-      "title": "After review, toggle accept for Character_C; overlaps fail closed",
+      "title": "Character_C accepted by default; disable only for preview review",
       "pos": [
         6600,
         0
@@ -4947,7 +4920,7 @@
         "Node name for S&R": "MiniMaxH3MultiFaceCompositeT8Advanced"
       },
       "widgets_values": [
-        false,
+        true,
         "reject"
       ]
     },
@@ -5081,7 +5054,7 @@
       "title": "三人 Face Refine 新节点用途与推荐参数（先读）",
       "pos": [
         0,
-        -1100
+        -1600
       ],
       "size": [
         3800,
@@ -5090,11 +5063,85 @@
       "flags": {},
       "order": 62,
       "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
       "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## 用途：三人分色追踪、绑定参考身份、逐人修复崩坏五官\n\n这不是锐化/超分节点。源脸本身模糊、失焦或缺少纹理时，H3通常仍会保持模糊质感；本工作流主要修正眼、口、鼻、脸型等结构崩坏。\n\n## 追踪与身份\n\n1. SAM3.1建议：`front-facing person with a visible face`、maximum people 3、threshold 0.53、detect interval 3、scene cut 0.28、analysis max side 512、追踪后选择性卸载SAM。\n2. 每个Character输入一张经授权、清楚、单人的参考图；确认权利后才打开`rights_confirmed`。SFace只提供建议，不是身份事实。\n3. 每个镜头都要查看分色预览并修改`manual_assignments_json`；切镜、遮挡或重新入镜后轨迹ID会变化。三人靠近或遮挡时尤其不能只信颜色。\n\n## 修复建议\n\n- Repair Job：每人每镜头一个窗口；默认73帧/约3.04秒，`manual_512 + target_face_px=300`，平滑`21/51`，SFace guard 0.36。帧数必须符合H3 `17n+5`。\n- Denoise：`relative_to_clip 0.8/0.35`，30/120，gamma 1，smooth 9。清楚但五官崩坏可从0.8开始；不要用1.0冒充锐化。\n- 采样：Ref2VA pruned、Turbo LoRA 0.75、`er_sde + simple`、**8步**、base denoise 0.45；三个人使用seed 42/43/44并严格顺序生成，禁止并行抢显存。\n- 每个人先看完整Preview，再依次打开Composite；默认false。人物羽化mask重叠时默认reject，只有人工确认后才考虑`keep_old_exp`。\n- 最终只回贴人脸并重新接回原音轨，音乐、环境声和音效不会因脸部修复被截断。\n\n完整审片重点是身份、五官自然、表情/嘴型、跨帧跳动和接缝。目标脸高300px只是局部H3画布尺度，不代表来源视频凭空恢复300px真实细节。"
+        "## 用途：三人分色追踪、绑定参考身份、逐人修复崩坏五官\n\n这不是锐化/超分节点。源脸本身模糊、失焦或缺少纹理时，H3通常仍会保持模糊质感；本工作流主要修正眼、口、鼻、脸型等结构崩坏。\n\n## 追踪与身份\n\n1. SAM3.1建议：`front-facing person with a visible face`、maximum people 3、threshold 0.53、detect interval 3、scene cut 0.28、analysis max side 512、追踪后选择性卸载SAM。\n2. 每个Character输入一张清楚、单人的参考图；Profile没有授权状态开关。SFace只提供建议，不是身份事实。\n3. 每个镜头都要查看分色预览并修改`manual_assignments_json`；切镜、遮挡或重新入镜后轨迹ID会变化。三人靠近或遮挡时尤其不能只信颜色。\n\n## 修复建议\n\n- Repair Job：每人每镜头一个窗口；默认73帧/约3.04秒，`manual_512 + target_face_px=300`，平滑`21/51`，SFace guard 0.36。帧数必须符合H3 `17n+5`。\n- Denoise：`relative_to_clip 0.8/0.35`，30/120，gamma 1，smooth 9。清楚但五官崩坏可从0.8开始；不要用1.0冒充锐化。\n- 采样：Ref2VA pruned、Turbo LoRA 0.75、`er_sde + simple`、**8步**、base denoise 0.45；三个人使用seed 42/43/44并严格顺序生成，禁止并行抢显存。\n- Composite默认`accept_candidate=true`，会依次采用三个人的修复候选；仅想预览、不想回贴时才改为false。人物羽化mask重叠时默认reject，只有人工确认后才考虑`keep_old_exp`。\n- 最终只回贴人脸并重新接回原音轨，音乐、环境声和音效不会因脸部修复被截断。\n\n完整审片重点是身份、五官自然、表情/嘴型、跨帧跳动和接缝。目标脸高300px只是局部H3画布尺度，不代表来源视频凭空恢复300px真实细节。"
+      ]
+    },
+    {
+      "id": 64,
+      "type": "MarkdownNote",
+      "title": "NOTE 1｜输入视频与人物参考图",
+      "pos": [0, -570],
+      "size": [800, 360],
+      "flags": {},
+      "order": 63,
+      "mode": 0,
+      "color": "#7c3aed",
+      "bgcolor": "#1f1535",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 输入与参考图\n\n- 源视频必须保持原宽高比，并建议为准确24fps。\n- 每个Character输入一张**清楚、单人、五官可见**的参考图。\n- Profile没有授权状态开关，载入参考图后会直接建立内存匹配档案。\n- 默认`dominant_face_auto`：只有面积、置信度都明显占优时才自动选主脸；两张真人脸接近时仍会拒绝。`require_single_face`是严格模式，`largest_face_exp`才是无条件选最大脸。"
+      ]
+    },
+    {
+      "id": 65,
+      "type": "MarkdownNote",
+      "title": "NOTE 2｜SAM3.1追踪与角色对应",
+      "pos": [880, -570],
+      "size": [1500, 360],
+      "flags": {},
+      "order": 64,
+      "mode": 0,
+      "color": "#0369a1",
+      "bgcolor": "#102a3a",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## SAM3.1建议参数\n\n`front-facing person with a visible face`；maximum people=`3`；threshold=`0.53`；detect interval=`3`；scene cut=`0.28`；analysis max side=`512`；release=`offload_sam31_after_track`。\n\n## 必须人工检查\n\n颜色和轨迹编号只表示当前镜头人物。切镜、遮挡、三人靠近/交叉或重新入镜后编号可能变化；每个镜头都要看分色预览，并修正`manual_assignments_json`，不能只凭颜色认人。"
+      ]
+    },
+    {
+      "id": 66,
+      "type": "MarkdownNote",
+      "title": "NOTE 3｜局部放大与逐帧去噪参数",
+      "pos": [2640, -570],
+      "size": [1500, 360],
+      "flags": {},
+      "order": 65,
+      "mode": 0,
+      "color": "#b45309",
+      "bgcolor": "#35220e",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Repair Job\n\n每人每镜头一个窗口；`73帧≈3.04秒`，必须满足H3 `17n+5`；`manual_512`；`crop_scale_mode=target_face_px`；`target_face_px=300`；轨迹平滑`21/51`；SFace guard建议`0.36`。若镜头只比73帧少1～16帧（例如69帧），节点会复制末帧补足H3上下文，并在最终Composite自动丢弃补齐尾帧，成片仍保持原帧数。\n\n## Per-frame denoise\n\n使用`relative_to_clip`，small/large=`0.8/0.35`，face px=`30/120`，gamma=`1.0`，smooth=`9`。该链主要修正清楚视频里的五官崩坏，不是去模糊、锐化或超分。"
+      ]
+    },
+    {
+      "id": 67,
+      "type": "MarkdownNote",
+      "title": "NOTE 4｜8步采样、顺序执行与最终验收",
+      "pos": [4400, -570],
+      "size": [3000, 360],
+      "flags": {},
+      "order": 66,
+      "mode": 0,
+      "color": "#047857",
+      "bgcolor": "#0d2d24",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 生成参数\n\nRef2VA pruned；FL2V Turbo LoRA=`0.75`；sampler=`er_sde`；scheduler=`simple`；**8步**；base denoise=`0.45`。三个人建议seed `42/43/44`，严格逐人顺序运行，禁止多个H3分支同时抢显存。\n\n## 验收与合成\n\nComposite默认`accept_candidate=true`，会依次采用三个人的修复候选。仍应完整观看每个人的Preview；仅想预览、不想回贴时才改为false。人物mask重叠默认reject，仅人工确认后考虑`keep_old_exp`。重点检查身份、眼口鼻、表情/嘴型、跳动和接缝。最终重新接回原音轨。"
       ]
     }
   ],

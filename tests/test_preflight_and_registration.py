@@ -557,7 +557,7 @@ def test_preflight_distinguishes_h3_video_and_audio_vaes_by_latent_contract():
 
 
 def test_example_api_workflow_is_valid_and_references_existing_nodes():
-    path = Path(__file__).resolve().parents[1] / "examples" / "audio_lock_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "audio_lock_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     custom_types = {value["class_type"] for value in workflow.values() if value["class_type"].endswith("T8")}
     assert custom_types == {
@@ -572,7 +572,7 @@ def test_example_api_workflow_is_valid_and_references_existing_nodes():
 
 
 def test_dual_clock_example_uses_one_coherent_sampling_setup():
-    path = Path(__file__).resolve().parents[1] / "examples" / "dual_clock_4step_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "dual_clock_4step_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     dual_nodes = [value for value in workflow.values() if value["class_type"] == "MiniMaxH3DualClockSamplerT8"]
     assert len(dual_nodes) == 1
@@ -587,7 +587,7 @@ def test_dual_clock_example_uses_one_coherent_sampling_setup():
 
 
 def test_multikeyframe_advanced_api_is_isolated_and_wired_to_the_cloned_model():
-    path = Path(__file__).resolve().parents[1] / "examples" / "multikeyframe_advanced_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "multikeyframe_advanced_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
 
     plan_ids = [
@@ -675,7 +675,7 @@ def test_multikeyframe_advanced_frontend_workflow_is_consistent_and_opt_in():
 
 
 def test_long_video_api_example_is_isolated_retry_safe_and_trimmed():
-    path = Path(__file__).resolve().parents[1] / "examples" / "long_video_segment_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "long_video_segment_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     custom_types = {
         value["class_type"] for value in workflow.values()
@@ -707,7 +707,7 @@ def test_long_video_api_example_is_isolated_retry_safe_and_trimmed():
 
 
 def test_long_video_candidate_api_separates_preview_from_accepted_state():
-    path = Path(__file__).resolve().parents[1] / "examples" / "long_video_candidate_accept_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "long_video_candidate_accept_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     types = {value["class_type"] for value in workflow.values()}
     assert {
@@ -753,7 +753,7 @@ def test_long_video_candidate_api_separates_preview_from_accepted_state():
 
 
 def test_long_video_compose_api_requires_an_explicit_final_segment():
-    path = Path(__file__).resolve().parents[1] / "examples" / "long_video_compose_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "long_video_compose_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     assert list(workflow.values())[0]["class_type"] == "MiniMaxH3LongVideoComposeAcceptedT8"
     assert list(workflow.values())[0]["inputs"]["require_final_segment"] is True
@@ -761,7 +761,7 @@ def test_long_video_compose_api_requires_an_explicit_final_segment():
 
 
 def test_long_video_auto_resume_api_drives_segment_prompt_and_seed_from_one_plan():
-    path = Path(__file__).resolve().parents[1] / "examples" / "long_video_auto_resume_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "long_video_auto_resume_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     orchestrator_id = next(
         key for key, value in workflow.items()
@@ -802,7 +802,7 @@ def test_long_video_auto_resume_api_drives_segment_prompt_and_seed_from_one_plan
 
 
 def test_long_video_background_api_is_explicit_and_queues_through_one_terminal():
-    path = Path(__file__).resolve().parents[1] / "examples" / "long_video_background_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "long_video_background_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     start_id = next(
         key for key, value in workflow.items()
@@ -1073,7 +1073,7 @@ def test_background_control_routes_offload_blocking_manager_calls():
 
 
 def test_multirate_exp_example_is_independent_and_uses_eight_joint_calls():
-    path = Path(__file__).resolve().parents[1] / "examples" / "multirate_exp_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "multirate_exp_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     exp_nodes = [
         value for value in workflow.values()
@@ -1099,7 +1099,7 @@ def test_multirate_exp_example_is_independent_and_uses_eight_joint_calls():
 
 
 def test_still_image_edit_example_uses_ref2va_without_incompatible_lora():
-    path = Path(__file__).resolve().parents[1] / "examples" / "still_image_edit_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "still_image_edit_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     types = {value["class_type"] for value in workflow.values()}
     assert "MiniMaxH3StillConditioningT8" in types
@@ -1293,7 +1293,7 @@ def test_frontend_still_edit_workflow_uses_native_22_frame_ref2va_target():
 
 def test_dialogue_safe_master_examples_require_verified_independent_stems():
     root = Path(__file__).resolve().parents[1]
-    api = json.loads((root / "examples" / "dialogue_safe_master_api.json").read_text(
+    api = json.loads((root / "tests" / "fixtures" / "api" / "dialogue_safe_master_api.json").read_text(
         encoding="utf-8"
     ))
     analyzer = next(
@@ -1340,7 +1340,7 @@ def test_dialogue_safe_master_examples_require_verified_independent_stems():
 
 def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice():
     root = Path(__file__).resolve().parents[1]
-    api = json.loads((root / "examples" / "dialogue_timed_bed_lock_api.json").read_text(
+    api = json.loads((root / "tests" / "fixtures" / "api" / "dialogue_timed_bed_lock_api.json").read_text(
         encoding="utf-8"
     ))
     ids_by_type = {

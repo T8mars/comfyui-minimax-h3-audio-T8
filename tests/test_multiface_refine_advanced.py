@@ -14,6 +14,7 @@ from h3_audio_t8_pkg.multiface_refine_advanced import (
     TRACK_PLAN_SCHEMA,
     _assert_native_sam31_capability,
     assign_multiface_identities,
+    build_multiface_character_profile,
     build_multiface_repair_job,
     build_sam31_multiface_track_plan,
     composite_multiface_candidate,
@@ -39,7 +40,6 @@ def _profile(character_id: str, value: float):
     profile = {
         "schema": CHARACTER_PROFILE_SCHEMA,
         "character_id": character_id,
-        "rights_confirmed": True,
         "reference_images": frames,
         "reference_source": module._source_contract(frames),
         "reference_face_boxes": [[16.0, 12.0, 48.0, 52.0]],
@@ -126,6 +126,104 @@ def test_multiface_nodes_are_append_only_advanced_contracts():
     assert all(schema.is_experimental for schema in schemas)
     assert all(schema.node_id.endswith("Advanced") for schema in schemas)
     assert all("Face Refine Multi-Person" in schema.category for schema in schemas)
+    profile_schema = schemas[0]
+    assert [item.id for item in profile_schema.inputs] == [
+        "character_id",
+        "reference_images",
+        "reference_face_policy",
+    ]
+    policy_input = profile_schema.inputs[-1]
+    assert policy_input.default == "dominant_face_auto"
+    assert policy_input.options == [
+        "dominant_face_auto",
+        "require_single_face",
+        "largest_face_exp",
+    ]
+
+
+def test_character_profile_ignores_legacy_rights_flag(monkeypatch):
+    frames = torch.zeros((1, 64, 64, 3))
+    detection = {
+        "box": [16.0, 12.0, 48.0, 52.0],
+        "landmarks_xy": [[24.0, 24.0], [40.0, 24.0], [32.0, 32.0], [26.0, 42.0], [38.0, 42.0]],
+        "confidence": 0.99,
+    }
+
+    class Recognizer:
+        def alignCrop(self, frame, row):
+            return frame
+
+        def feature(self, aligned):
+            return [[1.0, 0.0, 0.0, 0.0]]
+
+    monkeypatch.setattr(
+        module,
+        "_detect_local_opencv_yunet",
+        lambda *args, **kwargs: ([[detection]], {"backend": "test_yunet"}),
+    )
+    monkeypatch.setattr(module, "_create_sface_recognizer", Recognizer)
+    profile, preview, report = build_multiface_character_profile(
+        "Alice",
+        frames,
+        rights_confirmed=False,
+        reference_face_policy="require_single_face",
+    )
+    assert "rights_confirmed" not in profile
+    assert preview.shape == frames.shape
+    assert json.loads(report)["status"] == "in_memory_profile_ready"
+
+
+def test_character_profile_auto_selects_only_a_clearly_dominant_face(monkeypatch):
+    frames = torch.zeros((1, 64, 64, 3))
+
+    def candidate(box, confidence):
+        return {
+            "box": box,
+            "landmarks_xy": [[24.0, 24.0]] * 5,
+            "confidence": confidence,
+        }
+
+    dominant = candidate([8.0, 8.0, 48.0, 58.0], 0.88)
+    false_positive_a = candidate([2.0, 30.0, 26.0, 62.0], 0.41)
+    false_positive_b = candidate([42.0, 44.0, 54.0, 60.0], 0.36)
+
+    class Recognizer:
+        def alignCrop(self, frame, row):
+            return frame
+
+        def feature(self, aligned):
+            return [[1.0, 0.0, 0.0, 0.0]]
+
+    monkeypatch.setattr(
+        module,
+        "_detect_local_opencv_yunet",
+        lambda *args, **kwargs: (
+            [[dominant, false_positive_a, false_positive_b]],
+            {"backend": "test_yunet"},
+        ),
+    )
+    monkeypatch.setattr(module, "_create_sface_recognizer", Recognizer)
+    profile, _, report_json = build_multiface_character_profile(
+        "Alice", frames, reference_face_policy="dominant_face_auto"
+    )
+    report = json.loads(report_json)
+    assert profile["reference_face_boxes"][0] == dominant["box"]
+    assert profile["reference_face_selections"][0]["dominant_face_auto_passed"] is True
+    assert report["reference_face_selections"][0]["detected_face_count"] == 3
+
+    ambiguous = candidate([10.0, 10.0, 50.0, 58.0], 0.82)
+    monkeypatch.setattr(
+        module,
+        "_detect_local_opencv_yunet",
+        lambda *args, **kwargs: (
+            [[dominant, ambiguous]],
+            {"backend": "test_yunet"},
+        ),
+    )
+    with pytest.raises(ValueError, match="ambiguous YuNet detections"):
+        build_multiface_character_profile(
+            "Alice", frames, reference_face_policy="dominant_face_auto"
+        )
 
 
 def test_native_sam31_capability_probe_accepts_only_multiplex_tracker():
@@ -329,6 +427,68 @@ def test_repair_job_can_target_face_pixels_without_changing_legacy_default(monke
     assert report["source_boundary_limited_frames"] == 22
 
 
+def test_repair_job_pads_at_most_one_h3_grid_interval_and_composite_trims(monkeypatch):
+    frames = (
+        torch.arange(69, dtype=torch.float32).view(69, 1, 1, 1).expand(-1, 64, 96, 3)
+        / 68.0
+    ).clone()
+    assignment = _manual_assignment(frames)
+
+    def detections(batch, *args, **kwargs):
+        return [
+            [
+                {
+                    "box": [5.0, 8.0, 30.0, 48.0],
+                    "confidence": 0.9,
+                    "landmarks_xy": [[10, 20], [20, 20], [15, 28], [11, 36], [20, 36]],
+                }
+            ]
+            for _ in range(batch.shape[0])
+        ], {"backend": "test_yunet"}
+
+    monkeypatch.setattr(module, "_detect_local_opencv_yunet", detections)
+    result = build_multiface_repair_job(
+        frames=frames,
+        identity_assignment=assignment,
+        character_id="Alice",
+        shot_id=0,
+        window_start_in_shot=0,
+        window_frame_count=73,
+        crop_factor=2.5,
+        canvas_mode="manual_512",
+        center_smooth_window=21,
+        size_smooth_window=51,
+        identity_guard="sam_track_only_exp",
+        minimum_similarity=0.36,
+        analysis_chunk_frames=4,
+        crop_scale_mode="target_face_px",
+        target_face_px=300.0,
+    )
+    plan, model_window = result[:2]
+    report = json.loads(result[6])
+    assert model_window.shape[0] == 73
+    assert torch.equal(model_window[:69], frames)
+    assert torch.equal(model_window[69:], frames[-1:].expand(4, -1, -1, -1))
+    assert plan["multiface"]["source_window_frame_count"] == 69
+    assert plan["multiface"]["model_window_frame_count"] == 73
+    assert plan["multiface"]["alignment_context_pad_frames"] == 4
+    assert report["absolute_window"] == [0, 68]
+
+    changed_mask = torch.zeros((73, 64, 96))
+    output, _, composite_report_json, _ = composite_multiface_candidate(
+        frames,
+        model_window,
+        changed_mask,
+        plan,
+        False,
+        "reject",
+    )
+    composite_report = json.loads(composite_report_json)
+    assert torch.equal(output, frames)
+    assert composite_report["source_window_frame_count"] == 69
+    assert composite_report["alignment_context_pad_frames"] == 4
+
+
 def test_target_face_pixels_rejects_ambiguous_auto_canvas():
     with pytest.raises(ValueError, match="requires a manual canvas mode"):
         module._resolve_multiface_crop_scale(2.5, "auto_capped_768", "target_face_px", 300.0)
@@ -418,11 +578,17 @@ def test_composite_chains_disjoint_people_and_rejects_overlap(monkeypatch):
         raise AssertionError("overlapping multi-person masks must fail closed")
 
 
-def test_two_and_three_person_examples_are_review_gated_and_sequential():
+def test_two_and_three_person_examples_accept_candidates_and_run_sequentially():
     root = Path(__file__).resolve().parents[1]
     for count in (2, 3):
         api = json.loads(
-            (root / "examples" / f"multiface_sam31_{count}person_advanced_api.json").read_text(
+            (
+                root
+                / "tests"
+                / "fixtures"
+                / "api"
+                / f"multiface_sam31_{count}person_advanced_api.json"
+            ).read_text(
                 encoding="utf-8"
             )
         )
@@ -476,7 +642,11 @@ def test_two_and_three_person_examples_are_review_gated_and_sequential():
             for node in api.values()
             if node["class_type"] == "MiniMaxH3FaceCharacterProfileT8Advanced"
         ]
-        assert all(node["inputs"]["rights_confirmed"] is False for node in profiles)
+        assert all("rights_confirmed" not in node["inputs"] for node in profiles)
+        assert all(
+            node["inputs"]["reference_face_policy"] == "dominant_face_auto"
+            for node in profiles
+        )
         assignment = next(
             node
             for node in api.values()
@@ -490,7 +660,7 @@ def test_two_and_three_person_examples_are_review_gated_and_sequential():
             for node_id, node in api.items()
             if node["class_type"] == "MiniMaxH3MultiFaceCompositeT8Advanced"
         ]
-        assert all(node["inputs"]["accept_candidate"] is False for _, node in composites)
+        assert all(node["inputs"]["accept_candidate"] is True for _, node in composites)
         assert "previous_composite" not in composites[0][1]["inputs"]
         for index in range(1, count):
             assert composites[index][1]["inputs"]["previous_composite"] == [
@@ -518,14 +688,36 @@ def test_two_and_three_person_examples_are_review_gated_and_sequential():
         )
         frontend_nodes = {node["id"]: node for node in frontend["nodes"]}
         assert frontend["last_node_id"] == max(frontend_nodes)
-        note = next(node for node in frontend_nodes.values() if node["type"] == "MarkdownNote")
-        assert "不是锐化/超分节点" in note["widgets_values"][0]
-        assert "target_face_px=300" in note["widgets_values"][0]
-        assert "8步" in note["widgets_values"][0]
+        notes = [node for node in frontend_nodes.values() if node["type"] == "MarkdownNote"]
+        assert len(notes) == 5
+        note_text = "\n".join(node["widgets_values"][0] for node in notes)
+        assert "不是锐化/超分节点" in note_text
+        assert "target_face_px=300" in note_text
+        assert "dominant_face_auto" in note_text
+        assert "69帧" in note_text
+        assert "8步" in note_text
+        assert "accept_candidate=true" in note_text
+        assert any("SAM3.1追踪与角色对应" in node["title"] for node in notes)
+        assert all(node.get("color") and node.get("bgcolor") for node in notes)
+        frontend_profiles = [
+            node
+            for node in frontend_nodes.values()
+            if node["type"] == "MiniMaxH3FaceCharacterProfileT8Advanced"
+        ]
+        assert all(
+            "rights_confirmed" not in {item["name"] for item in node["inputs"]}
+            for node in frontend_profiles
+        )
+        assert all(node["widgets_values"][-1] == "dominant_face_auto" for node in frontend_profiles)
         assert sum(
             node["type"] == "MiniMaxH3MultiFaceCompositeT8Advanced"
             for node in frontend_nodes.values()
         ) == count
+        assert all(
+            node["widgets_values"][0] is True
+            for node in frontend_nodes.values()
+            if node["type"] == "MiniMaxH3MultiFaceCompositeT8Advanced"
+        )
         for link_id, origin, origin_slot, target, target_slot, link_type in frontend["links"]:
             assert link_id in frontend_nodes[origin]["outputs"][origin_slot]["links"]
             assert frontend_nodes[target]["inputs"][target_slot]["link"] == link_id

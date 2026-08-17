@@ -669,7 +669,7 @@ def test_file_stat_fingerprint_changes_after_file_replacement(tmp_path):
 
 
 def test_hybrid_api_example_is_isolated_and_routes_the_patched_model():
-    path = Path(__file__).resolve().parents[1] / "examples" / "hybrid_model_advanced_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "hybrid_model_advanced_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     by_type = {node["class_type"]: (node_id, node) for node_id, node in workflow.items()}
     assert "UNETLoader" not in by_type
@@ -733,8 +733,7 @@ def test_hybrid_frontend_workflow_is_importable_and_link_consistent():
 def test_hybrid_audio_reference_api_uses_conditioning_aware_minimal_profile():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples"
-        / "hybrid_model_audio_reference_api.json"
+        / "tests" / "fixtures" / "api" / "hybrid_model_audio_reference_api.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     by_type = {node["class_type"]: (node_id, node) for node_id, node in workflow.items()}
@@ -780,7 +779,7 @@ def test_hybrid_audio_reference_api_uses_conditioning_aware_minimal_profile():
 def test_hybrid_mixed_reference_examples_are_auto_routed_and_importable():
     root = Path(__file__).resolve().parents[1]
     workflow = json.loads(
-        (root / "examples" / "hybrid_model_mixed_reference_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "hybrid_model_mixed_reference_api.json").read_text(
             encoding="utf-8"
         )
     )
@@ -812,7 +811,7 @@ def test_hybrid_mixed_reference_examples_are_auto_routed_and_importable():
 def test_hybrid_artifact_maintenance_examples_are_safe_and_link_consistent():
     root = Path(__file__).resolve().parents[1]
     api = json.loads(
-        (root / "examples" / "hybrid_artifact_maintenance_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "hybrid_artifact_maintenance_api.json").read_text(
             encoding="utf-8"
         )
     )

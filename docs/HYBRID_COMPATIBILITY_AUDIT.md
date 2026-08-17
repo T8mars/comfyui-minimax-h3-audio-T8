@@ -249,7 +249,7 @@ artifact, LoRA, order, sampler, and quality matrix is calibrated.
 
 ## Examples
 
-- API: `examples/hybrid_compatibility_audit_api.json`
+- API: `tests/fixtures/api/hybrid_compatibility_audit_api.json`
 - Frontend: `examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`
 
 The frontend example keeps the validated 4 GiB reserve starting point for the

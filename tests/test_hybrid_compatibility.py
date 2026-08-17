@@ -365,7 +365,7 @@ def test_node_schema_is_appended_and_defaults_to_report_only():
 def test_api_example_routes_final_sampler_model_through_audit():
     root = Path(__file__).resolve().parents[1]
     workflow = json.loads(
-        (root / "examples" / "hybrid_compatibility_audit_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "hybrid_compatibility_audit_api.json").read_text(
             encoding="utf-8"
         )
     )

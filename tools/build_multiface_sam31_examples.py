@@ -41,8 +41,8 @@ def build_prompt(character_count: int) -> dict:
     references = [
         add(
             "LoadImage",
-            {"image": f"replace_with_authorized_{name}_reference.png"},
-            f"Authorized single-person reference for {name}",
+            {"image": f"replace_with_clear_single_person_{name}_reference.png"},
+            f"Clear single-person reference for {name}",
         )
         for name in names
     ]
@@ -81,10 +81,9 @@ def build_prompt(character_count: int) -> dict:
             {
                 "character_id": name,
                 "reference_images": [reference, 0],
-                "rights_confirmed": False,
-                "reference_face_policy": "require_single_face",
+                "reference_face_policy": "dominant_face_auto",
             },
-            f"Enable rights_confirmed only after verifying the {name} reference",
+            f"Build the in-memory matching profile for {name}",
         )
         for name, reference in zip(names, references)
     ]
@@ -96,7 +95,7 @@ def build_prompt(character_count: int) -> dict:
         cast = add(
             "MiniMaxH3FaceCastMergeT8Advanced",
             inputs,
-            f"Merge authorized character {index + 1} of {character_count}",
+            f"Merge character {index + 1} of {character_count}",
         )
 
     manual = {f"0:{index}": name for index, name in enumerate(names)}
@@ -306,7 +305,7 @@ def build_prompt(character_count: int) -> dict:
             "candidate_window": [stitched, 0],
             "changed_mask": [stitched, 1],
             "face_plan": [job, 0],
-            "accept_candidate": False,
+            "accept_candidate": True,
             "overlap_policy": "reject",
         }
         if previous_composite is not None:
@@ -314,7 +313,7 @@ def build_prompt(character_count: int) -> dict:
         previous_composite = add(
             "MiniMaxH3MultiFaceCompositeT8Advanced",
             composite_inputs,
-            f"After review, toggle accept for {name}; overlaps fail closed",
+            f"Accept {name} by default; disable only for preview-only review",
         )
 
     final_video = add(
@@ -342,7 +341,14 @@ def build_prompt(character_count: int) -> dict:
 
 def main() -> int:
     for count in (2, 3):
-        output = ROOT / "examples" / f"multiface_sam31_{count}person_advanced_api.json"
+        output = (
+            ROOT
+            / "tests"
+            / "fixtures"
+            / "api"
+            / f"multiface_sam31_{count}person_advanced_api.json"
+        )
+        output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
             json.dumps(build_prompt(count), ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",

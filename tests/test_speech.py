@@ -525,7 +525,7 @@ def test_speech_studio_expands_native_comfy_graph_without_loader_nodes():
 
 
 def test_described_speech_api_example_reuses_models_and_keeps_stock_baseline():
-    path = Path(__file__).resolve().parents[1] / "examples" / "speech_described_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "speech_described_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     assert {node["class_type"] for node in workflow.values()} == {
         "UNETLoader",
@@ -550,7 +550,7 @@ def test_described_speech_api_example_reuses_models_and_keeps_stock_baseline():
 
 
 def test_reference_speech_api_example_requires_rights_and_ref2va():
-    path = Path(__file__).resolve().parents[1] / "examples" / "speech_reference_clone_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "speech_reference_clone_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     assert workflow["1"]["inputs"]["unet_name"].startswith("minimax_h3_ref2va_")
     assert workflow["6"]["inputs"]["voice_mode"] == "reference_voice"
@@ -567,7 +567,7 @@ def test_reference_speech_api_example_requires_rights_and_ref2va():
 
 
 def test_dialogue_example_generates_turns_independently_before_sample_exact_mix():
-    path = Path(__file__).resolve().parents[1] / "examples" / "speech_dialogue_two_speaker_api.json"
+    path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api" / "speech_dialogue_two_speaker_api.json"
     workflow = json.loads(path.read_text(encoding="utf-8"))
     assert workflow["7"]["class_type"] == "MiniMaxH3DialogueScriptT8"
     assert workflow["8"]["class_type"] == "MiniMaxH3DialogueTurnSelectT8"
@@ -699,7 +699,7 @@ def test_speech_frontend_workflow_presets_keep_validated_exp_boundaries():
 
 
 def test_speech_reliability_api_examples_keep_explicit_safety_boundaries():
-    root = Path(__file__).resolve().parents[1] / "examples"
+    root = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api"
     performance = json.loads((root / "speech_performance_adr_api.json").read_text(encoding="utf-8"))
     assert performance["7"]["class_type"] == "MiniMaxH3SpeechPerformanceT8"
     assert performance["8"]["inputs"]["speech_plan"] == ["7", 0]

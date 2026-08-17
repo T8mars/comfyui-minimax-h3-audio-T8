@@ -266,7 +266,7 @@ def test_speech_preflight_uses_shared_dynamic_vram_snapshot(monkeypatch):
 def test_vram_policy_api_example_orders_policy_before_loader():
     root = Path(__file__).resolve().parents[1]
     workflow = json.loads(
-        (root / "examples" / "hybrid_model_vbar_headroom_api.json").read_text(
+        (root / "tests" / "fixtures" / "api" / "hybrid_model_vbar_headroom_api.json").read_text(
             encoding="utf-8"
         )
     )

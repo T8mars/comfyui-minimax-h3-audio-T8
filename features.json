@@ -253,9 +253,10 @@
     "behavior": [
       "uses the current ComfyUI native SAM31Tracker multiplex implementation for open-vocabulary person detection and shot-local mask propagation; old SAM3 and unknown wrappers fail closed",
       "caps every shot at two or three people, resets track identity across detected cuts and displays stable shot-local colors and track keys; color and numeric order are never treated as character identity",
-      "builds explicitly authorized in-memory character profiles with pinned OpenCV Zoo YuNet plus Apache-2.0 SFace on CPU; no biometric profile is written to disk and similarity remains a suggestion rather than proof",
+      "builds in-memory character profiles with pinned OpenCV Zoo YuNet plus Apache-2.0 SFace on CPU; the node has no authorization-state widget or execution gate, no biometric profile is written to disk and similarity remains a suggestion rather than proof",
+      "defaults reference selection to dominant_face_auto: multiple YuNet detections are accepted only when the largest face has at least 1.8x the runner-up area, at least 0.20 confidence margin and at least 0.60 confidence; ambiguous real faces still fail closed while strict and explicit-largest modes remain available",
       "supports one-to-one SFace suggestions plus authoritative shot:track JSON overrides, with minimum score and margin gates that reject ambiguous identity instead of guessing",
-      "creates one source-bound 17n+5 MANUAL512 repair job for one character and one shot/window, defaults to 73 frames / 3.04 seconds at 24fps, requires the face center to stay inside that person's SAM mask and optionally rechecks SFace identity per frame",
+      "creates one source-bound 17n+5 MANUAL512 repair job for one character and one shot/window, defaults to 73 frames / 3.04 seconds at 24fps, requires the face center to stay inside that person's SAM mask and optionally rechecks SFace identity per frame; a shortfall of at most 16 frames is padded only with repeated final context and trimmed back to the exact source length during composition",
       "preserves legacy crop_factor behavior by default and adds an explicit target_face_px mode for manual canvases; the new two/three-person examples target about 300px face height in a 512 crop, report achieved min/mean/max and boundary-limited frames, and use the project Turbo 8-step test baseline",
       "runs each character H3 crop branch sequentially and chains reviewed candidate windows through a source-bound compositor; overlapping changed masks reject by default and pixels outside each stitch mask must remain bit-exact",
       "the default release policy unloads only the selected SAM3.1 model and clones, runs Python GC and soft_empty_cache before H3, and never calls unload_all_models",
@@ -269,8 +270,8 @@
       "sface_sha256": "0BA9FBFA01B5270C96627C4EF784DA859931E02F04419C829E83484087C34E79"
     },
     "examples": [
-      "examples/multiface_sam31_2person_advanced_api.json",
-      "examples/multiface_sam31_3person_advanced_api.json",
+      "tests/fixtures/api/multiface_sam31_2person_advanced_api.json",
+      "tests/fixtures/api/multiface_sam31_3person_advanced_api.json",
       "examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
       "examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
     ],
@@ -286,9 +287,9 @@
       "the 73-frame close group produced 50621 overlapping feather-mask pixels at the third composite; default reject stopped safely, then the reviewed keep_old_exp policy preserved earlier accepted pixels and applied only the third person's non-overlapping region",
       "a 73-frame two-person Turbo 8-step probe targeted about 300px faces in each 512 crop; 0.8 small-face strength stayed slightly softer than source, while raising only that strength to 1.0 lifted raw sharpness proxies to about 1.06/1.01 but reduced dark/blonde motion-correlation medians to about 0.39/0.82, so neither route is promoted as an automatic restoration preset",
       "a native 1920x1408x69 two-person clear-source clip used two clear single-person references and sequential 56-frame MANUAL512, target-face-300px, relative-to-clip 0.8/0.35, Turbo 8-step repairs; the user accepted the complete result as real facial-structure repair and confirmed that blurred-source sharpening is outside the node's purpose",
-      "the single-, two- and three-person frontend workflows embed recommended-use Markdown covering clear references, original aspect ratio, 73-frame multi-person windows, per-shot assignment review, MANUAL512, relative-to-clip 0.8/0.35, Turbo 8 steps and sequential candidate acceptance",
+      "the two- and three-person frontend workflows each contain one overview plus four nearby Markdown NOTE blocks covering clear references, SAM3.1 tracking, per-shot assignment review, 73-frame MANUAL512 target-face scaling, relative-to-clip 0.8/0.35, Turbo 8 steps and sequential candidate acceptance",
       "the exact two-person run sampled whole-device free memory down to about 489MiB, an earlier single-branch probe observed 450MiB and the corrected three-person cold run reached about 375MiB post-run, all below the project's 512MiB safety gate",
-      "560 project tests, changed-scope Ruff, compileall, JSON parsing, registration, source-binding, capability, identity, sequential-composite and two/three-person example gates pass; repository-wide Ruff still reports the pre-existing tests/test_sampling.py:180 E721 outside this multi-person change"
+      "563 project tests, changed-scope Ruff, compileall, 108 non-artifact JSON documents, registration, source-binding, capability, identity, dominant-reference selection, bounded 69-to-73 context padding, sequential-composite, removed-rights-widget compatibility and two/three-person five-NOTE example gates pass; repository-wide Ruff still reports the pre-existing tests/test_sampling.py:180 E721 outside this multi-person change"
     ],
     "limits": [
       "SAM3.1 indices can change after cuts, occlusion or re-entry; every shot assignment must be reviewed and corrected in JSON when needed",
@@ -462,7 +463,7 @@
       "exact-destination temporary cleanup is serialized by OS locks; a rebuilt real 14-segment six-kill matrix removed both the half-copy and mid-audio orphan before retry while preserving the base manifest and all 27 accepted assets",
       "cross-platform filesystem behavior, cascading dependent-segment regeneration, multi-seed quality and blind listening remain unvalidated"
     ],
-    "api_example": "examples/selective_repair_execution_advanced_api.json",
+    "api_example": "tests/fixtures/api/selective_repair_execution_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Selective_Repair_Execution_Advanced.json",
     "status": "implemented Advanced non-destructive overlay executor; 14-segment/60-second six-point forced-crash recovery, exact-namespace orphan cleanup and one real H3 repair passed mechanical contracts, while outgoing context continuity remains unresolved"
   },
@@ -488,7 +489,7 @@
       "baseline extra speech began at 2.26s; full-strength scheduled injection still produced extra speech from 2.10s",
       "baseline/treatment peak device use 15554/15409MiB in one warm pair; this is not a 512MiB safety-margin matrix"
     ],
-    "api_example": "examples/scheduled_audio_injection_advanced_api.json",
+    "api_example": "tests/fixtures/api/scheduled_audio_injection_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json",
     "status": "implemented as default-off EXP; the first real A/B rejected an unwanted-tail-speech suppression claim"
   },
@@ -516,7 +517,7 @@
       "a 256x256 one-tile local/global coordinate control was bit-exact with max_abs=0",
       "three 736x416 eight-tile source-reconstruction A/B cases all rejected the direct global-spatial substitution: mean source SSIM changed by -0.0828, PSNR by -1.141dB, and no x/y seam-ratio case improved"
     ],
-    "api_example": "examples/av_decode_safety_advanced_api.json",
+    "api_example": "tests/fixtures/api/av_decode_safety_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_AV_Decode_Safety_Advanced.json",
     "status": "implemented Advanced safety gate with source/behavior detection for H3 internal tiling; current >256px decode remains high-risk, and the first direct global-spatial coordinate remedy was empirically rejected rather than merged"
   },
@@ -539,7 +540,7 @@
       "exact dialogue cannot be rewritten and the reviewed IR compiles through the existing T8 Prompt Packet contract",
       "sampled-frame analysis is not full video understanding and transcript input is not full music/SFX understanding"
     ],
-    "api_example": "examples/context_ir_provider_advanced_api.json",
+    "api_example": "tests/fixtures/api/context_ir_provider_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Context_IR_Provider_Advanced.json",
     "status": "implemented Advanced provider adapter with privacy and control-authority tests; no provider quality or cross-provider claim"
   },
@@ -585,7 +586,7 @@
       "a derived-1920x1088 auto-threaded probe exposed one native crash and 3/3 streams with strict-decoder H.264 errors; scoped single-thread x264 plus versioned phase-and-final strict decode then passed three independent projects with 348 frames, 696000 exact logical samples, identical phase/final hashes and no orphan temporary files",
       "Ubuntu 24.04.4 WSL2 with Linux FFmpeg 7.0.2 and PyAV 18.1.0 on ext4 /tmp composed two H.264/AAC clips plus one FLAC lane to exact 66 frames and 132000 logical samples; repeat phase hashes and mtimes plus final SHA matched, sources were unchanged, no temp survived, POSIX lock contention was rejected and the lock was reacquired after holder exit"
     ],
-    "api_example": "examples/reel_delivery_advanced_api.json",
+    "api_example": "tests/fixtures/api/reel_delivery_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Reel_Delivery_Advanced.json",
     "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing, real-H3 256/736px and derived-1920x1088 gates plus one low-resolution Ubuntu WSL2/ext4 Linux route passed; bare-metal Linux, macOS and high-resolution non-Windows behavior remain pending"
   },
@@ -625,7 +626,7 @@
       "actual final checkpoint sizes were about 4.10MiB at 736x416x124 and 2.66MiB at 256x256x362",
       "any non-empty patches_replace wrapper is refused because hidden per-execution state cannot be proven resumable"
     ],
-    "api_example": "examples/trajectory_probe_advanced_api.json",
+    "api_example": "tests/fixtures/api/trajectory_probe_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json",
     "status": "Trajectory v2 direct-transport numerical, 124/362-frame, disk-budget and 124-frame three-cold/three-warm repeat gates passed for the exact local profile and were rechecked on current ddbaa875; speed benefit, restart resume, wrappers, other samplers, cross-GPU and universal 16GiB safety remain denied or unverified"
   },
@@ -670,8 +671,8 @@
       "status": "real four-step H3 sampling validated the locked latent endpoint within 1e-6; decoded perceptual quality and seamlessness remain unvalidated"
     },
     "api_examples": [
-      "examples/dialogue_safe_master_api.json",
-      "examples/dialogue_timed_bed_lock_api.json"
+      "tests/fixtures/api/dialogue_safe_master_api.json",
+      "tests/fixtures/api/dialogue_timed_bed_lock_api.json"
     ],
     "frontend_workflows": [
       "examples/workflows/H3_Dialogue_Safe_Master_EXP.json",
@@ -839,11 +840,11 @@
     "auto_resume_frontend_workflow": "examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json",
     "background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_EXP.json",
     "scene_plus_identity_background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
-    "api_workflow": "examples/long_video_segment_api.json",
-    "candidate_accept_api_workflow": "examples/long_video_candidate_accept_api.json",
-    "compose_api_workflow": "examples/long_video_compose_api.json",
-    "auto_resume_api_workflow": "examples/long_video_auto_resume_api.json",
-    "background_api_workflow": "examples/long_video_background_api.json",
+    "api_workflow": "tests/fixtures/api/long_video_segment_api.json",
+    "candidate_accept_api_workflow": "tests/fixtures/api/long_video_candidate_accept_api.json",
+    "compose_api_workflow": "tests/fixtures/api/long_video_compose_api.json",
+    "auto_resume_api_workflow": "tests/fixtures/api/long_video_auto_resume_api.json",
+    "background_api_workflow": "tests/fixtures/api/long_video_background_api.json",
     "orchestration": "total duration is quantized once to 24fps; a fixed 17n+5 render window bounds every segment; accepted manifest length selects the next segment; global/per-segment prompt and fixed/increment/hash seeds are supported; steps, shifts, sampler and scheduler are emitted from the same plan to both sampling and candidate identity; a complete final manifest blocks downstream sampling",
     "background_executor": {
       "activation": "review_only is the safe default; auto_accept_and_continue must be selected explicitly and accepts every successful candidate without human review",
@@ -1160,18 +1161,18 @@
       }
     },
     "api_examples": [
-      "examples/speech_described_api.json",
-      "examples/speech_reference_clone_api.json",
-      "examples/speech_dialogue_two_speaker_api.json",
-      "examples/speech_performance_adr_api.json",
-      "examples/speech_longform_resume_api.json",
-      "examples/speech_longform_compose_api.json",
-      "examples/speech_voice_library_save_api.json",
-      "examples/speech_voice_library_load_api.json",
-      "examples/speech_voice_library_delete_api.json",
-      "examples/speech_vram_preflight_api.json",
-      "examples/speech_longform_control_api.json",
-      "examples/speech_joint_dialogue_exp_api.json"
+      "tests/fixtures/api/speech_described_api.json",
+      "tests/fixtures/api/speech_reference_clone_api.json",
+      "tests/fixtures/api/speech_dialogue_two_speaker_api.json",
+      "tests/fixtures/api/speech_performance_adr_api.json",
+      "tests/fixtures/api/speech_longform_resume_api.json",
+      "tests/fixtures/api/speech_longform_compose_api.json",
+      "tests/fixtures/api/speech_voice_library_save_api.json",
+      "tests/fixtures/api/speech_voice_library_load_api.json",
+      "tests/fixtures/api/speech_voice_library_delete_api.json",
+      "tests/fixtures/api/speech_vram_preflight_api.json",
+      "tests/fixtures/api/speech_longform_control_api.json",
+      "tests/fixtures/api/speech_joint_dialogue_exp_api.json"
     ],
     "frontend_workflows": [
       "examples/workflows/H3_Speech_Described_Stock20_EXP.json",
@@ -1251,7 +1252,7 @@
       "mask": "input masks are preserved as constraints and multiplied by the explicit stream mode strength; padded audio tail receives mask 1"
     },
     "compatibility": "all prior 48 node IDs, ordering and defaults are unchanged; the three Source AV EXP nodes are appended",
-    "api_example": "examples/source_video_repaint_api.json",
+    "api_example": "tests/fixtures/api/source_video_repaint_api.json",
     "frontend_workflow": "examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json",
     "validated": [
       "CPU tensor contract, temporal inverse, dtype normalization, explicit audio trim/pad and input immutability",
@@ -1315,7 +1316,7 @@
       ]
     },
     "examples": {
-      "api": "examples/multikeyframe_advanced_api.json",
+      "api": "tests/fixtures/api/multikeyframe_advanced_api.json",
       "frontend": "examples/workflows/H3_MultiKeyframe_Advanced_EXP.json"
     },
     "validation_report": "docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md",
@@ -1362,7 +1363,7 @@
       "0.950 and below are aggressive experiments",
       "current ComfyUI H3 payload exposes one global value rather than a separate value per reference"
     ],
-    "api_example": "examples/ref2va_visual_reference_strength_exp_api.json",
+    "api_example": "tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json",
     "frontend_workflow": "examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-10",
@@ -1423,12 +1424,12 @@
       "no profile is called best, high-quality or max-reference before controlled A/B and blind review",
       "no 16GiB memory_safe or never-OOM claim before the 512MiB whole-device headroom and repeat-run gates pass"
     ],
-    "api_example": "examples/hybrid_model_advanced_api.json",
+    "api_example": "tests/fixtures/api/hybrid_model_advanced_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
     "api_examples": [
-      "examples/hybrid_model_advanced_api.json",
-      "examples/hybrid_model_audio_reference_api.json",
-      "examples/hybrid_model_mixed_reference_api.json"
+      "tests/fixtures/api/hybrid_model_advanced_api.json",
+      "tests/fixtures/api/hybrid_model_audio_reference_api.json",
+      "tests/fixtures/api/hybrid_model_mixed_reference_api.json"
     ],
     "frontend_workflows": [
       "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
@@ -1486,7 +1487,7 @@
       "quarantine is recoverable housekeeping, not secure deletion, MODEL cache unloading, VRAM release or a memory_safe guarantee",
       "a real process kill can still leave a stale maintenance lock; explicit recovery archives only a sufficiently old lock whose owner is not proven alive"
     ],
-    "api_example": "examples/hybrid_artifact_maintenance_api.json",
+    "api_example": "tests/fixtures/api/hybrid_artifact_maintenance_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json",
     "status": "implemented with inspect, quarantine, idempotent replay, restore, tampered-journal refusal, a real subprocess kill between pair moves, stale-lock recovery and stale build-residue rebuild tests; remains Advanced/Experimental"
   },
@@ -1519,7 +1520,7 @@
       "VBAR pages model weights but cannot eliminate activation, attention-workspace, VAE/CLIP, CUDA-context, pinning, other-process, driver or host-commit OOM",
       "AdaLN-overlapping LoRA remains blocked until a controlled quality and numerical matrix calibrates that exact LoRA/base/artifact combination"
     ],
-    "api_example": "examples/hybrid_compatibility_audit_api.json",
+    "api_example": "tests/fixtures/api/hybrid_compatibility_audit_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",
@@ -1605,7 +1606,7 @@
       "VBAR manages model-weight pages but does not make activations, attention workspaces, VAE/CLIP allocations, CUDA context, other GPU users, pinned RAM, or system commit infallible",
       "the validated 4GiB starting point is scoped to one exact 16GiB Hybrid Stock20 workflow; memory_safe and never-OOM remain false outside that scope"
     ],
-    "api_example": "examples/hybrid_model_vbar_headroom_api.json",
+    "api_example": "tests/fixtures/api/hybrid_model_vbar_headroom_api.json",
     "frontend_workflow": "examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",

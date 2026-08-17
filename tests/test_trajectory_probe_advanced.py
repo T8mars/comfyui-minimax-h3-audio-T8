@@ -229,7 +229,7 @@ def test_trajectory_nodes_are_explicit_and_experimental():
 def test_trajectory_examples_route_the_direct_transport_contract():
     project_root = Path(__file__).resolve().parents[1]
     api = json.loads(
-        (project_root / "examples" / "trajectory_probe_advanced_api.json").read_text(
+        (project_root / "tests" / "fixtures" / "api" / "trajectory_probe_advanced_api.json").read_text(
             encoding="utf-8-sig"
         )
     )

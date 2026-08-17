@@ -174,18 +174,78 @@ def _mean_normalized(features: list[torch.Tensor]) -> torch.Tensor:
     return value / norm
 
 
+def _face_area(detection: dict) -> float:
+    left, top, right, bottom = [float(value) for value in detection["box"]]
+    return max(0.0, right - left) * max(0.0, bottom - top)
+
+
+def _select_reference_face(
+    candidates: list[dict], reference_face_policy: str, image_index: int
+) -> tuple[dict, dict]:
+    if not candidates:
+        raise ValueError(f"reference image {image_index} contains no YuNet face")
+    ordered = sorted(candidates, key=_face_area, reverse=True)
+    selected = ordered[0]
+    selection = {
+        "image_index": int(image_index),
+        "policy": str(reference_face_policy),
+        "detected_face_count": len(ordered),
+        "selected_area_px2": _face_area(selected),
+        "selected_confidence": float(selected.get("confidence", 0.0)),
+        "dominant_face_auto_passed": len(ordered) == 1,
+        "area_ratio_to_runner_up": None,
+        "confidence_margin_to_runner_up": None,
+    }
+    if len(ordered) == 1:
+        return selected, selection
+    if reference_face_policy == "require_single_face":
+        raise ValueError(
+            f"reference image {image_index} contains {len(ordered)} YuNet detections; "
+            "use dominant_face_auto for a clearly dominant person, crop the image, or "
+            "select largest_face_exp"
+        )
+    if reference_face_policy == "largest_face_exp":
+        return selected, selection
+
+    runner_up = ordered[1]
+    area_ratio = _face_area(selected) / max(_face_area(runner_up), 1e-8)
+    confidence_margin = float(selected.get("confidence", 0.0)) - float(
+        runner_up.get("confidence", 0.0)
+    )
+    selection["area_ratio_to_runner_up"] = area_ratio
+    selection["confidence_margin_to_runner_up"] = confidence_margin
+    selection["dominant_face_auto_passed"] = bool(
+        area_ratio >= 1.8
+        and confidence_margin >= 0.20
+        and float(selected.get("confidence", 0.0)) >= 0.60
+    )
+    if not selection["dominant_face_auto_passed"]:
+        raise ValueError(
+            f"reference image {image_index} has {len(ordered)} ambiguous YuNet detections "
+            f"(largest/runner-up area={area_ratio:.3f}, confidence margin="
+            f"{confidence_margin:.3f}); crop to one character or explicitly select "
+            "largest_face_exp"
+        )
+    return selected, selection
+
+
 def build_multiface_character_profile(
     character_id: str,
     reference_images: torch.Tensor,
-    rights_confirmed: bool,
-    reference_face_policy: str,
+    rights_confirmed: bool | None = None,
+    reference_face_policy: str = "dominant_face_auto",
 ):
+    # Kept as an ignored compatibility argument for older direct callers and API prompts.
+    # Current nodes do not expose or enforce an authorization-state widget.
+    del rights_confirmed
     character_id = str(character_id).strip()
     if not character_id or len(character_id) > 64:
         raise ValueError("character_id must contain 1-64 visible characters")
-    if not rights_confirmed:
-        raise ValueError("rights_confirmed must be enabled for every identity reference")
-    if reference_face_policy not in {"require_single_face", "largest_face_exp"}:
+    if reference_face_policy not in {
+        "dominant_face_auto",
+        "require_single_face",
+        "largest_face_exp",
+    }:
         raise ValueError(f"Unknown reference_face_policy: {reference_face_policy}")
     frame_count, _, _ = _validate_frames(reference_images, name="reference_images")
     detections, detector_report = _detect_local_opencv_yunet(
@@ -197,22 +257,15 @@ def build_multiface_character_profile(
     recognizer = _create_sface_recognizer()
     features: list[torch.Tensor] = []
     selected_boxes = []
+    selections = []
     try:
         for index, candidates in enumerate(detections):
-            if not candidates:
-                raise ValueError(f"reference image {index} contains no YuNet face")
-            if len(candidates) != 1 and reference_face_policy == "require_single_face":
-                raise ValueError(
-                    f"reference image {index} contains {len(candidates)} faces; provide one "
-                    "character per reference image or select largest_face_exp"
-                )
-            selected = max(
-                candidates,
-                key=lambda item: (item["box"][2] - item["box"][0])
-                * (item["box"][3] - item["box"][1]),
+            selected, selection = _select_reference_face(
+                candidates, reference_face_policy, index
             )
             features.append(_sface_feature(reference_images[index], selected, recognizer))
             selected_boxes.append([round(float(value), 4) for value in selected["box"]])
+            selections.append(selection)
     finally:
         del recognizer
         gc.collect()
@@ -222,10 +275,11 @@ def build_multiface_character_profile(
     profile = {
         "schema": CHARACTER_PROFILE_SCHEMA,
         "character_id": character_id,
-        "rights_confirmed": True,
         "reference_images": reference_images.detach(),
         "reference_source": source,
         "reference_face_boxes": selected_boxes,
+        "reference_face_policy": reference_face_policy,
+        "reference_face_selections": selections,
         "identity_embedding": embedding,
         "identity_backend": {
             "detector": "opencv_zoo_yunet_2023mar",
@@ -244,6 +298,8 @@ def build_multiface_character_profile(
         "reference_count": frame_count,
         "reference_proxy_sha256": source["proxy_sha256"],
         "profile_sha256": profile["sha256"],
+        "reference_face_policy": reference_face_policy,
+        "reference_face_selections": selections,
         "detector": detector_report,
         "recognizer_model_sha256": SFACE_EXPECTED_SHA256,
         "persistent_biometric_storage": False,
@@ -941,11 +997,26 @@ def build_multiface_repair_job(
     if count > 124:
         raise ValueError("A multi-person repair job is capped at 124 frames; prefer 22-56")
     local_start = int(window_start_in_shot)
-    if local_start < 0 or local_start + count > int(shot["frame_count"]):
-        raise ValueError("Requested repair window lies outside the selected shot")
+    shot_frame_count = int(shot["frame_count"])
+    if local_start < 0 or local_start >= shot_frame_count:
+        raise ValueError("Requested repair window starts outside the selected shot")
+    source_count = min(count, shot_frame_count - local_start)
+    alignment_context_pad_frames = count - source_count
+    if source_count < 5:
+        raise ValueError("The selected shot has fewer than 5 source frames after window_start")
+    if alignment_context_pad_frames > 16:
+        raise ValueError(
+            "Requested repair window exceeds the selected shot by more than 16 frames; "
+            "choose a shorter H3 17n+5 window or another shot-local start"
+        )
     absolute_start = int(shot["start_frame"]) + local_start
-    absolute_end = absolute_start + count - 1
-    window = frames[absolute_start : absolute_end + 1]
+    absolute_end = absolute_start + source_count - 1
+    source_window = frames[absolute_start : absolute_end + 1]
+    if alignment_context_pad_frames:
+        tail = source_window[-1:].expand(alignment_context_pad_frames, -1, -1, -1).clone()
+        window = torch.cat((source_window, tail), dim=0)
+    else:
+        window = source_window
     _, height, width = _validate_frames(window, name="repair_window")
     effective_crop_factor, requested_target_face_px = _resolve_multiface_crop_scale(
         crop_factor,
@@ -955,7 +1026,13 @@ def build_multiface_repair_job(
     )
     track_index = int(mapping["track_index"])
     masks = [
-        _mask_at_source(shot, local_start + index, track_index, height, width)
+        _mask_at_source(
+            shot,
+            min(local_start + index, shot_frame_count - 1),
+            track_index,
+            height,
+            width,
+        )
         for index in range(count)
     ]
     detections, detector_report = _detect_local_opencv_yunet(
@@ -1033,7 +1110,8 @@ def build_multiface_repair_job(
         records.append(
             {
                 "frame_index": index,
-                "absolute_frame_index": absolute_start + index,
+                "absolute_frame_index": min(absolute_start + index, absolute_end),
+                "alignment_context_pad": index >= source_count,
                 "shot_id": int(shot_id),
                 "state": states[index],
                 "detected": states[index] in ACTUAL_DETECTION_STATES,
@@ -1135,12 +1213,17 @@ def build_multiface_repair_job(
             "source_shot_id": int(shot_id),
             "window_start_absolute": absolute_start,
             "window_end_absolute": absolute_end,
+            "source_window_frame_count": source_count,
+            "model_window_frame_count": count,
+            "alignment_context_pad_frames": alignment_context_pad_frames,
+            "source_window_proxy_sha256": source_proxy_sha256(source_window),
             "sequential_generation_required": True,
         },
         "limits": {
             "h3_grid_required": True,
             "explicit_alignment_tail_discard_required": False,
             "max_supported_alignment_tail_frames": 0,
+            "max_supported_context_pad_frames": 16,
             "single_pass_safe": True,
             "identity_verified": False,
             "identity_guard_applied": identity_guard == "sface_cpu",
@@ -1174,6 +1257,9 @@ def build_multiface_repair_job(
         "track_key": mapping["track_key"],
         "shot_id": int(shot_id),
         "absolute_window": [absolute_start, absolute_end],
+        "source_window_frame_count": source_count,
+        "model_window_frame_count": count,
+        "alignment_context_pad_frames": alignment_context_pad_frames,
         "canvas": [canvas, canvas],
         "crop_scale_mode": str(crop_scale_mode),
         "effective_crop_factor": effective_crop_factor,
@@ -1219,18 +1305,22 @@ def composite_multiface_candidate(
     frame_count, height, width = _validate_frames(base_frames, name="base_frames")
     start = int(multiface["window_start_absolute"])
     end = int(multiface["window_end_absolute"])
-    count = end - start + 1
+    source_count = end - start + 1
+    model_count = int(multiface.get("model_window_frame_count", source_count))
     candidate_count, candidate_h, candidate_w = _validate_frames(
         candidate_window, name="candidate_window"
     )
-    if (candidate_count, candidate_h, candidate_w) != (count, height, width):
+    if (candidate_count, candidate_h, candidate_w) != (model_count, height, width):
         raise ValueError("candidate_window shape does not match its absolute source window")
-    if changed_mask.ndim != 3 or tuple(changed_mask.shape) != (count, height, width):
+    if changed_mask.ndim != 3 or tuple(changed_mask.shape) != (model_count, height, width):
         raise ValueError("changed_mask must be [window_frames,H,W]")
     source_hash = source_proxy_sha256(base_frames)
     if source_hash != multiface["parent_source_proxy_sha256"]:
         raise ValueError("base_frames do not match the multi-person source")
-    if source_proxy_sha256(base_frames[start : end + 1]) != plan["source"]["proxy_sha256"]:
+    expected_source_window_hash = multiface.get(
+        "source_window_proxy_sha256", plan["source"]["proxy_sha256"]
+    )
+    if source_proxy_sha256(base_frames[start : end + 1]) != expected_source_window_hash:
         raise ValueError("base_frames repair window does not match face_plan")
     if overlap_policy not in {"reject", "new_over_old_exp", "keep_old_exp"}:
         raise ValueError(f"Unknown overlap_policy: {overlap_policy}")
@@ -1248,7 +1338,7 @@ def composite_multiface_candidate(
         applied_mask = previous_composite["applied_mask"].clone()
         applied = list(previous_composite["applied"])
 
-    mask_values = changed_mask.detach().to(device="cpu")
+    mask_values = changed_mask[:source_count].detach().to(device="cpu")
     if not bool(torch.isfinite(mask_values).all()):
         raise ValueError("changed_mask contains NaN or Inf")
     if bool((mask_values < 0).any()) or bool((mask_values > 1).any()):
@@ -1261,7 +1351,7 @@ def composite_multiface_candidate(
     mask = mask_values > 0
     outside = ~mask
     base_window = base_frames[start : end + 1].detach().cpu()
-    candidate_cpu = candidate_window.detach().cpu()
+    candidate_cpu = candidate_window[:source_count].detach().cpu()
     if not torch.equal(candidate_cpu[outside], base_window[outside]):
         raise ValueError("candidate_window changed pixels outside changed_mask")
     existing = applied_mask[start : end + 1]
@@ -1276,7 +1366,9 @@ def composite_multiface_candidate(
         effective = mask & ~existing
     if accept_candidate:
         target = current[start : end + 1]
-        source_candidate = candidate_window.to(device=target.device, dtype=target.dtype)
+        source_candidate = candidate_window[:source_count].to(
+            device=target.device, dtype=target.dtype
+        )
         effective_device = effective.to(device=target.device)
         current[start : end + 1] = torch.where(
             effective_device.unsqueeze(-1), source_candidate, target
@@ -1305,6 +1397,9 @@ def composite_multiface_candidate(
         "character_id": multiface["character_id"],
         "track_key": multiface["track_key"],
         "absolute_window": [start, end],
+        "source_window_frame_count": source_count,
+        "model_window_frame_count": model_count,
+        "alignment_context_pad_frames": model_count - source_count,
         "overlap_policy": overlap_policy,
         "overlap_pixels": overlap_pixels,
         "applied_job_count": len(applied),

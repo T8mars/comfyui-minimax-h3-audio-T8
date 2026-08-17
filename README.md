@@ -1,6 +1,6 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.27.0`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.27.2`，共注册
 107 个节点，覆盖原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
@@ -51,7 +51,7 @@ SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。�
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前560项完整回归通过；本次改动文件Ruff与compileall通过，108份非artifact项目JSON、diff check与
+当前563项完整回归通过；本次改动文件Ruff与compileall通过，108份非artifact项目JSON、diff check与
 白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
@@ -63,14 +63,19 @@ WIDER FACE验证图、39,123个有效人脸上完成集成评估：默认0.35的
 阈值，仍要求人工审核Plan；这些证据不授予真实画质、多人身份安全、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
 
-`1.27.0`只在此前101个节点之后追加6个字面以`Advanced`结尾的多人节点，旧节点ID、顺序、输入、
+`1.27.2`保留此前追加的6个字面以`Advanced`结尾的多人节点，并从多人角色参考节点移除
+`rights_confirmed`界面控件与执行门槛；旧API残留字段会被兼容忽略。其余旧节点ID、顺序、输入、
 默认值和稳定`sampling.py`均不变。流程先用当前ComfyUI原生SAM3.1对每个镜头做2～3人分色追踪，
-再以经授权的单人参考图建立YuNet+SFace CPU角色档案；颜色和`0:0`之类索引只代表镜头内轨迹，
+再以清晰单人参考图建立YuNet+SFace CPU角色档案。参考图默认`dominant_face_auto`：只有最大检测框
+相对第二名同时满足面积比≥1.8、置信度差≥0.20且自身置信度≥0.60时才自动选择，否则仍拒绝；
+`require_single_face`保留为严格模式，`largest_face_exp`保留为显式无条件最大脸模式。颜色和`0:0`之类索引只代表镜头内轨迹，
 不能直接当人物身份。自动建议低于相似度或间隔门槛会拒绝，用户可用
 `{"0:0":"Character_A","0:1":"Character_B"}`逐镜头明确覆盖。
 
 每个修复任务只处理“一个人物×一个镜头窗口”，默认73帧（24fps下约3.04秒）、`manual_512`、
 legacy crop2.5、21/51平滑，并复用已人工验收的`relative_to_clip 0.8/0.35`和face-only 24/24回贴。
+当所选镜头只比请求窗口少1～16帧时，Repair Job只为H3上下文复制末帧补齐，Composite会自动丢弃
+补齐尾帧并保持来源帧数；超过16帧仍明确拒绝，避免把过短镜头伪装成长片。
 旧工作流继续使用原`crop_factor`；新2/3人示例显式选择`target_face_px=300`，节点会自动换算有效
 crop factor，并报告H3画布内实际脸高与受源边界限制的帧数。新Turbo示例统一为8步，旧4步只保留为
 历史验证记录。不同人物顺序生成，不会把
@@ -171,7 +176,7 @@ LightX2V FL2V Turbo LoRA强度0.75和seed42；最终只复用原视频完整音�
 选择本地Ultralytics，因此不称身份跟踪等价。新增质量门连接在Parity Stitch后，只接受结构SSIM、
 脸区变化、实测清晰度和残差时序都通过且连续至少3帧的候选；其余帧回到源tensor。代理通过仍不是
 身份或画质证明，输出必须观看完整视频。
-API示例为`examples/face_refine_parity_advanced_api.json`；第三方MIT归属见
+API示例为`tests/fixtures/api/face_refine_parity_advanced_api.json`；第三方MIT归属见
 `THIRD_PARTY_NOTICES.md`。
 
 本机已额外跑完三条736×416×124 T8真实候选，并直接运行固定commit上游的四个原始节点。T8
@@ -431,7 +436,7 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Face Refine Parity Stitch / 原版机制回贴 (Advanced) | 默认face-only矩形、dilation24、feather24、colour match1；mask外逐位不变，只输出待审候选 |
 | MiniMax H3 Face Refine Quality Gate / 候选质量门 (Advanced) | 兼容保留的保守源片回退实验；源相似/锐度代理不能判断结构修复成功，不再作为推荐工作流出口 |
 | MiniMax H3 Face Refine MANUAL512 REL Baseline / 人工验收512相对模式基线 (Advanced) | 严格校验manual512、crop2.5、relative 0.8/0.35、21/51、音频零mask和24/24回贴后原样放行候选；不宣称通用质量保证 |
-| MiniMax H3 Face Character Profile / 多人角色参考 (Advanced) | 对经授权的单人参考图运行YuNet+SFace CPU，建立执行期内存角色档案；相似度只作匹配建议 |
+| MiniMax H3 Face Character Profile / 多人角色参考 (Advanced) | 对清晰单人参考图运行YuNet+SFace CPU，建立执行期内存角色档案；无授权状态开关，相似度只作匹配建议 |
 | MiniMax H3 Face Cast Merge / 2-3人角色表 (Advanced) | 合并2～3个唯一角色ID；拒绝重复ID且不把身份向量持久写盘 |
 | MiniMax H3 SAM3.1 Multi-Person Track / 多人分色追踪 (Advanced) | 按镜头运行原生SAM31Tracker，输出2～3条分色轨迹并在结束后默认选择性卸载SAM |
 | MiniMax H3 Face Track Assign / 轨迹绑定角色 (Advanced) | SFace一对一建议加逐镜头JSON覆盖；低分、低间隔或未绑定轨迹默认拒绝 |
@@ -606,21 +611,21 @@ x/y接缝比没有一例改善，肉眼出现栅格和重影。这条直接修�
 
 API与可导入前端示例：
 
-- `examples/environment_audit_advanced_api.json` / `examples/workflows/H3_Environment_Audit_Advanced.json`
-- `examples/activation_chunk_advanced_api.json` / `examples/workflows/H3_Activation_Chunk_Advanced.json`
-- `examples/qwen_prefix_cache_advanced_api.json` / `examples/workflows/H3_Qwen_Prefix_Cache_Advanced.json`
-- `examples/studio_timeline_advanced_api.json` / `examples/workflows/H3_Studio_Timeline_Advanced.json`
-- `examples/context_ir_provider_advanced_api.json` / `examples/workflows/H3_Context_IR_Provider_Advanced.json`
-- `examples/selective_repair_execution_advanced_api.json` / `examples/workflows/H3_Selective_Repair_Execution_Advanced.json`
-- `examples/reel_delivery_advanced_api.json` / `examples/workflows/H3_Reel_Delivery_Advanced.json`
-- `examples/scheduled_audio_injection_advanced_api.json` / `examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json`
-- `examples/av_decode_safety_advanced_api.json` / `examples/workflows/H3_AV_Decode_Safety_Advanced.json`
-- `examples/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
-- `examples/face_refine_advanced_api.json` / `examples/workflows/H3_Face_Refine_Advanced_EXP.json`
-- `examples/face_refine_anime_advanced_api.json` / `examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
-- `examples/face_refine_parity_advanced_api.json` / `examples/workflows/H3_Face_Refine_Parity_Advanced_EXP.json`
-- `examples/multiface_sam31_2person_advanced_api.json` / `examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
-- `examples/multiface_sam31_3person_advanced_api.json` / `examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/environment_audit_advanced_api.json` / `examples/workflows/H3_Environment_Audit_Advanced.json`
+- `tests/fixtures/api/activation_chunk_advanced_api.json` / `examples/workflows/H3_Activation_Chunk_Advanced.json`
+- `tests/fixtures/api/qwen_prefix_cache_advanced_api.json` / `examples/workflows/H3_Qwen_Prefix_Cache_Advanced.json`
+- `tests/fixtures/api/studio_timeline_advanced_api.json` / `examples/workflows/H3_Studio_Timeline_Advanced.json`
+- `tests/fixtures/api/context_ir_provider_advanced_api.json` / `examples/workflows/H3_Context_IR_Provider_Advanced.json`
+- `tests/fixtures/api/selective_repair_execution_advanced_api.json` / `examples/workflows/H3_Selective_Repair_Execution_Advanced.json`
+- `tests/fixtures/api/reel_delivery_advanced_api.json` / `examples/workflows/H3_Reel_Delivery_Advanced.json`
+- `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json`
+- `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/H3_AV_Decode_Safety_Advanced.json`
+- `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/H3_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/H3_Face_Refine_Parity_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_2person_advanced_api.json` / `examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_3person_advanced_api.json` / `examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
 
 Face Refine示例故意不经过固定736×416的来源视频窗口：它要求输入已经是24fps且帧数严格满足
 `17n+5`，直接保留原始宽高比，再把脸部crop送入512×512二次H3。默认真人示例使用固定哈希的
@@ -632,9 +637,11 @@ YuNet CPU检测；纯动漫另有`H3_Face_Refine_Anime_Advanced_EXP.json`，明�
 人工选择是否接受；该示例没有身份识别，也不构成“远景脸一定修好”或16GB通用保证。
 
 多人示例在上述单人Parity机制外增加SAM3.1人体轨迹和SFace身份建议。导入后依次完成：替换源视频与
-2～3张经授权的单人参考图、勾选每个Profile的`rights_confirmed`、审核分色预览、按每个镜头修改
+2～3张清晰单人参考图、审核分色预览、按每个镜头修改
 `manual_assignments_json`、分别检查每个角色的完整candidate window，最后才把对应Composite的
-`accept_candidate`切为true。示例默认全部为false，第一次排队只会保存源片，不会自动采用候选。
+`accept_candidate`切为true。Composite默认全部为false，第一次排队只会保存源片，不会自动采用候选。
+双人、三人画布各有1块顶部总览和4块就地NOTE，分别贴近参考图、SAM追踪、Repair/Denoise与
+采样/Composite区域；建议按NOTE顺序从左到右检查，不需要再到画布末尾查参数。
 镜头切换后`0:0`可能指向另一人，必须重新绑定；遮挡、重新入镜或过小脸也不能只信颜色。
 
 当前单人推荐工作流与2/3人示例统一使用Turbo 8步；多人显式使用
@@ -806,7 +813,7 @@ profile的单评审主观冒烟门，但自动差异范围仍明显大于`0.08`�
 
 示例：
 
-- `examples/hybrid_compatibility_audit_api.json`；
+- `tests/fixtures/api/hybrid_compatibility_audit_api.json`；
 - `examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
 
 完整合同与issue code见
@@ -840,7 +847,7 @@ OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。�
 
 新示例为：
 
-- `examples/hybrid_model_vbar_headroom_api.json`；
+- `tests/fixtures/api/hybrid_model_vbar_headroom_api.json`；
 - `examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
 
 示例使用4.0GiB固定总预留、不做全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
@@ -892,7 +899,7 @@ OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。�
 H3画质、身份、动作、音频保真和16GB显存矩阵。因此三个节点均为 EXP，不标 `memory_safe`、
 “任意视频”或“精准局部重绘”。API与前端示例分别为：
 
-- `examples/source_video_repaint_api.json`；
+- `tests/fixtures/api/source_video_repaint_api.json`；
 - `examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json`。
 
 本机已用真实来源有声视频、FL2VA pruned INT8、Qwen3-VL NVFP4 与双 H3 VAE 完成一次
@@ -946,7 +953,7 @@ Advanced节点也不允许与本项目Long Video MODEL补丁或第三方全局Mo
 补丁叠加。完整边界、矩阵和否决项见
 [`docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md`](docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md)。
 
-API 示例：`examples/multikeyframe_advanced_api.json`；可拖入画布的示例：
+API 示例：`tests/fixtures/api/multikeyframe_advanced_api.json`；可拖入画布的示例：
 `examples/workflows/H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
 中间节点均默认 `0.999`，低值只建议在固定素材/seed/采样设置下做A/B。
 
@@ -964,7 +971,7 @@ API 示例：`examples/multikeyframe_advanced_api.json`；可拖入画布的示�
 属于激进实验，可能明显损失身份、动作、构图和首尾帧一致性。没有视觉参考时节点会明确拒绝，
 只有音频参考也不会误报生效。当前核心只支持一个全局强度，不能为每张参考图单独设置。
 
-API 示例：`examples/ref2va_visual_reference_strength_exp_api.json`；可拖入画布的工作流：
+API 示例：`tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json`；可拖入画布的工作流：
 `examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
 `minimax_h3_ref2va_int8_convrot.safetensors`、736×416、124帧和20步基线，导入后先替换
 占位参考图。该参数本身不要求这些采样值，接入旧工作流时保持用户原有 sampler/scheduler 即可。
@@ -1013,9 +1020,9 @@ latent 的平均绝对变化为 `0.50223`，2秒后锁定尾部的最大绝对�
 可能删除原本想保留的歌声或损伤音乐/SFX。必须先用合成可知真值与真实 H3 混音建立泄漏、
 音乐损伤和听评门槛，未过门槛前不会靠模型名猜一个默认分离器。
 
-示例：`examples/dialogue_safe_master_api.json`、
+示例：`tests/fixtures/api/dialogue_safe_master_api.json`、
 `examples/workflows/H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
-`examples/dialogue_timed_bed_lock_api.json`、
+`tests/fixtures/api/dialogue_timed_bed_lock_api.json`、
 `examples/workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
 底轨必须是不含对白的独立完整背景，而不是已混合的 H3 最终母带。
 
@@ -1402,15 +1409,15 @@ VAE重编码22帧没有显示出优于直接 sampler latent 的充分证据，�
 跨配置通用16GB安全档仍未完成，因此本功能继续保持 Experimental，不宣传无缝或绝不 OOM。
 
 旧手工链的画布/API 示例仍为 `examples/workflows/H3_Long_Video_22F_EXP.json` 与
-`examples/long_video_segment_api.json`。接受状态画布/API 示例为
+`tests/fixtures/api/long_video_segment_api.json`。接受状态画布/API 示例为
 `examples/workflows/H3_Long_Video_Accepted_22F_EXP.json` 与
-`examples/long_video_candidate_accept_api.json`；完成全部片段后再单独运行
-`examples/long_video_compose_api.json`。推荐的总时长自动恢复画布/API 示例为
+`tests/fixtures/api/long_video_candidate_accept_api.json`；完成全部片段后再单独运行
+`tests/fixtures/api/long_video_compose_api.json`。推荐的总时长自动恢复画布/API 示例为
 `examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` 与
-`examples/long_video_auto_resume_api.json`；它自动管理 index、final、时间轴和断点位置，但保留
+`tests/fixtures/api/long_video_auto_resume_api.json`；它自动管理 index、final、时间轴和断点位置，但保留
 逐段人工预览/接受。显式后台画布/API 为
 `examples/workflows/H3_Long_Video_Background_22F_EXP.json` 与
-`examples/long_video_background_api.json`；只有这组示例连接 Background Start 与 Auto Queue。
+`tests/fixtures/api/long_video_background_api.json`；只有这组示例连接 Background Start 与 Auto Queue。
 
 本机已对这条自动恢复 API 做一次真实执行探针：非裁剪 FL2VA INT8、Standard Turbo LoRA、
 NVFP4 H3 CLIP、双 H3 VAE、736×416、124帧内部窗口、1步、目标1秒，并启用 DynamicVRAM。
@@ -1543,7 +1550,7 @@ latent 注入更多噪声，可能增强重绘幅度，也可能损坏身份与�
 本机现有 Ref2VA 是 pruned INT8，不能完整应用本项目转换的 Turbo LoRA；示例因此不加载
 LoRA，并以 20 步作为结构基线。若以后安装非裁剪 Ref2VA，再单独进行 Turbo LoRA 对照。
 这项能力是参考引导的语义重绘，不是 mask/inpainting，也不保证未编辑区域像素不变。
-API 示例见 `examples/still_image_edit_api.json`；可直接拖入画布的完整示例见
+API 示例见 `tests/fixtures/api/still_image_edit_api.json`；可直接拖入画布的完整示例见
 `examples/workflows/H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
 并连接 Still Preflight；在 Reference Image Edit 节点上点击“＋”可追加最多8张参考图。
 
@@ -1597,7 +1604,7 @@ carry/scale。标准采样器只在新版原生协议存在时开放，因为旧
 直接使用本节点新增的两个下拉框。
 `SamplerCustomAdvanced`、`RandomNoise` 和 `BasicGuider` 仍照常使用。
 
-可导入的 API 结构示例见 `examples/dual_clock_4step_api.json`。其中模型文件名是占位符，
+可导入的 API 结构示例见 `tests/fixtures/api/dual_clock_4step_api.json`。其中模型文件名是占位符，
 请替换为本机的 H3 基模、两个 VAE、Qwen3-VL CLIP 和已转换 LoRA 文件名。旧 API JSON
 可以不提供 `sampler_name` 与 `scheduler`，后端会使用上述两个默认值。
 
@@ -1620,7 +1627,7 @@ DiT 前向次数：4/8 约是稳定 4/4 的 2 倍计算量，4/10 约是 2.5 倍
 改善音频数值积分，也可能产生分布外误差。EXP 不应直接替代已验证的生产工作流。
 
 连接方法与稳定版相同，只把三个输出接入 `BasicGuider` / `SamplerCustomAdvanced`；不要再
-叠加 Sigma Shift 或外部 scheduler。示例见 `examples/multirate_exp_api.json`。
+叠加 Sigma Shift 或外部 scheduler。示例见 `tests/fixtures/api/multirate_exp_api.json`。
 
 ## 四种音频模式
 
@@ -1766,13 +1773,13 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 - `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
   实验profile；仍需用户盲评，不能视为最佳profile。
 
-API 示例见 `examples/audio_lock_api.json`、
-`examples/dual_clock_4step_api.json`、`examples/multirate_exp_api.json` 和
-`examples/still_image_edit_api.json`、`examples/hybrid_model_advanced_api.json`、
-`examples/hybrid_model_audio_reference_api.json`与`examples/hybrid_model_mixed_reference_api.json`；
-高速动态实验另见`examples/motion_quality_advanced_8step_api.json`；
+API 示例见 `tests/fixtures/api/audio_lock_api.json`、
+`tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和
+`tests/fixtures/api/still_image_edit_api.json`、`tests/fixtures/api/hybrid_model_advanced_api.json`、
+`tests/fixtures/api/hybrid_model_audio_reference_api.json`与`tests/fixtures/api/hybrid_model_mixed_reference_api.json`；
+高速动态实验另见`tests/fixtures/api/motion_quality_advanced_8step_api.json`；
 对白安全音频另见
-`examples/dialogue_safe_master_api.json` 与 `examples/dialogue_timed_bed_lock_api.json`。
+`tests/fixtures/api/dialogue_safe_master_api.json` 与 `tests/fixtures/api/dialogue_timed_bed_lock_api.json`。
 替换 API 示例里的模型、VAE、CLIP、可选 LoRA、
 输入图像和音频文件名后即可使用；
 保存节点使用已安装的 VideoHelperSuite。

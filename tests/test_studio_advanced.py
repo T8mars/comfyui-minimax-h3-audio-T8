@@ -274,7 +274,9 @@ def test_studio_timeline_frontend_uses_text_nodes_for_untrusted_fields():
 )
 def test_new_api_and_frontend_examples_are_link_consistent(api_name, workflow_name):
     root = Path(__file__).resolve().parents[1]
-    api = json.loads((root / "examples" / api_name).read_text(encoding="utf-8"))
+    api = json.loads(
+        (root / "tests" / "fixtures" / "api" / api_name).read_text(encoding="utf-8")
+    )
     workflow = json.loads((root / "examples" / "workflows" / workflow_name).read_text(encoding="utf-8"))
     assert api
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -289,7 +291,7 @@ def test_new_api_and_frontend_examples_are_link_consistent(api_name, workflow_na
 
 
 def test_new_api_examples_keep_safe_defaults_and_explicit_sidecar_boundary():
-    root = Path(__file__).resolve().parents[1] / "examples"
+    root = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "api"
     environment = json.loads((root / "environment_audit_advanced_api.json").read_text(encoding="utf-8"))
     activation = json.loads((root / "activation_chunk_advanced_api.json").read_text(encoding="utf-8"))
     qwen = json.loads((root / "qwen_prefix_cache_advanced_api.json").read_text(encoding="utf-8"))

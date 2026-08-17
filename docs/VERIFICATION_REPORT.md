@@ -15,7 +15,7 @@ originally recorded on 2026-08-06 against source commit
 
 ## 1.27.0 native SAM3.1 multi-person Face Refine (2026-08-17)
 
-Six append-only Advanced nodes implement authorized reference profiles, a two/three-person cast, native
+Six append-only Advanced nodes implement in-memory reference profiles, a two/three-person cast, native
 SAM3.1 shot-local tracking, CPU SFace suggestions plus manual assignment, one-character repair jobs and
 review-gated sequential compositing. A class-and-callable probe verifies the current ComfyUI
 `SAM31Tracker.track_video_with_detection` contract. The source tree's stable `sampling.py` SHA-256 remains
@@ -95,9 +95,28 @@ No cross-shot re-entry matrix, anime identity calibration, broad perceptual pane
 three-cold/three-warm staircase or universal 16GiB claim is closed. The three-person fixture used approximately
 17px source faces, reviewed manual mappings, a deliberately relaxed 0.10 SFace guard and one
 `largest_face_exp` reference; it proves bounded mechanics, not production identity thresholds. The provided
-two- and three-person examples keep `rights_confirmed=false` and `accept_candidate=false` until users review
-them. The complete checkpoint passed 558 project tests, full Ruff, compileall, 108 non-artifact JSON documents
+two- and three-person examples no longer expose or enforce `rights_confirmed`; `accept_candidate=false` remains
+the non-destructive review gate. Each frontend workflow now places four parameter/caution NOTE blocks beside the
+relevant graph sections in addition to its overview. The complete checkpoint passed 563 project tests, changed-scope
+Ruff, compileall, 108 non-artifact JSON documents
 and `git diff --check`.
+
+Version 1.27.2 closes two workflow-input failures without changing any stable sampler or existing node ID. The
+black-haired clear single-person reference produced three YuNet detections because two low-confidence boxes landed
+on hair/clothing; `dominant_face_auto` selected the real face with a 2.0976 area ratio and 0.4676 confidence margin,
+while the blonde reference retained its single detection. Ambiguous similarly sized faces still fail closed. The
+actual two-person source contains 69 frames, four fewer than the 73-frame H3 request. Repair Job now repeats the
+last source frame only for those four model-context positions and Composite trims them, preserving all 69 original
+timeline frames and the untouched source audio. Shortfalls above 16 frames still reject. Both canonical workflows
+contain five colored Markdown NOTE nodes; a separately named local v1.27.2 copy avoids confusing an already-open
+browser canvas, which ComfyUI does not update when the JSON file changes on disk.
+
+One additional full native preprocessing attempt was not counted as a pass: while running the real 69-frame source
+through the native SAM3.1 branch, `python.exe` exited without a Python traceback. Windows Application Error logged
+`msvcrt.dll` access violation `0xc0000005`, followed by `ntdll.dll` `0xc0000008`. ComfyUI was restarted and the
+updated live schemas were rechecked. The direct real-reference tests, one-shot 0..68 scene analysis and synthetic
+69-to-73 plan/composite contract pass, but this native crash remains separate evidence rather than being attributed
+to the new Python boundary logic.
 
 ## 1.26.0 author-parity Face Refine correction (2026-08-17)
 
@@ -813,7 +832,7 @@ Implemented locally on 2026-08-08 without changing the stable sampler:
   `block_execution` reason, preventing an accidental extra sampling pass;
 - the frontend and API graphs are respectively
   `examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` and
-  `examples/long_video_auto_resume_api.json`.
+  `tests/fixtures/api/long_video_auto_resume_api.json`.
 
 Validation evidence:
 
@@ -1420,7 +1439,7 @@ ComfyUI `0.30.0` tree at commit `6f7cd7fce`:
 
 No full H3 render was run as part of this local sampler test, because the base
 model stack was not placed in this workspace. The user-provided installation
-can now run the included `examples/dual_clock_4step_api.json` workflow after its
+can now run the included `tests/fixtures/api/dual_clock_4step_api.json` workflow after its
 placeholder model names are replaced.
 
 ## Experimental multi-rate sampler validation

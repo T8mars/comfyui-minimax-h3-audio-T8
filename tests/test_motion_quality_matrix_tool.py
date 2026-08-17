@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _template():
     return json.loads(
-        (ROOT / "examples" / "motion_quality_same_nfe_repair_8step_api.json").read_text(
+        (ROOT / "tests" / "fixtures" / "api" / "motion_quality_same_nfe_repair_8step_api.json").read_text(
             encoding="utf-8"
         )
     )
@@ -27,7 +27,7 @@ def _template():
 
 def _spec():
     return json.loads(
-        (ROOT / "examples" / "motion_quality_matrix_spec.json").read_text(
+        (ROOT / "tests" / "fixtures" / "specs" / "motion_quality_matrix_spec.json").read_text(
             encoding="utf-8"
         )
     )
@@ -136,8 +136,8 @@ def test_plan_command_writes_resumable_manifest_without_selecting_a_winner(tmp_p
     result = matrix_tool.main(
         [
             "plan",
-            str(ROOT / "examples" / "motion_quality_same_nfe_repair_8step_api.json"),
-            str(ROOT / "examples" / "motion_quality_matrix_spec.json"),
+            str(ROOT / "tests" / "fixtures" / "api" / "motion_quality_same_nfe_repair_8step_api.json"),
+            str(ROOT / "tests" / "fixtures" / "specs" / "motion_quality_matrix_spec.json"),
             str(output),
             "--output-prefix",
             "T8/pytest-motion",
@@ -216,8 +216,8 @@ def test_strict_spec_rejects_a_smaller_convenience_matrix():
 def _completed_quality_manifest():
     records = matrix_tool.build_quality_records(_template(), _spec(), "T8/test-motion")
     manifest = matrix_tool.build_manifest(
-        ROOT / "examples" / "motion_quality_same_nfe_repair_8step_api.json",
-        ROOT / "examples" / "motion_quality_matrix_spec.json",
+        ROOT / "tests" / "fixtures" / "api" / "motion_quality_same_nfe_repair_8step_api.json",
+        ROOT / "tests" / "fixtures" / "specs" / "motion_quality_matrix_spec.json",
         records,
     )
     for record in manifest["records"].values():

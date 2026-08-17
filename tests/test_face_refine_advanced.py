@@ -414,7 +414,7 @@ def test_face_refine_sampler_selects_low_noise_tail_without_changing_stable_sour
 
 def test_face_refine_api_and_frontend_examples_are_complete_and_link_valid():
     root = Path(__file__).resolve().parents[1]
-    api = json.loads((root / "examples" / "face_refine_advanced_api.json").read_text("utf-8"))
+    api = json.loads((root / "tests" / "fixtures" / "api" / "face_refine_advanced_api.json").read_text("utf-8"))
     frontend = json.loads(
         (root / "examples" / "workflows" / "H3_Face_Refine_Advanced_EXP.json").read_text(
             "utf-8"
@@ -447,10 +447,10 @@ def test_face_refine_api_and_frontend_examples_are_complete_and_link_valid():
 
 def test_anime_face_refine_examples_change_only_the_explicit_detector_route():
     root = Path(__file__).resolve().parents[1]
-    examples = root / "examples"
-    human_api = json.loads((examples / "face_refine_advanced_api.json").read_text("utf-8"))
+    api_fixtures = root / "tests" / "fixtures" / "api"
+    human_api = json.loads((api_fixtures / "face_refine_advanced_api.json").read_text("utf-8"))
     anime_api = json.loads(
-        (examples / "face_refine_anime_advanced_api.json").read_text("utf-8")
+        (api_fixtures / "face_refine_anime_advanced_api.json").read_text("utf-8")
     )
     assert human_api["3"]["inputs"]["detector_mode"] == "local_opencv_yunet"
     assert anime_api["3"]["inputs"]["detector_mode"] == "local_anime_onnx_exp"
@@ -459,7 +459,8 @@ def test_anime_face_refine_examples_change_only_the_explicit_detector_route():
 
     anime_frontend = json.loads(
         (
-            examples
+            root
+            / "examples"
             / "workflows"
             / "H3_Face_Refine_Anime_Advanced_EXP.json"
         ).read_text("utf-8")

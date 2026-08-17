@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.27.0"
+version = "1.27.2"
 description = "MiniMax H3 native SAM3.1 multi-person face tracking and sequential repair, author-mechanism-aligned MANUAL512 REL face-refine baselines, 32-aligned latent upscaling, Studio planning, bounded Qwen reference-prefix caching, audio, Hybrid experiments, multi-keyframe timelines, speech, dual-clock sampling, resumable long video, and Ref2VA editing nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"

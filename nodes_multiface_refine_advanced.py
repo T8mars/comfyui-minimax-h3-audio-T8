@@ -30,18 +30,17 @@ class MiniMaxH3FaceCharacterProfileT8Advanced(io.ComfyNode):
             description=(
                 "Builds one in-memory character profile from one or more single-person reference "
                 "images. OpenCV Zoo YuNet+SFace run on CPU. The embedding is a matching aid, "
-                "never persistent identity proof; explicit rights confirmation is required."
+                "never persistent identity proof."
             ),
             category=CATEGORY,
             is_experimental=True,
             inputs=[
                 io.String.Input("character_id", default="Character_A"),
                 io.Image.Input("reference_images"),
-                io.Boolean.Input("rights_confirmed", default=False),
                 io.Combo.Input(
                     "reference_face_policy",
-                    options=["require_single_face", "largest_face_exp"],
-                    default="require_single_face",
+                    options=["dominant_face_auto", "require_single_face", "largest_face_exp"],
+                    default="dominant_face_auto",
                     advanced=True,
                 ),
             ],
@@ -221,7 +220,9 @@ class MiniMaxH3MultiFaceRepairJobT8Advanced(io.ComfyNode):
                     max=124,
                     tooltip=(
                         "Must be 5, 22, 39, 56, 73, 90, 107 or 124. "
-                        "The 73-frame default is about 3.04 seconds at 24 fps."
+                        "The 73-frame default is about 3.04 seconds at 24 fps. If a shot is "
+                        "short by at most 16 frames, its last frame is used only as H3 context "
+                        "and the padded tail is discarded during final composition."
                     ),
                 ),
                 io.Float.Input("crop_factor", default=2.5, min=1.2, max=8.0, step=0.1),
@@ -293,9 +294,11 @@ class MiniMaxH3MultiFaceCompositeT8Advanced(io.ComfyNode):
             node_id="MiniMaxH3MultiFaceCompositeT8Advanced",
             display_name="MiniMax H3 Multi-Face Composite / 多人候选合成 (Advanced)",
             description=(
-                "Applies one reviewed shot-local Face Refine candidate to the original full "
-                "video and chains up to three people. Default policy rejects overlapping masks; "
-                "pixels outside the audited changed mask remain bit-exact. Audio is untouched."
+                "Applies one shot-local Face Refine candidate to the original full video and "
+                "chains up to three people. Candidates are accepted by default so the example "
+                "produces a repaired final video; disable accept_candidate for preview-only "
+                "review. Overlapping masks still reject by default, pixels outside the audited "
+                "changed mask remain bit-exact, and audio is untouched."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -305,7 +308,14 @@ class MiniMaxH3MultiFaceCompositeT8Advanced(io.ComfyNode):
                 io.Image.Input("candidate_window"),
                 io.Mask.Input("changed_mask"),
                 FaceRefineParityPlanIO.Input("face_plan"),
-                io.Boolean.Input("accept_candidate", default=False),
+                io.Boolean.Input(
+                    "accept_candidate",
+                    default=True,
+                    tooltip=(
+                        "Enabled by default so the candidate reaches the final composite. Disable "
+                        "only when you want a preview-only run that returns the original frames."
+                    ),
+                ),
                 io.Combo.Input(
                     "overlap_policy",
                     options=["reject", "new_over_old_exp", "keep_old_exp"],

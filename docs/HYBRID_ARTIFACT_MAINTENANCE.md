@@ -87,7 +87,7 @@ memory management are intentionally separate responsibilities.
 
 ## Examples
 
-- API prompt: `examples/hybrid_artifact_maintenance_api.json`
+- API prompt: `tests/fixtures/api/hybrid_artifact_maintenance_api.json`
 - Frontend workflow: `examples/workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json`
 
 Both examples ship in the safe inspection configuration. Change an action only

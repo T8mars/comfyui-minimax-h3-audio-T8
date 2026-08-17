@@ -313,7 +313,7 @@ def test_separate_rejects_mismatched_audio_clock():
 
 def test_source_video_repaint_api_uses_prepared_latent_for_both_sampler_inputs():
     root = Path(__file__).resolve().parents[1]
-    prompt = json.loads((root / "examples" / "source_video_repaint_api.json").read_text("utf-8"))
+    prompt = json.loads((root / "tests" / "fixtures" / "api" / "source_video_repaint_api.json").read_text("utf-8"))
     by_type = {node["class_type"]: node for node in prompt.values()}
 
     window = by_type["MiniMaxH3SourceMediaWindowT8"]
