@@ -16,7 +16,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 101
+    assert len(ids) == 107
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -257,6 +257,19 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         assert parity_schema.is_experimental is True
         assert parity_schema.category == (
             "T8/MiniMax H3/Quality/Experimental/Face Refine Parity"
+        )
+    assert ids[101:107] == [
+        "MiniMaxH3FaceCharacterProfileT8Advanced",
+        "MiniMaxH3FaceCastMergeT8Advanced",
+        "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
+        "MiniMaxH3FaceTrackAssignT8Advanced",
+        "MiniMaxH3MultiFaceRepairJobT8Advanced",
+        "MiniMaxH3MultiFaceCompositeT8Advanced",
+    ]
+    for multiface_schema in schemas[101:107]:
+        assert multiface_schema.is_experimental is True
+        assert multiface_schema.category == (
+            "T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person"
         )
     sigma_tail_inputs = {item.id: item for item in schemas[86].inputs}
     assert sigma_tail_inputs["mode"].default == "report_only"

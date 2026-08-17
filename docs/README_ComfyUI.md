@@ -28,6 +28,84 @@ adds the required bias deltas. This does not make the original 518-tensor LoRA g
 with pruned models, and the converted file must not be used on a different checkpoint merely because
 its filename also contains `pruned`.
 
+## Version 1.27.0 native SAM3.1 multi-person Face Refine
+
+Version 1.27.0 appends six isolated Advanced nodes after the preceding 101 IDs. Existing Face Refine,
+Conditioning, sampler, workflow and `sampling.py` contracts do not change. The route uses ComfyUI's current
+native `SAM31Tracker` to detect and propagate two or three person masks per shot. A behavioral capability
+probe requires `track_video_with_detection`; old SAM3 or unknown wrappers fail closed. Track colors and
+indices are shot-local only and reset after cuts.
+
+Authorized single-person reference images are represented as in-memory profiles. Pinned OpenCV Zoo YuNet
+localizes faces and pinned Apache-2.0 SFace emits CPU identity suggestions. Suggestions are one-to-one per
+shot and must pass score and margin gates; `{"0:0":"Character_A"}` style JSON remains authoritative. No
+profile is persisted by these nodes, and a face embedding is not treated as identity proof.
+
+Each repair job covers one character, one shot and one legal `17n+5` window. The default reviewed profile is
+73 frames (about 3.04 seconds at 24fps), MANUAL512, crop factor 2.5, 21/51 trajectory smoothing,
+relative-to-clip 0.8/0.35 denoise and the
+existing face-only 24/24 stitch. Character branches execute sequentially and feed a source-bound composite
+state. Acceptance defaults to false, overlapping masks reject, and original audio is locked and re-muxed
+after all accepted candidates. The default SAM release policy calls only selective model-and-clone unload,
+GC and `soft_empty_cache`; it never calls global model unload.
+
+The job now also exposes an optional `target_face_px` scale mode for manual canvases. Legacy workflows omit
+the new optional fields and retain crop-factor behavior. The regenerated two/three-person examples explicitly
+target about 300px face height in a 512 crop and use Turbo 8 steps; their reports include the effective crop
+factor, achieved face-height range and source-boundary-limited frame count. This guarantees crop-space scale,
+not native detail: an already enlarged or defocused source cannot recover information merely by resizing.
+The single-person recommended workflow now also uses the Turbo 8-step review profile while retaining its
+human-selected MANUAL512/crop-2.5 route. Every single/two/three-person frontend workflow includes an embedded
+Markdown note with the intended use and exact review parameters.
+
+Face Refine is a structural re-generation tool, not a sharpening or super-resolution stage. It can repair
+collapsed eyes, mouths, noses or face geometry when the source face is otherwise clear. If the source is
+defocused, low-resolution or merely enlarged from a tiny raster, H3 usually preserves that soft visual style;
+the crop target only ensures enough H3 canvas area and cannot recreate absent source texture.
+
+Install `sam3.1_multiplex_fp16.safetensors` under `models/checkpoints` and
+`face_recognition_sface_2021dec.onnx` under `models/face_detection`. The locally verified SHA-256 values are
+`9BA99C92703C2E8B4F47DE2D34A539BB8E18923049E238B780D70DBE6368EB03` and
+`0BA9FBFA01B5270C96627C4EF784DA859931E02F04419C829E83484087C34E79` respectively. Weights are not
+distributed by this plugin.
+
+A real 240x416x22 two-person chain completed native tracking, automatic Alice/Bob SFace assignment, two
+sequential MANUAL512 H3 branches and final composition. The strict-decode output is 22 frames at 24fps with
+SHA-256 `C74000515CFED4DB8A7D6E1DCD428F4AF379D3CEA89A432C3AE5EEC806F818E2`. A second 240x416x22 source
+contained four people; the default `person with a visible face` prompt selected the three repairable visible
+faces and omitted the back-facing person. Three reviewed manual assignments, SFace-guarded repair plans and
+sequential H3 branches completed in 95.78 seconds under prompt
+`0c37c0b3-e910-405f-9b3f-0a159c048b9e`. The final 22-frame H.264/AAC SHA-256 is
+`C3CCB956397AC7497E8241DAB97D057ABAFFC20C625945662DE2608917B4DC42`; source and output decoded-audio
+SHA-256 are both `3645A04B3F853F324732FFB9779EE1C95B01F6E5F68C6A07968ECBEDAAD552C1`.
+
+That run exposed a real compositor-contract bug before it passed: Parity Stitch treats only `alpha == 0` as
+mask exterior, while the original multi-person compositor incorrectly thresholded `alpha <= 1e-6` as exterior
+and rejected the second person's legitimate feather tail. The compositor now uses `alpha > 0`, validates finite
+0..1 mask values, and has a sub-micro-alpha regression. It still rejects actual outside-mask changes and mask
+overlap. Sampled free VRAM reached approximately 489MiB in the two-person run, 450MiB in an earlier single
+branch and about 375MiB after the complete three-person cold run. These are operational passes below the
+512MiB project gate; neither universal 16GiB safety nor perceptual restoration is claimed.
+
+A longer 608x448x73 follow-up (3.042 seconds) used the stricter example prompt
+`front-facing person with a visible face`. Unlike the broader prompt on this four-person shot, it retained the
+intended left armored man, center woman and right yellow-headscarf man while omitting the back-facing person.
+All three roughly 50-100px source faces were planned on MANUAL512 canvases and all three H3 branches completed
+sequentially. The third 24px feather region overlapped 50,621 already accepted pixels, so the default `reject`
+policy stopped; after review, `keep_old_exp` preserved the earlier pixels and applied only the third person's
+non-overlapping region. The strict-decode-clean 608x448, 73-frame output SHA-256 is
+`AB26FC42A0FD9EFA5DA32877100554F1487165DEF2498BCC0495DD7638F656BB`; source and result decoded PCM MD5
+are both `4c7905d4a36f6f9c456b7e074b52707e`. Five labeled zoomed time samples showed no sampled catastrophic
+identity swap or face collapse, but the visible change was modest and no blinded perceptual promotion is claimed.
+
+A later clear-source two-person acceptance run used a native 1920x1408, 69-frame, 24fps side-profile clip.
+SAM3.1 tracked all 69 frames; the first legal 56-frame H3 window used two clear single-person references,
+MANUAL512, a 300px target face height, relative-to-clip 0.8/0.35 and sequential Turbo 8-step branches, with the
+remaining 13 frames retained as an untreated control tail. After watching the complete result, the user confirmed
+that the damaged facial structure was repaired and clarified that the earlier blurred-source failure was a task
+boundary rather than proof that Face Refine could not work. This is one user acceptance on a clear-source fixture,
+not a universal restoration, identity, deblur or memory guarantee.
+
 ## Version 1.26.0 audited author-parity correction
 
 Version 1.26.0 adds no node ID and changes no stable sampler. It corrects only the newly appended

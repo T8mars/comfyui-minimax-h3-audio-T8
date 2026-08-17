@@ -1,11 +1,11 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.26.0`，共注册
-101 个节点，覆盖人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.27.0`，共注册
+107 个节点，覆盖原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
-节点按稳定性与用途分为十个菜单：
+节点按稳定性与用途分为以下菜单：
 
 | 菜单 | 状态 | 内容 |
 |---|---|---|
@@ -20,6 +20,7 @@
 | `T8/MiniMax H3/Source AV/Experimental` | 实验 | 来源视频24fps窗口、H3双流latent严格组装、画面/音频独立mask与无VAE拆分 |
 | `T8/MiniMax H3/Quality/Experimental` | 实验 | 高速动态审计、sigma因果实验、repair规划，以及远景脸局部二次生成与回贴审计 |
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Parity` | 实验 | 隔离复现上游FaceRefine的21/51高斯轨迹、逐帧去噪、音频锁和24/24回贴，并提供MANUAL512 REL机械基线校验 |
+| `T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person` | 实验 | 原生SAM3.1按镜头分色追踪2～3人、CPU参考身份建议、逐角色H3修复与审片后顺序合成 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
@@ -35,16 +36,23 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 延迟使用ComfyUI环境中的OpenCV `FaceDetectorYN`，动漫EXP检测延迟导入`onnxruntime`，旧的
 本地Ultralytics路线仍为显式可选项。任何检测路线都不会在执行时联网下载模型。
 
-本机已把两份固定模型放入`ComfyUI/models/face_detection`，GitHub插件仓库不分发权重：
+本机已把固定人脸模型放入`ComfyUI/models/face_detection`，GitHub插件仓库不分发权重：
 
 - `face_detection_yunet_2023mar.onnx`：默认真人/远景CPU检测，OpenCV Zoo MIT，SHA-256
   `8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4`；
 - `anime_face_detect_v1.4_n.onnx`：仅供`local_anime_onnx_exp`动漫EXP路线，deepghs MIT，SHA-256
-  `fd860b650a4377046842c3cd80d01b0b408bdfbdb4acee5759630f82c6ef04a9`。
+  `fd860b650a4377046842c3cd80d01b0b408bdfbdb4acee5759630f82c6ef04a9`；
+- `face_recognition_sface_2021dec.onnx`：多人参考身份建议，OpenCV Zoo Apache-2.0，SHA-256
+  `0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79`。
+
+多人追踪还需把官方`sam3.1_multiplex_fp16.safetensors`放入`ComfyUI/models/checkpoints`，本机校验
+SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。节点按行为检查
+`SAM31Tracker + track_video_with_detection`，旧SAM3或未知包装器会明确拒绝，不按文件名猜版本。
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前550项完整回归、全仓Ruff、compileall、104份项目JSON、diff check与白名单启动使用ComfyUI
+当前560项完整回归通过；本次改动文件Ruff与compileall通过，108份非artifact项目JSON、diff check与
+白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
@@ -54,6 +62,59 @@ WIDER FACE验证图、39,123个有效人脸上完成集成评估：默认0.35的
 62.23%/64.99%，0.60为86.10%/56.94%，且`<16px`召回从43.60%降到32.25%。因此不强改默认
 阈值，仍要求人工审核Plan；这些证据不授予真实画质、多人身份安全、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
+
+`1.27.0`只在此前101个节点之后追加6个字面以`Advanced`结尾的多人节点，旧节点ID、顺序、输入、
+默认值和稳定`sampling.py`均不变。流程先用当前ComfyUI原生SAM3.1对每个镜头做2～3人分色追踪，
+再以经授权的单人参考图建立YuNet+SFace CPU角色档案；颜色和`0:0`之类索引只代表镜头内轨迹，
+不能直接当人物身份。自动建议低于相似度或间隔门槛会拒绝，用户可用
+`{"0:0":"Character_A","0:1":"Character_B"}`逐镜头明确覆盖。
+
+每个修复任务只处理“一个人物×一个镜头窗口”，默认73帧（24fps下约3.04秒）、`manual_512`、
+legacy crop2.5、21/51平滑，并复用已人工验收的`relative_to_clip 0.8/0.35`和face-only 24/24回贴。
+旧工作流继续使用原`crop_factor`；新2/3人示例显式选择`target_face_px=300`，节点会自动换算有效
+crop factor，并报告H3画布内实际脸高与受源边界限制的帧数。新Turbo示例统一为8步，旧4步只保留为
+历史验证记录。不同人物顺序生成，不会把
+三个人同时送入H3；候选通过`previous_composite`链式合成，默认`accept_candidate=false`且拒绝
+重叠mask。SAM默认在追踪后只卸载自身及其clone，不调用全局卸载，再进入H3；最终音轨始终取原视频。
+
+Face Refine的产品边界是“重建崩坏五官”，不是“把模糊视频锐化”。输入脸部已经清楚、但眼口鼻或
+脸型发生结构畸变时，参考图和局部H3重绘可以纠正结构；输入本身失焦、低清或只由小图放大时，H3通常
+会继续保持这种模糊质感，`target_face_px`也不会凭空恢复来源中不存在的纹理。单人、双人和三人前端
+工作流现在都内置Markdown使用说明；当前推荐统一为MANUAL512、`relative_to_clip 0.8/0.35`、
+`er_sde + simple`、Turbo 8步和人工完整审片。
+
+真实2人240×416×22帧探针中，SAM轨迹、SFace自动Alice/Bob绑定、两路MANUAL512 H3顺序生成、
+mask外逐位保护和最终合成都完成；结果严格解码为22帧24fps，SHA-256为
+`C74000515CFED4DB8A7D6E1DCD428F4AF379D3CEA89A432C3AE5EEC806F818E2`。随后把含4人的群像裁成
+240×416×22帧低分辨率测试片；`person with a visible face`正确选择3名可修复正脸人物并排除背对镜头者，
+三个人物计划均完成SAM约束YuNet定位、人工审核轨迹映射和SFace Guard，再用seed42/43/44依次生成。
+prompt `0c37c0b3-e910-405f-9b3f-0a159c048b9e`在95.78秒完成，最终H.264/AAC文件严格解码为
+240×416、22帧、24fps、0.917秒，SHA-256为
+`C3CCB956397AC7497E8241DAB97D057ABAFFC20C625945662DE2608917B4DC42`；来源/结果解码PCM SHA-256
+均为`3645A04B3F853F324732FFB9779EE1C95B01F6E5F68C6A07968ECBEDAAD552C1`。
+
+为避免不到1秒的短片掩盖跟踪和时序问题，随后又完成608×448×73帧（3.042秒）三人验证。普通
+`person with a visible face`在这段四人素材上把第3条轨迹给了背对镜头者；改为示例当前默认的
+`front-facing person with a visible face`后，三条轨迹稳定对应左侧关羽、中间女性和右侧黄头巾男性。
+三张来源脸约50～100px，均送入MANUAL512画布，seed42/43/44三路H3顺序完成。第三人24px羽化区
+与已接受区域重叠50,621像素，默认`reject`按设计停止；人工确认后用`keep_old_exp`保留旧像素并只应用
+第三人的非重叠区域。最终文件严格解码为608×448、73帧、24fps、3.042秒，SHA-256为
+`AB26FC42A0FD9EFA5DA32877100554F1487165DEF2498BCC0495DD7638F656BB`；来源/结果解码PCM MD5同为
+`4c7905d4a36f6f9c456b7e074b52707e`。五个时间点的放大对照未见新增鬼脸或串人，局部清晰度变化较轻，
+尚无盲评证明普遍修复增益，因此继续保留EXP与人工accept。
+
+随后使用一段原生1920×1408、69帧、24fps的清晰双人侧脸视频验证“清楚但五官崩坏”场景：SAM3.1
+追踪69帧，前56帧按合法H3窗口分别使用两张清晰单人参考图、MANUAL512、目标脸高300px、
+`relative_to_clip 0.8/0.35`和Turbo 8步顺序修复，末13帧保留为未修复对照。用户完整观看后确认本次
+实际修复了五官，并确认正确边界是“结构修复有效，但不会把原本模糊的画面直接锐化”。这是新增的一条
+清晰双人素材人工验收证据，不等于所有身份、角度、遮挡或模糊输入都会改善。
+
+这次三人实跑同时发现并修复了一个真实边界错误：Parity Stitch把`alpha == 0`定义为mask外，旧多人
+Composite却把`alpha <= 1e-6`也当成mask外，第二个人的羽化尾部因此被误拒。现在两端统一为
+`alpha > 0`，并新增mask有限性、0～1范围及微小正羽化值回归门；仍不会放行真正的mask外改动。
+精确2人链抽样最低余量约489MiB，前一单分支曾见450MiB；三人冷启动完整链结束后粗采样最低约
+375MiB，均低于512MiB保守门。因此2人和3人都只能称本机短片机械通过，不能宣传通用16GB安全、
+跨镜头身份可靠或跨素材修复质量。
 
 `1.26.0`不增加节点，也不改变前100个节点或稳定采样数学；它修正此前新追加的
 MANUAL512 REL Parity路径，使其真正复现用户选中作者结果的关键机制：Ultralytics接收BGR而不是
@@ -370,6 +431,12 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Face Refine Parity Stitch / 原版机制回贴 (Advanced) | 默认face-only矩形、dilation24、feather24、colour match1；mask外逐位不变，只输出待审候选 |
 | MiniMax H3 Face Refine Quality Gate / 候选质量门 (Advanced) | 兼容保留的保守源片回退实验；源相似/锐度代理不能判断结构修复成功，不再作为推荐工作流出口 |
 | MiniMax H3 Face Refine MANUAL512 REL Baseline / 人工验收512相对模式基线 (Advanced) | 严格校验manual512、crop2.5、relative 0.8/0.35、21/51、音频零mask和24/24回贴后原样放行候选；不宣称通用质量保证 |
+| MiniMax H3 Face Character Profile / 多人角色参考 (Advanced) | 对经授权的单人参考图运行YuNet+SFace CPU，建立执行期内存角色档案；相似度只作匹配建议 |
+| MiniMax H3 Face Cast Merge / 2-3人角色表 (Advanced) | 合并2～3个唯一角色ID；拒绝重复ID且不把身份向量持久写盘 |
+| MiniMax H3 SAM3.1 Multi-Person Track / 多人分色追踪 (Advanced) | 按镜头运行原生SAM31Tracker，输出2～3条分色轨迹并在结束后默认选择性卸载SAM |
+| MiniMax H3 Face Track Assign / 轨迹绑定角色 (Advanced) | SFace一对一建议加逐镜头JSON覆盖；低分、低间隔或未绑定轨迹默认拒绝 |
+| MiniMax H3 Multi-Face Repair Job / 单角色修复任务 (Advanced) | 为一个角色的一个镜头窗口生成source-bound、17n+5、默认MANUAL512的Parity修复计划；可选自动目标脸高，旧crop-factor模式保持默认 |
+| MiniMax H3 Multi-Face Composite / 多人候选合成 (Advanced) | 顺序应用已审片候选，默认拒绝人物mask重叠并验证mask外像素逐位不变；音频不参与回贴 |
 | Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
 
 最小可运行示例见
@@ -551,6 +618,9 @@ API与可导入前端示例：
 - `examples/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
 - `examples/face_refine_advanced_api.json` / `examples/workflows/H3_Face_Refine_Advanced_EXP.json`
 - `examples/face_refine_anime_advanced_api.json` / `examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
+- `examples/face_refine_parity_advanced_api.json` / `examples/workflows/H3_Face_Refine_Parity_Advanced_EXP.json`
+- `examples/multiface_sam31_2person_advanced_api.json` / `examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
+- `examples/multiface_sam31_3person_advanced_api.json` / `examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
 
 Face Refine示例故意不经过固定736×416的来源视频窗口：它要求输入已经是24fps且帧数严格满足
 `17n+5`，直接保留原始宽高比，再把脸部crop送入512×512二次H3。默认真人示例使用固定哈希的
@@ -560,6 +630,24 @@ YuNet CPU检测；纯动漫另有`H3_Face_Refine_Anime_Advanced_EXP.json`，明�
 重新封装，因此H3第二遍生成的音频被丢弃，原背景音乐、环境声和音效不会随脸部回贴被截断。
 若Plan报告硬切，Conditioning默认拒绝一次处理，应先按镜头拆开。先看preview与Stitch报告，再
 人工选择是否接受；该示例没有身份识别，也不构成“远景脸一定修好”或16GB通用保证。
+
+多人示例在上述单人Parity机制外增加SAM3.1人体轨迹和SFace身份建议。导入后依次完成：替换源视频与
+2～3张经授权的单人参考图、勾选每个Profile的`rights_confirmed`、审核分色预览、按每个镜头修改
+`manual_assignments_json`、分别检查每个角色的完整candidate window，最后才把对应Composite的
+`accept_candidate`切为true。示例默认全部为false，第一次排队只会保存源片，不会自动采用候选。
+镜头切换后`0:0`可能指向另一人，必须重新绑定；遮挡、重新入镜或过小脸也不能只信颜色。
+
+当前单人推荐工作流与2/3人示例统一使用Turbo 8步；多人显式使用
+`manual_512 + target_face_px=300`，单人沿用人工验收的`manual_512 + crop_factor=2.5`。300px是H3
+裁剪画布内的目标脸高，不是来源视频凭空获得300px真实细节；如果输入本身经过放大或严重失焦，自动
+放大只能保证重绘区域足够，不能单独保证恢复真实纹理。报告中的实际脸高和
+`source_boundary_limited_frames`必须先审核。
+
+每个角色分支都锁定源音频、顺序复用同一个H3模型，并在最终`CreateVideo`重新接回源音轨；因此不会
+为了修某张脸截掉音乐、环境声或音效。若源视频确实没有音轨，应显式接一个同长度32kHz双声道
+`EmptyAudio`作为锁定静音，不能把`native`误当成“无声等于已锁定”。当前2人和3人完整顺序合成均已
+实跑，清晰双人素材又通过一次用户人工结构修复验收；跨镜头长期身份、模糊输入锐化和其他素材显存仍需
+逐项目验收。
 
 本机真实机械探针使用FL2VA pruned INT8、Qwen3-VL NVFP4、双H3 VAE、736×416×124、12步
 低去噪双时钟和锁定原音频。手工ROI链12/12步完成、总耗时176.93秒；自动YuNet链同样12/12步

@@ -13,6 +13,92 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.27.0 native SAM3.1 multi-person Face Refine (2026-08-17)
+
+Six append-only Advanced nodes implement authorized reference profiles, a two/three-person cast, native
+SAM3.1 shot-local tracking, CPU SFace suggestions plus manual assignment, one-character repair jobs and
+review-gated sequential compositing. A class-and-callable probe verifies the current ComfyUI
+`SAM31Tracker.track_video_with_detection` contract. The source tree's stable `sampling.py` SHA-256 remains
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
+
+Real probes on ComfyUI `0.33.0@7fe8a61385` established the following limited facts:
+
+- A 22-frame group shot retained three distinct color tracks while `maximum_people=3` deliberately omitted
+  a fourth person. This proves the cap and short-shot track mechanics, not character identity.
+- A 240x416x22 two-person clip produced separate Alice and Bob repair plans. YuNet localized each face inside
+  its assigned SAM mask and the CPU SFace guard accepted both. A separate automatic-assignment run mapped
+  `0:0 -> Alice` and `0:1 -> Bob` without manual JSON.
+- Selective SAM cleanup reduced loaded Comfy models from two to one and whole-device use by about 2240MiB;
+  another model remained loaded and `global_unload_called=false`.
+- The two H3 MANUAL512 branches ran sequentially with seeds 42/43, Ref2VA pruned INT8, Qwen NVFP4, official
+  VAEs and the reviewed 0.75 FL2V Turbo LoRA route. The final chained composite passed strict FFmpeg decode as
+  240x416, 22 frames, 24fps H.264. SHA-256 is
+  `C74000515CFED4DB8A7D6E1DCD428F4AF379D3CEA89A432C3AE5EEC806F818E2`.
+- Coarse polling observed approximately 489MiB free in the complete two-person run; an earlier one-branch run
+  observed 450MiB. Both are below the 512MiB project gate, so this is an operational pass only.
+- A separate four-person shot was trimmed to 240x416x22. `person with a visible face` selected the three
+  repairable visible faces and omitted the back-facing person. Reviewed mappings bound `0:0`, `0:1` and `0:2`
+  to three authorized references; all three SAM-constrained YuNet plans and SFace guards completed.
+- The first full three-person attempt completed two H3 branches, then correctly stopped when the compositor
+  found an apparent outside-mask change. Root cause was a producer/consumer threshold mismatch: Parity Stitch
+  defines exterior as `alpha == 0`, whereas the compositor used `alpha <= 1e-6`. The consumer now uses
+  `alpha > 0`, rejects non-finite/out-of-range masks and has a sub-micro-alpha regression test. Genuine exterior
+  changes and overlapping person masks remain fail-closed.
+- The corrected three-person cold prompt `0c37c0b3-e910-405f-9b3f-0a159c048b9e` completed all three sequential
+  branches in 95.78 seconds. Its H.264/AAC output is 240x416, 22 frames, 24fps and 0.917 seconds; strict video
+  and audio decoding pass. File SHA-256 is
+  `C3CCB956397AC7497E8241DAB97D057ABAFFC20C625945662DE2608917B4DC42`. Source and output decoded PCM share
+  SHA-256 `3645A04B3F853F324732FFB9779EE1C95B01F6E5F68C6A07968ECBEDAAD552C1`.
+- Coarse whole-device polling reached about 375MiB free after the three-person run. This is below the 512MiB
+  gate and does not establish a universal 16GiB profile despite successful completion without OOM.
+- A longer 608x448x73 / 3.042-second follow-up showed that the broad visible-face prompt could spend the third
+  slot on a back-facing person. `front-facing person with a visible face` selected the intended three visible
+  faces throughout seven track previews, so the regenerated examples now use that stricter prompt.
+- The three roughly 50-100px source faces produced 73-frame MANUAL512 jobs and all seeds 42/43/44 H3 branches
+  completed sequentially. The first final composite attempt stopped because the third feathered mask overlapped
+  50,621 already applied pixels. A reviewed rerun changed only the final policy to `keep_old_exp`; all generation
+  nodes were cached, earlier pixels won in the overlap, and the final output completed.
+- The resulting 608x448 H.264/AAC file contains exactly 73 frames at 24fps and 3.042 seconds. Strict video/audio
+  decoding passes; SHA-256 is `AB26FC42A0FD9EFA5DA32877100554F1487165DEF2498BCC0495DD7638F656BB`,
+  and source/output decoded PCM MD5 are both `4c7905d4a36f6f9c456b7e074b52707e`. Coarse polling observed about
+  426MiB free at the lowest sampled point, again below the 512MiB promotion gate.
+- Full-frame and zoomed source/result comparisons were generated. Five labeled zoomed samples show modest local
+  changes without sampled catastrophic face collapse or track exchange, but no blind panel has established broad
+  perceptual restoration. This remains an EXP candidate rather than a quality guarantee.
+- A later backward-compatible crop-scale update kept `legacy_crop_factor` as the node default and added explicit
+  `target_face_px` for manual canvases. The regenerated two/three-person examples target about 300px faces in a
+  512 crop and use the project Turbo 8-step baseline. Reports record effective crop factor, achieved face-height
+  range and source-boundary-limited frames.
+- A real 512x384x73 two-person probe completed both sequential branches at approximately 300px crop-space face
+  height. At small-face strength 0.8, raw median Laplacian ratios were 0.9584/0.9720 and did not establish added
+  detail. Raising only that strength to 1.0 raised the raw ratios to approximately 1.06/1.01, but dark/blonde
+  motion-correlation medians fell to approximately 0.39/0.82 and full-frame paste sharpness remained about 0.85.
+  The stronger route is therefore rejected as an automatic preset: it creates high frequency at the cost of
+  temporal/identity risk. The source itself was a 2x enlargement of a 256x192 crop, so crop-space scale cannot be
+  interpreted as native source detail.
+- A separate native 1920x1408x69, 24fps two-person side-profile clip isolated the intended use case: facial
+  texture was already clear while structure was reported as damaged. SAM3.1 tracked 69 frames; the first legal
+  56-frame H3 window used two clear single-person references, MANUAL512, 300px target faces,
+  `relative_to_clip 0.8/0.35`, Ref2VA pruned, Turbo LoRA 0.75 and sequential 8-step branches. The remaining
+  13 frames stayed untreated as an internal control tail. The output retained the full 1920x1408 canvas and
+  original audio. Because Windows FFmpeg 7.1 again showed nondeterministic multi-thread H.264 decode errors,
+  the final media was re-encoded with one x264 thread and passed three complete decode checks.
+- The user watched the complete clear-source result and accepted it as a real facial-structure repair. The user
+  also confirmed the operative limitation: a blurred source tends to remain stylistically blurred, so this node
+  must not be advertised as video sharpening, deblurring or super-resolution. This closes one clear-source
+  two-person subjective acceptance case only; broad cross-source quality and identity guarantees remain open.
+- The single-, two- and three-person frontend workflows now contain embedded Markdown instructions. They record
+  the MANUAL512, relative-to-clip 0.8/0.35, 21/51 smoothing, face-only 24/24 stitch, Turbo 8-step, clear-reference,
+  per-shot identity-map and sequential review recommendations.
+
+No cross-shot re-entry matrix, anime identity calibration, broad perceptual panel,
+three-cold/three-warm staircase or universal 16GiB claim is closed. The three-person fixture used approximately
+17px source faces, reviewed manual mappings, a deliberately relaxed 0.10 SFace guard and one
+`largest_face_exp` reference; it proves bounded mechanics, not production identity thresholds. The provided
+two- and three-person examples keep `rights_confirmed=false` and `accept_candidate=false` until users review
+them. The complete checkpoint passed 558 project tests, full Ruff, compileall, 108 non-artifact JSON documents
+and `git diff --check`.
+
 ## 1.26.0 author-parity Face Refine correction (2026-08-17)
 
 The source audit found four material differences in the new Parity implementation rather than a model

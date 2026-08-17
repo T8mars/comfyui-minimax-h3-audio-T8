@@ -117,7 +117,13 @@
     "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
     "MiniMaxH3FaceRefineParityStitchT8Advanced",
     "MiniMaxH3FaceRefineQualityGateT8Advanced",
-    "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced"
+    "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced",
+    "MiniMaxH3FaceCharacterProfileT8Advanced",
+    "MiniMaxH3FaceCastMergeT8Advanced",
+    "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
+    "MiniMaxH3FaceTrackAssignT8Advanced",
+    "MiniMaxH3MultiFaceRepairJobT8Advanced",
+    "MiniMaxH3MultiFaceCompositeT8Advanced"
   ],
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
@@ -228,11 +234,71 @@
       "the exact upstream face and person detector weights are locally installed and hash-checked; the fixed upstream run used face YOLO while person fallback was disabled, and the T8 Plan still uses YuNet unless the user explicitly selects local Ultralytics",
       "the actual source prompt and all original references must be restored by the user; the example placeholder cannot infer missing workflow metadata",
       "fixed upstream code, T8 Parity and source files exist for the local reconstructed stack, but the author's original GGUF, embedded prompt, full references and isolated vocals are missing; the completed equal-quality review covers the reconstructed fixed stack, not the unavailable original author environment",
-      "the quality gate can prevent the tested regression by returning source frames, but no real generated frame has yet crossed the conservative gain gate and proved restorative improvement",
+      "the quality gate can prevent the tested regression by returning source frames, but it is not the recommended structural-repair exit and its conservative source-similarity proxy does not decide whether repaired facial geometry is perceptually better",
       "the MANUAL512 REL selection is one user's review of one fixed local fixture and seed; the mechanical guard cannot guarantee identity, expression, temporal stability or equal quality on another input",
-      "no successful face-restoration, identity, automatic acceptance or universal 16GiB claim is granted"
+      "one clear-source single-person fixture passed user review and one later clear-source two-person fixture was accepted as facial-structure repair; neither result grants identity, automatic acceptance, deblur, super-resolution or universal 16GiB guarantees"
     ],
     "status": "mechanically implemented with a corrected author-parity MANUAL512 REL v2 route and retained conservative source-fallback quality gate; BGR detection, centred mask geometry, crop-derived denoise, source-coordinate colour match and direct source-frame VAE encoding match the audited upstream mechanics, and the fixed full-video comparison passed one-user subjective non-inferiority; cross-input restoration, identity and universal quality or memory guarantees remain unproven"
+  },
+  "experimental_multiface_sam31_refine_advanced": {
+    "category": "T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person",
+    "nodes": [
+      "MiniMaxH3FaceCharacterProfileT8Advanced",
+      "MiniMaxH3FaceCastMergeT8Advanced",
+      "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
+      "MiniMaxH3FaceTrackAssignT8Advanced",
+      "MiniMaxH3MultiFaceRepairJobT8Advanced",
+      "MiniMaxH3MultiFaceCompositeT8Advanced"
+    ],
+    "behavior": [
+      "uses the current ComfyUI native SAM31Tracker multiplex implementation for open-vocabulary person detection and shot-local mask propagation; old SAM3 and unknown wrappers fail closed",
+      "caps every shot at two or three people, resets track identity across detected cuts and displays stable shot-local colors and track keys; color and numeric order are never treated as character identity",
+      "builds explicitly authorized in-memory character profiles with pinned OpenCV Zoo YuNet plus Apache-2.0 SFace on CPU; no biometric profile is written to disk and similarity remains a suggestion rather than proof",
+      "supports one-to-one SFace suggestions plus authoritative shot:track JSON overrides, with minimum score and margin gates that reject ambiguous identity instead of guessing",
+      "creates one source-bound 17n+5 MANUAL512 repair job for one character and one shot/window, defaults to 73 frames / 3.04 seconds at 24fps, requires the face center to stay inside that person's SAM mask and optionally rechecks SFace identity per frame",
+      "preserves legacy crop_factor behavior by default and adds an explicit target_face_px mode for manual canvases; the new two/three-person examples target about 300px face height in a 512 crop, report achieved min/mean/max and boundary-limited frames, and use the project Turbo 8-step test baseline",
+      "runs each character H3 crop branch sequentially and chains reviewed candidate windows through a source-bound compositor; overlapping changed masks reject by default and pixels outside each stitch mask must remain bit-exact",
+      "the default release policy unloads only the selected SAM3.1 model and clones, runs Python GC and soft_empty_cache before H3, and never calls unload_all_models",
+      "the original soundtrack is locked during every H3 repair and muxed untouched only after the final reviewed composite; no candidate is accepted automatically",
+      "the embedded workflow guidance explicitly positions the nodes as facial-structure repair rather than sharpening: clear-but-collapsed eyes, mouths, noses or geometry are in scope, while blurred or upscaled sources may remain stylistically blurred"
+    ],
+    "models": {
+      "sam31": "models/checkpoints/sam3.1_multiplex_fp16.safetensors",
+      "sam31_sha256": "9BA99C92703C2E8B4F47DE2D34A539BB8E18923049E238B780D70DBE6368EB03",
+      "sface": "models/face_detection/face_recognition_sface_2021dec.onnx",
+      "sface_sha256": "0BA9FBFA01B5270C96627C4EF784DA859931E02F04419C829E83484087C34E79"
+    },
+    "examples": [
+      "examples/multiface_sam31_2person_advanced_api.json",
+      "examples/multiface_sam31_3person_advanced_api.json",
+      "examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
+      "examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
+    ],
+    "validated": [
+      "a real 22-frame four-person group probe used the visible-face SAM prompt to keep three repairable color tracks continuous while omitting the back-facing person",
+      "a real 240x416x22 two-person probe produced separate Alice and Bob MANUAL512 jobs; YuNet detections stayed inside the assigned SAM masks and the CPU SFace guard accepted both identities",
+      "automatic SFace assignment on that same clip labeled shot-local track 0:0 as Alice and 0:1 as Bob without a manual override",
+      "selective SAM release reduced loaded Comfy models from two to one and whole-device use by about 2240MiB while another model remained loaded; global_unload_called was false",
+      "both character H3 branches completed sequentially and the chained compositor saved a strict-decode-clean 240x416, 22-frame, 24fps H.264 candidate with SHA-256 C74000515CFED4DB8A7D6E1DCD428F4AF379D3CEA89A432C3AE5EEC806F818E2",
+      "a corrected three-person cold prompt completed three reviewed manual mappings, SAM-constrained YuNet and SFace plans, seeds 42/43/44 sequential H3 branches and final composition in 95.78 seconds; its strict-decode-clean 240x416x22 H.264/AAC SHA-256 is C3CCB956397AC7497E8241DAB97D057ABAFFC20C625945662DE2608917B4DC42 and source/output decoded PCM hashes are identical",
+      "the three-person run exposed and closed a real feather-tail contract mismatch: Composite now follows Parity Stitch's alpha>0 changed-mask definition, validates finite 0..1 masks and retains fail-closed rejection for genuine exterior changes and overlap",
+      "a 608x448x73 / 3.042-second follow-up used the stricter front-facing visible-face prompt to select the intended three repairable people, enlarged roughly 50-100px source faces onto MANUAL512 canvases and completed all three sequential H3 branches; the strict-decode-clean output SHA-256 is AB26FC42A0FD9EFA5DA32877100554F1487165DEF2498BCC0495DD7638F656BB and source/output decoded PCM MD5 are both 4c7905d4a36f6f9c456b7e074b52707e",
+      "the 73-frame close group produced 50621 overlapping feather-mask pixels at the third composite; default reject stopped safely, then the reviewed keep_old_exp policy preserved earlier accepted pixels and applied only the third person's non-overlapping region",
+      "a 73-frame two-person Turbo 8-step probe targeted about 300px faces in each 512 crop; 0.8 small-face strength stayed slightly softer than source, while raising only that strength to 1.0 lifted raw sharpness proxies to about 1.06/1.01 but reduced dark/blonde motion-correlation medians to about 0.39/0.82, so neither route is promoted as an automatic restoration preset",
+      "a native 1920x1408x69 two-person clear-source clip used two clear single-person references and sequential 56-frame MANUAL512, target-face-300px, relative-to-clip 0.8/0.35, Turbo 8-step repairs; the user accepted the complete result as real facial-structure repair and confirmed that blurred-source sharpening is outside the node's purpose",
+      "the single-, two- and three-person frontend workflows embed recommended-use Markdown covering clear references, original aspect ratio, 73-frame multi-person windows, per-shot assignment review, MANUAL512, relative-to-clip 0.8/0.35, Turbo 8 steps and sequential candidate acceptance",
+      "the exact two-person run sampled whole-device free memory down to about 489MiB, an earlier single-branch probe observed 450MiB and the corrected three-person cold run reached about 375MiB post-run, all below the project's 512MiB safety gate",
+      "560 project tests, changed-scope Ruff, compileall, JSON parsing, registration, source-binding, capability, identity, sequential-composite and two/three-person example gates pass; repository-wide Ruff still reports the pre-existing tests/test_sampling.py:180 E721 outside this multi-person change"
+    ],
+    "limits": [
+      "SAM3.1 indices can change after cuts, occlusion or re-entry; every shot assignment must be reviewed and corrected in JSON when needed",
+      "SFace is not a legal or biometric identity guarantee and anime, profile, tiny or heavily occluded faces remain uncalibrated",
+      "input downscaling bounds source and preview tensors but SAM3.1 still uses a fixed 1008-square backbone, so it is not a proven backbone-VRAM reduction",
+      "the first three-person fixture used approximately 17px source faces; the 73-frame follow-up used roughly 50-100px visible faces, reviewed manual mappings, a relaxed 0.10 SFace guard and one largest_face_exp reference, but only five labeled time samples were inspected and no blind panel has promoted perceptual restoration",
+      "target_face_px guarantees crop-space scale, not native source information: the latest 512x384 fixture was itself a 2x enlargement of a 256x192 crop, so an approximately 300px H3 face still originated from only about 45px of native face sampling",
+      "the successful local two- and three-person runs are operational evidence only and do not grant a universal 16GiB memory-safe or perceptual-restoration claim"
+    ],
+    "status": "implemented as six append-only Advanced nodes with native SAM3.1 capability probing, CPU identity binding, selective SAM release, sequential H3 jobs and review-gated compositing; real 22-frame mechanics and a 73-frame / 3.04-second three-person visible-face route pass operationally, while cross-shot identity, broad perceptual quality and memory promotion remain Experimental"
   },
   "experimental_motion_quality_advanced": {
     "category": "T8/MiniMax H3/Quality/Experimental",

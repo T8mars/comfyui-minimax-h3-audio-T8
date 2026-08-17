@@ -1,0 +1,862 @@
+{
+  "1": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "replace_with_2_person_exact_24fps_source.mp4"
+    },
+    "_meta": {
+      "title": "Replace with an exact-24fps source; keep the original aspect ratio"
+    }
+  },
+  "2": {
+    "class_type": "GetVideoComponents",
+    "inputs": {
+      "video": [
+        "1",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Source frames and untouched final soundtrack"
+    }
+  },
+  "3": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "replace_with_authorized_Character_A_reference.png"
+    },
+    "_meta": {
+      "title": "Authorized single-person reference for Character_A"
+    }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "replace_with_authorized_Character_B_reference.png"
+    },
+    "_meta": {
+      "title": "Authorized single-person reference for Character_B"
+    }
+  },
+  "5": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sam3.1_multiplex_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "Official ComfyUI native SAM3.1 multiplex checkpoint"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "front-facing person with a visible face",
+      "clip": [
+        "5",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "SAM3.1 prompt biased toward people whose faces can actually be repaired"
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
+    "inputs": {
+      "frames": [
+        "2",
+        0
+      ],
+      "model": [
+        "5",
+        0
+      ],
+      "conditioning": [
+        "6",
+        0
+      ],
+      "fps": 24.0,
+      "maximum_people": 2,
+      "detection_threshold": 0.53,
+      "detect_interval": 3,
+      "scene_cut_threshold": 0.28,
+      "analysis_max_side": 512,
+      "preview_stride": 8,
+      "release_policy": "offload_sam31_after_track"
+    },
+    "_meta": {
+      "title": "Track people per shot, color preview them, then selectively unload SAM3.1"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3FaceCharacterProfileT8Advanced",
+    "inputs": {
+      "character_id": "Character_A",
+      "reference_images": [
+        "3",
+        0
+      ],
+      "rights_confirmed": false,
+      "reference_face_policy": "require_single_face"
+    },
+    "_meta": {
+      "title": "Enable rights_confirmed only after verifying the Character_A reference"
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3FaceCharacterProfileT8Advanced",
+    "inputs": {
+      "character_id": "Character_B",
+      "reference_images": [
+        "4",
+        0
+      ],
+      "rights_confirmed": false,
+      "reference_face_policy": "require_single_face"
+    },
+    "_meta": {
+      "title": "Enable rights_confirmed only after verifying the Character_B reference"
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3FaceCastMergeT8Advanced",
+    "inputs": {
+      "profile": [
+        "8",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Merge authorized character 1 of 2"
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3FaceCastMergeT8Advanced",
+    "inputs": {
+      "profile": [
+        "9",
+        0
+      ],
+      "previous_cast": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Merge authorized character 2 of 2"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3FaceTrackAssignT8Advanced",
+    "inputs": {
+      "frames": [
+        "2",
+        0
+      ],
+      "track_plan": [
+        "7",
+        0
+      ],
+      "face_cast": [
+        "11",
+        0
+      ],
+      "identity_mode": "sface_cpu_suggest",
+      "manual_assignments_json": "{\"0:0\": \"Character_A\", \"0:1\": \"Character_B\"}",
+      "minimum_similarity": 0.4,
+      "minimum_margin": 0.05,
+      "identity_samples_per_track": 3,
+      "strict_identity": true,
+      "preview_stride": 8
+    },
+    "_meta": {
+      "title": "Review colored shot-local IDs; edit the JSON for every shot before repair"
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3MultiFaceRepairJobT8Advanced",
+    "inputs": {
+      "frames": [
+        "2",
+        0
+      ],
+      "identity_assignment": [
+        "12",
+        0
+      ],
+      "character_id": "Character_A",
+      "shot_id": 0,
+      "window_start_in_shot": 0,
+      "window_frame_count": 73,
+      "crop_factor": 2.5,
+      "canvas_mode": "manual_512",
+      "center_smooth_window": 21,
+      "size_smooth_window": 51,
+      "identity_guard": "sface_cpu",
+      "minimum_similarity": 0.36,
+      "analysis_chunk_frames": 4,
+      "crop_scale_mode": "target_face_px",
+      "target_face_px": 300.0
+    },
+    "_meta": {
+      "title": "One 73-frame / 3.04-second MANUAL512 repair job for Character_A; duplicate per shot/window"
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3MultiFaceRepairJobT8Advanced",
+    "inputs": {
+      "frames": [
+        "2",
+        0
+      ],
+      "identity_assignment": [
+        "12",
+        0
+      ],
+      "character_id": "Character_B",
+      "shot_id": 0,
+      "window_start_in_shot": 0,
+      "window_frame_count": 73,
+      "crop_factor": 2.5,
+      "canvas_mode": "manual_512",
+      "center_smooth_window": 21,
+      "size_smooth_window": 51,
+      "identity_guard": "sface_cpu",
+      "minimum_similarity": 0.36,
+      "analysis_chunk_frames": 4,
+      "crop_scale_mode": "target_face_px",
+      "target_face_px": 300.0
+    },
+    "_meta": {
+      "title": "One 73-frame / 3.04-second MANUAL512 repair job for Character_B; duplicate per shot/window"
+    }
+  },
+  "15": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "Official MiniMax H3 video VAE"
+    }
+  },
+  "16": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "Official MiniMax H3 audio VAE"
+    }
+  },
+  "17": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "MiniMax H3 Qwen3-VL text encoder"
+    }
+  },
+  "18": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "Reviewed Ref2VA pruned model"
+    }
+  },
+  "19": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+      "strength_model": 0.75,
+      "model": [
+        "18",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Reviewed FL2V Turbo 4-step LoRA at 0.75"
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": [
+        "19",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Native MiniMax H3 video/audio sigma shift"
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "prompt": "Preserve the assigned character identity, expression, gaze, head pose, timing, lighting and camera motion. Restore only plausible facial structure and fine detail. Do not beautify, change makeup, age, hairstyle, mouth timing, background, music or sound effects. No additional speech.",
+      "width": 512,
+      "height": 512,
+      "length": 73,
+      "task_type": "Ref2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": [
+        "17",
+        0
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "audio_vae": [
+        "16",
+        0
+      ],
+      "drive_audio": [
+        "2",
+        1
+      ],
+      "ref_images.ref_image_0": [
+        "13",
+        3
+      ],
+      "ref_images.ref_image_1": [
+        "13",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "Ref2VA conditioning for Character_A; lock the original soundtrack"
+    }
+  },
+  "22": {
+    "class_type": "MiniMaxH3FaceRefineParityLatentT8Advanced",
+    "inputs": {
+      "audio_policy": "require_locked",
+      "allow_multi_shot_exp": false,
+      "positive": [
+        "21",
+        0
+      ],
+      "av_latent": [
+        "21",
+        1
+      ],
+      "crops": [
+        "13",
+        2
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "face_plan": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Inject only the Character_A crop video latent; keep audio locked"
+    }
+  },
+  "23": {
+    "class_type": "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
+    "inputs": {
+      "strength_small_face": 0.8,
+      "strength_large_face": 0.35,
+      "scale_mode": "relative_to_clip",
+      "face_px_small": 30.0,
+      "face_px_large": 120.0,
+      "gamma": 1.0,
+      "smooth_frames": 9,
+      "video_mask_mode": "replace_video_parity",
+      "require_locked_audio": true,
+      "av_latent": [
+        "22",
+        1
+      ],
+      "face_plan": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Human-reviewed relative-to-clip denoise for Character_A"
+    }
+  },
+  "24": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 42
+    },
+    "_meta": {
+      "title": "Fixed seed for Character_A"
+    }
+  },
+  "25": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "20",
+        0
+      ],
+      "conditioning": [
+        "22",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Basic guider for Character_A"
+    }
+  },
+  "26": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "er_sde"
+    },
+    "_meta": {
+      "title": "Reviewed er_sde sampler"
+    }
+  },
+  "27": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 0.45,
+      "model": [
+        "20",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Reviewed simple 8-step base denoise 0.45"
+    }
+  },
+  "28": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "24",
+        0
+      ],
+      "guider": [
+        "25",
+        0
+      ],
+      "sampler": [
+        "26",
+        0
+      ],
+      "sigmas": [
+        "27",
+        0
+      ],
+      "latent_image": [
+        "23",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Generate Character_A sequentially, never in parallel with another character"
+    }
+  },
+  "29": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "28",
+        0
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "audio_vae": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode the Character_A crop video; generated audio is discarded"
+    }
+  },
+  "30": {
+    "class_type": "MiniMaxH3FaceRefineParityStitchT8Advanced",
+    "inputs": {
+      "paste_region": "face_only",
+      "mask_dilation": 24,
+      "feather_source_px": 24.0,
+      "colour_match": 1.0,
+      "blend": 1.0,
+      "undetected_frames": "fade_out",
+      "max_face_mean_abs_delta": 1.0,
+      "processing_device": "cpu_memory_safe",
+      "base_frames": [
+        "13",
+        1
+      ],
+      "refined_crops": [
+        "29",
+        0
+      ],
+      "face_plan": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Face-only audited stitch for Character_A; preview before accepting"
+    }
+  },
+  "31": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "30",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Review the complete Character_A candidate window before accepting"
+    }
+  },
+  "32": {
+    "class_type": "MiniMaxH3MultiFaceCompositeT8Advanced",
+    "inputs": {
+      "base_frames": [
+        "2",
+        0
+      ],
+      "candidate_window": [
+        "30",
+        0
+      ],
+      "changed_mask": [
+        "30",
+        1
+      ],
+      "face_plan": [
+        "13",
+        0
+      ],
+      "accept_candidate": false,
+      "overlap_policy": "reject"
+    },
+    "_meta": {
+      "title": "After review, toggle accept for Character_A; overlaps fail closed"
+    }
+  },
+  "33": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "prompt": "Preserve the assigned character identity, expression, gaze, head pose, timing, lighting and camera motion. Restore only plausible facial structure and fine detail. Do not beautify, change makeup, age, hairstyle, mouth timing, background, music or sound effects. No additional speech.",
+      "width": 512,
+      "height": 512,
+      "length": 73,
+      "task_type": "Ref2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": [
+        "17",
+        0
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "audio_vae": [
+        "16",
+        0
+      ],
+      "drive_audio": [
+        "2",
+        1
+      ],
+      "ref_images.ref_image_0": [
+        "14",
+        3
+      ],
+      "ref_images.ref_image_1": [
+        "14",
+        4
+      ]
+    },
+    "_meta": {
+      "title": "Ref2VA conditioning for Character_B; lock the original soundtrack"
+    }
+  },
+  "34": {
+    "class_type": "MiniMaxH3FaceRefineParityLatentT8Advanced",
+    "inputs": {
+      "audio_policy": "require_locked",
+      "allow_multi_shot_exp": false,
+      "positive": [
+        "33",
+        0
+      ],
+      "av_latent": [
+        "33",
+        1
+      ],
+      "crops": [
+        "14",
+        2
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "face_plan": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Inject only the Character_B crop video latent; keep audio locked"
+    }
+  },
+  "35": {
+    "class_type": "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced",
+    "inputs": {
+      "strength_small_face": 0.8,
+      "strength_large_face": 0.35,
+      "scale_mode": "relative_to_clip",
+      "face_px_small": 30.0,
+      "face_px_large": 120.0,
+      "gamma": 1.0,
+      "smooth_frames": 9,
+      "video_mask_mode": "replace_video_parity",
+      "require_locked_audio": true,
+      "av_latent": [
+        "34",
+        1
+      ],
+      "face_plan": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Human-reviewed relative-to-clip denoise for Character_B"
+    }
+  },
+  "36": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 43
+    },
+    "_meta": {
+      "title": "Fixed seed for Character_B"
+    }
+  },
+  "37": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "20",
+        0
+      ],
+      "conditioning": [
+        "34",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Basic guider for Character_B"
+    }
+  },
+  "38": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "er_sde"
+    },
+    "_meta": {
+      "title": "Reviewed er_sde sampler"
+    }
+  },
+  "39": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 0.45,
+      "model": [
+        "20",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Reviewed simple 8-step base denoise 0.45"
+    }
+  },
+  "40": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "36",
+        0
+      ],
+      "guider": [
+        "37",
+        0
+      ],
+      "sampler": [
+        "38",
+        0
+      ],
+      "sigmas": [
+        "39",
+        0
+      ],
+      "latent_image": [
+        "35",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Generate Character_B sequentially, never in parallel with another character"
+    }
+  },
+  "41": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "40",
+        0
+      ],
+      "video_vae": [
+        "15",
+        0
+      ],
+      "audio_vae": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode the Character_B crop video; generated audio is discarded"
+    }
+  },
+  "42": {
+    "class_type": "MiniMaxH3FaceRefineParityStitchT8Advanced",
+    "inputs": {
+      "paste_region": "face_only",
+      "mask_dilation": 24,
+      "feather_source_px": 24.0,
+      "colour_match": 1.0,
+      "blend": 1.0,
+      "undetected_frames": "fade_out",
+      "max_face_mean_abs_delta": 1.0,
+      "processing_device": "cpu_memory_safe",
+      "base_frames": [
+        "14",
+        1
+      ],
+      "refined_crops": [
+        "41",
+        0
+      ],
+      "face_plan": [
+        "14",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Face-only audited stitch for Character_B; preview before accepting"
+    }
+  },
+  "43": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "42",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Review the complete Character_B candidate window before accepting"
+    }
+  },
+  "44": {
+    "class_type": "MiniMaxH3MultiFaceCompositeT8Advanced",
+    "inputs": {
+      "base_frames": [
+        "2",
+        0
+      ],
+      "candidate_window": [
+        "42",
+        0
+      ],
+      "changed_mask": [
+        "42",
+        1
+      ],
+      "face_plan": [
+        "14",
+        0
+      ],
+      "accept_candidate": false,
+      "overlap_policy": "reject",
+      "previous_composite": [
+        "32",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "After review, toggle accept for Character_B; overlaps fail closed"
+    }
+  },
+  "45": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": [
+        "44",
+        0
+      ],
+      "audio": [
+        "2",
+        1
+      ],
+      "fps": 24.0,
+      "bit_depth": 8
+    },
+    "_meta": {
+      "title": "Mux the untouched original soundtrack after all accepted face jobs"
+    }
+  },
+  "46": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "45",
+        0
+      ],
+      "filename_prefix": "MiniMaxH3/multiface_sam31_2person_reviewed",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "_meta": {
+      "title": "Save to a new file; never overwrite the source"
+    }
+  }
+}

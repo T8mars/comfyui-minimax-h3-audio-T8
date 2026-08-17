@@ -150,9 +150,9 @@
     "_meta": {"title": "Upstream sampler: er_sde"}
   },
   "17": {
-    "inputs": {"scheduler": "simple", "steps": 4, "denoise": 0.45, "model": ["10", 0]},
+    "inputs": {"scheduler": "simple", "steps": 8, "denoise": 0.45, "model": ["10", 0]},
     "class_type": "BasicScheduler",
-    "_meta": {"title": "Upstream scheduler: simple, 4 steps, base denoise 0.45"}
+    "_meta": {"title": "Recommended Turbo run: simple, 8 steps, base denoise 0.45"}
   },
   "18": {
     "inputs": {

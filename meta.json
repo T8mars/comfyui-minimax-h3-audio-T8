@@ -1,6 +1,6 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-08-17",
@@ -14,6 +14,8 @@
     "faster-whisper with a local multilingual CTranslate2 model for ASR verification/alignment",
     "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting",
     "OpenCV with FaceDetectorYN plus the pinned local YuNet 2023mar ONNX file for the default real-person Face Refine detector; no runtime download",
+    "OpenCV with FaceRecognizerSF plus the pinned Apache-2.0 OpenCV Zoo SFace 2021dec ONNX file for experimental multi-person identity suggestions; no runtime download",
+    "the current ComfyUI native SAM3.1 multiplex checkpoint for experimental two- or three-person shot-local tracking; model weights are not bundled",
     "onnxruntime plus the pinned local deepghs anime-face v1.4 nano ONNX file for the optional anime-only EXP detector; no runtime download",
     "ultralytics with a user-supplied locally licensed compatible face detector for the optional legacy Face Refine route; manual ROI remains dependency-free"
   ]

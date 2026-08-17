@@ -566,7 +566,7 @@ def test_parity_rejects_non_h3_frames_and_multi_shot_latent():
         )
 
 
-def test_parity_examples_lock_stock_upstream_sampling_and_original_audio_mux():
+def test_parity_examples_lock_reviewed_sampling_and_original_audio_mux():
     root = Path(__file__).resolve().parents[1]
     api = json.loads(
         (root / "examples" / "face_refine_parity_advanced_api.json").read_text(
@@ -577,7 +577,7 @@ def test_parity_examples_lock_stock_upstream_sampling_and_original_audio_mux():
     assert by_type["KSamplerSelect"]["inputs"]["sampler_name"] == "er_sde"
     assert by_type["BasicScheduler"]["inputs"] == {
         "scheduler": "simple",
-        "steps": 4,
+        "steps": 8,
         "denoise": 0.45,
         "model": ["10", 0],
     }
@@ -627,7 +627,7 @@ def test_parity_examples_lock_stock_upstream_sampling_and_original_audio_mux():
     nodes = {node["id"]: node for node in workflow["nodes"]}
     assert workflow["last_node_id"] == max(nodes)
     assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
-    assert len(nodes) == 24
+    assert len(nodes) == 25
     assert {
         "MiniMaxH3FaceRefineParityPlanT8Advanced",
         "MiniMaxH3FaceRefineParityLatentT8Advanced",
@@ -635,6 +635,10 @@ def test_parity_examples_lock_stock_upstream_sampling_and_original_audio_mux():
         "MiniMaxH3FaceRefineParityStitchT8Advanced",
         "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced",
     } <= {node["type"] for node in nodes.values()}
+    note = next(node for node in nodes.values() if node["type"] == "MarkdownNote")
+    assert "修复崩坏五官" in note["widgets_values"][0]
+    assert "不是视频锐化器" in note["widgets_values"][0]
+    assert "8步" in note["widgets_values"][0]
     for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
