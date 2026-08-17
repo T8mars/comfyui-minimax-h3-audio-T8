@@ -1,5 +1,12 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.28.0 also includes isolated, default-off MiniMax H3 Dynamic Guidance and extra-tail-NFE
+> Advanced examples. They are generation-time experiments, not face restoration. A 1.0-to-1.0
+> guidance curve preserves the BasicGuider route; every inserted tail point is one full joint A/V
+> DiT forward. The four planned single-output mechanical runs now pass strict A/V decode; human
+> quality review remains pending and one cold baseline had only 311.1MiB whole-device headroom.
+> See the main README and the two `H3_Motion_Quality_*_8Step_EXP.json` workflows.
+
 The converter lives in the project-local `tools/` directory. Model weights are
 kept outside this code repository and installed through ComfyUI's standard
 model directories. Conversion adds the required `diffusion_model.` prefix; it

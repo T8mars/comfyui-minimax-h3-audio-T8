@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.27.2`，共注册
-107 个节点，覆盖原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.28.0`，共注册
+109 个节点，覆盖默认无影响的动态 Guidance 与尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -1730,6 +1730,28 @@ v1.19.0 追加两个完全旁路旧工作流的实验节点：
 用于验证向后兼容和复现历史结果，不再作为后续质量结论的统一测试标准。新示例
 `H3_Motion_Quality_Advanced_8Step_EXP.json`默认不应用sigma插点，先提供严格8步基线和只读审计。
 
+v1.28.0 又追加两个隔离的 Advanced 节点，旧107个节点及稳定采样数学不变：
+
+- `MiniMaxH3DynamicCFGGuiderT8Advanced`：默认`passthrough_basic + 1.0→1.0`，不安装CFG或
+  model wrapper，等价回到BasicGuider路线。`single_condition_gain_exp`只对正条件预测施加随sigma变化的
+  单路增益，**不是真正CFG**；`true_cfg_exp`需要匹配的negative、双分支成本确认，仍未做H3质量验证。
+- `MiniMaxH3DynamicGuidanceAuditT8Advanced`：放在采样后，原样透传联合AV latent，并报告实际Guider
+  调用、物理模型前向和cond/uncond分支批次。它只负责审计，不修画面或声音。
+
+对应前端示例为`H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`与
+`H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`。二者均默认关闭实验效果并附带NOTE。推荐只做四条
+单变量检查：8步Basic基线、尾段额外2 NFE、普通10步因果对照、动态单路增益`0.90→1.10`；不要再扩成
+大矩阵。尾段2个插点会把8次提高到10次完整联合A/V DiT前向，约增加25% NFE；动态引导与尾段调度
+都是生成阶段预防实验，不是Face Refine、锐化或后处理。
+
+本机现已完成同一清晰736×416首帧、同prompt/seed、124帧、24fps、Turbo Standard 8步且
+Block Cache关闭的四条真实生成：S0原始8 NFE、S1尾段增加2次完整前向、S2普通10 NFE、G1单条件
+增益`0.90→1.10`。四条均严格解码为H.264 736×416×124@24fps与32kHz双声道AAC；G1审计实测
+8次predict、8次CFG callback、8次物理模型前向、8次cond与0次uncond，证实它不是true CFG。
+这只关闭机械执行门，完整视频/声音人工判断仍未完成；可选SG1组合按计划未生成。冷态S0最低整卡
+余量仅311.1MiB，低于512MiB门槛，因此`quality_guarantee=false`与通用
+`memory_safe_claim=false`保持不变。
+
 2026-08-16 已完成首轮3类素材×3seed×Stock20/Standard8/EMA8/FL2V8×control/same-NFE-tail，
 共72/72次真实124帧运行。严格视频解码6轮共432/432次通过；每条输出均为有限32kHz双声道音频，
 A/V时长差不超过一帧。FL2V处理组的预注册运动代理0/9通过，已否决。其余27个已完整评审的
@@ -1767,6 +1789,8 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 - `H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
 - `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
 - `H3_Motion_Quality_Advanced_8Step_EXP.json`：Turbo双时钟8步测试基线、默认关闭的sigma尾段实验与只读质量审计。
+- `H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`：默认Basic透传的动态单路引导实验与实际分支/NFE审计。
+- `H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`：默认关闭的尾段额外NFE实验，NOTE说明8→10 NFE成本与普通10步因果对照。
 - `H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
 - `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
   最小audio-row实验profile。

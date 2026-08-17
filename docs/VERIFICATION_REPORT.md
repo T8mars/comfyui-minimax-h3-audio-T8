@@ -2117,3 +2117,42 @@ After the local ComfyUI worktree advanced to
 with four existing Triton deprecation warnings. Full-project Ruff, compileall and `git diff --check`
 passed, and the CPU whitelist-only ComfyUI quick start imported this plugin without traceback. No
 additional GPU generation was run because the user explicitly waived it.
+
+## v1.28.0 default-off Dynamic Guidance and extra-tail NFE examples (2026-08-17)
+
+Two Advanced nodes are appended after the previous 107 IDs. The guider's default
+`passthrough_basic` mode and every identity `1.0 -> 1.0` curve leave the BasicGuider route free of
+sampler/model wrappers. The opt-in `single_condition_gain_exp` route applies a device-side
+sigma-dependent gain to the positive-only prediction and reports that it is not true CFG. The
+separate `true_cfg_exp` route requires a layout-matched negative and explicit two-branch cost
+consent; it remains mechanically gated and is not quality-validated.
+
+The runtime audit passes the sampled AV latent through unchanged while counting observed guider
+calls, physical model forwards and cond/uncond branch batches. Static tests cover no-op routing,
+curve endpoints, schedule reporting, Turbo OOD consent, wrapper conflict refusal, true-CFG
+layout/cost gates and frontend/API link contracts. The paired extra-tail example is default
+`report_only + extra_substeps=0`; enabling the documented two inserted points changes eight to ten
+full joint A/V DiT calls and therefore is not a free refinement stage.
+
+The planned validation was intentionally limited to one output each for an eight-NFE Basic baseline,
+two-extra-tail-NFE treatment, ordinary ten-NFE causal control and 0.90-to-1.10 single-condition gain.
+All four same-input jobs completed on the local RTX 4060 Ti 16GiB with ComfyUI
+`0.33.0@7fe8a61385`. Every final file strictly decoded as H.264 736x416, 124 frames at 24fps plus
+32kHz stereo AAC; the audio/video duration delta was 0.014667 seconds, below one frame.
+
+The audited guidance run observed exactly eight `predict_noise` calls, eight CFG callbacks, eight
+physical model forwards, eight conditional branch evaluations and zero unconditional evaluations.
+It therefore proves the implementation is an eight-NFE single-condition gain route, not true CFG.
+Observed end-to-end times were 143.922s (S0), 148.672s (S1), 153.531s (S2) and 138.641s (G1).
+Those timings are not a controlled performance comparison because model residency differed.
+
+Mechanical execution is complete, but human full-video/audio review is still pending and the SG1
+combination was intentionally not run. The cold S0 baseline reached only 311.1MiB whole-device
+headroom, below the 512MiB project gate; the other observational runs had 564.5-777.2MiB. Neither
+route has a perceptual quality claim, a face-restoration claim or a universal 16GiB memory-safe
+claim. Local evidence is retained in
+`artifacts/motion-quality-dynamic-guidance-v1/mechanical_summary.json`.
+
+The final source gate passed 573 project tests with four existing Triton deprecation warnings,
+changed-scope Ruff, compileall, 110 non-artifact JSON parses and `git diff --check`. The audit node
+is an output node and emitted its observed report into ComfyUI history during the real G1 run.

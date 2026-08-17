@@ -123,7 +123,9 @@
     "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
     "MiniMaxH3FaceTrackAssignT8Advanced",
     "MiniMaxH3MultiFaceRepairJobT8Advanced",
-    "MiniMaxH3MultiFaceCompositeT8Advanced"
+    "MiniMaxH3MultiFaceCompositeT8Advanced",
+    "MiniMaxH3DynamicCFGGuiderT8Advanced",
+    "MiniMaxH3DynamicGuidanceAuditT8Advanced"
   ],
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
@@ -307,7 +309,9 @@
       "MiniMaxH3AVSigmaTailSubdivisionT8Advanced",
       "MiniMaxH3MotionQualityAuditT8Advanced",
       "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
-      "MiniMaxH3MotionRepairPlanT8Advanced"
+      "MiniMaxH3MotionRepairPlanT8Advanced",
+      "MiniMaxH3DynamicCFGGuiderT8Advanced",
+      "MiniMaxH3DynamicGuidanceAuditT8Advanced"
     ],
     "behavior": [
       "future Turbo dual-clock validation uses 8 video and 8 audio denoise steps; retained 4-step examples are compatibility fixtures rather than the quality baseline",
@@ -315,7 +319,11 @@
       "Turbo subdivision is out-of-training-distribution and requires an explicit acknowledgement before apply_exp",
       "motion-quality audit is read-only and reports proxy signals plus 17n+5-aligned repair windows; it does not claim face detection, identity verification or quality improvement",
       "same-NFE redistribution keeps the exact joint AV model-call count and endpoints so schedule location can be tested without the inserted-NFE confounder; report_only remains the default",
-      "motion repair mapping converts audit ranges into the existing non-destructive H3_T8_REPAIR_PLAN schema and still requires explicit generation, review and acceptance"
+      "motion repair mapping converts audit ranges into the existing non-destructive H3_T8_REPAIR_PLAN schema and still requires explicit generation, review and acceptance",
+      "dynamic guidance is an isolated Advanced guider: passthrough_basic and every 1.0-to-1.0 curve preserve the BasicGuider route without installing sampler or model wrappers",
+      "single_condition_gain_exp applies one sigma-dependent device-side gain to the positive-only H3 prediction and is explicitly not true classifier-free guidance",
+      "true_cfg_exp requires layout-matched negative conditioning and explicit two-branch cost consent; it remains mechanically gated and quality-unvalidated",
+      "the post-sampler audit passes the exact AV latent through while reporting observed guider calls, physical model forwards and conditional branch batches"
     ],
     "validated": [
       "exact 8-step Turbo profile enforcement and original-knot preservation unit tests",
@@ -334,9 +342,15 @@
       "the user explicitly waived the aspect-safe 72-run rerun and three-cold/three-warm gate and confirmed the exact local 16GB workflow as operationally accepted; the statement and artifact hashes are preserved without converting that confirmation into fabricated repeat telemetry or a universal memory-safe claim",
       "ComfyUI 0f1fa67ad full regression passed 491 tests; Ruff, compileall, diff check and whitelist-only plugin startup passed",
       "after local ComfyUI advanced to 7fe8a61385, the complete 491-test regression, full Ruff, compileall, diff check and CPU whitelist-only plugin startup all passed; no additional GPU generation was run because the user explicitly waived it",
-      "90-node append-only registration contract"
+      "90-node append-only motion-quality registration contract",
+      "dynamic guidance unit coverage includes exact no-op routing, device-side curve math, Turbo OOD consent, wrapper-conflict refusal, true-CFG layout/cost gates and runtime branch accounting",
+      "the four planned same-input real jobs completed at 736x416x124 and strict-decoded with 32kHz stereo audio: Basic 8 NFE, extra-tail 10 NFE, ordinary 10 NFE and single-condition 0.90-to-1.10 gain",
+      "the live guidance audit observed 8 predict calls, 8 CFG callbacks, 8 physical model forwards, 8 conditional branch evaluations and 0 unconditional evaluations, confirming this route is not true CFG",
+      "the cold Basic baseline left only 311.1MiB whole-device headroom, below the 512MiB gate; human full-video/audio review remains pending and the optional combined SG1 candidate was not generated",
+      "573 project tests, changed-scope Ruff, compileall, 110 non-artifact JSON parses, diff check and a live ComfyUI output-node audit passed on the final source",
+      "109-node append-only project registration contract"
     ],
-    "status": "implemented Advanced EXP mechanics, same-NFE causal-control plumbing and audit-to-repair planning; real mechanical matrix and complete authorized blind-review record exist; the user cancelled the prepared aspect-safe rerun and accepted the exact local 16GB workflow operationally, so this cycle's delivery gate is closed by explicit user acceptance rather than repeat telemetry; quality_guarantee and universal memory_safe_claim remain false"
+    "status": "implemented Advanced EXP sigma mechanics, same-NFE causal-control plumbing, audit-to-repair planning and default-off dynamic guidance; the four-run mechanical/strict-decode gate passes, but human quality review is pending and the cold baseline fails the 512MiB headroom gate, so quality_guarantee and universal memory_safe_claim remain false"
   },
   "experimental_environment_audit_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
