@@ -470,7 +470,14 @@ def test_anime_face_refine_examples_change_only_the_explicit_detector_route():
         for node in anime_frontend["nodes"]
         if node["type"] == "MiniMaxH3FaceRefinePlanT8Advanced"
     )
-    assert plan["widgets_values"][:3] == [
+    widget_names = [
+        item["widget"]["name"]
+        for item in plan["inputs"]
+        if isinstance(item.get("widget"), dict)
+    ]
+    widget_values = dict(zip(widget_names, plan["widgets_values"], strict=True))
+    detector_keys = ("detector_mode", "detector_model", "detector_device")
+    assert [widget_values[name] for name in detector_keys] == [
         "local_anime_onnx_exp",
         ANIME_FACE_V14_N_RELATIVE,
         "cpu",

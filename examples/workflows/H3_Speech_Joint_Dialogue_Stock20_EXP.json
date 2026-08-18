@@ -691,6 +691,26 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 5
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 6
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "dialogue_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 8
+        },
+        {
           "name": "start_turn",
           "type": "INT",
           "widget": {
@@ -723,29 +743,10 @@
           "link": null
         },
         {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 5
-        },
-        {
-          "name": "video_vae",
-          "type": "VAE",
-          "link": 6
-        },
-        {
-          "name": "audio_vae",
-          "type": "VAE",
-          "link": 7
-        },
-        {
-          "name": "dialogue_plan",
-          "type": "H3_T8_SPEECH_PLAN",
-          "link": 8
-        },
-        {
           "name": "speech_guard",
           "type": "H3_T8_SPEECH_GUARD",
-          "link": 9
+          "link": 9,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -803,6 +804,16 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 10
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 11
+        },
+        {
           "name": "steps",
           "type": "INT",
           "widget": {
@@ -841,16 +852,6 @@
             "name": "scheduler"
           },
           "link": null
-        },
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 10
-        },
-        {
-          "name": "av_latent",
-          "type": "LATENT",
-          "link": 11
         }
       ],
       "outputs": [
@@ -1052,6 +1053,16 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 19
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 20
+        },
+        {
           "name": "trim_mode",
           "type": "COMBO",
           "widget": {
@@ -1074,16 +1085,6 @@
             "name": "trim_padding_seconds"
           },
           "link": null
-        },
-        {
-          "name": "av_latent",
-          "type": "LATENT",
-          "link": 19
-        },
-        {
-          "name": "audio_vae",
-          "type": "VAE",
-          "link": 20
         }
       ],
       "outputs": [
@@ -1127,6 +1128,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 21
+        },
+        {
           "name": "release_policy",
           "type": "COMBO",
           "widget": {
@@ -1135,14 +1141,16 @@
           "link": null
         },
         {
-          "name": "audio",
-          "type": "AUDIO",
-          "link": 21
+          "name": "upstream_report",
+          "type": "STRING",
+          "link": null,
+          "shape": 7
         },
         {
           "name": "speech_guard",
           "type": "H3_T8_SPEECH_GUARD",
-          "link": 22
+          "link": 22,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -1251,7 +1259,7 @@
       2,
       0,
       11,
-      4,
+      0,
       "CLIP"
     ],
     [
@@ -1259,7 +1267,7 @@
       3,
       0,
       11,
-      5,
+      1,
       "VAE"
     ],
     [
@@ -1267,7 +1275,7 @@
       4,
       0,
       11,
-      6,
+      2,
       "VAE"
     ],
     [
@@ -1275,7 +1283,7 @@
       9,
       0,
       11,
-      7,
+      3,
       "H3_T8_SPEECH_PLAN"
     ],
     [
@@ -1291,7 +1299,7 @@
       1,
       0,
       12,
-      5,
+      0,
       "MODEL"
     ],
     [
@@ -1299,7 +1307,7 @@
       11,
       1,
       12,
-      6,
+      1,
       "LATENT"
     ],
     [
@@ -1363,7 +1371,7 @@
       15,
       0,
       16,
-      3,
+      0,
       "LATENT"
     ],
     [
@@ -1371,7 +1379,7 @@
       4,
       0,
       16,
-      4,
+      1,
       "VAE"
     ],
     [
@@ -1379,7 +1387,7 @@
       16,
       0,
       17,
-      1,
+      0,
       "AUDIO"
     ],
     [
@@ -1387,7 +1395,7 @@
       10,
       0,
       17,
-      2,
+      3,
       "H3_T8_SPEECH_GUARD"
     ],
     [

@@ -45,22 +45,6 @@
           "link": null
         },
         {
-          "name": "exact_dialogue",
-          "type": "STRING",
-          "widget": {
-            "name": "exact_dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_transcript",
-          "type": "STRING",
-          "widget": {
-            "name": "audio_transcript"
-          },
-          "link": null
-        },
-        {
           "name": "endpoint",
           "type": "STRING",
           "widget": {
@@ -133,9 +117,26 @@
           "link": null
         },
         {
+          "name": "exact_dialogue",
+          "type": "STRING",
+          "widget": {
+            "name": "exact_dialogue"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_transcript",
+          "type": "STRING",
+          "widget": {
+            "name": "audio_transcript"
+          },
+          "link": null
+        },
+        {
           "name": "reference_images",
           "type": "IMAGE",
-          "link": null
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -165,8 +166,6 @@
         "validate_local",
         "{\"context\":{\"scene\":\"A rain-soaked railway platform\",\"camera\":\"slow push-in\",\"lighting\":\"cold dawn light\",\"continuity\":\"keep the red umbrella\"}}",
         "A commuter waits for the first train.",
-        "We leave now.",
-        "",
         "https://api.openai.com/v1/chat/completions",
         "gpt-4.1-mini",
         "OPENAI_API_KEY",
@@ -175,7 +174,9 @@
         768,
         85,
         120,
-        262144
+        262144,
+        "We leave now.",
+        ""
       ]
     },
     {
@@ -232,6 +233,14 @@
           "link": null
         },
         {
+          "name": "strict_exact_dialogue",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_exact_dialogue"
+          },
+          "link": null
+        },
+        {
           "name": "dialogue",
           "type": "STRING",
           "widget": {
@@ -248,22 +257,16 @@
           "link": null
         },
         {
-          "name": "strict_exact_dialogue",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_exact_dialogue"
-          },
-          "link": null
-        },
-        {
           "name": "cast",
           "type": "H3_T8_UNIFIED_CAST",
-          "link": null
+          "link": null,
+          "shape": 7
         },
         {
           "name": "sound_canvas",
           "type": "H3_T8_SOUND_CANVAS",
-          "link": null
+          "link": null,
+          "shape": 7
         },
         {
           "name": "cast_ids",
@@ -310,9 +313,9 @@
         "minimax_h3",
         5.167,
         "16:9",
+        true,
         "We leave now.",
         "identity drift, waxy skin",
-        true,
         ""
       ]
     }

@@ -8,6 +8,16 @@
     "vram_caution_pixel_area": 1032192,
     "batch_size": 1
   },
+  "frontend_workflow_compatibility_hotfix": {
+    "version": "1.30.1",
+    "scope": "repairs positional frontend input/widget serialization without changing any stable node schema, default or sampler math",
+    "repaired_project_workflows": 40,
+    "repaired_user_workflows": 40,
+    "strict_json_scan": "63 project plus 60 user frontend workflows",
+    "verification": "610 project tests, Ruff, compileall, idempotent live-schema rescan, git diff check and stable sampling hash passed",
+    "stable_node_schema_changed": false,
+    "stable_sampling_changed": false
+  },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
     "native": "examples/workflows/H3_Turbo_Stable_4V4A.json",
@@ -130,8 +140,79 @@
     "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
     "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
     "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
-    "MiniMaxH3TemporalDetailEnhanceT8Advanced"
+    "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+    "MiniMaxH3SPEEDSpectrumHarvesterT8Advanced",
+    "MiniMaxH3SPEEDPlanT8Advanced",
+    "MiniMaxH3SPEEDSourceT8Advanced",
+    "MiniMaxH3SPEEDSamplerT8Advanced"
   ],
+  "experimental_speed_spatial_progressive": {
+    "category": "T8/MiniMax H3/SPEED/Experimental",
+    "nodes": [
+      "MiniMaxH3SPEEDSpectrumHarvesterT8Advanced",
+      "MiniMaxH3SPEEDPlanT8Advanced",
+      "MiniMaxH3SPEEDSourceT8Advanced",
+      "MiniMaxH3SPEEDSamplerT8Advanced"
+    ],
+    "official_basis": {
+      "paper": "SPEED arXiv:2605.18736v3",
+      "source_commit": "howardhx/speed@ca7801c9bdffe681742e9592345bcf4885959be5",
+      "license": "MIT",
+      "implemented_math": [
+        "P(omega)=A*|omega|^-beta and Eq.9/Eq.10 transition planning",
+      "orthonormal DCT low-frequency preservation with sigma-amplitude new high-frequency coefficients",
+      "Eq.5 kappa state rescaling and Eq.6 shifted-sigma alignment",
+      "official requested-scale ratio drives kappa while the separately reported snapped-grid ratio is diagnostic only",
+        "constant temporal resolution and exact total NFE preservation"
+      ]
+    },
+    "h3_architecture": [
+      "whole-chain staged sampling instead of pretending a shape-changing method is a normal SAMPLER",
+      "every stage rebuilds the H3 AV latent, keyframes, reference payload, tokenization and PackedLayout at its own multiple-of-32 canvas",
+      "strict media-free T2VA reuses one Qwen text conditioning and rebuilds only each stage's empty AV latent; spatial multimodal tasks still re-encode per stage",
+      "video alone receives spatial DCT expansion; audio is never spatially padded or given high-frequency coefficients",
+      "audio remains in the shared Transformer and is target-anchored from the old to aligned public H3 flow sigma; this H3 extension is explicitly unvalidated until GPU listening tests",
+      "strict_t2va_stock20 is the default execution scope; I2VA, FL2VA, L2VA, Ref2VA and Hybrid are available only through explicit multimodal_research_exp"
+    ],
+    "spectrum_contract": [
+      "no WAN/FLUX A or beta is reused for H3",
+      "the Harvester fits a radial FFT power law from separated H3 video latents and records checkpoint/VAE fingerprints",
+      "a single clip is research_probe_only; validated delta-optimal status requires at least 100 actual latent batch entries, a declared independent-dataset provenance no larger than that batch, checkpoint/VAE fingerprints, and the configured R-squared threshold",
+      "manual transition sigmas remain the default until H3 dataset calibration is completed",
+      "delta-optimal execution binds task family and recorded checkpoint/VAE fingerprints to the runtime Stage Source and fails on mismatches"
+    ],
+    "memory_and_conflict_contract": [
+      "DCT runs in bounded B*C*T chunks and keeps only a bounded CPU basis cache which is cleared after each transition and in finally",
+      "the implementation rejects non-H3 models, DiT block replacements and known sampler/model wrappers instead of silently combining BlockCache, STG, ActivationChunk, Restart or MultiRate",
+      "SPEED reduces only early target-video spatial rows; model weights, CLIP, VAE, audio, text and fixed reference rows remain",
+      "VBAR does not imply SPEED is OOM-safe and coupled full-grid noise is not implemented or enabled"
+    ],
+    "validation": {
+      "completed": [
+        "10-round paper/source/WIP/H3-core/red-team audit",
+        "official equation unit tests",
+        "multiple-of-32 aspect-preserving stage planner and exact-NFE schedule tests",
+        "torch DCT numerical comparison against SciPy's official reference convention",
+        "deterministic high-frequency seed, audio flow reindex and segmented-state round-trip tests",
+        "profile validation/fail-closed and all-task raw-source contract tests"
+      ],
+      "pending": [
+        "real ComfyUI H3 generation",
+        "same-input full-resolution versus SPEED quality and timing comparison",
+        "whole-device VRAM/RAM telemetry and repeated-run cleanup",
+        "audio listening/non-inferiority and A/V synchronization",
+        "I2VA/FL2VA/L2VA, masks, lock/remix, Ref2VA and Hybrid perceptual validation"
+      ]
+    },
+    "claims": {
+      "quality_validated": false,
+      "speedup_validated": false,
+      "memory_safe_claim": false,
+      "audio_noninferiority_validated": false,
+      "gpu_generation_completed": false
+    },
+    "status": "code, theory, clean-room official math and CPU/static validation implemented; real ComfyUI GPU generation intentionally deferred"
+  },
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
     "nodes": ["MiniMaxH3LatentUpscaleBy32T8"],

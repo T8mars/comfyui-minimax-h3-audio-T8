@@ -145,6 +145,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 1
+        },
+        {
           "name": "text",
           "type": "STRING",
           "widget": {
@@ -215,11 +220,6 @@
             "name": "max_units"
           },
           "link": null
-        },
-        {
-          "name": "voice_profile",
-          "type": "H3_T8_VOICE_PROFILE",
-          "link": 1
         }
       ],
       "outputs": [
@@ -269,6 +269,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 2
+        },
+        {
           "name": "job_id",
           "type": "STRING",
           "widget": {
@@ -291,11 +296,6 @@
             "name": "peak_limit_dbfs"
           },
           "link": null
-        },
-        {
-          "name": "speech_plan",
-          "type": "H3_T8_SPEECH_PLAN",
-          "link": 2
         }
       ],
       "outputs": [
@@ -384,7 +384,7 @@
       1,
       0,
       2,
-      9,
+      0,
       "H3_T8_VOICE_PROFILE"
     ],
     [
@@ -392,7 +392,7 @@
       2,
       0,
       3,
-      3,
+      0,
       "H3_T8_SPEECH_PLAN"
     ],
     [

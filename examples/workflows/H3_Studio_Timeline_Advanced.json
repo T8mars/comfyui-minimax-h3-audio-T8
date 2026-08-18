@@ -594,6 +594,14 @@
           "link": null
         },
         {
+          "name": "strict_exact_dialogue",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_exact_dialogue"
+          },
+          "link": null
+        },
+        {
           "name": "dialogue",
           "type": "STRING",
           "widget": {
@@ -610,22 +618,16 @@
           "link": null
         },
         {
-          "name": "strict_exact_dialogue",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_exact_dialogue"
-          },
-          "link": null
-        },
-        {
           "name": "cast",
           "type": "H3_T8_UNIFIED_CAST",
-          "link": 6
+          "link": 6,
+          "shape": 7
         },
         {
           "name": "sound_canvas",
           "type": "H3_T8_SOUND_CANVAS",
-          "link": 7
+          "link": 7,
+          "shape": 7
         },
         {
           "name": "cast_ids",
@@ -680,9 +682,9 @@
         "wan_2_2",
         5.0,
         "16:9",
+        true,
         "",
         "identity drift, waxy skin",
-        true,
         "hero",
         "{\"camera\":\"locked medium shot\"}"
       ]

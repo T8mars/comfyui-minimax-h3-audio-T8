@@ -1315,12 +1315,18 @@
         {
           "name": "start_seconds",
           "type": "FLOAT",
-          "link": 29
+          "link": 29,
+          "widget": {
+            "name": "start_seconds"
+          }
         },
         {
           "name": "duration_seconds",
           "type": "FLOAT",
-          "link": 30
+          "link": 30,
+          "widget": {
+            "name": "duration_seconds"
+          }
         },
         {
           "name": "fps",
@@ -1333,7 +1339,8 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 31
+          "link": 31,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -1361,6 +1368,8 @@
         "Node name for S&R": "MiniMaxH3OutputTrimT8"
       },
       "widgets_values": [
+        0.0,
+        5.0,
         24
       ]
     },

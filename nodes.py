@@ -32,6 +32,7 @@ from .nodes_face_refine_parity_advanced import FACE_REFINE_PARITY_ADVANCED_NODE_
 from .nodes_multiface_refine_advanced import MULTIFACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_dynamic_guidance_advanced import DYNAMIC_GUIDANCE_ADVANCED_NODE_CLASSES
 from .nodes_detail_sampling_advanced import DETAIL_SAMPLING_ADVANCED_NODE_CLASSES
+from .nodes_speed_advanced import SPEED_ADVANCED_NODE_CLASSES
 from .nodes_hybrid_compatibility_advanced import (
     HYBRID_COMPATIBILITY_ADVANCED_NODE_CLASSES,
 )
@@ -445,7 +446,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *FACE_REFINE_PARITY_ADVANCED_NODE_CLASSES,
                 *MULTIFACE_REFINE_ADVANCED_NODE_CLASSES,
                 *DYNAMIC_GUIDANCE_ADVANCED_NODE_CLASSES,
-                *DETAIL_SAMPLING_ADVANCED_NODE_CLASSES]
+                *DETAIL_SAMPLING_ADVANCED_NODE_CLASSES,
+                *SPEED_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():

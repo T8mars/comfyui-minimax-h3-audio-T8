@@ -72,6 +72,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
           "name": "minimum_headroom_mib",
           "type": "FLOAT",
           "widget": {
@@ -86,11 +91,6 @@
             "name": "block_when_currently_below_gate"
           },
           "link": null
-        },
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 1
         }
       ],
       "outputs": [
@@ -126,7 +126,7 @@
       1,
       0,
       2,
-      2,
+      0,
       "MODEL"
     ]
   ],

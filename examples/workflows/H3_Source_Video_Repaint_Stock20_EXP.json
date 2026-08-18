@@ -119,9 +119,17 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
           "name": "source_fps",
           "type": "FLOAT",
-          "link": 2
+          "link": 2,
+          "widget": {
+            "name": "source_fps"
+          }
         },
         {
           "name": "width",
@@ -172,14 +180,10 @@
           "link": null
         },
         {
-          "name": "frames",
-          "type": "IMAGE",
-          "link": 3
-        },
-        {
           "name": "source_audio",
           "type": "AUDIO",
-          "link": 4
+          "link": 4,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -218,6 +222,7 @@
         "Node name for S&R": "MiniMaxH3SourceMediaWindowT8"
       },
       "widgets_values": [
+        24.0,
         736,
         416,
         124,
@@ -415,6 +420,16 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "video_latent",
+          "type": "LATENT",
+          "link": 9
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "link": 10
+        },
+        {
           "name": "video_mode",
           "type": "COMBO",
           "widget": {
@@ -461,16 +476,6 @@
             "name": "dtype_device_policy"
           },
           "link": null
-        },
-        {
-          "name": "video_latent",
-          "type": "LATENT",
-          "link": 9
-        },
-        {
-          "name": "audio_latent",
-          "type": "LATENT",
-          "link": 10
         }
       ],
       "outputs": [
@@ -639,6 +644,21 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 11
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 12
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 13
+        },
+        {
           "name": "prompt",
           "type": "STRING",
           "widget": {
@@ -735,19 +755,28 @@
           "link": null
         },
         {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 11
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
         },
         {
-          "name": "video_vae",
-          "type": "VAE",
-          "link": 12
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
         },
         {
-          "name": "audio_vae",
-          "type": "VAE",
-          "link": 13
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -820,6 +849,16 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
           "name": "steps",
           "type": "INT",
           "widget": {
@@ -858,16 +897,6 @@
             "name": "scheduler"
           },
           "link": null
-        },
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 14
-        },
-        {
-          "name": "av_latent",
-          "type": "LATENT",
-          "link": 15
         }
       ],
       "outputs": [
@@ -1255,7 +1284,7 @@
       2,
       2,
       3,
-      0,
+      1,
       "FLOAT"
     ],
     [
@@ -1263,7 +1292,7 @@
       2,
       0,
       3,
-      7,
+      0,
       "IMAGE"
     ],
     [
@@ -1311,7 +1340,7 @@
       6,
       0,
       8,
-      6,
+      0,
       "LATENT"
     ],
     [
@@ -1319,7 +1348,7 @@
       7,
       0,
       8,
-      7,
+      1,
       "LATENT"
     ],
     [
@@ -1327,7 +1356,7 @@
       10,
       0,
       11,
-      12,
+      0,
       "CLIP"
     ],
     [
@@ -1335,7 +1364,7 @@
       4,
       0,
       11,
-      13,
+      1,
       "VAE"
     ],
     [
@@ -1343,7 +1372,7 @@
       5,
       0,
       11,
-      14,
+      2,
       "VAE"
     ],
     [
@@ -1351,7 +1380,7 @@
       9,
       0,
       12,
-      5,
+      0,
       "MODEL"
     ],
     [
@@ -1359,7 +1388,7 @@
       8,
       0,
       12,
-      6,
+      1,
       "LATENT"
     ],
     [

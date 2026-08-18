@@ -526,9 +526,34 @@
           "link": null
         },
         {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
           "name": "ref_images.ref_image_0",
           "type": "IMAGE",
-          "link": 6
+          "link": 6,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -1078,7 +1103,7 @@
       7,
       0,
       8,
-      15,
+      19,
       "IMAGE"
     ],
     [

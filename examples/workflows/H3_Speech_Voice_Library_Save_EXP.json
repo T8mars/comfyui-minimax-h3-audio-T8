@@ -192,6 +192,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 2
+        },
+        {
           "name": "library_name",
           "type": "STRING",
           "widget": {
@@ -206,11 +211,6 @@
             "name": "replace_existing"
           },
           "link": null
-        },
-        {
-          "name": "voice_profile",
-          "type": "H3_T8_VOICE_PROFILE",
-          "link": 2
         }
       ],
       "outputs": [
@@ -249,7 +249,7 @@
       2,
       0,
       3,
-      2,
+      0,
       "H3_T8_VOICE_PROFILE"
     ]
   ],

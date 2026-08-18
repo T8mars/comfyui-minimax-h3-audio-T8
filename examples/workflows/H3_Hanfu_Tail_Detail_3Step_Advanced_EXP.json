@@ -64,14 +64,14 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "conditioning",
-          "type": "CONDITIONING",
-          "link": 1
-        },
-        {
           "name": "model",
           "type": "MODEL",
           "link": 2
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 1
         }
       ],
       "outputs": [
@@ -106,19 +106,14 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "guider",
-          "type": "GUIDER",
-          "link": 3
-        },
-        {
-          "name": "latent_image",
-          "type": "LATENT",
-          "link": 4
-        },
-        {
           "name": "noise",
           "type": "NOISE",
           "link": 5
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 3
         },
         {
           "name": "sampler",
@@ -129,6 +124,11 @@
           "name": "sigmas",
           "type": "SIGMAS",
           "link": 7
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 4
         }
       ],
       "outputs": [
@@ -168,11 +168,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "audio_vae",
-          "type": "VAE",
-          "link": 8
-        },
-        {
           "name": "av_latent",
           "type": "LATENT",
           "link": 9
@@ -181,6 +176,11 @@
           "name": "video_vae",
           "type": "VAE",
           "link": 10
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 8
         }
       ],
       "outputs": [
@@ -407,25 +407,25 @@
       "inputs": [
         {
           "name": "clip_name",
-          "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
+          "type": "COMBO",
           "widget": {
             "name": "clip_name"
           },
           "link": null
         },
         {
-          "name": "device",
-          "type": "['default', 'cpu']",
+          "name": "type",
+          "type": "COMBO",
           "widget": {
-            "name": "device"
+            "name": "type"
           },
           "link": null
         },
         {
-          "name": "type",
-          "type": "['stable_diffusion', 'stable_cascade', 'sd3', 'stable_audio', 'mochi', 'ltxv', 'pixart', 'cosmos', 'lumina2', 'wan', 'hidream', 'chroma', 'ace', 'omnigen2', 'qwen_image', 'hunyuan_image', 'flux2', 'ovis', 'longcat_image', 'cogvideox', 'lens', 'pixeldit', 'ideogram4', 'boogu', 'krea2', 'joyimage', 'mage', 'minimax']",
+          "name": "device",
+          "type": "COMBO",
           "widget": {
-            "name": "type"
+            "name": "device"
           },
           "link": null
         }
@@ -445,8 +445,8 @@
       },
       "widgets_values": [
         "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-        "default",
-        "minimax"
+        "minimax",
+        "default"
       ]
     },
     {
@@ -517,17 +517,17 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        },
+        {
           "name": "lora_name",
-          "type": "['10Eros_compat_exp\\\\minimax_h3_fl2v_turbo_4step_v0.1_alpha8_T8_10ErosMax_test4_pruned_compat_v001.safetensors', '10Eros_compat_exp\\\\minimax_h3_fl2v_turbo_4step_v1.0_768p_10ErosMax_beta1_pruned_compat_v001.safetensors', '10Eros_compat_exp\\\\minimax_h3_fl2v_turbo_8step_v1.0_10ErosMax_beta1_pruned_compat_v001.safetensors', '10Eros_compat_exp\\\\minimax_h3_turbo_4step_10ErosMax_test4_pruned_B_curveproj1025_exp_v002.safetensors', '10Eros_compat_exp\\\\minimax_h3_turbo_4step_10ErosMax_test4_pruned_core208_ablation_v001.safetensors', '10Eros_compat_exp\\\\minimax_h3_turbo_4step_10ErosMax_test4_pruned_curveproj1025_exp_v001.safetensors', '10Eros_compat_exp\\\\minimax_h3_turbo_v4_step600_T8_10ErosMax_test4_pruned_curveproj1025_exp_v001.safetensors', '111Apose_V7_dim4-hunyuan-video.safetensors', '14b_oil_motion_preview1.0.safetensors', '14b_oil_style_preview1.0.safetensors', '14b_oil_style_v2_preview1.0B.safetensors', '360度旋转.safetensors', 'FILM_NOIR_EPOCH10.safetensors', 'FastWan_T2V_14B_480p_lora_rank_128_bf16.safetensors', 'FastWan_T2V_14B_480p_lora_rank_16_bf16.safetensors', 'FastWan_T2V_14B_480p_lora_rank_64_bf16.safetensors', 'HYVrewardMPS_epoch40.safetensors', 'HunyuanVideo_dashtoon_keyframe_lora_converted_bf16.safetensors', 'LongCat_distill_lora_alpha64_bf16.safetensors', 'Phantom_Wan_14B_FusionX_LoRA.safetensors', 'UniAnimate-Wan2.1-14B-Lora-12000-fp16.safetensors', 'WAN2.1_SmartphoneSnapshotPhotoReality_v1_by-AI_Characters.safetensors', 'Wan2.1-Fun-1.3B-InP-HPS2.1.safetensors', 'Wan2.1-Fun-1.3B-InP-MPS.safetensors', 'Wan2.1-Fun-14B-InP-HPS2.1.safetensors', 'Wan2.1-Fun-14B-InP-MPS.safetensors', 'Wan2.1_I2V_14B_FusionX_LoRA.safetensors', 'Wan2.1_T2V_14B_FusionX_LoRA.safetensors', 'Wan2.2-Fun-A14B-InP-high-noise-HPS2.1.safetensors', 'Wan2.2-Fun-A14B-InP-high-noise-MPS.safetensors', 'Wan2.2-Fun-A14B-InP-low-noise-HPS2.1.safetensors', 'Wan2.2-Fun-A14B-InP-low-noise-MPS.safetensors', 'Wan2.2-Lightning_T2V-A14B-4steps-lora_HIGH_fp16.safetensors', 'Wan2.2-Lightning_T2V-A14B-4steps-lora_LOW_fp16.safetensors', 'Wan21_AccVid_T2V_14B_lora_rank32_fp16.safetensors', 'Wan21_CausVid_14B_T2V_lora_rank32.safetensors', 'Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors', 'Wan21_I2V_14B_lightx2v_cfg_step_distill_lora_rank64.safetensors', 'Wan21_PusaV1_LoRA_14B_rank512_bf16.safetensors', 'Wan21_T2V_14B_lightx2v_cfg_step_distill_lora_rank32.safetensors', 'Wan22_A14B_T2V_HIGH_Lightning_4steps_lora_250928_rank128_fp16.safetensors', 'Wan22_A14B_T2V_LOW_Lightning_4steps_lora_250928_rank64_fp16.safetensors', 'Wan2_1_EchoShot_1_3B_lora_rank_128_fp16.safetensors', 'Wan2_1_self_forcing_dmd_1_3B_lora_rank_32_fp16.safetensors', 'Wan2_1_self_forcing_sid_v2_1_3B_lora_rank_32_fp16.safetensors', 'Wan_Breast_Helper_Hearmeman.safetensors', 'Wan_i2v_hadouken_v2_s1200.safetensors', 'body2img_V7_kisekaeichi_dim4_1e-3_512_768-000140.safetensors', 'boogu_image_turbo_lora_rank_128_bf16.safetensors', 'cakify_i2v_v2-wan.safetensors', 'chenyu.safetensors', 'chenyu2.safetensors', 'chenyu3.safetensors', 'embrace_kohaya_weights.safetensors', 'gao_6943.pt', 'gao_epo13.safetensors', 'gao_epo15.safetensors', 'gao_epoch4.safetensors', 'gao_epoch9.safetensors', 'hair_growth_kohaya_weights.safetensors', 'high_noise_model.safetensors', 'hunyuan_i2v544p_V2.safetensors', 'hunyuan_video_accvid_5_steps_lora_rank16_fp8_e4m3fn.safetensors', 'hyvideo_FastVideo_LoRA-fp8.safetensors', 'img2vid.safetensors', 'kxsr_walking_anim_v1-5.safetensors', 'lora12-000002_converted.safetensors', 'lora13-000004_converted.safetensors', 'low_noise_model.safetensors', 'ltx-2-19b-lora-camera-control-dolly-left.safetensors', 'ltxv-097-ic-lora-canny-control-comfyui.safetensors', 'ltxv-097-ic-lora-depth-control-comfyui.safetensors', 'ltxv-097-ic-lora-pose-control-comfyui.safetensors', 'ltxv-098-ic-lora-detailer-comfyui.safetensors', 'makima_hunyuan.safetensors', 'minimax_h3_fl2v_turbo_4step_v0.1_comfyui.safetensors', 'minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors', 'minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors', 'minimax_h3_turbo_4步加速_comfyui.safetensors', 'minimax_h3_turbo_4步加速ema_comfyui.safetensors', 'n_wan_1.3b_motion_helper.safetensors', 'oralv2_hunyuan_video_v2_e11_logsnr.safetensors', 'pcm_sd15_smallcfg_2step_converted.safetensors', 'reika_hunyuan_video_v4_e22.safetensors', 'skyreels-i2v-smooth-lora-test-00000350.safetensors', 'squish_18.safetensors', 'ttp_goyounjung.safetensors', 'wan2.1-1.3b-control-lora-tile-v0.2_comfy.safetensors', 'z-image-turbo-fix-speed.safetensors', '万物放气.safetensors', '人物飞翔.safetensors', '压扁480p_V20.safetensors', '变胖飞走.safetensors', '大摆锤200.safetensors', '奶louchu(1).safetensors', '打耳光720P.safetensors', '拿枪射击.safetensors', '断头.safetensors', '泼水BigSplashV01.safetensors', '混元视频_3D卡通蛇_混元视频3D卡通蛇.safetensors', '物体腐烂.safetensors', '男女秀肌肉18.safetensors', '羞羞的铁拳480p.safetensors', '脱下wan.safetensors']",
+          "type": "COMBO",
           "widget": {
             "name": "lora_name"
           },
           "link": null
-        },
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 13
         },
         {
           "name": "strength_model",
@@ -620,28 +620,14 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
+          "name": "clip",
+          "type": "CLIP",
+          "link": 15
         },
         {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 17
         },
         {
           "name": "audio_vae",
@@ -649,14 +635,20 @@
           "link": 14
         },
         {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 15
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
         },
         {
-          "name": "first_frame",
-          "type": "IMAGE",
-          "link": 16
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
         },
         {
           "name": "height",
@@ -675,10 +667,34 @@
           "link": null
         },
         {
-          "name": "prompt",
-          "type": "STRING",
+          "name": "task_type",
+          "type": "COMBO",
           "widget": {
-            "name": "prompt"
+            "name": "task_type"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_denoise_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "audio_denoise_strength"
+          },
+          "link": null
+        },
+        {
+          "name": "add_source_as_reference",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "add_source_as_reference"
           },
           "link": null
         },
@@ -687,6 +703,14 @@
           "type": "INT",
           "widget": {
             "name": "prompt_primary_audio_ordinal"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_prompt_tags",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_prompt_tags"
           },
           "link": null
         },
@@ -707,33 +731,28 @@
           "link": null
         },
         {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
         },
         {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
         },
         {
-          "name": "video_vae",
-          "type": "VAE",
-          "link": 17
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 16,
+          "shape": 7
         },
         {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -778,18 +797,18 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        false,
-        1.0,
-        "native",
+        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] Live-action cinematic night fantasy, the same adult woman from <Picture 1> preserves her facial identity and natural anatomy while wearing a layered crimson-red Hanfu gauze robe with long translucent sleeves, a flowing pleated skirt, and extended silk ribbons. She rises rapidly into a deep midnight sky above silver moonlit clouds and performs a continuous sequence of extremely fast aerial spins, corkscrew rotations, and sweeping turns. Her body follows physically coherent rotational momentum while the sheer sleeves, skirt layers, ribbons, and long hair whip outward into sharp flowing arcs, repeatedly crossing her silhouette without merging into her limbs or face. The camera tracks her with a fast large-amplitude arc shot and slight upward movement, keeping her visible against the high-contrast night sky as she accelerates through multiple full rotations, then finishes in a stable floating pose under cold moonlight. Preserve one consistent woman, a stable face whenever visible, coherent hands and feet, crisp fabric edges, and natural cloth inertia; no cut, no duplicate body, no extra person, no morphing, no dialogue.\n\noverall_soundscape: Strong high-altitude wind surrounds her, layered with rapid silk swishes, crisp sleeve snaps, ribbon flutters, and synchronized air whooshes that follow each rotation. Subtle breathing remains natural beneath the wind.\n\nnon_diegetic_music: N/A",
+        1152,
         640,
         124,
-        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] Live-action cinematic night fantasy, the same adult woman from <Picture 1> preserves her facial identity and natural anatomy while wearing a layered crimson-red Hanfu gauze robe with long translucent sleeves, a flowing pleated skirt, and extended silk ribbons. She rises rapidly into a deep midnight sky above silver moonlit clouds and performs a continuous sequence of extremely fast aerial spins, corkscrew rotations, and sweeping turns. Her body follows physically coherent rotational momentum while the sheer sleeves, skirt layers, ribbons, and long hair whip outward into sharp flowing arcs, repeatedly crossing her silhouette without merging into her limbs or face. The camera tracks her with a fast large-amplitude arc shot and slight upward movement, keeping her visible against the high-contrast night sky as she accelerates through multiple full rotations, then finishes in a stable floating pose under cold moonlight. Preserve one consistent woman, a stable face whenever visible, coherent hands and feet, crisp fabric edges, and natural cloth inertia; no cut, no duplicate body, no extra person, no morphing, no dialogue.\n\noverall_soundscape: Strong high-altitude wind surrounds her, layered with rapid silk swishes, crisp sleeve snaps, ribbon flutters, and synchronized air whooshes that follow each rotation. Subtle breathing remains natural beneath the wind.\n\nnon_diegetic_music: N/A",
-        0,
-        "match",
-        "official_2_to_15s",
-        true,
         "I2VA",
-        1152
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
       ]
     },
     {
@@ -809,14 +828,38 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
           "name": "av_latent",
           "type": "LATENT",
           "link": 18
         },
         {
-          "name": "model",
-          "type": "MODEL",
-          "link": 19
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
         },
         {
           "name": "sampler_name",
@@ -831,30 +874,6 @@
           "type": "COMBO",
           "widget": {
             "name": "scheduler"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
           },
           "link": null
         }
@@ -887,11 +906,11 @@
         "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
       },
       "widgets_values": [
-        "dual_clock_euler",
-        "native_flow",
-        3.0,
+        8,
         12.0,
-        8
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
       ]
     },
     {
@@ -1061,7 +1080,7 @@
       11,
       0,
       2,
-      0,
+      1,
       "CONDITIONING"
     ],
     [
@@ -1069,7 +1088,7 @@
       12,
       0,
       2,
-      1,
+      0,
       "MODEL"
     ],
     [
@@ -1077,7 +1096,7 @@
       2,
       0,
       3,
-      0,
+      1,
       "GUIDER"
     ],
     [
@@ -1085,7 +1104,7 @@
       11,
       1,
       3,
-      1,
+      4,
       "LATENT"
     ],
     [
@@ -1093,7 +1112,7 @@
       13,
       0,
       3,
-      2,
+      0,
       "NOISE"
     ],
     [
@@ -1101,7 +1120,7 @@
       12,
       1,
       3,
-      3,
+      2,
       "SAMPLER"
     ],
     [
@@ -1109,7 +1128,7 @@
       14,
       0,
       3,
-      4,
+      3,
       "SIGMAS"
     ],
     [
@@ -1117,7 +1136,7 @@
       6,
       0,
       4,
-      0,
+      2,
       "VAE"
     ],
     [
@@ -1125,7 +1144,7 @@
       3,
       0,
       4,
-      1,
+      0,
       "LATENT"
     ],
     [
@@ -1133,7 +1152,7 @@
       1,
       0,
       4,
-      2,
+      1,
       "VAE"
     ],
     [
@@ -1157,7 +1176,7 @@
       8,
       0,
       9,
-      1,
+      0,
       "MODEL"
     ],
     [
@@ -1165,7 +1184,7 @@
       6,
       0,
       11,
-      3,
+      2,
       "VAE"
     ],
     [
@@ -1173,7 +1192,7 @@
       7,
       0,
       11,
-      4,
+      0,
       "CLIP"
     ],
     [
@@ -1181,7 +1200,7 @@
       10,
       0,
       11,
-      5,
+      17,
       "IMAGE"
     ],
     [
@@ -1189,7 +1208,7 @@
       1,
       0,
       11,
-      14,
+      1,
       "VAE"
     ],
     [
@@ -1197,7 +1216,7 @@
       11,
       1,
       12,
-      0,
+      1,
       "LATENT"
     ],
     [
@@ -1205,7 +1224,7 @@
       9,
       0,
       12,
-      1,
+      0,
       "MODEL"
     ],
     [

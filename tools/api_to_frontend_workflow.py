@@ -8,6 +8,11 @@ from pathlib import Path
 import urllib.request
 import uuid
 
+try:
+    from .repair_frontend_workflow_order import repair_workflow
+except ImportError:  # Direct script execution puts tools/ on sys.path.
+    from repair_frontend_workflow_order import repair_workflow
+
 
 def _get_json(url: str) -> dict:
     with urllib.request.urlopen(url, timeout=30) as response:
@@ -123,7 +128,7 @@ def convert(prompt: dict, object_info: dict, title: str) -> dict:
             origin["outputs"][source_slot]["links"].append(link_id)
             links.append([link_id, origin["id"], source_slot, target["id"], target_slot, link_type])
 
-    return {
+    workflow = {
         "id": str(uuid.uuid4()),
         "revision": 0,
         "last_node_id": len(frontend_nodes),
@@ -135,6 +140,12 @@ def convert(prompt: dict, object_info: dict, title: str) -> dict:
         "extra": {"ds": {"scale": 0.75, "offset": [120, 120]}, "workflow_title": title},
         "version": 0.4,
     }
+    result = repair_workflow(workflow, object_info, force=True)
+    if result["skipped"]:
+        raise ValueError(
+            "Could not serialize frontend input order: " + "; ".join(result["skipped"])
+        )
+    return workflow
 
 
 def main() -> int:

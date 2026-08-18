@@ -1,5 +1,18 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.30.1 is a frontend-workflow compatibility hotfix. It does not change a stable node
+> schema, default or sampler. The converter and repair tool now serialize the complete live-schema
+> input order and connected slots. Forty project workflows plus forty installed user copies were
+> repaired; 610 tests and a strict 123-workflow JSON/schema scan passed.
+
+> Project v1.30.0 appends four isolated H3 SPEED Advanced nodes. They implement the official
+> spatial progressive DCT expansion, kappa rescaling and sigma alignment as a whole-chain H3
+> sampler that rebuilds stage-specific AV conditioning. WAN spectrum constants are never reused.
+> Strict mode is T2VA/native-audio/exactly-20-step Stock20 only; multimodal stage rebuilding is explicit EXP.
+> Code, theory and CPU/static validation are complete, but no real H3 GPU generation has been run,
+> so speed, quality, audio non-inferiority and 16GB safety claims remain false.
+> The final source gate passed 606 project tests, Ruff, compileall, and all 63 frontend workflow JSON parses.
+
 > Project v1.29.0 also includes five isolated MiniMax H3 detail experiments: final-interval AV
 > subdivision, smooth shared-Transformer model-time bias, true joint-AV rectified-flow restart,
 > H3 skip-block spatio-temporal guidance and decoded-frame motion-gated luma detail enhancement.

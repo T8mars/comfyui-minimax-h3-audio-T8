@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 114
+    assert len(ids) == 118
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -1061,7 +1061,7 @@ def test_scene_plus_identity_background_workflow_wires_two_images_and_exp_policy
         full_scene["id"], 0, conditioning["id"], 22,
     ]
     assert links[inputs["persistent_identity_image"]["link"]][1:5] == [
-        identity_crop["id"], 0, conditioning["id"], 24,
+        identity_crop["id"], 0, conditioning["id"], 25,
     ]
 
     start = next(

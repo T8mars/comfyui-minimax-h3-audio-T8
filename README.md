@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.29.0`，共注册
-114 个节点，覆盖尾段细化调度、平滑模型时间偏置、联合音画Rectified-Flow Restart、H3时空引导、时序保护细节增强、默认无影响的动态 Guidance 与尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.30.1`，共注册
+118 个节点。新增四个隔离的SPEED Advanced节点，按官方论文实现空间渐进分辨率、DCT频谱扩张、kappa状态缩放与sigma对齐，并为H3联合音画、关键帧和参考模态重建每阶段条件；此前的尾段细化调度、平滑模型时间偏置、联合音画Rectified-Flow Restart、H3时空引导、时序保护细节增强、默认无影响的动态 Guidance 与尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -22,6 +22,7 @@
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Parity` | 实验 | 隔离复现上游FaceRefine的21/51高斯轨迹、逐帧去噪、音频锁和24/24回贴，并提供MANUAL512 REL机械基线校验 |
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person` | 实验 | 原生SAM3.1按镜头分色追踪2～3人、CPU参考身份建议、逐角色H3修复与审片后顺序合成 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
+| `T8/MiniMax H3/SPEED/Experimental` | 实验 | H3空间频谱标定、渐进画布计划、原始多模态条件源和整链分阶段采样 |
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -1818,6 +1819,58 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
 
+## v1.30.1：老工作流参数错位兼容热修
+
+本版没有调整任何稳定节点输入顺序、类型、默认值或`sampling.py`数学。问题来自此前的
+API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，而ComfyUI按节点schema顺序读取，
+导致部分示例在重新打开时出现宽高、长度、枚举和布尔值串位，甚至显示`NaN`。
+
+- 转换器现在强制依据在线`object_info`的required/optional完整顺序序列化，并重建真实连线槽位；
+- 独立修复工具只在检测到输入顺序、控件或已连接槽位异常时修改旧文件，正常旧工作流保持不变；
+- 40份项目工作流及用户目录中的对应40份副本已恢复，原文件备份保存在`artifacts/workflow-order-repair-*`；
+- 63份项目与60份用户前端JSON已严格解析，在线schema复扫为0残留，完整610项测试全部通过。
+
+磁盘修复不会改写浏览器内已经打开的画布；请关闭旧标签后从工作流菜单重新打开，或刷新页面后重载。
+
+## v1.30.0：MiniMax H3 SPEED 空间渐进采样（Advanced）
+
+本版不是复制`ComfyUI-MiniMax-H3-SPEED`。实现以
+[`howardhx/speed@ca7801c9`](https://github.com/howardhx/speed/tree/ca7801c9bdffe681742e9592345bcf4885959be5)
+和论文[`arXiv:2605.18736v3`](https://arxiv.org/abs/2605.18736v3)为数学基线，clean-room实现：
+
+- 早期在较小空间latent上去噪，时间轴、帧数和音频长度不变；
+- 切换分辨率时用正交DCT保留原低频系数，用当前视频sigma幅度的高频高斯系数补齐新频段；
+- 按`κ(t,r)=r/[1+(r-1)t]`缩放状态，并把下一阶段起始sigma改为`tκ`；
+- 总NFE保持不变，例如20步两阶段仍是20次DiT前向，不是Block Cache、跳层或额外细化；
+- 不使用WAN的`A=219.48、β=2.4227`，也不使用WIP猜测的`A=150、β=2.0`冒充H3标定。
+
+四个节点职责分开：
+
+1. `SPEED Spectrum Harvester Advanced`从已分离的H3视频latent拟合`P(ω)=A|ω|^-β`。单片只标
+   `research_probe_only`；必须在一次输入里实际提供至少100条batch样本、声明其独立数据来源、填写
+   checkpoint/VAE指纹并达到设定R²才可作为dataset profile。节点能核对batch数量，不能从tensor本身
+   证明统计独立性；手填更大的样本数不能把单片升级成已标定profile。
+2. `SPEED Plan Advanced`把每级画布解析为同时被32整除、宽高比误差受控的实际尺寸，生成手工sigma或
+   delta-optimal阶段表，并证明NFE守恒。κ严格使用官方定义的请求scale比，不把32整除后的grid比误当成r；
+   两个值都会写入报告。默认用手工sigma，因为当前尚无通过门槛的H3数据集profile。
+3. `SPEED Stage Source Advanced`保存原始prompt、首尾帧、参考图/视频/音频和双VAE/CLIP引用，不预编码
+   第二份H3模型。这样每个分辨率阶段都能重新缩放、VAE编码并重建keyframe/ref/PackedLayout；若使用
+   delta-optimal，还会把profile的task/checkpoint/VAE指纹与当前Source绑定，不匹配即拒绝。严格纯T2VA
+   没有空间条件，因此只编码一次Qwen文本，后续阶段复用文本条件并只重建对应尺寸的空AV latent。
+4. `SPEED Whole-Chain Sampler Advanced`按阶段运行原生H3`ModelSamplingAV + Euler`。只有视频做空间DCT
+   扩张；音频不补空间高频，但由于音画共享Transformer，音频状态仍需从旧公共flow sigma同步重参数化
+   到对齐sigma，不能伪装成冻结不动。
+
+默认`strict_t2va_stock20`只允许T2VA+native audio+严格20步；要运行I2VA、FL2VA、L2VA、Ref2VA或Hybrid，必须
+主动选择`multimodal_research_exp`。这些模态的阶段重建代码已完成，但真实H3生成、身份/锚点、mask、
+参考声音和感知质量尚待逐项实机验证。节点遇到现有DiT block replacement或已知采样wrapper会直接拒绝，
+首轮不得叠Block Cache、STG、Activation Chunk、Restart、MultiRate或Dynamic Guidance。
+
+当前已完成官方公式测试、20 NFE守恒、画布/latent尺寸、DCT对SciPy数值对齐、确定性随机种子、联合AV
+分段状态往返、频谱profile门槛、节点注册和工作流静态合同；全项目606项测试、Ruff、compileall和
+63份前端工作流JSON解析均通过。尚未运行真实ComfyUI GPU生成，因此此版本
+不声明速度提升、质量非劣、音频非劣、16GB安全或任意参考模态已经通过；这些字段在报告中全部为false。
+
 ## 示例与测试
 
 可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑、
@@ -1841,6 +1894,9 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
   最小audio-row实验profile。
 - `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
   实验profile；仍需用户盲评，不能视为最佳profile。
+- `H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：默认严格T2VA、20步、0.5→1.0、手工sigma的首个实机候选。
+- `H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的多模态研究示例，必须显式EXP。
+- `H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建示例，必须显式EXP。
 
 API 示例见 `tests/fixtures/api/audio_lock_api.json`、
 `tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和

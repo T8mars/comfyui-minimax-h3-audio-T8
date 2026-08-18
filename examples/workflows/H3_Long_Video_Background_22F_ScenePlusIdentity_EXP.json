@@ -759,27 +759,56 @@
         {
           "name": "drive_audio",
           "type": "AUDIO",
-          "link": null
+          "link": null,
+          "shape": 7
         },
         {
           "name": "final_audio",
           "type": "AUDIO",
-          "link": null
+          "link": null,
+          "shape": 7
         },
         {
           "name": "first_frame",
           "type": "IMAGE",
-          "link": 52
+          "link": 52,
+          "shape": 7
         },
         {
           "name": "last_frame",
           "type": "IMAGE",
-          "link": null
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame_reuse",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "first_frame_reuse"
+          }
         },
         {
           "name": "persistent_identity_image",
           "type": "IMAGE",
-          "link": 53
+          "link": 53,
+          "shape": 7
+        },
+        {
+          "name": "persistent_identity_strategy",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "persistent_identity_strategy"
+          }
+        },
+        {
+          "name": "persistent_identity_interval",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "persistent_identity_interval"
+          }
         }
       ],
       "outputs": [
@@ -1323,12 +1352,18 @@
         {
           "name": "start_seconds",
           "type": "FLOAT",
-          "link": 29
+          "link": 29,
+          "widget": {
+            "name": "start_seconds"
+          }
         },
         {
           "name": "duration_seconds",
           "type": "FLOAT",
-          "link": 30
+          "link": 30,
+          "widget": {
+            "name": "duration_seconds"
+          }
         },
         {
           "name": "fps",
@@ -1341,7 +1376,8 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 31
+          "link": 31,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -1369,6 +1405,8 @@
         "Node name for S&R": "MiniMaxH3OutputTrimT8"
       },
       "widgets_values": [
+        0.0,
+        5.0,
         24
       ]
     },
@@ -2128,7 +2166,7 @@
       20,
       0,
       8,
-      24,
+      25,
       "IMAGE"
     ]
   ],

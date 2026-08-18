@@ -468,7 +468,10 @@
         {
           "name": "length",
           "type": "INT",
-          "link": 6
+          "link": 6,
+          "widget": {
+            "name": "length"
+          }
         },
         {
           "name": "task_type",
@@ -533,6 +536,30 @@
             "name": "reference_video_policy"
           },
           "link": null
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -579,6 +606,7 @@
         "A quiet cinematic room. A person says exactly and only <d>The light is on.</d> After the final word the person stays silent and closes their mouth. Soft music, room ambience, and subtle sound effects continue naturally to the end.",
         736,
         416,
+        124,
         "T2VA",
         "native",
         1.0,

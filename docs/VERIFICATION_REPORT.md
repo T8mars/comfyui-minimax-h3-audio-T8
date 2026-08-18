@@ -13,6 +13,54 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.30.1 frontend workflow order compatibility hotfix (2026-08-18)
+
+The defect was in API-to-frontend serialization, not H3 inference: API dictionary order was written
+as positional frontend `inputs/widgets_values`, while ComfyUI restores widgets from the node schema
+order. This could shift prompt, dimensions, frame count, enums and booleans and display `NaN`.
+No stable node input, output, default, registry prefix or sampler equation was changed.
+
+The converter now force-serializes the complete live `object_info` order, including omitted optional
+sockets before later links. The standalone repair tool is conservative for existing files and also
+checks connected-slot positions. It repaired 40 project workflows and the corresponding 40 installed
+user copies. Pre-repair files are preserved under `artifacts/workflow-order-repair-20260818` and
+`artifacts/workflow-order-repair-pass2-20260818`; a second live-schema scan reported zero changes.
+
+Final gates: 610 project tests passed; Ruff, compileall, strict parsing of 63 project plus 60 user
+frontend JSON files, `git diff --check`, and the stable `sampling.py` SHA-256 guard passed.
+
+## 1.30.0 H3 SPEED Advanced source gate (2026-08-18)
+
+Four Advanced nodes were appended after the existing 114 IDs. The implementation is a clean-room
+adaptation of `howardhx/speed@ca7801c9` and paper v3, not a copy of the H3 WIP plugin. It implements
+the official power-law transition equations, orthonormal DCT coefficient expansion, kappa state
+rescale and aligned sigma. H3 sampling is whole-chain and stage-specific: AV latents, keyframes,
+references, tokenization and PackedLayout are rebuilt at every multiple-of-32 canvas.
+Media-free strict T2VA is the safe special case: its Qwen text conditioning is encoded once and reused,
+while only the correctly sized empty AV latent is rebuilt at later stages. Spatial multimodal conditions
+continue through full per-stage resize/VAE/token/layout rebuilding.
+
+CPU/static evidence covers official-equation values, two- and three-stage exact NFE conservation,
+aspect-preserving canvas resolution, DCT comparison with SciPy's type-II orthonormal convention,
+deterministic high-frequency noise, radial profile gates and segmented AV-state transport. Video
+alone receives spatial DCT coefficients. Audio remains in the shared Transformer and uses an
+explicit target-anchored public-flow reindex; that H3 extension is not claimed by the SPEED paper.
+The Harvester cannot promote a one-clip probe by merely declaring a larger evidence count: validated
+dataset status requires at least 100 actual latent batch entries, explicit independent-dataset provenance,
+checkpoint/VAE fingerprints and the configured fit threshold. Tensor shape verifies count, not statistical
+independence, so the latter remains an auditable dataset assertion rather than an inferred fact.
+Kappa uses the official requested scale ratio; the slightly different multiple-of-32 grid ratio is
+reported separately and never substituted into Eq.5/Eq.6. Delta-optimal plans also bind task family
+and recorded checkpoint/VAE fingerprints to the runtime Stage Source and fail closed on mismatches.
+
+No real ComfyUI H3 generation was run in this source gate. Consequently the execution report keeps
+`quality_validated`, `speedup_validated`, `vram_safe_16gb`, `audio_noninferiority_validated` and
+`gpu_generated` false. Strict execution permits only T2VA/native audio at exactly 20 steps. I2VA, FL2VA, L2VA,
+Ref2VA and Hybrid mechanics require explicit `multimodal_research_exp` and remain pending GPU tests.
+The final source gate passed 606 project tests (four existing Triton deprecation warnings), full Ruff,
+compileall, all 63 frontend workflow JSON parses, `git diff --check`, stable-sampler hash verification,
+and a CPU whitelist-only ComfyUI quick start.
+
 ## 1.29.0 H3 tail/detail Advanced routes (2026-08-18)
 
 Five nodes were appended after the previous 109-node inventory. The stable `sampling.py` source,

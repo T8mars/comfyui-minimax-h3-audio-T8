@@ -1,7 +1,7 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.29.0"
-description = "MiniMax H3 tail-detail schedules, smooth model-time bias, joint AV rectified-flow restart, H3 STG, temporal detail enhancement, dynamic guidance, native SAM3.1 multi-person face tracking, audio, Hybrid experiments, multi-keyframe timelines, speech, dual-clock sampling, resumable long video, and Ref2VA editing nodes for ComfyUI"
+version = "1.30.1"
+description = "MiniMax H3 SPEED spatial-progressive sampling, tail-detail schedules, joint AV flow experiments, native SAM3.1 multi-person face tracking, audio, Hybrid, multi-keyframe, speech, long-video, and Ref2VA nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }

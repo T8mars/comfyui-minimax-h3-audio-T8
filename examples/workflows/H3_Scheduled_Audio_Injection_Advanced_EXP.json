@@ -121,14 +121,6 @@
           "link": null
         },
         {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
-        },
-        {
           "name": "allow_unverified_patch_stack",
           "type": "BOOLEAN",
           "widget": {
@@ -137,9 +129,18 @@
           "link": null
         },
         {
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
           "name": "final_audio",
           "type": "AUDIO",
-          "link": null
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -189,8 +190,8 @@
         "constant",
         2608132201,
         false,
-        "native_flow",
-        false
+        false,
+        "native_flow"
       ]
     }
   ],

@@ -341,6 +341,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 1
+        },
+        {
           "name": "text",
           "type": "STRING",
           "widget": {
@@ -411,11 +416,6 @@
             "name": "max_units"
           },
           "link": null
-        },
-        {
-          "name": "voice_profile",
-          "type": "H3_T8_VOICE_PROFILE",
-          "link": 1
         }
       ],
       "outputs": [
@@ -464,6 +464,11 @@
       "order": 6,
       "mode": 0,
       "inputs": [
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 2
+        },
         {
           "name": "segment_index",
           "type": "INT",
@@ -519,11 +524,6 @@
             "name": "nonverbal_direction"
           },
           "link": null
-        },
-        {
-          "name": "speech_plan",
-          "type": "H3_T8_SPEECH_PLAN",
-          "link": 2
         }
       ],
       "outputs": [
@@ -570,6 +570,36 @@
       "order": 7,
       "mode": 0,
       "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 4
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 6
+        },
+        {
+          "name": "voice_profile",
+          "type": "H3_T8_VOICE_PROFILE",
+          "link": 7
+        },
+        {
+          "name": "speech_plan",
+          "type": "H3_T8_SPEECH_PLAN",
+          "link": 8
+        },
         {
           "name": "segment_index",
           "type": "INT",
@@ -739,34 +769,10 @@
           "link": null
         },
         {
-          "name": "model",
-          "type": "MODEL",
-          "link": 3
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 4
-        },
-        {
-          "name": "video_vae",
-          "type": "VAE",
-          "link": 5
-        },
-        {
-          "name": "audio_vae",
-          "type": "VAE",
-          "link": 6
-        },
-        {
-          "name": "voice_profile",
-          "type": "H3_T8_VOICE_PROFILE",
-          "link": 7
-        },
-        {
-          "name": "speech_plan",
-          "type": "H3_T8_SPEECH_PLAN",
-          "link": 8
+          "name": "speech_guard",
+          "type": "H3_T8_SPEECH_GUARD",
+          "link": null,
+          "shape": 7
         }
       ],
       "outputs": [
@@ -859,6 +865,11 @@
       "mode": 0,
       "inputs": [
         {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 9
+        },
+        {
           "name": "target_duration_seconds",
           "type": "FLOAT",
           "widget": {
@@ -897,11 +908,6 @@
             "name": "pitch_semitones"
           },
           "link": null
-        },
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "link": 9
         }
       ],
       "outputs": [
@@ -982,7 +988,7 @@
       5,
       0,
       6,
-      9,
+      0,
       "H3_T8_VOICE_PROFILE"
     ],
     [
@@ -990,7 +996,7 @@
       6,
       0,
       7,
-      7,
+      0,
       "H3_T8_SPEECH_PLAN"
     ],
     [
@@ -998,7 +1004,7 @@
       1,
       0,
       8,
-      21,
+      0,
       "MODEL"
     ],
     [
@@ -1006,7 +1012,7 @@
       2,
       0,
       8,
-      22,
+      1,
       "CLIP"
     ],
     [
@@ -1014,7 +1020,7 @@
       3,
       0,
       8,
-      23,
+      2,
       "VAE"
     ],
     [
@@ -1022,7 +1028,7 @@
       4,
       0,
       8,
-      24,
+      3,
       "VAE"
     ],
     [
@@ -1030,7 +1036,7 @@
       5,
       0,
       8,
-      25,
+      4,
       "H3_T8_VOICE_PROFILE"
     ],
     [
@@ -1038,7 +1044,7 @@
       7,
       0,
       8,
-      26,
+      5,
       "H3_T8_SPEECH_PLAN"
     ],
     [
@@ -1046,7 +1052,7 @@
       8,
       0,
       9,
-      5,
+      0,
       "AUDIO"
     ],
     [
