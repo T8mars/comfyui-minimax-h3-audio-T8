@@ -4,6 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 
+import pytest
 import torch
 
 import h3_audio_t8_pkg
@@ -16,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 109
+    assert len(ids) == 114
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -278,6 +279,19 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for dynamic_guidance_schema in schemas[107:109]:
         assert dynamic_guidance_schema.is_experimental is True
         assert dynamic_guidance_schema.category == "T8/MiniMax H3/Quality/Experimental"
+    assert ids[109:114] == [
+        "MiniMaxH3AVTailDetailScheduleT8Advanced",
+        "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
+        "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+        "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
+        "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+    ]
+    for detail_schema in schemas[109:114]:
+        assert detail_schema.is_experimental is True
+        assert detail_schema.category == "T8/MiniMax H3/Quality/Experimental"
+    tail_detail_inputs = {item.id: item for item in schemas[109].inputs}
+    assert tail_detail_inputs["extra_tail_steps"].default == 1
+    assert tail_detail_inputs["spacing"].default == "video_sigma_linear"
     sigma_tail_inputs = {item.id: item for item in schemas[86].inputs}
     assert sigma_tail_inputs["mode"].default == "report_only"
     assert sigma_tail_inputs["extra_substeps"].default == 0
@@ -1381,6 +1395,66 @@ def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice()
     assert frontend["last_node_id"] == max(nodes)
     assert frontend["last_link_id"] == max(link[0] for link in frontend["links"])
     for link_id, source, output_slot, target, input_slot, link_type in frontend["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type
+
+
+@pytest.mark.parametrize(
+    ("filename", "advanced_type"),
+    [
+        (
+            "H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json",
+            "MiniMaxH3AVTailDetailScheduleT8Advanced",
+        ),
+        (
+            "H3_Hanfu_Model_Time_Bias_Advanced_EXP.json",
+            "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
+        ),
+        (
+            "H3_Hanfu_RF_Restart_Advanced_EXP.json",
+            "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+        ),
+        (
+            "H3_Hanfu_STG_Advanced_EXP.json",
+            "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
+        ),
+        (
+            "H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
+            "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+        ),
+    ],
+)
+def test_h3_detail_advanced_frontend_examples_are_importable_and_documented(
+    filename,
+    advanced_type,
+):
+    root = Path(__file__).resolve().parents[1]
+    workflow = json.loads(
+        (root / "examples" / "workflows" / filename).read_text(encoding="utf-8")
+    )
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = {node["type"] for node in nodes.values()}
+
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert advanced_type in types
+    assert "MarkdownNote" in types
+    assert (
+        "MiniMaxH3DualClockSamplerT8" in types
+        or advanced_type
+        in {
+            "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
+            "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+        }
+    )
+    assert "MiniMaxH3AudioConditioningT8" in types
+    note = next(node for node in nodes.values() if node["type"] == "MarkdownNote")
+    assert len(note["widgets_values"][0]) >= 100
+
+    for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
         assert nodes[source]["outputs"][output_slot]["type"] == link_type

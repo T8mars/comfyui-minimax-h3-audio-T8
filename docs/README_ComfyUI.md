@@ -1,11 +1,15 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
-> Project v1.28.0 also includes isolated, default-off MiniMax H3 Dynamic Guidance and extra-tail-NFE
+> Project v1.29.0 also includes five isolated MiniMax H3 detail experiments: final-interval AV
+> subdivision, smooth shared-Transformer model-time bias, true joint-AV rectified-flow restart,
+> H3 skip-block spatio-temporal guidance and decoded-frame motion-gated luma detail enhancement.
+> The older default-off Dynamic Guidance and extra-tail-NFE examples remain available. These are
 > Advanced examples. They are generation-time experiments, not face restoration. A 1.0-to-1.0
 > guidance curve preserves the BasicGuider route; every inserted tail point is one full joint A/V
-> DiT forward. The four planned single-output mechanical runs now pass strict A/V decode; human
-> quality review remains pending and one cold baseline had only 311.1MiB whole-device headroom.
-> See the main README and the two `H3_Motion_Quality_*_8Step_EXP.json` workflows.
+> DiT forward. All five red-Hanfu 1152x640x124 candidates completed and each new file passed three
+> strict A/V decodes; the reused upstream eight-step baseline retains its previously accepted bad
+> frame and therefore fails strict decode. Human quality/audio review remains pending. See the main
+> README and the five `H3_Hanfu_*_Advanced_EXP.json` workflows.
 
 The converter lives in the project-local `tools/` directory. Model weights are
 kept outside this code repository and installed through ComfyUI's standard

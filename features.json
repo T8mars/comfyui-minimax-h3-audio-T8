@@ -125,7 +125,12 @@
     "MiniMaxH3MultiFaceRepairJobT8Advanced",
     "MiniMaxH3MultiFaceCompositeT8Advanced",
     "MiniMaxH3DynamicCFGGuiderT8Advanced",
-    "MiniMaxH3DynamicGuidanceAuditT8Advanced"
+    "MiniMaxH3DynamicGuidanceAuditT8Advanced",
+    "MiniMaxH3AVTailDetailScheduleT8Advanced",
+    "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
+    "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+    "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
+    "MiniMaxH3TemporalDetailEnhanceT8Advanced"
   ],
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
@@ -311,7 +316,12 @@
       "MiniMaxH3AVSigmaSameNFERedistributionT8Advanced",
       "MiniMaxH3MotionRepairPlanT8Advanced",
       "MiniMaxH3DynamicCFGGuiderT8Advanced",
-      "MiniMaxH3DynamicGuidanceAuditT8Advanced"
+      "MiniMaxH3DynamicGuidanceAuditT8Advanced",
+      "MiniMaxH3AVTailDetailScheduleT8Advanced",
+      "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
+      "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+      "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
+      "MiniMaxH3TemporalDetailEnhanceT8Advanced"
     ],
     "behavior": [
       "future Turbo dual-clock validation uses 8 video and 8 audio denoise steps; retained 4-step examples are compatibility fixtures rather than the quality baseline",
@@ -323,7 +333,12 @@
       "dynamic guidance is an isolated Advanced guider: passthrough_basic and every 1.0-to-1.0 curve preserve the BasicGuider route without installing sampler or model wrappers",
       "single_condition_gain_exp applies one sigma-dependent device-side gain to the positive-only H3 prediction and is explicitly not true classifier-free guidance",
       "true_cfg_exp requires layout-matched negative conditioning and explicit two-branch cost consent; it remains mechanically gated and quality-unvalidated",
-      "the post-sampler audit passes the exact AV latent through while reporting observed guider calls, physical model forwards and conditional branch batches"
+      "the post-sampler audit passes the exact AV latent through while reporting observed guider calls, physical model forwards and conditional branch batches",
+      "the new tail-detail schedule explicitly subdivides only the final dual-clock interval; one extra step is the connected-node default, three steps descend through 75/50/25 percent of the final video sigma, and zero remains an endpoint rather than a model call",
+      "smooth model-time bias leaves the integrator schedule unchanged and applies a true sin-squared tail envelope to the sigma seen by the shared AV Transformer; it is time conditioning, not random noise",
+      "joint AV rectified-flow restart re-noises the clean endpoint with x_sigma=(1-sigma)*x_clean+sigma*epsilon on independently mapped video/audio clocks, records seed and actual extra NFE, requires full audio participation, rejects fractional masks and does not expose an unvalidated video-only mode",
+      "H3-specific spatio-temporal guidance adds a skipped-double-block positive branch only inside the selected progress window, requires a native H3 MODEL, rejects nonzero shared-AV rescale and rechecks replacement conflicts at sampling time",
+      "the separate temporal detail node performs chunked motion-gated luma enhancement and optional aspect-first non-shrinking multiple-of-32 bicubic enlargement, defaults to a 2.1MP output budget, does not touch audio and does not claim to reconstruct missing identity/geometry"
     ],
     "validated": [
       "exact 8-step Turbo profile enforcement and original-knot preservation unit tests",
@@ -348,9 +363,15 @@
       "the live guidance audit observed 8 predict calls, 8 CFG callbacks, 8 physical model forwards, 8 conditional branch evaluations and 0 unconditional evaluations, confirming this route is not true CFG",
       "the cold Basic baseline left only 311.1MiB whole-device headroom, below the 512MiB gate; human full-video/audio review remains pending and the optional combined SG1 candidate was not generated",
       "573 project tests, changed-scope Ruff, compileall, 110 non-artifact JSON parses, diff check and a live ComfyUI output-node audit passed on the final source",
-      "109-node append-only project registration contract"
+      "109-node append-only project registration contract",
+      "new focused coverage validates exact tail formulas, AV clock projection, no-op contracts, smooth model-time endpoints, deterministic joint restart and callback/NFE accounting, H3 block conflict refusal, temporal motion gating and append-only five-node registration",
+      "the fixed red-Hanfu 1152x640x124 real case completed tail+3, smooth model-time bias, joint AV RF Restart+3, H3 STG and decoded temporal detail; all five new H.264/AAC files passed 3/3 strict FFmpeg decodes with 124 frames, finite 32kHz stereo audio and A/V stream durations within one frame",
+      "the reused upstream eight-step baseline retains the isolated corrupt frame explicitly accepted by the user and therefore fails repeat strict decode; it remains an annotated historical blind-comparison input rather than being counted as a new-file pass",
+      "five importable frontend workflows contain route-specific Markdown notes and are checked for bidirectional link consistency; the randomized six-way full-video/audio review exists locally and perceptual review remains pending",
+      "590 project tests, changed-scope Ruff, compileall, 115 non-artifact JSON parses, git diff check, stable sampling.py SHA-256 and live ComfyUI output-node audits pass on the v1.29.0 source",
+      "post-red-team coverage rejects locked/partial audio restart and fractional masks, permits binary conditioned video rows with full audio, catches STG conflicts added after the STG node, rejects non-H3 models/nonzero AV rescale/positive model-time bias, and verifies chunked temporal processing plus aspect-safe non-shrinking alignment and output budget"
     ],
-    "status": "implemented Advanced EXP sigma mechanics, same-NFE causal-control plumbing, audit-to-repair planning and default-off dynamic guidance; the four-run mechanical/strict-decode gate passes, but human quality review is pending and the cold baseline fails the 512MiB headroom gate, so quality_guarantee and universal memory_safe_claim remain false"
+    "status": "implemented Advanced EXP sigma mechanics, same-NFE causal-control plumbing, audit-to-repair planning, dynamic guidance, final-interval detail subdivision, smooth model-time bias, true joint-AV RF restart, H3 STG and motion-gated decoded-frame detail enhancement; fixed red-Hanfu generation and strict decoding pass for all five new routes, but complete visual/audio blind review remains pending, so quality_guarantee and universal memory_safe_claim remain false"
   },
   "experimental_environment_audit_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",

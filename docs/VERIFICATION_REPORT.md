@@ -13,6 +13,66 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.29.0 H3 tail/detail Advanced routes (2026-08-18)
+
+Five nodes were appended after the previous 109-node inventory. The stable `sampling.py` source,
+existing node IDs, schemas, defaults and serialized workflows were not modified:
+
+- final-interval dual-clock subdivision (`extra_tail_steps=3`, 11 joint AV forwards);
+- smooth shared-Transformer model-time bias (8 NFE, unchanged integrator sigmas);
+- true joint audio/video rectified-flow endpoint restart (`video sigma=0.15`, 3 restart forwards);
+- H3 skip-double-block spatio-temporal guidance (block 25, progress 0.25 to 0.85);
+- decoded-frame motion-gated luma detail enhancement (no audio tensor input or mutation).
+
+The fixed real-generation case used `10A.jpg`, 1152x640 (737,280 pixels), 124 frames at 24fps,
+seed `2608172801`, the non-pruned FL2VA INT8 checkpoint, Qwen NVFP4, official video/audio VAEs,
+Turbo LoRA, video shift 12, audio shift 3 and the same night-time fast-spinning red-Hanfu prompt.
+All five new candidates completed. Their final synchronized files are H.264/AAC, contain 124 frames
+and finite 32kHz stereo audio, and each passed three complete FFmpeg `-xerror -threads 1` decodes.
+Every candidate has 5.1667s of video and 5.152s of audio; the -14.67ms stream-duration difference is
+within one 24fps frame.
+
+| Route | Observed execution | Final SHA-256 |
+|---|---:|---|
+| tail+3 | 574.94s | `1FB196B01B997AD9B5EFBF1D5D1C25E349D2467ECDACDCED0C74908BA3284230` |
+| model-time bias | about 412s generation; cached re-save 4.02s | `3B969FA1600A6616E7064E9FA682CE6404D69E7ADC6B12AA00EAB1199EC5C001` |
+| joint AV RF Restart+3 | 558.22s | `A093AB192912B090D4D05AF1329756A616F4590E889C35FCA7D2CFB1532DEBAE` |
+| H3 STG | 655.66s | `7610B69D71F8212473450C899EB2EF9C0AFE5CD819B8C6565351A997A5718A39` |
+| temporal detail | 423.66s | `DE27F74664A14F51D62ABC0922984B02BB70252DEDC075D59263944DC8B2ADFF` |
+
+The model-time-bias generation itself completed, but its first VideoHelperSuite intermediate MP4 was
+missing the `moov` atom and failed during mux. The corrupt intermediate was deleted and the same cached
+decoded output was saved successfully. This is retained as a save-path incident, not silently counted as
+a first-attempt end-to-end pass and not attributed to the model-time mathematics.
+
+The reused upstream eight-step comparison file contains the isolated corrupt frame the user had already
+accepted. OpenCV still returns 124 frames, but repeat strict decode fails, so it is explicitly marked as
+an accepted historical comparison defect and is not included in the five new-file decode pass count.
+The proxy high-frequency, motion and audio-level measurements are anomaly screens only. They do not prove
+face quality, cloth detail, action adherence or sound non-inferiority. The randomized six-way complete-video
+review is in `artifacts/h3-detail-routes-v1/blind/blind_review.html`; no perceptual winner is declared before
+the user's full visual and audio review.
+
+All mechanisms remain Experimental. H3 predicts audio and video in one Transformer, so forced audio
+freezing was not made a hard constraint. Tail subdivision, model-time bias, Restart and STG can all change
+the joint sound prediction and require listening. Only the decoded-frame detail node is mechanically
+audio-independent, but its separately generated comparison audio is not used as proof of bit identity.
+
+The final source gate passed 590 tests (four existing Triton deprecation warnings), changed-scope Ruff,
+compileall, 115 non-artifact JSON parses and `git diff --check`. Live ComfyUI `object_info` exposed all five
+new node IDs with their expected outputs. Stable `sampling.py` remained byte-identical at SHA-256
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
+
+A final red-team pass found and closed two pre-release contract defects. Restart now rejects fractional
+video masks and any locked or partial audio mask at both setup and sampler runtime; binary conditioned
+video rows may remain fixed only while the complete audio latent participates. STG now rechecks the actual
+runtime `patches_replace` map, so a downstream Block Cache/Activation Chunk cannot silently overwrite its
+selected block. It also rejects non-H3 models and nonzero shared-AV global-standard-deviation rescale.
+Additional gates reject positive model-time bias that can reverse model-visible time, process temporal
+detail in bounded chunks with one-frame halos, select aspect-first non-shrinking 32-aligned geometry and
+enforce a default 2.1MP output budget. These are fail-closed safety/contract changes; they do not turn the
+single red-Hanfu comparison into a general quality guarantee.
+
 ## 1.27.0 native SAM3.1 multi-person Face Refine (2026-08-17)
 
 Six append-only Advanced nodes implement in-memory reference profiles, a two/three-person cast, native
