@@ -151,7 +151,8 @@
     "MiniMaxH3SPEEDSpectrumHarvesterT8Advanced",
     "MiniMaxH3SPEEDPlanT8Advanced",
     "MiniMaxH3SPEEDSourceT8Advanced",
-    "MiniMaxH3SPEEDSamplerT8Advanced"
+    "MiniMaxH3SPEEDSamplerT8Advanced",
+    "MiniMaxH3SPEEDModalityStableNoiseT8Advanced"
   ],
   "experimental_speed_spatial_progressive": {
     "category": "T8/MiniMax H3/SPEED/Experimental",
@@ -159,7 +160,8 @@
       "MiniMaxH3SPEEDSpectrumHarvesterT8Advanced",
       "MiniMaxH3SPEEDPlanT8Advanced",
       "MiniMaxH3SPEEDSourceT8Advanced",
-      "MiniMaxH3SPEEDSamplerT8Advanced"
+      "MiniMaxH3SPEEDSamplerT8Advanced",
+      "MiniMaxH3SPEEDModalityStableNoiseT8Advanced"
     ],
     "official_basis": {
       "paper": "SPEED arXiv:2605.18736v3",
@@ -200,13 +202,14 @@
         "official equation unit tests",
         "multiple-of-32 aspect-preserving stage planner and exact-NFE schedule tests",
         "torch DCT numerical comparison against SciPy's official reference convention",
-        "deterministic high-frequency seed, audio flow reindex and segmented-state round-trip tests",
-        "profile validation/fail-closed and all-task raw-source contract tests"
+      "deterministic high-frequency seed, audio flow reindex and segmented-state round-trip tests",
+      "profile validation/fail-closed and all-task raw-source contract tests",
+      "real 1056x608, 124-frame T2VA Stock20 GPU generation with 124-frame/24fps/32kHz-stereo output and three strict decode passes",
+      "modality-stable AV seed control plus targeted H3 clone-family release and temporary execution-scoped VRAM headroom"
       ],
       "pending": [
-        "real ComfyUI H3 generation",
-        "same-input full-resolution versus SPEED quality and timing comparison",
-        "whole-device VRAM/RAM telemetry and repeated-run cleanup",
+        "human same-input full-resolution versus SPEED quality and audio non-inferiority review",
+        "warm repeated-run cleanup and the 512MiB 16GB minimum-headroom gate; current controlled SPEED run retained only about 376MiB",
         "audio listening/non-inferiority and A/V synchronization",
         "I2VA/FL2VA/L2VA, masks, lock/remix, Ref2VA and Hybrid perceptual validation"
       ]
@@ -216,9 +219,9 @@
       "speedup_validated": false,
       "memory_safe_claim": false,
       "audio_noninferiority_validated": false,
-      "gpu_generation_completed": false
+      "gpu_generation_completed": true
     },
-    "status": "code, theory, clean-room official math and CPU/static validation implemented; real ComfyUI GPU generation intentionally deferred"
+    "status": "clean-room official math, CPU/static validation and one real T2VA Stock20 GPU execution completed; strict decode passed, while quality/audio and the 512MiB 16GB safety gate remain unpassed"
   },
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",

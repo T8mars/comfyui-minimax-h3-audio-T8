@@ -24,6 +24,8 @@ SPEED_REPORT_SCHEMA = "minimax_h3_speed_execution_t8_v1"
 OFFICIAL_SPEED_COMMIT = "ca7801c9bdffe681742e9592345bcf4885959be5"
 OFFICIAL_SPEED_PAPER = "arXiv:2605.18736v3"
 H3_CORE_AUDIT_COMMIT = "7fe8a6138504f90ff7be82f3babf416da32876b1"
+SPEED_SCOPED_HEADROOM_BYTES = int(1.5 * 1024**3)
+SPEED_AUDIO_NOISE_SEED_XOR = 0x9E3779B97F4A7C15
 
 
 def canonical_json(value: Any, *, indent: int | None = 2) -> str:
@@ -706,6 +708,172 @@ def solve_segment_noise(
     return comfy.nested_tensor.NestedTensor((video_noise, audio_noise))
 
 
+def modality_stable_h3_noise(input_latent: Mapping[str, Any], seed: int) -> Any:
+    """Generate AV noise whose audio stream is invariant to video canvas size."""
+    import comfy.sample
+
+    samples = input_latent.get("samples")
+    if samples is None or not getattr(samples, "is_nested", False):
+        raise ValueError("Modality-stable H3 noise requires a nested AV LATENT")
+    video, audio = _nested_parts(samples)
+    batch_indices = input_latent.get("batch_index")
+    video_seed = int(seed) & 0xFFFFFFFFFFFFFFFF
+    audio_seed = video_seed ^ SPEED_AUDIO_NOISE_SEED_XOR
+    video_noise = comfy.sample.prepare_noise(video, video_seed, batch_indices)
+    audio_noise = comfy.sample.prepare_noise(audio, audio_seed, batch_indices)
+    return comfy.nested_tensor.NestedTensor((video_noise, audio_noise))
+
+
+class H3ModalityStableNoise:
+    def __init__(self, seed: int):
+        self.seed = int(seed) & 0xFFFFFFFFFFFFFFFF
+
+    def generate_noise(self, input_latent):
+        return modality_stable_h3_noise(input_latent, self.seed)
+
+
+def _release_h3_residency_between_stages(model) -> dict[str, Any]:
+    """Target only the active H3 clone family before a larger SPEED canvas loads.
+
+    DynamicVRAM can retain weight pages chosen for the cheap low-resolution stage.
+    Those pages leave too little activation headroom when the next stage grows.  The
+    public ComfyUI helper unloads the supplied patcher and its clones without
+    evicting unrelated CLIP/VAE models; this is deliberately not a global unload.
+    """
+    from comfy import model_management as comfy_model_management
+
+    unload = getattr(comfy_model_management, "unload_model_and_clones", None)
+    if not callable(unload):
+        return {
+            "performed": False,
+            "scope": "selected_h3_model_and_clones",
+            "global_unload_called": False,
+            "reason": "current ComfyUI has no targeted unload_model_and_clones API",
+        }
+    device = getattr(model, "load_device", None)
+    before = None
+    if device is not None:
+        try:
+            before = int(comfy_model_management.get_free_memory(device))
+        except Exception:
+            before = None
+    unload(
+        model,
+        unload_additional_models=False,
+        all_devices=False,
+    )
+    comfy_model_management.soft_empty_cache()
+    after = None
+    if device is not None:
+        try:
+            after = int(comfy_model_management.get_free_memory(device))
+        except Exception:
+            after = None
+    return {
+        "performed": True,
+        "scope": "selected_h3_model_and_clones",
+        "global_unload_called": False,
+        "unload_additional_models": False,
+        "all_devices": False,
+        "free_memory_before_bytes": before,
+        "free_memory_after_bytes": after,
+        "free_memory_delta_bytes": (
+            after - before if before is not None and after is not None else None
+        ),
+    }
+
+
+def _set_comfy_reserved_bytes(model_management, value: int) -> str:
+    setter = getattr(model_management, "set_extra_reserved_vram", None)
+    if callable(setter):
+        setter(int(value) / 1024**3)
+        return "set_extra_reserved_vram_gib"
+    model_management.EXTRA_RESERVED_VRAM = int(value)
+    return "EXTRA_RESERVED_VRAM_bytes"
+
+
+def _speed_dynamic_headroom_control() -> tuple[Any | None, int, str]:
+    """Return the AIMDO setter and the best available previous value."""
+    try:
+        import comfy.memory_management as memory_management
+
+        if not bool(getattr(memory_management, "aimdo_enabled", False)):
+            return None, 0, "dynamic_vram_not_enabled"
+        import comfy_aimdo.control as control
+
+        setter = getattr(getattr(control, "lib", None), "set_simple_vram_headroom", None)
+        if not callable(setter):
+            return None, 0, "dynamic_vram_setter_unavailable"
+        try:
+            from . import vram_policy
+
+            previous = getattr(vram_policy, "_LAST_SIMPLE_HEADROOM_BYTES", None)
+        except Exception:
+            previous = None
+        if previous is None:
+            try:
+                from comfy.cli_args import args
+
+                previous = int(float(getattr(args, "vram_headroom", 0.0) or 0.0) * 1024**3)
+            except Exception:
+                previous = 0
+        return setter, int(previous), "direct_lib.set_simple_vram_headroom"
+    except Exception as error:
+        return None, 0, f"unavailable:{type(error).__name__}"
+
+
+def _apply_speed_scoped_headroom() -> tuple[dict[str, Any], dict[str, Any]]:
+    """Raise headroom only for this SPEED execution and return a restoration token."""
+    from comfy import model_management as comfy_model_management
+
+    getter = getattr(comfy_model_management, "extra_reserved_memory", None)
+    previous_reserved = int(
+        getter() if callable(getter) else comfy_model_management.EXTRA_RESERVED_VRAM
+    )
+    target = max(previous_reserved, SPEED_SCOPED_HEADROOM_BYTES)
+    comfy_route = _set_comfy_reserved_bytes(comfy_model_management, target)
+    dynamic_setter, previous_dynamic, dynamic_route = _speed_dynamic_headroom_control()
+    dynamic_applied = dynamic_setter is not None
+    if dynamic_applied:
+        dynamic_setter(target)
+    token = {
+        "model_management": comfy_model_management,
+        "previous_reserved_bytes": previous_reserved,
+        "dynamic_setter": dynamic_setter,
+        "previous_dynamic_bytes": previous_dynamic,
+        "restored": False,
+    }
+    report = {
+        "applied": target > previous_reserved or dynamic_applied,
+        "temporary": True,
+        "target_bytes": target,
+        "previous_comfy_reserved_bytes": previous_reserved,
+        "previous_dynamic_headroom_bytes": previous_dynamic if dynamic_applied else None,
+        "comfy_route": comfy_route,
+        "dynamic_route": dynamic_route,
+        "global_model_unload_called": False,
+    }
+    return token, report
+
+
+def _restore_speed_scoped_headroom(token: dict[str, Any] | None) -> dict[str, Any]:
+    if not token or token.get("restored"):
+        return {"restored": bool(token and token.get("restored"))}
+    model_management = token["model_management"]
+    _set_comfy_reserved_bytes(model_management, token["previous_reserved_bytes"])
+    dynamic_setter = token.get("dynamic_setter")
+    if callable(dynamic_setter):
+        dynamic_setter(token["previous_dynamic_bytes"])
+    token["restored"] = True
+    return {
+        "restored": True,
+        "comfy_reserved_bytes": token["previous_reserved_bytes"],
+        "dynamic_headroom_bytes": (
+            token["previous_dynamic_bytes"] if callable(dynamic_setter) else None
+        ),
+    }
+
+
 def _source_conditioning_kwargs(source: Mapping[str, Any], width: int, height: int) -> dict[str, Any]:
     keys = (
         "task_type",
@@ -953,7 +1121,7 @@ def execute_speed_sampling(
     if not supported and fallback == "error":
         raise ValueError(support_reason)
 
-    from comfy_extras.nodes_custom_sampler import Guider_Basic, Noise_RandomNoise
+    from comfy_extras.nodes_custom_sampler import Guider_Basic
 
     stages = list(speed_plan["stages"])
     segments = list(speed_plan["segments"])
@@ -971,12 +1139,17 @@ def execute_speed_sampling(
             }
         ]
 
+    headroom_token = None
+    headroom_report = None
     output_nested = None
     pending_noise = None
     pending_stage: StageConditioning | None = None
     stage_records: list[dict[str, Any]] = []
     final_stage: StageConditioning | None = None
+    initial_residency_release = None
     try:
+        headroom_token, headroom_report = _apply_speed_scoped_headroom()
+        initial_residency_release = _release_h3_residency_between_stages(model)
         for stage_index, (shape, segment) in enumerate(zip(stages, segments)):
             stage = pending_stage or _build_stage(
                 speed_source, shape["width"], shape["height"]
@@ -1006,7 +1179,7 @@ def execute_speed_sampling(
             guider = Guider_Basic(stage_model)
             guider.set_conds(stage.positive)
             if stage_index == 0:
-                noise = Noise_RandomNoise(int(seed)).generate_noise(stage.latent)
+                noise = modality_stable_h3_noise(stage.latent, int(seed))
             else:
                 noise = pending_noise
                 pending_noise = None
@@ -1036,7 +1209,8 @@ def execute_speed_sampling(
                 "audio_scale": audio_scale,
                 "noise_scale": noise_scale,
             }
-            if stage_index < len(transitions):
+            has_transition = stage_index < len(transitions)
+            if has_transition:
                 transition = transitions[stage_index]
                 sigma_from = float(transition["sigma"])
                 desired_raw = recover_raw_flow_state(
@@ -1109,6 +1283,10 @@ def execute_speed_sampling(
                 del next_audio_scaled
             stage_records.append(record)
             del stage_model, sampler, guider, noise, stage
+            if has_transition:
+                record["transition"]["stage_residency_release"] = (
+                    _release_h3_residency_between_stages(model)
+                )
         if output_nested is None or final_stage is None:
             raise RuntimeError("SPEED did not execute any sampling stage")
         runtime_devices = sorted({part.device.type for part in output_nested.unbind()})
@@ -1139,6 +1317,16 @@ def execute_speed_sampling(
             "official_speed_commit": OFFICIAL_SPEED_COMMIT,
             "paper": OFFICIAL_SPEED_PAPER,
             "h3_core_audit_commit": H3_CORE_AUDIT_COMMIT,
+            "noise_contract": {
+                "type": "modality_stable_nested_av_v1",
+                "video_seed": int(seed) & 0xFFFFFFFFFFFFFFFF,
+                "audio_seed": (
+                    (int(seed) & 0xFFFFFFFFFFFFFFFF) ^ SPEED_AUDIO_NOISE_SEED_XOR
+                ),
+                "audio_invariant_to_video_canvas_size": True,
+            },
+            "initial_residency_release": initial_residency_release,
+            "scoped_vram_headroom": headroom_report,
             "claims": {
                 "gpu_generated": gpu_generated,
                 "quality_validated": False,
@@ -1148,6 +1336,9 @@ def execute_speed_sampling(
             },
             "next_validation": "Run controlled ComfyUI GPU baseline vs SPEED with identical H3 inputs.",
         }
+        report["scoped_vram_headroom"]["restoration"] = (
+            _restore_speed_scoped_headroom(headroom_token)
+        )
         return (
             output,
             final_stage.mux_audio,
@@ -1156,6 +1347,7 @@ def execute_speed_sampling(
             canonical_json(report),
         )
     finally:
+        _restore_speed_scoped_headroom(headroom_token)
         pending_noise = None
         pending_stage = None
         clear_speed_math_cache()

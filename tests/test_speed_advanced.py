@@ -17,6 +17,9 @@ from h3_audio_t8_pkg.speed_advanced import (
     StageConditioning,
     _build_empty_t2va_stage,
     _profile_binding,
+    _apply_speed_scoped_headroom,
+    _release_h3_residency_between_stages,
+    _restore_speed_scoped_headroom,
     _task_support,
     activation_time,
     align_sigma,
@@ -26,6 +29,7 @@ from h3_audio_t8_pkg.speed_advanced import (
     dct_expand_official,
     fit_h3_spatial_power_spectrum,
     kappa,
+    modality_stable_h3_noise,
     power_spectrum,
     recover_raw_flow_state,
     reindex_joint_audio_state,
@@ -350,6 +354,77 @@ def test_audio_reindex_and_segment_transport_round_trip():
     assert torch.allclose(reconstructed_audio, reindexed_audio)
 
 
+def test_modality_stable_noise_keeps_audio_equal_across_video_canvas_sizes():
+    audio = torch.zeros(1, 32, 2, 8)
+    small = {
+        "samples": comfy.nested_tensor.NestedTensor(
+            (torch.zeros(1, 24, 2, 4, 6), audio.clone())
+        )
+    }
+    large = {
+        "samples": comfy.nested_tensor.NestedTensor(
+            (torch.zeros(1, 24, 2, 8, 12), audio.clone())
+        )
+    }
+    small_video, small_audio = modality_stable_h3_noise(small, 123).unbind()
+    large_video, large_audio = modality_stable_h3_noise(large, 123).unbind()
+    assert small_video.shape != large_video.shape
+    assert torch.equal(small_audio, large_audio)
+
+
+def test_stage_growth_release_targets_only_h3_clone_family(monkeypatch):
+    import comfy.model_management as model_management
+
+    events = []
+    free_values = iter((128, 1024))
+    monkeypatch.setattr(
+        model_management,
+        "get_free_memory",
+        lambda device: next(free_values),
+    )
+    monkeypatch.setattr(
+        model_management,
+        "unload_model_and_clones",
+        lambda model, unload_additional_models, all_devices: events.append(
+            (model, unload_additional_models, all_devices)
+        ),
+    )
+    monkeypatch.setattr(
+        model_management,
+        "soft_empty_cache",
+        lambda: events.append("soft_empty_cache"),
+    )
+    dummy = type("DummyModel", (), {"load_device": torch.device("cuda")})()
+    report = _release_h3_residency_between_stages(dummy)
+    assert events == [(dummy, False, False), "soft_empty_cache"]
+    assert report["performed"] is True
+    assert report["scope"] == "selected_h3_model_and_clones"
+    assert report["global_unload_called"] is False
+    assert report["free_memory_delta_bytes"] == 896
+
+
+def test_speed_scoped_headroom_is_temporary_and_never_unloads_models(monkeypatch):
+    import comfy.model_management as model_management
+    import h3_audio_t8_pkg.speed_advanced as speed_advanced
+
+    calls = []
+    monkeypatch.setattr(model_management, "EXTRA_RESERVED_VRAM", 700 * 1024**2)
+    monkeypatch.setattr(
+        speed_advanced,
+        "_speed_dynamic_headroom_control",
+        lambda: (lambda value: calls.append(("dynamic", value)), 0, "test"),
+    )
+    token, report = _apply_speed_scoped_headroom()
+    assert model_management.EXTRA_RESERVED_VRAM == int(1.5 * 1024**3)
+    assert calls == [("dynamic", int(1.5 * 1024**3))]
+    assert report["global_model_unload_called"] is False
+    restored = _restore_speed_scoped_headroom(token)
+    assert restored["restored"] is True
+    assert model_management.EXTRA_RESERVED_VRAM == 700 * 1024**2
+    assert calls[-1] == ("dynamic", 0)
+    assert _restore_speed_scoped_headroom(token)["restored"] is True
+
+
 def test_source_resolves_all_media_without_encoding_and_nodes_are_advanced():
     dummy = object()
     image = torch.zeros(1, 64, 64, 3)
@@ -381,7 +456,7 @@ def test_source_resolves_all_media_without_encoding_and_nodes_are_advanced():
     assert source["schema"] == SPEED_SOURCE_SCHEMA
     assert source["resolved_task"] == "fl2va"
     assert json.loads(report_json)["resolved_task"] == "fl2va"
-    assert len(SPEED_ADVANCED_NODE_CLASSES) == 4
+    assert len(SPEED_ADVANCED_NODE_CLASSES) == 5
     for node in SPEED_ADVANCED_NODE_CLASSES:
         schema = node.define_schema()
         assert schema.is_experimental is True

@@ -81,6 +81,20 @@ def _save_nodes(*, latent_link: list[Any], filename_prefix: str) -> dict[str, di
     }
 
 
+def _save_report_node(*, report_link: list[Any], filename_prefix: str) -> dict[str, Any]:
+    return {
+        "13": {
+            "class_type": "SaveText",
+            "inputs": {
+                "text": report_link,
+                "filename_prefix": filename_prefix,
+                "format": "json",
+            },
+            "_meta": {"title": "Save machine-readable validation report"},
+        }
+    }
+
+
 def build_t2va_pair(
     *,
     width: int,
@@ -156,9 +170,9 @@ def build_t2va_pair(
             "_meta": {"title": "CFG-false BasicGuider"},
         },
         "8": {
-            "class_type": "RandomNoise",
-            "inputs": {"noise_seed": seed},
-            "_meta": {"title": "Controlled seed"},
+            "class_type": "MiniMaxH3SPEEDModalityStableNoiseT8Advanced",
+            "inputs": {"seed": seed},
+            "_meta": {"title": "Controlled AV-independent seed"},
         },
         "9": {
             "class_type": "SamplerCustomAdvanced",
@@ -174,6 +188,10 @@ def build_t2va_pair(
         **_save_nodes(
             latent_link=["9", 0],
             filename_prefix=f"{filename_prefix}/baseline_stock20",
+        ),
+        **_save_report_node(
+            report_link=["5", 5],
+            filename_prefix=f"{filename_prefix}/baseline_conditioning_report",
         ),
     }
 
@@ -234,6 +252,10 @@ def build_t2va_pair(
             latent_link=["7", 0],
             filename_prefix=f"{filename_prefix}/speed_stock20",
         ),
+        **_save_report_node(
+            report_link=["7", 4],
+            filename_prefix=f"{filename_prefix}/speed_execution_report",
+        ),
     }
 
     manifest = {
@@ -253,6 +275,7 @@ def build_t2va_pair(
             "shift_audio": shift_audio,
             "sampler": "Euler",
             "scheduler": "native H3 flow",
+            "noise_contract": "modality_stable_nested_av_v1",
         },
         "treatment": {
             "scales": scales,

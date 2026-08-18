@@ -1,5 +1,10 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.31.1 adds a modality-stable AV noise node and targeted H3 clone-family release for
+> the isolated SPEED experiment. A real 1056x608, 124-frame Stock20 run completed and passed three
+> strict decodes, but its minimum 16GB headroom was about 376MiB, below the 512MiB release gate;
+> SPEED therefore remains EXP and makes no universal memory, quality, or audio claim.
+
 > Project v1.31.0 appends one isolated H3 Detail Mixer Advanced sampler without changing the
 > existing five detail nodes, stable schemas, defaults or sampler math. Tail subdivision,
 > model-time bias, STG and joint-AV RF Restart are separate opt-in toggles and all default off.

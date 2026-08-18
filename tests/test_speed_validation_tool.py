@@ -36,10 +36,12 @@ def test_speed_validation_pair_freezes_all_control_variables():
     assert baseline["3"]["inputs"] == speed["3"]["inputs"]
     assert baseline["4"]["inputs"] == speed["4"]["inputs"]
     assert baseline["5"]["inputs"]["prompt"] == speed["6"]["inputs"]["prompt"]
-    assert baseline["8"]["inputs"]["noise_seed"] == speed["7"]["inputs"]["seed"]
+    assert baseline["8"]["class_type"] == "MiniMaxH3SPEEDModalityStableNoiseT8Advanced"
+    assert baseline["8"]["inputs"]["seed"] == speed["7"]["inputs"]["seed"]
     assert baseline["6"]["inputs"]["steps"] == speed["5"]["inputs"]["steps"]
     assert speed["7"]["inputs"]["execution_scope"] == "strict_t2va_stock20"
     assert manifest["treatment"]["total_nfe_unchanged"] is True
+    assert controlled["noise_contract"] == "modality_stable_nested_av_v1"
 
 
 def test_speed_validation_pair_uses_real_output_nodes_and_distinct_prefixes():
@@ -48,8 +50,11 @@ def test_speed_validation_pair_uses_real_output_nodes_and_distinct_prefixes():
         assert prompt["10"]["class_type"] == "MiniMaxH3AVDecodeT8"
         assert prompt["11"]["class_type"] == "CreateVideo"
         assert prompt["12"]["class_type"] == "SaveVideo"
+        assert prompt["13"]["class_type"] == "SaveText"
     baseline_prefix = baseline["12"]["inputs"]["filename_prefix"]
     speed_prefix = speed["12"]["inputs"]["filename_prefix"]
     assert baseline_prefix.endswith("baseline_stock20")
     assert speed_prefix.endswith("speed_stock20")
     assert baseline_prefix != speed_prefix
+    assert baseline["13"]["inputs"]["text"] == ["5", 5]
+    assert speed["13"]["inputs"]["text"] == ["7", 4]

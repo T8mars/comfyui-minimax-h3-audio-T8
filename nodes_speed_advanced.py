@@ -3,6 +3,7 @@ from __future__ import annotations
 from comfy_api.latest import io
 
 from .speed_advanced import (
+    H3ModalityStableNoise,
     build_spectrum_profile,
     build_speed_plan,
     build_speed_source,
@@ -15,6 +16,36 @@ SpeedProfileIO = io.Custom("H3_T8_SPEED_PROFILE")
 SpeedPlanIO = io.Custom("H3_T8_SPEED_PLAN")
 SpeedSourceIO = io.Custom("H3_T8_SPEED_SOURCE")
 MAX_RESOLUTION = 16384
+
+
+class MiniMaxH3SPEEDModalityStableNoiseT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDModalityStableNoiseT8Advanced",
+            display_name="MiniMax H3 Modality-Stable AV Noise / AV独立随机噪声 (Advanced)",
+            description=(
+                "Generates deterministic video and audio noise from separate derived seeds. "
+                "Changing only the video canvas therefore cannot silently change the audio "
+                "noise stream. Intended for controlled H3 SPEED baselines and diagnostics."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Int.Input(
+                    "seed",
+                    default=2608184001,
+                    min=0,
+                    max=0xFFFFFFFFFFFFFFFF,
+                    control_after_generate=True,
+                ),
+            ],
+            outputs=[io.Noise.Output("noise")],
+        )
+
+    @classmethod
+    def execute(cls, seed):
+        return io.NodeOutput(H3ModalityStableNoise(seed))
 
 
 class MiniMaxH3SPEEDSpectrumHarvesterT8Advanced(io.ComfyNode):
@@ -340,4 +371,5 @@ SPEED_ADVANCED_NODE_CLASSES = [
     MiniMaxH3SPEEDPlanT8Advanced,
     MiniMaxH3SPEEDSourceT8Advanced,
     MiniMaxH3SPEEDSamplerT8Advanced,
+    MiniMaxH3SPEEDModalityStableNoiseT8Advanced,
 ]

@@ -1,9 +1,9 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.31.0`，共注册
-119 个节点。新增一个隔离的混合细节采样器，可选择组合尾段细化、平滑模型时间偏置、联合音画
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.31.1`，共注册
+120 个节点。新增一个隔离的混合细节采样器，可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
-前向成本；此前的四个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
+前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
 尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
@@ -1822,6 +1822,20 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
 
+## v1.31.1：SPEED 实机链、音画独立噪声与分阶段显存释放
+
+本补丁没有修改任何稳定节点的输入顺序、默认值或`sampling.py`数学。SPEED实验链新增
+`MiniMax H3 Modality-Stable AV Noise Advanced`：视频与音频由两个确定性的派生seed分别生成噪声，
+仅改变视频画布时不会再悄悄改变音频随机流，完整分辨率基线与SPEED因此可以做受控音频比较。
+
+SPEED Whole-Chain Sampler会在初始阶段及画布放大边界只卸载当前H3 MODEL及其clone，并临时提高本次
+执行的Comfy/DynamicVRAM预留；不会调用全局`unload_all_models()`，执行结束或异常时恢复原设置。
+1056×608、124帧、Stock20、RTX 4060 Ti 16GB真实运行已成功，耗时301.469秒；输出连续3次严格
+FFmpeg解码均通过，得到124帧24fps视频与32kHz双声道音频，音画时长误差约0.0003秒。但整卡峰值
+约16004MiB、最低余量约376MiB，低于项目512MiB发布门槛，所以仍只标EXP，不声明“16GB安全”、
+质量非劣或音频非劣。I2VA/FL2VA/L2VA、lock/remix、Ref2VA与Hybrid仍需逐项真实验证。全项目
+621项测试、Ruff、compileall、JSON解析和稳定`sampling.py`哈希保护均通过。
+
 ## v1.31.0：MiniMax H3 混合细节采样器（Advanced）
 
 本版只追加`MiniMax H3 Detail Mixer Sampler / 混合细节采样 (Advanced)`，不修改原有五个细节节点、
@@ -1873,7 +1887,7 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 - 总NFE保持不变，例如20步两阶段仍是20次DiT前向，不是Block Cache、跳层或额外细化；
 - 不使用WAN的`A=219.48、β=2.4227`，也不使用WIP猜测的`A=150、β=2.0`冒充H3标定。
 
-四个节点职责分开：
+五个节点职责分开：
 
 1. `SPEED Spectrum Harvester Advanced`从已分离的H3视频latent拟合`P(ω)=A|ω|^-β`。单片只标
    `research_probe_only`；必须在一次输入里实际提供至少100条batch样本、声明其独立数据来源、填写
@@ -1889,6 +1903,8 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 4. `SPEED Whole-Chain Sampler Advanced`按阶段运行原生H3`ModelSamplingAV + Euler`。只有视频做空间DCT
    扩张；音频不补空间高频，但由于音画共享Transformer，音频状态仍需从旧公共flow sigma同步重参数化
    到对齐sigma，不能伪装成冻结不动。
+5. `SPEED Modality-Stable AV Noise Advanced`用独立派生seed生成视频与音频噪声。它用于受控A/B和诊断，
+   解决原生Nested RandomNoise在视频尺寸变化后连带改变音频随机流的问题；不改变H3模型或采样公式。
 
 默认`strict_t2va_stock20`只允许T2VA+native audio+严格20步；要运行I2VA、FL2VA、L2VA、Ref2VA或Hybrid，必须
 主动选择`multimodal_research_exp`。这些模态的阶段重建代码已完成，但真实H3生成、身份/锚点、mask、
@@ -1896,9 +1912,9 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 首轮不得叠Block Cache、STG、Activation Chunk、Restart、MultiRate或Dynamic Guidance。
 
 当前已完成官方公式测试、20 NFE守恒、画布/latent尺寸、DCT对SciPy数值对齐、确定性随机种子、联合AV
-分段状态往返、频谱profile门槛、节点注册和工作流静态合同；全项目606项测试、Ruff、compileall和
-63份前端工作流JSON解析均通过。尚未运行真实ComfyUI GPU生成，因此此版本
-不声明速度提升、质量非劣、音频非劣、16GB安全或任意参考模态已经通过；这些字段在报告中全部为false。
+分段状态往返、频谱profile门槛、节点注册、工作流静态合同，以及一条真实T2VA Stock20 GPU生成。
+该实机结果证明整链可以生成并严格解码，不足以证明通用速度、质量、音频或16GB安全；报告中的
+质量非劣、音频非劣和memory-safe字段仍为false，参考模态也仍需逐项验收。
 
 ## 示例与测试
 
