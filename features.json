@@ -9,7 +9,7 @@
     "batch_size": 1
   },
   "frontend_workflow_compatibility_hotfix": {
-    "version": "1.32.0",
+    "version": "1.32.1",
     "scope": "repairs positional frontend input/widget serialization without changing any stable node schema, default or sampler math",
     "repaired_project_workflows": 40,
     "repaired_user_workflows": 40,
@@ -210,20 +210,24 @@
         "real 1024x576x124 Stock20 P2 runs for I2VA lock_source, FL2VA remix_source and L2VA native; all produced 124-frame 24fps finite 32kHz-stereo outputs and passed three strict decodes",
         "real 1024x576x124 Stock20 P3 runs for reference image, two-second reference video plus matching numbered soundtrack, and Hybrid first-frame plus independent image/audio references; stage reports preserved the expected keyframe/reference counts",
         "one real 1024x576x124 Turbo8 T2VA run with the explicit 208-patch LoRA route; the schedule preserved eight total NFE as six coarse plus two full-resolution calls and passed mechanical output checks",
+        "same-input same-seed same-20-NFE full-resolution versus SPEED controls for T2VA, FL2VA remix_source and Ref2VA image completed; exact-profile end-to-end speedups were 2.179x, 2.209x and 2.299x respectively",
+        "all six final comparison videos passed three decoder-error-fatal FFmpeg passes, exact 124-frame/24fps checks, finite 32kHz-stereo audio and one-frame A/V alignment; one older T2VA SPEED file exposed as corrupt by the strengthened gate was discarded and regenerated cleanly",
+        "a three-pair anonymous full-video/audio review package and machine-readable proxy report were generated; proxy differences are explicitly not treated as quality or reference-adherence verdicts",
         "fail-closed tests for Transformer wrappers/callbacks/patches, DiT block replacements, post-CFG/model wrappers and LongVideo/MultiKeyframe scoped MODEL patches",
-        "655 project tests, full Ruff, compileall, 70 JSON workflow parses, idempotent live-schema rescan, stable sampling hash and project/user workflow SHA parity passed"
+        "664 project tests, full Ruff, compileall, 126 non-artifact JSON parses, stable sampling hash and project/user SHA parity for all 70 frontend workflows passed"
       ],
       "pending": [
-        "human same-input full-resolution versus SPEED quality and audio non-inferiority review",
+        "human review of the prepared three-pair same-input full-resolution versus SPEED blind package for quality, motion, audio and Ref2VA adherence",
         "warm repeated-run cleanup and the 512MiB 16GB minimum-headroom gate; controlled P2/P3 cases retained only about 272-455MiB and Turbo8 retained about 122MiB",
         "human audio listening/non-inferiority, semantic reference adherence and event/lip synchronization",
-        "same-input full-resolution baselines needed to establish actual SPEED speedup and perceptual non-inferiority for each task family",
+        "additional same-input baselines for I2VA, L2VA, reference-video/audio and Hybrid if route-specific speed or quality claims are desired beyond the three representative controls",
         "mask-heavy source repaint, higher resolutions, longer reference video, repeated warm cleanup and other GPUs"
       ]
     },
     "claims": {
       "quality_validated": false,
       "speedup_validated": false,
+      "representative_exact_profile_speedup_validated": true,
       "memory_safe_claim": false,
       "audio_noninferiority_validated": false,
       "gpu_generation_completed": true

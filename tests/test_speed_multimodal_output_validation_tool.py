@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import subprocess
+
 import numpy as np
 import pytest
 
+from h3_audio_t8_pkg.tools import validate_h3_speed_multimodal_outputs as output_tool
 from h3_audio_t8_pkg.tools.validate_h3_speed_multimodal_outputs import (
     _audio_pair_metrics,
     _frame_metrics,
@@ -33,3 +36,17 @@ def test_audio_pair_metrics_reports_exact_match():
     assert metrics["sample_count_equal"] is True
     assert metrics["zero_lag_correlation"] == pytest.approx(1.0)
     assert metrics["generated_rms"] == metrics["reference_rms"]
+
+
+def test_shared_strict_decode_makes_reported_decoder_errors_fatal(monkeypatch, tmp_path):
+    commands = []
+
+    def fake_run(command):
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(output_tool, "_run", fake_run)
+    result = output_tool._strict_decode(tmp_path / "sample.mp4", "ffmpeg", attempts=1)
+    assert result["passed"] is True
+    assert "-xerror" in commands[0]
+    assert commands[0][commands[0].index("-err_detect") + 1] == "explode"

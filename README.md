@@ -1,8 +1,10 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.32.0`，共注册
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.32.1`，共注册
 120 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
-Turbo8代表链，并新增六份带多处NOTE的可导入工作流；稳定节点、默认参数和`sampling.py`保持不变。
+Turbo8代表链；T2VA、FL2VA和Ref2VA三条同输入、同seed、同20 NFE控制分别实测约
+2.18×、2.21×和2.30×端到端加速。画质、声音与参考遵循的三组匿名审片仍未完成，因此节点继续为
+EXP；稳定节点、默认参数和`sampling.py`保持不变。
 此前新增的隔离混合细节采样器可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
 前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
@@ -57,7 +59,7 @@ SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。�
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前616项完整回归通过；本次改动文件Ruff与compileall通过，64份项目与64份已安装用户前端工作流
+当前664项完整回归、全仓Ruff与compileall通过，126份非artifact JSON严格解析；70份项目与70份已安装用户前端工作流
 均严格解析且逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
@@ -1823,6 +1825,35 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 使用场景记为`local_16gb_operational_acceptance=passed_by_user_confirmation`，将72条复测与3冷3暖
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
+
+## v1.32.1：SPEED 同输入全分辨率对照与强制解码门
+
+本补丁不增加节点、不修改既有节点schema/default，也不改变稳定`sampling.py`。新增可复现的
+FL2VA/Ref2VA质量对照构建器：从冻结的SPEED API生成全分辨率Stock20控制，逐项证明模型、CLIP、双VAE、
+媒体、prompt、seed、20 NFE、shift 12/3、Euler/native flow、最终裁切和独立音视频噪声完全一致；唯一变量
+是SPEED使用`0.5→1.0`空间阶段与DCT/κ/sigma对齐，而控制组20次调用都在最终画布。
+
+RTX 4060 Ti 16GB上的三条代表性结果：
+
+| 任务 | 全分辨率 | SPEED | 端到端加速 | 峰值显存变化（SPEED-基线） |
+|---|---:|---:|---:|---:|
+| T2VA，1056×608×124，Stock20 | 683.953s | 313.859s | 2.179× | -77.0MiB |
+| FL2VA remix_source，1024×576×124，Stock20 | 706.610s | 319.829s | 2.209× | +33.9MiB |
+| Ref2VA单图，1024×576×124，Stock20 | 619.281s | 269.344s | 2.299× | -162.5MiB |
+
+这证明三条**固定配置**存在真实净加速，但没有证明通用倍率。显存变化很小且FL2VA还略升；SPEED不是
+显存保险，也没有任何路线达到512MiB最低余量门。六条最终视频均为124帧/24fps、有限32kHz双声道，
+A/V误差不超过一帧。
+
+验证器同时修正了一个旧盲点：普通`ffmpeg -v error`即使报告损坏H.264数据也可能返回0；现在三次解码
+都强制`-xerror -err_detect explode`。该门发现旧T2VA SPEED文件有损坏码流，因此旧文件被否决并按相同
+输入重跑v7，新文件3/3零错误。FL2VA、Ref2VA和其基线也全部通过强化门。
+
+三组完整匿名A/B视频和机器代理报告已生成。视频SSIM、清晰度、运动量与音频相关只证明两条轨迹有多大
+差异，不能判断哪条更好；人工完整观看和试听结束前，`quality_validated`、
+`audio_noninferiority_validated`与`reference_noninferiority_validated`继续为false，默认EXP不升级。
+当前发布门为664项测试、全仓Ruff、compileall、126份非artifact JSON、70份工作流逐文件SHA一致、
+`git diff --check`和稳定`sampling.py`哈希，全部通过。
 
 ## v1.32.0：SPEED 多模态、参考模态与 Turbo8 实机收口
 

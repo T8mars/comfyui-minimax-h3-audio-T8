@@ -13,6 +13,39 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.32.1 H3 SPEED controlled performance and decoder-error gate (2026-08-19)
+
+No node, schema, default or stable sampler changed. Two reusable tools now build and analyze one
+FL2VA remix and one Ref2VA-image full-resolution Stock20 control from the frozen SPEED prompts.
+The contract checker requires identical model, CLIP, VAEs, media, conditioning fields, seed,
+20 NFE, shifts, trim and modality-stable AV noise; only the staged spatial SPEED treatment differs.
+The existing T2VA pair uses the same contract.
+
+| Route | Full-resolution | SPEED | Speedup | SPEED minus baseline peak |
+|---|---:|---:|---:|---:|
+| T2VA 1056x608x124 | 683.953s | 313.859s | 2.179x | -77.0MiB |
+| FL2VA remix_source 1024x576x124 | 706.610s | 319.829s | 2.209x | +33.9MiB |
+| Ref2VA image 1024x576x124 | 619.281s | 269.344s | 2.299x | -162.5MiB |
+
+These results validate a real end-to-end speedup only for the three exact local profiles. They do
+not validate a universal speed factor. Peak VRAM did not consistently improve and every SPEED run
+remained below the 512MiB minimum-headroom publication gate, so the memory-safe claim remains false.
+
+The earlier three-pass decoder helper was insufficient because FFmpeg can print H.264 decode errors
+while returning success. It now adds `-xerror -err_detect explode`. The stronger check rejected the
+older T2VA SPEED bitstream, while its baseline and all FL2VA/Ref2VA files passed. T2VA SPEED was rerun
+with the exact same model, prompt, seed, 20 NFE and plan; the clean v7 file passed the strengthened
+check three times. All final files contain exactly 124 frames at 24fps, finite 32kHz stereo audio and
+A/V duration within one frame.
+
+An anonymous three-pair full-video/audio review package plus proxy report was generated. The proxy
+metrics show material route differences but cannot rank perceptual quality, motion, sound or reference
+adherence. Those three non-inferiority gates remain false until human review is completed.
+
+The source release gate passed 664 tests, full Ruff, compileall, 126 non-artifact JSON parses,
+`git diff --check`, the unchanged stable `sampling.py` SHA-256 and SHA parity for all 70 project/user
+frontend workflows.
+
 ## 1.32.0 H3 SPEED multimodal/reference/Turbo8 GPU gate (2026-08-19)
 
 The stable node inventory remains 120 and `sampling.py` is unchanged. One execution-scope enum value

@@ -44,7 +44,21 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[bytes]:
 def _strict_decode(path: Path, ffmpeg: str, attempts: int = 3) -> dict[str, Any]:
     results = []
     for attempt in range(1, attempts + 1):
-        completed = _run([ffmpeg, "-v", "error", "-i", str(path), "-f", "null", "-"])
+        completed = _run(
+            [
+                ffmpeg,
+                "-v",
+                "error",
+                "-xerror",
+                "-err_detect",
+                "explode",
+                "-i",
+                str(path),
+                "-f",
+                "null",
+                "-",
+            ]
+        )
         results.append(
             {
                 "attempt": attempt,

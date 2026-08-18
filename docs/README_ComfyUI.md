@@ -1,5 +1,15 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.32.1 adds controlled same-input, same-seed, same-20-NFE full-resolution comparisons
+> for SPEED T2VA, FL2VA remix and Ref2VA image. Exact-profile end-to-end speedups were 2.179x,
+> 2.209x and 2.299x; peak VRAM changed by -77.0MiB, +33.9MiB and -162.5MiB, so SPEED is a
+> compute-time optimization rather than a memory-safety feature. The decoder gate now uses
+> FFmpeg `-xerror -err_detect explode`; it rejected one older corrupt T2VA SPEED stream, which
+> was regenerated and passed 3/3. The final six files pass mechanical A/V checks and are packaged
+> for anonymous full-video/audio review. Quality, audio and reference non-inferiority remain unproven.
+> The release gate passed 664 tests, full Ruff, compileall, 126 non-artifact JSON parses, stable
+> sampler SHA protection and project/user SHA parity for all 70 frontend workflows.
+
 > Project v1.32.0 completes representative real-GPU mechanical runs for SPEED T2VA, I2VA,
 > FL2VA, L2VA, Ref2VA, Hybrid and an explicit Turbo8 scope. Every 1024x576x124 output passed
 > three strict decodes with finite 32kHz stereo audio, but the worst 16GB headroom was only about
