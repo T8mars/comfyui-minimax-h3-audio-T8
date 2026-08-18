@@ -1,7 +1,9 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.31.1`，共注册
-120 个节点。新增一个隔离的混合细节采样器，可选择组合尾段细化、平滑模型时间偏置、联合音画
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.32.0`，共注册
+120 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
+Turbo8代表链，并新增六份带多处NOTE的可导入工作流；稳定节点、默认参数和`sampling.py`保持不变。
+此前新增的隔离混合细节采样器可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
 前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
 尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
@@ -1822,6 +1824,35 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
 
+## v1.32.0：SPEED 多模态、参考模态与 Turbo8 实机收口
+
+本版不新增或替换稳定节点，只在SPEED Advanced下追加一个下拉值
+`turbo8_t2va_research_exp`；原有`strict_t2va_stock20`与`multimodal_research_exp`保持原顺序，
+因此旧工作流控件不会移位。Turbo8档只接受无媒体T2VA、native audio、严格8步、shift 12/3和带
+weight patches的MODEL；运行时不会从patch tensor猜LoRA文件身份，用户仍需明确选择已验证LoRA。
+实测8 NFE被分成6个粗画布调用和2个全分辨率调用，不会暗中变成10步。
+
+RTX 4060 Ti 16GB、1024×576、124帧、24fps上的单条代表链结果如下；所有输出均为124帧、32kHz
+双声道有限音频、A/V时长误差小于1帧，并通过3/3完整FFmpeg严格解码：
+
+| 路线 | 耗时 | 峰值显存 | 最低余量 | 机械结果 |
+|---|---:|---:|---:|---|
+| I2VA + lock_source / Stock20 | 298.859s | 15924.2MiB | 455.3MiB | 通过；首帧相关0.9985，锁定原音AAC后相关0.9831 |
+| FL2VA + remix_source / Stock20 | 319.829s | 15934.3MiB | 445.2MiB | 通过；首/尾decoded相关0.9984/0.9972 |
+| L2VA + native / Stock20 | 278.797s | 16107.8MiB | 271.7MiB | 通过；尾帧decoded相关0.9976 |
+| Ref2VA单图 / Stock20 | 269.344s | 16043.0MiB | 336.5MiB | 通过；参考质量未盲评 |
+| Ref2VA 2秒视频+同编号音轨 / Stock20 | 416.797s | 15990.4MiB | 389.1MiB | 通过；固定ref token明显增加耗时 |
+| Hybrid首帧+独立图/音频 / Stock20 | 303.250s | 15927.3MiB | 452.2MiB | 通过；keyframe和refs计数同时保持 |
+| T2VA Turbo8 / 208-patch LoRA | 149.578s | 16257.8MiB | 121.7MiB | 通过但出现换页抖动分类 |
+
+这些数据只证明机械链路成立。所有路线都没有达到512MiB的16GB发布安全门；没有同输入全分辨率基线
+就不能宣称实际加速，参考遵循、画质、声音非劣和事件/口型同步仍需人工审片试听。BlockCache、STG、
+ActivationChunk、Restart、MultiRate、Dynamic Guidance、LongVideo和MultiKeyframe不自动叠加：已知
+Transformer wrapper、callback/patch、DiT replacement、post-CFG/model wrapper及局部MODEL patch会
+fail closed。六份`2026-08-19_H3_SPEED_*`工作流各带三处NOTE说明用途、参数、显存和审片边界。
+最终发布门为655项测试、全仓Ruff、compileall、70份工作流JSON解析、在线schema幂等复扫、稳定
+`sampling.py`哈希保护以及项目/用户菜单70份工作流逐文件SHA一致，全部通过。
+
 ## v1.31.1：SPEED 实机链、音画独立噪声与分阶段显存释放
 
 本补丁没有修改任何稳定节点的输入顺序、默认值或`sampling.py`数学。SPEED实验链新增
@@ -1833,7 +1864,8 @@ SPEED Whole-Chain Sampler会在初始阶段及画布放大边界只卸载当前H
 1056×608、124帧、Stock20、RTX 4060 Ti 16GB真实运行已成功，耗时301.469秒；输出连续3次严格
 FFmpeg解码均通过，得到124帧24fps视频与32kHz双声道音频，音画时长误差约0.0003秒。但整卡峰值
 约16004MiB、最低余量约376MiB，低于项目512MiB发布门槛，所以仍只标EXP，不声明“16GB安全”、
-质量非劣或音频非劣。I2VA/FL2VA/L2VA、lock/remix、Ref2VA与Hybrid仍需逐项真实验证。全项目
+质量非劣或音频非劣。I2VA/FL2VA/L2VA、lock/remix、Ref2VA与Hybrid在v1.32.0已完成代表链机械验证，
+但感知质量仍未宣称通过。全项目
 621项测试、Ruff、compileall、JSON解析和稳定`sampling.py`哈希保护均通过。
 
 ## v1.31.0：MiniMax H3 混合细节采样器（Advanced）
@@ -1944,6 +1976,12 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 - `2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：默认严格T2VA、20步、0.5→1.0、手工sigma的首个实机候选。
 - `2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的多模态研究示例，必须显式EXP。
 - `2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建示例，必须显式EXP。
+- `2026-08-19_H3_SPEED_I2VA_Lock_Stock20_Advanced_EXP.json`：I2VA首帧锚点与原音锁定旁路，带三处NOTE。
+- `2026-08-19_H3_SPEED_FL2VA_Remix_Stock20_Advanced_EXP.json`：首尾锚点和0.35源音重混，保存生成音频。
+- `2026-08-19_H3_SPEED_L2VA_Native_Stock20_Advanced_EXP.json`：尾帧锚点与原生生成音频。
+- `2026-08-19_H3_SPEED_RefVideoAudio_Stock20_Advanced_EXP.json`：2秒视频参考及同编号关联音轨。
+- `2026-08-19_H3_SPEED_Hybrid_FirstImageAudio_Stock20_Advanced_EXP.json`：首帧、独立参考图和独立参考音频并用。
+- `2026-08-19_H3_SPEED_T2VA_Turbo8_Advanced_EXP.json`：显式Turbo LoRA、6+2 NFE和专用fail-closed执行档。
 
 API 示例见 `tests/fixtures/api/audio_lock_api.json`、
 `tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和

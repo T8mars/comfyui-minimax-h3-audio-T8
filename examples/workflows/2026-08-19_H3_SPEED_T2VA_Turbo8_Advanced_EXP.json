@@ -1,19 +1,20 @@
 {
-  "id": "d6e59e2c-0a2e-4c30-b10b-5a0f95f85002",
+  "id": "bd112774-295b-5ca1-8507-c8ed4bd62999",
   "revision": 0,
-  "last_node_id": 12,
-  "last_link_id": 13,
+  "last_node_id": 16,
+  "last_link_id": 16,
   "nodes": [
     {
       "id": 1,
       "type": "UNETLoader",
+      "title": "Stock MiniMax H3 FL2VA base",
       "pos": [
         0,
         0
       ],
       "size": [
-        340,
-        82
+        390,
+        168
       ],
       "flags": {},
       "order": 0,
@@ -46,6 +47,7 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
@@ -55,17 +57,74 @@
     },
     {
       "id": 2,
-      "type": "CLIPLoader",
+      "type": "LoraLoaderModelOnly",
+      "title": "Explicit user-selected Turbo LoRA",
       "pos": [
-        0,
-        140
+        440,
+        0
       ],
       "size": [
-        340,
-        106
+        390,
+        194
       ],
       "flags": {},
       "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "lora_name"
+          },
+          "link": null
+        },
+        {
+          "name": "strength_model",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength_model"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoraLoaderModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "MiniMax H3 Qwen encoder",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
       "mode": 0,
       "inputs": [
         {
@@ -103,6 +162,7 @@
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
@@ -112,56 +172,16 @@
       ]
     },
     {
-      "id": 3,
-      "type": "VAELoader",
-      "pos": [
-        0,
-        300
-      ],
-      "size": [
-        340,
-        58
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            3,
-            8
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VAELoader"
-      },
-      "widgets_values": [
-        "minimax_h3_video_vae_fp16.safetensors"
-      ]
-    },
-    {
       "id": 4,
       "type": "VAELoader",
+      "title": "MiniMax H3 video VAE",
       "pos": [
         0,
-        400
+        600
       ],
       "size": [
-        340,
-        58
+        390,
+        124
       ],
       "flags": {},
       "order": 3,
@@ -181,12 +201,56 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            4,
+            3,
             9
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "title": "MiniMax H3 audio VAE",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
@@ -194,19 +258,19 @@
       ]
     },
     {
-      "id": 5,
+      "id": 6,
       "type": "MiniMaxH3SPEEDPlanT8Advanced",
-      "title": "1. Manual H3 SPEED plan: 20 NFE remains 20 NFE",
+      "title": "Two-stage SPEED plan; total NFE stays eight",
       "pos": [
-        420,
-        -40
+        0,
+        1200
       ],
       "size": [
-        520,
-        410
+        390,
+        564
       ],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -309,22 +373,23 @@
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
           "links": [
-            5
+            6
           ]
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDPlanT8Advanced"
       },
       "widgets_values": [
-        1056,
-        608,
-        20,
+        1024,
+        576,
+        8,
         "0.5,1.0",
         "manual_sigmas",
         "0.85",
@@ -336,19 +401,19 @@
       ]
     },
     {
-      "id": 6,
+      "id": 7,
       "type": "MiniMaxH3SPEEDSourceT8Advanced",
-      "title": "2. FL2VA raw frames; VAE-encoded again at every SPEED canvas",
+      "title": "Media-free T2VA Turbo8 source",
       "pos": [
-        420,
-        420
+        440,
+        300
       ],
       "size": [
-        620,
-        690
+        390,
+        686
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -477,13 +542,13 @@
         {
           "name": "first_frame",
           "type": "IMAGE",
-          "link": 12,
+          "link": null,
           "shape": 7
         },
         {
           "name": "last_frame",
           "type": "IMAGE",
-          "link": 13,
+          "link": null,
           "shape": 7
         }
       ],
@@ -492,24 +557,25 @@
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
           "links": [
-            6
+            7
           ]
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDSourceT8Advanced"
       },
       "widgets_values": [
-        "The scene begins exactly from the first frame and ends exactly at the last frame. Natural cinematic motion between them, synchronized environment sound, no speech.",
+        "A woman in flowing red Hanfu spins rapidly through the night sky. Coherent anatomy, crisp fabric detail, cinematic moonlight, synchronized wind; no speech.",
         124,
-        "FL2VA",
+        "T2VA",
         "native",
-        0.35,
+        1.0,
         false,
         0,
         true,
@@ -520,35 +586,35 @@
       ]
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "MiniMaxH3SPEEDSamplerT8Advanced",
-      "title": "3. Multimodal research scope: FL2VA stage rebuild",
+      "title": "Turbo8-specific fail-closed SPEED scope",
       "pos": [
-        1120,
-        160
+        880,
+        0
       ],
       "size": [
-        560,
-        250
+        390,
+        352
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 1
+          "link": 5
         },
         {
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
-          "link": 5
+          "link": 6
         },
         {
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
-          "link": 6
+          "link": 7
         },
         {
           "name": "shift_audio",
@@ -588,69 +654,74 @@
           "name": "av_latent",
           "type": "LATENT",
           "links": [
-            7
+            8
           ]
         },
         {
           "name": "mux_audio",
           "type": "AUDIO",
-          "links": []
+          "links": null
         },
         {
           "name": "conditioned_prompt",
           "type": "STRING",
-          "links": []
+          "links": null
         },
         {
           "name": "media_map_json",
           "type": "STRING",
-          "links": []
+          "links": null
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": [
+            16
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDSamplerT8Advanced"
       },
       "widgets_values": [
         3.0,
-        2608184001,
-        "multimodal_research_exp",
+        2608194001,
+        "fixed",
+        "turbo8_t2va_research_exp",
         64
       ]
     },
     {
-      "id": 8,
+      "id": 9,
       "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode generated H3 video and audio",
       "pos": [
-        1740,
-        150
+        1320,
+        0
       ],
       "size": [
-        300,
-        130
+        390,
+        158
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "av_latent",
           "type": "LATENT",
-          "link": 7
+          "link": 8
         },
         {
           "name": "video_vae",
           "type": "VAE",
-          "link": 8
+          "link": 9
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 9
+          "link": 10
         }
       ],
       "outputs": [
@@ -658,226 +729,361 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            10
+            11
           ]
         },
         {
           "name": "generated_audio",
           "type": "AUDIO",
           "links": [
-            11
+            12
           ]
         },
         {
           "name": "video_latent",
           "type": "LATENT",
-          "links": []
+          "links": null
         },
         {
           "name": "audio_latent",
           "type": "LATENT",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3AVDecodeT8"
       },
       "widgets_values": []
     },
     {
-      "id": 9,
-      "type": "VHS_VideoCombine",
-      "pos": [
-        2100,
-        100
-      ],
-      "size": [
-        430,
-        500
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 10
-        },
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "link": 11,
-          "shape": 7
-        },
-        {
-          "name": "meta_batch",
-          "type": "VHS_BatchManager",
-          "link": null,
-          "shape": 7
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": null,
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "Filenames",
-          "type": "VHS_FILENAMES",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VHS_VideoCombine"
-      },
-      "widgets_values": {
-        "frame_rate": 24,
-        "loop_count": 0,
-        "filename_prefix": "MiniMaxH3/speed_fl2va_stock20_exp",
-        "format": "video/h264-mp4",
-        "pix_fmt": "yuv420p",
-        "crf": 19,
-        "save_metadata": true,
-        "trim_to_audio": false,
-        "pingpong": false,
-        "save_output": true
-      }
-    },
-    {
       "id": 10,
-      "type": "MarkdownNote",
-      "title": "FL2VA mechanics passed one GPU chain; quality/speed remain EXP",
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "Exact 124-frame A/V trim",
       "pos": [
-        1120,
-        -430
+        1760,
+        0
       ],
       "size": [
-        1400,
-        500
+        390,
+        264
       ],
       "flags": {},
       "order": 9,
       "mode": 0,
-      "color": "#7c4a03",
-      "bgcolor": "#1f1608",
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "## FL2VA机械链已完成一条真实GPU验证，仍是EXP\n\n替换两张同画幅首尾帧。每个SPEED阶段会按该阶段画布重新缩放并用video VAE重新编码，避免最终尺寸keyframe latent与粗阶段PackedLayout行数不一致。\n\n本机1024×576、124帧、Stock20代表链已确认首尾锚点、124帧、32kHz双声道和A/V时长机械正确；最低显存余量约445MiB，未达到512MiB安全门槛。尚未证明相对全分辨率的画质非劣、稳定加速或通用16GB安全。`multimodal_research_exp`仍是显式风险开关；不要叠其他sampler/model wrapper。"
-      ]
-    },
-    {
-      "id": 11,
-      "type": "LoadImage",
-      "pos": [
-        40,
-        540
-      ],
-      "size": [
-        340,
-        320
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
       "inputs": [
         {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
+          "name": "frames",
           "type": "IMAGE",
-          "links": [
-            12
-          ]
+          "link": 11
         },
         {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "replace_with_first_frame.png",
-        "image"
-      ]
-    },
-    {
-      "id": 12,
-      "type": "LoadImage",
-      "pos": [
-        40,
-        900
-      ],
-      "size": [
-        340,
-        320
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
+          "name": "start_seconds",
+          "type": "FLOAT",
           "widget": {
-            "name": "image"
+            "name": "start_seconds"
           },
           "link": null
         },
         {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
+          "name": "duration_seconds",
+          "type": "FLOAT",
           "widget": {
-            "name": "upload"
+            "name": "duration_seconds"
           },
           "link": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 12,
+          "shape": 7
         }
       ],
       "outputs": [
         {
-          "name": "IMAGE",
+          "name": "frames",
           "type": "IMAGE",
           "links": [
             13
           ]
         },
         {
-          "name": "MASK",
-          "type": "MASK",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0.0,
+        5.166666666666667,
+        24.0
+      ]
+    },
+    {
+      "id": 11,
+      "type": "CreateVideo",
+      "title": "Create review video",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 14,
+          "shape": 7
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "widget": {
+            "name": "bit_depth"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 12,
+      "type": "SaveVideo",
+      "title": "Save Turbo8 SPEED result",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 15
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
           "links": null
         }
       ],
       "properties": {
         "cnr_id": "comfy-core",
-        "Node name for S&R": "LoadImage"
+        "Node name for S&R": "SaveVideo"
       },
       "widgets_values": [
-        "replace_with_last_frame.png",
-        "image"
+        "MiniMaxH3/SPEED_Turbo8_v1/t2va_turbo8",
+        "mp4"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "SaveText",
+      "title": "Save Turbo8 execution report",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 16
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveText"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SPEED_Turbo8_v1/t2va_turbo8_speed_report",
+        "json"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "title": "SPEED机制与发布边界",
+      "pos": [
+        0,
+        -720
+      ],
+      "size": [
+        820,
+        430
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## SPEED公共边界\n\n这是Advanced/EXP整链采样，不会替换原采样节点。默认两级`0.5→1.0`、Stock20时为14+6 NFE；Turbo8时为6+2 NFE，总NFE不额外增加。每级都会重建H3 AV latent、PackedLayout和条件。当前仅机械跑通，未证明质量或加速收益。"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "本工作流用途",
+      "pos": [
+        920,
+        -720
+      ],
+      "size": [
+        820,
+        430
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "color": "#3f5d36",
+      "bgcolor": "#152115",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Turbo8专用档\n\nMODEL必须由用户明确选择兼容Turbo LoRA后传入。运行时只能证明存在weight patches，不能从patch tensor反推LoRA文件身份，因此报告不会伪称自动验证了LoRA。"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "参数、显存与审片清单",
+      "pos": [
+        1840,
+        -720
+      ],
+      "size": [
+        820,
+        430
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "color": "#6a4425",
+      "bgcolor": "#24170f",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 成本与风险\n\n8步分成6+2 NFE，本机约150秒；峰值16258MiB，仅余约122MiB并发生换页。严格检查画面、声音与同步；不要标16GB安全，不要叠BlockCache/STG/ActivationChunk。"
       ]
     }
   ],
@@ -886,145 +1092,142 @@
       1,
       1,
       0,
-      7,
+      2,
       0,
       "MODEL"
     ],
     [
       2,
-      2,
+      3,
       0,
-      6,
+      7,
       0,
       "CLIP"
     ],
     [
       3,
-      3,
+      4,
       0,
-      6,
+      7,
       1,
       "VAE"
     ],
     [
       4,
-      4,
+      5,
       0,
-      6,
+      7,
       2,
       "VAE"
     ],
     [
       5,
-      5,
+      2,
       0,
-      7,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      6,
+      0,
+      8,
       1,
       "H3_T8_SPEED_PLAN"
     ],
     [
-      6,
-      6,
-      0,
       7,
+      7,
+      0,
+      8,
       2,
       "H3_T8_SPEED_SOURCE"
     ],
     [
-      7,
-      7,
-      0,
       8,
+      8,
+      0,
+      9,
       0,
       "LATENT"
-    ],
-    [
-      8,
-      3,
-      0,
-      8,
-      1,
-      "VAE"
     ],
     [
       9,
       4,
       0,
-      8,
-      2,
+      9,
+      1,
       "VAE"
     ],
     [
       10,
-      8,
+      5,
       0,
       9,
+      2,
+      "VAE"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
       0,
       "IMAGE"
     ],
     [
-      11,
-      8,
-      1,
+      12,
       9,
       1,
+      10,
+      4,
       "AUDIO"
     ],
     [
-      12,
+      13,
+      10,
+      0,
       11,
       0,
-      6,
-      17,
       "IMAGE"
     ],
     [
-      13,
+      14,
+      10,
+      1,
+      11,
+      2,
+      "AUDIO"
+    ],
+    [
+      15,
+      11,
+      0,
       12,
       0,
-      6,
-      18,
-      "IMAGE"
+      "VIDEO"
+    ],
+    [
+      16,
+      8,
+      4,
+      13,
+      0,
+      "STRING"
     ]
   ],
-  "groups": [
-    {
-      "id": 1,
-      "title": "Official-math H3 SPEED Advanced (strict T2VA first)",
-      "bounding": [
-        380,
-        -500,
-        1340,
-        1660
-      ],
-      "color": "#8a5a16",
-      "font_size": 28,
-      "flags": {}
-    },
-    {
-      "id": 2,
-      "title": "Decode and review all audio/video",
-      "bounding": [
-        1700,
-        30,
-        880,
-        610
-      ],
-      "color": "#7c3f58",
-      "font_size": 26,
-      "flags": {}
-    }
-  ],
+  "groups": [],
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.72,
+      "scale": 0.75,
       "offset": [
-        80,
-        220
+        120,
+        120
       ]
     },
-    "ue_links": []
+    "workflow_title": "T2VA Turbo8"
   },
   "version": 0.4
 }

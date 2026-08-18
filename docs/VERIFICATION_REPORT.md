@@ -13,6 +13,38 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.32.0 H3 SPEED multimodal/reference/Turbo8 GPU gate (2026-08-19)
+
+The stable node inventory remains 120 and `sampling.py` is unchanged. One execution-scope enum value
+was appended after the two existing SPEED values: `turbo8_t2va_research_exp`. It requires media-free
+T2VA, native audio, exactly eight steps, shifts 12/3 and a weight-patched MODEL. Runtime reports the
+presence of patches but deliberately keeps LoRA identity unverified because patch tensors do not carry
+a trustworthy source filename. Existing strict Stock20 and multimodal scope values retain their order.
+
+Seven controlled RTX 4060 Ti 16GB runs used 1024x576, 124 frames and 24fps. Stock20 used a two-stage
+14+6 split; Turbo8 preserved total NFE as 6+2. All outputs contained exactly 124 decodable frames,
+finite 32kHz stereo audio, stream-duration error within one frame and passed 3/3 full FFmpeg decodes.
+
+| Route | Runtime | Peak VRAM | Minimum headroom | Mechanical result |
+|---|---:|---:|---:|---|
+| I2VA lock_source | 298.859s | 15924.2MiB | 455.3MiB | pass; first-frame corr 0.9985, locked AAC audio corr 0.9831 |
+| FL2VA remix_source | 319.829s | 15934.3MiB | 445.2MiB | pass; first/last decoded corr 0.9984/0.9972 |
+| L2VA native | 278.797s | 16107.8MiB | 271.7MiB | pass; last-frame decoded corr 0.9976 |
+| Ref2VA image | 269.344s | 16043.0MiB | 336.5MiB | pass; perceptual reference adherence not scored |
+| Ref2VA 2s video + numbered soundtrack | 416.797s | 15990.4MiB | 389.1MiB | pass; fixed reference rows materially increased runtime |
+| Hybrid first-frame + image/audio refs | 303.250s | 15927.3MiB | 452.2MiB | pass; keyframe and refs survived both stage rebuilds |
+| T2VA Turbo8, 208 LoRA patches | 149.578s | 16257.8MiB | 121.7MiB | pass with `fits_with_thrashing` telemetry classification |
+
+These are mechanical executions, not speedup or perceptual winners. No route passed the 512MiB
+16GB publication gate. Reference identity/style/action/audio adherence, remix/native audio quality,
+extra speech, event/lip synchronization and same-input full-resolution speed/quality comparisons remain
+pending. Unit gates now also reject Transformer wrappers/callbacks/patches, DiT replacements,
+post-CFG/model wrappers and LongVideo/MultiKeyframe scoped MODEL patches. Six dated frontend workflows
+carry three Markdown notes each; user-facing source/reference filenames are explicit replace-me values.
+The final release gate passed 655 project tests, full Ruff, compileall, 70 workflow JSON parses, an
+idempotent live-schema rescan, the stable `sampling.py` SHA-256 guard and SHA parity for all 70 project/user
+menu workflows.
+
 ## 1.31.0 H3 Detail Mixer Advanced source gate (2026-08-18)
 
 One append-only node was added after the existing 118 IDs. The five independent detail nodes,

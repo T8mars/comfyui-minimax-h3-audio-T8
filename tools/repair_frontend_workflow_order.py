@@ -57,11 +57,22 @@ def _autogrow_matches(
     template_inputs = template.get("input", {}).get("required", {})
     template_spec = next(iter(template_inputs.values()), ["*"])
     dotted = f"{group_name}."
+
+    def belongs_to_group(name: str) -> bool:
+        if name.startswith(dotted):
+            local_name = name[len(dotted) :]
+        elif "." not in name:
+            local_name = name
+        else:
+            return False
+        if not prefix or not local_name.startswith(prefix):
+            return False
+        return local_name[len(prefix) :].isdigit()
+
     matches = [
         name
         for name in saved_names
-        if name.startswith(dotted)
-        or (prefix and (name.startswith(prefix) or name.startswith(dotted + prefix)))
+        if belongs_to_group(name)
     ]
 
     def sort_key(name: str) -> tuple[str, int, str]:

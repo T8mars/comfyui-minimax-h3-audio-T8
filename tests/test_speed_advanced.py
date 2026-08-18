@@ -8,6 +8,7 @@ import pytest
 import torch
 
 import comfy.nested_tensor
+from comfy.ldm.minimax.model import MiniMaxH3Model
 
 from h3_audio_t8_pkg.nodes_speed_advanced import SPEED_ADVANCED_NODE_CLASSES
 from h3_audio_t8_pkg.speed_advanced import (
@@ -15,12 +16,15 @@ from h3_audio_t8_pkg.speed_advanced import (
     SPEED_PROFILE_SCHEMA,
     SPEED_SOURCE_SCHEMA,
     StageConditioning,
+    _build_stage,
     _build_empty_t2va_stage,
     _profile_binding,
     _apply_speed_scoped_headroom,
     _release_h3_residency_between_stages,
     _restore_speed_scoped_headroom,
     _task_support,
+    _weight_patch_contract,
+    _ensure_native_h3_model,
     activation_time,
     align_sigma,
     build_spectrum_profile,
@@ -36,6 +40,7 @@ from h3_audio_t8_pkg.speed_advanced import (
     resolve_stage_shapes,
     solve_segment_noise,
 )
+from helpers import FakeAudioVAE, FakeClip, FakeVideoVAE, make_audio
 
 
 def test_official_speed_equations_match_reference_formulas():
@@ -248,6 +253,84 @@ def test_strict_scope_is_exactly_t2va_native_stock20():
     )[0] is False
 
 
+def test_turbo8_scope_is_exactly_media_free_t2va_native_8step():
+    source = {"resolved_task": "t2va", "audio_mode": "native"}
+    assert _task_support(source, "turbo8_t2va_research_exp", 8, 12.0, 3.0)[0]
+    assert not _task_support(source, "turbo8_t2va_research_exp", 20, 12.0, 3.0)[0]
+    assert not _task_support(
+        {**source, "first_frame": torch.zeros(1, 32, 32, 3)},
+        "turbo8_t2va_research_exp",
+        8,
+        12.0,
+        3.0,
+    )[0]
+
+
+def test_weight_patch_contract_distinguishes_stock_and_turbo_scopes():
+    class FakeModel:
+        def __init__(self, patches):
+            self.patches = patches
+
+    stock = FakeModel({})
+    patched = FakeModel({"diffusion_model.test": [(1.0, object())]})
+    assert _weight_patch_contract(stock, "strict_t2va_stock20")[0]
+    assert not _weight_patch_contract(patched, "strict_t2va_stock20")[0]
+    assert not _weight_patch_contract(stock, "turbo8_t2va_research_exp")[0]
+    supported, _reason, report = _weight_patch_contract(
+        patched, "turbo8_t2va_research_exp"
+    )
+    assert supported is True
+    assert report["has_weight_patches"] is True
+    assert report["lora_identity_verified_by_runtime"] is False
+
+
+def _native_h3_patcher_for_conflict_test(model_options=None, *, extra_conds=None):
+    class FakeBase:
+        pass
+
+    class FakePatcher:
+        pass
+
+    base = FakeBase()
+    base.diffusion_model = object.__new__(MiniMaxH3Model)
+    base.extra_conds = extra_conds or (lambda **_kwargs: None)
+    patcher = FakePatcher()
+    patcher.model = base
+    patcher.model_options = model_options or {}
+    return patcher
+
+
+@pytest.mark.parametrize(
+    "model_options",
+    [
+        {"transformer_options": {"wrappers": {"dit": object()}}},
+        {"transformer_options": {"callbacks": {"dit": object()}}},
+        {"transformer_options": {"patches": {"dit": object()}}},
+        {
+            "transformer_options": {
+                "patches_replace": {"dit": {("double_block", 0): object()}}
+            }
+        },
+        {"model_function_wrapper": object()},
+        {"sampler_post_cfg_function": [object()]},
+    ],
+)
+def test_speed_fails_closed_on_wrappers_and_block_replacements(model_options):
+    with pytest.raises(ValueError, match="refuses"):
+        _ensure_native_h3_model(_native_h3_patcher_for_conflict_test(model_options))
+
+
+def test_speed_fails_closed_on_long_video_or_multikeyframe_scoped_model():
+    def patched_extra_conds(**_kwargs):
+        return None
+
+    patched_extra_conds._t8_long_video_patch_version = "test"
+    with pytest.raises(ValueError, match="scoped MODEL patches"):
+        _ensure_native_h3_model(
+            _native_h3_patcher_for_conflict_test(extra_conds=patched_extra_conds)
+        )
+
+
 def test_strict_t2va_stage_reuses_text_and_rebuilds_only_empty_av_canvas():
     positive = object()
     mux_audio = object()
@@ -274,6 +357,57 @@ def test_strict_t2va_stage_reuses_text_and_rebuilds_only_empty_av_canvas():
     assert tuple(audio.shape) == (1, 32, 2, 207)
     assert torch.count_nonzero(video) == 0
     assert torch.count_nonzero(audio) == 0
+
+
+@pytest.mark.parametrize(
+    ("task", "mode", "first", "last", "expected_audio_mask"),
+    [
+        ("I2VA", "lock_source", True, False, 0.0),
+        ("FL2VA", "remix_source", True, True, 0.35),
+        ("L2VA", "native", False, True, None),
+    ],
+)
+def test_multimodal_stage_rebuilds_keyframes_and_audio_mask_per_canvas(
+    task, mode, first, last, expected_audio_mask
+):
+    source, _ = build_speed_source(
+        clip=FakeClip(),
+        video_vae=FakeVideoVAE(),
+        audio_vae=FakeAudioVAE(),
+        prompt="controlled multimodal test",
+        length=124,
+        task_type=task,
+        audio_mode=mode,
+        audio_denoise_strength=0.35,
+        add_source_as_reference=False,
+        prompt_primary_audio_ordinal=0,
+        strict_prompt_tags=True,
+        ref_image_size="match",
+        reference_video_policy="official_2_to_15s",
+        checkpoint_fingerprint="unrecorded",
+        vae_fingerprint="unrecorded",
+        drive_audio=make_audio() if mode != "native" else None,
+        final_audio=None,
+        first_frame=torch.zeros(1, 96, 160, 3) if first else None,
+        last_frame=torch.ones(1, 96, 160, 3) if last else None,
+        ref_images=None,
+        ref_videos=None,
+        ref_video_audios=None,
+        ref_audios=None,
+    )
+    stages = [_build_stage(source, 256, 128), _build_stage(source, 512, 256)]
+    for stage, expected_hw in zip(stages, ((8, 16), (16, 32))):
+        video, _audio = stage.latent["samples"].unbind()
+        assert tuple(video.shape[-2:]) == expected_hw
+        metadata = stage.positive[0][1]
+        keyframes = metadata["minimax_keyframes"]
+        assert len(keyframes) == int(first) + int(last)
+        assert all(tuple(item["latent"].shape[-2:]) == expected_hw for item in keyframes)
+        if expected_audio_mask is None:
+            assert "noise_mask" not in stage.latent
+        else:
+            _video_mask, audio_mask = stage.latent["noise_mask"].unbind()
+            assert torch.all(audio_mask == expected_audio_mask)
 
 
 def test_dct_expansion_matches_scipy_reference_and_is_deterministic():

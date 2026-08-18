@@ -15,7 +15,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     paths = sorted(root.glob("*.json"))
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 64
+    assert len(paths) == 70
     assert [path.name for path in paths if not publication_name.fullmatch(path.name)] == []
 
 
@@ -152,6 +152,65 @@ def test_api_converter_keeps_full_slots_before_a_later_optional_link():
     ]
     assert target["inputs"][2]["link"] == 1
     assert workflow["links"] == [[1, 1, 0, 2, 2, "IMAGE"]]
+
+
+def test_autogrow_repair_does_not_cross_match_overlapping_prefixes():
+    object_info = {
+        "Target": {
+            "input": {
+                "required": {},
+                "optional": {
+                    "ref_videos": [
+                        "COMFY_AUTOGROW_V3",
+                        {
+                            "template": {
+                                "input": {"required": {"ref_video": ["IMAGE", {}]}},
+                                "prefix": "ref_video_",
+                            }
+                        },
+                    ],
+                    "ref_video_audios": [
+                        "COMFY_AUTOGROW_V3",
+                        {
+                            "template": {
+                                "input": {"required": {"ref_video_audio": ["AUDIO", {}]}},
+                                "prefix": "ref_video_audio_",
+                            }
+                        },
+                    ],
+                },
+            },
+            "output": [],
+            "output_name": [],
+        }
+    }
+    workflow = {
+        "nodes": [
+            {
+                "id": 1,
+                "type": "Target",
+                "inputs": [
+                    {
+                        "name": "ref_videos.ref_video_0",
+                        "type": "IMAGE",
+                        "link": 1,
+                    },
+                    {
+                        "name": "ref_video_audios.ref_video_audio_0",
+                        "type": "AUDIO",
+                        "link": 2,
+                    },
+                ],
+                "outputs": [],
+                "widgets_values": [],
+            }
+        ],
+        "links": [],
+    }
+
+    frozen = deepcopy(workflow)
+    assert repair_workflow(workflow, object_info) == {"repaired": [], "skipped": []}
+    assert workflow == frozen
 
 
 def test_all_t8_frontend_workflows_match_current_schema_order():

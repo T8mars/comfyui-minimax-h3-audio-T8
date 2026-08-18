@@ -988,9 +988,55 @@ def _task_support(
             supported,
             "strict P1 requires media-free T2VA + native audio + exactly 20 steps + shifts 12/3",
         )
+    if execution_scope == "turbo8_t2va_research_exp":
+        conditioning_media = bool(
+            source.get("first_frame") is not None
+            or source.get("last_frame") is not None
+            or sorted_autogrow_values(source.get("ref_images"))
+            or sorted_autogrow_values(source.get("ref_videos"))
+            or sorted_autogrow_values(source.get("ref_video_audios"))
+            or sorted_autogrow_values(source.get("ref_audios"))
+            or source.get("drive_audio") is not None
+        )
+        supported = (
+            task == "t2va"
+            and audio_mode == "native"
+            and int(steps) == 8
+            and math.isclose(float(shift_video), 12.0, rel_tol=0.0, abs_tol=1e-7)
+            and math.isclose(float(shift_audio), 3.0, rel_tol=0.0, abs_tol=1e-7)
+            and not conditioning_media
+        )
+        return (
+            supported,
+            "Turbo8 research requires media-free T2VA + native audio + exactly 8 steps + "
+            "shifts 12/3 and a separately verified compatible Turbo LoRA",
+        )
     if execution_scope == "multimodal_research_exp":
         return True, "multimodal mechanics implemented; GPU quality/audio validation pending"
     raise ValueError("Unknown SPEED execution_scope")
+
+
+def _weight_patch_contract(model, execution_scope: str) -> tuple[bool, str, dict[str, Any]]:
+    has_weight_patches = bool(getattr(model, "patches", {}))
+    report = {
+        "has_weight_patches": has_weight_patches,
+        "lora_identity_verified_by_runtime": False,
+        "scope": execution_scope,
+    }
+    if execution_scope == "strict_t2va_stock20" and has_weight_patches:
+        return (
+            False,
+            "strict P1 refuses LoRA/weight-patched models; use an unpatched stock H3 model",
+            report,
+        )
+    if execution_scope == "turbo8_t2va_research_exp" and not has_weight_patches:
+        return (
+            False,
+            "Turbo8 research requires a weight-patched MODEL from a compatible Turbo LoRA; "
+            "the runtime cannot infer LoRA identity from patch tensors alone",
+            report,
+        )
+    return True, "weight patch presence matches the selected execution scope", report
 
 
 def _profile_binding(
@@ -1114,9 +1160,12 @@ def execute_speed_sampling(
         shift_video,
         float(shift_audio),
     )
-    if execution_scope == "strict_t2va_stock20" and getattr(model, "patches", {}):
+    patch_supported, patch_reason, weight_patch_report = _weight_patch_contract(
+        model, execution_scope
+    )
+    if not patch_supported:
         supported = False
-        support_reason = "strict P1 refuses LoRA/weight-patched models; use an unpatched stock H3 model"
+        support_reason = patch_reason
     fallback = speed_plan["fallback_policy"]
     if not supported and fallback == "error":
         raise ValueError(support_reason)
@@ -1231,7 +1280,10 @@ def execute_speed_sampling(
                     sigma_to, float(transition["aligned_sigma"]), rel_tol=0.0, abs_tol=1e-7
                 ):
                     raise RuntimeError("DCT transition sigma disagrees with the frozen SPEED plan")
-                if supported and execution_scope == "strict_t2va_stock20":
+                if supported and execution_scope in {
+                    "strict_t2va_stock20",
+                    "turbo8_t2va_research_exp",
+                }:
                     next_stage = _build_empty_t2va_stage(
                         speed_source,
                         next_shape["width"],
@@ -1307,6 +1359,7 @@ def execute_speed_sampling(
             "status": "completed_unvalidated_quality" if supported else "fallback_completed",
             "execution_scope": execution_scope,
             "support_reason": support_reason,
+            "weight_patch_contract": weight_patch_report,
             "resolved_task": speed_source.get("resolved_task"),
             "audio_mode": speed_source.get("audio_mode"),
             "spectrum_profile_binding": profile_binding,

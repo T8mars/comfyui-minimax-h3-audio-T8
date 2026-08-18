@@ -1,5 +1,12 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.32.0 completes representative real-GPU mechanical runs for SPEED T2VA, I2VA,
+> FL2VA, L2VA, Ref2VA, Hybrid and an explicit Turbo8 scope. Every 1024x576x124 output passed
+> three strict decodes with finite 32kHz stereo audio, but the worst 16GB headroom was only about
+> 122MiB and no same-input full-resolution/perceptual baseline has established speed or quality.
+> Six dated frontend workflows include multiple parameter and review notes. The 655-test, full-Ruff,
+> compileall, 70-workflow JSON/live-schema and stable-sampler-hash release gates passed. SPEED remains EXP.
+
 > Project v1.31.1 adds a modality-stable AV noise node and targeted H3 clone-family release for
 > the isolated SPEED experiment. A real 1056x608, 124-frame Stock20 run completed and passed three
 > strict decodes, but its minimum 16GB headroom was about 376MiB, below the 512MiB release gate;

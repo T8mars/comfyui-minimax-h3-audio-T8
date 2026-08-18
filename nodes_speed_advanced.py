@@ -335,12 +335,18 @@ class MiniMaxH3SPEEDSamplerT8Advanced(io.ComfyNode):
                 ),
                 io.Combo.Input(
                     "execution_scope",
-                    options=["strict_t2va_stock20", "multimodal_research_exp"],
+                    options=[
+                        "strict_t2va_stock20",
+                        "multimodal_research_exp",
+                        "turbo8_t2va_research_exp",
+                    ],
                     default="strict_t2va_stock20",
                     tooltip=(
                         "Strict mode requires media-free native-audio T2VA, exactly 20 steps, shifts 12/3, "
                         "and an unpatched stock H3 model. Multimodal research mode "
-                        "enables stage-rebuilt I/FL/L/Ref/Hybrid mechanics before GPU validation."
+                        "enables stage-rebuilt I/FL/L/Ref/Hybrid mechanics. Turbo8 research mode "
+                        "requires media-free T2VA, exactly 8 steps and a compatible weight-patched MODEL; "
+                        "the node cannot prove a LoRA file's identity from patch tensors."
                     ),
                 ),
                 io.Int.Input(

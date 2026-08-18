@@ -9,7 +9,7 @@
     "batch_size": 1
   },
   "frontend_workflow_compatibility_hotfix": {
-    "version": "1.30.1",
+    "version": "1.32.0",
     "scope": "repairs positional frontend input/widget serialization without changing any stable node schema, default or sampler math",
     "repaired_project_workflows": 40,
     "repaired_user_workflows": 40,
@@ -21,8 +21,8 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 64,
-    "installed_user_workflows": 64
+    "project_workflows": 70,
+    "installed_user_workflows": 70
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
@@ -181,7 +181,8 @@
       "strict media-free T2VA reuses one Qwen text conditioning and rebuilds only each stage's empty AV latent; spatial multimodal tasks still re-encode per stage",
       "video alone receives spatial DCT expansion; audio is never spatially padded or given high-frequency coefficients",
       "audio remains in the shared Transformer and is target-anchored from the old to aligned public H3 flow sigma; this H3 extension is explicitly unvalidated until GPU listening tests",
-      "strict_t2va_stock20 is the default execution scope; I2VA, FL2VA, L2VA, Ref2VA and Hybrid are available only through explicit multimodal_research_exp"
+      "strict_t2va_stock20 is the default execution scope; I2VA, FL2VA, L2VA, Ref2VA and Hybrid require explicit multimodal_research_exp",
+      "turbo8_t2va_research_exp is appended without changing the two older scope values; it requires media-free T2VA, exactly eight steps, shifts 12/3 and a weight-patched MODEL while explicitly refusing to infer the LoRA file identity from patch tensors"
     ],
     "spectrum_contract": [
       "no WAN/FLUX A or beta is reused for H3",
@@ -202,16 +203,22 @@
         "official equation unit tests",
         "multiple-of-32 aspect-preserving stage planner and exact-NFE schedule tests",
         "torch DCT numerical comparison against SciPy's official reference convention",
-      "deterministic high-frequency seed, audio flow reindex and segmented-state round-trip tests",
-      "profile validation/fail-closed and all-task raw-source contract tests",
-      "real 1056x608, 124-frame T2VA Stock20 GPU generation with 124-frame/24fps/32kHz-stereo output and three strict decode passes",
-      "modality-stable AV seed control plus targeted H3 clone-family release and temporary execution-scoped VRAM headroom"
+        "deterministic high-frequency seed, audio flow reindex and segmented-state round-trip tests",
+        "profile validation/fail-closed and all-task raw-source contract tests",
+        "real 1056x608, 124-frame T2VA Stock20 GPU generation with 124-frame/24fps/32kHz-stereo output and three strict decode passes",
+        "modality-stable AV seed control plus targeted H3 clone-family release and temporary execution-scoped VRAM headroom",
+        "real 1024x576x124 Stock20 P2 runs for I2VA lock_source, FL2VA remix_source and L2VA native; all produced 124-frame 24fps finite 32kHz-stereo outputs and passed three strict decodes",
+        "real 1024x576x124 Stock20 P3 runs for reference image, two-second reference video plus matching numbered soundtrack, and Hybrid first-frame plus independent image/audio references; stage reports preserved the expected keyframe/reference counts",
+        "one real 1024x576x124 Turbo8 T2VA run with the explicit 208-patch LoRA route; the schedule preserved eight total NFE as six coarse plus two full-resolution calls and passed mechanical output checks",
+        "fail-closed tests for Transformer wrappers/callbacks/patches, DiT block replacements, post-CFG/model wrappers and LongVideo/MultiKeyframe scoped MODEL patches",
+        "655 project tests, full Ruff, compileall, 70 JSON workflow parses, idempotent live-schema rescan, stable sampling hash and project/user workflow SHA parity passed"
       ],
       "pending": [
         "human same-input full-resolution versus SPEED quality and audio non-inferiority review",
-        "warm repeated-run cleanup and the 512MiB 16GB minimum-headroom gate; current controlled SPEED run retained only about 376MiB",
-        "audio listening/non-inferiority and A/V synchronization",
-        "I2VA/FL2VA/L2VA, masks, lock/remix, Ref2VA and Hybrid perceptual validation"
+        "warm repeated-run cleanup and the 512MiB 16GB minimum-headroom gate; controlled P2/P3 cases retained only about 272-455MiB and Turbo8 retained about 122MiB",
+        "human audio listening/non-inferiority, semantic reference adherence and event/lip synchronization",
+        "same-input full-resolution baselines needed to establish actual SPEED speedup and perceptual non-inferiority for each task family",
+        "mask-heavy source repaint, higher resolutions, longer reference video, repeated warm cleanup and other GPUs"
       ]
     },
     "claims": {
@@ -221,7 +228,7 @@
       "audio_noninferiority_validated": false,
       "gpu_generation_completed": true
     },
-    "status": "clean-room official math, CPU/static validation and one real T2VA Stock20 GPU execution completed; strict decode passed, while quality/audio and the 512MiB 16GB safety gate remain unpassed"
+    "status": "clean-room official math plus real T2VA, I2VA, FL2VA, L2VA, Ref2VA, Hybrid and Turbo8 representative GPU executions completed mechanically; all strict outputs passed, while quality, actual speedup, audio/reference non-inferiority and the 512MiB 16GB safety gate remain unpassed"
   },
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",

@@ -56,9 +56,9 @@ def build_fl2va(base: dict) -> dict:
     combine = node(workflow, 9)
     combine["widgets_values"]["filename_prefix"] = "MiniMaxH3/speed_fl2va_stock20_exp"
     note = node(workflow, 10)
-    note["title"] = "FL2VA is implemented but not GPU-validated"
+    note["title"] = "FL2VA mechanics passed one GPU chain; quality/speed remain EXP"
     note["widgets_values"] = [
-        "## FL2VA研究示例，不是已通过功能声明\n\n替换两张同画幅首尾帧。每个SPEED阶段会按该阶段画布重新缩放并用video VAE重新编码，避免最终尺寸keyframe latent与粗阶段PackedLayout行数不一致。\n\n首次只和普通全分辨率Stock20跑一组同seed对照，检查首尾帧、过渡、音频和耗时。当前`multimodal_research_exp`是显式风险开关；不要叠其他sampler/model wrapper。"
+        "## FL2VA机械链已完成一条真实GPU验证，仍是EXP\n\n替换两张同画幅首尾帧。每个SPEED阶段会按该阶段画布重新缩放并用video VAE重新编码，避免最终尺寸keyframe latent与粗阶段PackedLayout行数不一致。\n\n本机1024×576、124帧、Stock20代表链已确认首尾锚点、124帧、32kHz双声道和A/V时长机械正确；最低显存余量约445MiB，未达到512MiB安全门槛。尚未证明相对全分辨率的画质非劣、稳定加速或通用16GB安全。`multimodal_research_exp`仍是显式风险开关；不要叠其他sampler/model wrapper。"
     ]
     workflow["nodes"].extend(
         [
@@ -99,9 +99,9 @@ def build_ref2va(base: dict) -> dict:
     combine = node(workflow, 9)
     combine["widgets_values"]["filename_prefix"] = "MiniMaxH3/speed_ref2va_stock20_exp"
     note = node(workflow, 10)
-    note["title"] = "Ref2VA fixed-token cost and quality are not validated"
+    note["title"] = "Ref2VA mechanics passed one GPU chain; adherence/speed remain EXP"
     note["widgets_values"] = [
-        "## Ref2VA研究示例，不是已通过功能声明\n\n替换参考图。`ref_image_size=match`会按每级画布重新调整和编码参考图；`max`可能让固定reference token在粗阶段占主导并抵消SPEED收益。\n\n首次只和普通全分辨率Ref2VA Stock20跑一组同seed对照，检查身份、构图、参考遵循、音频、耗时和峰值。当前`multimodal_research_exp`是显式风险开关。"
+        "## Ref2VA机械链已完成一条真实GPU验证，仍是EXP\n\n替换参考图。`ref_image_size=match`会按每级画布重新调整和编码参考图；`max`可能让固定reference token在粗阶段占主导并抵消SPEED收益。\n\n本机1024×576、124帧、Stock20单参考图代表链已确认124帧、32kHz双声道和A/V时长机械正确；最低显存余量约337MiB，未达到512MiB安全门槛。尚未证明身份/构图/参考遵循、音频非劣、稳定加速或通用16GB安全。`multimodal_research_exp`仍是显式风险开关。"
     ]
     workflow["nodes"].append(
         load_image_node(11, 40, 560, "replace_with_reference_image.png", 12)
