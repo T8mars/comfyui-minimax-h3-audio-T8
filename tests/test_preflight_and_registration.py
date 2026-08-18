@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 118
+    assert len(ids) == 119
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -286,7 +286,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
         "MiniMaxH3TemporalDetailEnhanceT8Advanced",
     ]
-    for detail_schema in schemas[109:114]:
+    for detail_schema in schemas[109:115]:
         assert detail_schema.is_experimental is True
         assert detail_schema.category == "T8/MiniMax H3/Quality/Experimental"
     tail_detail_inputs = {item.id: item for item in schemas[109].inputs}
@@ -1424,6 +1424,10 @@ def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice()
             "2026-08-18_H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
             "MiniMaxH3TemporalDetailEnhanceT8Advanced",
         ),
+        (
+            "2026-08-18_H3_Hanfu_Detail_Mixer_Advanced_EXP.json",
+            "MiniMaxH3DetailMixerSamplerT8Advanced",
+        ),
     ],
 )
 def test_h3_detail_advanced_frontend_examples_are_importable_and_documented(
@@ -1448,11 +1452,39 @@ def test_h3_detail_advanced_frontend_examples_are_importable_and_documented(
         in {
             "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
             "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
+            "MiniMaxH3DetailMixerSamplerT8Advanced",
         }
     )
     assert "MiniMaxH3AudioConditioningT8" in types
     note = next(node for node in nodes.values() if node["type"] == "MarkdownNote")
     assert len(note["widgets_values"][0]) >= 100
+    if advanced_type == "MiniMaxH3DetailMixerSamplerT8Advanced":
+        mixer = next(node for node in nodes.values() if node["type"] == advanced_type)
+        assert mixer["widgets_values"] == [
+            8,
+            12.0,
+            3.0,
+            True,
+            1,
+            "video_sigma_linear",
+            "turbo_standard8",
+            True,
+            -0.025,
+            0.7,
+            0.95,
+            "video_sigma",
+            True,
+            0.35,
+            "25",
+            0.25,
+            0.85,
+            False,
+            0.15,
+            3,
+            2608183001,
+        ]
+        assert sum(node["type"] == "MarkdownNote" for node in nodes.values()) == 4
+        assert "MiniMaxH3TemporalDetailEnhanceT8Advanced" in types
 
     for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id

@@ -1,7 +1,10 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.30.1`，共注册
-118 个节点。新增四个隔离的SPEED Advanced节点，按官方论文实现空间渐进分辨率、DCT频谱扩张、kappa状态缩放与sigma对齐，并为H3联合音画、关键帧和参考模态重建每阶段条件；此前的尾段细化调度、平滑模型时间偏置、联合音画Rectified-Flow Restart、H3时空引导、时序保护细节增强、默认无影响的动态 Guidance 与尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.31.0`，共注册
+119 个节点。新增一个隔离的混合细节采样器，可选择组合尾段细化、平滑模型时间偏置、联合音画
+Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
+前向成本；此前的四个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
+尾段额外 NFE 因果实验、原生SAM3.1多人分色追踪、参考图身份建议、逐角色顺序修复与审片合成，人工验收的MANUAL512 REL Face Refine机械基线、带源片回退的Face Refine候选质量门、隔离的上游机制Face Refine Parity、32像素整除且比例误差可审计的latent放大、分镜感知的远景脸二次生成规划、严格视频 latent 注入、低去噪双时钟采样与非破坏回贴审计，只读环境审计、克隆局部 MLP 激活分块、有界 Qwen 视觉参考前缀缓存、参考语义 IR、统一角色表、声音画布、多后端提示词编译、可视时间轴、非破坏性局部重做、文件级成片交付、同进程采样轨迹探针、计划式驱动音频实验与安全 AV 解码，以及原生音画条件、Hybrid组合兼容审计、可恢复的Hybrid artifact维护、前置显存/VBAR策略、隔离的 FL2VA×Ref2VA 小型混合补丁、多关键帧时间线、对白边界分析、对白安全分轨混音、分时背景底轨锁定、来源视频音画重绘准备、音频控制与后处理、稳定双时钟采样、实验性多速率采样、
 隔离的分段长视频续写、总时长编排、候选/接受状态与文件级合成、Ref2VA 单图/多图
 参考的静态语义编辑，以及带异常释放保护、持久分段、精确时长后期和显式音色库的实验性语音链。
 
@@ -52,8 +55,8 @@ SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。�
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前590项完整回归通过；本次改动文件Ruff与compileall通过，115份非artifact项目JSON、diff check与
-白名单启动继续使用ComfyUI
+当前616项完整回归通过；本次改动文件Ruff与compileall通过，64份项目与64份已安装用户前端工作流
+均严格解析且逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
@@ -1819,6 +1822,32 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
 
+## v1.31.0：MiniMax H3 混合细节采样器（Advanced）
+
+本版只追加`MiniMax H3 Detail Mixer Sampler / 混合细节采样 (Advanced)`，不修改原有五个细节节点、
+稳定采样器或旧工作流。四个生成期机制均可独立开关，而且全部默认关闭：
+
+- Tail Detail只细分最后一个联合AV区间；每个新增点都是一次完整联合音画积分前向；
+- Model-Time Bias只平滑改变共享Transformer看到的模型时间，不改积分sigma，也不重新注入随机噪声；
+- STG在选定进度和H3 double block上增加一次弱skip分支，因此会产生额外Transformer前向；
+- RF Restart在到达干净端点后对联合音画状态重新加噪并执行独立restart轨迹，默认关闭。
+
+节点同时输出`actual_nfe`和`planned_joint_av_forwards`，报告还分别记录base NFE、tail NFE、restart NFE、
+STG附加弱分支次数和模型时间偏置调用数，避免把“积分步数”与“真实Transformer成本”混为一谈。
+组合过程中继续沿用单节点的fail-closed检查：既有post-CFG、model wrapper、block replacement、非法mask、
+部分/冻结音频restart和未知H3模型都不会静默兼容。
+
+`Temporal Detail Enhance`仍是AV Decode之后的独立IMAGE后处理，不能放进采样器；示例中最终音频直接
+旁路自AV Decode，不受该节点修改。新工作流
+`2026-08-18_H3_Hanfu_Detail_Mixer_Advanced_EXP.json`默认仅开启Tail + Bias + STG，Restart关闭，
+并带四个NOTE说明用途、参数、成本与审片边界。该组合是创作候选，不是新的单变量实验，也不声明
+普遍质量提升、音频非劣或16GB显存安全。
+
+本机另完成一条只用于机械集成的真实GPU探针：RTX 4060 Ti 16GB、非pruned FL2VA INT8、Qwen NVFP4、
+官方双VAE、256×256×22、基础2步+Tail 1步、Bias与STG开启、Restart关闭。prompt
+`87b8c224-514c-46cf-af79-09da785a820d`在39.38秒完成联合音画采样和双VAE解码，保存的22张PNG均为
+256×256。低步数小画布不用于感知比较，也不建立正式示例1152×640×124的显存或速度结论。
+
 ## v1.30.1：老工作流参数错位兼容热修
 
 本版没有调整任何稳定节点输入顺序、类型、默认值或`sampling.py`数学。问题来自此前的
@@ -1889,6 +1918,8 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 - `2026-08-18_H3_Hanfu_RF_Restart_Advanced_EXP.json`：同输入基础8步后联合AV Rectified-Flow Restart 3步。
 - `2026-08-18_H3_Hanfu_STG_Advanced_EXP.json`：同输入H3 block 25时空引导。
 - `2026-08-18_H3_Hanfu_Temporal_Detail_Advanced_EXP.json`：同输入基础8步后解码帧时序保护细节增强。
+- `2026-08-18_H3_Hanfu_Detail_Mixer_Advanced_EXP.json`：同一节点可选组合Tail、模型时间偏置、STG与
+  联合AV Restart；示例默认Tail + Bias + STG，并在AV Decode后独立接Temporal Detail。
 - `2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
 - `2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
   最小audio-row实验profile。
@@ -1902,7 +1933,8 @@ API 示例见 `tests/fixtures/api/audio_lock_api.json`、
 `tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和
 `tests/fixtures/api/still_image_edit_api.json`、`tests/fixtures/api/hybrid_model_advanced_api.json`、
 `tests/fixtures/api/hybrid_model_audio_reference_api.json`与`tests/fixtures/api/hybrid_model_mixed_reference_api.json`；
-高速动态实验另见`tests/fixtures/api/motion_quality_advanced_8step_api.json`；
+高速动态实验另见`tests/fixtures/api/motion_quality_advanced_8step_api.json`与
+`tests/fixtures/api/detail_mixer_advanced_api.json`；
 对白安全音频另见
 `tests/fixtures/api/dialogue_safe_master_api.json` 与 `tests/fixtures/api/dialogue_timed_bed_lock_api.json`。
 替换 API 示例里的模型、VAE、CLIP、可选 LoRA、

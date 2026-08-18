@@ -57,20 +57,39 @@ H3音画在同一个Transformer中，偏置会同时改变画面与声音预测�
 
 该节点不接触音频，但也不能补回本来不存在的人脸身份、五官或布料几何。若只产生边缘过冲、颗粒、光晕或时序抖动，应降低strength或停用。""",
     ),
+    "mixer": (
+        "2026-08-18_H3_Hanfu_Detail_Mixer_Advanced_EXP.json",
+        "红色汉服：混合细节采样（Tail + Bias + STG）",
+        """## 用途：在一个节点中组合生成阶段的细节实验
+
+本例启用Tail +1、Model-Time Bias -0.025（70%～95%）和STG 0.35/block25（25%～85%）；RF Restart默认关闭。节点报告会分别列出积分NFE、STG额外弱分支前向和计划中的联合AV Transformer总调用数。不要只看`steps=8`误判真实成本。
+
+四个开关默认全部关闭；Restart是真随机联合音画重新加噪，风险和成本最高，只建议单独受控测试。旧五个节点和旧工作流未被替换。解码后的Temporal Detail仍是独立IMAGE节点，音频从AV Decode直接旁路到保存节点。完整检查人物结构、运动幅度、闪烁、额外语音、音效、音乐和音画同步；本例仍是EXP，不承诺质量提升或16GB安全。""",
+    ),
 }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build five importable H3 detail workflows with notes.")
+    parser = argparse.ArgumentParser(description="Build six importable H3 detail workflows with notes.")
     parser.add_argument("prompt_dir", type=Path)
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--server", default="http://127.0.0.1:8188")
+    parser.add_argument("--route", choices=sorted(EXAMPLES), help="Build only one route.")
     args = parser.parse_args()
 
     object_info = _get_json(f"{args.server.rstrip('/')}/object_info")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    for route, (filename, title, note) in EXAMPLES.items():
+    selected = EXAMPLES.items() if args.route is None else [(args.route, EXAMPLES[args.route])]
+    for route, (filename, title, note) in selected:
         prompt_path = args.prompt_dir / f"{route}.json"
+        if route == "mixer" and not prompt_path.exists():
+            prompt_path = (
+                Path(__file__).resolve().parents[1]
+                / "tests"
+                / "fixtures"
+                / "api"
+                / "detail_mixer_advanced_api.json"
+            )
         prompt = json.loads(prompt_path.read_text(encoding="utf-8"))
         workflow = convert(prompt, object_info, title)
         note_id = int(workflow["last_node_id"]) + 1
@@ -93,6 +112,59 @@ def main() -> int:
             }
         )
         workflow["last_node_id"] = note_id
+        if route == "mixer":
+            extra_notes = [
+                (
+                    "混合采样器参数建议",
+                    [850, 1120],
+                    [860, 390],
+                    """## 建议起点（不是质量保证）
+
+- `Tail`: 开，+1；只细分最后区间。
+- `Model-Time Bias`: 开，-0.025，70%～95%。
+- `STG`: 开，0.35，block 25，25%～85%。
+- `RF Restart`: 默认关；它会对联合音画真正重新加噪。
+
+报告中的`actual_nfe`是积分调用数；`planned_joint_av_forwards`还包含STG弱分支，才更接近真实Transformer成本。已有post-CFG或double-block替换冲突会直接报错，不静默覆盖。""",
+                ),
+                (
+                    "解码后细节与音频旁路",
+                    [2600, 520],
+                    [900, 330],
+                    """## Temporal Detail必须位于AV Decode之后
+
+它只处理解码后的IMAGE，示例使用`strength=0.20 / guard=0.90 / upscale=1.0`。它不是生成采样器，也不能恢复不存在的身份或五官。音频从AV Decode直接连到保存节点，完全绕过此后期节点。""",
+                ),
+                (
+                    "最终审片清单",
+                    [3080, 460],
+                    [900, 360],
+                    """## 保存前后都要完整看与听
+
+检查：小脸与手脚结构、快速旋转是否被压慢、纱衣边缘/闪烁、额外说话、风声/布料声/音乐、削波和音画同步。任一声音退化都不能用“只是画面参数”解释；H3生成阶段四种机制都经过同一个联合AV Transformer。""",
+                ),
+            ]
+            for extra_title, position, size, extra_text in extra_notes:
+                note_id += 1
+                workflow["nodes"].append(
+                    {
+                        "id": note_id,
+                        "type": "MarkdownNote",
+                        "title": extra_title,
+                        "pos": position,
+                        "size": size,
+                        "flags": {},
+                        "order": len(workflow["nodes"]),
+                        "mode": 0,
+                        "color": "#5c3b1e",
+                        "bgcolor": "#1f1710",
+                        "inputs": [],
+                        "outputs": [],
+                        "properties": {},
+                        "widgets_values": [extra_text],
+                    }
+                )
+            workflow["last_node_id"] = note_id
         destination = args.output_dir / filename
         destination.write_text(
             json.dumps(workflow, ensure_ascii=False, indent=2),

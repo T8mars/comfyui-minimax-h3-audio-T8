@@ -1,5 +1,16 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Project v1.31.0 appends one isolated H3 Detail Mixer Advanced sampler without changing the
+> existing five detail nodes, stable schemas, defaults or sampler math. Tail subdivision,
+> model-time bias, STG and joint-AV RF Restart are separate opt-in toggles and all default off.
+> The report separates integrator NFE from STG weak-branch and total planned joint-AV Transformer
+> forwards. Temporal Detail remains a decoded-IMAGE post-process and the example bypasses its
+> audio from AV Decode. No universal quality, audio or 16GB safety claim is made.
+> The final source gate passed 616 project tests, changed-scope Ruff, compileall, strict parsing and
+> project/user hash parity for all 64 frontend workflows, plus whitelist-only ComfyUI startup.
+> A 256x256x22 native FL2VA INT8 GPU probe with two base steps plus one tail step, Bias and STG
+> completed in 39.38 seconds and saved all 22 frames. It is mechanical integration evidence only.
+
 > Project v1.30.1 is a frontend-workflow compatibility hotfix. It does not change a stable node
 > schema, default or sampler. The converter and repair tool now serialize the complete live-schema
 > input order and connected slots. Forty project workflows plus forty installed user copies were

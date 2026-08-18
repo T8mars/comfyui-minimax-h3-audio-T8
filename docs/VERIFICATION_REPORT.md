@@ -13,6 +13,40 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.31.0 H3 Detail Mixer Advanced source gate (2026-08-18)
+
+One append-only node was added after the existing 118 IDs. The five independent detail nodes,
+stable sampler, old schemas, defaults and serialized workflows were not changed. The mixer reuses
+their already-gated implementations instead of duplicating the sigma or wrapper mathematics:
+
+- tail subdivision optionally changes the integrator schedule;
+- smooth model-time bias optionally wraps the shared AV model time;
+- H3 STG optionally adds one weak skipped-block prediction on active calls;
+- joint AV rectified-flow Restart optionally appends a second re-noised trajectory.
+
+All four toggles default false. The report distinguishes base, tail, restart and actual integrator
+NFE from STG weak forwards, model-time-biased calls and total planned joint-AV Transformer forwards.
+The known conflict and mask checks remain fail closed, including pre-existing post-CFG functions,
+model wrappers, H3 block replacements, fractional video masks and partial or frozen audio Restart.
+
+Decoded Temporal Detail is intentionally outside the sampler because it consumes IMAGE after AV
+Decode. The new frontend workflow wires final audio directly from AV Decode, includes four Markdown
+notes and enables only the conservative Tail + Bias + STG candidate; Restart remains off. This is an
+Experimental composition contract, not evidence of a perceptual winner, audio non-inferiority or a
+universal memory-safe tier.
+
+Final source gates passed 616 project tests, changed-scope Ruff, compileall, strict parsing and
+project/user SHA-256 parity for all 64 frontend workflows, `git diff --check`, the stable
+`sampling.py` SHA-256 guard and a whitelist-only ComfyUI quick startup.
+
+One real GPU mechanical probe then ran on the local RTX 4060 Ti 16GB using non-pruned FL2VA INT8,
+Qwen NVFP4, both official VAEs, 256x256x22 I2VA and the same source image/prompt family as the
+red-Hanfu examples. The mixer used two base steps, one tail subdivision, Bias and STG, with Restart
+disabled. Prompt `87b8c224-514c-46cf-af79-09da785a820d` completed sampling plus both VAE decoders in
+39.38 seconds and SaveImage returned exactly 22 readable 256x256 PNG frames. This closes real-device
+composition plumbing only; the deliberately tiny/low-step run cannot support perceptual, speed or
+memory-tier claims for the published 1152x640x124 workflow.
+
 ## 1.30.1 frontend workflow order compatibility hotfix (2026-08-18)
 
 The defect was in API-to-frontend serialization, not H3 inference: API dictionary order was written

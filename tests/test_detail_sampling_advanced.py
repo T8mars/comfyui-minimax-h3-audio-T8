@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -13,6 +14,7 @@ from h3_audio_t8_pkg.detail_sampling_advanced import (
     apply_h3_spatiotemporal_guidance,
     build_tail_detail_schedule,
     model_time_bias_sigma,
+    setup_detail_mixer_sampling,
     setup_model_time_bias_sampling,
     setup_rectified_flow_restart_sampling,
     temporal_detail_enhance,
@@ -20,6 +22,7 @@ from h3_audio_t8_pkg.detail_sampling_advanced import (
 from h3_audio_t8_pkg.nodes_detail_sampling_advanced import (
     DETAIL_SAMPLING_ADVANCED_NODE_CLASSES,
     MiniMaxH3AVTailDetailScheduleT8Advanced,
+    MiniMaxH3DetailMixerSamplerT8Advanced,
     MiniMaxH3ModelTimeBiasSamplerT8Advanced,
     MiniMaxH3RectifiedFlowRestartSamplerT8Advanced,
     MiniMaxH3SpatioTemporalGuidanceT8Advanced,
@@ -170,6 +173,10 @@ class _FakePatchModel:
 
     def set_model_sampler_post_cfg_function(self, callback):
         self.post_cfg = callback
+        self.model_options.setdefault("sampler_post_cfg_function", []).append(callback)
+
+    def set_model_unet_function_wrapper(self, callback):
+        self.model_options["model_function_wrapper"] = callback
 
 
 def test_h3_stg_zero_scale_is_identity_and_patch_conflicts_fail_closed():
@@ -514,11 +521,175 @@ def test_joint_av_restart_allows_binary_conditioned_video_rows_with_full_audio(m
     assert report["conditioned_binary_video_rows_preserved"] is True
 
 
-def test_all_five_advanced_nodes_are_registered_in_isolated_order():
+def test_detail_mixer_all_disabled_uses_stable_route_and_reports_true_cost(monkeypatch):
+    sigmas = native_flow_sigmas(8, 12.0)
+    source = _FakePatchModel()
+    sampler_marker = object()
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.setup_dual_clock_sampling",
+        lambda *_args, **_kwargs: (source, sampler_marker, sigmas),
+    )
+    model, sampler, output_sigmas, actual_nfe, forwards, report_json = (
+        setup_detail_mixer_sampling(
+            source,
+            {},
+            steps=8,
+            shift_video=12.0,
+            shift_audio=3.0,
+            enable_tail=False,
+            extra_tail_steps=1,
+            tail_spacing="video_sigma_linear",
+            profile="turbo_standard8",
+            enable_model_time_bias=False,
+            bias=-0.025,
+            bias_start_progress=0.70,
+            bias_end_progress=0.95,
+            bias_domain="video_sigma",
+            enable_stg=False,
+            stg_scale=0.35,
+            stg_double_blocks="25",
+            stg_start_progress=0.25,
+            stg_end_progress=0.85,
+            enable_restart=False,
+            restart_video_sigma=0.15,
+            restart_steps=3,
+            restart_seed=1234,
+        )
+    )
+    report = json.loads(report_json)
+    assert model is source
+    assert sampler is sampler_marker
+    assert output_sigmas is sigmas
+    assert actual_nfe == forwards == 8
+    assert report["status"] == "noop"
+    assert report["enabled_mechanisms"] == []
+    assert report["temporal_detail_external"] is True
+
+
+def test_detail_mixer_composes_tail_bias_stg_and_restart_with_honest_nfe(monkeypatch):
+    video = torch.zeros((1, 24, 1, 1, 1))
+    audio = torch.zeros((1, 32, 2, 1))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+    sigmas = native_flow_sigmas(8, 12.0)
+    source = _FakePatchModel()
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.setup_dual_clock_sampling",
+        lambda model, *_args, **_kwargs: (model, object(), sigmas),
+    )
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.model_uses_raw_audio_velocity",
+        lambda _model: True,
+    )
+
+    model, sampler, output_sigmas, actual_nfe, forwards, report_json = (
+        setup_detail_mixer_sampling(
+            source,
+            latent,
+            steps=8,
+            shift_video=12.0,
+            shift_audio=3.0,
+            enable_tail=True,
+            extra_tail_steps=3,
+            tail_spacing="video_sigma_linear",
+            profile="turbo_standard8",
+            enable_model_time_bias=True,
+            bias=-0.025,
+            bias_start_progress=0.70,
+            bias_end_progress=0.95,
+            bias_domain="video_sigma",
+            enable_stg=True,
+            stg_scale=0.35,
+            stg_double_blocks="25",
+            stg_start_progress=0.25,
+            stg_end_progress=0.85,
+            enable_restart=True,
+            restart_video_sigma=0.15,
+            restart_steps=3,
+            restart_seed=1234,
+        )
+    )
+    report = json.loads(report_json)
+    assert model.post_cfg is not None
+    assert output_sigmas.numel() - 1 == 11
+    assert sampler._reported_total_steps == 14
+    assert actual_nfe == 14
+    # Runtime comparisons use the actual float32 schedule; the nominal 0.25
+    # boundary lands just below 0.25, so four calls are active, not five.
+    assert report["stg_extra_weak_forwards"] == 4
+    assert forwards == 18
+    assert report["planned_joint_av_transformer_forwards"] == 18
+    assert report["random_restart_applied"] is True
+    assert report["applied_mechanisms"] == [
+        "tail_subdivision",
+        "model_time_bias",
+        "spatiotemporal_guidance",
+        "rectified_flow_restart",
+    ]
+
+
+def test_detail_mixer_stg_rejects_existing_post_cfg_hook():
+    source = _FakePatchModel(
+        {"sampler_post_cfg_function": [lambda args: args["denoised"]]}
+    )
+    with pytest.raises(ValueError, match="existing sampler_post_cfg_function"):
+        setup_detail_mixer_sampling(
+            source,
+            {},
+            steps=8,
+            shift_video=12.0,
+            shift_audio=3.0,
+            enable_tail=False,
+            extra_tail_steps=1,
+            tail_spacing="video_sigma_linear",
+            profile="turbo_standard8",
+            enable_model_time_bias=False,
+            bias=-0.025,
+            bias_start_progress=0.70,
+            bias_end_progress=0.95,
+            bias_domain="video_sigma",
+            enable_stg=True,
+            stg_scale=0.35,
+            stg_double_blocks="25",
+            stg_start_progress=0.25,
+            stg_end_progress=0.85,
+            enable_restart=False,
+            restart_video_sigma=0.15,
+            restart_steps=3,
+            restart_seed=1234,
+        )
+
+
+def test_detail_mixer_api_example_keeps_temporal_detail_after_decode_and_audio_bypass():
+    root = Path(__file__).resolve().parents[1]
+    prompt = json.loads(
+        (root / "tests" / "fixtures" / "api" / "detail_mixer_advanced_api.json")
+        .read_text(encoding="utf-8")
+    )
+    mixer = prompt["8"]
+    assert mixer["class_type"] == "MiniMaxH3DetailMixerSamplerT8Advanced"
+    assert mixer["inputs"]["enable_tail"] is True
+    assert mixer["inputs"]["enable_model_time_bias"] is True
+    assert mixer["inputs"]["enable_stg"] is True
+    assert mixer["inputs"]["enable_restart"] is False
+    assert prompt["13"]["class_type"] == "MiniMaxH3TemporalDetailEnhanceT8Advanced"
+    assert prompt["13"]["inputs"]["frames"] == ["12", 0]
+    assert prompt["14"]["inputs"]["images"] == ["13", 0]
+    assert prompt["14"]["inputs"]["audio"] == ["12", 1]
+
+
+def test_all_six_advanced_nodes_are_registered_in_isolated_order():
     assert DETAIL_SAMPLING_ADVANCED_NODE_CLASSES == [
         MiniMaxH3AVTailDetailScheduleT8Advanced,
         MiniMaxH3ModelTimeBiasSamplerT8Advanced,
         MiniMaxH3RectifiedFlowRestartSamplerT8Advanced,
         MiniMaxH3SpatioTemporalGuidanceT8Advanced,
         MiniMaxH3TemporalDetailEnhanceT8Advanced,
+        MiniMaxH3DetailMixerSamplerT8Advanced,
     ]
+
+    schema = MiniMaxH3DetailMixerSamplerT8Advanced.define_schema()
+    inputs = {item.id: item for item in schema.inputs}
+    assert inputs["enable_tail"].default is False
+    assert inputs["enable_model_time_bias"].default is False
+    assert inputs["enable_stg"].default is False
+    assert inputs["enable_restart"].default is False

@@ -15,7 +15,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     paths = sorted(root.glob("*.json"))
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 63
+    assert len(paths) == 64
     assert [path.name for path in paths if not publication_name.fullmatch(path.name)] == []
 
 

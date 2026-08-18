@@ -5,6 +5,7 @@ from comfy_api.latest import io
 from .detail_sampling_advanced import (
     apply_h3_spatiotemporal_guidance,
     build_tail_detail_schedule,
+    setup_detail_mixer_sampling,
     setup_model_time_bias_sampling,
     setup_rectified_flow_restart_sampling,
     temporal_detail_enhance,
@@ -282,10 +283,89 @@ class MiniMaxH3TemporalDetailEnhanceT8Advanced(io.ComfyNode):
         return io.NodeOutput(*temporal_detail_enhance(**kwargs))
 
 
+class MiniMaxH3DetailMixerSamplerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3DetailMixerSamplerT8Advanced",
+            display_name="MiniMax H3 Detail Mixer Sampler / 混合细节采样 (Advanced)",
+            description=(
+                "Composes Tail subdivision, smooth Model-Time Bias, H3 STG and joint AV "
+                "RF Restart in one fail-closed sampler setup. All effects default off. "
+                "Temporal Detail Enhance remains a separate post-decode IMAGE node."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input("model"),
+                io.Latent.Input("av_latent"),
+                io.Int.Input("steps", default=8, min=1, max=10000),
+                io.Float.Input("shift_video", default=12.0, min=0.01, max=100.0, step=0.01),
+                io.Float.Input("shift_audio", default=3.0, min=0.01, max=100.0, step=0.01),
+                io.Boolean.Input("enable_tail", default=False),
+                io.Int.Input("extra_tail_steps", default=1, min=0, max=8),
+                io.Combo.Input(
+                    "tail_spacing",
+                    options=["video_sigma_linear", "video_sigma_cosine", "base_flow_linear"],
+                    default="video_sigma_linear",
+                ),
+                io.Combo.Input("profile", options=_PROFILES, default="turbo_standard8"),
+                io.Boolean.Input("enable_model_time_bias", default=False),
+                io.Float.Input("bias", default=-0.025, min=-0.5, max=0.0, step=0.005),
+                io.Float.Input(
+                    "bias_start_progress", default=0.70, min=0.0, max=0.99, step=0.01
+                ),
+                io.Float.Input(
+                    "bias_end_progress", default=0.95, min=0.01, max=1.0, step=0.01
+                ),
+                io.Combo.Input(
+                    "bias_domain",
+                    options=["video_sigma", "base_flow"],
+                    default="video_sigma",
+                    advanced=True,
+                ),
+                io.Boolean.Input("enable_stg", default=False),
+                io.Float.Input("stg_scale", default=0.35, min=0.0, max=5.0, step=0.05),
+                io.String.Input("stg_double_blocks", default="25", advanced=True),
+                io.Float.Input(
+                    "stg_start_progress", default=0.25, min=0.0, max=0.99, step=0.01
+                ),
+                io.Float.Input(
+                    "stg_end_progress", default=0.85, min=0.01, max=1.0, step=0.01
+                ),
+                io.Boolean.Input("enable_restart", default=False),
+                io.Float.Input(
+                    "restart_video_sigma", default=0.15, min=0.0, max=0.5, step=0.005
+                ),
+                io.Int.Input("restart_steps", default=3, min=0, max=8),
+                io.Int.Input(
+                    "restart_seed",
+                    default=2608183001,
+                    min=0,
+                    max=0xFFFFFFFFFFFFFFFF,
+                    control_after_generate=True,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                io.Sampler.Output("sampler"),
+                io.Sigmas.Output("sigmas"),
+                io.Int.Output("actual_nfe"),
+                io.Int.Output("planned_joint_av_forwards"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*setup_detail_mixer_sampling(**kwargs))
+
+
 DETAIL_SAMPLING_ADVANCED_NODE_CLASSES = [
     MiniMaxH3AVTailDetailScheduleT8Advanced,
     MiniMaxH3ModelTimeBiasSamplerT8Advanced,
     MiniMaxH3RectifiedFlowRestartSamplerT8Advanced,
     MiniMaxH3SpatioTemporalGuidanceT8Advanced,
     MiniMaxH3TemporalDetailEnhanceT8Advanced,
+    MiniMaxH3DetailMixerSamplerT8Advanced,
 ]

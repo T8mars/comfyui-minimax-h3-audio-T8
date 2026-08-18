@@ -19,7 +19,9 @@
 - Hybrid：兼容审计、模型实验、音频/混合参考、VBAR 余量和 artifact 维护。
 - 创作与诊断：环境审计、激活分块、Qwen 前缀缓存、时间线、选择性修复、成片交付、音频注入和轨迹探针。
 - 高速动态与细节：红色汉服固定输入的尾段3步、平滑模型时间偏置、联合AV RF Restart、H3 STG、
-  时序保护后期细节五个独立Advanced工作流；每份都带NOTE，禁止把五种机制叠加后冒充单变量结论。
+  时序保护后期细节五个独立Advanced工作流，以及一个可选的混合细节采样工作流。前五份继续用于
+  单变量因果对照；`2026-08-18_H3_Hanfu_Detail_Mixer_Advanced_EXP.json`用于创作组合，默认只开启
+  Tail + Bias + STG，Restart关闭，并以多个NOTE说明参数、真实前向成本和解码后Temporal Detail。
 - 工具：`2026-08-16_H3_Latent_Upscale_By32.json` 按 32 倍数约束 latent 放大后的目标宽高。
 
 ## 多人脸修复默认行为

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from typing import Any
 
@@ -633,6 +634,245 @@ def apply_h3_spatiotemporal_guidance(
         "memory_safe_claim": False,
     }
     return patched_model, canonical_json(report, indent=2)
+
+
+def _flow_progress(sigmas: torch.Tensor, shift_video: float) -> torch.Tensor:
+    denominator = shift_video + sigmas * (1.0 - shift_video)
+    if not bool(torch.all(denominator > 0.0)):
+        raise ValueError("sigma shift produced an invalid base-flow denominator")
+    return 1.0 - sigmas / denominator
+
+
+def setup_detail_mixer_sampling(
+    model,
+    av_latent: dict,
+    *,
+    steps: int,
+    shift_video: float,
+    shift_audio: float,
+    enable_tail: bool,
+    extra_tail_steps: int,
+    tail_spacing: str,
+    profile: str,
+    enable_model_time_bias: bool,
+    bias: float,
+    bias_start_progress: float,
+    bias_end_progress: float,
+    bias_domain: str,
+    enable_stg: bool,
+    stg_scale: float,
+    stg_double_blocks: str,
+    stg_start_progress: float,
+    stg_end_progress: float,
+    enable_restart: bool,
+    restart_video_sigma: float,
+    restart_steps: int,
+    restart_seed: int,
+) -> tuple[Any, Any, torch.Tensor, int, int, str]:
+    """Compose the four generation-stage detail experiments without altering old nodes."""
+    source_options = getattr(model, "model_options", {})
+    if enable_stg and source_options.get("sampler_post_cfg_function"):
+        raise ValueError(
+            "Detail Mixer STG refuses an existing sampler_post_cfg_function; "
+            "use an isolated graph so guidance hooks are not silently stacked"
+        )
+
+    if enable_model_time_bias:
+        working_model, base_sampler, base_sigmas, bias_report_json = (
+            setup_model_time_bias_sampling(
+                model,
+                av_latent,
+                steps=steps,
+                shift_video=shift_video,
+                shift_audio=shift_audio,
+                bias=bias,
+                start_progress=bias_start_progress,
+                end_progress=bias_end_progress,
+                bias_domain=bias_domain,
+            )
+        )
+        bias_report = json.loads(bias_report_json)
+    else:
+        working_model, base_sampler, base_sigmas = setup_dual_clock_sampling(
+            model,
+            av_latent,
+            steps,
+            shift_video,
+            shift_audio,
+            DEFAULT_SAMPLER_NAME,
+            DEFAULT_SCHEDULER_NAME,
+        )
+        bias_report = {
+            "schema": "minimax_h3_model_time_bias_sampler_t8_v1",
+            "status": "disabled",
+            "applied": False,
+        }
+
+    if enable_stg:
+        working_model, stg_report_json = apply_h3_spatiotemporal_guidance(
+            working_model,
+            scale=stg_scale,
+            double_blocks=stg_double_blocks,
+            start_progress=stg_start_progress,
+            end_progress=stg_end_progress,
+            shift_video=shift_video,
+            rescale=0.0,
+        )
+        stg_report = json.loads(stg_report_json)
+    else:
+        stg_report = {
+            "schema": "minimax_h3_spatiotemporal_guidance_t8_v1",
+            "status": "disabled",
+            "applied": False,
+        }
+
+    final_sigmas, tail_nfe, tail_report_json = build_tail_detail_schedule(
+        base_sigmas,
+        extra_tail_steps=extra_tail_steps if enable_tail else 0,
+        spacing=tail_spacing,
+        shift_video=shift_video,
+        shift_audio=shift_audio,
+        profile=profile if enable_tail else "custom_strict",
+    )
+    tail_report = json.loads(tail_report_json)
+    tail_report["enabled"] = bool(enable_tail)
+    tail_report["requested_profile"] = profile
+
+    restart_nfe = 0
+    if enable_restart:
+        restart_model, sampler, restart_base_sigmas, restart_report_json = (
+            setup_rectified_flow_restart_sampling(
+                working_model,
+                av_latent,
+                steps=steps,
+                shift_video=shift_video,
+                shift_audio=shift_audio,
+                restart_video_sigma=restart_video_sigma,
+                restart_steps=restart_steps,
+                restart_seed=restart_seed,
+            )
+        )
+        if not torch.equal(restart_base_sigmas, base_sigmas):
+            raise RuntimeError(
+                "Detail Mixer restart rebuilt a different base sigma schedule"
+            )
+        working_model = restart_model
+        restart_report = json.loads(restart_report_json)
+        restart_nfe = int(restart_report["restart_nfe"])
+        if isinstance(sampler, _RestartKSAMPLER):
+            sampler._reported_total_steps = int(tail_nfe + restart_nfe)
+    else:
+        sampler = base_sampler
+        restart_report = {
+            "schema": "minimax_h3_rectified_flow_restart_sampler_t8_v1",
+            "status": "disabled",
+            "applied": False,
+            "restart_nfe": 0,
+        }
+
+    call_sigmas = final_sigmas[:-1].detach().to(device="cpu", dtype=torch.float64)
+    if restart_nfe:
+        restart_calls = torch.linspace(
+            restart_video_sigma,
+            0.0,
+            restart_nfe + 1,
+            dtype=torch.float64,
+        )[:-1]
+        call_sigmas = torch.cat((call_sigmas, restart_calls))
+
+    stg_extra_forwards = 0
+    if bool(stg_report.get("applied")):
+        progress = _flow_progress(call_sigmas, shift_video)
+        stg_extra_forwards = int(
+            ((progress >= stg_start_progress) & (progress <= stg_end_progress))
+            .sum()
+            .item()
+        )
+
+    model_time_biased_calls = 0
+    if bool(bias_report.get("applied")):
+        visible = model_time_bias_sigma(
+            call_sigmas,
+            bias=bias,
+            start_progress=bias_start_progress,
+            end_progress=bias_end_progress,
+            shift_video=shift_video,
+            domain=bias_domain,
+        )
+        model_time_biased_calls = int(
+            (~torch.isclose(visible, call_sigmas, rtol=0.0, atol=1.0e-12))
+            .sum()
+            .item()
+        )
+
+    actual_nfe = int(tail_nfe + restart_nfe)
+    planned_joint_av_forwards = int(actual_nfe + stg_extra_forwards)
+    enabled = [
+        name
+        for name, active in (
+            ("tail_subdivision", enable_tail),
+            ("model_time_bias", enable_model_time_bias),
+            ("spatiotemporal_guidance", enable_stg),
+            ("rectified_flow_restart", enable_restart),
+        )
+        if active
+    ]
+    applied = [
+        name
+        for name, active in (
+            ("tail_subdivision", bool(tail_report.get("applied"))),
+            ("model_time_bias", bool(bias_report.get("applied"))),
+            ("spatiotemporal_guidance", bool(stg_report.get("applied"))),
+            ("rectified_flow_restart", bool(restart_report.get("applied"))),
+        )
+        if active
+    ]
+    report = {
+        "schema": "minimax_h3_detail_mixer_sampler_t8_v1",
+        "status": "applied_exp" if applied else "noop",
+        "enabled_mechanisms": enabled,
+        "applied_mechanisms": applied,
+        "base_nfe": int(base_sigmas.numel() - 1),
+        "tail_schedule_nfe": int(tail_nfe),
+        "restart_nfe": int(restart_nfe),
+        "actual_integrator_nfe": actual_nfe,
+        "stg_extra_weak_forwards": stg_extra_forwards,
+        "planned_joint_av_transformer_forwards": planned_joint_av_forwards,
+        "model_time_biased_calls": model_time_biased_calls,
+        "random_restart_applied": bool(restart_report.get("applied")),
+        "shift_video": float(shift_video),
+        "shift_audio": float(shift_audio),
+        "output_schedule_sha256": _schedule_sha(
+            final_sigmas.detach().to(device="cpu", dtype=torch.float64)
+        ),
+        "children": {
+            "tail": tail_report,
+            "model_time_bias": bias_report,
+            "spatiotemporal_guidance": stg_report,
+            "rectified_flow_restart": restart_report,
+        },
+        "temporal_detail_external": True,
+        "temporal_detail_notice": (
+            "Temporal Detail Enhance operates on decoded IMAGE frames and must remain "
+            "after AV Decode; decoded audio bypasses it unchanged."
+        ),
+        "joint_av_notice": (
+            "All generation-stage mechanisms act through H3's shared audio-video "
+            "Transformer. STG adds extra weak forwards and RF Restart injects random "
+            "noise into both modalities when applied."
+        ),
+        "unsupported_combinations_fail_closed": True,
+        "quality_validated": False,
+        "memory_safe_claim": False,
+    }
+    return (
+        working_model,
+        sampler,
+        final_sigmas,
+        actual_nfe,
+        planned_joint_av_forwards,
+        canonical_json(report, indent=2),
+    )
 
 
 def _gaussian_kernel(radius: int, sigma: float, device, dtype) -> torch.Tensor:

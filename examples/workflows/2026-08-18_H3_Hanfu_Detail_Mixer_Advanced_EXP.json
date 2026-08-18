@@ -1,0 +1,1482 @@
+{
+  "id": "a2f44d25-6791-413b-a6b3-8c3be15c3fc6",
+  "revision": 0,
+  "last_node_id": 18,
+  "last_link_id": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "Load H3 video VAE",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "Load H3 audio VAE",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "Load H3 CLIP",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          },
+          "link": null
+        },
+        {
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          },
+          "link": null
+        },
+        {
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "UNETLoader",
+      "title": "Load non-pruned FL2VA INT8",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "Turbo LoRA bypass for quantized H3",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "lora_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "lora_name"
+          },
+          "link": null
+        },
+        {
+          "name": "strength_model",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength_model"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_turbo_4步加速_comfyui.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "title": "Reviewed identity reference",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "10A.jpg"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "I2VA high-motion controlled input",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        712
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "name": "task_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "task_type"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_denoise_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "audio_denoise_strength"
+          },
+          "link": null
+        },
+        {
+          "name": "add_source_as_reference",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "add_source_as_reference"
+          },
+          "link": null
+        },
+        {
+          "name": "prompt_primary_audio_ordinal",
+          "type": "INT",
+          "widget": {
+            "name": "prompt_primary_audio_ordinal"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_prompt_tags",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_prompt_tags"
+          },
+          "link": null
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_video_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "reference_video_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            7,
+            11
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] Live-action cinematic night fantasy, the same adult woman from <Picture 1> preserves her facial identity and natural anatomy while wearing a layered crimson-red Hanfu gauze robe with long translucent sleeves, a flowing pleated skirt, and extended silk ribbons. She rises rapidly into a deep midnight sky above silver moonlit clouds and performs a continuous sequence of extremely fast aerial spins, corkscrew rotations, and sweeping turns. Her body follows physically coherent rotational momentum while the sheer sleeves, skirt layers, ribbons, and long hair whip outward into sharp flowing arcs, repeatedly crossing her silhouette without merging into her limbs or face. The camera tracks her with a fast large-amplitude arc shot and slight upward movement, keeping her visible against the high-contrast night sky as she accelerates through multiple full rotations, then finishes in a stable floating pose under cold moonlight. Preserve one consistent woman, a stable face whenever visible, coherent hands and feet, crisp fabric edges, and natural cloth inertia; no cut, no duplicate body, no extra person, no morphing, no dialogue.\n\noverall_soundscape: Strong high-altitude wind surrounds her, layered with rapid silk swishes, crisp sleeve snaps, ribbon flutters, and synchronized air whooshes that follow each rotation. Subtle breathing remains natural beneath the wind.\n\nnon_diegetic_music: N/A",
+        1152,
+        640,
+        124,
+        "I2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3DetailMixerSamplerT8Advanced",
+      "title": "Mixed detail sampler: Tail + Bias + STG; Restart off",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        1056
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_tail",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_tail"
+          },
+          "link": null
+        },
+        {
+          "name": "extra_tail_steps",
+          "type": "INT",
+          "widget": {
+            "name": "extra_tail_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "tail_spacing",
+          "type": "COMBO",
+          "widget": {
+            "name": "tail_spacing"
+          },
+          "link": null
+        },
+        {
+          "name": "profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "profile"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_model_time_bias",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_model_time_bias"
+          },
+          "link": null
+        },
+        {
+          "name": "bias",
+          "type": "FLOAT",
+          "widget": {
+            "name": "bias"
+          },
+          "link": null
+        },
+        {
+          "name": "bias_start_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "bias_start_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "bias_end_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "bias_end_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "bias_domain",
+          "type": "COMBO",
+          "widget": {
+            "name": "bias_domain"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_stg",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_stg"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_scale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_scale"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_double_blocks",
+          "type": "STRING",
+          "widget": {
+            "name": "stg_double_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_start_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_start_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_end_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_end_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_restart",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_restart"
+          },
+          "link": null
+        },
+        {
+          "name": "restart_video_sigma",
+          "type": "FLOAT",
+          "widget": {
+            "name": "restart_video_sigma"
+          },
+          "link": null
+        },
+        {
+          "name": "restart_steps",
+          "type": "INT",
+          "widget": {
+            "name": "restart_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "restart_seed",
+          "type": "INT",
+          "widget": {
+            "name": "restart_seed"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "actual_nfe",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "planned_joint_av_forwards",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DetailMixerSamplerT8Advanced"
+      },
+      "widgets_values": [
+        8,
+        12.0,
+        3.0,
+        true,
+        1,
+        "video_sigma_linear",
+        "turbo_standard8",
+        true,
+        -0.025,
+        0.7,
+        0.95,
+        "video_sigma",
+        true,
+        0.35,
+        "25",
+        0.25,
+        0.85,
+        false,
+        0.15,
+        3,
+        2608183001
+      ]
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "title": "Controlled seed",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608172801,
+        "fixed"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "BasicGuider",
+      "title": "Basic guider (CFG false route)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "SamplerCustomAdvanced",
+      "title": "Sample mixed H3 AV latent",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 12
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 10
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 13
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 14
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode generated video and audio",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 17
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+      "title": "Temporal detail after decode; audio bypasses",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        458
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 18
+        },
+        {
+          "name": "upscale_factor",
+          "type": "FLOAT",
+          "widget": {
+            "name": "upscale_factor"
+          },
+          "link": null
+        },
+        {
+          "name": "strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength"
+          },
+          "link": null
+        },
+        {
+          "name": "blur_radius",
+          "type": "INT",
+          "widget": {
+            "name": "blur_radius"
+          },
+          "link": null
+        },
+        {
+          "name": "blur_sigma",
+          "type": "FLOAT",
+          "widget": {
+            "name": "blur_sigma"
+          },
+          "link": null
+        },
+        {
+          "name": "motion_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "motion_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "temporal_guard",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temporal_guard"
+          },
+          "link": null
+        },
+        {
+          "name": "frame_chunk_size",
+          "type": "INT",
+          "widget": {
+            "name": "frame_chunk_size"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_output_megapixels",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_output_megapixels"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3TemporalDetailEnhanceT8Advanced"
+      },
+      "widgets_values": [
+        1.0,
+        0.2,
+        2,
+        1.2,
+        0.04,
+        0.9,
+        8,
+        2.1
+      ]
+    },
+    {
+      "id": 14,
+      "type": "VHS_VideoCombine",
+      "title": "Save synchronized mixed-detail media",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        396
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 20
+        },
+        {
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": null
+        },
+        {
+          "name": "loop_count",
+          "type": "INT",
+          "widget": {
+            "name": "loop_count"
+          },
+          "link": null
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "name": "pingpong",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pingpong"
+          },
+          "link": null
+        },
+        {
+          "name": "save_output",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_output"
+          },
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        24,
+        0,
+        "MiniMaxH3/H3_Detail_Routes_v1/detail_mixer_hanfu_spin_0p7mp",
+        "video/h264-mp4",
+        false,
+        true
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "参数、成本、科学边界与审片重点",
+      "pos": [
+        1320,
+        -680
+      ],
+      "size": [
+        1500,
+        560
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 用途：在一个节点中组合生成阶段的细节实验\n\n本例启用Tail +1、Model-Time Bias -0.025（70%～95%）和STG 0.35/block25（25%～85%）；RF Restart默认关闭。节点报告会分别列出积分NFE、STG额外弱分支前向和计划中的联合AV Transformer总调用数。不要只看`steps=8`误判真实成本。\n\n四个开关默认全部关闭；Restart是真随机联合音画重新加噪，风险和成本最高，只建议单独受控测试。旧五个节点和旧工作流未被替换。解码后的Temporal Detail仍是独立IMAGE节点，音频从AV Decode直接旁路到保存节点。完整检查人物结构、运动幅度、闪烁、额外语音、音效、音乐和音画同步；本例仍是EXP，不承诺质量提升或16GB安全。"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "混合采样器参数建议",
+      "pos": [
+        850,
+        1120
+      ],
+      "size": [
+        860,
+        390
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "color": "#5c3b1e",
+      "bgcolor": "#1f1710",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 建议起点（不是质量保证）\n\n- `Tail`: 开，+1；只细分最后区间。\n- `Model-Time Bias`: 开，-0.025，70%～95%。\n- `STG`: 开，0.35，block 25，25%～85%。\n- `RF Restart`: 默认关；它会对联合音画真正重新加噪。\n\n报告中的`actual_nfe`是积分调用数；`planned_joint_av_forwards`还包含STG弱分支，才更接近真实Transformer成本。已有post-CFG或double-block替换冲突会直接报错，不静默覆盖。"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "解码后细节与音频旁路",
+      "pos": [
+        2600,
+        520
+      ],
+      "size": [
+        900,
+        330
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "color": "#5c3b1e",
+      "bgcolor": "#1f1710",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Temporal Detail必须位于AV Decode之后\n\n它只处理解码后的IMAGE，示例使用`strength=0.20 / guard=0.90 / upscale=1.0`。它不是生成采样器，也不能恢复不存在的身份或五官。音频从AV Decode直接连到保存节点，完全绕过此后期节点。"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "最终审片清单",
+      "pos": [
+        3080,
+        460
+      ],
+      "size": [
+        900,
+        360
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "color": "#5c3b1e",
+      "bgcolor": "#1f1710",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 保存前后都要完整看与听\n\n检查：小脸与手脚结构、快速旋转是否被压慢、纱衣边缘/闪烁、额外说话、风声/布料声/音乐、削波和音画同步。任一声音退化都不能用“只是画面参数”解释；H3生成阶段四种机制都经过同一个联合AV Transformer。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      4,
+      0,
+      5,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      3,
+      3,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      6,
+      0,
+      7,
+      17,
+      "IMAGE"
+    ],
+    [
+      5,
+      1,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      5,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      7,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      8,
+      7,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      9,
+      8,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      10,
+      0,
+      11,
+      1,
+      "GUIDER"
+    ],
+    [
+      11,
+      7,
+      1,
+      11,
+      4,
+      "LATENT"
+    ],
+    [
+      12,
+      9,
+      0,
+      11,
+      0,
+      "NOISE"
+    ],
+    [
+      13,
+      8,
+      1,
+      11,
+      2,
+      "SAMPLER"
+    ],
+    [
+      14,
+      8,
+      2,
+      11,
+      3,
+      "SIGMAS"
+    ],
+    [
+      15,
+      2,
+      0,
+      12,
+      2,
+      "VAE"
+    ],
+    [
+      16,
+      11,
+      0,
+      12,
+      0,
+      "LATENT"
+    ],
+    [
+      17,
+      1,
+      0,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      18,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      12,
+      1,
+      14,
+      7,
+      "AUDIO"
+    ],
+    [
+      20,
+      13,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "红色汉服：混合细节采样（Tail + Bias + STG）"
+  },
+  "version": 0.4
+}

@@ -21,8 +21,8 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 63,
-    "installed_user_workflows": 63
+    "project_workflows": 64,
+    "installed_user_workflows": 64
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
@@ -147,6 +147,7 @@
     "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
     "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
     "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+    "MiniMaxH3DetailMixerSamplerT8Advanced",
     "MiniMaxH3SPEEDSpectrumHarvesterT8Advanced",
     "MiniMaxH3SPEEDPlanT8Advanced",
     "MiniMaxH3SPEEDSourceT8Advanced",
@@ -408,7 +409,8 @@
       "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
       "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
       "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
-      "MiniMaxH3TemporalDetailEnhanceT8Advanced"
+      "MiniMaxH3TemporalDetailEnhanceT8Advanced",
+      "MiniMaxH3DetailMixerSamplerT8Advanced"
     ],
     "behavior": [
       "future Turbo dual-clock validation uses 8 video and 8 audio denoise steps; retained 4-step examples are compatibility fixtures rather than the quality baseline",
@@ -425,7 +427,9 @@
       "smooth model-time bias leaves the integrator schedule unchanged and applies a true sin-squared tail envelope to the sigma seen by the shared AV Transformer; it is time conditioning, not random noise",
       "joint AV rectified-flow restart re-noises the clean endpoint with x_sigma=(1-sigma)*x_clean+sigma*epsilon on independently mapped video/audio clocks, records seed and actual extra NFE, requires full audio participation, rejects fractional masks and does not expose an unvalidated video-only mode",
       "H3-specific spatio-temporal guidance adds a skipped-double-block positive branch only inside the selected progress window, requires a native H3 MODEL, rejects nonzero shared-AV rescale and rechecks replacement conflicts at sampling time",
-      "the separate temporal detail node performs chunked motion-gated luma enhancement and optional aspect-first non-shrinking multiple-of-32 bicubic enlargement, defaults to a 2.1MP output budget, does not touch audio and does not claim to reconstruct missing identity/geometry"
+      "the separate temporal detail node performs chunked motion-gated luma enhancement and optional aspect-first non-shrinking multiple-of-32 bicubic enlargement, defaults to a 2.1MP output budget, does not touch audio and does not claim to reconstruct missing identity/geometry",
+      "the append-only detail mixer reuses the four generation-stage implementations behind independent default-off toggles and reports base/tail/restart integrator NFE separately from STG weak forwards and total planned joint AV Transformer forwards",
+      "decoded Temporal Detail remains outside the mixer after AV Decode; the importable example bypasses final audio directly from AV Decode and does not claim that combining mechanisms is a controlled single-variable comparison"
     ],
     "validated": [
       "exact 8-step Turbo profile enforcement and original-knot preservation unit tests",
@@ -456,9 +460,12 @@
       "the reused upstream eight-step baseline retains the isolated corrupt frame explicitly accepted by the user and therefore fails repeat strict decode; it remains an annotated historical blind-comparison input rather than being counted as a new-file pass",
       "five importable frontend workflows contain route-specific Markdown notes and are checked for bidirectional link consistency; the randomized six-way full-video/audio review exists locally and perceptual review remains pending",
       "590 project tests, changed-scope Ruff, compileall, 115 non-artifact JSON parses, git diff check, stable sampling.py SHA-256 and live ComfyUI output-node audits pass on the v1.29.0 source",
-      "post-red-team coverage rejects locked/partial audio restart and fractional masks, permits binary conditioned video rows with full audio, catches STG conflicts added after the STG node, rejects non-H3 models/nonzero AV rescale/positive model-time bias, and verifies chunked temporal processing plus aspect-safe non-shrinking alignment and output budget"
+      "post-red-team coverage rejects locked/partial audio restart and fractional masks, permits binary conditioned video rows with full audio, catches STG conflicts added after the STG node, rejects non-H3 models/nonzero AV rescale/positive model-time bias, and verifies chunked temporal processing plus aspect-safe non-shrinking alignment and output budget",
+      "the append-only detail mixer passes all-disabled stable-route equivalence, exact combined tail/bias/STG/restart NFE and forward accounting, pre-existing post-CFG conflict refusal, six-node append-only registration and importable workflow routing tests",
+      "616 project tests, changed-scope Ruff, compileall, 64 project plus 64 installed user frontend workflow parses and hash parity, diff check, stable sampling.py SHA-256 and whitelist-only ComfyUI startup pass for v1.31.0",
+      "one RTX 4060 Ti 16GB mechanical chain used native FL2VA INT8, Qwen NVFP4, official dual VAEs, 256x256x22 I2VA, two base steps plus one tail step, Bias and STG with Restart off; prompt 87b8c224-514c-46cf-af79-09da785a820d completed in 39.38 seconds and saved 22 readable 256x256 PNG frames, without granting quality, speed or memory-tier promotion"
     ],
-    "status": "implemented Advanced EXP sigma mechanics, same-NFE causal-control plumbing, audit-to-repair planning, dynamic guidance, final-interval detail subdivision, smooth model-time bias, true joint-AV RF restart, H3 STG and motion-gated decoded-frame detail enhancement; fixed red-Hanfu generation and strict decoding pass for all five new routes, but complete visual/audio blind review remains pending, so quality_guarantee and universal memory_safe_claim remain false"
+    "status": "implemented Advanced EXP sigma mechanics, same-NFE causal-control plumbing, audit-to-repair planning, dynamic guidance, five independent detail routes and one append-only opt-in detail mixer; the mixer keeps Temporal Detail post-decode, preserves fail-closed conflicts and exposes honest NFE/forward accounting, while perceptual superiority, audio non-inferiority and universal memory safety remain unclaimed"
   },
   "experimental_environment_audit_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
