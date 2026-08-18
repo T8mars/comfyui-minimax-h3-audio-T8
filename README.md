@@ -446,7 +446,7 @@ Scheduled Audio Injection的默认`report_only`与实际
 | Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
 
 最小可运行示例见
-[`examples/workflows/H3_Latent_Upscale_By32.json`](examples/workflows/H3_Latent_Upscale_By32.json)。
+[`examples/workflows/2026-08-16_H3_Latent_Upscale_By32.json`](examples/workflows/2026-08-16_H3_Latent_Upscale_By32.json)。
 示例使用ComfyUI普通`EmptyLatentImage`，所以显式选择8像素/latent；连接本包H3 Conditioning输出的
 联合AV latent时应保留默认16。不要把已包含首尾帧/参考图空间条件的AV latent随意放大后继续沿用
 旧尺寸Conditioning；新节点只负责latent几何与音频保持，不会自动重编码那些条件媒体。
@@ -612,25 +612,25 @@ x/y接缝比没有一例改善，肉眼出现栅格和重影。这条直接修�
 
 API与可导入前端示例：
 
-- `tests/fixtures/api/environment_audit_advanced_api.json` / `examples/workflows/H3_Environment_Audit_Advanced.json`
-- `tests/fixtures/api/activation_chunk_advanced_api.json` / `examples/workflows/H3_Activation_Chunk_Advanced.json`
-- `tests/fixtures/api/qwen_prefix_cache_advanced_api.json` / `examples/workflows/H3_Qwen_Prefix_Cache_Advanced.json`
-- `tests/fixtures/api/studio_timeline_advanced_api.json` / `examples/workflows/H3_Studio_Timeline_Advanced.json`
-- `tests/fixtures/api/context_ir_provider_advanced_api.json` / `examples/workflows/H3_Context_IR_Provider_Advanced.json`
-- `tests/fixtures/api/selective_repair_execution_advanced_api.json` / `examples/workflows/H3_Selective_Repair_Execution_Advanced.json`
-- `tests/fixtures/api/reel_delivery_advanced_api.json` / `examples/workflows/H3_Reel_Delivery_Advanced.json`
-- `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json`
-- `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/H3_AV_Decode_Safety_Advanced.json`
-- `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/H3_Face_Refine_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/H3_Face_Refine_Anime_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/H3_Face_Refine_Parity_Advanced_EXP.json`
-- `tests/fixtures/api/multiface_sam31_2person_advanced_api.json` / `examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
-- `tests/fixtures/api/multiface_sam31_3person_advanced_api.json` / `examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/environment_audit_advanced_api.json` / `examples/workflows/2026-08-13_H3_Environment_Audit_Advanced.json`
+- `tests/fixtures/api/activation_chunk_advanced_api.json` / `examples/workflows/2026-08-13_H3_Activation_Chunk_Advanced.json`
+- `tests/fixtures/api/qwen_prefix_cache_advanced_api.json` / `examples/workflows/2026-08-13_H3_Qwen_Prefix_Cache_Advanced.json`
+- `tests/fixtures/api/studio_timeline_advanced_api.json` / `examples/workflows/2026-08-13_H3_Studio_Timeline_Advanced.json`
+- `tests/fixtures/api/context_ir_provider_advanced_api.json` / `examples/workflows/2026-08-13_H3_Context_IR_Provider_Advanced.json`
+- `tests/fixtures/api/selective_repair_execution_advanced_api.json` / `examples/workflows/2026-08-13_H3_Selective_Repair_Execution_Advanced.json`
+- `tests/fixtures/api/reel_delivery_advanced_api.json` / `examples/workflows/2026-08-13_H3_Reel_Delivery_Advanced.json`
+- `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json`
+- `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/2026-08-13_H3_AV_Decode_Safety_Advanced.json`
+- `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_2person_advanced_api.json` / `examples/workflows/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_3person_advanced_api.json` / `examples/workflows/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
 
 Face Refine示例故意不经过固定736×416的来源视频窗口：它要求输入已经是24fps且帧数严格满足
 `17n+5`，直接保留原始宽高比，再把脸部crop送入512×512二次H3。默认真人示例使用固定哈希的
-YuNet CPU检测；纯动漫另有`H3_Face_Refine_Anime_Advanced_EXP.json`，明确使用动漫专用EXP模型。
+YuNet CPU检测；纯动漫另有`2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`，明确使用动漫专用EXP模型。
 两者都要求先审核Plan preview；手工ROI仍可在缺少检测依赖时使用，Ultralytics自带模型须由用户
 自行确认许可和类别。示例最终用Conditioning的`mux_audio`
 重新封装，因此H3第二遍生成的音频被丢弃，原背景音乐、环境声和音效不会随脸部回贴被截断。
@@ -815,7 +815,7 @@ profile的单评审主观冒烟门，但自动差异范围仍明显大于`0.08`�
 示例：
 
 - `tests/fixtures/api/hybrid_compatibility_audit_api.json`；
-- `examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
+- `examples/workflows/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
 
 完整合同与issue code见
 [Hybrid Compatibility Audit文档](docs/HYBRID_COMPATIBILITY_AUDIT.md)。
@@ -849,7 +849,7 @@ OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。�
 新示例为：
 
 - `tests/fixtures/api/hybrid_model_vbar_headroom_api.json`；
-- `examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
+- `examples/workflows/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
 
 示例使用4.0GiB固定总预留、不做全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
 门槛。RTX 4060 Ti 16GiB、736×416、124帧、Hybrid Stock20真实A/B中，未启用策略最低余量
@@ -901,7 +901,7 @@ H3画质、身份、动作、音频保真和16GB显存矩阵。因此三个节�
 “任意视频”或“精准局部重绘”。API与前端示例分别为：
 
 - `tests/fixtures/api/source_video_repaint_api.json`；
-- `examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json`。
+- `examples/workflows/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json`。
 
 本机已用真实来源有声视频、FL2VA pruned INT8、Qwen3-VL NVFP4 与双 H3 VAE 完成一次
 256×256、124帧、1步机械整链检查；结果成功保存为24fps H.264 + 32kHz stereo AAC，视频与
@@ -955,7 +955,7 @@ Advanced节点也不允许与本项目Long Video MODEL补丁或第三方全局Mo
 [`docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md`](docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md)。
 
 API 示例：`tests/fixtures/api/multikeyframe_advanced_api.json`；可拖入画布的示例：
-`examples/workflows/H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
+`examples/workflows/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
 中间节点均默认 `0.999`，低值只建议在固定素材/seed/采样设置下做A/B。
 
 ## EXP：视觉参考强度（Ref2VA 纹理 A/B）
@@ -973,7 +973,7 @@ API 示例：`tests/fixtures/api/multikeyframe_advanced_api.json`；可拖入画
 只有音频参考也不会误报生效。当前核心只支持一个全局强度，不能为每张参考图单独设置。
 
 API 示例：`tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json`；可拖入画布的工作流：
-`examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
+`examples/workflows/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
 `minimax_h3_ref2va_int8_convrot.safetensors`、736×416、124帧和20步基线，导入后先替换
 占位参考图。该参数本身不要求这些采样值，接入旧工作流时保持用户原有 sampler/scheduler 即可。
 
@@ -1022,9 +1022,9 @@ latent 的平均绝对变化为 `0.50223`，2秒后锁定尾部的最大绝对�
 音乐损伤和听评门槛，未过门槛前不会靠模型名猜一个默认分离器。
 
 示例：`tests/fixtures/api/dialogue_safe_master_api.json`、
-`examples/workflows/H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
+`examples/workflows/2026-08-10_H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
 `tests/fixtures/api/dialogue_timed_bed_lock_api.json`、
-`examples/workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
+`examples/workflows/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
 底轨必须是不含对白的独立完整背景，而不是已混合的 H3 最终母带。
 
 ## EXP：原生语音、参考音色与逐句对白
@@ -1110,13 +1110,13 @@ Joint多人均未放行。
 
 API 与前端示例除原有描述音色、参考音色和逐turn对白外，新增：
 
-- `speech_performance_adr_api.json` / `H3_Speech_Performance_ADR_Stock20_EXP.json`；
-- `speech_longform_resume_api.json` / `H3_Speech_LongForm_Resume_Stock20_EXP.json`；
-- `speech_longform_compose_api.json` / `H3_Speech_LongForm_Compose_EXP.json`；
+- `speech_performance_adr_api.json` / `2026-08-10_H3_Speech_Performance_ADR_Stock20_EXP.json`；
+- `speech_longform_resume_api.json` / `2026-08-10_H3_Speech_LongForm_Resume_Stock20_EXP.json`；
+- `speech_longform_compose_api.json` / `2026-08-10_H3_Speech_LongForm_Compose_EXP.json`；
 - `speech_voice_library_save_api.json`、`speech_voice_library_load_api.json` 及对应前端工作流；
 - `speech_voice_library_delete_api.json`、`speech_vram_preflight_api.json`、
   `speech_longform_control_api.json` 及对应维护工作流；
-- `speech_joint_dialogue_exp_api.json` / `H3_Speech_Joint_Dialogue_Stock20_EXP.json`，仅用于复现
+- `speech_joint_dialogue_exp_api.json` / `2026-08-09_H3_Speech_Joint_Dialogue_Stock20_EXP.json`，仅用于复现
   已知质量风险，不作为推荐模板。
 
 参考与Joint示例导入后必须替换 `speech_reference*.flac` 占位音频；完整环境、输出哈希、显存和否决项见
@@ -1219,7 +1219,7 @@ flow-P90仍在第4/5/6段降到0.648/0.457/0.652，动作地板继续失败。�
 
 ### 双参考身份续写示例
 
-可直接导入的 `examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
+可直接导入的 `examples/workflows/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
 基于后台长链示例，专门演示“完整场景首帧 + 人物身份裁剪图”的双参考续写：
 
 1. 完整场景图连接 Long Video Conditioning 的 `first_frame`，继续精确控制第0段首帧。
@@ -1281,7 +1281,7 @@ flow-P90仍在第4/5/6段降到0.648/0.457/0.652，动作地板继续失败。�
    完整历史 IMAGE/AUDIO tensor，也不会通过后台循环绕过 ComfyUI 的模型管理。
 
 `1.7.0` 在不移除上述人工审核路线的前提下增加一条显式后台路线。加载
-`examples/workflows/H3_Long_Video_Background_22F_EXP.json` 后，`Background Start` 的默认值仍是
+`examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 后，`Background Start` 的默认值仍是
 `review_only`；只有主动改为 `auto_accept_and_continue` 才会跳过人工预览，自动接受每个成功候选。
 终端节点每次只排入一个下一段 prompt，不在单个 Python 循环里长期持有完整 IMAGE/AUDIO 历史。
 
@@ -1409,15 +1409,15 @@ VAE重编码22帧没有显示出优于直接 sampler latent 的充分证据，�
 该首版 bridge 检查当时只覆盖上述三段单素材；后续14段证据见下文。多素材长期退化矩阵和
 跨配置通用16GB安全档仍未完成，因此本功能继续保持 Experimental，不宣传无缝或绝不 OOM。
 
-旧手工链的画布/API 示例仍为 `examples/workflows/H3_Long_Video_22F_EXP.json` 与
+旧手工链的画布/API 示例仍为 `examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json` 与
 `tests/fixtures/api/long_video_segment_api.json`。接受状态画布/API 示例为
-`examples/workflows/H3_Long_Video_Accepted_22F_EXP.json` 与
+`examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` 与
 `tests/fixtures/api/long_video_candidate_accept_api.json`；完成全部片段后再单独运行
 `tests/fixtures/api/long_video_compose_api.json`。推荐的总时长自动恢复画布/API 示例为
-`examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` 与
+`examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` 与
 `tests/fixtures/api/long_video_auto_resume_api.json`；它自动管理 index、final、时间轴和断点位置，但保留
 逐段人工预览/接受。显式后台画布/API 为
-`examples/workflows/H3_Long_Video_Background_22F_EXP.json` 与
+`examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 与
 `tests/fixtures/api/long_video_background_api.json`；只有这组示例连接 Background Start 与 Auto Queue。
 
 本机已对这条自动恢复 API 做一次真实执行探针：非裁剪 FL2VA INT8、Standard Turbo LoRA、
@@ -1552,7 +1552,7 @@ latent 注入更多噪声，可能增强重绘幅度，也可能损坏身份与�
 LoRA，并以 20 步作为结构基线。若以后安装非裁剪 Ref2VA，再单独进行 Turbo LoRA 对照。
 这项能力是参考引导的语义重绘，不是 mask/inpainting，也不保证未编辑区域像素不变。
 API 示例见 `tests/fixtures/api/still_image_edit_api.json`；可直接拖入画布的完整示例见
-`examples/workflows/H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
+`examples/workflows/2026-08-07_H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
 并连接 Still Preflight；在 Reference Image Edit 节点上点击“＋”可追加最多8张参考图。
 
 本机真实模型验证中，pruned Ref2VA INT8 在 512×512、20 步、`direct_1_frame` 下成功
@@ -1647,10 +1647,10 @@ DiT 前向次数：4/8 约是稳定 4/4 的 2 倍计算量，4/10 约是 2.5 倍
 
 | 工作流 | `audio_mode` | 最终 MP4 音轨 | 用途 |
 |---|---|---|---|
-| `H3_Audio_Lock_Source_Stable_4V4A.json` | `lock_source` | Conditioning `mux_audio` | 锁定源 latent，保留干净输入原音轨 |
-| `H3_Audio_Remix_Source_Stable_4V4A.json` | `remix_source` | AV Decode `generated_audio` | 以默认0.35强度保留节奏/语音结构并重绘声音 |
-| `H3_Audio_Reference_Only_Stable_4V4A.json` | `reference_only` | AV Decode `generated_audio` | 输入音频仅作 `<Audio 1>` 参考，目标音频重新生成 |
-| `H3_Turbo_Stable_4V4A.json` | `native` | AV Decode `generated_audio` | 无需输入音频的原生音画联合生成 |
+| `2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json` | `lock_source` | Conditioning `mux_audio` | 锁定源 latent，保留干净输入原音轨 |
+| `2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json` | `remix_source` | AV Decode `generated_audio` | 以默认0.35强度保留节奏/语音结构并重绘声音 |
+| `2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json` | `reference_only` | AV Decode `generated_audio` | 输入音频仅作 `<Audio 1>` 参考，目标音频重新生成 |
+| `2026-08-06_H3_Turbo_Stable_4V4A.json` | `native` | AV Decode `generated_audio` | 无需输入音频的原生音画联合生成 |
 
 三份输入音频示例均预设736×416、124帧、稳定4/4双时钟、原生 flow 调度，并通过 Audio Window
 把用户选择的5秒场景对齐到合法 H3 窗口，再由 Output Trim 恢复精确5秒。导入后必须先在
@@ -1729,7 +1729,7 @@ v1.19.0 追加两个完全旁路旧工作流的实验节点：
 
 新的 Turbo 双时钟质量、兼容、性能和显存测试统一按视频8步/音频8步。旧4步工作流继续保留，
 用于验证向后兼容和复现历史结果，不再作为后续质量结论的统一测试标准。新示例
-`H3_Motion_Quality_Advanced_8Step_EXP.json`默认不应用sigma插点，先提供严格8步基线和只读审计。
+`2026-08-09_H3_Motion_Quality_Advanced_8Step_EXP.json`默认不应用sigma插点，先提供严格8步基线和只读审计。
 
 v1.28.0 又追加两个隔离的 Advanced 节点，旧107个节点及稳定采样数学不变：
 
@@ -1739,8 +1739,8 @@ v1.28.0 又追加两个隔离的 Advanced 节点，旧107个节点及稳定采�
 - `MiniMaxH3DynamicGuidanceAuditT8Advanced`：放在采样后，原样透传联合AV latent，并报告实际Guider
   调用、物理模型前向和cond/uncond分支批次。它只负责审计，不修画面或声音。
 
-对应前端示例为`H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`与
-`H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`。二者均默认关闭实验效果并附带NOTE。推荐只做四条
+对应前端示例为`2026-08-09_H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`与
+`2026-08-09_H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`。二者均默认关闭实验效果并附带NOTE。推荐只做四条
 单变量检查：8步Basic基线、尾段额外2 NFE、普通10步因果对照、动态单路增益`0.90→1.10`；不要再扩成
 大矩阵。尾段2个插点会把8次提高到10次完整联合A/V DiT前向，约增加25% NFE；动态引导与尾段调度
 都是生成阶段预防实验，不是Face Refine、锐化或后处理。
@@ -1876,27 +1876,27 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 可直接拖入画布的稳定 4/4、三种输入音频模式、EXP 4/8、EXP 4/10、Ref2VA 22帧静态候选编辑、
 对白安全分轨母带、两遍 H3 分时背景底轨锁定、Hybrid Model Advanced Stock20，以及以下长视频示例位于 `examples/workflows/`：
 
-- `H3_Long_Video_22F_EXP.json`：手工逐段续写基线。
-- `H3_Long_Video_Accepted_22F_EXP.json`：候选预览、接受和可恢复状态链。
-- `H3_Long_Video_Auto_Resume_22F_EXP.json`：总时长编排与人工审核后自动恢复。
-- `H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
-- `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
-- `H3_Motion_Quality_Advanced_8Step_EXP.json`：Turbo双时钟8步测试基线、默认关闭的sigma尾段实验与只读质量审计。
-- `H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`：默认Basic透传的动态单路引导实验与实际分支/NFE审计。
-- `H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`：默认关闭的尾段额外NFE实验，NOTE说明8→10 NFE成本与普通10步因果对照。
-- `H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json`：红色汉服高速旋转固定例，8+3联合AV尾段细化。
-- `H3_Hanfu_Model_Time_Bias_Advanced_EXP.json`：同输入8 NFE、平滑共享AV模型时间偏置。
-- `H3_Hanfu_RF_Restart_Advanced_EXP.json`：同输入基础8步后联合AV Rectified-Flow Restart 3步。
-- `H3_Hanfu_STG_Advanced_EXP.json`：同输入H3 block 25时空引导。
-- `H3_Hanfu_Temporal_Detail_Advanced_EXP.json`：同输入基础8步后解码帧时序保护细节增强。
-- `H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
-- `H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
+- `2026-08-09_H3_Long_Video_22F_EXP.json`：手工逐段续写基线。
+- `2026-08-09_H3_Long_Video_Accepted_22F_EXP.json`：候选预览、接受和可恢复状态链。
+- `2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json`：总时长编排与人工审核后自动恢复。
+- `2026-08-09_H3_Long_Video_Background_22F_EXP.json`：后台自动排队长链。
+- `2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`：完整场景与身份裁剪双参考的后台长链。
+- `2026-08-09_H3_Motion_Quality_Advanced_8Step_EXP.json`：Turbo双时钟8步测试基线、默认关闭的sigma尾段实验与只读质量审计。
+- `2026-08-09_H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json`：默认Basic透传的动态单路引导实验与实际分支/NFE审计。
+- `2026-08-09_H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json`：默认关闭的尾段额外NFE实验，NOTE说明8→10 NFE成本与普通10步因果对照。
+- `2026-08-18_H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json`：红色汉服高速旋转固定例，8+3联合AV尾段细化。
+- `2026-08-18_H3_Hanfu_Model_Time_Bias_Advanced_EXP.json`：同输入8 NFE、平滑共享AV模型时间偏置。
+- `2026-08-18_H3_Hanfu_RF_Restart_Advanced_EXP.json`：同输入基础8步后联合AV Rectified-Flow Restart 3步。
+- `2026-08-18_H3_Hanfu_STG_Advanced_EXP.json`：同输入H3 block 25时空引导。
+- `2026-08-18_H3_Hanfu_Temporal_Detail_Advanced_EXP.json`：同输入基础8步后解码帧时序保护细节增强。
+- `2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json`：精确pair检查、默认小artifact、stock-loader Hybrid MODEL与Ref2VA参考图链。
+- `2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`：独立音频参考，Inspector按Conditioning自动选择
   最小audio-row实验profile。
-- `H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
+- `2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
   实验profile；仍需用户盲评，不能视为最佳profile。
-- `H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：默认严格T2VA、20步、0.5→1.0、手工sigma的首个实机候选。
-- `H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的多模态研究示例，必须显式EXP。
-- `H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建示例，必须显式EXP。
+- `2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：默认严格T2VA、20步、0.5→1.0、手工sigma的首个实机候选。
+- `2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的多模态研究示例，必须显式EXP。
+- `2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建示例，必须显式EXP。
 
 API 示例见 `tests/fixtures/api/audio_lock_api.json`、
 `tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和

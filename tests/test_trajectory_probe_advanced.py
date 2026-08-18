@@ -243,7 +243,7 @@ def test_trajectory_examples_route_the_direct_transport_contract():
             project_root
             / "examples"
             / "workflows"
-            / "H3_Trajectory_Probe_Advanced_EXP.json"
+            / "2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json"
         ).read_text(encoding="utf-8-sig")
     )
     nodes = {node["id"]: node for node in workflow["nodes"]}

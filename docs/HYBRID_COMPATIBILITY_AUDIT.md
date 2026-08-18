@@ -250,7 +250,7 @@ artifact, LoRA, order, sampler, and quality matrix is calibrated.
 ## Examples
 
 - API: `tests/fixtures/api/hybrid_compatibility_audit_api.json`
-- Frontend: `examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`
+- Frontend: `examples/workflows/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`
 
 The frontend example keeps the validated 4 GiB reserve starting point for the
 exact RTX 4060 Ti 16 GiB, 736×416, 124-frame Stock20 experiment, requires an

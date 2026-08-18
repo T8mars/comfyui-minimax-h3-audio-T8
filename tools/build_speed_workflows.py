@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "examples" / "workflows"
-BASE = WORKFLOWS / "H3_SPEED_T2VA_Stock20_Advanced_EXP.json"
+BASE = WORKFLOWS / "2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json"
 
 
 def node(workflow: dict, node_id: int) -> dict:
@@ -113,8 +113,8 @@ def build_ref2va(base: dict) -> dict:
 def main() -> None:
     base = json.loads(BASE.read_text(encoding="utf-8"))
     outputs = {
-        WORKFLOWS / "H3_SPEED_FL2VA_Stock20_Advanced_EXP.json": build_fl2va(base),
-        WORKFLOWS / "H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json": build_ref2va(base),
+        WORKFLOWS / "2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json": build_fl2va(base),
+        WORKFLOWS / "2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json": build_ref2va(base),
     }
     for path, workflow in outputs.items():
         path.write_text(

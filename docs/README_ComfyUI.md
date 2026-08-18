@@ -474,7 +474,7 @@ auto reserve from missing or report-only policy. Current 512 MiB VRAM and 16 GiB
 are not peak predictions. Passing the audit is mechanical compatibility only; quality, de-waxing,
 reference identity and universal 16 GiB safety remain unproven, and `memory_safe_claim=false`.
 See `docs/HYBRID_COMPATIBILITY_AUDIT.md` and import
-`H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
+`2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
 `hybrid_compatibility_audit_api.json`.
 
 A follow-up exact-profile matrix on 2026-08-13 used 736x416, 124 frames,
@@ -545,7 +545,7 @@ It never scans source checkpoints, unloads a MODEL, or releases VRAM. See
 `docs/HYBRID_ARTIFACT_MAINTENANCE.md`.
 
 Version 1.15.1 retains all 60 Version 1.15.0 node IDs and updates the opt-in
-`H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
+`2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
 connects a reportable 4.0 GiB total-reserve policy directly to the Hybrid Loader, guaranteeing that
 ComfyUI reserve and AIMDO simple headroom are set before the stock diffusion-model load. The policy
 uses a direct AIMDO setter, does not reinitialize devices or alter startup `--vram-headroom`, and
@@ -558,10 +558,10 @@ not generalize to other resolutions, frame counts, GPUs, concurrent CUDA users, 
 conditions; `memory_safe` and `never_oom` remain false.
 
 Version 1.14.0 added the opt-in
-`examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
+`examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
 `tests/fixtures/api/hybrid_model_advanced_api.json`. Audio-only and mixed-reference variants are provided as
-`H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
-`H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
+`2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
+`2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
 `hybrid_model_audio_reference_api.json`, and `hybrid_model_mixed_reference_api.json`.
 The graph strictly hashes the exact validated FL2VA/
 Ref2VA pruned pair, builds or reuses a 27.69 MiB curve-rebased target-slice artifact under
@@ -582,18 +582,18 @@ MP4 settings for direct comparison. Drag a JSON file into the ComfyUI canvas or
 open it from the Workflows menu.
 
 Three stable 4/4 source-audio workflows are installed in the same directory:
-`H3_Audio_Lock_Source_Stable_4V4A.json`,
-`H3_Audio_Remix_Source_Stable_4V4A.json`, and
-`H3_Audio_Reference_Only_Stable_4V4A.json`. Each uses a 5-second Audio Window,
+`2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json`,
+`2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json`, and
+`2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json`. Each uses a 5-second Audio Window,
 736x416 canvas, 124-frame legal H3 context, exact synchronized Output Trim, and
 the explicit dual-clock Euler/native-flow defaults. Lock mode routes the clean
 Conditioning `mux_audio` to the final MP4; remix and reference-only route decoded
 model audio instead. Upload or select a source file in `Load Audio` before queuing.
 
 Version 1.12.0 also installs two opt-in dialogue-safe audio workflows without changing any old
-workflow: `H3_Dialogue_Safe_Master_EXP.json` accepts already independent speech/music/ambience/SFX
+workflow: `2026-08-10_H3_Dialogue_Safe_Master_EXP.json` accepts already independent speech/music/ambience/SFX
 stems and keeps the background running after verified speech ends;
-`H3_Dialogue_Timed_Background_Bed_Lock_EXP.json` is a two-pass H3 graph that locks an independent
+`2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json` is a two-pass H3 graph that locks an independent
 dialogue-free background bed after an explicit 40Hz latent boundary. The first path is sample-exact
 stem assembly. The second path is not source separation or a sample-exact cut: the real H3 Audio
 VAE encoded a standard 124-frame window to 206 steps against the 207-step AV clock, so the example
@@ -601,7 +601,7 @@ explicitly selects `fit_reported`, and its decoder showed roughly 0.3 seconds of
 after the latent boundary. Both workflows use placeholders that must be replaced before queuing.
 
 The project also includes the isolated experimental long-video workflow
-`examples/workflows/H3_Long_Video_22F_EXP.json` and API graph
+`examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json` and API graph
 `tests/fixtures/api/long_video_segment_api.json`. They plan and execute one bounded segment
 at a time, store only a checksummed AV latent tail, and use a cloned-MODEL object
 patch rather than a process-global MiniMax H3 monkey patch. Intermediate segments
@@ -620,7 +620,7 @@ Version 1.5.0 adds a safer accepted-state route without removing that P1 example
 - `tests/fixtures/api/long_video_candidate_accept_api.json` loads only an accepted parent,
   saves a non-mutating candidate, previews it with acceptance off by default, and
   promotes it through a locked, checksummed, atomic manifest only after review;
-- `examples/workflows/H3_Long_Video_Accepted_22F_EXP.json` provides the same
+- `examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` provides the same
   review-first route as a drag-and-drop frontend workflow;
 - replacing segment N is explicit and invalidates every accepted segment after N,
   because those outputs were conditioned on the old parent chain;
@@ -675,7 +675,7 @@ arbitrary-length, or no-OOM claim.
 
 Version 1.6.0 adds a human-reviewed total-duration resume route:
 
-- `examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` is the recommended
+- `examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` is the recommended
   frontend graph and is installed in the same ComfyUI workflow directory;
 - `tests/fixtures/api/long_video_auto_resume_api.json` is the equivalent API graph;
 - one `MiniMaxH3LongVideoOrchestratorT8` input defines the total duration, a fixed
@@ -696,9 +696,9 @@ Version 1.6.0 adds a human-reviewed total-duration resume route:
 Version 1.7.0 adds a separate, explicitly enabled background route without changing the
 review-first workflow:
 
-- `H3_Long_Video_Background_22F_EXP.json` and `long_video_background_api.json` connect
+- `2026-08-09_H3_Long_Video_Background_22F_EXP.json` and `long_video_background_api.json` connect
   `Background Start` before expensive work and `Auto Accept & Continue` as the only terminal;
-- `H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json` is the ready-to-import
+- `2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json` is the ready-to-import
   two-image variant: the full scene drives exact segment 0, while a same-subject face or
   upper-body crop joins the full scene as two continuation-only identity references;
 - `review_only` is the safe default. `auto_accept_and_continue` accepts every successful

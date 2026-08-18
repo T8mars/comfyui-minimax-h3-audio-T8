@@ -549,7 +549,7 @@ def test_motion_quality_examples_use_eight_step_baseline_and_safe_defaults():
             root
             / "examples"
             / "workflows"
-            / "H3_Motion_Quality_Advanced_8Step_EXP.json"
+            / "2026-08-09_H3_Motion_Quality_Advanced_8Step_EXP.json"
         ).read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in frontend["nodes"]}

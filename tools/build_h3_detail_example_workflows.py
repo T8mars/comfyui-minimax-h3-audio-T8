@@ -13,7 +13,7 @@ except ImportError:
 
 EXAMPLES = {
     "tail3": (
-        "H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json",
+        "2026-08-18_H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json",
         "红色汉服：尾段3步联合AV细化",
         """## 用途：最后区间减小步长，不是升噪或修脸
 
@@ -22,7 +22,7 @@ EXAMPLES = {
 节点自身默认是+1；改为0才是精确透传。末尾0只是积分终点，不会再调用模型。请完整检查人物、小脸、纱衣、闪烁、非要求语音、风声/布料声和音画同步；不能仅凭单帧锐度宣传质量提升。""",
     ),
     "time_bias": (
-        "H3_Hanfu_Model_Time_Bias_Advanced_EXP.json",
+        "2026-08-18_H3_Hanfu_Model_Time_Bias_Advanced_EXP.json",
         "红色汉服：平滑共享AV模型时间偏置",
         """## 用途：同8 NFE的模型时间实验
 
@@ -31,7 +31,7 @@ EXAMPLES = {
 H3音画在同一个Transformer中，偏置会同时改变画面与声音预测。必须与原8步同seed完整试听/观看；若出现运动幅度下降、身份漂移、额外语音或音效退化，应直接否决。""",
     ),
     "rf_restart": (
-        "H3_Hanfu_RF_Restart_Advanced_EXP.json",
+        "2026-08-18_H3_Hanfu_RF_Restart_Advanced_EXP.json",
         "红色汉服：联合AV Rectified-Flow Restart",
         """## 用途：真正重新加噪后再下降，高风险EXP
 
@@ -40,7 +40,7 @@ H3音画在同一个Transformer中，偏置会同时改变画面与声音预测�
 这和Navyblue/model-time bias完全不同，是真随机Restart。首版故意不提供video-only模式，因为共享Transformer下冻结audio并不保证联合分布正确。重点检查画面结构是否被重写、声音是否变化、是否新增说话/噪声及A/V同步。""",
     ),
     "stg": (
-        "H3_Hanfu_STG_Advanced_EXP.json",
+        "2026-08-18_H3_Hanfu_STG_Advanced_EXP.json",
         "红色汉服：H3时空引导",
         """## 用途：H3专用skip-block时空引导
 
@@ -49,7 +49,7 @@ H3音画在同一个Transformer中，偏置会同时改变画面与声音预测�
 同block已有Block Cache或其他replacement时节点会fail closed。STG会显著增加计算，并可能同时改变声音；先单独运行，不要和Restart/时间偏置叠加。观察高速旋转、纱衣连续性、小脸、闪烁和完整音轨。""",
     ),
     "temporal_detail": (
-        "H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
+        "2026-08-18_H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
         "红色汉服：解码帧时序保护细节增强",
         """## 用途：后期亮度细节增强，不是生成式修复
 

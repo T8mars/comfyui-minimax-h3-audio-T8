@@ -18,12 +18,18 @@
     "stable_node_schema_changed": false,
     "stable_sampling_changed": false
   },
+  "frontend_workflow_naming": {
+    "format": "YYYY-MM-DD_<workflow_name>.json",
+    "date_semantics": "first publication date derived from Git history; not the latest edit date",
+    "project_workflows": 63,
+    "installed_user_workflows": 63
+  },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
-    "native": "examples/workflows/H3_Turbo_Stable_4V4A.json",
-    "lock_source": "examples/workflows/H3_Audio_Lock_Source_Stable_4V4A.json",
-    "remix_source": "examples/workflows/H3_Audio_Remix_Source_Stable_4V4A.json",
-    "reference_only": "examples/workflows/H3_Audio_Reference_Only_Stable_4V4A.json"
+    "native": "examples/workflows/2026-08-06_H3_Turbo_Stable_4V4A.json",
+    "lock_source": "examples/workflows/2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json",
+    "remix_source": "examples/workflows/2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json",
+    "reference_only": "examples/workflows/2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json"
   },
   "task_modes": ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
   "nodes": [
@@ -360,8 +366,8 @@
     "examples": [
       "tests/fixtures/api/multiface_sam31_2person_advanced_api.json",
       "tests/fixtures/api/multiface_sam31_3person_advanced_api.json",
-      "examples/workflows/H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
-      "examples/workflows/H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
+      "examples/workflows/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
+      "examples/workflows/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
     ],
     "validated": [
       "a real 22-frame four-person group probe used the visible-face SAM prompt to keep three repairable color tracks continuous while omitting the back-facing person",
@@ -580,7 +586,7 @@
       "cross-platform filesystem behavior, cascading dependent-segment regeneration, multi-seed quality and blind listening remain unvalidated"
     ],
     "api_example": "tests/fixtures/api/selective_repair_execution_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Selective_Repair_Execution_Advanced.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_Selective_Repair_Execution_Advanced.json",
     "status": "implemented Advanced non-destructive overlay executor; 14-segment/60-second six-point forced-crash recovery, exact-namespace orphan cleanup and one real H3 repair passed mechanical contracts, while outgoing context continuity remains unresolved"
   },
   "experimental_scheduled_drive_audio_injection_advanced": {
@@ -606,7 +612,7 @@
       "baseline/treatment peak device use 15554/15409MiB in one warm pair; this is not a 512MiB safety-margin matrix"
     ],
     "api_example": "tests/fixtures/api/scheduled_audio_injection_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Scheduled_Audio_Injection_Advanced_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json",
     "status": "implemented as default-off EXP; the first real A/B rejected an unwanted-tail-speech suppression claim"
   },
   "experimental_av_decode_safety_advanced": {
@@ -634,7 +640,7 @@
       "three 736x416 eight-tile source-reconstruction A/B cases all rejected the direct global-spatial substitution: mean source SSIM changed by -0.0828, PSNR by -1.141dB, and no x/y seam-ratio case improved"
     ],
     "api_example": "tests/fixtures/api/av_decode_safety_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_AV_Decode_Safety_Advanced.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_AV_Decode_Safety_Advanced.json",
     "status": "implemented Advanced safety gate with source/behavior detection for H3 internal tiling; current >256px decode remains high-risk, and the first direct global-spatial coordinate remedy was empirically rejected rather than merged"
   },
   "experimental_context_ir_provider_advanced": {
@@ -657,7 +663,7 @@
       "sampled-frame analysis is not full video understanding and transcript input is not full music/SFX understanding"
     ],
     "api_example": "tests/fixtures/api/context_ir_provider_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Context_IR_Provider_Advanced.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_Context_IR_Provider_Advanced.json",
     "status": "implemented Advanced provider adapter with privacy and control-authority tests; no provider quality or cross-provider claim"
   },
   "experimental_reel_delivery_advanced": {
@@ -703,7 +709,7 @@
       "Ubuntu 24.04.4 WSL2 with Linux FFmpeg 7.0.2 and PyAV 18.1.0 on ext4 /tmp composed two H.264/AAC clips plus one FLAC lane to exact 66 frames and 132000 logical samples; repeat phase hashes and mtimes plus final SHA matched, sources were unchanged, no temp survived, POSIX lock contention was rejected and the lock was reacquired after holder exit"
     ],
     "api_example": "tests/fixtures/api/reel_delivery_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Reel_Delivery_Advanced.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_Reel_Delivery_Advanced.json",
     "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing, real-H3 256/736px and derived-1920x1088 gates plus one low-resolution Ubuntu WSL2/ext4 Linux route passed; bare-metal Linux, macOS and high-resolution non-Windows behavior remain pending"
   },
   "experimental_trajectory_probe_advanced": {
@@ -743,7 +749,7 @@
       "any non-empty patches_replace wrapper is refused because hidden per-execution state cannot be proven resumable"
     ],
     "api_example": "tests/fixtures/api/trajectory_probe_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Trajectory_Probe_Advanced_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json",
     "status": "Trajectory v2 direct-transport numerical, 124/362-frame, disk-budget and 124-frame three-cold/three-warm repeat gates passed for the exact local profile and were rechecked on current ddbaa875; speed benefit, restart resume, wrappers, other samplers, cross-GPU and universal 16GiB safety remain denied or unverified"
   },
   "experimental_dialogue_safe_audio": {
@@ -791,8 +797,8 @@
       "tests/fixtures/api/dialogue_timed_bed_lock_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/H3_Dialogue_Safe_Master_EXP.json",
-      "examples/workflows/H3_Dialogue_Timed_Background_Bed_Lock_EXP.json"
+      "examples/workflows/2026-08-10_H3_Dialogue_Safe_Master_EXP.json",
+      "examples/workflows/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json"
     ],
     "scientific_limits": [
       "No source separation is performed; an already mixed H3 master cannot be safely repaired by these nodes alone.",
@@ -916,7 +922,7 @@
     ],
     "audio_strategies": ["generate_and_discard", "lock_silence"],
     "total_reference_picture_limit": 9,
-    "frontend_workflow": "examples/workflows/H3_Still_Edit_22Frames_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-07_H3_Still_Edit_22Frames_EXP.json",
     "status": "experimental semantic reference editing; not mask-based pixel editing",
     "validated_probe": {
       "checkpoint": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
@@ -951,11 +957,11 @@
     "audio_context_strategies": ["video_and_audio", "video_only"],
     "continuation_rule": "non-final output reaches sampled tail; exact hidden-tail trim only on final segment",
     "segment_output": "ComfyUI core CreateVideo -> SaveVideo; avoids the tested VHS apad/-shortest audio underrun",
-    "frontend_workflow": "examples/workflows/H3_Long_Video_22F_EXP.json",
-    "accepted_frontend_workflow": "examples/workflows/H3_Long_Video_Accepted_22F_EXP.json",
-    "auto_resume_frontend_workflow": "examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json",
-    "background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_EXP.json",
-    "scene_plus_identity_background_frontend_workflow": "examples/workflows/H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json",
+    "accepted_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json",
+    "auto_resume_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json",
+    "background_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json",
+    "scene_plus_identity_background_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
     "api_workflow": "tests/fixtures/api/long_video_segment_api.json",
     "candidate_accept_api_workflow": "tests/fixtures/api/long_video_candidate_accept_api.json",
     "compose_api_workflow": "tests/fixtures/api/long_video_compose_api.json",
@@ -1291,18 +1297,18 @@
       "tests/fixtures/api/speech_joint_dialogue_exp_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/H3_Speech_Described_Stock20_EXP.json",
-      "examples/workflows/H3_Speech_Reference_Clone_Stock20_EXP.json",
-      "examples/workflows/H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
-      "examples/workflows/H3_Speech_Performance_ADR_Stock20_EXP.json",
-      "examples/workflows/H3_Speech_LongForm_Resume_Stock20_EXP.json",
-      "examples/workflows/H3_Speech_LongForm_Compose_EXP.json",
-      "examples/workflows/H3_Speech_Voice_Library_Save_EXP.json",
-      "examples/workflows/H3_Speech_Voice_Library_Load_EXP.json",
-      "examples/workflows/H3_Speech_Voice_Library_Delete_EXP.json",
-      "examples/workflows/H3_Speech_VRAM_Preflight_EXP.json",
-      "examples/workflows/H3_Speech_LongForm_Control_EXP.json",
-      "examples/workflows/H3_Speech_Joint_Dialogue_Stock20_EXP.json"
+      "examples/workflows/2026-08-10_H3_Speech_Described_Stock20_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_Reference_Clone_Stock20_EXP.json",
+      "examples/workflows/2026-08-09_H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_Performance_ADR_Stock20_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_LongForm_Resume_Stock20_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_LongForm_Compose_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Save_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Load_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Delete_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_VRAM_Preflight_EXP.json",
+      "examples/workflows/2026-08-10_H3_Speech_LongForm_Control_EXP.json",
+      "examples/workflows/2026-08-09_H3_Speech_Joint_Dialogue_Stock20_EXP.json"
     ],
     "validation_report": "docs/SPEECH_VALIDATION_REPORT.md",
     "validated_real_probe": {
@@ -1369,7 +1375,7 @@
     },
     "compatibility": "all prior 48 node IDs, ordering and defaults are unchanged; the three Source AV EXP nodes are appended",
     "api_example": "tests/fixtures/api/source_video_repaint_api.json",
-    "frontend_workflow": "examples/workflows/H3_Source_Video_Repaint_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json",
     "validated": [
       "CPU tensor contract, temporal inverse, dtype normalization, explicit audio trim/pad and input immutability",
       "noise-mask and metadata preservation",
@@ -1433,7 +1439,7 @@
     },
     "examples": {
       "api": "tests/fixtures/api/multikeyframe_advanced_api.json",
-      "frontend": "examples/workflows/H3_MultiKeyframe_Advanced_EXP.json"
+      "frontend": "examples/workflows/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json"
     },
     "validation_report": "docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md",
     "validated_real_probe": {
@@ -1480,7 +1486,7 @@
       "current ComfyUI H3 payload exposes one global value rather than a separate value per reference"
     ],
     "api_example": "tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json",
-    "frontend_workflow": "examples/workflows/H3_Ref2VA_Visual_Reference_Strength_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-10",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
@@ -1541,16 +1547,16 @@
       "no 16GiB memory_safe or never-OOM claim before the 512MiB whole-device headroom and repeat-run gates pass"
     ],
     "api_example": "tests/fixtures/api/hybrid_model_advanced_api.json",
-    "frontend_workflow": "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
     "api_examples": [
       "tests/fixtures/api/hybrid_model_advanced_api.json",
       "tests/fixtures/api/hybrid_model_audio_reference_api.json",
       "tests/fixtures/api/hybrid_model_mixed_reference_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/H3_Hybrid_Model_Advanced_Stock20_EXP.json",
-      "examples/workflows/H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json",
-      "examples/workflows/H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
+      "examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+      "examples/workflows/2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json",
+      "examples/workflows/2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
     ],
     "matrix_tool": {
       "path": "tools/run_hybrid_model_matrix.py",
@@ -1604,7 +1610,7 @@
       "a real process kill can still leave a stale maintenance lock; explicit recovery archives only a sufficiently old lock whose owner is not proven alive"
     ],
     "api_example": "tests/fixtures/api/hybrid_artifact_maintenance_api.json",
-    "frontend_workflow": "examples/workflows/H3_Hybrid_Artifact_Maintenance_Advanced.json",
+    "frontend_workflow": "examples/workflows/2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json",
     "status": "implemented with inspect, quarantine, idempotent replay, restore, tampered-journal refusal, a real subprocess kill between pair moves, stale-lock recovery and stale build-residue rebuild tests; remains Advanced/Experimental"
   },
   "experimental_hybrid_compatibility_audit": {
@@ -1637,7 +1643,7 @@
       "AdaLN-overlapping LoRA remains blocked until a controlled quality and numerical matrix calibrates that exact LoRA/base/artifact combination"
     ],
     "api_example": "tests/fixtures/api/hybrid_compatibility_audit_api.json",
-    "frontend_workflow": "examples/workflows/H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; isolated GPU service with this plugin, T8 H3 Block Cache and KJNodes",
@@ -1723,7 +1729,7 @@
       "the validated 4GiB starting point is scoped to one exact 16GiB Hybrid Stock20 workflow; memory_safe and never-OOM remain false outside that scope"
     ],
     "api_example": "tests/fixtures/api/hybrid_model_vbar_headroom_api.json",
-    "frontend_workflow": "examples/workflows/H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; comfy-aimdo 0.4.13; DynamicVRAM explicitly enabled",

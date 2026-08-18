@@ -176,7 +176,7 @@ def test_visual_reference_strength_frontend_workflow_is_consistent_and_warns():
             root
             / "examples"
             / "workflows"
-            / "H3_Ref2VA_Visual_Reference_Strength_EXP.json"
+            / "2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json"
         ).read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in workflow["nodes"]}

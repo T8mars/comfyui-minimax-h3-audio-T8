@@ -683,7 +683,7 @@ def test_two_and_three_person_examples_accept_candidates_and_run_sequentially():
                 root
                 / "examples"
                 / "workflows"
-                / f"H3_SAM31_{count}Person_Face_Refine_Advanced_EXP.json"
+                / f"2026-08-17_H3_SAM31_{count}Person_Face_Refine_Advanced_EXP.json"
             ).read_text(encoding="utf-8")
         )
         frontend_nodes = {node["id"]: node for node in frontend["nodes"]}

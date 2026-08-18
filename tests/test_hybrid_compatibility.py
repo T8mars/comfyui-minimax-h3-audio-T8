@@ -389,7 +389,7 @@ def test_frontend_example_routes_audited_model_and_has_consistent_links():
             root
             / "examples"
             / "workflows"
-            / "H3_Hybrid_Compatibility_Audit_Stock20_EXP.json"
+            / "2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json"
         ).read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in workflow["nodes"]}

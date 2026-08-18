@@ -4,10 +4,19 @@ import asyncio
 from copy import deepcopy
 import json
 from pathlib import Path
+import re
 
 from h3_audio_t8_pkg.nodes import comfy_entrypoint
 from tools.api_to_frontend_workflow import convert
 from tools.repair_frontend_workflow_order import node_needs_repair, repair_workflow
+
+
+def test_all_frontend_workflows_have_publication_date_prefix():
+    root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
+    paths = sorted(root.glob("*.json"))
+    publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
+    assert len(paths) == 63
+    assert [path.name for path in paths if not publication_name.fullmatch(path.name)] == []
 
 
 def _plugin_object_info() -> dict:

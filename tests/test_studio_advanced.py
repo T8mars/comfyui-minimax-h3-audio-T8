@@ -260,16 +260,16 @@ def test_studio_timeline_frontend_uses_text_nodes_for_untrusted_fields():
 @pytest.mark.parametrize(
     ("api_name", "workflow_name"),
     [
-        ("environment_audit_advanced_api.json", "H3_Environment_Audit_Advanced.json"),
-        ("activation_chunk_advanced_api.json", "H3_Activation_Chunk_Advanced.json"),
-        ("qwen_prefix_cache_advanced_api.json", "H3_Qwen_Prefix_Cache_Advanced.json"),
-        ("studio_timeline_advanced_api.json", "H3_Studio_Timeline_Advanced.json"),
-        ("context_ir_provider_advanced_api.json", "H3_Context_IR_Provider_Advanced.json"),
-        ("reel_delivery_advanced_api.json", "H3_Reel_Delivery_Advanced.json"),
-        ("av_decode_safety_advanced_api.json", "H3_AV_Decode_Safety_Advanced.json"),
-        ("scheduled_audio_injection_advanced_api.json", "H3_Scheduled_Audio_Injection_Advanced_EXP.json"),
-        ("trajectory_probe_advanced_api.json", "H3_Trajectory_Probe_Advanced_EXP.json"),
-        ("selective_repair_execution_advanced_api.json", "H3_Selective_Repair_Execution_Advanced.json"),
+        ("environment_audit_advanced_api.json", "2026-08-13_H3_Environment_Audit_Advanced.json"),
+        ("activation_chunk_advanced_api.json", "2026-08-13_H3_Activation_Chunk_Advanced.json"),
+        ("qwen_prefix_cache_advanced_api.json", "2026-08-13_H3_Qwen_Prefix_Cache_Advanced.json"),
+        ("studio_timeline_advanced_api.json", "2026-08-13_H3_Studio_Timeline_Advanced.json"),
+        ("context_ir_provider_advanced_api.json", "2026-08-13_H3_Context_IR_Provider_Advanced.json"),
+        ("reel_delivery_advanced_api.json", "2026-08-13_H3_Reel_Delivery_Advanced.json"),
+        ("av_decode_safety_advanced_api.json", "2026-08-13_H3_AV_Decode_Safety_Advanced.json"),
+        ("scheduled_audio_injection_advanced_api.json", "2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json"),
+        ("trajectory_probe_advanced_api.json", "2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json"),
+        ("selective_repair_execution_advanced_api.json", "2026-08-13_H3_Selective_Repair_Execution_Advanced.json"),
     ],
 )
 def test_new_api_and_frontend_examples_are_link_consistent(api_name, workflow_name):

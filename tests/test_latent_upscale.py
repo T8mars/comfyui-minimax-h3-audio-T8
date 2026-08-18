@@ -181,7 +181,7 @@ def test_frontend_example_is_loadable_and_uses_plain_latent_scale_explicitly():
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
-        / "H3_Latent_Upscale_By32.json"
+        / "2026-08-16_H3_Latent_Upscale_By32.json"
     )
     workflow = json.loads(workflow_path.read_text(encoding="utf-8"))
     nodes = {node["type"]: node for node in workflow["nodes"]}

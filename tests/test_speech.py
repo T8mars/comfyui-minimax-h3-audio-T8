@@ -582,18 +582,18 @@ def test_dialogue_example_generates_turns_independently_before_sample_exact_mix(
 
 
 SPEECH_FRONTEND_WORKFLOWS = (
-    "H3_Speech_Described_Stock20_EXP.json",
-    "H3_Speech_Reference_Clone_Stock20_EXP.json",
-    "H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
-    "H3_Speech_Performance_ADR_Stock20_EXP.json",
-    "H3_Speech_LongForm_Resume_Stock20_EXP.json",
-    "H3_Speech_LongForm_Compose_EXP.json",
-    "H3_Speech_Voice_Library_Save_EXP.json",
-    "H3_Speech_Voice_Library_Load_EXP.json",
-    "H3_Speech_Voice_Library_Delete_EXP.json",
-    "H3_Speech_VRAM_Preflight_EXP.json",
-    "H3_Speech_LongForm_Control_EXP.json",
-    "H3_Speech_Joint_Dialogue_Stock20_EXP.json",
+    "2026-08-10_H3_Speech_Described_Stock20_EXP.json",
+    "2026-08-10_H3_Speech_Reference_Clone_Stock20_EXP.json",
+    "2026-08-09_H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
+    "2026-08-10_H3_Speech_Performance_ADR_Stock20_EXP.json",
+    "2026-08-10_H3_Speech_LongForm_Resume_Stock20_EXP.json",
+    "2026-08-10_H3_Speech_LongForm_Compose_EXP.json",
+    "2026-08-10_H3_Speech_Voice_Library_Save_EXP.json",
+    "2026-08-10_H3_Speech_Voice_Library_Load_EXP.json",
+    "2026-08-10_H3_Speech_Voice_Library_Delete_EXP.json",
+    "2026-08-10_H3_Speech_VRAM_Preflight_EXP.json",
+    "2026-08-10_H3_Speech_LongForm_Control_EXP.json",
+    "2026-08-09_H3_Speech_Joint_Dialogue_Stock20_EXP.json",
 )
 
 
@@ -635,13 +635,13 @@ def test_speech_frontend_workflow_has_bidirectionally_consistent_links(filename)
 
 def test_speech_frontend_workflow_presets_keep_validated_exp_boundaries():
     described = load_speech_frontend_workflow(
-        "H3_Speech_Described_Stock20_EXP.json"
+        "2026-08-10_H3_Speech_Described_Stock20_EXP.json"
     )
     reference = load_speech_frontend_workflow(
-        "H3_Speech_Reference_Clone_Stock20_EXP.json"
+        "2026-08-10_H3_Speech_Reference_Clone_Stock20_EXP.json"
     )
     dialogue = load_speech_frontend_workflow(
-        "H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json"
+        "2026-08-09_H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json"
     )
 
     described_nodes = {node["id"]: node for node in described["nodes"]}

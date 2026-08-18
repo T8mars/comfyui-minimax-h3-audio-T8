@@ -939,7 +939,7 @@ Implemented locally on 2026-08-08 without changing the stable sampler:
 - after the final segment is accepted, the node returns full progress and a ComfyUI
   `block_execution` reason, preventing an accidental extra sampling pass;
 - the frontend and API graphs are respectively
-  `examples/workflows/H3_Long_Video_Auto_Resume_22F_EXP.json` and
+  `examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` and
   `tests/fixtures/api/long_video_auto_resume_api.json`.
 
 Validation evidence:
@@ -1588,7 +1588,7 @@ checked bidirectionally in the plugin test suite. Copies were installed under
 `ComfyUI/user/default/workflows/MiniMax H3 T8/`.
 
 A fourth ComfyUI 0.4 frontend workflow,
-`H3_Still_Edit_22Frames_EXP.json`, covers the experimental Ref2VA still-image
+`2026-08-07_H3_Still_Edit_22Frames_EXP.json`, covers the experimental Ref2VA still-image
 path. It uses the locally available pruned Ref2VA INT8 checkpoint without Turbo
 LoRA, the H3 text encoder and video VAE, a 512x512/22-frame/20-step setup, Still
 Preflight reporting, middle-frame Still Decode, and PNG output. Twenty-two

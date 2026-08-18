@@ -657,7 +657,7 @@ def test_multikeyframe_advanced_api_is_isolated_and_wired_to_the_cloned_model():
 def test_multikeyframe_advanced_frontend_workflow_is_consistent_and_opt_in():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples" / "workflows" / "H3_MultiKeyframe_Advanced_EXP.json"
+        / "examples" / "workflows" / "2026-08-09_H3_MultiKeyframe_Advanced_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -863,7 +863,7 @@ def test_long_video_background_api_is_explicit_and_queues_through_one_terminal()
 def test_long_video_frontend_workflow_has_consistent_links_and_no_global_motion_node():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples" / "workflows" / "H3_Long_Video_22F_EXP.json"
+        / "examples" / "workflows" / "2026-08-09_H3_Long_Video_22F_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -881,7 +881,7 @@ def test_long_video_frontend_workflow_has_consistent_links_and_no_global_motion_
 def test_long_video_accepted_frontend_workflow_is_review_first_and_consistent():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples" / "workflows" / "H3_Long_Video_Accepted_22F_EXP.json"
+        / "examples" / "workflows" / "2026-08-09_H3_Long_Video_Accepted_22F_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -930,7 +930,7 @@ def test_long_video_accepted_frontend_workflow_is_review_first_and_consistent():
 def test_long_video_auto_resume_frontend_workflow_has_one_timeline_source():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples" / "workflows" / "H3_Long_Video_Auto_Resume_22F_EXP.json"
+        / "examples" / "workflows" / "2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -985,7 +985,7 @@ def test_long_video_auto_resume_frontend_workflow_has_one_timeline_source():
 def test_long_video_background_frontend_workflow_has_explicit_controller_links():
     path = (
         Path(__file__).resolve().parents[1]
-        / "examples" / "workflows" / "H3_Long_Video_Background_22F_EXP.json"
+        / "examples" / "workflows" / "2026-08-09_H3_Long_Video_Background_22F_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -1032,7 +1032,7 @@ def test_scene_plus_identity_background_workflow_wires_two_images_and_exp_policy
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
-        / "H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json"
+        / "2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     nodes = {node["id"]: node for node in workflow["nodes"]}
@@ -1155,9 +1155,9 @@ def test_still_image_edit_example_uses_ref2va_without_incompatible_lora():
 def test_frontend_workflows_cover_stable_and_both_exp_step_counts():
     workflow_dir = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     expected = {
-        "H3_Turbo_Stable_4V4A.json": ("MiniMaxH3DualClockSamplerT8", [4, 12.0, 3.0]),
-        "H3_Turbo_EXP_4V8A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 8, 12.0, 3.0]),
-        "H3_Turbo_EXP_4V10A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 10, 12.0, 3.0]),
+        "2026-08-06_H3_Turbo_Stable_4V4A.json": ("MiniMaxH3DualClockSamplerT8", [4, 12.0, 3.0]),
+        "2026-08-06_H3_Turbo_EXP_4V8A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 8, 12.0, 3.0]),
+        "2026-08-06_H3_Turbo_EXP_4V10A.json": ("MiniMaxH3MultiRateSamplerEXPT8", [4, 10, 12.0, 3.0]),
     }
 
     for filename, (sampler_type, sampler_widgets) in expected.items():
@@ -1198,9 +1198,9 @@ def test_frontend_workflows_cover_stable_and_both_exp_step_counts():
 def test_frontend_audio_input_workflows_cover_three_source_modes_and_output_routing():
     workflow_dir = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     expected = {
-        "H3_Audio_Lock_Source_Stable_4V4A.json": ("lock_source", 6),
-        "H3_Audio_Remix_Source_Stable_4V4A.json": ("remix_source", 11),
-        "H3_Audio_Reference_Only_Stable_4V4A.json": ("reference_only", 11),
+        "2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json": ("lock_source", 6),
+        "2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json": ("remix_source", 11),
+        "2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json": ("reference_only", 11),
     }
 
     for filename, (audio_mode, final_audio_source_id) in expected.items():
@@ -1260,7 +1260,7 @@ def test_frontend_still_edit_workflow_uses_native_22_frame_ref2va_target():
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
-        / "H3_Still_Edit_22Frames_EXP.json"
+        / "2026-08-07_H3_Still_Edit_22Frames_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
     assert workflow["version"] == 0.4
@@ -1342,7 +1342,7 @@ def test_dialogue_safe_master_examples_require_verified_independent_stems():
     assert any("SFX stem" in title for title in load_titles)
 
     frontend = json.loads(
-        (root / "examples" / "workflows" / "H3_Dialogue_Safe_Master_EXP.json")
+        (root / "examples" / "workflows" / "2026-08-10_H3_Dialogue_Safe_Master_EXP.json")
         .read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in frontend["nodes"]}
@@ -1383,7 +1383,7 @@ def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice()
     assert sampler_setup["inputs"]["steps"] == 4
 
     frontend = json.loads(
-        (root / "examples" / "workflows" / "H3_Dialogue_Timed_Background_Bed_Lock_EXP.json")
+        (root / "examples" / "workflows" / "2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json")
         .read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in frontend["nodes"]}
@@ -1405,23 +1405,23 @@ def test_timed_background_bed_example_is_opt_in_and_routes_locked_latent_twice()
     ("filename", "advanced_type"),
     [
         (
-            "H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json",
+            "2026-08-18_H3_Hanfu_Tail_Detail_3Step_Advanced_EXP.json",
             "MiniMaxH3AVTailDetailScheduleT8Advanced",
         ),
         (
-            "H3_Hanfu_Model_Time_Bias_Advanced_EXP.json",
+            "2026-08-18_H3_Hanfu_Model_Time_Bias_Advanced_EXP.json",
             "MiniMaxH3ModelTimeBiasSamplerT8Advanced",
         ),
         (
-            "H3_Hanfu_RF_Restart_Advanced_EXP.json",
+            "2026-08-18_H3_Hanfu_RF_Restart_Advanced_EXP.json",
             "MiniMaxH3RectifiedFlowRestartSamplerT8Advanced",
         ),
         (
-            "H3_Hanfu_STG_Advanced_EXP.json",
+            "2026-08-18_H3_Hanfu_STG_Advanced_EXP.json",
             "MiniMaxH3SpatioTemporalGuidanceT8Advanced",
         ),
         (
-            "H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
+            "2026-08-18_H3_Hanfu_Temporal_Detail_Advanced_EXP.json",
             "MiniMaxH3TemporalDetailEnhanceT8Advanced",
         ),
     ],

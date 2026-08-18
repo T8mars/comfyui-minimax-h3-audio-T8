@@ -392,9 +392,9 @@ def test_source_resolves_all_media_without_encoding_and_nodes_are_advanced():
 @pytest.mark.parametrize(
     ("filename", "task", "scope", "image_count"),
     [
-        ("H3_SPEED_T2VA_Stock20_Advanced_EXP.json", "T2VA", "strict_t2va_stock20", 0),
-        ("H3_SPEED_FL2VA_Stock20_Advanced_EXP.json", "FL2VA", "multimodal_research_exp", 2),
-        ("H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json", "Ref2VA", "multimodal_research_exp", 1),
+        ("2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json", "T2VA", "strict_t2va_stock20", 0),
+        ("2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json", "FL2VA", "multimodal_research_exp", 2),
+        ("2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json", "Ref2VA", "multimodal_research_exp", 1),
     ],
 )
 def test_speed_frontend_workflows_are_importable_and_self_documenting(
