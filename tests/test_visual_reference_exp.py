@@ -176,6 +176,7 @@ def test_visual_reference_strength_frontend_workflow_is_consistent_and_warns():
             root
             / "examples"
             / "workflows"
+            / "03-image-video-edit"
             / "2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json"
         ).read_text(encoding="utf-8")
     )

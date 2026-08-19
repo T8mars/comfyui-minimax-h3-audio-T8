@@ -17,6 +17,16 @@ import torch
 QWEN_PREFIX_CACHE_SCHEMA = "t8.minimax_h3.qwen_reference_prefix_cache.v1"
 SUPPORTED_CORE_CONTRACTS = {
     (
+        # ComfyUI 187eda8: MiniMax prompt embeddings plus batched FixedKV decode.
+        "c05a3608337ea95d6703909a055a8c20b88a3b38d08e706e142daf5d2ff96b20",
+        "441453d9e244ac56caa2e697ac6b37afed6463c929eebc19959a54e28423ef20",
+        "be8eb446e143c6ed0c50b653390f2286db5c65ddeabfc8d991b0bd91727ce846",
+        "19bae67ffee1e8a6cf3f2b2bbd96dae540bc29da6b412d683f51dcde10e23d0e",
+        "5cfdc538682394f3b653be9e6665687d057fd6d1107f69fdfccd84533feaa5bc",
+        "e05700e116d6a4ceb4ef0452d524d4c4cfd073f7e0679abbdffd0b62ce913057",
+        "71b138c2606ad2a3a32d022238c78a36106347bf46317348b0810c70de4d6be9",
+    ),
+    (
         "bed1e84fba459099df310aed267fb2c51bbd8a768b9727767300225afe28d361",
         "441453d9e244ac56caa2e697ac6b37afed6463c929eebc19959a54e28423ef20",
         "be8eb446e143c6ed0c50b653390f2286db5c65ddeabfc8d991b0bd91727ce846",

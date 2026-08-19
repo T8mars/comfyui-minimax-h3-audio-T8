@@ -57,6 +57,8 @@ DEFAULT_VISUAL_NOISE_AUG = 0.999
 VALIDATED_FORWARD_SHA256S = {
     "ec62dafa65d6eaf36c670b926a05b42503702cbd6e1e4bb9db279c0db2b4a3c5",
     "f40e52b23fb2f9c76ac4cac48c7a2f899e6e37d517cd801a939fff551ab89867",
+    # ComfyUI 187eda8: adds row-wise video/audio denoise-mask timesteps.
+    "14bdfccd6860f252005b8d43ab446aa9a938a13dc819061724b8f914218f5fd1",
 }
 RESIZE_MODES = {"center_crop", "stretch"}
 POSITION_MODES = {"frame", "seconds", "percent"}
@@ -430,6 +432,49 @@ def _segment_timestep_plan(layout, t_video: float, t_audio: float, visual_augs, 
     return segment_times
 
 
+def _target_mask_timestep_rows(
+    denoise_mask,
+    audio_denoise_mask,
+    sigma_video,
+    t_video: float,
+    t_audio: float,
+    latent_t: int,
+    latent_h: int,
+    latent_w: int,
+):
+    video_time = t_video
+    audio_time = t_audio
+    video_rows = None
+    audio_rows = None
+    if denoise_mask is not None:
+        mask_row_values = getattr(minimax_model, "mask_row_values", None)
+        if mask_row_values is None:
+            raise RuntimeError(
+                "This ComfyUI build supplied a video denoise mask without the validated "
+                "MiniMax H3 row-mask contract"
+            )
+        mask = mask_row_values(
+            denoise_mask[0, 0].to(torch.float32), latent_t, latent_h, latent_w
+        )
+        if mask is not None:
+            pin = max(t_video, minimax_model.VISUAL_COND_TIMESTEP)
+            rows = (1.0 - mask * sigma_video.to(mask.device)).clamp(max=pin)
+            if rows.unique().numel() == 1:
+                video_time = float(rows[0])
+            else:
+                video_rows = rows
+    if audio_denoise_mask is not None:
+        mask = audio_denoise_mask[0, 0].to(torch.float32).reshape(-1)
+        if not bool((mask >= 1.0 - 1e-3).all()):
+            pin = max(t_audio, minimax_model.AUDIO_COND_TIMESTEP)
+            rows = (1.0 - mask * (1.0 - t_audio)).clamp(max=pin)
+            if rows.unique().numel() == 1:
+                audio_time = float(rows[0])
+            else:
+                audio_rows = rows
+    return video_time, audio_time, video_rows, audio_rows
+
+
 def _multikeyframe_forward(
     self,
     x,
@@ -437,6 +482,8 @@ def _multikeyframe_forward(
     context,
     transformer_options=None,
     minimax_payload=None,
+    denoise_mask=None,
+    audio_denoise_mask=None,
     **kwargs,
 ):
     transformer_options = transformer_options or {}
@@ -486,7 +533,40 @@ def _multikeyframe_forward(
         payload.get("audio_cond_noise_aug", minimax_model.AUDIO_COND_TIMESTEP)
     )
     segment_times = _segment_timestep_plan(layout, t_v, t_a, visual_augs, audio_aug)
-    unique_t = sorted(set(segment_times))
+
+    # ComfyUI 187eda8 added row-wise target denoise-mask timesteps. Preserve that
+    # behavior while independently scheduling the visual conditioning segments.
+    video_time, audio_time, video_rows_t, audio_rows_t = _target_mask_timestep_rows(
+        denoise_mask,
+        audio_denoise_mask,
+        sigma_v,
+        t_v,
+        t_a,
+        latent_t,
+        lat_h,
+        lat_w,
+    )
+
+    def set_segment_time(kind: str, value: float) -> None:
+        matches = [
+            index
+            for index, (_start, _stop, segment_kind) in enumerate(layout.segments)
+            if segment_kind == kind
+        ]
+        if len(matches) != 1:
+            raise RuntimeError(f"MiniMax H3 layout must contain one {kind} segment")
+        segment_times[matches[0]] = value
+
+    if not math.isclose(video_time, t_v, abs_tol=0.0):
+        set_segment_time("video", video_time)
+    if not math.isclose(audio_time, t_a, abs_tol=0.0):
+        set_segment_time("audio", audio_time)
+
+    unique_t = sorted(
+        set(segment_times)
+        | (set(video_rows_t.unique().tolist()) if video_rows_t is not None else set())
+        | (set(audio_rows_t.unique().tolist()) if audio_rows_t is not None else set())
+    )
     t_row = {value: index for index, value in enumerate(unique_t)}
     segment_tags = {
         "text": 1,
@@ -497,6 +577,15 @@ def _multikeyframe_forward(
         "cond_audio": 2,
         "ref_audio": 2,
     }
+
+    def rows_to_mod_index(rows, tag: int):
+        levels = rows.unique()
+        base = torch.tensor(
+            [t_row[value] * 3 + tag for value in levels.tolist()],
+            dtype=torch.long,
+            device=rows.device,
+        )
+        return base[torch.searchsorted(levels, rows)]
 
     text_tags = payload.get("text_token_tags")
     mod_segments = []
@@ -511,6 +600,14 @@ def _multikeyframe_forward(
                         (start + run_start, start + index, row_base + int(tags[run_start]))
                     )
                     run_start = index
+        elif kind == "video" and video_rows_t is not None:
+            mod_segments.append(
+                (start, stop, rows_to_mod_index(video_rows_t, segment_tags[kind]))
+            )
+        elif kind == "audio" and audio_rows_t is not None:
+            mod_segments.append(
+                (start, stop, rows_to_mod_index(audio_rows_t, segment_tags[kind]))
+            )
         else:
             mod_segments.append((start, stop, row_base + segment_tags[kind]))
 
@@ -612,16 +709,40 @@ def _multikeyframe_forward(
     if prefetch_queue is not None:
         minimax_model.comfy.model_prefetch.prefetch_queue_pop(prefetch_queue, device, None)
 
-    video_segment = next(
-        (start, stop, t_row[t_v])
-        for start, stop, kind in layout.segments
-        if kind == "video"
+    video_index, (video_start, video_stop, _kind) = next(
+        (index, segment)
+        for index, segment in enumerate(layout.segments)
+        if segment[2] == "video"
     )
-    audio_segment = next(
-        (start, stop, t_row[t_a])
-        for start, stop, kind in layout.segments
-        if kind == "audio"
+    audio_index, (audio_start, audio_stop, _kind) = next(
+        (index, segment)
+        for index, segment in enumerate(layout.segments)
+        if segment[2] == "audio"
     )
+    if video_rows_t is not None:
+        video_segment = (
+            video_start,
+            video_stop,
+            rows_to_mod_index(video_rows_t, 0) // 3,
+        )
+    else:
+        video_segment = (
+            video_start,
+            video_stop,
+            t_row[segment_times[video_index]],
+        )
+    if audio_rows_t is not None:
+        audio_segment = (
+            audio_start,
+            audio_stop,
+            rows_to_mod_index(audio_rows_t, 0) // 3,
+        )
+    else:
+        audio_segment = (
+            audio_start,
+            audio_stop,
+            t_row[segment_times[audio_index]],
+        )
     video_out, audio_out = self.final_layer(
         hidden, t_emb, video_segment, audio_segment
     )

@@ -7,7 +7,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOWS = ROOT / "examples" / "workflows"
+WORKFLOWS = ROOT / "examples" / "workflows" / "10-speed"
 FILES = (
     "2026-08-19_H3_SPEED_I2VA_Lock_Stock20_Advanced_EXP.json",
     "2026-08-19_H3_SPEED_FL2VA_Remix_Stock20_Advanced_EXP.json",

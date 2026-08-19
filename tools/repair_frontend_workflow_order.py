@@ -287,7 +287,7 @@ def _iter_workflows(paths: list[Path]) -> list[Path]:
     files: list[Path] = []
     for path in paths:
         if path.is_dir():
-            files.extend(sorted(path.glob("*.json")))
+            files.extend(sorted(path.rglob("*.json")))
         else:
             files.append(path)
     return files

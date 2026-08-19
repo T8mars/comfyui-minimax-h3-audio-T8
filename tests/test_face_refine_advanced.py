@@ -416,7 +416,7 @@ def test_face_refine_api_and_frontend_examples_are_complete_and_link_valid():
     root = Path(__file__).resolve().parents[1]
     api = json.loads((root / "tests" / "fixtures" / "api" / "face_refine_advanced_api.json").read_text("utf-8"))
     frontend = json.loads(
-        (root / "examples" / "workflows" / "2026-08-16_H3_Face_Refine_Advanced_EXP.json").read_text(
+        (root / "examples" / "workflows" / "06-face-refine" / "2026-08-16_H3_Face_Refine_Advanced_EXP.json").read_text(
             "utf-8"
         )
     )
@@ -462,6 +462,7 @@ def test_anime_face_refine_examples_change_only_the_explicit_detector_route():
             root
             / "examples"
             / "workflows"
+            / "06-face-refine"
             / "2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json"
         ).read_text("utf-8")
     )

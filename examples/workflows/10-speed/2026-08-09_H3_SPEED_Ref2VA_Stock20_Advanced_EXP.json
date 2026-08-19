@@ -1,8 +1,8 @@
 {
-  "id": "d6e59e2c-0a2e-4c30-b10b-5a0f95f85002",
+  "id": "d6e59e2c-0a2e-4c30-b10b-5a0f95f85003",
   "revision": 0,
-  "last_node_id": 12,
-  "last_link_id": 13,
+  "last_node_id": 11,
+  "last_link_id": 12,
   "nodes": [
     {
       "id": 1,
@@ -49,7 +49,7 @@
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "minimax_h3_ref2va_int8_convrot.safetensors",
         "default"
       ]
     },
@@ -338,7 +338,7 @@
     {
       "id": 6,
       "type": "MiniMaxH3SPEEDSourceT8Advanced",
-      "title": "2. FL2VA raw frames; VAE-encoded again at every SPEED canvas",
+      "title": "2. Ref2VA raw reference; rebuilt at every SPEED canvas",
       "pos": [
         420,
         420
@@ -477,14 +477,20 @@
         {
           "name": "first_frame",
           "type": "IMAGE",
-          "link": 12,
+          "link": null,
           "shape": 7
         },
         {
           "name": "last_frame",
           "type": "IMAGE",
-          "link": 13,
+          "link": null,
           "shape": 7
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "type": "IMAGE",
+          "link": 12
         }
       ],
       "outputs": [
@@ -505,9 +511,9 @@
         "Node name for S&R": "MiniMaxH3SPEEDSourceT8Advanced"
       },
       "widgets_values": [
-        "The scene begins exactly from the first frame and ends exactly at the last frame. Natural cinematic motion between them, synchronized environment sound, no speech.",
+        "Use <Picture 1> as the visual reference. Preserve its identity, materials and style while creating natural cinematic motion. Synchronized ambience, no speech.",
         124,
-        "FL2VA",
+        "Ref2VA",
         "native",
         0.35,
         false,
@@ -522,7 +528,7 @@
     {
       "id": 7,
       "type": "MiniMaxH3SPEEDSamplerT8Advanced",
-      "title": "3. Multimodal research scope: FL2VA stage rebuild",
+      "title": "3. Multimodal research scope: Ref2VA stage rebuild",
       "pos": [
         1120,
         160
@@ -618,6 +624,7 @@
       "widgets_values": [
         3.0,
         2608184001,
+        "fixed",
         "multimodal_research_exp",
         64
       ]
@@ -736,7 +743,7 @@
       "widgets_values": {
         "frame_rate": 24,
         "loop_count": 0,
-        "filename_prefix": "MiniMaxH3/speed_fl2va_stock20_exp",
+        "filename_prefix": "MiniMaxH3/speed_ref2va_stock20_exp",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 19,
@@ -749,7 +756,7 @@
     {
       "id": 10,
       "type": "MarkdownNote",
-      "title": "FL2VA mechanics passed one GPU chain; quality/speed remain EXP",
+      "title": "历史Ref2VA机械示例：旧14+6计划已被盲评否决",
       "pos": [
         1120,
         -430
@@ -767,7 +774,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## FL2VA机械链已完成一条真实GPU验证，仍是EXP\n\n替换两张同画幅首尾帧。每个SPEED阶段会按该阶段画布重新缩放并用video VAE重新编码，避免最终尺寸keyframe latent与粗阶段PackedLayout行数不一致。\n\n本机1024×576、124帧、Stock20代表链已确认首尾锚点、124帧、32kHz双声道和A/V时长机械正确；最低显存余量约445MiB，未达到512MiB安全门槛。尚未证明相对全分辨率的画质非劣、稳定加速或通用16GB安全。`multimodal_research_exp`仍是显式风险开关；不要叠其他sampler/model wrapper。"
+        "## 仅保留机械兼容研究，不是最新推荐参数\n\n此Ref2VA工作流仍复现旧`0.5→1.0 / manual 0.85 / 14粗+6全分辨率`路线。用户盲评已明确选择全分辨率基线，并判定该路线的SPEED画面明显崩坏；它没有自己的100条Ref2VA正式profile，禁止套用T2VA profile。\n\n当前只可用于检查参考图、PackedLayout与音画机械合同，不得宣传参考遵循、画质、加速或16GB安全。"
       ]
     },
     {
@@ -775,7 +782,7 @@
       "type": "LoadImage",
       "pos": [
         40,
-        540
+        560
       ],
       "size": [
         340,
@@ -821,62 +828,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "replace_with_first_frame.png",
-        "image"
-      ]
-    },
-    {
-      "id": 12,
-      "type": "LoadImage",
-      "pos": [
-        40,
-        900
-      ],
-      "size": [
-        340,
-        320
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            13
-          ]
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "replace_with_last_frame.png",
+        "replace_with_reference_image.png",
         "image"
       ]
     }
@@ -975,15 +927,7 @@
       11,
       0,
       6,
-      17,
-      "IMAGE"
-    ],
-    [
-      13,
-      12,
-      0,
-      6,
-      18,
+      19,
       "IMAGE"
     ]
   ],

@@ -602,6 +602,7 @@ def load_speech_frontend_workflow(filename):
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
+        / "05-speech-dialogue"
         / filename
     )
     return json.loads(path.read_text(encoding="utf-8"))

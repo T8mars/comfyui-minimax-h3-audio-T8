@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -13,11 +15,23 @@ import comfy.nested_tensor
 from comfy.ldm.minimax.model import MiniMaxH3Model
 
 from .conditioning import build_conditioning, resolve_task_type
-from .core import MAX_PIXELS, empty_av_latent, nested_av_parts, sorted_autogrow_values
+from .core import (
+    FPS,
+    MAX_PIXELS,
+    align_frame_count,
+    empty_av_latent,
+    nested_av_parts,
+    resize_image,
+    sorted_autogrow_values,
+    video_latent_t,
+)
 from .sampling import native_flow_sigmas, setup_dual_clock_sampling
 
 
 SPEED_PROFILE_SCHEMA = "minimax_h3_speed_spectrum_profile_t8_v1"
+SPEED_SPECTRUM_DATASET_SCHEMA = "minimax_h3_speed_spectrum_dataset_t8_v1"
+SPEED_DATASET_PROVENANCE_SCHEMA = "minimax_h3_speed_dataset_provenance_t8_v1"
+SPEED_SOURCE_ENTRY_SCHEMA = "minimax_h3_speed_source_entry_t8_v1"
 SPEED_PLAN_SCHEMA = "minimax_h3_speed_plan_t8_v1"
 SPEED_SOURCE_SCHEMA = "minimax_h3_speed_source_t8_v1"
 SPEED_REPORT_SCHEMA = "minimax_h3_speed_execution_t8_v1"
@@ -30,6 +44,116 @@ SPEED_AUDIO_NOISE_SEED_XOR = 0x9E3779B97F4A7C15
 
 def canonical_json(value: Any, *, indent: int | None = 2) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=indent)
+
+
+@torch.no_grad()
+def prepare_speed_calibration_window(
+    frames: torch.Tensor,
+    *,
+    source_fps: float,
+    width: int,
+    height: int,
+    length: int,
+    start_seconds: float,
+    resize_mode: str,
+) -> tuple[torch.Tensor, int, str]:
+    """Create one aspect-safe, fixed-grid H3 spectrum-calibration window."""
+
+    if not isinstance(frames, torch.Tensor) or frames.ndim != 4:
+        shape = tuple(frames.shape) if isinstance(frames, torch.Tensor) else type(frames).__name__
+        raise ValueError(f"frames must be IMAGE [N,H,W,C], got {shape}")
+    if frames.shape[0] < 1 or frames.shape[-1] < 3:
+        raise ValueError("Calibration frames are empty or do not contain RGB channels")
+    source_fps = float(source_fps)
+    start_seconds = float(start_seconds)
+    width = int(width)
+    height = int(height)
+    if not math.isfinite(source_fps) or source_fps <= 0.0:
+        raise ValueError("source_fps must be finite and positive")
+    if not math.isfinite(start_seconds) or start_seconds < 0.0:
+        raise ValueError("start_seconds must be finite and nonnegative")
+    if width < 32 or height < 32 or width % 32 or height % 32:
+        raise ValueError("Calibration width and height must be positive multiples of 32")
+    if width * height > MAX_PIXELS:
+        raise ValueError(
+            f"Calibration canvas {width}x{height} exceeds the {MAX_PIXELS:,}-pixel limit"
+        )
+    if resize_mode != "center_cover":
+        raise ValueError("SPEED calibration only supports aspect-safe center_cover")
+
+    frame_count = align_frame_count(int(length))
+    target_times = start_seconds + torch.arange(frame_count, dtype=torch.float64) / FPS
+    source_indices = torch.round(target_times * source_fps).to(torch.long)
+    if int(source_indices[-1]) >= frames.shape[0]:
+        required_end = start_seconds + (frame_count - 1) / FPS
+        available_end = (frames.shape[0] - 1) / source_fps
+        raise ValueError(
+            "Calibration video is too short for a strict H3 window: "
+            f"needs frame time {required_end:.6f}s, available through {available_end:.6f}s"
+        )
+    source_indices = source_indices.to(frames.device)
+    selected = frames.index_select(0, source_indices)
+    source_height = int(selected.shape[1])
+    source_width = int(selected.shape[2])
+    source_aspect = source_width / source_height
+    target_aspect = width / height
+    crop_left_right = 0
+    crop_top_bottom = 0
+    if source_aspect > target_aspect:
+        crop_each = round(
+            (source_width - source_width * (target_aspect / source_aspect)) / 2
+        )
+        crop_left_right = int(crop_each * 2)
+    elif source_aspect < target_aspect:
+        crop_each = round(
+            (source_height - source_height * (source_aspect / target_aspect)) / 2
+        )
+        crop_top_bottom = int(crop_each * 2)
+    selected = resize_image(selected, width, height, "center")
+    if tuple(selected.shape[1:3]) != (height, width):
+        raise RuntimeError("Aspect-safe calibration resize returned an unexpected canvas")
+
+    report = {
+        "schema": "minimax_h3_speed_calibration_window_t8_v1",
+        "status": "aspect_safe_center_cover",
+        "source": {
+            "frames": int(frames.shape[0]),
+            "width": source_width,
+            "height": source_height,
+            "fps": source_fps,
+            "aspect_ratio": source_aspect,
+        },
+        "target": {
+            "frames": frame_count,
+            "width": width,
+            "height": height,
+            "fps": FPS,
+            "aspect_ratio": target_aspect,
+            "start_seconds": start_seconds,
+        },
+        "sampling": {
+            "first_source_index": int(source_indices[0]),
+            "last_source_index": int(source_indices[-1]),
+            "unique_source_frames": int(torch.unique(source_indices).numel()),
+        },
+        "resize": {
+            "mode": resize_mode,
+            "anisotropic_stretch": False,
+            "cropped_source_pixels_width": crop_left_right,
+            "cropped_source_pixels_height": crop_top_bottom,
+            "retained_source_fraction": (
+                (source_width - crop_left_right)
+                * (source_height - crop_top_bottom)
+                / (source_width * source_height)
+            ),
+        },
+        "boundary": (
+            "Center-cover preserves geometry but discards source edges. It is appropriate for "
+            "a fixed-grid spectrum dataset and is not evidence that the selected clips are "
+            "independent, representative, diverse, or authorized."
+        ),
+    }
+    return selected, frame_count, canonical_json(report)
 
 
 def power_spectrum(omega: float, amplitude: float, beta: float) -> float:
@@ -188,41 +312,87 @@ def _linear_fit(x: torch.Tensor, y: torch.Tensor) -> tuple[float, float, float]:
     return intercept, slope, r_squared
 
 
-@torch.no_grad()
-def fit_h3_spatial_power_spectrum(
-    video_latent: torch.Tensor,
-    *,
-    max_temporal_samples: int = 32,
-    minimum_radius: int = 1,
-    maximum_radius_fraction: float = 0.5,
-) -> dict[str, Any]:
-    """Fit a radial FFT power law to H3 video latents without importing SciPy."""
+def _spectrum_input_contract(
+    video_latent: torch.Tensor, *, max_temporal_samples: int
+) -> tuple[dict[str, int], torch.Tensor]:
     if not isinstance(video_latent, torch.Tensor) or video_latent.ndim != 5:
         raise ValueError("video_latent must be [B,C,T,H,W]")
     batch, channels, frames, height, width = map(int, video_latent.shape)
     if batch < 1 or channels < 1 or frames < 1 or min(height, width) < 8:
         raise ValueError("video_latent is too small for a spatial spectrum fit")
-    if not math.isfinite(maximum_radius_fraction) or not 0.1 <= maximum_radius_fraction <= 1.0:
-        raise ValueError("maximum_radius_fraction must be in [0.1, 1.0]")
-
+    max_temporal_samples = int(max_temporal_samples)
+    if max_temporal_samples < 1:
+        raise ValueError("max_temporal_samples must be positive")
     temporal_indices = torch.linspace(
-        0, frames - 1, min(frames, int(max_temporal_samples)), dtype=torch.float64
+        0,
+        frames - 1,
+        min(frames, max_temporal_samples),
+        dtype=torch.float64,
     ).round().long().unique()
-    source_temporal_indices = temporal_indices.to(video_latent.device)
-    mean_power = torch.zeros((height, width), dtype=torch.float64, device="cpu")
-    for batch_index in range(batch):
-        # Dataset profiles may contain many clips. Stream one batch entry through CPU
-        # float32 FFTs instead of materializing the entire dataset as float64.
-        x = video_latent[batch_index : batch_index + 1].index_select(
-            2, source_temporal_indices
+    return (
+        {
+            "batch": batch,
+            "channels": channels,
+            "frames": frames,
+            "height": height,
+            "width": width,
+            "max_temporal_samples": max_temporal_samples,
+            "temporal_samples": int(temporal_indices.numel()),
+        },
+        temporal_indices,
+    )
+
+
+@torch.no_grad()
+def _spatial_power_per_clip(
+    video_latent: torch.Tensor, *, max_temporal_samples: int
+) -> tuple[torch.Tensor, dict[str, int]]:
+    contract, temporal_indices = _spectrum_input_contract(
+        video_latent, max_temporal_samples=max_temporal_samples
+    )
+    source_indices = temporal_indices.to(video_latent.device)
+    rows: list[torch.Tensor] = []
+    for batch_index in range(contract["batch"]):
+        # Stream one clip at a time to CPU. The retained calibration state is one
+        # float64 HxW power grid, never the source latent or a CUDA tensor.
+        value = video_latent[batch_index : batch_index + 1].index_select(
+            2, source_indices
         ).detach()
-        x = x.to(device="cpu", dtype=torch.float32)
-        x = x - x.mean(dim=(-2, -1), keepdim=True)
-        spectrum = torch.fft.fft2(x, norm="ortho")
-        mean_power.add_(spectrum.abs().square().mean(dim=(0, 1, 2)).to(torch.float64))
-        del x, spectrum
-    mean_power.div_(batch)
-    del source_temporal_indices
+        value = value.to(device="cpu", dtype=torch.float32)
+        value = value - value.mean(dim=(-2, -1), keepdim=True)
+        spectrum = torch.fft.fft2(value, norm="ortho")
+        rows.append(
+            spectrum.abs().square().mean(dim=(0, 1, 2)).to(torch.float64)
+        )
+        del value, spectrum
+    del source_indices
+    return torch.stack(rows, dim=0), contract
+
+
+def _fit_spatial_mean_power(
+    mean_power: torch.Tensor,
+    *,
+    latent_contract: Mapping[str, int],
+    minimum_radius: int,
+    maximum_radius_fraction: float,
+    clip_count: int,
+) -> dict[str, Any]:
+    if (
+        not isinstance(mean_power, torch.Tensor)
+        or mean_power.device.type != "cpu"
+        or mean_power.ndim != 2
+    ):
+        raise ValueError("mean_power must be a CPU [H,W] tensor")
+    if not bool(torch.isfinite(mean_power).all()) or bool((mean_power < 0).any()):
+        raise ValueError("mean_power must contain finite non-negative values")
+    height = int(latent_contract["height"])
+    width = int(latent_contract["width"])
+    if list(mean_power.shape) != [height, width]:
+        raise ValueError("mean_power shape does not match the latent contract")
+    if not math.isfinite(maximum_radius_fraction) or not (
+        0.1 <= maximum_radius_fraction <= 1.0
+    ):
+        raise ValueError("maximum_radius_fraction must be in [0.1, 1.0]")
 
     fy = torch.fft.fftfreq(height, d=1.0, dtype=torch.float64) * height
     fx = torch.fft.fftfreq(width, d=1.0, dtype=torch.float64) * width
@@ -240,10 +410,10 @@ def fit_h3_spatial_power_spectrum(
         count = int(mask.sum())
         if count < 2:
             continue
-        value = float(mean_power[mask].mean())
-        if math.isfinite(value) and value > 0.0:
+        power = float(mean_power[mask].mean())
+        if math.isfinite(power) and power > 0.0:
             radii.append(float(index))
-            powers.append(value)
+            powers.append(power)
             counts.append(count)
     if len(radii) < 4:
         raise ValueError("The latent did not provide enough finite radial spectrum bins")
@@ -253,7 +423,12 @@ def fit_h3_spatial_power_spectrum(
     intercept, slope, r_squared = _linear_fit(log_radius, log_power)
     amplitude = math.exp(intercept)
     beta = -slope
-    if not (math.isfinite(amplitude) and amplitude > 0.0 and math.isfinite(beta) and beta > 0.0):
+    if not (
+        math.isfinite(amplitude)
+        and amplitude > 0.0
+        and math.isfinite(beta)
+        and beta > 0.0
+    ):
         raise ValueError("The fitted spatial power law is not physically usable")
     return {
         "amplitude": amplitude,
@@ -261,10 +436,475 @@ def fit_h3_spatial_power_spectrum(
         "r_squared": r_squared,
         "radial_bins": len(radii),
         "spatial_coefficients": int(sum(counts)),
-        "latent_shape": [batch, channels, frames, height, width],
-        "temporal_samples": int(temporal_indices.numel()),
+        "latent_shape": [
+            int(clip_count),
+            int(latent_contract["channels"]),
+            int(latent_contract["frames"]),
+            height,
+            width,
+        ],
+        "temporal_samples": int(latent_contract["temporal_samples"]),
         "radius_range": [radii[0], radii[-1]],
     }
+
+
+@torch.no_grad()
+def fit_h3_spatial_power_spectrum(
+    video_latent: torch.Tensor,
+    *,
+    max_temporal_samples: int = 32,
+    minimum_radius: int = 1,
+    maximum_radius_fraction: float = 0.5,
+) -> dict[str, Any]:
+    """Fit a radial FFT power law to H3 video latents without importing SciPy."""
+    per_clip_power, contract = _spatial_power_per_clip(
+        video_latent, max_temporal_samples=max_temporal_samples
+    )
+    return _fit_spatial_mean_power(
+        per_clip_power.mean(dim=0),
+        latent_contract=contract,
+        minimum_radius=minimum_radius,
+        maximum_radius_fraction=maximum_radius_fraction,
+        clip_count=contract["batch"],
+    )
+
+
+def _power_sha256(value: torch.Tensor) -> str:
+    array = value.detach().to(device="cpu", dtype=torch.float64).contiguous().numpy()
+    return hashlib.sha256(memoryview(array).cast("B")).hexdigest().upper()
+
+
+def _usable_provenance(value: Any) -> str:
+    normalized = str(value).strip()
+    if not normalized or normalized.lower() in {"unrecorded", "unknown", "none"}:
+        raise ValueError("Dataset calibration requires a recorded model/VAE fingerprint")
+    return normalized
+
+
+def _spectrum_dataset_public_report(dataset: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in dataset.items()
+        if key != "power_sum"
+    }
+
+
+def _sha256_text(value: Any, *, field: str) -> str:
+    normalized = str(value).strip().upper()
+    if len(normalized) != 64 or any(character not in "0123456789ABCDEF" for character in normalized):
+        raise ValueError(f"{field} must be a complete hexadecimal SHA-256")
+    return normalized
+
+
+def _source_set_sha256(entries: Sequence[Mapping[str, Any]]) -> str:
+    normalized = [
+        {
+            "source_file_sha256": _sha256_text(
+                entry.get("source_file_sha256"), field="source_file_sha256"
+            ),
+            "decoded_window_sha256": _sha256_text(
+                entry.get("decoded_window_sha256"), field="decoded_window_sha256"
+            ),
+        }
+        for entry in entries
+    ]
+    normalized.sort(
+        key=lambda item: (item["source_file_sha256"], item["decoded_window_sha256"])
+    )
+    return hashlib.sha256(
+        canonical_json(normalized, indent=None).encode("utf-8")
+    ).hexdigest().upper()
+
+
+def _parse_dataset_provenance(value: Any) -> dict[str, Any] | None:
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError("dataset_provenance_json is malformed") from exc
+    if not isinstance(value, Mapping) or value.get("schema") != SPEED_DATASET_PROVENANCE_SCHEMA:
+        raise ValueError("Dataset provenance schema is missing or unsupported")
+    required_text = (
+        "source_kind",
+        "dataset_id",
+        "dataset_revision",
+        "dataset_license",
+        "selection_policy",
+    )
+    normalized = dict(value)
+    for field in required_text:
+        text = str(normalized.get(field, "")).strip()
+        if not text:
+            raise ValueError(f"Dataset provenance is missing {field}")
+        normalized[field] = text
+    normalized["curation_report_sha256"] = _sha256_text(
+        normalized.get("curation_report_sha256"), field="curation_report_sha256"
+    )
+    normalized["review_report_sha256"] = _sha256_text(
+        normalized.get("review_report_sha256"), field="review_report_sha256"
+    )
+    normalized["selected_source_set_sha256"] = _sha256_text(
+        normalized.get("selected_source_set_sha256"),
+        field="selected_source_set_sha256",
+    )
+    selected_count = int(normalized.get("selected_source_count", 0))
+    if selected_count < 1:
+        raise ValueError("Dataset provenance selected_source_count must be positive")
+    normalized["selected_source_count"] = selected_count
+    for field in (
+        "independence_reviewed",
+        "content_diversity_reviewed",
+        "raw_media_redistributed",
+    ):
+        if not isinstance(normalized.get(field), bool):
+            raise ValueError(f"Dataset provenance {field} must be boolean")
+    shards = normalized.get("source_shards")
+    if not isinstance(shards, list) or not shards:
+        raise ValueError("Dataset provenance requires at least one source_shard")
+    normalized_shards = []
+    for shard in shards:
+        if not isinstance(shard, Mapping):
+            raise ValueError("Dataset provenance source_shards entries must be objects")
+        shard_name = str(shard.get("shard", "")).strip()
+        if not shard_name or Path(shard_name).is_absolute() or ".." in Path(shard_name).parts:
+            raise ValueError("Dataset provenance shard names must be safe relative paths")
+        normalized_shards.append(
+            {
+                "shard": shard_name.replace("\\", "/"),
+                "lfs_oid": _sha256_text(shard.get("lfs_oid"), field="source_shard.lfs_oid"),
+                "fetch_report_sha256": _sha256_text(
+                    shard.get("fetch_report_sha256"),
+                    field="source_shard.fetch_report_sha256",
+                ),
+            }
+        )
+    normalized["source_shards"] = sorted(
+        normalized_shards, key=lambda item: (item["shard"], item["lfs_oid"])
+    )
+    return normalized
+
+
+def _parse_source_entry(value: Any, *, batch_id: str) -> dict[str, Any] | None:
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError("source_entry_json is malformed") from exc
+    if not isinstance(value, Mapping) or value.get("schema") != SPEED_SOURCE_ENTRY_SCHEMA:
+        raise ValueError("Source entry provenance schema is missing or unsupported")
+    entry_batch_id = str(value.get("batch_id", "")).strip()
+    if entry_batch_id != batch_id:
+        raise ValueError("Source entry batch_id does not match the accumulated batch")
+    return {
+        "schema": SPEED_SOURCE_ENTRY_SCHEMA,
+        "batch_id": entry_batch_id,
+        "source_file_sha256": _sha256_text(
+            value.get("source_file_sha256"), field="source_file_sha256"
+        ),
+        "decoded_window_sha256": _sha256_text(
+            value.get("decoded_window_sha256"), field="decoded_window_sha256"
+        ),
+    }
+
+
+def _validate_spectrum_dataset(dataset: Mapping[str, Any]) -> None:
+    if not isinstance(dataset, Mapping) or dataset.get("schema") != SPEED_SPECTRUM_DATASET_SCHEMA:
+        raise ValueError("previous_dataset is not an H3 SPEED spectrum dataset")
+    power_sum = dataset.get("power_sum")
+    contract = dataset.get("latent_contract")
+    if not isinstance(contract, Mapping):
+        raise ValueError("Spectrum dataset latent_contract is missing")
+    if (
+        not isinstance(power_sum, torch.Tensor)
+        or power_sum.device.type != "cpu"
+        or power_sum.dtype != torch.float64
+        or power_sum.ndim != 2
+    ):
+        raise ValueError("Spectrum dataset power_sum must be a CPU float64 [H,W] tensor")
+    expected_shape = [int(contract.get("height", -1)), int(contract.get("width", -1))]
+    if list(power_sum.shape) != expected_shape:
+        raise ValueError("Spectrum dataset power_sum shape does not match its contract")
+    if not bool(torch.isfinite(power_sum).all()) or bool((power_sum < 0).any()):
+        raise ValueError("Spectrum dataset power_sum is invalid")
+    clip_count = int(dataset.get("independent_clip_count", 0))
+    batch_count = int(dataset.get("batch_count", 0))
+    batch_ids = dataset.get("batch_ids")
+    batch_sizes = dataset.get("batch_sizes")
+    clip_fingerprints = dataset.get("clip_fingerprints")
+    if (
+        clip_count < 1
+        or batch_count < 1
+        or not isinstance(batch_ids, list)
+        or not isinstance(batch_sizes, list)
+        or not isinstance(clip_fingerprints, list)
+    ):
+        raise ValueError("Spectrum dataset counts or provenance lists are invalid")
+    if len(batch_ids) != batch_count or len(batch_sizes) != batch_count:
+        raise ValueError("Spectrum dataset batch counts are inconsistent")
+    if any(
+        not isinstance(size, int) or isinstance(size, bool) or size < 1
+        for size in batch_sizes
+    ):
+        raise ValueError("Spectrum dataset batch sizes are invalid")
+    if sum(batch_sizes) != clip_count:
+        raise ValueError("Spectrum dataset batch sizes do not sum to clip count")
+    if len(clip_fingerprints) != clip_count or len(set(clip_fingerprints)) != clip_count:
+        raise ValueError("Spectrum dataset clip fingerprints are inconsistent")
+    if len(set(batch_ids)) != len(batch_ids):
+        raise ValueError("Spectrum dataset contains duplicate batch IDs")
+    if dataset.get("power_sum_sha256") != _power_sha256(power_sum):
+        raise ValueError("Spectrum dataset power_sum hash mismatch")
+    provenance = dataset.get("dataset_provenance")
+    source_entries = dataset.get("source_entries")
+    if provenance is not None:
+        normalized_provenance = _parse_dataset_provenance(provenance)
+        if normalized_provenance != provenance:
+            raise ValueError("Spectrum dataset provenance is not canonical")
+    if source_entries is not None:
+        if not isinstance(source_entries, list) or len(source_entries) != batch_count:
+            raise ValueError("Spectrum dataset source_entries must match batch_count")
+        normalized_entries = [
+            _parse_source_entry(entry, batch_id=str(batch_id))
+            for entry, batch_id in zip(source_entries, batch_ids)
+        ]
+        if normalized_entries != source_entries:
+            raise ValueError("Spectrum dataset source_entries are not canonical")
+        source_hashes = [entry["source_file_sha256"] for entry in source_entries]
+        decoded_hashes = [entry["decoded_window_sha256"] for entry in source_entries]
+        if len(set(source_hashes)) != len(source_hashes):
+            raise ValueError("Spectrum dataset repeats a source file SHA-256")
+        if len(set(decoded_hashes)) != len(decoded_hashes):
+            raise ValueError("Spectrum dataset repeats a decoded calibration window")
+
+
+@torch.no_grad()
+def accumulate_spectrum_dataset(
+    video_latent: torch.Tensor,
+    *,
+    batch_id: str,
+    task_family: str,
+    checkpoint_fingerprint: str,
+    vae_fingerprint: str,
+    max_temporal_samples: int,
+    previous_dataset: Mapping[str, Any] | None = None,
+    dataset_provenance_json: str = "",
+    source_entry_json: str = "",
+) -> tuple[dict[str, Any], str]:
+    batch_name = str(batch_id).strip()
+    if not batch_name:
+        raise ValueError("batch_id must be non-empty and unique for this dataset")
+    task = str(task_family)
+    if task not in {"T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"}:
+        raise ValueError("Unknown H3 SPEED task family")
+    checkpoint_id = _usable_provenance(checkpoint_fingerprint)
+    vae_id = _usable_provenance(vae_fingerprint)
+    incoming_provenance = _parse_dataset_provenance(dataset_provenance_json)
+    incoming_source_entry = _parse_source_entry(source_entry_json, batch_id=batch_name)
+    if (incoming_provenance is None) != (incoming_source_entry is None):
+        raise ValueError(
+            "Formal source binding requires both dataset_provenance_json and source_entry_json"
+        )
+    per_clip_power, input_contract = _spatial_power_per_clip(
+        video_latent, max_temporal_samples=max_temporal_samples
+    )
+    if input_contract["channels"] != 24:
+        raise ValueError("H3 video latent calibration requires exactly 24 channels")
+    latent_contract = {
+        key: input_contract[key]
+        for key in (
+            "channels",
+            "frames",
+            "height",
+            "width",
+            "max_temporal_samples",
+            "temporal_samples",
+        )
+    }
+    clip_fingerprints = [_power_sha256(row) for row in per_clip_power]
+    if len(set(clip_fingerprints)) != len(clip_fingerprints):
+        raise ValueError("The input batch repeats an identical clip spectrum")
+
+    if previous_dataset is None:
+        old_power_sum = torch.zeros(
+            (latent_contract["height"], latent_contract["width"]),
+            dtype=torch.float64,
+            device="cpu",
+        )
+        old_batch_ids: list[str] = []
+        old_clip_fingerprints: list[str] = []
+        old_batch_sizes: list[int] = []
+        old_source_entries: list[dict[str, Any]] = []
+        dataset_provenance = incoming_provenance
+    else:
+        _validate_spectrum_dataset(previous_dataset)
+        for field, expected in (
+            ("task_family", task),
+            ("checkpoint_fingerprint", checkpoint_id),
+            ("vae_fingerprint", vae_id),
+        ):
+            if previous_dataset.get(field) != expected:
+                raise ValueError(f"Spectrum dataset {field} mismatch")
+        if dict(previous_dataset["latent_contract"]) != latent_contract:
+            raise ValueError("Spectrum dataset latent/settings contract mismatch")
+        old_batch_ids = list(previous_dataset["batch_ids"])
+        old_clip_fingerprints = list(previous_dataset["clip_fingerprints"])
+        old_batch_sizes = list(previous_dataset.get("batch_sizes", []))
+        old_power_sum = previous_dataset["power_sum"].clone()
+        old_source_entries = list(previous_dataset.get("source_entries", []))
+        dataset_provenance = previous_dataset.get("dataset_provenance")
+        if dataset_provenance is None and incoming_provenance is not None:
+            raise ValueError("Cannot add formal provenance to an already unbound dataset")
+        if dataset_provenance is not None:
+            if incoming_provenance is None:
+                raise ValueError("A provenance-bound dataset requires source metadata on every append")
+            if incoming_provenance != dataset_provenance:
+                raise ValueError("Spectrum dataset provenance mismatch")
+    if batch_name in old_batch_ids:
+        raise ValueError(f"Duplicate spectrum dataset batch_id: {batch_name}")
+    duplicates = sorted(set(clip_fingerprints).intersection(old_clip_fingerprints))
+    if duplicates:
+        raise ValueError("The input repeats a clip spectrum already present in the dataset")
+
+    power_sum = old_power_sum.add(per_clip_power.sum(dim=0))
+    all_batch_ids = [*old_batch_ids, batch_name]
+    all_clip_fingerprints = [*old_clip_fingerprints, *clip_fingerprints]
+    all_batch_sizes = [*old_batch_sizes, input_contract["batch"]]
+    all_source_entries = (
+        [*old_source_entries, incoming_source_entry]
+        if incoming_source_entry is not None
+        else []
+    )
+    dataset = {
+        "schema": SPEED_SPECTRUM_DATASET_SCHEMA,
+        "task_family": task,
+        "checkpoint_fingerprint": checkpoint_id,
+        "vae_fingerprint": vae_id,
+        "latent_contract": latent_contract,
+        "independent_clip_count": len(all_clip_fingerprints),
+        "batch_count": len(all_batch_ids),
+        "batch_ids": all_batch_ids,
+        "batch_sizes": all_batch_sizes,
+        "clip_fingerprints": all_clip_fingerprints,
+        "power_sum": power_sum,
+        "power_sum_sha256": _power_sha256(power_sum),
+        "resident_cpu_bytes": int(power_sum.numel() * power_sum.element_size()),
+        "duplicate_policy": "batch_id_and_exact_per_clip_power_hash_rejected",
+        "independence_boundary": (
+            "Unique hashes reject exact repeats but cannot prove dataset independence, consent, "
+            "content diversity or absence of near-duplicates."
+        ),
+    }
+    if dataset_provenance is not None:
+        if input_contract["batch"] != 1:
+            raise ValueError("Formal source binding currently requires one clip per batch")
+        dataset["dataset_provenance"] = dataset_provenance
+        dataset["source_entries"] = all_source_entries
+    report = _spectrum_dataset_public_report(dataset)
+    report["status"] = "dataset_accumulated"
+    return dataset, canonical_json(report)
+
+
+def finalize_spectrum_dataset(
+    dataset: Mapping[str, Any],
+    *,
+    profile_name: str,
+    minimum_r_squared: float,
+    minimum_independent_clips: int = 100,
+) -> tuple[dict[str, Any], str]:
+    _validate_spectrum_dataset(dataset)
+    minimum_independent_clips = int(minimum_independent_clips)
+    if minimum_independent_clips < 100:
+        raise ValueError("minimum_independent_clips cannot be lower than 100")
+    minimum_r_squared = float(minimum_r_squared)
+    if not math.isfinite(minimum_r_squared) or not 0.0 <= minimum_r_squared <= 1.0:
+        raise ValueError("minimum_r_squared must be in [0, 1]")
+    clip_count = int(dataset["independent_clip_count"])
+    mean_power = dataset["power_sum"] / clip_count
+    fit = _fit_spatial_mean_power(
+        mean_power,
+        latent_contract=dataset["latent_contract"],
+        minimum_radius=1,
+        maximum_radius_fraction=0.5,
+        clip_count=clip_count,
+    )
+    dataset_fingerprint = hashlib.sha256(
+        canonical_json(_spectrum_dataset_public_report(dataset), indent=None).encode(
+            "utf-8"
+        )
+    ).hexdigest().upper()
+    enough_clips = clip_count >= minimum_independent_clips
+    fit_passed = fit["r_squared"] >= minimum_r_squared
+    provenance = dataset.get("dataset_provenance")
+    source_entries = dataset.get("source_entries")
+    provenance_complete = False
+    source_set_matches = False
+    if provenance is not None and isinstance(source_entries, list):
+        provenance_complete = bool(
+            provenance.get("source_kind") == "independent_natural_video_corpus"
+            and provenance.get("selection_policy") == "sha256_rank"
+            and provenance.get("independence_reviewed") is True
+            and provenance.get("content_diversity_reviewed") is True
+            and provenance.get("raw_media_redistributed") is False
+            and int(provenance.get("selected_source_count", 0)) == clip_count
+        )
+        source_set_matches = (
+            _source_set_sha256(source_entries)
+            == provenance.get("selected_source_set_sha256")
+        )
+    validated = enough_clips and fit_passed and provenance_complete and source_set_matches
+    profile = {
+        "schema": SPEED_PROFILE_SCHEMA,
+        "profile_name": str(profile_name).strip() or "unnamed_h3_dataset_profile",
+        "task_family": dataset["task_family"],
+        "checkpoint_fingerprint": dataset["checkpoint_fingerprint"],
+        "vae_fingerprint": dataset["vae_fingerprint"],
+        "independent_clip_count": clip_count,
+        "actual_batch_entries": clip_count,
+        "declared_evidence_present_in_input": True,
+        "provenance_complete": provenance_complete,
+        "fit": fit,
+        "dataset": {
+            "schema": dataset["schema"],
+            "fingerprint": dataset_fingerprint,
+            "batch_count": int(dataset["batch_count"]),
+            "batch_ids": list(dataset["batch_ids"]),
+            "latent_contract": dict(dataset["latent_contract"]),
+            "power_sum_sha256": dataset["power_sum_sha256"],
+            "dataset_provenance": provenance,
+            "source_set_sha256": (
+                _source_set_sha256(source_entries)
+                if isinstance(source_entries, list) and source_entries
+                else None
+            ),
+        },
+        "validated_for_delta_optimal": validated,
+        "validation_rule": {
+            "minimum_independent_clips": minimum_independent_clips,
+            "actual_unique_clip_power_hashes_required": True,
+            "checkpoint_and_vae_fingerprints_required": True,
+            "reviewed_independent_natural_corpus_provenance_required": True,
+            "selected_source_set_hash_must_match": True,
+            "minimum_r_squared": minimum_r_squared,
+        },
+        "validation_checks": {
+            "enough_unique_clips": enough_clips,
+            "fit_r_squared_passed": fit_passed,
+            "provenance_complete": provenance_complete,
+            "selected_source_set_matches": source_set_matches,
+        },
+        "status": "dataset_profile" if validated else "research_probe_only",
+        "warning": (
+            "A validated numerical fit only authorizes delta-optimal schedule research for the "
+            "exact task/model/VAE/grid contract. It does not prove quality, audio, reference "
+            "adherence, speedup or memory safety. Dataset independence remains a reviewed "
+            "provenance assertion rather than something latent hashes can prove."
+        ),
+    }
+    return profile, canonical_json(profile)
 
 
 def build_spectrum_profile(
@@ -322,6 +962,54 @@ def build_spectrum_profile(
         ),
     }
     return profile, canonical_json(profile)
+
+
+def _spectrum_profile_latent_contract(
+    profile: Mapping[str, Any],
+) -> dict[str, int]:
+    dataset = profile.get("dataset")
+    dataset_contract = (
+        dataset.get("latent_contract") if isinstance(dataset, Mapping) else None
+    )
+    fit = profile.get("fit")
+    latent_shape = fit.get("latent_shape") if isinstance(fit, Mapping) else None
+
+    candidates: list[dict[str, int]] = []
+    if isinstance(dataset_contract, Mapping):
+        try:
+            candidates.append(
+                {
+                    "channels": int(dataset_contract["channels"]),
+                    "frames": int(dataset_contract["frames"]),
+                    "height": int(dataset_contract["height"]),
+                    "width": int(dataset_contract["width"]),
+                }
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("SPEED spectrum dataset latent contract is invalid") from exc
+    if isinstance(latent_shape, Sequence) and not isinstance(latent_shape, (str, bytes)):
+        if len(latent_shape) != 5:
+            raise ValueError("SPEED spectrum fit latent_shape must be [B,C,T,H,W]")
+        try:
+            candidates.append(
+                {
+                    "channels": int(latent_shape[1]),
+                    "frames": int(latent_shape[2]),
+                    "height": int(latent_shape[3]),
+                    "width": int(latent_shape[4]),
+                }
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SPEED spectrum fit latent_shape is invalid") from exc
+    if not candidates:
+        raise ValueError("SPEED spectrum profile is missing its exact latent grid contract")
+    if any(value <= 0 for candidate in candidates for value in candidate.values()):
+        raise ValueError("SPEED spectrum latent grid values must be positive")
+    if any(candidate["channels"] != 24 for candidate in candidates):
+        raise ValueError("SPEED spectrum profile is not an H3 24-channel video latent")
+    if any(candidate != candidates[0] for candidate in candidates[1:]):
+        raise ValueError("SPEED spectrum dataset and fit latent contracts disagree")
+    return candidates[0]
 
 
 def _find_transition_index(sigmas: Sequence[float], threshold: float) -> int:
@@ -395,6 +1083,20 @@ def build_speed_plan(
         fit = spectrum_profile.get("fit", {})
         amplitude = float(fit["amplitude"])
         beta = float(fit["beta"])
+        latent_contract = _spectrum_profile_latent_contract(spectrum_profile)
+        requested_spatial_grid = {
+            "height": int(height) // 16,
+            "width": int(width) // 16,
+        }
+        profile_spatial_grid = {
+            "height": latent_contract["height"],
+            "width": latent_contract["width"],
+        }
+        if profile_spatial_grid != requested_spatial_grid:
+            raise ValueError(
+                "SPEED spectrum latent grid mismatch: "
+                f"profile={profile_spatial_grid}, plan={requested_spatial_grid}"
+            )
         omega_max = min(stages[-1]["latent_height"], stages[-1]["latent_width"]) / 2.0
         for stage in stages[:-1]:
             omega = float(stage["effective_scale"]) * omega_max
@@ -408,6 +1110,7 @@ def build_speed_plan(
             "r_squared": fit.get("r_squared"),
             "checkpoint_fingerprint": spectrum_profile.get("checkpoint_fingerprint"),
             "vae_fingerprint": spectrum_profile.get("vae_fingerprint"),
+            "latent_contract": latent_contract,
         }
     elif len(stages) > 1:
         raise ValueError("transition_mode must be manual_sigmas or delta_optimal")
@@ -1053,9 +1756,48 @@ def _profile_binding(
         raise ValueError(
             f"SPEED spectrum task mismatch: profile={expected_task!r}, source={actual_task!r}"
         )
+    latent_contract = profile.get("latent_contract")
+    if not isinstance(latent_contract, Mapping):
+        raise ValueError("delta_optimal SPEED plan lost its latent grid binding")
+    try:
+        expected_grid = {
+            "channels": int(latent_contract["channels"]),
+            "frames": int(latent_contract["frames"]),
+            "height": int(latent_contract["height"]),
+            "width": int(latent_contract["width"]),
+        }
+        frame_count = align_frame_count(int(source["length"]))
+        actual_grid = {
+            "channels": 24,
+            "frames": video_latent_t(frame_count),
+            "height": int(plan["height"]) // 16,
+            "width": int(plan["width"]) // 16,
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("SPEED runtime cannot resolve the exact latent grid binding") from exc
+    if expected_grid != actual_grid:
+        raise ValueError(
+            "SPEED spectrum latent grid mismatch: "
+            f"profile={expected_grid}, runtime={actual_grid}"
+        )
     fields = ("checkpoint_fingerprint", "vae_fingerprint")
-    expected = {field: str(profile.get(field, "")).strip() for field in fields}
-    actual = {field: str(source.get(field, "")).strip() for field in fields}
+
+    def normalize_fingerprint(value: Any) -> str:
+        text = str(value).strip()
+        prefix, separator, digest = text.partition(":")
+        if (
+            separator
+            and prefix.lower() == "sha256"
+            and len(digest) == 64
+            and all(character in "0123456789abcdefABCDEF" for character in digest)
+        ):
+            return f"sha256:{digest.lower()}"
+        return text
+
+    expected = {
+        field: normalize_fingerprint(profile.get(field, "")) for field in fields
+    }
+    actual = {field: normalize_fingerprint(source.get(field, "")) for field in fields}
 
     def known(value: str) -> bool:
         return bool(value) and value.lower() not in {"unrecorded", "unknown", "none"}
@@ -1088,6 +1830,7 @@ def _profile_binding(
             else "research_unrecorded_runtime_fingerprint"
         ),
         "task_family": actual_task,
+        "latent_grid": actual_grid,
         "expected": expected,
         "actual": actual,
     }

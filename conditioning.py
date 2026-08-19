@@ -38,6 +38,12 @@ NATIVE_GUIDE_PACKED_LAYOUT_SHA256 = (
 NATIVE_GUIDE_EXTRA_CONDS_SHA256 = (
     "5a6d7d0a5963c96c12f0e04a400f6c45e8f6df632e343be6c86b6ac4ccbc8a46"
 )
+NATIVE_GUIDE_EXTRA_CONDS_SHA256S = {
+    NATIVE_GUIDE_EXTRA_CONDS_SHA256,
+    # ComfyUI 187eda8: native keyframe+reference concatenation is unchanged;
+    # extra_conds additionally forwards the new video/audio denoise masks.
+    "e43a26358405187d5a9556c158843d9ffe150ac52591d1034f3cce422e565974",
+}
 
 
 def build_packed_layout(
@@ -78,7 +84,7 @@ def assert_hybrid_layout_contract() -> str:
     packed_source = inspect.getsource(PackedLayout.__init__)
     packed_sha256 = hashlib.sha256(packed_source.encode("utf-8")).hexdigest()
 
-    if extra_conds_sha256 == NATIVE_GUIDE_EXTRA_CONDS_SHA256:
+    if extra_conds_sha256 in NATIVE_GUIDE_EXTRA_CONDS_SHA256S:
         if "frame_count" in parameters or packed_sha256 != NATIVE_GUIDE_PACKED_LAYOUT_SHA256:
             raise RuntimeError(
                 "This ComfyUI build mixes unknown MiniMax H3 native-guide contracts; "

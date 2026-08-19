@@ -112,6 +112,11 @@ def build_t2va_pair(
     video_vae_name: str,
     audio_vae_name: str,
     filename_prefix: str,
+    transition_mode: str = "manual_sigmas",
+    spectrum_dataset_name: str = "",
+    spectrum_profile_name: str = "h3_t2va_calibrated_v1",
+    minimum_r_squared: float = 0.80,
+    minimum_independent_clips: int = 100,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("width and height must be positive multiples of 32")
@@ -121,6 +126,12 @@ def build_t2va_pair(
         raise ValueError("the strict SPEED P1 validation pair requires exactly 20 steps")
     if not prompt.strip():
         raise ValueError("prompt must not be empty")
+    if transition_mode not in {"manual_sigmas", "delta_optimal"}:
+        raise ValueError("transition_mode must be manual_sigmas or delta_optimal")
+    if transition_mode == "delta_optimal" and not spectrum_dataset_name.strip():
+        raise ValueError("delta_optimal requires spectrum_dataset_name")
+    if minimum_independent_clips < 100:
+        raise ValueError("minimum_independent_clips cannot be below the formal 100-clip gate")
 
     common = _loader_nodes(
         model_name=model_name,
@@ -195,23 +206,67 @@ def build_t2va_pair(
         ),
     }
 
+    calibrated_nodes: dict[str, dict[str, Any]] = {}
+    spectrum_profile_input: list[Any] | None = None
+    checkpoint_fingerprint_input: Any = "unrecorded"
+    vae_fingerprint_input: Any = "unrecorded"
+    if transition_mode == "delta_optimal":
+        calibrated_nodes = {
+            "14": {
+                "class_type": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+                "inputs": {
+                    "mode": "load",
+                    "dataset_name": spectrum_dataset_name,
+                    "overwrite": False,
+                    "confirm_write": False,
+                },
+                "_meta": {"title": "Load provenance-reviewed H3 spectrum dataset"},
+            },
+            "15": {
+                "class_type": "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+                "inputs": {
+                    "spectrum_dataset": ["14", 0],
+                    "profile_name": spectrum_profile_name,
+                    "minimum_r_squared": minimum_r_squared,
+                    "minimum_independent_clips": minimum_independent_clips,
+                },
+                "_meta": {"title": "Finalize validated H3 spectrum profile"},
+            },
+            "16": {
+                "class_type": "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+                "inputs": {
+                    "checkpoint_name": model_name,
+                    "video_vae_name": video_vae_name,
+                },
+                "_meta": {"title": "Recompute runtime model and VAE file fingerprints"},
+            },
+        }
+        spectrum_profile_input = ["15", 0]
+        checkpoint_fingerprint_input = ["16", 0]
+        vae_fingerprint_input = ["16", 1]
+
+    plan_inputs: dict[str, Any] = {
+        "width": width,
+        "height": height,
+        "steps": steps,
+        "scales": scales,
+        "transition_mode": transition_mode,
+        "manual_transition_sigmas": transition_sigma,
+        "delta": 0.01,
+        "shift_video": shift_video,
+        "transform": "dct",
+        "profile_policy": "require_validated_profile",
+        "fallback_policy": "error",
+    }
+    if spectrum_profile_input is not None:
+        plan_inputs["spectrum_profile"] = spectrum_profile_input
+
     speed = {
         **common,
+        **calibrated_nodes,
         "5": {
             "class_type": "MiniMaxH3SPEEDPlanT8Advanced",
-            "inputs": {
-                "width": width,
-                "height": height,
-                "steps": steps,
-                "scales": scales,
-                "transition_mode": "manual_sigmas",
-                "manual_transition_sigmas": transition_sigma,
-                "delta": 0.01,
-                "shift_video": shift_video,
-                "transform": "dct",
-                "profile_policy": "require_validated_profile",
-                "fallback_policy": "error",
-            },
+            "inputs": plan_inputs,
             "_meta": {"title": "Official-math SPEED stage plan"},
         },
         "6": {
@@ -230,8 +285,8 @@ def build_t2va_pair(
                 "strict_prompt_tags": True,
                 "ref_image_size": "match",
                 "reference_video_policy": "official_2_to_15s",
-                "checkpoint_fingerprint": "unrecorded",
-                "vae_fingerprint": "unrecorded",
+                "checkpoint_fingerprint": checkpoint_fingerprint_input,
+                "vae_fingerprint": vae_fingerprint_input,
             },
             "_meta": {"title": "Raw T2VA source rebuilt at each SPEED canvas"},
         },
@@ -279,7 +334,20 @@ def build_t2va_pair(
         },
         "treatment": {
             "scales": scales,
-            "transition_sigma": transition_sigma,
+            "transition_mode": transition_mode,
+            "transition_sigma": (
+                transition_sigma if transition_mode == "manual_sigmas" else None
+            ),
+            "spectrum_dataset_name": spectrum_dataset_name or None,
+            "spectrum_profile_name": (
+                spectrum_profile_name if transition_mode == "delta_optimal" else None
+            ),
+            "minimum_r_squared": (
+                minimum_r_squared if transition_mode == "delta_optimal" else None
+            ),
+            "minimum_independent_clips": (
+                minimum_independent_clips if transition_mode == "delta_optimal" else None
+            ),
             "transform": "orthonormal DCT",
             "total_nfe_unchanged": True,
         },
@@ -306,6 +374,15 @@ def main() -> None:
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
     parser.add_argument("--scales", default="0.5,1.0")
     parser.add_argument("--transition-sigma", default="0.85")
+    parser.add_argument(
+        "--transition-mode",
+        choices=("manual_sigmas", "delta_optimal"),
+        default="manual_sigmas",
+    )
+    parser.add_argument("--spectrum-dataset-name", default="")
+    parser.add_argument("--spectrum-profile-name", default="h3_t2va_calibrated_v1")
+    parser.add_argument("--minimum-r-squared", type=float, default=0.80)
+    parser.add_argument("--minimum-independent-clips", type=int, default=100)
     parser.add_argument("--shift-video", type=float, default=12.0)
     parser.add_argument("--shift-audio", type=float, default=3.0)
     parser.add_argument(
@@ -341,6 +418,11 @@ def main() -> None:
         video_vae_name=args.video_vae_name,
         audio_vae_name=args.audio_vae_name,
         filename_prefix=args.filename_prefix,
+        transition_mode=args.transition_mode,
+        spectrum_dataset_name=args.spectrum_dataset_name,
+        spectrum_profile_name=args.spectrum_profile_name,
+        minimum_r_squared=args.minimum_r_squared,
+        minimum_independent_clips=args.minimum_independent_clips,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for name, payload in (

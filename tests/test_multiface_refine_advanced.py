@@ -683,6 +683,7 @@ def test_two_and_three_person_examples_accept_candidates_and_run_sequentially():
                 root
                 / "examples"
                 / "workflows"
+                / "06-face-refine"
                 / f"2026-08-17_H3_SAM31_{count}Person_Face_Refine_Advanced_EXP.json"
             ).read_text(encoding="utf-8")
         )

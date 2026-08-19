@@ -1,10 +1,15 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.32.1`，共注册
-120 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.33.1`，共注册
+125 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
 Turbo8代表链；T2VA、FL2VA和Ref2VA三条同输入、同seed、同20 NFE控制分别实测约
-2.18×、2.21×和2.30×端到端加速。画质、声音与参考遵循的三组匿名审片仍未完成，因此节点继续为
-EXP；稳定节点、默认参数和`sampling.py`保持不变。
+2.18×、2.21×和2.30×端到端加速，但用户盲审三组全部选择全分辨率基线，FL2VA的SPEED A与
+Ref2VA的SPEED B被明确判为画面明显崩坏。当前手工14粗+6全分辨率计划已被固定配置质量门否决；
+新增跨批次频谱数据集累积、原子文件、严格定稿和完整模型/VAE指纹节点，用经目标H3 video VAE
+编码的独立自然视频语料重新标定delta-optimal转场。正式100条数据已完成标定，但同输入实跑没有获得
+净加速，峰值显存反而明显升高且跌破512MiB余量门，因此当前SPEED实现仍被否决为稳定功能。
+SPEED继续为EXP；稳定节点、默认参数和
+`sampling.py`保持不变。
 此前新增的隔离混合细节采样器可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
 前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
@@ -30,6 +35,14 @@ Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG�
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person` | 实验 | 原生SAM3.1按镜头分色追踪2～3人、CPU参考身份建议、逐角色H3修复与审片后顺序合成 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
 | `T8/MiniMax H3/SPEED/Experimental` | 实验 | H3空间频谱标定、渐进画布计划、原始多模态条件源和整链分阶段采样 |
+
+## 工作流分类目录
+
+全部可导入前端工作流已经从单层列表整理到 `examples/workflows` 下的12个功能目录，并同步到
+ComfyUI用户工作流菜单 `MiniMax H3 T8`。目录从 `01-basic-generation` 到
+`12-system-memory` 排序；每个目录都有独立 `README.md`，记录该批工作流的用途、已验证成果、
+推荐入口、使用方法和不能外推的边界。工作流JSON继续保留发布日期前缀，移动目录不修改其画布内容、
+节点参数或连接关系。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 
 本包不是把源音频简单塞进 latent：它按 ComfyUI 当前 H3 实现维护媒体展示顺序、
 `<Picture N>` / `<Video N>` / `<Audio N>` 标签、联合 AV latent、首尾关键帧、参考媒体和
@@ -59,8 +72,8 @@ SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。�
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前664项完整回归、全仓Ruff与compileall通过，126份非artifact JSON严格解析；70份项目与70份已安装用户前端工作流
-均严格解析且逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
+当前718项完整回归、改动范围Ruff与compileall通过，127份非artifact JSON严格解析；71份项目与71份已安装用户前端工作流
+已按12个功能目录递归解析且相对路径/逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
@@ -453,7 +466,7 @@ Scheduled Audio Injection的默认`report_only`与实际
 | Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
 
 最小可运行示例见
-[`examples/workflows/2026-08-16_H3_Latent_Upscale_By32.json`](examples/workflows/2026-08-16_H3_Latent_Upscale_By32.json)。
+[`examples/workflows/12-system-memory/2026-08-16_H3_Latent_Upscale_By32.json`](examples/workflows/12-system-memory/2026-08-16_H3_Latent_Upscale_By32.json)。
 示例使用ComfyUI普通`EmptyLatentImage`，所以显式选择8像素/latent；连接本包H3 Conditioning输出的
 联合AV latent时应保留默认16。不要把已包含首尾帧/参考图空间条件的AV latent随意放大后继续沿用
 旧尺寸Conditioning；新节点只负责latent几何与音频保持，不会自动重编码那些条件媒体。
@@ -619,21 +632,21 @@ x/y接缝比没有一例改善，肉眼出现栅格和重影。这条直接修�
 
 API与可导入前端示例：
 
-- `tests/fixtures/api/environment_audit_advanced_api.json` / `examples/workflows/2026-08-13_H3_Environment_Audit_Advanced.json`
-- `tests/fixtures/api/activation_chunk_advanced_api.json` / `examples/workflows/2026-08-13_H3_Activation_Chunk_Advanced.json`
-- `tests/fixtures/api/qwen_prefix_cache_advanced_api.json` / `examples/workflows/2026-08-13_H3_Qwen_Prefix_Cache_Advanced.json`
-- `tests/fixtures/api/studio_timeline_advanced_api.json` / `examples/workflows/2026-08-13_H3_Studio_Timeline_Advanced.json`
-- `tests/fixtures/api/context_ir_provider_advanced_api.json` / `examples/workflows/2026-08-13_H3_Context_IR_Provider_Advanced.json`
-- `tests/fixtures/api/selective_repair_execution_advanced_api.json` / `examples/workflows/2026-08-13_H3_Selective_Repair_Execution_Advanced.json`
-- `tests/fixtures/api/reel_delivery_advanced_api.json` / `examples/workflows/2026-08-13_H3_Reel_Delivery_Advanced.json`
-- `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json`
-- `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/2026-08-13_H3_AV_Decode_Safety_Advanced.json`
-- `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
-- `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`
-- `tests/fixtures/api/multiface_sam31_2person_advanced_api.json` / `examples/workflows/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
-- `tests/fixtures/api/multiface_sam31_3person_advanced_api.json` / `examples/workflows/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/environment_audit_advanced_api.json` / `examples/workflows/12-system-memory/2026-08-13_H3_Environment_Audit_Advanced.json`
+- `tests/fixtures/api/activation_chunk_advanced_api.json` / `examples/workflows/12-system-memory/2026-08-13_H3_Activation_Chunk_Advanced.json`
+- `tests/fixtures/api/qwen_prefix_cache_advanced_api.json` / `examples/workflows/12-system-memory/2026-08-13_H3_Qwen_Prefix_Cache_Advanced.json`
+- `tests/fixtures/api/studio_timeline_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_Studio_Timeline_Advanced.json`
+- `tests/fixtures/api/context_ir_provider_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_Context_IR_Provider_Advanced.json`
+- `tests/fixtures/api/selective_repair_execution_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_Selective_Repair_Execution_Advanced.json`
+- `tests/fixtures/api/reel_delivery_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_Reel_Delivery_Advanced.json`
+- `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/02-audio-control/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json`
+- `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_AV_Decode_Safety_Advanced.json`
+- `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/12-system-memory/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
+- `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_2person_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json`
+- `tests/fixtures/api/multiface_sam31_3person_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json`
 
 Face Refine示例故意不经过固定736×416的来源视频窗口：它要求输入已经是24fps且帧数严格满足
 `17n+5`，直接保留原始宽高比，再把脸部crop送入512×512二次H3。默认真人示例使用固定哈希的
@@ -822,7 +835,7 @@ profile的单评审主观冒烟门，但自动差异范围仍明显大于`0.08`�
 示例：
 
 - `tests/fixtures/api/hybrid_compatibility_audit_api.json`；
-- `examples/workflows/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
+- `examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json`。
 
 完整合同与issue code见
 [Hybrid Compatibility Audit文档](docs/HYBRID_COMPATIBILITY_AUDIT.md)。
@@ -856,7 +869,7 @@ OOM返回路径。`clean_before_load`还是全局卸载，不是只卸载H3。�
 新示例为：
 
 - `tests/fixtures/api/hybrid_model_vbar_headroom_api.json`；
-- `examples/workflows/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
+- `examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json`。
 
 示例使用4.0GiB固定总预留、不做全局清理、DynamicVRAM必需、512MiB当前门槛和16GiB主机commit
 门槛。RTX 4060 Ti 16GiB、736×416、124帧、Hybrid Stock20真实A/B中，未启用策略最低余量
@@ -908,7 +921,7 @@ H3画质、身份、动作、音频保真和16GB显存矩阵。因此三个节�
 “任意视频”或“精准局部重绘”。API与前端示例分别为：
 
 - `tests/fixtures/api/source_video_repaint_api.json`；
-- `examples/workflows/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json`。
+- `examples/workflows/03-image-video-edit/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json`。
 
 本机已用真实来源有声视频、FL2VA pruned INT8、Qwen3-VL NVFP4 与双 H3 VAE 完成一次
 256×256、124帧、1步机械整链检查；结果成功保存为24fps H.264 + 32kHz stereo AAC，视频与
@@ -962,7 +975,7 @@ Advanced节点也不允许与本项目Long Video MODEL补丁或第三方全局Mo
 [`docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md`](docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md)。
 
 API 示例：`tests/fixtures/api/multikeyframe_advanced_api.json`；可拖入画布的示例：
-`examples/workflows/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
+`examples/workflows/08-multi-keyframe/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json`。导入后需要替换四张占位图片；两个
 中间节点均默认 `0.999`，低值只建议在固定素材/seed/采样设置下做A/B。
 
 ## EXP：视觉参考强度（Ref2VA 纹理 A/B）
@@ -980,7 +993,7 @@ API 示例：`tests/fixtures/api/multikeyframe_advanced_api.json`；可拖入画
 只有音频参考也不会误报生效。当前核心只支持一个全局强度，不能为每张参考图单独设置。
 
 API 示例：`tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json`；可拖入画布的工作流：
-`examples/workflows/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
+`examples/workflows/03-image-video-edit/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json`。前端示例使用完整
 `minimax_h3_ref2va_int8_convrot.safetensors`、736×416、124帧和20步基线，导入后先替换
 占位参考图。该参数本身不要求这些采样值，接入旧工作流时保持用户原有 sampler/scheduler 即可。
 
@@ -1029,9 +1042,9 @@ latent 的平均绝对变化为 `0.50223`，2秒后锁定尾部的最大绝对�
 音乐损伤和听评门槛，未过门槛前不会靠模型名猜一个默认分离器。
 
 示例：`tests/fixtures/api/dialogue_safe_master_api.json`、
-`examples/workflows/2026-08-10_H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
+`examples/workflows/05-speech-dialogue/2026-08-10_H3_Dialogue_Safe_Master_EXP.json`，以及两遍 H3 的
 `tests/fixtures/api/dialogue_timed_bed_lock_api.json`、
-`examples/workflows/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
+`examples/workflows/05-speech-dialogue/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json`。所有输入文件都是占位符；
 底轨必须是不含对白的独立完整背景，而不是已混合的 H3 最终母带。
 
 ## EXP：原生语音、参考音色与逐句对白
@@ -1226,7 +1239,7 @@ flow-P90仍在第4/5/6段降到0.648/0.457/0.652，动作地板继续失败。�
 
 ### 双参考身份续写示例
 
-可直接导入的 `examples/workflows/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
+可直接导入的 `examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json`
 基于后台长链示例，专门演示“完整场景首帧 + 人物身份裁剪图”的双参考续写：
 
 1. 完整场景图连接 Long Video Conditioning 的 `first_frame`，继续精确控制第0段首帧。
@@ -1288,7 +1301,7 @@ flow-P90仍在第4/5/6段降到0.648/0.457/0.652，动作地板继续失败。�
    完整历史 IMAGE/AUDIO tensor，也不会通过后台循环绕过 ComfyUI 的模型管理。
 
 `1.7.0` 在不移除上述人工审核路线的前提下增加一条显式后台路线。加载
-`examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 后，`Background Start` 的默认值仍是
+`examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 后，`Background Start` 的默认值仍是
 `review_only`；只有主动改为 `auto_accept_and_continue` 才会跳过人工预览，自动接受每个成功候选。
 终端节点每次只排入一个下一段 prompt，不在单个 Python 循环里长期持有完整 IMAGE/AUDIO 历史。
 
@@ -1416,15 +1429,15 @@ VAE重编码22帧没有显示出优于直接 sampler latent 的充分证据，�
 该首版 bridge 检查当时只覆盖上述三段单素材；后续14段证据见下文。多素材长期退化矩阵和
 跨配置通用16GB安全档仍未完成，因此本功能继续保持 Experimental，不宣传无缝或绝不 OOM。
 
-旧手工链的画布/API 示例仍为 `examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json` 与
+旧手工链的画布/API 示例仍为 `examples/workflows/04-long-video/2026-08-09_H3_Long_Video_22F_EXP.json` 与
 `tests/fixtures/api/long_video_segment_api.json`。接受状态画布/API 示例为
-`examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` 与
+`examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` 与
 `tests/fixtures/api/long_video_candidate_accept_api.json`；完成全部片段后再单独运行
 `tests/fixtures/api/long_video_compose_api.json`。推荐的总时长自动恢复画布/API 示例为
-`examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` 与
+`examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` 与
 `tests/fixtures/api/long_video_auto_resume_api.json`；它自动管理 index、final、时间轴和断点位置，但保留
 逐段人工预览/接受。显式后台画布/API 为
-`examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 与
+`examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Background_22F_EXP.json` 与
 `tests/fixtures/api/long_video_background_api.json`；只有这组示例连接 Background Start 与 Auto Queue。
 
 本机已对这条自动恢复 API 做一次真实执行探针：非裁剪 FL2VA INT8、Standard Turbo LoRA、
@@ -1559,7 +1572,7 @@ latent 注入更多噪声，可能增强重绘幅度，也可能损坏身份与�
 LoRA，并以 20 步作为结构基线。若以后安装非裁剪 Ref2VA，再单独进行 Turbo LoRA 对照。
 这项能力是参考引导的语义重绘，不是 mask/inpainting，也不保证未编辑区域像素不变。
 API 示例见 `tests/fixtures/api/still_image_edit_api.json`；可直接拖入画布的完整示例见
-`examples/workflows/2026-08-07_H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
+`examples/workflows/03-image-video-edit/2026-08-07_H3_Still_Edit_22Frames_EXP.json`。两者默认使用512×512、22帧、20步，
 并连接 Still Preflight；在 Reference Image Edit 节点上点击“＋”可追加最多8张参考图。
 
 本机真实模型验证中，pruned Ref2VA INT8 在 512×512、20 步、`direct_1_frame` 下成功
@@ -1826,6 +1839,91 @@ profile-pair中，画面偏好为20平、5次same-NFE-tail、2次control，声�
 记为`waived_by_user`而不是失败；原话、manifest哈希和边界保存在同目录`user_acceptance.json`。
 这不是伪造的重复测量，也不外推到所有16GB显卡、分辨率、帧数、驱动、wrapper或并发负载。
 
+## v1.33.1：SPEED盲评否决、100条正式标定与实跑结论
+
+v1.32.1三组匿名完整视频/音频已经由用户完成审片。揭盲映射为：T2VA A=SPEED、FL2VA A=SPEED、
+Ref2VA B=SPEED。用户对总体、运动和声音三项均选择全分辨率基线，Ref2VA参考遵循也选择基线；并明确
+指出FL2VA的A与Ref2VA的B“画面明显崩坏”。原始评分JSON与本地副本SHA-256均为
+`BA47FA124C9FD0BF51E625DBB0D7F170FA795D0E2BD9654161A16A664B201365`。这只否决固定素材、seed、
+模型、Stock20及当前计划，不能证明所有SPEED参数必然失败；但足以拒绝把当前手工计划设为稳定默认。
+
+三条失败的执行报告都显示20 NFE被分为14次半分辨率与6次全分辨率，阈值`0.85`来自手工设置，
+并非H3数据集频谱。它是当前最强的共同机制嫌疑，但盲评本身不能证明因果。为按论文方法继续，末尾
+追加5个隔离Advanced节点，旧120节点ID、输入、默认值与注册顺序不变：
+
+- `Spectrum Dataset Accumulate`：跨批次累积每个经同一H3 video VAE编码的独立自然视频latent的CPU
+  float64空间功率充分统计，
+  不保留源latent或CUDA tensor；重复batch ID、完全相同的片段功率、任务/模型/VAE/网格/设置不一致均拒绝。
+- `Spectrum Dataset File`：在`ComfyUI/output/h3_speed_spectrum_datasets`以单个safetensors原子保存/加载；
+  默认只读，保存必须显式确认，覆盖也必须显式开启，禁止路径穿越和符号链接。Load用完整文件SHA作为
+  ComfyUI缓存指纹，文件更新后必定重读；Save作为显式副作用永不复用旧缓存。
+- `Spectrum Dataset Finalize`：从聚合平均功率一次拟合A/β，而不是平均每批拟合结果；少于100条实际唯一
+  clip-power、R²不足，或缺少经人工确认的独立自然视频语料来源/多样性证明，只能输出
+  `research_probe_only`，不能进入validated delta-optimal计划。
+- `Model + VAE Fingerprint`：流式读取所选完整checkpoint和video VAE字节，生成真正SHA-256绑定；不加载
+  第二份GPU模型。首次读取大文件会较慢，输入未变时可由ComfyUI缓存。
+- `SPEED Calibration Window`：严格取24fps、`17n+5`窗口，使用center-cover等比缩放；它宁可报告并裁掉
+  超出目标画幅的边缘，也不会压扁人物或物体，且不会修改旧`Source Media Window`节点或旧工作流。
+
+示例`2026-08-19_H3_SPEED_Spectrum_Dataset_Calibration_Advanced_EXP.json`带多块NOTE，通过新窗口固定24fps、
+736×416、124帧且不做非等比拉伸，并展示首次创建、后续加载追加、显式保存、100条定稿及`delta_optimal +
+require_validated_profile`连接。唯一hash只能拒绝精确重复，不能证明素材真正独立、多样或有授权；数值拟合
+通过也不等于画质、音频、参考遵循、速度和显存门通过。下一步只用标定计划各跑一条最小对照，失败就停止
+对应路线，不再用大量无效矩阵掩盖问题。
+
+独立8197实例已完成真实两批持久化验证。两条严格FFmpeg解码通过的736×416素材经同一H3 video VAE
+生成`[1,24,37,26,46]` latent，第二批从磁盘读取第一批后追加并原子覆盖；随后用完全相同Load图复读，
+文件内容SHA变化使Load不再命中旧缓存，正确返回2条。干净探针文件SHA-256为
+`80EE5756323AA6F8F0ED80A465C5EF5C812009EDEBDFE86F522FD649930080B4`；拟合A=23.3507、
+β=2.07666、R²=0.99460，但因只有2条仍严格保持`research_probe_only`。另一个416×736竖向素材证明
+center-cover没有拉伸并报告保留约32.1%源画面，但严格解码发现CABAC损坏，因此没有计入这份干净数据集。
+
+项目另提供只读工具`tools/curate_h3_speed_spectrum_sources.py`，用于在编码前清点标定源：它核对
+ffprobe元数据、严格目标窗口解码、完整文件SHA、解码后窗口SHA及低分辨率时间哈希近重复，并标记
+明显的A/B、修复、缓存、SPEED和其他派生成片名称；工具不会移动或删除媒体，也不会把近重复启发式
+结果冒充独立性证明。对`ComfyUI/output/MiniMaxH3`的188个文件实扫中，89个通过目标窗口严格解码；
+综合短片、需上采样、损坏、精确文件/解码窗口重复与派生/近重复人工复核后，只有3个保持
+`provisional_candidate`，55个需人工复核、130个机械拒绝。进一步扫描5个H3命名输出根共1275个文件，
+也只有3个暂列候选、244个需人工复核、1028个机械拒绝；其中442个严格解码通过，但有574个过短、
+460个精确文件重复、221个必须上采样、185个解码窗口精确重复和22个严格解码失败，拒绝原因可重叠。
+因此现有输出不能拼凑成100条正式数据集。
+
+工具还会在MP4确实带有ComfyUI嵌入元数据时，只提取并哈希任务、checkpoint、VAE、LoRA、采样合同、
+seed、输入素材标识和提示词内容签名；不会把原始prompt、workflow或素材路径写入报告。要求元数据的
+1275文件复扫只有452条形成完整H3合同，51条合同不完整，768条没有prompt tag；即使结合严格解码，
+现有同合同素材仍主要是多关键帧、Sigma、Face Refine等派生矩阵，不能冒充独立Stock标定集。
+
+`ComfyUI/input`又被单独扫描了358个视频。严格736×416×124窗口门只留下19个候选、15个待人工复核、
+324个拒绝；重叠原因包括219个需要上采样、217个时长不足、62个精确文件重复、11个检查失败和8个
+严格解码失败。`tools/build_h3_speed_spectrum_manifest.py`只接受这份signature报告中的严格候选、
+完整文件SHA和受限input根路径，并硬性禁止把正式阈值降低到100以下。为验证剩余链路，19个候选以
+“本地输入视频语料代理”身份全部经同一H3 video VAE顺序编码；最终latent合同为`[19,24,37,26,46]`，
+拟合A=26.5381849、β=2.1534428、R²=0.9955738。它相对2条T2VA干净探针的A/β变化约+13.65%/+3.70%，
+进一步说明小样本参数不稳定。该数据不是经过正式来源与多样性复核的100条独立自然视频窗口，
+Finalize因此仍返回
+`research_probe_only`/`validated_for_delta_optimal=false`；它不授权新的SPEED质量A/B。
+
+为验证正式链路而不伪造样本数，项目从冻结的Stock20控制矩阵选出3张不同首帧×3个seed共9条I2VA
+成片；它们逐条严格解码、顺序经过同一H3 video VAE编码、跨9次prompt原子追加。最终latent合同为
+`[9,24,37,26,46]`，数据集拟合A=29.5579671、β=2.3662343、R²=0.9971147；节点正确报告
+`research_probe_only`和`enough_unique_clips=false`。这与2条T2VA探针的A=23.3507、β=2.07666
+存在明显差异，进一步支持按task/model/VAE分别标定，但9条仍不足以授权`delta_optimal`或新的质量A/B。
+`delta_optimal`现在还会把profile的完整video latent网格`C/T/H/W`绑定到Plan和运行时：分辨率或
+`17n+5`帧长任何一项不同都会直接报错，避免把736×416×124的频谱配置静默套到别的画布或时长。
+
+VChitect-T2V-Dataverse固定revision的100条来源窗口现已全部通过预裁切、严格解码、去重与人工
+10×10内容多样性复核，并经本机同一H3 video VAE顺序累积。正式数据集为100条
+`[24,37,26,46]`视频latent，拟合A=29.9641867、β=2.3183721、R²=0.9951512；完整模型、VAE、
+任务与网格指纹均匹配，因而数值上通过`validated_for_delta_optimal`。这只证明标定统计合同成立，
+不等于生成效果成立。
+
+随后只按约定跑了一条T2VA Stock20受控对照：736×416×124、20 NFE、相同prompt/seed/模型/CLIP/
+双VAE。全分辨率基线耗时243.203秒、峰值12504.6MiB；正式标定自动给出384×224执行13次、
+736×416执行7次，SPEED耗时248.688秒、峰值16175.8MiB，约慢2.26%，最低余量仅203.7MiB，
+低于512MiB门槛。SPEED原始H.264还在严格解码中暴露一帧损坏；原文件保留为失败证据，另生成只用于
+盲审的非覆盖重编码副本。重编码不会把原始机械失败改判为通过。故当前实现不具备稳定加速、显存安全、
+质量或音频非劣声明；不再扩大到I/FL/L/Ref/Hybrid矩阵，继续仅保留EXP研究与诊断用途。
+
 ## v1.32.1：SPEED 同输入全分辨率对照与强制解码门
 
 本补丁不增加节点、不修改既有节点schema/default，也不改变稳定`sampling.py`。新增可复现的
@@ -1953,7 +2051,8 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
 五个节点职责分开：
 
 1. `SPEED Spectrum Harvester Advanced`从已分离的H3视频latent拟合`P(ω)=A|ω|^-β`。单片只标
-   `research_probe_only`；必须在一次输入里实际提供至少100条batch样本、声明其独立数据来源、填写
+   `research_probe_only`；正式数据集需把至少100条经过来源与内容多样性复核的独立自然视频窗口通过
+   同一目标H3 video VAE编码，声明数据来源、填写
    checkpoint/VAE指纹并达到设定R²才可作为dataset profile。节点能核对batch数量，不能从tensor本身
    证明统计独立性；手填更大的样本数不能把单片升级成已标定profile。
 2. `SPEED Plan Advanced`把每级画布解析为同时被32整除、宽高比误差受控的实际尺寸，生成手工sigma或
@@ -2004,15 +2103,20 @@ API→前端工作流转换器按API字典顺序写入`inputs/widgets_values`，
   最小audio-row实验profile。
 - `2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`：参考图+参考音频，自动选择video+audio-row
   实验profile；仍需用户盲评，不能视为最佳profile。
-- `2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：默认严格T2VA、20步、0.5→1.0、手工sigma的首个实机候选。
-- `2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的多模态研究示例，必须显式EXP。
-- `2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建示例，必须显式EXP。
+- `2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：已更新为正式100条T2VA数据集Load→Finalize、完整
+  模型/VAE指纹和`delta_optimal`执行链；自带三块NOTE明确记录其速度、显存、码流和盲评均未通过，
+  仅供复现实验，不是推荐方案。
+- `2026-08-09_H3_SPEED_FL2VA_Stock20_Advanced_EXP.json`：首尾帧逐阶段重编码的历史机械示例；旧14+6计划
+  已被盲评否决且没有FL2VA专用正式profile。
+- `2026-08-09_H3_SPEED_Ref2VA_Stock20_Advanced_EXP.json`：参考图逐阶段条件重建的历史机械示例；旧14+6
+  计划已被盲评否决且没有Ref2VA专用正式profile。
 - `2026-08-19_H3_SPEED_I2VA_Lock_Stock20_Advanced_EXP.json`：I2VA首帧锚点与原音锁定旁路，带三处NOTE。
 - `2026-08-19_H3_SPEED_FL2VA_Remix_Stock20_Advanced_EXP.json`：首尾锚点和0.35源音重混，保存生成音频。
 - `2026-08-19_H3_SPEED_L2VA_Native_Stock20_Advanced_EXP.json`：尾帧锚点与原生生成音频。
 - `2026-08-19_H3_SPEED_RefVideoAudio_Stock20_Advanced_EXP.json`：2秒视频参考及同编号关联音轨。
 - `2026-08-19_H3_SPEED_Hybrid_FirstImageAudio_Stock20_Advanced_EXP.json`：首帧、独立参考图和独立参考音频并用。
-- `2026-08-19_H3_SPEED_T2VA_Turbo8_Advanced_EXP.json`：显式Turbo LoRA、6+2 NFE和专用fail-closed执行档。
+- `2026-08-19_H3_SPEED_T2VA_Turbo8_Advanced_EXP.json`：显式Turbo LoRA、6+2 NFE历史机械执行档；100条
+  Stock20 T2VA profile不能外推给Turbo8。
 
 API 示例见 `tests/fixtures/api/audio_lock_api.json`、
 `tests/fixtures/api/dual_clock_4step_api.json`、`tests/fixtures/api/multirate_exp_api.json` 和

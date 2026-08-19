@@ -621,7 +621,7 @@ def test_parity_examples_lock_reviewed_sampling_and_original_audio_mux():
     assert by_type["CreateVideo"]["inputs"]["images"] == ["23", 0]
 
     workflow = json.loads(
-        (root / "examples" / "workflows" / "2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json")
+        (root / "examples" / "workflows" / "06-face-refine" / "2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json")
         .read_text(encoding="utf-8")
     )
     nodes = {node["id"]: node for node in workflow["nodes"]}

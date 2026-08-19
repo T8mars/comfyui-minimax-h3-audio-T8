@@ -549,6 +549,7 @@ def test_motion_quality_examples_use_eight_step_baseline_and_safe_defaults():
             root
             / "examples"
             / "workflows"
+            / "07-motion-detail"
             / "2026-08-09_H3_Motion_Quality_Advanced_8Step_EXP.json"
         ).read_text(encoding="utf-8")
     )

@@ -305,6 +305,7 @@ def test_dynamic_guidance_api_and_frontend_examples_are_safe_and_complete():
             root
             / "examples"
             / "workflows"
+            / "07-motion-detail"
             / "2026-08-09_H3_Motion_Quality_Dynamic_Guidance_8Step_EXP.json"
         ).read_text(encoding="utf-8")
     )
@@ -357,6 +358,7 @@ def test_extra_tail_api_and_frontend_examples_are_default_off_and_explain_cost()
             root
             / "examples"
             / "workflows"
+            / "07-motion-detail"
             / "2026-08-09_H3_Motion_Quality_Extra_Tail_NFE_8Step_EXP.json"
         ).read_text(encoding="utf-8")
     )

@@ -1,18 +1,32 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import folder_paths
 from comfy_api.latest import io
 
 from .speed_advanced import (
     H3ModalityStableNoise,
+    accumulate_spectrum_dataset,
     build_spectrum_profile,
     build_speed_plan,
     build_speed_source,
+    canonical_json,
     execute_speed_sampling,
+    finalize_spectrum_dataset,
+    prepare_speed_calibration_window,
+)
+from .speed_spectrum_storage import (
+    load_spectrum_dataset_file,
+    save_spectrum_dataset_file,
+    sha256_file,
+    spectrum_dataset_file_fingerprint,
 )
 
 
 CATEGORY = "T8/MiniMax H3/SPEED/Experimental"
 SpeedProfileIO = io.Custom("H3_T8_SPEED_PROFILE")
+SpeedSpectrumDatasetIO = io.Custom("H3_T8_SPEED_SPECTRUM_DATASET")
 SpeedPlanIO = io.Custom("H3_T8_SPEED_PLAN")
 SpeedSourceIO = io.Custom("H3_T8_SPEED_SOURCE")
 MAX_RESOLUTION = 16384
@@ -127,6 +141,297 @@ class MiniMaxH3SPEEDSpectrumHarvesterT8Advanced(io.ComfyNode):
                 max_temporal_samples=max_temporal_samples,
             )
         )
+
+
+class MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced",
+            display_name=(
+                "MiniMax H3 SPEED Spectrum Dataset Accumulate / "
+                "频谱数据集累积 (Advanced)"
+            ),
+            description=(
+                "Accumulates exact per-clip H3 spatial power statistics across ComfyUI "
+                "executions without retaining source or CUDA latents. Duplicate batch IDs "
+                "and exact clip-spectrum repeats fail closed; model, VAE, task and latent "
+                "contracts must remain identical."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Latent.Input(
+                    "video_latent",
+                    tooltip="Separated H3 video LATENT [B,24,T,H,W], never joint AV latent.",
+                ),
+                io.String.Input(
+                    "batch_id",
+                    default="batch_001",
+                    tooltip="A unique stable ID for this actual source batch; repeats are rejected.",
+                ),
+                io.Combo.Input(
+                    "task_family",
+                    options=["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
+                    default="T2VA",
+                ),
+                io.String.Input(
+                    "checkpoint_fingerprint",
+                    default="sha256:replace_with_real_checkpoint_fingerprint",
+                ),
+                io.String.Input(
+                    "vae_fingerprint",
+                    default="sha256:replace_with_real_vae_fingerprint",
+                ),
+                io.Int.Input(
+                    "max_temporal_samples", default=32, min=1, max=512, advanced=True
+                ),
+                SpeedSpectrumDatasetIO.Input("previous_dataset", optional=True),
+                io.String.Input(
+                    "dataset_provenance_json",
+                    default="",
+                    optional=True,
+                    advanced=True,
+                    tooltip=(
+                        "Optional reviewed natural-corpus provenance. Appended after the legacy "
+                        "inputs so existing widget positions remain unchanged."
+                    ),
+                ),
+                io.String.Input(
+                    "source_entry_json",
+                    default="",
+                    optional=True,
+                    advanced=True,
+                    tooltip=(
+                        "Optional manifest-bound source and decoded-window hashes for this batch."
+                    ),
+                ),
+            ],
+            outputs=[
+                SpeedSpectrumDatasetIO.Output("spectrum_dataset"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, video_latent, **kwargs):
+        samples = video_latent.get("samples") if isinstance(video_latent, dict) else None
+        return io.NodeOutput(*accumulate_spectrum_dataset(samples, **kwargs))
+
+
+class MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+            display_name=(
+                "MiniMax H3 SPEED Spectrum Dataset Finalize / "
+                "频谱数据集定稿 (Advanced)"
+            ),
+            description=(
+                "Fits one task/model/VAE-bound H3 SPEED profile from accumulated sufficient "
+                "statistics. Fewer than 100 unique clips or a weak fit remains a research "
+                "probe and cannot authorize the validated delta-optimal Plan mode."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                SpeedSpectrumDatasetIO.Input("spectrum_dataset"),
+                io.String.Input("profile_name", default="h3_dataset_spectrum_v1"),
+                io.Float.Input(
+                    "minimum_r_squared", default=0.80, min=0.0, max=1.0, step=0.01
+                ),
+                io.Int.Input(
+                    "minimum_independent_clips",
+                    default=100,
+                    min=100,
+                    max=1000000,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                SpeedProfileIO.Output("spectrum_profile"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, spectrum_dataset, **kwargs):
+        return io.NodeOutput(*finalize_spectrum_dataset(spectrum_dataset, **kwargs))
+
+
+class MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+            display_name=(
+                "MiniMax H3 SPEED Spectrum Dataset File / "
+                "频谱数据集文件 (Advanced)"
+            ),
+            description=(
+                "Loads or explicitly saves one accumulated spectrum dataset under the "
+                "ComfyUI output directory. Save is atomic, stores no source latent/video, "
+                "requires confirmation and refuses silent overwrite or unsafe paths."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                io.Combo.Input("mode", options=["load", "save"], default="load"),
+                io.String.Input("dataset_name", default="h3_t2va_spectrum_dataset_v1"),
+                io.Boolean.Input("overwrite", default=False),
+                io.Boolean.Input("confirm_write", default=False),
+                SpeedSpectrumDatasetIO.Input("spectrum_dataset", optional=True),
+            ],
+            outputs=[
+                SpeedSpectrumDatasetIO.Output("spectrum_dataset"),
+                io.String.Output("file_path"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        mode,
+        dataset_name,
+        overwrite,
+        confirm_write,
+        spectrum_dataset=None,
+    ):
+        root = Path(folder_paths.get_output_directory()) / "h3_speed_spectrum_datasets"
+        if mode == "load":
+            return io.NodeOutput(
+                *load_spectrum_dataset_file(root=root, dataset_name=dataset_name)
+            )
+        if mode != "save":
+            raise ValueError("mode must be load or save")
+        if not bool(confirm_write):
+            raise ValueError("Saving a spectrum dataset requires confirm_write=true")
+        if spectrum_dataset is None:
+            raise ValueError("save mode requires spectrum_dataset")
+        return io.NodeOutput(
+            *save_spectrum_dataset_file(
+                spectrum_dataset,
+                root=root,
+                dataset_name=dataset_name,
+                overwrite=bool(overwrite),
+            )
+        )
+
+    @classmethod
+    def fingerprint_inputs(cls, mode, dataset_name, **_kwargs):
+        if mode == "save":
+            # Saving is an explicit side effect. Never allow ComfyUI to reuse an older save.
+            return float("nan")
+        if mode != "load":
+            return f"unsupported-mode:{mode}"
+        root = Path(folder_paths.get_output_directory()) / "h3_speed_spectrum_datasets"
+        return spectrum_dataset_file_fingerprint(root=root, dataset_name=dataset_name)
+
+
+class MiniMaxH3SPEEDModelVAEFingerprintT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+            display_name=(
+                "MiniMax H3 SPEED Model + VAE Fingerprint / "
+                "模型与VAE指纹 (Advanced)"
+            ),
+            description=(
+                "Streams the complete selected diffusion checkpoint and video VAE files to "
+                "produce binding SHA-256 fingerprints. It does not load model weights onto "
+                "GPU; first execution can be disk-I/O heavy and ComfyUI may cache unchanged inputs."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Combo.Input(
+                    "checkpoint_name",
+                    options=folder_paths.get_filename_list("diffusion_models"),
+                ),
+                io.Combo.Input(
+                    "video_vae_name", options=folder_paths.get_filename_list("vae")
+                ),
+            ],
+            outputs=[
+                io.String.Output("checkpoint_fingerprint"),
+                io.String.Output("vae_fingerprint"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, checkpoint_name, video_vae_name):
+        checkpoint_path = Path(
+            folder_paths.get_full_path_or_raise("diffusion_models", checkpoint_name)
+        )
+        vae_path = Path(folder_paths.get_full_path_or_raise("vae", video_vae_name))
+        checkpoint_fingerprint = sha256_file(checkpoint_path)
+        vae_fingerprint = sha256_file(vae_path)
+        report = {
+            "schema": "minimax_h3_speed_model_vae_fingerprint_t8_v1",
+            "checkpoint": {
+                "name": checkpoint_name,
+                "bytes": checkpoint_path.stat().st_size,
+                "fingerprint": checkpoint_fingerprint,
+            },
+            "video_vae": {
+                "name": video_vae_name,
+                "bytes": vae_path.stat().st_size,
+                "fingerprint": vae_fingerprint,
+            },
+            "gpu_model_loaded": False,
+            "hash_scope": "complete_file_bytes",
+        }
+        return io.NodeOutput(
+            checkpoint_fingerprint, vae_fingerprint, canonical_json(report)
+        )
+
+
+class MiniMaxH3SPEEDCalibrationWindowT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SPEEDCalibrationWindowT8Advanced",
+            display_name=(
+                "MiniMax H3 SPEED Calibration Window / "
+                "画幅安全标定窗口 (Advanced)"
+            ),
+            description=(
+                "Resamples one strict H3 24fps/17n+5 calibration window and uses "
+                "aspect-preserving center-cover resize. It never stretches source geometry, "
+                "never pads short clips and does not alter the existing Source Media Window."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Image.Input("frames"),
+                io.Float.Input(
+                    "source_fps", default=24.0, min=0.01, max=1000.0, step=0.001
+                ),
+                io.Int.Input("width", default=736, min=32, max=MAX_RESOLUTION, step=32),
+                io.Int.Input("height", default=416, min=32, max=MAX_RESOLUTION, step=32),
+                io.Int.Input("length", default=124, min=5, max=3600, step=17),
+                io.Float.Input(
+                    "start_seconds", default=0.0, min=0.0, max=86400.0, step=0.001
+                ),
+                io.Combo.Input(
+                    "resize_mode", options=["center_cover"], default="center_cover"
+                ),
+            ],
+            outputs=[
+                io.Image.Output("frames"),
+                io.Int.Output("frame_count"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*prepare_speed_calibration_window(**kwargs))
 
 
 class MiniMaxH3SPEEDPlanT8Advanced(io.ComfyNode):
@@ -378,4 +683,9 @@ SPEED_ADVANCED_NODE_CLASSES = [
     MiniMaxH3SPEEDSourceT8Advanced,
     MiniMaxH3SPEEDSamplerT8Advanced,
     MiniMaxH3SPEEDModalityStableNoiseT8Advanced,
+    MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced,
+    MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced,
+    MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced,
+    MiniMaxH3SPEEDModelVAEFingerprintT8Advanced,
+    MiniMaxH3SPEEDCalibrationWindowT8Advanced,
 ]

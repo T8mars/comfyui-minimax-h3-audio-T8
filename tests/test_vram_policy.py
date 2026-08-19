@@ -301,6 +301,7 @@ def test_vram_policy_frontend_workflow_is_link_consistent_and_isolated():
             root
             / "examples"
             / "workflows"
+            / "09-hybrid-model"
             / "2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json"
         ).read_text(encoding="utf-8")
     )

@@ -24,6 +24,7 @@ from h3_audio_t8_pkg.multikeyframe_advanced import (
     VISUAL_NOISE_AUGS_KEY,
     _condition_rows_with_augs,
     _segment_timestep_plan,
+    _target_mask_timestep_rows,
     append_keyframe_plan,
     build_multikeyframe_conditioning,
     native_middle_keyframe_support,
@@ -426,6 +427,53 @@ def test_per_condition_rows_and_timesteps_change_only_the_selected_condition():
         if kind == "cond"
     ]
     assert cond_times == [0.999, 0.95]
+
+
+def test_current_core_target_mask_rows_are_preserved_by_advanced_forward():
+    sigma_video = torch.tensor(0.5)
+    video_mask = torch.tensor(
+        [[[[[1.0, 1.0, 0.5, 0.5], [1.0, 1.0, 0.5, 0.5],
+             [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]]]]
+    ).reshape(1, 1, 1, 4, 4)
+    audio_mask = torch.tensor([[[[1.0, 0.5], [0.0, 1.0]]]])
+    video_time, audio_time, video_rows, audio_rows = _target_mask_timestep_rows(
+        video_mask,
+        audio_mask,
+        sigma_video,
+        0.5,
+        0.25,
+        1,
+        4,
+        4,
+    )
+    expected_video_mask = minimax_model.mask_row_values(video_mask[0, 0], 1, 4, 4)
+    expected_video_rows = (1.0 - expected_video_mask * sigma_video).clamp(
+        max=max(0.5, minimax_model.VISUAL_COND_TIMESTEP)
+    )
+    expected_audio_rows = (1.0 - audio_mask[0, 0].reshape(-1) * 0.75).clamp(
+        max=max(0.25, minimax_model.AUDIO_COND_TIMESTEP)
+    )
+    assert video_time == 0.5
+    assert audio_time == 0.25
+    assert torch.equal(video_rows, expected_video_rows)
+    assert torch.equal(audio_rows, expected_audio_rows)
+
+
+def test_fully_generated_target_masks_keep_the_unmasked_schedule():
+    video_time, audio_time, video_rows, audio_rows = _target_mask_timestep_rows(
+        torch.ones((1, 1, 1, 4, 4)),
+        torch.ones((1, 1, 2, 3)),
+        torch.tensor(0.5),
+        0.5,
+        0.25,
+        1,
+        4,
+        4,
+    )
+    assert video_time == 0.5
+    assert audio_time == 0.25
+    assert video_rows is None
+    assert audio_rows is None
 
 
 def test_uniform_default_condition_rows_match_current_comfyui_core_exactly():

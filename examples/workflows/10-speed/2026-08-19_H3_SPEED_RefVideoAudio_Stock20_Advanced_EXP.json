@@ -1,13 +1,13 @@
 {
-  "id": "9bad8e09-3704-5466-a218-4656a5b03a7f",
+  "id": "db28c0a8-2b5b-5ae1-ae35-3486709b6f5a",
   "revision": 0,
   "last_node_id": 21,
-  "last_link_id": 22,
+  "last_link_id": 21,
   "nodes": [
     {
       "id": 1,
       "type": "UNETLoader",
-      "title": "Stock MiniMax H3 FL2VA model",
+      "title": "Stock MiniMax H3 Ref2VA model",
       "pos": [
         0,
         0
@@ -51,7 +51,7 @@
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "minimax_h3_ref2va_int8_convrot.safetensors",
         "default"
       ]
     },
@@ -146,7 +146,7 @@
           "type": "VAE",
           "links": [
             2,
-            14
+            13
           ]
         }
       ],
@@ -189,7 +189,7 @@
           "type": "VAE",
           "links": [
             3,
-            15
+            14
           ]
         }
       ],
@@ -347,9 +347,9 @@
     {
       "id": 6,
       "type": "MiniMaxH3SPEEDSourceT8Advanced",
-      "title": "Raw I2VA + lock_source stage source",
+      "title": "Raw Ref2VA reference source",
       "pos": [
-        1760,
+        1320,
         0
       ],
       "size": [
@@ -474,7 +474,7 @@
         {
           "name": "drive_audio",
           "type": "AUDIO",
-          "link": 4,
+          "link": null,
           "shape": 7
         },
         {
@@ -486,13 +486,25 @@
         {
           "name": "first_frame",
           "type": "IMAGE",
-          "link": 5,
+          "link": null,
           "shape": 7
         },
         {
           "name": "last_frame",
           "type": "IMAGE",
           "link": null,
+          "shape": 7
+        },
+        {
+          "name": "ref_videos.ref_video_0",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "ref_video_audios.ref_video_audio_0",
+          "type": "AUDIO",
+          "link": 5,
           "shape": 7
         }
       ],
@@ -508,7 +520,7 @@
           "name": "report_json",
           "type": "STRING",
           "links": [
-            22
+            21
           ]
         }
       ],
@@ -517,11 +529,11 @@
         "Node name for S&R": "MiniMaxH3SPEEDSourceT8Advanced"
       },
       "widgets_values": [
-        "Continue naturally from the first frame with coherent subject identity and camera motion. Preserve the supplied source soundtrack exactly; add no speech.",
+        "Use <Video 1> as the motion and visual reference and <Audio 1> as its associated soundtrack reference. Create a new coherent shot; add no speech.",
         124,
-        "I2VA",
-        "lock_source",
-        0.0,
+        "Ref2VA",
+        "native",
+        1.0,
         false,
         0,
         true,
@@ -534,9 +546,9 @@
     {
       "id": 7,
       "type": "MiniMaxH3SPEEDSamplerT8Advanced",
-      "title": "P2 multimodal SPEED execution",
+      "title": "P3 reference SPEED execution",
       "pos": [
-        2200,
+        1760,
         0
       ],
       "size": [
@@ -600,15 +612,13 @@
           "name": "av_latent",
           "type": "LATENT",
           "links": [
-            13
+            12
           ]
         },
         {
           "name": "mux_audio",
           "type": "AUDIO",
-          "links": [
-            17
-          ]
+          "links": null
         },
         {
           "name": "conditioned_prompt",
@@ -624,7 +634,7 @@
           "name": "report_json",
           "type": "STRING",
           "links": [
-            21
+            20
           ]
         }
       ],
@@ -634,7 +644,7 @@
       },
       "widgets_values": [
         3.0,
-        2608192001,
+        2608193002,
         "fixed",
         "multimodal_research_exp",
         64
@@ -643,7 +653,7 @@
     {
       "id": 8,
       "type": "LoadVideo",
-      "title": "Shared exact-24fps source video",
+      "title": "Reference/source media",
       "pos": [
         0,
         1500
@@ -679,13 +689,13 @@
         "Node name for S&R": "LoadVideo"
       },
       "widgets_values": [
-        "replace_with_exact_24fps_source.mp4"
+        "replace_with_reference_video.mp4"
       ]
     },
     {
       "id": 9,
       "type": "Video Slice",
-      "title": "Bound source decoding to the 124-frame target window",
+      "title": "Official-minimum two-second video reference",
       "pos": [
         440,
         0
@@ -743,14 +753,14 @@
       },
       "widgets_values": [
         0.0,
-        5.166666666666667,
+        2.0,
         true
       ]
     },
     {
       "id": 10,
       "type": "GetVideoComponents",
-      "title": "Shared source frames and 32kHz soundtrack",
+      "title": "48-frame reference and its soundtrack",
       "pos": [
         880,
         0
@@ -774,15 +784,15 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            11,
-            12
+            4,
+            11
           ]
         },
         {
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            4
+            5
           ]
         },
         {
@@ -804,18 +814,63 @@
     },
     {
       "id": 11,
+      "type": "LoadImage",
+      "title": "Independent visual reference",
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_reference_image.png"
+      ]
+    },
+    {
+      "id": 12,
       "type": "ImageFromBatch",
-      "title": "Exact first frame",
+      "title": "Hybrid first-frame anchor",
       "pos": [
         1320,
-        0
+        300
       ],
       "size": [
         390,
         194
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -844,9 +899,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            5
-          ]
+          "links": null
         }
       ],
       "properties": {
@@ -859,65 +912,11 @@
       ]
     },
     {
-      "id": 12,
-      "type": "ImageFromBatch",
-      "title": "Exact last frame",
-      "pos": [
-        1320,
-        300
-      ],
-      "size": [
-        390,
-        194
-      ],
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 12
-        },
-        {
-          "name": "batch_index",
-          "type": "INT",
-          "widget": {
-            "name": "batch_index"
-          },
-          "link": null
-        },
-        {
-          "name": "length",
-          "type": "INT",
-          "widget": {
-            "name": "length"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "Node name for S&R": "ImageFromBatch"
-      },
-      "widgets_values": [
-        -1,
-        1
-      ]
-    },
-    {
       "id": 13,
       "type": "MiniMaxH3AVDecodeT8",
       "title": "Decode generated H3 video and audio",
       "pos": [
-        2640,
+        2200,
         0
       ],
       "size": [
@@ -931,17 +930,17 @@
         {
           "name": "av_latent",
           "type": "LATENT",
-          "link": 13
+          "link": 12
         },
         {
           "name": "video_vae",
           "type": "VAE",
-          "link": 14
+          "link": 13
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 15
+          "link": 14
         }
       ],
       "outputs": [
@@ -949,13 +948,15 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            16
+            15
           ]
         },
         {
           "name": "generated_audio",
           "type": "AUDIO",
-          "links": null
+          "links": [
+            16
+          ]
         },
         {
           "name": "video_latent",
@@ -977,9 +978,9 @@
     {
       "id": 14,
       "type": "MiniMaxH3OutputTrimT8",
-      "title": "Exact A/V trim; audio=locked_source",
+      "title": "Exact 124-frame A/V trim",
       "pos": [
-        3080,
+        2640,
         0
       ],
       "size": [
@@ -993,7 +994,7 @@
         {
           "name": "frames",
           "type": "IMAGE",
-          "link": 16
+          "link": 15
         },
         {
           "name": "start_seconds",
@@ -1022,7 +1023,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 17,
+          "link": 16,
           "shape": 7
         }
       ],
@@ -1031,14 +1032,14 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            18
+            17
           ]
         },
         {
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            19
+            18
           ]
         },
         {
@@ -1062,7 +1063,7 @@
       "type": "CreateVideo",
       "title": "Create exact 24fps review video",
       "pos": [
-        3520,
+        3080,
         0
       ],
       "size": [
@@ -1076,7 +1077,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 18
+          "link": 17
         },
         {
           "name": "fps",
@@ -1089,7 +1090,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 19,
+          "link": 18,
           "shape": 7
         },
         {
@@ -1106,7 +1107,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            20
+            19
           ]
         }
       ],
@@ -1122,9 +1123,9 @@
     {
       "id": 16,
       "type": "SaveVideo",
-      "title": "Save P2 SPEED result",
+      "title": "Save P3 SPEED result",
       "pos": [
-        3960,
+        3520,
         0
       ],
       "size": [
@@ -1138,7 +1139,7 @@
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 20
+          "link": 19
         },
         {
           "name": "filename_prefix",
@@ -1174,7 +1175,7 @@
         "Node name for S&R": "SaveVideo"
       },
       "widgets_values": [
-        "MiniMaxH3/SPEED_P2_multimodal_v1/i2va_lock_source",
+        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native",
         "mp4"
       ]
     },
@@ -1183,7 +1184,7 @@
       "type": "SaveText",
       "title": "Save SPEED execution report",
       "pos": [
-        2640,
+        2200,
         300
       ],
       "size": [
@@ -1192,6 +1193,60 @@
       ],
       "flags": {},
       "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 20
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveText"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native_speed_report",
+        "json"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "SaveText",
+      "title": "Save resolved reference report",
+      "pos": [
+        1760,
+        300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -1228,61 +1283,7 @@
         "Node name for S&R": "SaveText"
       },
       "widgets_values": [
-        "MiniMaxH3/SPEED_P2_multimodal_v1/i2va_lock_source_speed_report",
-        "json"
-      ]
-    },
-    {
-      "id": 18,
-      "type": "SaveText",
-      "title": "Save resolved task/source report",
-      "pos": [
-        2200,
-        300
-      ],
-      "size": [
-        390,
-        194
-      ],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "link": 22
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "COMBO",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "Node name for S&R": "SaveText"
-      },
-      "widgets_values": [
-        "MiniMaxH3/SPEED_P2_multimodal_v1/i2va_lock_source_source_report",
+        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native_source_report",
         "json"
       ]
     },
@@ -1307,7 +1308,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## SPEED公共边界\n\n这是Advanced/EXP整链采样，不会替换原采样节点。默认两级`0.5→1.0`、Stock20时为14+6 NFE；Turbo8时为6+2 NFE，总NFE不额外增加。每级都会重建H3 AV latent、PackedLayout和条件。当前仅机械跑通，未证明质量或加速收益。"
+          "## 历史机械示例，旧计划已否决\n\n此工作流仍使用`0.5→1.0 / manual 0.85 / 14粗+6全分辨率`，只保留用于RefVideo+Audio的机械合同检查。三路线盲评已否决该手工计划；正式100条profile只绑定T2VA，不能套用到本工作流。不得作为推荐加速、画质或16GB安全方案。"
       ]
     },
     {
@@ -1331,7 +1332,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## I2VA + lock_source\n\n替换输入视频；首帧作为锚点，原音频锁定并在最终保存时旁路生成音频。实测首帧decoded correlation 0.9985，锁定音轨经AAC后waveform correlation 0.9831。"
+        "## Ref2VA：视频与同编号音轨\n\n示例截取2秒/48帧参考视频，并把它的音频连到`ref_video_audios.ref_video_audio_0`；编号必须与`ref_video_0`一致。"
       ]
     },
     {
@@ -1355,7 +1356,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## 参数与检查\n\n1024×576、124帧、20步、shift 12/3。检查首帧、124帧、32k双声道和完整原声；本机最低显存余量约455MiB，低于512MiB门槛。"
+        "## 成本与检查\n\n固定参考token让本机耗时约417秒，明显抵消SPEED收益。检查动作/画面/声音参考遵循；机械跑通不代表比全分辨率更快或更好。"
       ]
     }
   ],
@@ -1387,18 +1388,18 @@
     [
       4,
       10,
-      1,
+      0,
       6,
-      15,
-      "AUDIO"
+      19,
+      "IMAGE"
     ],
     [
       5,
-      11,
-      0,
+      10,
+      1,
       6,
-      17,
-      "IMAGE"
+      20,
+      "AUDIO"
     ],
     [
       6,
@@ -1444,20 +1445,12 @@
       11,
       10,
       0,
-      11,
-      0,
-      "IMAGE"
-    ],
-    [
-      12,
-      10,
-      0,
       12,
       0,
       "IMAGE"
     ],
     [
-      13,
+      12,
       7,
       0,
       13,
@@ -1465,7 +1458,7 @@
       "LATENT"
     ],
     [
-      14,
+      13,
       3,
       0,
       13,
@@ -1473,7 +1466,7 @@
       "VAE"
     ],
     [
-      15,
+      14,
       4,
       0,
       13,
@@ -1481,7 +1474,7 @@
       "VAE"
     ],
     [
-      16,
+      15,
       13,
       0,
       14,
@@ -1489,15 +1482,15 @@
       "IMAGE"
     ],
     [
-      17,
-      7,
+      16,
+      13,
       1,
       14,
       4,
       "AUDIO"
     ],
     [
-      18,
+      17,
       14,
       0,
       15,
@@ -1505,7 +1498,7 @@
       "IMAGE"
     ],
     [
-      19,
+      18,
       14,
       1,
       15,
@@ -1513,7 +1506,7 @@
       "AUDIO"
     ],
     [
-      20,
+      19,
       15,
       0,
       16,
@@ -1521,7 +1514,7 @@
       "VIDEO"
     ],
     [
-      21,
+      20,
       7,
       4,
       17,
@@ -1529,7 +1522,7 @@
       "STRING"
     ],
     [
-      22,
+      21,
       6,
       1,
       18,
@@ -1547,7 +1540,7 @@
         120
       ]
     },
-    "workflow_title": "I2VA锁定原声"
+    "workflow_title": "Ref2VA视频和同编号音轨"
   },
   "version": 0.4
 }

@@ -14,22 +14,44 @@
     "repaired_project_workflows": 40,
     "repaired_user_workflows": 40,
     "strict_json_scan": "63 project plus 60 user frontend workflows",
-    "verification": "610 project tests, Ruff, compileall, idempotent live-schema rescan, git diff check and stable sampling hash passed",
+    "verification": "718 project tests, changed-scope Ruff, compileall, 127 non-artifact JSON parses, 125-node registration, stable sampling hash and 71-workflow project/user relative-path/SHA parity across 12 categories passed",
     "stable_node_schema_changed": false,
     "stable_sampling_changed": false
   },
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 70,
-    "installed_user_workflows": 70
+    "project_workflows": 71,
+    "installed_user_workflows": 71
+  },
+  "frontend_workflow_library": {
+    "root_index": "examples/workflows/README.md",
+    "category_count": 12,
+    "layout": "one primary purpose directory per importable frontend workflow; no flat JSON duplicates",
+    "category_readme_contract": "each category documents purpose, validated outcomes, usage guidance and limitations",
+    "installed_user_root": "ComfyUI/user/default/workflows/MiniMax H3 T8",
+    "sync_contract": "project and installed user JSON copies match by relative path and SHA-256",
+    "categories": [
+      "01-basic-generation",
+      "02-audio-control",
+      "03-image-video-edit",
+      "04-long-video",
+      "05-speech-dialogue",
+      "06-face-refine",
+      "07-motion-detail",
+      "08-multi-keyframe",
+      "09-hybrid-model",
+      "10-speed",
+      "11-studio-production",
+      "12-system-memory"
+    ]
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
-    "native": "examples/workflows/2026-08-06_H3_Turbo_Stable_4V4A.json",
-    "lock_source": "examples/workflows/2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json",
-    "remix_source": "examples/workflows/2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json",
-    "reference_only": "examples/workflows/2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json"
+    "native": "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json",
+    "lock_source": "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json",
+    "remix_source": "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json",
+    "reference_only": "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json"
   },
   "task_modes": ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
   "nodes": [
@@ -152,7 +174,12 @@
     "MiniMaxH3SPEEDPlanT8Advanced",
     "MiniMaxH3SPEEDSourceT8Advanced",
     "MiniMaxH3SPEEDSamplerT8Advanced",
-    "MiniMaxH3SPEEDModalityStableNoiseT8Advanced"
+    "MiniMaxH3SPEEDModalityStableNoiseT8Advanced",
+    "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced",
+    "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+    "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+    "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+    "MiniMaxH3SPEEDCalibrationWindowT8Advanced"
   ],
   "experimental_speed_spatial_progressive": {
     "category": "T8/MiniMax H3/SPEED/Experimental",
@@ -161,7 +188,12 @@
       "MiniMaxH3SPEEDPlanT8Advanced",
       "MiniMaxH3SPEEDSourceT8Advanced",
       "MiniMaxH3SPEEDSamplerT8Advanced",
-      "MiniMaxH3SPEEDModalityStableNoiseT8Advanced"
+      "MiniMaxH3SPEEDModalityStableNoiseT8Advanced",
+      "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced",
+      "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+      "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+      "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+      "MiniMaxH3SPEEDCalibrationWindowT8Advanced"
     ],
     "official_basis": {
       "paper": "SPEED arXiv:2605.18736v3",
@@ -187,9 +219,15 @@
     "spectrum_contract": [
       "no WAN/FLUX A or beta is reused for H3",
       "the Harvester fits a radial FFT power law from separated H3 video latents and records checkpoint/VAE fingerprints",
+      "the append-only Dataset Accumulate node stores only one CPU float64 HxW sufficient-statistics grid, rejects duplicate batch IDs and exact per-clip power hashes, and fails on task/model/VAE/grid/settings mismatches",
+      "the Dataset Finalize node fits from the aggregate mean rather than averaging per-batch A/beta estimates; fewer than 100 actual unique clip-power entries or a weak R-squared fit remains research_probe_only",
+      "the Dataset File node saves one atomic safetensors sufficient-statistics file under a bounded local directory, requires explicit overwrite confirmation, and never stores source video or source latent tensors",
+      "the Model/VAE Fingerprint node streams full-file SHA-256 values for the selected local checkpoint and video VAE without loading a second GPU model",
+      "the Calibration Window node strictly resamples to 24fps/17n+5 and uses center-cover resize, preserving source geometry while reporting edge crop; it does not modify the legacy Source Media Window",
+      "the standalone manifest builder consumes only strict signature-mode curation reports, confines source paths to the declared ComfyUI input root, requires complete file hashes and refuses a formal minimum below 100 clips",
       "a single clip is research_probe_only; validated delta-optimal status requires at least 100 actual latent batch entries, a declared independent-dataset provenance no larger than that batch, checkpoint/VAE fingerprints, and the configured R-squared threshold",
-      "manual transition sigmas remain the default until H3 dataset calibration is completed",
-      "delta-optimal execution binds task family and recorded checkpoint/VAE fingerprints to the runtime Stage Source and fails on mismatches"
+      "manual and dataset-calibrated transition plans both remain explicit EXP choices; neither is a stable default after the manual quality failure and calibrated performance/memory failure",
+      "delta-optimal execution binds task family, recorded checkpoint/VAE fingerprints and the exact H3 video-latent C/T/H/W grid to the runtime Stage Source and fails on mismatches"
     ],
     "memory_and_conflict_contract": [
       "DCT runs in bounded B*C*T chunks and keeps only a bounded CPU basis cache which is cleared after each transition and in finally",
@@ -212,27 +250,44 @@
         "one real 1024x576x124 Turbo8 T2VA run with the explicit 208-patch LoRA route; the schedule preserved eight total NFE as six coarse plus two full-resolution calls and passed mechanical output checks",
         "same-input same-seed same-20-NFE full-resolution versus SPEED controls for T2VA, FL2VA remix_source and Ref2VA image completed; exact-profile end-to-end speedups were 2.179x, 2.209x and 2.299x respectively",
         "all six final comparison videos passed three decoder-error-fatal FFmpeg passes, exact 124-frame/24fps checks, finite 32kHz-stereo audio and one-frame A/V alignment; one older T2VA SPEED file exposed as corrupt by the strengthened gate was discarded and regenerated cleanly",
-        "a three-pair anonymous full-video/audio review package and machine-readable proxy report were generated; proxy differences are explicitly not treated as quality or reference-adherence verdicts",
+        "the user completed the three-pair blind review: all overall, motion and audio votes preferred the full-resolution baseline; Ref2VA reference adherence also preferred baseline; FL2VA SPEED A and Ref2VA SPEED B were explicitly reported as visibly broken",
+        "the blind-review analyzer validates the review/reveal schemas and A/B mapping, preserves the submitted JSON SHA-256, treats missing votes only as explicit ties, and denies the current three fixed SPEED profiles as stable defaults",
+        "all three rejected executions shared a hand-set 14-coarse plus 6-full-resolution schedule with a 0.85 transition threshold; this is recorded as a common mechanism suspect rather than a proven cause",
+        "cross-batch dataset accumulation, strict aggregate finalization, atomic sufficient-statistics persistence, content-bound load-cache invalidation, uncached explicit save and full-file model/VAE fingerprint contracts passed focused CPU regression",
+        "the aspect-safe Calibration Window passed live horizontal and portrait center-cover probes without anisotropic stretch; the corrupt portrait source was excluded after strict FFmpeg CABAC failure",
+        "an isolated two-prompt clean-source probe persisted and reloaded two entries; complete-file cache invalidation prevented stale one-entry reuse, while the two-clip A=23.3507002 beta=2.0766619 R-squared=0.9946004 result remained research_probe_only",
+        "a strict five-root H3 output scan inspected 1275 files and left only 3 provisional candidates, 244 manual-review files and 1028 rejected files, proving the existing output inventory cannot honestly supply 100 independent calibration clips",
+        "a privacy-minimized embedded-provenance rescan found 452 complete H3 contracts, 51 partial contracts and 768 missing prompt tags; raw prompts/workflows are never emitted, and derived MultiKeyframe/sigma/repair matrices remain excluded from a formal Stock calibration claim",
+        "nine provenance-bound I2VA Stock20 controls from three distinct first frames by three seeds accumulated sequentially through the H3 video VAE; aggregate A=29.5579671 beta=2.3662343 R-squared=0.9971147 remained research_probe_only because 9 is below 100",
+        "a strict scan of 358 ComfyUI input videos left 19 provisional candidates, 15 manual-review files and 324 rejected files; all 19 candidates encoded through the same H3 video VAE and fitted A=26.5381849 beta=2.1534428 R-squared=0.9955738 on [19,24,37,26,46], but remained a local-corpus proxy research probe rather than a formal 100-clip H3 dataset",
+        "a pinned Apache-2.0 Vchitect/Vchitect_T2V_DataVerse corpus at revision e068be25f4d06a837992a1e9096fd00105c83f2c supplied 100 reviewed independent natural-video windows; exact pre-trim, strict decode, hash and near-duplicate screening plus a 10x10 human diversity review completed before sequential encoding through the exact H3 video VAE",
+        "the formal 100-entry T2VA dataset on video-latent grid [24,37,26,46] finalized with A=29.96418670445687 beta=2.3183720623777164 R-squared=0.9951511913433466 and validated_for_delta_optimal=true; the dataset file SHA-256 is C219A739BDD9C17EDAA53EF1022CCDB6985B72B237AF2A44DE19AB34047BF43E",
+        "one predeclared same-input calibrated T2VA Stock20 comparison completed: full resolution was 243.203s at 12504.6MiB peak, while the fitted 13-NFE 384x224 plus 7-NFE 736x416 SPEED plan was 248.688s at 16175.8MiB peak and about 203.7MiB headroom; it was slower, added about 3671.2MiB peak usage and failed the 512MiB gate",
+        "the calibrated SPEED source MP4 failed three decoder-error-fatal passes on one corrupt decoded frame; the original remains failure evidence and a non-overwriting re-encoded derivative exists only for optional blind inspection",
+        "delta-optimal profile fingerprints now normalize syntactically valid SHA-256 values case-insensitively while preserving strict mismatch rejection, closing a real lowercase-profile versus uppercase-runtime false mismatch",
         "fail-closed tests for Transformer wrappers/callbacks/patches, DiT block replacements, post-CFG/model wrappers and LongVideo/MultiKeyframe scoped MODEL patches",
-        "664 project tests, full Ruff, compileall, 126 non-artifact JSON parses, stable sampling hash and project/user SHA parity for all 70 frontend workflows passed"
+        "the T2VA frontend workflow now binds the formal 100-clip dataset, exact full model/VAE fingerprints and delta-optimal plan with three denial/usage notes; the other multimodal and Turbo SPEED workflows are explicitly marked as historical mechanical examples rather than recommended profiles, and all 10 project/user SPEED copies have exact SHA parity",
+        "718 project tests, changed-scope Ruff, compileall, 125-node registration and stable sampling hash passed against ComfyUI 187eda8ef5e588c6a5765cad53e482765edae052"
       ],
       "pending": [
-        "human review of the prepared three-pair same-input full-resolution versus SPEED blind package for quality, motion, audio and Ref2VA adherence",
-        "warm repeated-run cleanup and the 512MiB 16GB minimum-headroom gate; controlled P2/P3 cases retained only about 272-455MiB and Turbo8 retained about 122MiB",
-        "human audio listening/non-inferiority, semantic reference adherence and event/lip synchronization",
-        "additional same-input baselines for I2VA, L2VA, reference-video/audio and Hybrid if route-specific speed or quality claims are desired beyond the three representative controls",
-        "mask-heavy source repaint, higher resolutions, longer reference video, repeated warm cleanup and other GPUs"
+        "do not expand the current calibrated implementation to I2VA, FL2VA, L2VA, Ref2VA or Hybrid unless the stage-transition architecture is materially revised and a new single T2VA control first passes speed, decode, 512MiB headroom, quality and audio gates",
+        "human audio listening and optional blind quality inspection of the repaired derivative may inform research, but cannot overturn the measured speed, peak-memory and original-bitstream failures",
+        "any future route-specific corpus must independently bind its own task/model/VAE/grid and repeat the one-pair stop/go gate; the completed T2VA corpus must not be silently reused"
       ]
     },
     "claims": {
       "quality_validated": false,
+      "quality_noninferiority_result": "failed_for_all_three_fixed_manual_profiles",
+      "stable_default_or_auto_enable": false,
       "speedup_validated": false,
       "representative_exact_profile_speedup_validated": true,
+      "formal_t2va_dataset_profile_validated": true,
+      "calibrated_t2va_generation_gate": "failed_speed_memory_and_original_strict_decode",
       "memory_safe_claim": false,
       "audio_noninferiority_validated": false,
       "gpu_generation_completed": true
     },
-    "status": "clean-room official math plus real T2VA, I2VA, FL2VA, L2VA, Ref2VA, Hybrid and Turbo8 representative GPU executions completed mechanically; all strict outputs passed, while quality, actual speedup, audio/reference non-inferiority and the 512MiB 16GB safety gate remain unpassed"
+    "status": "clean-room official math and representative task routes execute mechanically, but the manual 14+6 schedule failed blind quality and the formal 100-clip calibrated T2VA schedule was slower, used about 3.67GiB more peak VRAM, fell below the 512MiB gate and emitted an original MP4 with one corrupt decoded frame; SPEED remains EXP/research only and is denied as a stable accelerator or memory-safe feature"
   },
   "latent_upscale_by_32": {
     "category": "T8/MiniMax H3/Latent",
@@ -381,8 +436,8 @@
     "examples": [
       "tests/fixtures/api/multiface_sam31_2person_advanced_api.json",
       "tests/fixtures/api/multiface_sam31_3person_advanced_api.json",
-      "examples/workflows/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
-      "examples/workflows/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
+      "examples/workflows/06-face-refine/2026-08-17_H3_SAM31_2Person_Face_Refine_Advanced_EXP.json",
+      "examples/workflows/06-face-refine/2026-08-17_H3_SAM31_3Person_Face_Refine_Advanced_EXP.json"
     ],
     "validated": [
       "a real 22-frame four-person group probe used the visible-face SAM prompt to keep three repairable color tracks continuous while omitting the back-facing person",
@@ -607,7 +662,7 @@
       "cross-platform filesystem behavior, cascading dependent-segment regeneration, multi-seed quality and blind listening remain unvalidated"
     ],
     "api_example": "tests/fixtures/api/selective_repair_execution_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_Selective_Repair_Execution_Advanced.json",
+    "frontend_workflow": "examples/workflows/11-studio-production/2026-08-13_H3_Selective_Repair_Execution_Advanced.json",
     "status": "implemented Advanced non-destructive overlay executor; 14-segment/60-second six-point forced-crash recovery, exact-namespace orphan cleanup and one real H3 repair passed mechanical contracts, while outgoing context continuity remains unresolved"
   },
   "experimental_scheduled_drive_audio_injection_advanced": {
@@ -633,7 +688,7 @@
       "baseline/treatment peak device use 15554/15409MiB in one warm pair; this is not a 512MiB safety-margin matrix"
     ],
     "api_example": "tests/fixtures/api/scheduled_audio_injection_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json",
+    "frontend_workflow": "examples/workflows/02-audio-control/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json",
     "status": "implemented as default-off EXP; the first real A/B rejected an unwanted-tail-speech suppression claim"
   },
   "experimental_av_decode_safety_advanced": {
@@ -661,7 +716,7 @@
       "three 736x416 eight-tile source-reconstruction A/B cases all rejected the direct global-spatial substitution: mean source SSIM changed by -0.0828, PSNR by -1.141dB, and no x/y seam-ratio case improved"
     ],
     "api_example": "tests/fixtures/api/av_decode_safety_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_AV_Decode_Safety_Advanced.json",
+    "frontend_workflow": "examples/workflows/11-studio-production/2026-08-13_H3_AV_Decode_Safety_Advanced.json",
     "status": "implemented Advanced safety gate with source/behavior detection for H3 internal tiling; current >256px decode remains high-risk, and the first direct global-spatial coordinate remedy was empirically rejected rather than merged"
   },
   "experimental_context_ir_provider_advanced": {
@@ -684,7 +739,7 @@
       "sampled-frame analysis is not full video understanding and transcript input is not full music/SFX understanding"
     ],
     "api_example": "tests/fixtures/api/context_ir_provider_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_Context_IR_Provider_Advanced.json",
+    "frontend_workflow": "examples/workflows/11-studio-production/2026-08-13_H3_Context_IR_Provider_Advanced.json",
     "status": "implemented Advanced provider adapter with privacy and control-authority tests; no provider quality or cross-provider claim"
   },
   "experimental_reel_delivery_advanced": {
@@ -730,7 +785,7 @@
       "Ubuntu 24.04.4 WSL2 with Linux FFmpeg 7.0.2 and PyAV 18.1.0 on ext4 /tmp composed two H.264/AAC clips plus one FLAC lane to exact 66 frames and 132000 logical samples; repeat phase hashes and mtimes plus final SHA matched, sources were unchanged, no temp survived, POSIX lock contention was rejected and the lock was reacquired after holder exit"
     ],
     "api_example": "tests/fixtures/api/reel_delivery_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_Reel_Delivery_Advanced.json",
+    "frontend_workflow": "examples/workflows/11-studio-production/2026-08-13_H3_Reel_Delivery_Advanced.json",
     "status": "implemented Advanced file-level delivery; bounded Windows/NTFS scale, external-kill recovery, synthetic codec diversity, exact AAC logical timing, real-H3 256/736px and derived-1920x1088 gates plus one low-resolution Ubuntu WSL2/ext4 Linux route passed; bare-metal Linux, macOS and high-resolution non-Windows behavior remain pending"
   },
   "experimental_trajectory_probe_advanced": {
@@ -770,7 +825,7 @@
       "any non-empty patches_replace wrapper is refused because hidden per-execution state cannot be proven resumable"
     ],
     "api_example": "tests/fixtures/api/trajectory_probe_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json",
+    "frontend_workflow": "examples/workflows/12-system-memory/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json",
     "status": "Trajectory v2 direct-transport numerical, 124/362-frame, disk-budget and 124-frame three-cold/three-warm repeat gates passed for the exact local profile and were rechecked on current ddbaa875; speed benefit, restart resume, wrappers, other samplers, cross-GPU and universal 16GiB safety remain denied or unverified"
   },
   "experimental_dialogue_safe_audio": {
@@ -818,8 +873,8 @@
       "tests/fixtures/api/dialogue_timed_bed_lock_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/2026-08-10_H3_Dialogue_Safe_Master_EXP.json",
-      "examples/workflows/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json"
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Dialogue_Safe_Master_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json"
     ],
     "scientific_limits": [
       "No source separation is performed; an already mixed H3 master cannot be safely repaired by these nodes alone.",
@@ -943,7 +998,7 @@
     ],
     "audio_strategies": ["generate_and_discard", "lock_silence"],
     "total_reference_picture_limit": 9,
-    "frontend_workflow": "examples/workflows/2026-08-07_H3_Still_Edit_22Frames_EXP.json",
+    "frontend_workflow": "examples/workflows/03-image-video-edit/2026-08-07_H3_Still_Edit_22Frames_EXP.json",
     "status": "experimental semantic reference editing; not mask-based pixel editing",
     "validated_probe": {
       "checkpoint": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
@@ -978,11 +1033,11 @@
     "audio_context_strategies": ["video_and_audio", "video_only"],
     "continuation_rule": "non-final output reaches sampled tail; exact hidden-tail trim only on final segment",
     "segment_output": "ComfyUI core CreateVideo -> SaveVideo; avoids the tested VHS apad/-shortest audio underrun",
-    "frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json",
-    "accepted_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json",
-    "auto_resume_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json",
-    "background_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Background_22F_EXP.json",
-    "scene_plus_identity_background_frontend_workflow": "examples/workflows/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
+    "frontend_workflow": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_22F_EXP.json",
+    "accepted_frontend_workflow": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json",
+    "auto_resume_frontend_workflow": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json",
+    "background_frontend_workflow": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Background_22F_EXP.json",
+    "scene_plus_identity_background_frontend_workflow": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Background_22F_ScenePlusIdentity_EXP.json",
     "api_workflow": "tests/fixtures/api/long_video_segment_api.json",
     "candidate_accept_api_workflow": "tests/fixtures/api/long_video_candidate_accept_api.json",
     "compose_api_workflow": "tests/fixtures/api/long_video_compose_api.json",
@@ -1318,18 +1373,18 @@
       "tests/fixtures/api/speech_joint_dialogue_exp_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/2026-08-10_H3_Speech_Described_Stock20_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_Reference_Clone_Stock20_EXP.json",
-      "examples/workflows/2026-08-09_H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_Performance_ADR_Stock20_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_LongForm_Resume_Stock20_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_LongForm_Compose_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Save_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Load_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_Voice_Library_Delete_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_VRAM_Preflight_EXP.json",
-      "examples/workflows/2026-08-10_H3_Speech_LongForm_Control_EXP.json",
-      "examples/workflows/2026-08-09_H3_Speech_Joint_Dialogue_Stock20_EXP.json"
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Described_Stock20_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Reference_Clone_Stock20_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-09_H3_Speech_Dialogue_Two_Speaker_Stock20_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Performance_ADR_Stock20_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_LongForm_Resume_Stock20_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_LongForm_Compose_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Voice_Library_Save_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Voice_Library_Load_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_Voice_Library_Delete_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_VRAM_Preflight_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-10_H3_Speech_LongForm_Control_EXP.json",
+      "examples/workflows/05-speech-dialogue/2026-08-09_H3_Speech_Joint_Dialogue_Stock20_EXP.json"
     ],
     "validation_report": "docs/SPEECH_VALIDATION_REPORT.md",
     "validated_real_probe": {
@@ -1396,7 +1451,7 @@
     },
     "compatibility": "all prior 48 node IDs, ordering and defaults are unchanged; the three Source AV EXP nodes are appended",
     "api_example": "tests/fixtures/api/source_video_repaint_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/03-image-video-edit/2026-08-09_H3_Source_Video_Repaint_Stock20_EXP.json",
     "validated": [
       "CPU tensor contract, temporal inverse, dtype normalization, explicit audio trim/pad and input immutability",
       "noise-mask and metadata preservation",
@@ -1460,7 +1515,7 @@
     },
     "examples": {
       "api": "tests/fixtures/api/multikeyframe_advanced_api.json",
-      "frontend": "examples/workflows/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json"
+      "frontend": "examples/workflows/08-multi-keyframe/2026-08-09_H3_MultiKeyframe_Advanced_EXP.json"
     },
     "validation_report": "docs/MULTIKEYFRAME_ADVANCED_VALIDATION.md",
     "validated_real_probe": {
@@ -1507,7 +1562,7 @@
       "current ComfyUI H3 payload exposes one global value rather than a separate value per reference"
     ],
     "api_example": "tests/fixtures/api/ref2va_visual_reference_strength_exp_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json",
+    "frontend_workflow": "examples/workflows/03-image-video-edit/2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-10",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.31.0 at cbbc9dab1; DynamicVRAM",
@@ -1568,16 +1623,16 @@
       "no 16GiB memory_safe or never-OOM claim before the 512MiB whole-device headroom and repeat-run gates pass"
     ],
     "api_example": "tests/fixtures/api/hybrid_model_advanced_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
     "api_examples": [
       "tests/fixtures/api/hybrid_model_advanced_api.json",
       "tests/fixtures/api/hybrid_model_audio_reference_api.json",
       "tests/fixtures/api/hybrid_model_mixed_reference_api.json"
     ],
     "frontend_workflows": [
-      "examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
-      "examples/workflows/2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json",
-      "examples/workflows/2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
+      "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json",
+      "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json",
+      "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
     ],
     "matrix_tool": {
       "path": "tools/run_hybrid_model_matrix.py",
@@ -1631,7 +1686,7 @@
       "a real process kill can still leave a stale maintenance lock; explicit recovery archives only a sufficiently old lock whose owner is not proven alive"
     ],
     "api_example": "tests/fixtures/api/hybrid_artifact_maintenance_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json",
+    "frontend_workflow": "examples/workflows/09-hybrid-model/2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json",
     "status": "implemented with inspect, quarantine, idempotent replay, restore, tampered-journal refusal, a real subprocess kill between pair moves, stale-lock recovery and stale build-residue rebuild tests; remains Advanced/Experimental"
   },
   "experimental_hybrid_compatibility_audit": {
@@ -1664,7 +1719,7 @@
       "AdaLN-overlapping LoRA remains blocked until a controlled quality and numerical matrix calibrates that exact LoRA/base/artifact combination"
     ],
     "api_example": "tests/fixtures/api/hybrid_compatibility_audit_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; isolated GPU service with this plugin, T8 H3 Block Cache and KJNodes",
@@ -1750,7 +1805,7 @@
       "the validated 4GiB starting point is scoped to one exact 16GiB Hybrid Stock20 workflow; memory_safe and never-OOM remain false outside that scope"
     ],
     "api_example": "tests/fixtures/api/hybrid_model_vbar_headroom_api.json",
-    "frontend_workflow": "examples/workflows/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
+    "frontend_workflow": "examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json",
     "validated_real_probe": {
       "date": "2026-08-12",
       "environment": "RTX 4060 Ti 16GiB; ComfyUI cbbc9dab1; comfy-aimdo 0.4.13; DynamicVRAM explicitly enabled",

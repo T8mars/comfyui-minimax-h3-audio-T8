@@ -13,9 +13,27 @@ from tools.repair_frontend_workflow_order import node_needs_repair, repair_workf
 
 def test_all_frontend_workflows_have_publication_date_prefix():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
-    paths = sorted(root.glob("*.json"))
+    paths = sorted(root.rglob("*.json"))
+    categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 70
+    assert len(paths) == 71
+    assert [path.name for path in categories] == [
+        "01-basic-generation",
+        "02-audio-control",
+        "03-image-video-edit",
+        "04-long-video",
+        "05-speech-dialogue",
+        "06-face-refine",
+        "07-motion-detail",
+        "08-multi-keyframe",
+        "09-hybrid-model",
+        "10-speed",
+        "11-studio-production",
+        "12-system-memory",
+    ]
+    assert (root / "README.md").is_file()
+    assert all((category / "README.md").is_file() for category in categories)
+    assert list(root.glob("*.json")) == []
     assert [path.name for path in paths if not publication_name.fullmatch(path.name)] == []
 
 
@@ -217,7 +235,7 @@ def test_all_t8_frontend_workflows_match_current_schema_order():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     object_info = _plugin_object_info()
     failures = []
-    for path in sorted(root.glob("*.json")):
+    for path in sorted(root.rglob("*.json")):
         workflow = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes"), list):
             continue

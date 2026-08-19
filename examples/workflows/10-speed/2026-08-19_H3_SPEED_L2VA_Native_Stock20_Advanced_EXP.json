@@ -1305,7 +1305,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## SPEED公共边界\n\n这是Advanced/EXP整链采样，不会替换原采样节点。默认两级`0.5→1.0`、Stock20时为14+6 NFE；Turbo8时为6+2 NFE，总NFE不额外增加。每级都会重建H3 AV latent、PackedLayout和条件。当前仅机械跑通，未证明质量或加速收益。"
+          "## 历史机械示例，旧计划已否决\n\n此工作流仍使用`0.5→1.0 / manual 0.85 / 14粗+6全分辨率`，只保留用于L2VA native的机械合同检查。三路线盲评已否决该手工计划；正式100条profile只绑定T2VA，不能套用到本工作流。不得作为推荐加速、画质或16GB安全方案。"
       ]
     },
     {

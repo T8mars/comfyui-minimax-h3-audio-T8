@@ -13,6 +13,146 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.33.1 H3 SPEED formal calibration and controlled denial (2026-08-19)
+
+The user-provided `h3_speed_blind_review.json` was preserved byte-for-byte in the ignored local
+evidence directory. Both copies have SHA-256
+`BA47FA124C9FD0BF51E625DBB0D7F170FA795D0E2BD9654161A16A664B201365`. The frozen reveal maps
+T2VA A and FL2VA A to SPEED, while Ref2VA B is SPEED. After reveal, all three overall, motion and
+audio votes prefer the full-resolution baseline; Ref2VA reference adherence also prefers baseline.
+The reviewer additionally marked FL2VA SPEED A and Ref2VA SPEED B as visibly broken.
+
+This is a decisive rejection of those three fixed schedules, not proof that every possible SPEED
+profile must fail. One reviewer and one case per route cannot isolate causality. Execution reports
+showed one common hand-set treatment: 14 of 20 NFE at half resolution, transition threshold 0.85,
+then only six full-resolution NFE. Because this threshold did not come from an H3 dataset fit, it is
+the strongest shared mechanism suspect, but is not recorded as a proven cause.
+
+The next implementation step therefore did not expand the failed default. Five append-only
+Advanced nodes provide an H3 dataset calibration path:
+
+- Dataset Accumulate stores only one CPU float64 HxW summed spatial-power grid plus hashes and
+  provenance; it rejects repeated batches, exact repeated clip spectra and task/model/VAE/grid
+  mismatches.
+- Dataset File persists that sufficient statistic as one atomic safetensors file, with explicit
+  write/overwrite confirmation and no source video or source latent storage. Load uses the complete
+  file SHA as its ComfyUI fingerprint, while explicit Save is never cached.
+- Model/VAE Fingerprint streams full-file SHA-256 values without loading a second GPU model.
+- Dataset Finalize fits the aggregate mean once. Fewer than 100 actual unique clips or a failed R²
+  threshold can only yield `research_probe_only`, never a validated delta-optimal profile.
+- Calibration Window strictly resamples to 24fps/17n+5 and uses aspect-preserving center-cover;
+  short clips fail and source geometry is never stretched. The legacy Source Media Window is unchanged.
+
+The isolated example is
+`2026-08-19_H3_SPEED_Spectrum_Dataset_Calibration_Advanced_EXP.json`. This closes the mechanical
+calibration contract only. The paper's corpus method uses independent natural videos encoded through
+the target video VAE; it does not require first generating 100 outputs with the diffusion model. This
+project keeps a conservative formal minimum of 100 reviewed natural-video windows for the exact H3
+video VAE/profile contract.
+
+That formal accumulation is now complete. One hundred reviewed windows from pinned
+Vchitect/Vchitect_T2V_DataVerse revision `e068be25f4d06a837992a1e9096fd00105c83f2c` passed exact pre-trim, strict decoding, hash and
+near-duplicate screening, and a 10x10 human content-diversity review before sequential encoding by
+the same H3 video VAE. The final sufficient-statistics file has SHA-256
+`C219A739BDD9C17EDAA53EF1022CCDB6985B72B237AF2A44DE19AB34047BF43E`, contains 100 independent
+entries on video-latent grid `[24,37,26,46]`, and fits A=29.96418670445687,
+beta=2.3183720623777164, R²=0.9951511913433466. The strict finalizer therefore correctly marks
+the exact task/model/VAE/grid profile as `validated_for_delta_optimal`. This validates the corpus and
+fit contract only, not a generation claim.
+
+Only one calibrated T2VA comparison was then run, as predeclared: 736x416x124, Stock20/Euler,
+identical prompt, seed, model, CLIP, VAEs, noise and 20 total NFE. The full-resolution baseline took
+243.203s with 12504.6MiB whole-device peak. The fitted plan selected 384x224 for 13 NFE and 736x416
+for 7 NFE; calibrated SPEED took 248.688s, peaked at 16175.8MiB and left only about 203.7MiB
+headroom. It was approximately 2.26% slower, added about 3671.2MiB peak usage, failed the 512MiB
+headroom gate, and was classified `fits_with_thrashing`. Its original H.264 also failed 3/3 strict
+decodes because of one corrupt decoded frame. The original is retained as failure evidence; a separate
+re-encoded derivative passed strict decode solely to permit optional blind review and does not erase
+the source failure. The implementation is therefore denied for stable acceleration, memory safety,
+quality and audio/reference non-inferiority; no wider multimodal calibration matrix is authorized.
+
+An isolated `127.0.0.1:8197` probe then encoded two strict-FFmpeg-clean 736x416x124 sources through
+the same H3 video VAE and persisted a two-entry dataset across separate prompts. After a one-entry
+Load had been cached, the second atomic overwrite changed the complete-file fingerprint; the identical
+Load graph executed again and returned two entries instead of stale state. The 10,856-byte clean probe
+has SHA-256 `80EE5756323AA6F8F0ED80A465C5EF5C812009EDEBDFE86F522FD649930080B4` and fitted
+A=23.3507002, beta=2.0766619, R²=0.9946004, but correctly remains `research_probe_only` because
+2 is below 100. A separate portrait source proved center-cover reporting and no anisotropic stretch,
+but strict decoding exposed a CABAC error, so it was not counted in the clean dataset.
+
+`tools/curate_h3_speed_spectrum_sources.py` now provides a read-only pre-encoding source gate. It
+inspects ffprobe metadata, target-window strict decoding, full-file hashes, decoded-window hashes and
+a 16x16/3fps temporal average-hash heuristic. Exact duplicates are rejected; heuristic near-duplicates
+and filenames associated with comparisons, repairs, caches or experimental SPEED outputs require
+manual review and are never silently declared independent. It never moves or deletes media.
+
+The signature-mode scan of all 188 files under `ComfyUI/output/MiniMaxH3` produced 3 provisional
+candidates, 55 manual-review files and 130 rejected files. Eighty-nine files passed strict target-window
+decoding; nine failed it. Rejections overlap and include 69 clips too short for the 124-frame window,
+62 sources requiring spatial upscaling, 29 exact decoded-window duplicates, four exact file duplicates,
+nine strict-decode failures and five inspection failures. The ignored local report has SHA-256
+`AE8FEAC8D70F9A38A8FD65AE2FC7E71A4847BE3947AC32B99DB28BFA8D5B865C`. These counts establish that
+the existing output directory cannot satisfy the 100 independent-clip gate. They do not validate the
+three provisional clips as independent or representative. A wider strict scan across five H3-named
+output roots found 1,275 files: 3 provisional, 244 manual-review and 1,028 rejected. Overlapping
+reasons included 574 short clips, 460 exact-file duplicates, 221 required upscales, 185 exact decoded
+window duplicates, 22 strict decode failures and 13 inspection failures; 442 files passed strict
+decoding. Its ignored report SHA-256 is
+`2A7D54548D34009228D2516D06F3F4E9D180F6199E20C9B4FCB9F6A8BBD85582`.
+
+Nine provenance-bound I2VA Stock20 controls were then selected from the frozen motion-quality
+generation spec: three distinct first-frame images times three distinct seeds, with only the control
+arm retained. All nine sources passed strict decoding and were accumulated sequentially through the
+same H3 video VAE. The final dataset contract is `[9,24,37,26,46]`; its aggregate fit is
+A=29.5579671, beta=2.3662343, R²=0.9971147. Finalize correctly returns
+`research_probe_only`, `validated_for_delta_optimal=false` and `enough_unique_clips=false` because
+9 is below 100. The differing two-clip T2VA and nine-clip I2VA fits are evidence that task families
+must not silently share one spectrum profile; neither small probe establishes a production value.
+
+The curation tool can now parse embedded ComfyUI prompt metadata into a privacy-minimized execution
+contract. It emits hashes and model/task/VAE/LoRA/sampler/modifier/seed/content signatures, never raw
+prompt or workflow text. A provenance-required scan of the same 1,275 files found 452 complete H3
+contracts, 51 partial contracts and 768 files without a prompt tag; only 8 remained provisional,
+456 required review and 811 were mechanically rejected. Exact contract grouping still exposed mostly
+derived MultiKeyframe, sigma and repair matrices, not 100 diverse independent Stock clips. The local
+report SHA-256 is `D089706EB19528F305F4899C1170D6ED2F2AB86E3CFB9669A0D39DDB037B5C96`.
+
+A separate strict signature scan covered all 358 video files under `ComfyUI/input`. It retained 19
+provisional candidates, left 15 for manual review and rejected 324. Overlapping reasons were 219
+required upscales, 217 clips shorter than the exact window, 62 exact-file duplicates, 11 inspection
+failures and 8 strict-decode failures. The report SHA-256 is
+`EA5C1A80F34DA88E50CDD11B7784F39D8D917F8A2EF9B6EF7BE63FA0EDD9B5DC`.
+`tools/build_h3_speed_spectrum_manifest.py` consumes only this signature schema, confines every source
+to the declared input root, requires complete file hashes and refuses any formal threshold below 100.
+
+The resulting 19-entry local-video-corpus proxy manifest has SHA-256
+`52C04B72762A5EC1169B21BFB393C07D1205C8D6242D495529A5066FB9906922`; all 19 clips encoded through
+the same H3 video VAE and appended successfully. The run report SHA-256 is
+`CC7D8A83156AB7D2904E2982E62112FA245F20DADFB58F1AA1926E01AA4DB49E`, and the persisted dataset SHA-256
+is `6750766764A8D45FA67EEF6295E2AB8261798B169515B815AED80949DAEF42B0`. Offline aggregate finalization
+returned A=26.5381849, beta=2.1534428 and R²=0.9955738 on latent contract `[19,24,37,26,46]`; the
+profile report SHA-256 is `9701DBA26EEFE44FCECC93A54DF92CD1B3AFF30F4E42DEC6D1F6FC5BA08B33EF`.
+This is deliberately still `research_probe_only`: the 19 inputs are a local video-corpus proxy, not
+100 independent natural-video windows with a formal diversity/provenance review. Compared with the
+two-clip
+T2VA probe, A and beta changed by about +13.65% and +3.70%, reinforcing the refusal to promote a
+small-sample fit or run another quality A/B from it.
+
+`delta_optimal` plans now preserve the fitted H3 video-latent C/T/H/W contract and compare it with
+the requested final canvas and runtime aligned frame count. A spatial or temporal grid mismatch fails
+before sampling; task/model/VAE equality alone is no longer treated as sufficient binding.
+
+The T2VA frontend workflow now reproduces the exact formal dataset load/finalize, full model/VAE
+fingerprints and `delta_optimal` execution graph used by the controlled run. Three visible notes state
+the failed speed, peak-memory, original-decode and blind-review gates. All other SPEED task workflows
+are explicitly historical mechanical examples because they lack route-specific formal profiles. The
+ten project files and ten installed ComfyUI user-menu copies have exact SHA-256 parity.
+
+The final v1.33.1 source gate passes 718 project tests, changed-scope Ruff, compileall, 125-node
+append-only registration and the unchanged stable `sampling.py` SHA-256 against ComfyUI
+`187eda8ef5e588c6a5765cad53e482765edae052`. Full-project Ruff still reports the pre-existing
+`tests/test_sampling.py:180` E721 under the old bundled Ruff; it is outside this change set.
+
 ## 1.32.1 H3 SPEED controlled performance and decoder-error gate (2026-08-19)
 
 No node, schema, default or stable sampler changed. Two reusable tools now build and analyze one
@@ -38,9 +178,9 @@ with the exact same model, prompt, seed, 20 NFE and plan; the clean v7 file pass
 check three times. All final files contain exactly 124 frames at 24fps, finite 32kHz stereo audio and
 A/V duration within one frame.
 
-An anonymous three-pair full-video/audio review package plus proxy report was generated. The proxy
-metrics show material route differences but cannot rank perceptual quality, motion, sound or reference
-adherence. Those three non-inferiority gates remain false until human review is completed.
+The anonymous review is now complete: all three fixed SPEED routes lost to baseline, and two routes
+were explicitly described as visibly broken. The proxy metrics remain diagnostics only and did not
+override the human verdict.
 
 The source release gate passed 664 tests, full Ruff, compileall, 126 non-artifact JSON parses,
 `git diff --check`, the unchanged stable `sampling.py` SHA-256 and SHA parity for all 70 project/user
@@ -1038,7 +1178,7 @@ Implemented locally on 2026-08-08 without changing the stable sampler:
 - after the final segment is accepted, the node returns full progress and a ComfyUI
   `block_execution` reason, preventing an accidental extra sampling pass;
 - the frontend and API graphs are respectively
-  `examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` and
+  `examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` and
   `tests/fixtures/api/long_video_auto_resume_api.json`.
 
 Validation evidence:
@@ -2363,3 +2503,10 @@ claim. Local evidence is retained in
 The final source gate passed 573 project tests with four existing Triton deprecation warnings,
 changed-scope Ruff, compileall, 110 non-artifact JSON parses and `git diff --check`. The audit node
 is an output node and emitted its observed report into ComfyUI history during the real G1 run.
+## Categorized frontend workflow library
+
+- The 71 importable frontend JSON workflows are stored recursively in 12 purpose-based directories.
+- Every category has a local `README.md` describing purpose, evidence, starting workflow and limits.
+- The installed `MiniMax H3 T8` user menu mirrors the same relative paths; verification compares each
+  project/user JSON pair by relative path and SHA-256.
+- Moving a workflow changes only its filesystem location, not the JSON graph, widgets or links.

@@ -239,11 +239,11 @@ WIDER easy/medium/hard AP：
 ## 示例
 
 - API：`tests/fixtures/api/face_refine_advanced_api.json`
-- 前端：`examples/workflows/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
+- 前端：`examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
 - 动漫API：`tests/fixtures/api/face_refine_anime_advanced_api.json`
-- 动漫前端：`examples/workflows/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
+- 动漫前端：`examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
 - Parity+MANUAL512 REL基线API：`tests/fixtures/api/face_refine_parity_advanced_api.json`
-- Parity+MANUAL512 REL基线前端：`examples/workflows/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`
+- Parity+MANUAL512 REL基线前端：`examples/workflows/06-face-refine/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`
 
 示例要求用户先准备精确24fps、124帧、单镜头素材。真人示例默认YuNet，动漫示例必须显式使用
 动漫EXP模型；二者都不做人脸识别。模型缺失时改用手工ROI，而不是运行时下载。先看Plan preview，

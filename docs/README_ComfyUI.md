@@ -1,5 +1,53 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> Frontend workflows are organized under `examples/workflows/01-basic-generation` through
+> `examples/workflows/12-system-memory`. Each category contains an independent `README.md` with
+> purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
+> mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
+> contents are preserved.
+
+> Project v1.33.1 records the completed SPEED blind review and formal 100-clip calibration before
+> any further promotion. T2VA,
+> FL2VA and Ref2VA all preferred the full-resolution baseline for overall quality, motion and audio;
+> Ref2VA reference adherence also preferred baseline. The reviewer explicitly identified FL2VA
+> SPEED A and Ref2VA SPEED B as visibly broken. The exact manual 14-coarse/6-full schedules are
+> therefore rejected as stable defaults even though their exact-profile speedups remain real.
+> Five append-only Advanced nodes now add an aspect-safe 24fps/17n+5 calibration window, accumulate
+> cross-batch spatial spectra after independent natural-video windows pass through the target H3 video
+> VAE, save/load one atomic sufficient-statistics file, finalize only provenance- and diversity-reviewed
+> datasets with at least 100 actual unique clips, and bind a profile to full-file model/VAE SHA-256 fingerprints.
+> Load follows complete file content rather than stale ComfyUI cache. No calibrated quality fix is claimed yet.
+> A read-only source-curation tool additionally checks metadata, strict decode, exact file/decoded-window
+> duplicates and heuristic temporal near-duplicates. Its first scan of 188 MiniMaxH3 outputs left only
+> 3 provisional candidates, 55 manual-review files and 130 rejected files; it therefore prevents the
+> existing A/B and derived outputs from being counted as a 100-clip calibration dataset.
+> A broader five-root H3 scan found 1,275 files but still only 3 provisional candidates. A separately
+> curated 3-image x 3-seed I2VA Stock20 probe accumulated 9/9 clips and fitted A=29.5579671,
+> beta=2.3662343, R-squared=0.9971147; it remains `research_probe_only` because 9 is below 100.
+> A strict scan of 358 local input videos retained 19 provisional candidates. All 19 were encoded as a
+> local-video-corpus proxy and fitted A=26.5381849, beta=2.1534428, R-squared=0.9955738, but this is
+> still not a formally reviewed 100-natural-video corpus encoded by the exact H3 VAE and therefore
+> cannot drive a new quality A/B.
+> Dataset profiles are additionally bound to the exact H3 video latent C/T/H/W grid; another
+> resolution or 17n+5 duration fails closed instead of reusing the fit. Embedded ComfyUI metadata
+> curation hashes provenance/content identifiers without emitting raw prompts, workflows or paths.
+> The restored formal corpus now contains 100 reviewed windows from pinned VChitect-T2V-Dataverse
+> sources encoded through the exact H3 video VAE. It fitted A=29.9641867, beta=2.3183721 and
+> R-squared=0.9951512 and passed the dataset-profile contract. One controlled 736x416x124 Stock20
+> T2VA comparison nevertheless failed the product gates: full resolution took 243.203s at
+> 12504.6MiB peak, while calibrated SPEED took 248.688s at 16175.8MiB peak and retained only about
+> 203.7MiB headroom. Its original H.264 also failed strict decoding on one frame; a non-overwriting
+> re-encode exists only for optional blind inspection. The current implementation therefore remains
+> EXP and cannot claim acceleration, memory safety, quality, or audio non-inferiority.
+> The dated T2VA SPEED frontend workflow now loads the formal 100-clip dataset, recomputes exact
+> model/VAE fingerprints and runs `delta_optimal`, with three visible notes preserving the failed
+> speed, memory, decode and blind-review verdict. The other SPEED task workflows are labeled as
+> historical mechanical examples because no route-specific formal profile exists. All ten project
+> copies match their installed ComfyUI user-menu copies by SHA-256.
+> The v1.33.1 source gate passes 718 project tests, changed-scope Ruff, compileall, 125-node
+> append-only registration and stable sampler SHA protection against ComfyUI
+> `187eda8ef5e588c6a5765cad53e482765edae052`.
+
 > Project v1.32.1 adds controlled same-input, same-seed, same-20-NFE full-resolution comparisons
 > for SPEED T2VA, FL2VA remix and Ref2VA image. Exact-profile end-to-end speedups were 2.179x,
 > 2.209x and 2.299x; peak VRAM changed by -77.0MiB, +33.9MiB and -162.5MiB, so SPEED is a
@@ -507,7 +555,7 @@ auto reserve from missing or report-only policy. Current 512 MiB VRAM and 16 GiB
 are not peak predictions. Passing the audit is mechanical compatibility only; quality, de-waxing,
 reference identity and universal 16 GiB safety remain unproven, and `memory_safe_claim=false`.
 See `docs/HYBRID_COMPATIBILITY_AUDIT.md` and import
-`2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
+`examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Compatibility_Audit_Stock20_EXP.json` or
 `hybrid_compatibility_audit_api.json`.
 
 A follow-up exact-profile matrix on 2026-08-13 used 736x416, 124 frames,
@@ -578,7 +626,7 @@ It never scans source checkpoints, unloads a MODEL, or releases VRAM. See
 `docs/HYBRID_ARTIFACT_MAINTENANCE.md`.
 
 Version 1.15.1 retains all 60 Version 1.15.0 node IDs and updates the opt-in
-`2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
+`examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_VBAR_Headroom_Stock20_EXP.json` / `hybrid_model_vbar_headroom_api.json` pair. It
 connects a reportable 4.0 GiB total-reserve policy directly to the Hybrid Loader, guaranteeing that
 ComfyUI reserve and AIMDO simple headroom are set before the stock diffusion-model load. The policy
 uses a direct AIMDO setter, does not reinitialize devices or alter startup `--vram-headroom`, and
@@ -591,10 +639,10 @@ not generalize to other resolutions, frame counts, GPUs, concurrent CUDA users, 
 conditions; `memory_safe` and `never_oom` remain false.
 
 Version 1.14.0 added the opt-in
-`examples/workflows/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
+`examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json` workflow and
 `tests/fixtures/api/hybrid_model_advanced_api.json`. Audio-only and mixed-reference variants are provided as
-`2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
-`2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
+`examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
+`examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
 `hybrid_model_audio_reference_api.json`, and `hybrid_model_mixed_reference_api.json`.
 The graph strictly hashes the exact validated FL2VA/
 Ref2VA pruned pair, builds or reuses a 27.69 MiB curve-rebased target-slice artifact under
@@ -609,12 +657,13 @@ de-wax fix, or universal 16 GB safe tier. See
 `docs/HYBRID_MODEL_ADVANCED_VALIDATION.md` for the exact hashes and current pilot limits.
 
 Three base sampler-comparison frontend workflows are installed under
-`ComfyUI/user/default/workflows/MiniMax H3 T8/`: stable 4/4, experimental 4/8,
+`ComfyUI/user/default/workflows/MiniMax H3 T8/01-basic-generation/`: stable 4/4, experimental 4/8,
 and experimental 4/10. They share the same seed, prompt, EMA LoRA, loaders, and
 MP4 settings for direct comparison. Drag a JSON file into the ComfyUI canvas or
 open it from the Workflows menu.
 
-Three stable 4/4 source-audio workflows are installed in the same directory:
+Three stable 4/4 source-audio workflows are installed under
+`ComfyUI/user/default/workflows/MiniMax H3 T8/02-audio-control/`:
 `2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json`,
 `2026-08-06_H3_Audio_Remix_Source_Stable_4V4A.json`, and
 `2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json`. Each uses a 5-second Audio Window,
@@ -623,7 +672,8 @@ the explicit dual-clock Euler/native-flow defaults. Lock mode routes the clean
 Conditioning `mux_audio` to the final MP4; remix and reference-only route decoded
 model audio instead. Upload or select a source file in `Load Audio` before queuing.
 
-Version 1.12.0 also installs two opt-in dialogue-safe audio workflows without changing any old
+Version 1.12.0 also installs two opt-in dialogue-safe audio workflows under
+`ComfyUI/user/default/workflows/MiniMax H3 T8/05-speech-dialogue/` without changing any old
 workflow: `2026-08-10_H3_Dialogue_Safe_Master_EXP.json` accepts already independent speech/music/ambience/SFX
 stems and keeps the background running after verified speech ends;
 `2026-08-09_H3_Dialogue_Timed_Background_Bed_Lock_EXP.json` is a two-pass H3 graph that locks an independent
@@ -634,7 +684,7 @@ explicitly selects `fit_reported`, and its decoder showed roughly 0.3 seconds of
 after the latent boundary. Both workflows use placeholders that must be replaced before queuing.
 
 The project also includes the isolated experimental long-video workflow
-`examples/workflows/2026-08-09_H3_Long_Video_22F_EXP.json` and API graph
+`examples/workflows/04-long-video/2026-08-09_H3_Long_Video_22F_EXP.json` and API graph
 `tests/fixtures/api/long_video_segment_api.json`. They plan and execute one bounded segment
 at a time, store only a checksummed AV latent tail, and use a cloned-MODEL object
 patch rather than a process-global MiniMax H3 monkey patch. Intermediate segments
@@ -653,7 +703,7 @@ Version 1.5.0 adds a safer accepted-state route without removing that P1 example
 - `tests/fixtures/api/long_video_candidate_accept_api.json` loads only an accepted parent,
   saves a non-mutating candidate, previews it with acceptance off by default, and
   promotes it through a locked, checksummed, atomic manifest only after review;
-- `examples/workflows/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` provides the same
+- `examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Accepted_22F_EXP.json` provides the same
   review-first route as a drag-and-drop frontend workflow;
 - replacing segment N is explicit and invalidates every accepted segment after N,
   because those outputs were conditioned on the old parent chain;
@@ -708,8 +758,8 @@ arbitrary-length, or no-OOM claim.
 
 Version 1.6.0 adds a human-reviewed total-duration resume route:
 
-- `examples/workflows/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` is the recommended
-  frontend graph and is installed in the same ComfyUI workflow directory;
+- `examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json` is the recommended
+  frontend graph and is installed under `MiniMax H3 T8/04-long-video/`;
 - `tests/fixtures/api/long_video_auto_resume_api.json` is the equivalent API graph;
 - one `MiniMaxH3LongVideoOrchestratorT8` input defines the total duration, a fixed
   legal H3 render window, overlap context, global/per-segment prompts, a seed policy,

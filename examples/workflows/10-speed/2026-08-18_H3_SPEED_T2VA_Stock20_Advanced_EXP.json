@@ -1,19 +1,20 @@
 {
-  "id": "d6e59e2c-0a2e-4c30-b10b-5a0f95f85003",
+  "id": "378d233e-9e20-4d22-a7a4-519e10b3086a",
   "revision": 0,
-  "last_node_id": 11,
-  "last_link_id": 12,
+  "last_node_id": 17,
+  "last_link_id": 17,
   "nodes": [
     {
       "id": 1,
       "type": "UNETLoader",
+      "title": "Load stock non-pruned H3 model",
       "pos": [
         0,
         0
       ],
       "size": [
-        340,
-        82
+        390,
+        168
       ],
       "flags": {},
       "order": 0,
@@ -41,28 +42,30 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            1
+            8
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "UNETLoader"
       },
       "widgets_values": [
-        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "minimax_h3_fl2va_int8_convrot.safetensors",
         "default"
       ]
     },
     {
       "id": 2,
       "type": "CLIPLoader",
+      "title": "Load H3 Qwen text encoder",
       "pos": [
         0,
-        140
+        300
       ],
       "size": [
-        340,
-        106
+        390,
+        212
       ],
       "flags": {},
       "order": 1,
@@ -98,11 +101,12 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            2
+            3
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
@@ -114,13 +118,14 @@
     {
       "id": 3,
       "type": "VAELoader",
+      "title": "Load H3 video VAE",
       "pos": [
         0,
-        300
+        600
       ],
       "size": [
-        340,
-        58
+        390,
+        124
       ],
       "flags": {},
       "order": 2,
@@ -140,12 +145,13 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            3,
-            8
+            4,
+            12
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
@@ -155,13 +161,14 @@
     {
       "id": 4,
       "type": "VAELoader",
+      "title": "Load H3 audio VAE",
       "pos": [
         0,
-        400
+        900
       ],
       "size": [
-        340,
-        58
+        390,
+        124
       ],
       "flags": {},
       "order": 3,
@@ -181,12 +188,13 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
-            4,
-            9
+            5,
+            13
           ]
         }
       ],
       "properties": {
+        "cnr_id": "comfy-core",
         "Node name for S&R": "VAELoader"
       },
       "widgets_values": [
@@ -195,18 +203,236 @@
     },
     {
       "id": 5,
-      "type": "MiniMaxH3SPEEDPlanT8Advanced",
-      "title": "1. Manual H3 SPEED plan: 20 NFE remains 20 NFE",
+      "type": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+      "title": "Load provenance-reviewed H3 spectrum dataset",
       "pos": [
-        420,
-        -40
+        0,
+        1200
       ],
       "size": [
-        520,
-        410
+        390,
+        256
       ],
       "flags": {},
       "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "dataset_name",
+          "type": "STRING",
+          "widget": {
+            "name": "dataset_name"
+          },
+          "link": null
+        },
+        {
+          "name": "overwrite",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "overwrite"
+          },
+          "link": null
+        },
+        {
+          "name": "confirm_write",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "confirm_write"
+          },
+          "link": null
+        },
+        {
+          "name": "spectrum_dataset",
+          "type": "H3_T8_SPEED_SPECTRUM_DATASET",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "spectrum_dataset",
+          "type": "H3_T8_SPEED_SPECTRUM_DATASET",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "file_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced"
+      },
+      "widgets_values": [
+        "load",
+        "h3_t2va_vchitect_e068_736x416x124_n100_v1",
+        false,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+      "title": "Finalize validated H3 spectrum profile",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "spectrum_dataset",
+          "type": "H3_T8_SPEED_SPECTRUM_DATASET",
+          "link": 1
+        },
+        {
+          "name": "profile_name",
+          "type": "STRING",
+          "widget": {
+            "name": "profile_name"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_r_squared",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_r_squared"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_independent_clips",
+          "type": "INT",
+          "widget": {
+            "name": "minimum_independent_clips"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "spectrum_profile",
+          "type": "H3_T8_SPEED_PROFILE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced"
+      },
+      "widgets_values": [
+        "h3_t2va_vchitect_e068_736x416x124_n100_profile_v1",
+        0.8,
+        100
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+      "title": "Recompute runtime model and VAE file fingerprints",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "checkpoint_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "checkpoint_name"
+          },
+          "link": null
+        },
+        {
+          "name": "video_vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "video_vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "checkpoint_fingerprint",
+          "type": "STRING",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "vae_fingerprint",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3SPEEDPlanT8Advanced",
+      "title": "Official-math SPEED stage plan",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        590
+      ],
+      "flags": {},
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -300,7 +526,7 @@
         {
           "name": "spectrum_profile",
           "type": "H3_T8_SPEED_PROFILE",
-          "link": null,
+          "link": 2,
           "shape": 7
         }
       ],
@@ -309,24 +535,25 @@
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
           "links": [
-            5
+            9
           ]
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDPlanT8Advanced"
       },
       "widgets_values": [
-        1056,
-        608,
+        736,
+        416,
         20,
         "0.5,1.0",
-        "manual_sigmas",
+        "delta_optimal",
         "0.85",
         0.01,
         12.0,
@@ -336,35 +563,35 @@
       ]
     },
     {
-      "id": 6,
+      "id": 9,
       "type": "MiniMaxH3SPEEDSourceT8Advanced",
-      "title": "2. Ref2VA raw reference; rebuilt at every SPEED canvas",
+      "title": "Raw T2VA source rebuilt at each SPEED canvas",
       "pos": [
-        420,
-        420
+        440,
+        300
       ],
       "size": [
-        620,
-        690
+        390,
+        650
       ],
       "flags": {},
-      "order": 5,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "name": "clip",
           "type": "CLIP",
-          "link": 2
+          "link": 3
         },
         {
           "name": "video_vae",
           "type": "VAE",
-          "link": 3
+          "link": 4
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 4
+          "link": 5
         },
         {
           "name": "prompt",
@@ -449,18 +676,18 @@
         {
           "name": "checkpoint_fingerprint",
           "type": "STRING",
+          "link": 6,
           "widget": {
             "name": "checkpoint_fingerprint"
-          },
-          "link": null
+          }
         },
         {
           "name": "vae_fingerprint",
           "type": "STRING",
+          "link": 7,
           "widget": {
             "name": "vae_fingerprint"
-          },
-          "link": null
+          }
         },
         {
           "name": "drive_audio",
@@ -485,12 +712,6 @@
           "type": "IMAGE",
           "link": null,
           "shape": 7
-        },
-        {
-          "label": "ref_image_0",
-          "name": "ref_images.ref_image_0",
-          "type": "IMAGE",
-          "link": 12
         }
       ],
       "outputs": [
@@ -498,24 +719,25 @@
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
           "links": [
-            6
+            10
           ]
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDSourceT8Advanced"
       },
       "widgets_values": [
-        "Use <Picture 1> as the visual reference. Preserve its identity, materials and style while creating natural cinematic motion. Synchronized ambience, no speech.",
+        "A cinematic night city in rain, camera gliding forward through reflections and mist. Natural synchronized rain, distant traffic and wind, no speech.",
         124,
-        "Ref2VA",
+        "T2VA",
         "native",
-        0.35,
+        1.0,
         false,
         0,
         true,
@@ -526,35 +748,35 @@
       ]
     },
     {
-      "id": 7,
+      "id": 10,
       "type": "MiniMaxH3SPEEDSamplerT8Advanced",
-      "title": "3. Multimodal research scope: Ref2VA stage rebuild",
+      "title": "Strict T2VA Stock20 SPEED whole-chain sampler",
       "pos": [
-        1120,
-        160
+        1320,
+        0
       ],
       "size": [
-        560,
-        250
+        390,
+        352
       ],
       "flags": {},
-      "order": 6,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 1
+          "link": 8
         },
         {
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
-          "link": 5
+          "link": 9
         },
         {
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
-          "link": 6
+          "link": 10
         },
         {
           "name": "shift_audio",
@@ -594,69 +816,74 @@
           "name": "av_latent",
           "type": "LATENT",
           "links": [
-            7
+            11
           ]
         },
         {
           "name": "mux_audio",
           "type": "AUDIO",
-          "links": []
+          "links": null
         },
         {
           "name": "conditioned_prompt",
           "type": "STRING",
-          "links": []
+          "links": null
         },
         {
           "name": "media_map_json",
           "type": "STRING",
-          "links": []
+          "links": null
         },
         {
           "name": "report_json",
           "type": "STRING",
-          "links": []
+          "links": [
+            17
+          ]
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3SPEEDSamplerT8Advanced"
       },
       "widgets_values": [
         3.0,
-        2608184001,
-        "multimodal_research_exp",
+        2608194001,
+        "fixed",
+        "strict_t2va_stock20",
         64
       ]
     },
     {
-      "id": 8,
+      "id": 11,
       "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode synchronized H3 audio and video",
       "pos": [
-        1740,
-        150
+        1760,
+        0
       ],
       "size": [
-        300,
-        130
+        390,
+        158
       ],
       "flags": {},
-      "order": 7,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
           "name": "av_latent",
           "type": "LATENT",
-          "link": 7
+          "link": 11
         },
         {
           "name": "video_vae",
           "type": "VAE",
-          "link": 8
+          "link": 12
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 9
+          "link": 13
         }
       ],
       "outputs": [
@@ -664,294 +891,441 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            10
+            14
           ]
         },
         {
           "name": "generated_audio",
           "type": "AUDIO",
           "links": [
-            11
+            15
           ]
         },
         {
           "name": "video_latent",
           "type": "LATENT",
-          "links": []
+          "links": null
         },
         {
           "name": "audio_latent",
           "type": "LATENT",
-          "links": []
+          "links": null
         }
       ],
       "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3AVDecodeT8"
       },
       "widgets_values": []
     },
     {
-      "id": 9,
-      "type": "VHS_VideoCombine",
+      "id": 12,
+      "type": "CreateVideo",
+      "title": "Create synchronized 24fps video",
       "pos": [
-        2100,
-        100
+        2200,
+        0
       ],
       "size": [
-        430,
-        500
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 10
-        },
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "link": 11,
-          "shape": 7
-        },
-        {
-          "name": "meta_batch",
-          "type": "VHS_BatchManager",
-          "link": null,
-          "shape": 7
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": null,
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "Filenames",
-          "type": "VHS_FILENAMES",
-          "links": null
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VHS_VideoCombine"
-      },
-      "widgets_values": {
-        "frame_rate": 24,
-        "loop_count": 0,
-        "filename_prefix": "MiniMaxH3/speed_ref2va_stock20_exp",
-        "format": "video/h264-mp4",
-        "pix_fmt": "yuv420p",
-        "crf": 19,
-        "save_metadata": true,
-        "trim_to_audio": false,
-        "pingpong": false,
-        "save_output": true
-      }
-    },
-    {
-      "id": 10,
-      "type": "MarkdownNote",
-      "title": "Ref2VA mechanics passed one GPU chain; adherence/speed remain EXP",
-      "pos": [
-        1120,
-        -430
-      ],
-      "size": [
-        1400,
-        500
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "color": "#7c4a03",
-      "bgcolor": "#1f1608",
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "## Ref2VA机械链已完成一条真实GPU验证，仍是EXP\n\n替换参考图。`ref_image_size=match`会按每级画布重新调整和编码参考图；`max`可能让固定reference token在粗阶段占主导并抵消SPEED收益。\n\n本机1024×576、124帧、Stock20单参考图代表链已确认124帧、32kHz双声道和A/V时长机械正确；最低显存余量约337MiB，未达到512MiB安全门槛。尚未证明身份/构图/参考遵循、音频非劣、稳定加速或通用16GB安全。`multimodal_research_exp`仍是显式风险开关。"
-      ]
-    },
-    {
-      "id": 11,
-      "type": "LoadImage",
-      "pos": [
-        40,
-        560
-      ],
-      "size": [
-        340,
-        320
+        390,
+        220
       ],
       "flags": {},
       "order": 11,
       "mode": 0,
       "inputs": [
         {
-          "name": "image",
-          "type": "COMBO",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 14
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
           "widget": {
-            "name": "image"
+            "name": "fps"
           },
           "link": null
         },
         {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 15,
+          "shape": 7
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
           "widget": {
-            "name": "upload"
+            "name": "bit_depth"
           },
           "link": null
         }
       ],
       "outputs": [
         {
-          "name": "IMAGE",
-          "type": "IMAGE",
+          "name": "VIDEO",
+          "type": "VIDEO",
           "links": [
-            12
+            16
           ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 13,
+      "type": "SaveVideo",
+      "title": "Save controlled SPEED validation output",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 16
         },
         {
-          "name": "MASK",
-          "type": "MASK",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
           "links": null
         }
       ],
       "properties": {
         "cnr_id": "comfy-core",
-        "Node name for S&R": "LoadImage"
+        "Node name for S&R": "SaveVideo"
       },
       "widgets_values": [
-        "replace_with_reference_image.png",
-        "image"
+        "MiniMaxH3/SPEED_calibrated_n100_v1/speed_stock20",
+        "mp4"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "SaveText",
+      "title": "Save machine-readable validation report",
+      "pos": [
+        1760,
+        300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 17
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveText"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SPEED_calibrated_n100_v1/speed_execution_report",
+        "json"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "先读：正式100条标定仍未通过发布门",
+      "pos": [
+        0,
+        -850
+      ],
+      "size": [
+        820,
+        450
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "color": "#6b2634",
+      "bgcolor": "#241116",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 这是最新T2VA正式标定复现实验，不是推荐加速工作流\n\n100条VChitect自然视频窗口经当前H3 video VAE标定：A=29.9641867、β=2.3183721、R²=0.9951512，数值profile通过。\n\n但同输入Stock20实跑中：全分辨率基线243.203秒/12504.6MiB；标定SPEED 248.688秒/16175.8MiB，仅余约203.7MiB。匿名审片中总体、运动细节、声音三项也全部选择基线。原始SPEED MP4另有一帧严格解码失败。\n\n结论：当前实现只保留EXP研究，不是稳定加速、画质增强或16GB安全方案。"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "运行前：数据集、模型、VAE和网格必须完全匹配",
+      "pos": [
+        860,
+        -850
+      ],
+      "size": [
+        820,
+        450
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "color": "#735b16",
+      "bgcolor": "#251f0f",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 精确绑定条件\n\n数据集文件必须存在：`ComfyUI/output/h3_speed_spectrum_datasets/h3_t2va_vchitect_e068_736x416x124_n100_v1.safetensors`。\n\n此profile只允许T2VA、736×416、124帧、当前FL2VA INT8 checkpoint与video VAE完整SHA匹配。修改模型、VAE、宽高或帧数会fail closed，不能把这份T2VA profile套给I2VA/FL2VA/Ref2VA。\n\nModel/VAE Fingerprint首次会流式读取大文件，可能明显增加启动耗时和磁盘读取，但不会额外加载第二份GPU模型。"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "参数说明：delta_optimal自动计划与兼容边界",
+      "pos": [
+        1720,
+        -850
+      ],
+      "size": [
+        820,
+        450
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "color": "#305778",
+      "bgcolor": "#122331",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 当前实跑解析结果\n\n`transition_mode=delta_optimal`时，界面中的`manual_transition_sigmas=0.85`不参与计算；它只是切回manual模式时的备用值。正式profile在本次20 NFE运行中自动解析为384×224执行13次、736×416执行7次，总NFE仍为20。\n\n保持`strict_t2va_stock20`、Euler、shift video/audio=12/3。不要同时接BlockCache、STG、Restart、ActivationChunk、MultiRate或其他MODEL/采样wrapper；节点会尽量fail closed，但未知组合不保证安全。"
       ]
     }
   ],
   "links": [
     [
       1,
-      1,
+      5,
       0,
-      7,
+      6,
       0,
-      "MODEL"
+      "H3_T8_SPEED_SPECTRUM_DATASET"
     ],
     [
       2,
+      6,
+      0,
+      8,
+      11,
+      "H3_T8_SPEED_PROFILE"
+    ],
+    [
+      3,
       2,
       0,
-      6,
+      9,
       0,
       "CLIP"
     ],
     [
-      3,
+      4,
       3,
       0,
-      6,
+      9,
       1,
       "VAE"
     ],
     [
-      4,
+      5,
       4,
       0,
-      6,
+      9,
       2,
       "VAE"
     ],
     [
-      5,
-      5,
-      0,
+      6,
       7,
+      0,
+      9,
+      13,
+      "STRING"
+    ],
+    [
+      7,
+      7,
+      1,
+      9,
+      14,
+      "STRING"
+    ],
+    [
+      8,
+      1,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      8,
+      0,
+      10,
       1,
       "H3_T8_SPEED_PLAN"
     ],
     [
-      6,
-      6,
+      10,
+      9,
       0,
-      7,
+      10,
       2,
       "H3_T8_SPEED_SOURCE"
     ],
     [
-      7,
-      7,
+      11,
+      10,
       0,
-      8,
+      11,
       0,
       "LATENT"
     ],
     [
-      8,
+      12,
       3,
       0,
-      8,
+      11,
       1,
       "VAE"
     ],
     [
-      9,
+      13,
       4,
       0,
-      8,
+      11,
       2,
       "VAE"
     ],
     [
-      10,
-      8,
+      14,
+      11,
       0,
-      9,
+      12,
       0,
       "IMAGE"
     ],
     [
+      15,
       11,
-      8,
       1,
-      9,
-      1,
+      12,
+      2,
       "AUDIO"
     ],
     [
+      16,
       12,
-      11,
       0,
-      6,
-      19,
-      "IMAGE"
+      13,
+      0,
+      "VIDEO"
+    ],
+    [
+      17,
+      10,
+      4,
+      14,
+      0,
+      "STRING"
     ]
   ],
   "groups": [
     {
       "id": 1,
-      "title": "Official-math H3 SPEED Advanced (strict T2VA first)",
+      "title": "正式100条profile与完整指纹",
       "bounding": [
-        380,
-        -500,
+        -60,
+        -80,
         1340,
-        1660
+        1080
       ],
       "color": "#8a5a16",
-      "font_size": 28,
+      "font_size": 26,
       "flags": {}
     },
     {
       "id": 2,
-      "title": "Decode and review all audio/video",
+      "title": "T2VA delta-optimal SPEED EXP执行",
       "bounding": [
-        1700,
-        30,
-        880,
-        610
+        1260,
+        -80,
+        980,
+        1080
       ],
       "color": "#7c3f58",
       "font_size": 26,
@@ -961,13 +1335,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.72,
+      "scale": 0.75,
       "offset": [
-        80,
-        220
+        120,
+        120
       ]
     },
-    "ue_links": []
+    "workflow_title": "MiniMax H3 SPEED T2VA 100-Clip Calibrated EXP"
   },
   "version": 0.4
 }

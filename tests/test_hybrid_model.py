@@ -703,6 +703,7 @@ def test_hybrid_frontend_workflow_is_importable_and_link_consistent():
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
+        / "09-hybrid-model"
         / "2026-08-09_H3_Hybrid_Model_Advanced_Stock20_EXP.json"
     )
     workflow = json.loads(path.read_text(encoding="utf-8"))
@@ -760,6 +761,7 @@ def test_hybrid_audio_reference_api_uses_conditioning_aware_minimal_profile():
             Path(__file__).resolve().parents[1]
             / "examples"
             / "workflows"
+            / "09-hybrid-model"
             / "2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json"
         ).read_text(encoding="utf-8")
     )
@@ -796,6 +798,7 @@ def test_hybrid_mixed_reference_examples_are_auto_routed_and_importable():
             root
             / "examples"
             / "workflows"
+            / "09-hybrid-model"
             / "2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json"
         ).read_text(encoding="utf-8")
     )
@@ -838,6 +841,7 @@ def test_hybrid_artifact_maintenance_examples_are_safe_and_link_consistent():
             root
             / "examples"
             / "workflows"
+            / "09-hybrid-model"
             / "2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json"
         ).read_text(encoding="utf-8")
     )

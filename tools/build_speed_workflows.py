@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOWS = ROOT / "examples" / "workflows"
+WORKFLOWS = ROOT / "examples" / "workflows" / "10-speed"
 BASE = WORKFLOWS / "2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json"
 
 

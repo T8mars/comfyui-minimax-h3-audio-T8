@@ -1,8 +1,8 @@
 {
-  "id": "db28c0a8-2b5b-5ae1-ae35-3486709b6f5a",
+  "id": "84826730-0f90-55e4-aed3-dfc75c99b752",
   "revision": 0,
   "last_node_id": 21,
-  "last_link_id": 21,
+  "last_link_id": 22,
   "nodes": [
     {
       "id": 1,
@@ -42,7 +42,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            6
+            7
           ]
         }
       ],
@@ -146,7 +146,7 @@
           "type": "VAE",
           "links": [
             2,
-            13
+            14
           ]
         }
       ],
@@ -189,7 +189,7 @@
           "type": "VAE",
           "links": [
             3,
-            14
+            15
           ]
         }
       ],
@@ -317,7 +317,7 @@
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
           "links": [
-            7
+            8
           ]
         },
         {
@@ -347,14 +347,14 @@
     {
       "id": 6,
       "type": "MiniMaxH3SPEEDSourceT8Advanced",
-      "title": "Raw Ref2VA reference source",
+      "title": "Raw Hybrid reference source",
       "pos": [
-        1320,
+        1760,
         0
       ],
       "size": [
         390,
-        738
+        764
       ],
       "flags": {},
       "order": 5,
@@ -486,7 +486,7 @@
         {
           "name": "first_frame",
           "type": "IMAGE",
-          "link": null,
+          "link": 4,
           "shape": 7
         },
         {
@@ -496,15 +496,15 @@
           "shape": 7
         },
         {
-          "name": "ref_videos.ref_video_0",
+          "name": "ref_images.ref_image_0",
           "type": "IMAGE",
-          "link": 4,
+          "link": 5,
           "shape": 7
         },
         {
-          "name": "ref_video_audios.ref_video_audio_0",
+          "name": "ref_audios.ref_audio_0",
           "type": "AUDIO",
-          "link": 5,
+          "link": 6,
           "shape": 7
         }
       ],
@@ -513,14 +513,14 @@
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
           "links": [
-            8
+            9
           ]
         },
         {
           "name": "report_json",
           "type": "STRING",
           "links": [
-            21
+            22
           ]
         }
       ],
@@ -529,9 +529,9 @@
         "Node name for S&R": "MiniMaxH3SPEEDSourceT8Advanced"
       },
       "widgets_values": [
-        "Use <Video 1> as the motion and visual reference and <Audio 1> as its associated soundtrack reference. Create a new coherent shot; add no speech.",
+        "Begin exactly from the supplied first frame. Use <Picture 1> as a separate identity and material reference and <Audio 1> as an ambience reference; add no speech.",
         124,
-        "Ref2VA",
+        "Hybrid",
         "native",
         1.0,
         false,
@@ -548,7 +548,7 @@
       "type": "MiniMaxH3SPEEDSamplerT8Advanced",
       "title": "P3 reference SPEED execution",
       "pos": [
-        1760,
+        2200,
         0
       ],
       "size": [
@@ -562,17 +562,17 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 6
+          "link": 7
         },
         {
           "name": "speed_plan",
           "type": "H3_T8_SPEED_PLAN",
-          "link": 7
+          "link": 8
         },
         {
           "name": "speed_source",
           "type": "H3_T8_SPEED_SOURCE",
-          "link": 8
+          "link": 9
         },
         {
           "name": "shift_audio",
@@ -612,7 +612,7 @@
           "name": "av_latent",
           "type": "LATENT",
           "links": [
-            12
+            13
           ]
         },
         {
@@ -634,7 +634,7 @@
           "name": "report_json",
           "type": "STRING",
           "links": [
-            20
+            21
           ]
         }
       ],
@@ -644,7 +644,7 @@
       },
       "widgets_values": [
         3.0,
-        2608193002,
+        2608193003,
         "fixed",
         "multimodal_research_exp",
         64
@@ -680,7 +680,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            9
+            10
           ]
         }
       ],
@@ -711,7 +711,7 @@
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 9
+          "link": 10
         },
         {
           "name": "start_time",
@@ -743,7 +743,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            10
+            11
           ]
         }
       ],
@@ -776,7 +776,7 @@
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 10
+          "link": 11
         }
       ],
       "outputs": [
@@ -784,15 +784,14 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            4,
-            11
+            12
           ]
         },
         {
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            5
+            6
           ]
         },
         {
@@ -841,7 +840,9 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": [
+            5
+          ]
         },
         {
           "name": "MASK",
@@ -863,7 +864,7 @@
       "title": "Hybrid first-frame anchor",
       "pos": [
         1320,
-        300
+        0
       ],
       "size": [
         390,
@@ -876,7 +877,7 @@
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 11
+          "link": 12
         },
         {
           "name": "batch_index",
@@ -899,7 +900,9 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": null
+          "links": [
+            4
+          ]
         }
       ],
       "properties": {
@@ -916,7 +919,7 @@
       "type": "MiniMaxH3AVDecodeT8",
       "title": "Decode generated H3 video and audio",
       "pos": [
-        2200,
+        2640,
         0
       ],
       "size": [
@@ -930,17 +933,17 @@
         {
           "name": "av_latent",
           "type": "LATENT",
-          "link": 12
+          "link": 13
         },
         {
           "name": "video_vae",
           "type": "VAE",
-          "link": 13
+          "link": 14
         },
         {
           "name": "audio_vae",
           "type": "VAE",
-          "link": 14
+          "link": 15
         }
       ],
       "outputs": [
@@ -948,14 +951,14 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            15
+            16
           ]
         },
         {
           "name": "generated_audio",
           "type": "AUDIO",
           "links": [
-            16
+            17
           ]
         },
         {
@@ -980,7 +983,7 @@
       "type": "MiniMaxH3OutputTrimT8",
       "title": "Exact 124-frame A/V trim",
       "pos": [
-        2640,
+        3080,
         0
       ],
       "size": [
@@ -994,7 +997,7 @@
         {
           "name": "frames",
           "type": "IMAGE",
-          "link": 15
+          "link": 16
         },
         {
           "name": "start_seconds",
@@ -1023,7 +1026,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 16,
+          "link": 17,
           "shape": 7
         }
       ],
@@ -1032,14 +1035,14 @@
           "name": "frames",
           "type": "IMAGE",
           "links": [
-            17
+            18
           ]
         },
         {
           "name": "audio",
           "type": "AUDIO",
           "links": [
-            18
+            19
           ]
         },
         {
@@ -1063,7 +1066,7 @@
       "type": "CreateVideo",
       "title": "Create exact 24fps review video",
       "pos": [
-        3080,
+        3520,
         0
       ],
       "size": [
@@ -1077,7 +1080,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 17
+          "link": 18
         },
         {
           "name": "fps",
@@ -1090,7 +1093,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 18,
+          "link": 19,
           "shape": 7
         },
         {
@@ -1107,7 +1110,7 @@
           "name": "VIDEO",
           "type": "VIDEO",
           "links": [
-            19
+            20
           ]
         }
       ],
@@ -1125,7 +1128,7 @@
       "type": "SaveVideo",
       "title": "Save P3 SPEED result",
       "pos": [
-        3520,
+        3960,
         0
       ],
       "size": [
@@ -1139,7 +1142,7 @@
         {
           "name": "video",
           "type": "VIDEO",
-          "link": 19
+          "link": 20
         },
         {
           "name": "filename_prefix",
@@ -1175,7 +1178,7 @@
         "Node name for S&R": "SaveVideo"
       },
       "widgets_values": [
-        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native",
+        "MiniMaxH3/SPEED_P3_reference_v1/hybrid_first_image_audio",
         "mp4"
       ]
     },
@@ -1184,7 +1187,7 @@
       "type": "SaveText",
       "title": "Save SPEED execution report",
       "pos": [
-        2200,
+        2640,
         300
       ],
       "size": [
@@ -1193,60 +1196,6 @@
       ],
       "flags": {},
       "order": 16,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "link": 20
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "COMBO",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "Node name for S&R": "SaveText"
-      },
-      "widgets_values": [
-        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native_speed_report",
-        "json"
-      ]
-    },
-    {
-      "id": 18,
-      "type": "SaveText",
-      "title": "Save resolved reference report",
-      "pos": [
-        1760,
-        300
-      ],
-      "size": [
-        390,
-        194
-      ],
-      "flags": {},
-      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -1283,7 +1232,61 @@
         "Node name for S&R": "SaveText"
       },
       "widgets_values": [
-        "MiniMaxH3/SPEED_P3_reference_v1/ref_video_audio_native_source_report",
+        "MiniMaxH3/SPEED_P3_reference_v1/hybrid_first_image_audio_speed_report",
+        "json"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "SaveText",
+      "title": "Save resolved reference report",
+      "pos": [
+        2200,
+        300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 22
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveText"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SPEED_P3_reference_v1/hybrid_first_image_audio_source_report",
         "json"
       ]
     },
@@ -1308,7 +1311,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## SPEED公共边界\n\n这是Advanced/EXP整链采样，不会替换原采样节点。默认两级`0.5→1.0`、Stock20时为14+6 NFE；Turbo8时为6+2 NFE，总NFE不额外增加。每级都会重建H3 AV latent、PackedLayout和条件。当前仅机械跑通，未证明质量或加速收益。"
+          "## 历史机械示例，旧计划已否决\n\n此工作流仍使用`0.5→1.0 / manual 0.85 / 14粗+6全分辨率`，只保留用于Hybrid引用组合的机械合同检查。三路线盲评已否决该手工计划；正式100条profile只绑定T2VA，不能套用到本工作流。不得作为推荐加速、画质或16GB安全方案。"
       ]
     },
     {
@@ -1332,7 +1335,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## Ref2VA：视频与同编号音轨\n\n示例截取2秒/48帧参考视频，并把它的音频连到`ref_video_audios.ref_video_audio_0`；编号必须与`ref_video_0`一致。"
+        "## Hybrid：首帧 + 独立图 + 独立音频\n\n首帧、Picture 1和Audio 1同时进入条件。每级报告应为pictures=2, videos=0, audios=1，防止refs覆盖keyframe。"
       ]
     },
     {
@@ -1356,7 +1359,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## 成本与检查\n\n固定参考token让本机耗时约417秒，明显抵消SPEED收益。检查动作/画面/声音参考遵循；机械跑通不代表比全分辨率更快或更好。"
+        "## 参数与检查\n\n替换输入视频和参考图；检查首帧、图像身份/材质、音色/环境声是否串扰。当前只证明payload与输出机械正确，参考质量仍需人工审片/试听。"
       ]
     }
   ],
@@ -1387,14 +1390,22 @@
     ],
     [
       4,
-      10,
+      12,
+      0,
+      6,
+      17,
+      "IMAGE"
+    ],
+    [
+      5,
+      11,
       0,
       6,
       19,
       "IMAGE"
     ],
     [
-      5,
+      6,
       10,
       1,
       6,
@@ -1402,7 +1413,7 @@
       "AUDIO"
     ],
     [
-      6,
+      7,
       1,
       0,
       7,
@@ -1410,7 +1421,7 @@
       "MODEL"
     ],
     [
-      7,
+      8,
       5,
       0,
       7,
@@ -1418,7 +1429,7 @@
       "H3_T8_SPEED_PLAN"
     ],
     [
-      8,
+      9,
       6,
       0,
       7,
@@ -1426,7 +1437,7 @@
       "H3_T8_SPEED_SOURCE"
     ],
     [
-      9,
+      10,
       8,
       0,
       9,
@@ -1434,7 +1445,7 @@
       "VIDEO"
     ],
     [
-      10,
+      11,
       9,
       0,
       10,
@@ -1442,7 +1453,7 @@
       "VIDEO"
     ],
     [
-      11,
+      12,
       10,
       0,
       12,
@@ -1450,7 +1461,7 @@
       "IMAGE"
     ],
     [
-      12,
+      13,
       7,
       0,
       13,
@@ -1458,7 +1469,7 @@
       "LATENT"
     ],
     [
-      13,
+      14,
       3,
       0,
       13,
@@ -1466,7 +1477,7 @@
       "VAE"
     ],
     [
-      14,
+      15,
       4,
       0,
       13,
@@ -1474,7 +1485,7 @@
       "VAE"
     ],
     [
-      15,
+      16,
       13,
       0,
       14,
@@ -1482,7 +1493,7 @@
       "IMAGE"
     ],
     [
-      16,
+      17,
       13,
       1,
       14,
@@ -1490,7 +1501,7 @@
       "AUDIO"
     ],
     [
-      17,
+      18,
       14,
       0,
       15,
@@ -1498,7 +1509,7 @@
       "IMAGE"
     ],
     [
-      18,
+      19,
       14,
       1,
       15,
@@ -1506,7 +1517,7 @@
       "AUDIO"
     ],
     [
-      19,
+      20,
       15,
       0,
       16,
@@ -1514,7 +1525,7 @@
       "VIDEO"
     ],
     [
-      20,
+      21,
       7,
       4,
       17,
@@ -1522,7 +1533,7 @@
       "STRING"
     ],
     [
-      21,
+      22,
       6,
       1,
       18,
@@ -1540,7 +1551,7 @@
         120
       ]
     },
-    "workflow_title": "Ref2VA视频和同编号音轨"
+    "workflow_title": "Hybrid首帧图像音频参考"
   },
   "version": 0.4
 }

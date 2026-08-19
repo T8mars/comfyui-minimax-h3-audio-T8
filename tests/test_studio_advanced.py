@@ -277,7 +277,9 @@ def test_new_api_and_frontend_examples_are_link_consistent(api_name, workflow_na
     api = json.loads(
         (root / "tests" / "fixtures" / "api" / api_name).read_text(encoding="utf-8")
     )
-    workflow = json.loads((root / "examples" / "workflows" / workflow_name).read_text(encoding="utf-8"))
+    workflow_paths = list((root / "examples" / "workflows").rglob(workflow_name))
+    assert len(workflow_paths) == 1
+    workflow = json.loads(workflow_paths[0].read_text(encoding="utf-8"))
     assert api
     nodes = {node["id"]: node for node in workflow["nodes"]}
     assert len(nodes) == len(workflow["nodes"])

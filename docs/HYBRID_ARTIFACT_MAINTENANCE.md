@@ -88,7 +88,7 @@ memory management are intentionally separate responsibilities.
 ## Examples
 
 - API prompt: `tests/fixtures/api/hybrid_artifact_maintenance_api.json`
-- Frontend workflow: `examples/workflows/2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json`
+- Frontend workflow: `examples/workflows/09-hybrid-model/2026-08-12_H3_Hybrid_Artifact_Maintenance_Advanced.json`
 
 Both examples ship in the safe inspection configuration. Change an action only
 after reading the report, and never reuse an old epoch for a new quarantine.

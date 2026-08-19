@@ -1,0 +1,331 @@
+{
+  "last_node_id": 15,
+  "last_link_id": 14,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "先读：100条正式标定已完成，但生成门仍失败",
+      "pos": [0, -620],
+      "size": [850, 390],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "color": "#6b2634",
+      "bgcolor": "#241116",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["## 这不是推荐生成工作流，而是H3频谱标定与复核工作流\n\n正式100条T2VA自然视频窗口已经完成：A=29.9641867、β=2.3183721、R²=0.9951512，数值profile通过。但对应标定SPEED实跑比全分辨率基线更慢、峰值高约3671.2MiB、余量仅约203.7MiB，匿名审片总体/运动细节/声音也全部选择基线，原始SPEED MP4还有一帧严格解码失败。\n\n因此100条标定只证明频谱统计合同成立，不证明SPEED适合H3；当前路线继续为EXP并禁止稳定默认。"]
+    },
+    {
+      "id": 2,
+      "type": "MarkdownNote",
+      "title": "正式数据集已存在；仅在重建新语料时使用累积支路",
+      "pos": [900, -620],
+      "size": [850, 390],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "color": "#365d3d",
+      "bgcolor": "#122018",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["## 当前正式文件与重建规则\n\n现有正式文件：`h3_t2va_vchitect_e068_736x416x124_n100_v1.safetensors`。Load→Finalize可以直接复核profile，不需要重新累积。\n\n只有构建新的task/model/VAE/grid语料时才使用Calibration Window→VAE Encode→Accumulate→Save：每个文件一个唯一batch_id，至少100个独立片段，24fps、124帧、736×416、center-cover不拉伸。保存前必须显式`confirm_write=true`；覆盖还需`overwrite=true`。\n\n禁止把这份T2VA profile静默套给I2VA、FL2VA、L2VA、Ref2VA或Hybrid。"]
+    },
+    {
+      "id": 3,
+      "type": "LoadVideo",
+      "title": "每次替换为一个独立24fps片段",
+      "pos": [0, 0],
+      "size": [390, 124],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [{"name": "file", "type": "COMBO", "widget": {"name": "file"}, "link": null}],
+      "outputs": [{"name": "VIDEO", "type": "VIDEO", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadVideo"},
+      "widgets_values": ["replace_with_independent_24fps_clip.mp4"]
+    },
+    {
+      "id": 4,
+      "type": "GetVideoComponents",
+      "title": "提取帧/FPS（标定不读取音频）",
+      "pos": [440, 0],
+      "size": [390, 110],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "video", "type": "VIDEO", "link": 1}],
+      "outputs": [
+        {"name": "images", "type": "IMAGE", "links": [2]},
+        {"name": "audio", "type": "AUDIO", "links": null},
+        {"name": "fps", "type": "FLOAT", "links": [3]},
+        {"name": "bit_depth", "type": "INT", "links": null}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "GetVideoComponents"},
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SPEEDCalibrationWindowT8Advanced",
+      "title": "固定24fps / 736×416 / 124帧，中心裁切不拉伸",
+      "pos": [880, 0],
+      "size": [410, 430],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "frames", "type": "IMAGE", "link": 2},
+        {"name": "source_fps", "type": "FLOAT", "link": 3, "widget": {"name": "source_fps"}},
+        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
+        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
+        {"name": "length", "type": "INT", "widget": {"name": "length"}, "link": null},
+        {"name": "start_seconds", "type": "FLOAT", "widget": {"name": "start_seconds"}, "link": null},
+        {"name": "resize_mode", "type": "COMBO", "widget": {"name": "resize_mode"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "frames", "type": "IMAGE", "links": [5]},
+        {"name": "frame_count", "type": "INT", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDCalibrationWindowT8Advanced"},
+      "widgets_values": [24.0, 736, 416, 124, 0.0, "center_cover"]
+    },
+    {
+      "id": 6,
+      "type": "VAELoader",
+      "title": "同一MiniMax H3 video VAE",
+      "pos": [880, 500],
+      "size": [410, 124],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "vae_name", "type": "COMBO", "widget": {"name": "vae_name"}, "link": null}],
+      "outputs": [{"name": "VAE", "type": "VAE", "links": [6]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "VAELoader"},
+      "widgets_values": ["minimax_h3_video_vae_fp16.safetensors"]
+    },
+    {
+      "id": 7,
+      "type": "VAEEncode",
+      "title": "编码分离的H3 video latent",
+      "pos": [1340, 0],
+      "size": [390, 132],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "pixels", "type": "IMAGE", "link": 5},
+        {"name": "vae", "type": "VAE", "link": 6}
+      ],
+      "outputs": [{"name": "LATENT", "type": "LATENT", "links": [7]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "VAEEncode"},
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
+      "title": "首次流式计算完整模型/VAE SHA-256",
+      "pos": [1340, 260],
+      "size": [470, 230],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "checkpoint_name", "type": "COMBO", "widget": {"name": "checkpoint_name"}, "link": null},
+        {"name": "video_vae_name", "type": "COMBO", "widget": {"name": "video_vae_name"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "checkpoint_fingerprint", "type": "STRING", "links": [8]},
+        {"name": "vae_fingerprint", "type": "STRING", "links": [9]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced"},
+      "widgets_values": ["minimax_h3_fl2va_int8_convrot.safetensors", "minimax_h3_video_vae_fp16.safetensors"]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+      "title": "后续批次：Load后把输出接previous_dataset",
+      "pos": [1340, 560],
+      "size": [470, 250],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "mode", "type": "COMBO", "widget": {"name": "mode"}, "link": null},
+        {"name": "dataset_name", "type": "STRING", "widget": {"name": "dataset_name"}, "link": null},
+        {"name": "overwrite", "type": "BOOLEAN", "widget": {"name": "overwrite"}, "link": null},
+        {"name": "confirm_write", "type": "BOOLEAN", "widget": {"name": "confirm_write"}, "link": null},
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "link": null, "shape": 7}
+      ],
+      "outputs": [
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "links": null},
+        {"name": "file_path", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced"},
+      "widgets_values": ["load", "h3_t2va_vchitect_e068_736x416x124_n100_v1", false, false]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced",
+      "title": "每次batch_id必须唯一；任务/网格不可变",
+      "pos": [1880, 0],
+      "size": [520, 420],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "video_latent", "type": "LATENT", "link": 7},
+        {"name": "batch_id", "type": "STRING", "widget": {"name": "batch_id"}, "link": null},
+        {"name": "task_family", "type": "COMBO", "widget": {"name": "task_family"}, "link": null},
+        {"name": "checkpoint_fingerprint", "type": "STRING", "widget": {"name": "checkpoint_fingerprint"}, "link": 8},
+        {"name": "vae_fingerprint", "type": "STRING", "widget": {"name": "vae_fingerprint"}, "link": 9},
+        {"name": "max_temporal_samples", "type": "INT", "widget": {"name": "max_temporal_samples"}, "link": null},
+        {"name": "previous_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "link": null, "shape": 7},
+        {"name": "dataset_provenance_json", "type": "STRING", "widget": {"name": "dataset_provenance_json"}, "link": null},
+        {"name": "source_entry_json", "type": "STRING", "widget": {"name": "source_entry_json"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "links": [10, 11]},
+        {"name": "report_json", "type": "STRING", "links": [13]}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced"},
+      "widgets_values": ["batch_001", "T2VA", "sha256:connected", "sha256:connected", 32, "", ""]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
+      "title": "显式确认后原子保存；首次overwrite=false",
+      "pos": [2460, 0],
+      "size": [480, 250],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "mode", "type": "COMBO", "widget": {"name": "mode"}, "link": null},
+        {"name": "dataset_name", "type": "STRING", "widget": {"name": "dataset_name"}, "link": null},
+        {"name": "overwrite", "type": "BOOLEAN", "widget": {"name": "overwrite"}, "link": null},
+        {"name": "confirm_write", "type": "BOOLEAN", "widget": {"name": "confirm_write"}, "link": null},
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "link": 10, "shape": 7}
+      ],
+      "outputs": [
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "links": null},
+        {"name": "file_path", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced"},
+      "widgets_values": ["save", "h3_t2va_vchitect_e068_736x416x124_n100_v1", false, false]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
+      "title": "100条与R²门槛同时通过才是dataset_profile",
+      "pos": [2460, 330],
+      "size": [480, 310],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "spectrum_dataset", "type": "H3_T8_SPEED_SPECTRUM_DATASET", "link": 11},
+        {"name": "profile_name", "type": "STRING", "widget": {"name": "profile_name"}, "link": null},
+        {"name": "minimum_r_squared", "type": "FLOAT", "widget": {"name": "minimum_r_squared"}, "link": null},
+        {"name": "minimum_independent_clips", "type": "INT", "widget": {"name": "minimum_independent_clips"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "spectrum_profile", "type": "H3_T8_SPEED_PROFILE", "links": [12]},
+        {"name": "report_json", "type": "STRING", "links": [14]}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced"},
+      "widgets_values": ["h3_t2va_vchitect_e068_736x416x124_n100_profile_v1", 0.8, 100]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3SPEEDPlanT8Advanced",
+      "title": "仅dataset_profile通过后才允许delta_optimal",
+      "pos": [3020, 330],
+      "size": [520, 550],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
+        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
+        {"name": "steps", "type": "INT", "widget": {"name": "steps"}, "link": null},
+        {"name": "scales", "type": "STRING", "widget": {"name": "scales"}, "link": null},
+        {"name": "transition_mode", "type": "COMBO", "widget": {"name": "transition_mode"}, "link": null},
+        {"name": "manual_transition_sigmas", "type": "STRING", "widget": {"name": "manual_transition_sigmas"}, "link": null},
+        {"name": "delta", "type": "FLOAT", "widget": {"name": "delta"}, "link": null},
+        {"name": "shift_video", "type": "FLOAT", "widget": {"name": "shift_video"}, "link": null},
+        {"name": "transform", "type": "COMBO", "widget": {"name": "transform"}, "link": null},
+        {"name": "profile_policy", "type": "COMBO", "widget": {"name": "profile_policy"}, "link": null},
+        {"name": "fallback_policy", "type": "COMBO", "widget": {"name": "fallback_policy"}, "link": null},
+        {"name": "spectrum_profile", "type": "H3_T8_SPEED_PROFILE", "link": 12, "shape": 7}
+      ],
+      "outputs": [
+        {"name": "speed_plan", "type": "H3_T8_SPEED_PLAN", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SPEEDPlanT8Advanced"},
+      "widgets_values": [736, 416, 20, "0.5,1.0", "delta_optimal", "0.85", 0.01, 12.0, "dct", "require_validated_profile", "error"]
+    },
+    {
+      "id": 14,
+      "type": "SaveText",
+      "title": "保存本次累积报告",
+      "pos": [2460, 700],
+      "size": [480, 194],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {"name": "text", "type": "STRING", "link": 13},
+        {"name": "filename_prefix", "type": "STRING", "widget": {"name": "filename_prefix"}, "link": null},
+        {"name": "format", "type": "COMBO", "widget": {"name": "format"}, "link": null}
+      ],
+      "outputs": [{"name": "text", "type": "STRING", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SaveText"},
+      "widgets_values": ["MiniMaxH3/SPEED_Calibration/accumulate_report", "json"]
+    },
+    {
+      "id": 15,
+      "type": "SaveText",
+      "title": "保存拟合/验证报告",
+      "pos": [3020, 0],
+      "size": [520, 194],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {"name": "text", "type": "STRING", "link": 14},
+        {"name": "filename_prefix", "type": "STRING", "widget": {"name": "filename_prefix"}, "link": null},
+        {"name": "format", "type": "COMBO", "widget": {"name": "format"}, "link": null}
+      ],
+      "outputs": [{"name": "text", "type": "STRING", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SaveText"},
+      "widgets_values": ["MiniMaxH3/SPEED_Calibration/profile_report", "json"]
+    }
+  ],
+  "links": [
+    [1, 3, 0, 4, 0, "VIDEO"],
+    [2, 4, 0, 5, 0, "IMAGE"],
+    [3, 4, 2, 5, 1, "FLOAT"],
+    [5, 5, 0, 7, 0, "IMAGE"],
+    [6, 6, 0, 7, 1, "VAE"],
+    [7, 7, 0, 10, 0, "LATENT"],
+    [8, 8, 0, 10, 3, "STRING"],
+    [9, 8, 1, 10, 4, "STRING"],
+    [10, 10, 0, 11, 4, "H3_T8_SPEED_SPECTRUM_DATASET"],
+    [11, 10, 0, 12, 0, "H3_T8_SPEED_SPECTRUM_DATASET"],
+    [12, 12, 0, 13, 11, "H3_T8_SPEED_PROFILE"],
+    [13, 10, 1, 14, 0, "STRING"],
+    [14, 12, 1, 15, 0, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.62, "offset": [90, 760]}},
+  "version": 0.4
+}

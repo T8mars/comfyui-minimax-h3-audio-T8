@@ -243,6 +243,7 @@ def test_trajectory_examples_route_the_direct_transport_contract():
             project_root
             / "examples"
             / "workflows"
+            / "12-system-memory"
             / "2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json"
         ).read_text(encoding="utf-8-sig")
     )
