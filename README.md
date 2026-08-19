@@ -59,6 +59,13 @@ ComfyUI用户工作流菜单 `MiniMax H3 T8`。目录从 `01-basic-generation` �
 
 ## 安装与兼容性
 
+发布到官方 Comfy Registry 后，可使用 ComfyUI Manager 搜索 `MiniMax H3 Audio T8` 安装，
+或在 ComfyUI 环境中执行：
+
+```bash
+comfy node install minimax-h3-audio-t8
+```
+
 将项目目录放入 ComfyUI 的 `custom_nodes/minimax-h3-audio-T8`，重启 ComfyUI 后即可在上述
 菜单中找到节点。基础节点没有额外 pip 依赖，复用 ComfyUI 自带的 PyTorch、torchaudio 和
 MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `transformers`，缺少它们不会

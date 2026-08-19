@@ -1,0 +1,12 @@
+# Development-only files excluded from the Comfy Registry archive.
+.github/
+artifacts/
+docs/
+tests/
+tools/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
