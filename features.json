@@ -1,4 +1,19 @@
 {
+  "prompt_tag_compatibility_hotfix": {
+    "status": "implemented locally; not yet released",
+    "date": "2026-08-20",
+    "scope": "prompt preprocessing only; no node schema, conditioning layout, or sampler change",
+    "compatible_cases": [
+      "plain numbered media prose when no same-type reference is connected",
+      "legacy zero-based media ordinals",
+      "stale positive ordinals when exactly one same-type reference is connected"
+    ],
+    "fail_closed": [
+      "explicit disconnected bracketed tags",
+      "ambiguous out-of-range ordinals when multiple same-type references are connected"
+    ],
+    "verification": "25 focused tests and 746 full-project tests passed; changed-scope Ruff and git diff --check passed"
+  },
   "native_h3_contract": {
     "fps": 24,
     "frame_grid": "17n+5",

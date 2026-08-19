@@ -113,6 +113,36 @@ def test_native_t2va_needs_no_source_audio():
     assert "task=t2va" in report
 
 
+def test_plain_disconnected_media_number_is_preserved_as_text_and_reported():
+    args = base_args()
+    args.update({
+        "audio_mode": "native",
+        "drive_audio": None,
+        "add_source_as_reference": False,
+        "prompt_primary_audio_ordinal": 0,
+        "prompt": "Video 2 opens with a quiet landscape and Audio 3 fades in.",
+    })
+    _conditioning, _latent, _output_audio, prompt, _media_map, report = build_conditioning(
+        **args
+    )
+    assert prompt == "Video 2 opens with a quiet landscape and Audio 3 fades in."
+    assert "warning: <Video 2> is not connected" in report
+    assert "warning: <Audio 3> is not connected" in report
+
+
+def test_explicit_disconnected_media_tag_still_fails_closed():
+    args = base_args()
+    args.update({
+        "audio_mode": "native",
+        "drive_audio": None,
+        "add_source_as_reference": False,
+        "prompt_primary_audio_ordinal": 0,
+        "prompt": "Use <Picture 1> as the identity reference.",
+    })
+    with pytest.raises(ValueError, match="Connect the referenced media"):
+        build_conditioning(**args)
+
+
 def test_orphan_video_soundtrack_is_rejected():
     args = base_args()
     args["ref_video_audios"] = {"ref_video_audio_2": make_audio(2)}

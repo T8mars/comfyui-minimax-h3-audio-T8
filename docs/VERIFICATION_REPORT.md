@@ -13,6 +13,22 @@ historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## Unreleased prompt-tag compatibility hotfix (2026-08-20)
+
+The reported failure occurred before CLIP encoding in `prepare_prompt()`: the local validator
+treated every plain `Image N`, `Video N`, or `Audio N` phrase as an intentional reference token and
+raised whenever the ordinal was not connected. The compatibility path now keeps plain numbered
+media prose as prose when zero same-type reference items exist, maps zero-based ordinals to the
+official one-based form, and maps a stale positive ordinal only when exactly one same-type item is
+connected. All such changes are recorded as warnings in the Conditioning report.
+
+Strict fail-closed behavior remains for an explicitly bracketed tag with no corresponding media and
+for an out-of-range ordinal when multiple same-type media items are connected. In non-strict mode an
+unresolved explicit tag is demoted to prose instead of being passed to Qwen as a dangling media tag.
+The focused prompt/Conditioning/still-image suite passed 25 tests. The complete project suite passed
+746 tests with four existing Triton deprecation warnings; changed-scope Ruff and `git diff --check`
+also passed. No node schema, input order, packed Conditioning payload, or sampler file changed.
+
 ## 1.35.1 learned H3 multiplier workflow hotfix (2026-08-19)
 
 The current upstream workflow was pinned at

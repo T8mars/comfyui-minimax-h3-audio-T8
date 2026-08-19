@@ -6,6 +6,13 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> The current unreleased prompt-tag compatibility fix preserves strict failure for ambiguous or
+> explicitly disconnected reference tags, while accepting three mechanically unambiguous legacy
+> cases: zero-based ordinals, stale ordinals when exactly one same-type medium is connected, and
+> plain numbered media prose when no reference medium of that type exists. Every automatic mapping
+> or prose fallback is surfaced in the node report. No node schema, input order, conditioning
+> layout, or sampler math changes.
+
 > Project v1.35.1 keeps the learned-latent nodes isolated and fixes the shipped I2VA graph against
 > upstream workflow commit `64fc9d4`. The only user size control is now the learned upscaler's
 > `scale_by=2.0`; its aligned width/height outputs directly drive high-resolution Conditioning.
