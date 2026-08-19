@@ -5,13 +5,44 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.18.2 checkpoint passed the full project regression and a real Qwen-cache/H3 generation
-probe on 2026-08-14 against ComfyUI `v0.32.0-16` at
-`ddbaa8752874c275290d054ee4fddd6e004f5fdf`. The immediately preceding compatibility checkpoint was
-`v0.32.0-15@86aedfd943d36d485e5ed3cb9d962f21f73d1741`. The wider real-generation matrix below remains anchored
-to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was
-originally recorded on 2026-08-06 against source commit
-`563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+The current 1.35.1 checkpoint passed all 741 tests against the configured ComfyUI source tree
+`187eda8ef5e588c6a5765cad53e482765edae052`; its real learned-latent generation used the one-key runtime
+entry point `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
+on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5fdf`, while the wider
+historical generation matrix below remains anchored to
+`0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
+recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.35.1 learned H3 multiplier workflow hotfix (2026-08-19)
+
+The current upstream workflow was pinned at
+`LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler@64fc9d4c7e2c03e8c61d6886182e3309365a1962`.
+It uses native H3 shift 12/3, a Comfy `simple` eight-step schedule split after four low-resolution
+calls, and raw high-resolution video sigmas `0.9035, 0.6316, 0.3158, 0`. It does not reinterpret
+those values as a shift-6 schedule. The upstream 3D node also defaults to multiplier 2.0.
+
+The project example now has one authoritative size control: `scale_by=2.0` on the learned upscaler.
+Its actual aligned `width` and `height` outputs are connected directly to the high-resolution H3
+Conditioning node. Changing the multiplier therefore cannot leave a stale second canvas behind.
+Existing saved workflows keep their serialized values and node input order; stable nodes and
+`sampling.py` are unchanged.
+
+The first attempted 1472x832 run exposed a separate invalid LoRA conversion. The plain
+`minimax_h3_fl2v_turbo_4step_v0.1_comfyui.safetensors` has SHA-256
+`BE232BED4B6E2A808E53481056D2EB1DFEC064113FAAC9FF68C28D43D5261A07`, omits the PEFT alpha
+normalization required by the source adapter and applies approximately 16x excessive update. Its
+whole-frame melt is retained only as failure evidence. The accepted graph instead uses
+`LoraLoaderBypassModelOnly` with
+`minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors`, SHA-256
+`35A4465A7911C8917C8BA3CFD2991270184474DC2FA9122BBDECAFF15D7C1B39`, at strength 1.0.
+
+The corrected real I2VA graph ran 736x416x124 low resolution, multiplier 2.0 learned resize and
+1472x832x124 high resolution with seven total joint AV forwards. It completed in 626.969 seconds;
+whole-device peak use was about 15170.3MiB. The final H.265 file has 124 frames at 24fps plus 32kHz
+stereo audio, passed separate `-xerror -err_detect explode` video and audio decodes, and has SHA-256
+`06BEE97DAC218956FBB83288397878481211A6BA626EEA599667C897500924E0`. Eight sampled frames no
+longer exhibit the rejected LoRA route's whole-frame melt. This proves the corrected sizing,
+LoRA/schedule mechanics and media contract for one case; it is not a universal quality or 16GB claim.
 
 ## 1.34.0 learned H3 latent two-pass route (2026-08-19)
 

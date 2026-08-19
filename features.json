@@ -209,23 +209,25 @@
       "all output pixel dimensions are exactly divisible by 32 and remain within the existing 1920x1088-area H3 cap",
       "the default release policy selectively offloads only the learned-resizer patcher after inference; exceptions always unload it and never call global unload_all_models",
       "a second current H3 Conditioning node must rebuild keyframes and media payload for the high-resolution canvas; stale low-resolution keyframes fail closed",
-      "the corrected parity plan reproduces the upstream simple-8 low-pass split and published shift-6 refine schedule; a different active H3 video shift is mapped through the same base-flow model time",
+      "the corrected parity plan reproduces upstream workflow commit 64fc9d4: native shift 12/3, the simple-8 low-pass split and the published raw refine video sigmas without a guessed shift-6 remap",
       "the first sampler must feed denoised_output into the learned upscaler; the high-resolution Conditioning template is authoritative for masks and lock/remix audio",
+      "the learned upscaler defaults to scale_by=2.0 and its actual aligned width/height outputs directly drive high-resolution Conditioning, so changing scale does not require a duplicate manual canvas",
+      "the default quantized-model workflow uses LoraLoaderBypassModelOnly with the SHA-verified comfyui_alpha8 LightX2V LoRA; the superseded plain comfyui conversion is rejected because it applies about 16x excessive LoRA update",
       "Tail subdivision, Model-Time Bias, H3 STG and joint AV RF Restart can only augment the partial high-resolution schedule through the dedicated two-pass detail mixer; the older full-trajectory mixer is deliberately incompatible",
       "Temporal Detail remains an IMAGE post-process after AV Decode and the decoded audio bypasses it"
     ],
     "validated_real_probe": {
       "date": "2026-08-19",
       "environment": "RTX 4060 Ti 16GiB; one-key runtime ComfyUI 0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a; plugin loaded from the configured ComfyUI base directory plus VideoHelperSuite",
-      "graph": "FL2VA full INT8 plus Turbo EMA; I2VA 736x416x124 low 4 steps from Comfy simple-8; learned 3D video-latent upscale to 1120x640; rebuilt high-resolution Conditioning; published three-call refine schedule at shift 6/3; native joint AV decode",
-      "sampling": "the corrected parity graph completed all 7 joint AV forwards in 238.96 seconds; the preceding v1.34 linear-base-q 4+4 graph was mechanically runnable but rejected as a behavioral reproduction",
-      "learned_model": "exact published 690,592,672-byte checkpoint loaded; synthetic GPU probe emitted finite [1,24,7,40,70] video latent while preserving exact audio object and selectively released its GPU weights",
-      "media": "corrected H.265 output passed separate fatal video/audio decoder-error validation at 1120x640, 124 frames, 24fps, 32kHz stereo and 14.67ms A/V duration difference; SHA-256 EF67FDE279E1EB0D0AD117E46EBA163230B029013A4B4E24471E8C19D7A1387F",
+      "graph": "FL2VA full INT8 plus corrected alpha8 LightX2V LoRA through the quantized-model bypass loader; I2VA 736x416x124 low 4 steps from Comfy simple-8; learned 3D scale_by=2.0 video-latent upscale to 1472x832; upscaler width/height directly linked to rebuilt high-resolution Conditioning; published raw three-call refine schedule at shift 12/3; native joint AV decode",
+      "sampling": "the corrected upstream-current graph completed all 7 joint AV forwards in 626.969 seconds; peak whole-device use was about 15170.3MiB. The earlier plain comfyui LoRA run was rejected after its missing PEFT alpha handling was shown to apply about 16x excessive update and melt the frame",
+      "learned_model": "exact published 690,592,672-byte checkpoint loaded; the real probe emitted finite [1,24,37,52,92] video latent while preserving the joint audio object and selectively released its GPU weights",
+      "media": "corrected H.265 output passed separate fatal video/audio decoder-error validation at 1472x832, 124 frames, 24fps, 32kHz stereo and 14.67ms A/V duration difference; SHA-256 06BEE97DAC218956FBB83288397878481211A6BA626EEA599667C897500924E0; an eight-frame contact sheet no longer showed the rejected route's whole-frame melt",
       "tail3_probe": "the same cached graph with only high-resolution Tail +3 enabled completed six refine calls in a 302.85-second task; H.265 video/audio strict decode passed with the same 1120x640, 124-frame, 24fps, 32kHz-stereo contract; SHA-256 F2C1308F22E5852BBFCA22833FAF73393D39B27695C88523686CE5B93E1F7419",
       "save_boundary": "VideoHelperSuite H.264 produced one corrupt frame and metadata-enabled H.264 raced final moov writing; the example therefore uses H.265 with save_metadata=false",
-      "memory": "coarse sampling observed about 1,940MiB minimum free whole-device VRAM; this was not a continuous calibrated peak trace and is not a universal 16GiB safety claim"
+      "memory": "the corrected 2x run peaked at about 15170.3MiB whole-device use on the tested RTX 4060 Ti 16GiB; no three-cold/three-warm matrix was run, so this is not a universal 16GiB safety claim"
     },
-    "status": "clean-room learned network is tensor-exact against the upstream checkpoint implementation on a fixed synthetic latent; the corrected 4+3 upstream-schedule I2VA graph and strict H.265 media validation passed. Perceptual superiority, broader tasks and universal memory safety remain Experimental and unproven"
+    "status": "clean-room learned network is tensor-exact against the upstream checkpoint implementation on a fixed synthetic latent; the corrected upstream-current multiplier workflow, automatic high-resolution size binding, alpha8 LoRA route, 4+3 I2VA graph and strict H.265 media validation passed. Perceptual superiority, broader tasks and universal memory safety remain Experimental and unproven"
   },
   "experimental_speed_spatial_progressive": {
     "category": "T8/MiniMax H3/SPEED/Experimental",

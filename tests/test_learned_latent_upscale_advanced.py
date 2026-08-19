@@ -325,14 +325,16 @@ def test_learned_parity_plan_reproduces_published_refine_sigmas(monkeypatch):
         Model(), 8, 4, 3
     )
     assert torch.equal(coarse, published_simple[:5])
-    assert refine.tolist() == pytest.approx([0.85, 0.6316, 0.3158, 0.0])
+    assert refine.tolist() == pytest.approx([0.9035, 0.6316, 0.3158, 0.0])
     report = json.loads(report_text)
     assert report["previous_linear_q_plan_denied"] is True
+    assert report["previous_reference_shift_remap_denied"] is True
+    assert report["source_commit"] == learned.UPSTREAM_WORKFLOW_COMMIT
     assert report["coarse_scheduler"] == "comfy.simple"
     assert report["total_nfe"] == 7
 
 
-def test_learned_parity_plan_maps_reference_through_base_flow_for_shift_12(monkeypatch):
+def test_learned_parity_plan_keeps_published_raw_video_sigmas_at_shift_12(monkeypatch):
     simple = torch.linspace(1.0, 0.0, 9)
     monkeypatch.setattr(
         learned.comfy.samplers,
@@ -343,11 +345,14 @@ def test_learned_parity_plan_maps_reference_through_base_flow_for_shift_12(monke
     _coarse, refine, report_text = learned.build_learned_two_pass_parity_plan(
         model, 8, 4, 4
     )
-    reference = torch.tensor([0.9035, 0.8, 0.6316, 0.3158, 0.0], dtype=torch.float64)
-    base_q = learned._inverse_shift_sigma(reference, 6.0)
-    expected = learned.shift_sigma(base_q, 12.0).to(torch.float32)
+    expected = torch.tensor([0.9035, 0.8, 0.6316, 0.3158, 0.0], dtype=torch.float32)
     assert torch.equal(refine, expected)
-    assert json.loads(report_text)["shift_video"] == 12.0
+    report = json.loads(report_text)
+    assert report["shift_video"] == 12.0
+    expected_audio = learned.shift_sigma(
+        learned._inverse_shift_sigma(expected.to(torch.float64), 12.0), 3.0
+    )
+    assert report["refine_audio_sigmas"] == pytest.approx(expected_audio.tolist())
 
 
 def test_learned_parity_plan_rejects_unpublished_refine_counts(monkeypatch):
@@ -390,6 +395,7 @@ def test_node_schemas_are_isolated_experimental_and_safe_by_default():
     assert parity_schema.is_experimental is True
     assert learned_inputs["release_policy"].default == "offload_after"
     assert learned_inputs["aspect_policy"].default == "preserve_source"
+    assert learned_inputs["scale_by"].default == 2.0
     assert reconcile_inputs["audio_policy"].default == "auto"
     assert sigma_inputs["coarse_steps"].default == 4
     assert sigma_inputs["refine_steps"].default == 4
@@ -423,20 +429,28 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     low_conditioning = next(node for node in workflow["nodes"] if node["id"] == 7)
     high_conditioning = next(node for node in workflow["nodes"] if node["id"] == 14)
     assert low_conditioning["widgets_values"][1:4] == [736, 416, 124]
-    assert high_conditioning["widgets_values"][1:4] == [1120, 640, 124]
+    assert high_conditioning["widgets_values"][3] == 124
     assert low_conditioning["widgets_values"][0] == high_conditioning["widgets_values"][0]
     assert low_conditioning["widgets_values"][4] == "I2VA"
     assert high_conditioning["widgets_values"][4] == "I2VA"
 
-    links = {link[0]: link for link in workflow["links"]}
-    assert links[16][1:5] == [12, 1, 13, 0]
+    width_link = next(
+        link for link in workflow["links"] if link[1:5] == [13, 1, 14, 4]
+    )
+    height_link = next(
+        link for link in workflow["links"] if link[1:5] == [13, 2, 14, 5]
+    )
+    assert width_link[5] == "INT"
+    assert height_link[5] == "INT"
+    assert any(link[1:5] == [12, 1, 13, 0] for link in workflow["links"])
     assert nodes[12]["outputs"][1]["name"] == "denoised_output"
-    assert links[26][1:5] == [9, 1, 16, 2]
-    assert links[32][1:5] == [16, 2, 19, 3]
+    assert any(link[1:5] == [9, 1, 16, 2] for link in workflow["links"])
+    assert any(link[1:5] == [16, 2, 19, 3] for link in workflow["links"])
+    assert nodes[13]["widgets_values"][2] == 2.0
     assert nodes[13]["widgets_values"][-1] == "offload_after"
     assert nodes[15]["widgets_values"] == ["auto"]
     assert nodes[9]["widgets_values"] == [8, 4, 3]
-    assert nodes[16]["widgets_values"][0:2] == [6.0, 3.0]
+    assert nodes[16]["widgets_values"][0:2] == [12.0, 3.0]
     assert nodes[16]["widgets_values"][2] is False
     assert nodes[16]["widgets_values"][3] == 3
 
@@ -458,11 +472,17 @@ def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_c
     assert prompt["19"]["inputs"]["sigmas"] == ["16", 2]
     assert prompt["7"]["inputs"]["width"] == 736
     assert prompt["7"]["inputs"]["height"] == 416
-    assert prompt["14"]["inputs"]["width"] == 1120
-    assert prompt["14"]["inputs"]["height"] == 640
+    assert prompt["13"]["inputs"]["size_mode"] == "scale_by"
+    assert prompt["13"]["inputs"]["scale_by"] == 2.0
+    assert prompt["14"]["inputs"]["width"] == ["13", 1]
+    assert prompt["14"]["inputs"]["height"] == ["13", 2]
     assert prompt["13"]["inputs"]["release_policy"] == "offload_after"
     assert prompt["15"]["inputs"]["audio_policy"] == "auto"
-    assert prompt["8"]["inputs"]["shift_video"] == 6.0
+    assert prompt["5"]["inputs"]["lora_name"] == (
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors"
+    )
+    assert prompt["5"]["class_type"] == "LoraLoaderBypassModelOnly"
+    assert prompt["8"]["inputs"]["shift_video"] == 12.0
     assert prompt["9"]["class_type"] == "MiniMaxH3LearnedTwoPassParityPlanT8Advanced"
     assert prompt["9"]["inputs"]["refine_steps"] == 3
     assert prompt["16"]["class_type"] == "MiniMaxH3TwoPassDetailMixerT8Advanced"

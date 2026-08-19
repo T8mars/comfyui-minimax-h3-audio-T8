@@ -6,17 +6,16 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
-> Project v1.34.0 appends three isolated learned-latent Advanced nodes after the existing 125 IDs.
-> The H3 joint AV node upscales only the 24-channel video latent with the fixed 3D checkpoint,
-> preserves audio, aligns every output to 32 pixels and selectively unloads only the upscaler.
-> A second high-resolution Conditioning plus strict Reconcile prevents stale keyframe/reference
-> geometry; a shift-aware Sigma Plan splits the default eight joint AV NFE into 4+4 passes.
-> One 736x416 to 1120x640 I2VA run completed all eight forwards and produced a strict-decode-clean
-> 124-frame, 24fps, 32kHz-stereo H.265 output. This is mechanical evidence only: perceptual gain,
-> other task families and universal 16GB safety remain unproven. The stable interpolation node and
-> sampler math are unchanged. The source gate passes 734 tests, changed-scope Ruff, compileall,
-> 129 non-artifact JSON parses, 128-node append-only registration and 72 frontend workflows across
-> 13 dated categories against ComfyUI `187eda8ef5e588c6a5765cad53e482765edae052`.
+> Project v1.35.1 keeps the learned-latent nodes isolated and fixes the shipped I2VA graph against
+> upstream workflow commit `64fc9d4`. The only user size control is now the learned upscaler's
+> `scale_by=2.0`; its aligned width/height outputs directly drive high-resolution Conditioning.
+> The graph uses native shift 12/3, `simple8` low calls 0-3, raw refine sigmas
+> `0.9035,0.6316,0.3158,0`, and the SHA-verified `comfyui_alpha8` LightX2V LoRA through
+> `LoraLoaderBypassModelOnly`. The superseded plain conversion is explicitly rejected because it
+> applies about 16x excessive update. One 736x416 to 1472x832 I2VA run completed all seven joint AV
+> forwards and produced a strict-decode-clean 124-frame, 24fps, 32kHz-stereo H.265 output. This is
+> one-case mechanical and visual-collapse evidence only: broader perceptual superiority and
+> universal 16GB safety remain unproven. Stable interpolation and sampler math are unchanged.
 
 > Project v1.33.1 records the completed SPEED blind review and formal 100-clip calibration before
 > any further promotion. T2VA,

@@ -33,9 +33,9 @@ ASPECT_POLICIES = ("preserve_source", "honor_dimensions_exp")
 PRECISIONS = ("fp16", "bf16", "fp32")
 RELEASE_POLICIES = ("offload_after", "clear_after", "keep_loaded")
 AUDIO_POLICIES = ("auto", "first_pass", "highres_template")
-UPSTREAM_REFERENCE_SHIFT_VIDEO = 6.0
+UPSTREAM_WORKFLOW_COMMIT = "64fc9d4c7e2c03e8c61d6886182e3309365a1962"
 UPSTREAM_REFINE_VIDEO_SIGMAS = {
-    3: (0.8500, 0.6316, 0.3158, 0.0),
+    3: (0.9035, 0.6316, 0.3158, 0.0),
     4: (0.9035, 0.8000, 0.6316, 0.3158, 0.0),
     5: (0.9231, 0.8780, 0.8000, 0.6316, 0.3158, 0.0),
 }
@@ -694,9 +694,21 @@ def reconcile_two_pass_h3_latent(
         highres_template["samples"], "high-resolution template samples"
     )
     if tuple(learned_video.shape) != tuple(template_video.shape):
+        learned_pixels = (
+            int(learned_video.shape[-1]) * PIXELS_PER_H3_LATENT,
+            int(learned_video.shape[-2]) * PIXELS_PER_H3_LATENT,
+        )
+        template_pixels = (
+            int(template_video.shape[-1]) * PIXELS_PER_H3_LATENT,
+            int(template_video.shape[-2]) * PIXELS_PER_H3_LATENT,
+        )
         raise ValueError(
             "Learned video latent and high-resolution Conditioning template must have identical "
-            f"shape; learned={tuple(learned_video.shape)}, template={tuple(template_video.shape)}"
+            f"shape; learned={tuple(learned_video.shape)} ({learned_pixels[0]}x{learned_pixels[1]} px), "
+            f"template={tuple(template_video.shape)} "
+            f"({template_pixels[0]}x{template_pixels[1]} px). Connect this upscaler's width and "
+            "height outputs directly to the high-resolution H3 Conditioning width and height "
+            "inputs; do not maintain a second manual size."
         )
     if tuple(learned_audio.shape) != tuple(template_audio.shape):
         raise ValueError(
@@ -856,13 +868,15 @@ def build_learned_two_pass_parity_plan(
     coarse_steps: int,
     refine_steps: int,
 ) -> tuple[torch.Tensor, torch.Tensor, str]:
-    """Reproduce the published LBH two-pass schedule while honoring H3's active shifts.
+    """Reproduce the current published LBH two-pass schedule exactly.
 
     The upstream workflow uses a normal ``simple`` eight-step schedule, keeps its first
     four intervals for the low-resolution pass, then starts a fresh high-resolution
-    pass from one of three manually published sigma sequences.  Those manual values are
-    defined at video shift 6.  Mapping through base-flow time preserves the same model
-    time when a user deliberately runs another H3 video shift.
+    pass from one of three manually published video-sigma sequences.  The I2V workflow
+    applies those raw values at video shift 12 while the R2V workflow applies the same
+    values at shift 6, so remapping them through a guessed reference shift is not parity.
+    H3's active audio clock is still derived from each raw video sigma through base-flow
+    time, exactly as the native joint AV sampler does.
     """
     base_steps = int(base_steps)
     coarse_steps = int(coarse_steps)
@@ -890,28 +904,25 @@ def build_learned_two_pass_parity_plan(
         raise RuntimeError("ComfyUI simple scheduler did not return a strict H3 descent to zero")
     coarse_sigmas = full_sigmas[: coarse_steps + 1].clone()
 
-    reference_sigmas = torch.tensor(
+    refine_sigmas = torch.tensor(
         UPSTREAM_REFINE_VIDEO_SIGMAS[refine_steps],
-        dtype=torch.float64,
+        dtype=torch.float32,
     )
-    reference_base_q = _inverse_shift_sigma(
-        reference_sigmas,
-        UPSTREAM_REFERENCE_SHIFT_VIDEO,
-    )
-    refine_sigmas = shift_sigma(reference_base_q, shift_video).to(dtype=torch.float32)
     if not bool(torch.all(refine_sigmas[:-1] > refine_sigmas[1:])) or float(refine_sigmas[-1]) != 0.0:
-        raise RuntimeError("Mapped upstream refine schedule is not a strict descent to zero")
+        raise RuntimeError("Published upstream refine schedule is not a strict descent to zero")
 
     coarse_audio = shift_sigma(
         _inverse_shift_sigma(coarse_sigmas.to(dtype=torch.float64), shift_video),
         shift_audio,
     )
-    refine_audio = shift_sigma(reference_base_q, shift_audio)
+    refine_base_q = _inverse_shift_sigma(refine_sigmas.to(dtype=torch.float64), shift_video)
+    refine_audio = shift_sigma(refine_base_q, shift_audio)
     report = {
         "schema_version": 2,
         "node": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
         "status": "upstream_schedule_reproduced",
         "source": "LBH-123-AI Comfyui_Minimax_h3_latent_Upscaler workflow",
+        "source_commit": UPSTREAM_WORKFLOW_COMMIT,
         "coarse_scheduler": "comfy.simple",
         "base_steps": base_steps,
         "coarse_steps": coarse_steps,
@@ -919,9 +930,8 @@ def build_learned_two_pass_parity_plan(
         "total_nfe": coarse_steps + refine_steps,
         "shift_video": shift_video,
         "shift_audio": shift_audio,
-        "reference_shift_video": UPSTREAM_REFERENCE_SHIFT_VIDEO,
-        "reference_refine_video_sigmas": reference_sigmas.tolist(),
-        "reference_refine_base_q": reference_base_q.tolist(),
+        "published_refine_video_sigmas": refine_sigmas.tolist(),
+        "refine_base_q_for_audio_clock": refine_base_q.tolist(),
         "coarse_video_sigmas": coarse_sigmas.tolist(),
         "coarse_audio_sigmas": coarse_audio.tolist(),
         "refine_video_sigmas": refine_sigmas.tolist(),
@@ -933,6 +943,7 @@ def build_learned_two_pass_parity_plan(
             "Apply Tail/Bias/STG/Restart only through the dedicated two-pass detail setup.",
         ],
         "previous_linear_q_plan_denied": True,
+        "previous_reference_shift_remap_denied": True,
     }
     return coarse_sigmas, refine_sigmas, json.dumps(
         report,

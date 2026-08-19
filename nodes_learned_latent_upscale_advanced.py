@@ -42,7 +42,7 @@ class MiniMaxH3LearnedLatentUpscaleT8Advanced(io.ComfyNode):
                     options=folder_paths.get_filename_list("latent_upscale_models"),
                 ),
                 io.Combo.Input("size_mode", options=list(SIZE_MODES), default="scale_by"),
-                io.Float.Input("scale_by", default=1.5, min=1.0, max=4.0, step=0.01),
+                io.Float.Input("scale_by", default=2.0, min=1.0, max=4.0, step=0.01),
                 io.Float.Input(
                     "target_megapixels", default=0.70, min=0.01, max=2.0, step=0.01
                 ),
@@ -181,8 +181,9 @@ class MiniMaxH3LearnedTwoPassParityPlanT8Advanced(io.ComfyNode):
             ),
             description=(
                 "Reproduces the published LBH low-resolution simple-schedule split and "
-                "its 3/4/5-step high-resolution refine sigmas. The published shift-6 "
-                "values are mapped through base-flow time when another H3 shift is used."
+                "its current 3/4/5-step high-resolution raw video-sigma sequences. "
+                "The native H3 sampler derives the matching audio clock from the active "
+                "video/audio shifts."
             ),
             category=CATEGORY,
             is_experimental=True,
