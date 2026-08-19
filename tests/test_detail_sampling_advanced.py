@@ -17,6 +17,7 @@ from h3_audio_t8_pkg.detail_sampling_advanced import (
     setup_detail_mixer_sampling,
     setup_model_time_bias_sampling,
     setup_rectified_flow_restart_sampling,
+    setup_two_pass_detail_mixer_sampling,
     temporal_detail_enhance,
 )
 from h3_audio_t8_pkg.nodes_detail_sampling_advanced import (
@@ -27,6 +28,7 @@ from h3_audio_t8_pkg.nodes_detail_sampling_advanced import (
     MiniMaxH3RectifiedFlowRestartSamplerT8Advanced,
     MiniMaxH3SpatioTemporalGuidanceT8Advanced,
     MiniMaxH3TemporalDetailEnhanceT8Advanced,
+    MiniMaxH3TwoPassDetailMixerT8Advanced,
 )
 from h3_audio_t8_pkg.sampling import native_flow_sigmas, time_shift_sigma
 
@@ -96,6 +98,143 @@ def test_tail_detail_zero_is_exact_object_identity_and_invalid_schedules_fail_cl
             shift_audio=3.0,
             profile="custom_strict",
         )
+
+
+def _two_pass_mixer_kwargs():
+    return {
+        "shift_video": 6.0,
+        "shift_audio": 3.0,
+        "enable_tail": False,
+        "extra_tail_steps": 3,
+        "tail_spacing": "video_sigma_linear",
+        "enable_model_time_bias": False,
+        "bias": -0.025,
+        "bias_start_progress": 0.70,
+        "bias_end_progress": 0.95,
+        "bias_domain": "video_sigma",
+        "enable_stg": False,
+        "stg_scale": 0.35,
+        "stg_double_blocks": "25",
+        "stg_start_progress": 0.25,
+        "stg_end_progress": 0.85,
+        "enable_restart": False,
+        "restart_video_sigma": 0.15,
+        "restart_steps": 3,
+        "restart_seed": 2608193401,
+    }
+
+
+def test_two_pass_detail_mixer_preserves_external_refine_schedule_when_disabled(monkeypatch):
+    sigmas = torch.tensor([0.85, 0.6316, 0.3158, 0.0])
+    sampler = object()
+    model = SimpleNamespace(model_options={})
+    patched = SimpleNamespace(model_options={})
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.setup_dual_clock_sampling",
+        lambda *_args, **_kwargs: (patched, sampler, torch.linspace(1.0, 0.0, 4)),
+    )
+    output_model, output_sampler, output_sigmas, nfe, forwards, report_text = (
+        setup_two_pass_detail_mixer_sampling(
+            model,
+            {},
+            sigmas,
+            **_two_pass_mixer_kwargs(),
+        )
+    )
+    assert output_model is patched
+    assert output_sampler is sampler
+    assert output_sigmas is sigmas
+    assert nfe == 3
+    assert forwards == 3
+    report = json.loads(report_text)
+    assert report["status"] == "parity_passthrough"
+    assert report["external_refine_schedule_authoritative"] is True
+    assert report["phase_scope"] == "high_resolution_refine_only"
+
+
+def test_two_pass_detail_mixer_tail_three_augments_only_refine_schedule(monkeypatch):
+    sigmas = torch.tensor([0.85, 0.6316, 0.3158, 0.0])
+    sampler = object()
+    model = SimpleNamespace(model_options={})
+    patched = SimpleNamespace(model_options={})
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.setup_dual_clock_sampling",
+        lambda *_args, **_kwargs: (patched, sampler, torch.linspace(1.0, 0.0, 4)),
+    )
+    kwargs = _two_pass_mixer_kwargs()
+    kwargs["enable_tail"] = True
+    output_model, output_sampler, output_sigmas, nfe, forwards, report_text = (
+        setup_two_pass_detail_mixer_sampling(model, {}, sigmas, **kwargs)
+    )
+    assert output_model is patched
+    assert output_sampler is sampler
+    assert output_sigmas.shape == (7,)
+    assert output_sigmas[-5:].tolist() == pytest.approx(
+        [0.3158, 0.23685, 0.1579, 0.07895, 0.0]
+    )
+    assert nfe == 6
+    assert forwards == 6
+    report = json.loads(report_text)
+    assert report["children"]["tail"]["phase_scope"] == "high_resolution_refine_only"
+    assert report["enabled_mechanisms"] == ["tail_subdivision"]
+
+
+def test_two_pass_detail_mixer_rejects_full_trajectory_sigmas():
+    with pytest.raises(ValueError, match="starting below sigma 1.0"):
+        setup_two_pass_detail_mixer_sampling(
+            SimpleNamespace(model_options={}),
+            {},
+            torch.tensor([1.0, 0.5, 0.0]),
+            **_two_pass_mixer_kwargs(),
+        )
+
+
+def test_two_pass_detail_mixer_composes_all_sampling_mechanisms(monkeypatch):
+    video = torch.zeros((1, 24, 1, 1, 1))
+    audio = torch.zeros((1, 32, 2, 1))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+    refine_sigmas = torch.tensor([0.85, 0.6316, 0.3158, 0.0])
+    source = _FakePatchModel()
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.setup_dual_clock_sampling",
+        lambda model, *_args, **_kwargs: (
+            model,
+            object(),
+            torch.linspace(1.0, 0.0, 4),
+        ),
+    )
+    monkeypatch.setattr(
+        "h3_audio_t8_pkg.detail_sampling_advanced.model_uses_raw_audio_velocity",
+        lambda _model: True,
+    )
+    kwargs = _two_pass_mixer_kwargs()
+    kwargs.update(
+        enable_tail=True,
+        enable_model_time_bias=True,
+        enable_stg=True,
+        enable_restart=True,
+    )
+    model, sampler, sigmas, nfe, forwards, report_text = (
+        setup_two_pass_detail_mixer_sampling(
+            source,
+            latent,
+            refine_sigmas,
+            **kwargs,
+        )
+    )
+    report = json.loads(report_text)
+    assert model.post_cfg is not None
+    assert sigmas.numel() - 1 == 6
+    assert sampler._reported_total_steps == 9
+    assert nfe == 9
+    assert forwards >= nfe
+    assert report["model_time_biased_calls"] > 0
+    assert report["enabled_mechanisms"] == [
+        "tail_subdivision",
+        "model_time_bias",
+        "spatiotemporal_guidance",
+        "rectified_flow_restart",
+    ]
 
 
 def test_model_time_bias_is_smooth_endpoint_zero_and_integrator_schedule_is_not_modified(monkeypatch):
@@ -693,3 +832,12 @@ def test_all_six_advanced_nodes_are_registered_in_isolated_order():
     assert inputs["enable_model_time_bias"].default is False
     assert inputs["enable_stg"].default is False
     assert inputs["enable_restart"].default is False
+
+    two_pass_schema = MiniMaxH3TwoPassDetailMixerT8Advanced.define_schema()
+    two_pass_inputs = {item.id: item for item in two_pass_schema.inputs}
+    assert two_pass_schema.is_experimental is True
+    assert two_pass_inputs["enable_tail"].default is False
+    assert two_pass_inputs["extra_tail_steps"].default == 3
+    assert two_pass_inputs["enable_model_time_bias"].default is False
+    assert two_pass_inputs["enable_stg"].default is False
+    assert two_pass_inputs["enable_restart"].default is False

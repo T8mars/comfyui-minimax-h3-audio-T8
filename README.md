@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.34.0`，共注册
-128 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.35.0`，共注册
+130 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
 Turbo8代表链；T2VA、FL2VA和Ref2VA三条同输入、同seed、同20 NFE控制分别实测约
 2.18×、2.21×和2.30×端到端加速，但用户盲审三组全部选择全分辨率基线，FL2VA的SPEED A与
 Ref2VA的SPEED B被明确判为画面明显崩坏。当前手工14粗+6全分辨率计划已被固定配置质量门否决；
@@ -10,10 +10,14 @@ Ref2VA的SPEED B被明确判为画面明显崩坏。当前手工14粗+6全分辨
 净加速，峰值显存反而明显升高且跌破512MiB余量门，因此当前SPEED实现仍被否决为稳定功能。
 SPEED继续为EXP；稳定节点、默认参数和
 `sampling.py`保持不变。
-`1.34.0`在原125个节点后追加3个学习型Latent Advanced节点：直接接收H3联合AV latent，只用固定
-3D神经网络放大24通道视频潜空间并保持音频对象不变；第二套Conditioning在目标画布重建首帧和参考媒体，
-Reconcile拒绝旧尺寸条件；Sigma Plan按MODEL实际video/audio shift把默认8 NFE拆成低分辨率4步和
-高分辨率4步。原普通插值`Latent Upscale by 32`、旧工作流和稳定采样数学均未改动。
+`1.35.0`保留`1.34.0`的3个学习型Latent Advanced节点，并在原128个节点后追加原版二采计划与
+二采专用细节混合器。排查确认学习型3D网络的322个权重和固定随机latent输出与上游逐位一致；旧示例出错
+不是网络复现偏差，而是`1.34.0`把高分辨率阶段错误规划成线性base-flow 4步，没有复现上游的
+`simple 8 → 前4步低分辨率 → 手工3/4/5步高分辨率`合同。新Parity Plan默认使用shift 6/3、低4步、
+高3步，并在用户更改视频shift时通过base-flow模型时间映射公开sigma。Two-Pass Detail Mixer保持该局部
+refine schedule为权威，可在高分辨率阶段可选叠加Tail、Model-Time Bias、H3 STG与联合AV RF Restart；
+旧的完整轨迹Detail Mixer不能直接接入。Temporal Detail仍只能放在AV Decode之后，音频旁路不变。
+原普通插值`Latent Upscale by 32`、前128个节点、旧工作流schema/default和稳定采样数学均未改动。
 此前新增的隔离混合细节采样器可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
 前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
@@ -38,7 +42,7 @@ Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG�
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Parity` | 实验 | 隔离复现上游FaceRefine的21/51高斯轨迹、逐帧去噪、音频锁和24/24回贴，并提供MANUAL512 REL机械基线校验 |
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person` | 实验 | 原生SAM3.1按镜头分色追踪2～3人、CPU参考身份建议、逐角色H3修复与审片后顺序合成 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
-| `T8/MiniMax H3/Latent/Experimental` | 实验 | 学习型3D视频latent放大、目标画布条件重建检查和二阶段双时钟Sigma计划 |
+| `T8/MiniMax H3/Latent/Experimental` | 实验 | 学习型3D视频latent放大、目标画布条件重建、原版二采Sigma计划及二采专用细节混合 |
 | `T8/MiniMax H3/SPEED/Experimental` | 实验 | H3空间频谱标定、渐进画布计划、原始多模态条件源和整链分阶段采样 |
 
 ## 工作流分类目录
@@ -84,9 +88,9 @@ SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。�
 
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前734项完整回归、改动范围Ruff与compileall通过，129份非artifact JSON严格解析；72份项目与72份已安装用户前端工作流
+当前741项完整回归、改动范围Ruff与compileall通过，129份非artifact JSON严格解析；72份项目与72份已安装用户前端工作流
 已按13个功能目录递归解析且相对路径/逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
-`v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
+`187eda8ef5e5`；本轮真实学习型二采由当前一键包启动入口`0f1fa67ad8a6`执行，相关79项回归通过；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
 736×416×124完整H3三冷三暖，冷/暖最低整卡余量717.6/922.1MiB，执行后private spread
@@ -96,14 +100,18 @@ WIDER FACE验证图、39,123个有效人脸上完成集成评估：默认0.35的
 阈值，仍要求人工审核Plan；这些证据不授予真实画质、多人身份安全、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
 
-`1.34.0`的真实I2VA探针使用FL2VA full INT8、Turbo EMA、同一首帧/提示词/seed，先在
-736×416×124执行4步，再以学习型3D模型放大到1120×640并重建高分辨率Conditioning后继续4步；
-8次联合AV前向全部完成，低/高阶段约52.9/184.5秒。最终H.265为1120×640、124帧、24fps、
-32kHz双声道，A/V时差小于1帧，并通过fatal decoder-error检查；SHA-256为
-`53F10C8CFB6EC0584679F33101EB6A5687491FED4089E646FE2A2675F53F5430`。本机VHS H.264路线曾出现
-一帧损坏，开启元数据还触发过`moov`写入竞态，因此示例固定H.265且`save_metadata=false`。
-粗采样最低整卡余量约1,940MiB，不是连续峰值标定；单条机械成功不能证明画质优于同NFE全分辨率、
-也不能外推Ref2VA/Hybrid/Long Video或通用16GB安全。
+`1.35.0`的真实I2VA纠偏探针使用FL2VA full INT8、Turbo EMA、同一首帧/提示词/seed，按原项目公开
+schedule在736×416×124执行低4步，以学习型3D模型放大到1120×640，重建高分辨率Conditioning后执行
+shift 6/3的高3步。7次联合AV前向在238.96秒内完成；最终H.265为1120×640、124帧、24fps、32kHz
+双声道，A/V时差14.67ms，视频和音频分别通过`-xerror -err_detect explode`严格完整解码，SHA-256为
+`EF67FDE279E1EB0D0AD117E46EBA163230B029013A4B4E24471E8C19D7A1387F`。8帧接触表检查不再出现旧错误
+计划的整幅崩坏。上游/本地网络在同权重、同随机输入上的322个参数和输出均逐位相同；因此本轮修复的是
+二阶段sigma与连接合同，不是偷偷替换放大网络。本机VHS H.264路线曾出现一帧损坏，示例继续固定H.265。
+同一缓存链仅开启二采Mixer的Tail +3后，高分辨率阶段执行6次前向，任务在302.85秒完成；输出保持相同
+媒体合同并再次通过视频/音频严格解码，SHA-256为
+`F2C1308F22E5852BBFCA22833FAF73393D39B27695C88523686CE5B93E1F7419`。这证明连接和媒体链可用，
+不等于Tail +3在所有素材上都比原版3步更好。
+单条修复探针不能证明画质优于同NFE全分辨率，也不能外推Ref2VA/Hybrid/Long Video或通用16GB安全。
 
 `1.27.2`保留此前追加的6个字面以`Advanced`结尾的多人节点，并从多人角色参考节点移除
 `rights_confirmed`界面控件与执行门槛；旧API残留字段会被兼容忽略。其余旧节点ID、顺序、输入、

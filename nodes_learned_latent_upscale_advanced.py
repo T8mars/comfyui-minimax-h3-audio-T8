@@ -9,6 +9,7 @@ from .learned_latent_upscale_advanced import (
     PRECISIONS,
     RELEASE_POLICIES,
     SIZE_MODES,
+    build_learned_two_pass_parity_plan,
     build_two_pass_sigma_plan,
     learned_upscale_h3_av_latent,
     reconcile_two_pass_h3_latent,
@@ -169,8 +170,57 @@ class MiniMaxH3TwoPassSigmaPlanT8Advanced(io.ComfyNode):
         return io.NodeOutput(*build_two_pass_sigma_plan(**kwargs))
 
 
+class MiniMaxH3LearnedTwoPassParityPlanT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
+            display_name=(
+                "MiniMax H3 Learned Two-Pass Parity Plan / H3学习放大原版二采计划 "
+                "(Advanced)"
+            ),
+            description=(
+                "Reproduces the published LBH low-resolution simple-schedule split and "
+                "its 3/4/5-step high-resolution refine sigmas. The published shift-6 "
+                "values are mapped through base-flow time when another H3 shift is used."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect a MiniMax H3 model carrying the same video/audio shifts "
+                        "that both passes will use."
+                    ),
+                ),
+                io.Int.Input("base_steps", default=8, min=2, max=1000),
+                io.Int.Input("coarse_steps", default=4, min=1, max=999),
+                io.Int.Input(
+                    "refine_steps",
+                    default=3,
+                    min=3,
+                    max=5,
+                    tooltip=(
+                        "Published parity profiles exist only for 3, 4, or 5 refine calls."
+                    ),
+                ),
+            ],
+            outputs=[
+                io.Sigmas.Output("coarse_sigmas"),
+                io.Sigmas.Output("refine_sigmas"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*build_learned_two_pass_parity_plan(**kwargs))
+
+
 LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES = [
     MiniMaxH3LearnedLatentUpscaleT8Advanced,
     MiniMaxH3TwoPassLatentReconcileT8Advanced,
     MiniMaxH3TwoPassSigmaPlanT8Advanced,
+    MiniMaxH3LearnedTwoPassParityPlanT8Advanced,
 ]

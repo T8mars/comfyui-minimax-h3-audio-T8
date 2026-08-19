@@ -13,6 +13,7 @@ import comfy.nested_tensor
 from h3_audio_t8_pkg import learned_latent_upscale_advanced as learned
 from h3_audio_t8_pkg.nodes_learned_latent_upscale_advanced import (
     MiniMaxH3LearnedLatentUpscaleT8Advanced,
+    MiniMaxH3LearnedTwoPassParityPlanT8Advanced,
     MiniMaxH3TwoPassLatentReconcileT8Advanced,
     MiniMaxH3TwoPassSigmaPlanT8Advanced,
 )
@@ -294,16 +295,83 @@ def test_two_pass_sigma_plan_uses_one_base_flow_trajectory_and_actual_shifts():
     assert report["shift_audio"] == 3.0
 
 
+def test_learned_parity_plan_reproduces_published_refine_sigmas(monkeypatch):
+    published_simple = torch.tensor(
+        [1.0, 0.98, 0.94, 0.90, 0.86, 0.75, 0.55, 0.30, 0.0]
+    )
+    monkeypatch.setattr(
+        learned.comfy.samplers,
+        "calculate_sigmas",
+        lambda sampling, scheduler, steps: published_simple,
+    )
+
+    class Sampling:
+        shift = 6.0
+        audio_shift = 3.0
+
+    class Model:
+        model_options = {
+            "transformer_options": {
+                "minimax_h3_sigma_shift_video": 6.0,
+                "minimax_h3_sigma_shift_audio": 3.0,
+            }
+        }
+
+        def get_model_object(self, name):
+            assert name == "model_sampling"
+            return Sampling()
+
+    coarse, refine, report_text = learned.build_learned_two_pass_parity_plan(
+        Model(), 8, 4, 3
+    )
+    assert torch.equal(coarse, published_simple[:5])
+    assert refine.tolist() == pytest.approx([0.85, 0.6316, 0.3158, 0.0])
+    report = json.loads(report_text)
+    assert report["previous_linear_q_plan_denied"] is True
+    assert report["coarse_scheduler"] == "comfy.simple"
+    assert report["total_nfe"] == 7
+
+
+def test_learned_parity_plan_maps_reference_through_base_flow_for_shift_12(monkeypatch):
+    simple = torch.linspace(1.0, 0.0, 9)
+    monkeypatch.setattr(
+        learned.comfy.samplers,
+        "calculate_sigmas",
+        lambda *_args, **_kwargs: simple,
+    )
+    model = _FakeModel()
+    _coarse, refine, report_text = learned.build_learned_two_pass_parity_plan(
+        model, 8, 4, 4
+    )
+    reference = torch.tensor([0.9035, 0.8, 0.6316, 0.3158, 0.0], dtype=torch.float64)
+    base_q = learned._inverse_shift_sigma(reference, 6.0)
+    expected = learned.shift_sigma(base_q, 12.0).to(torch.float32)
+    assert torch.equal(refine, expected)
+    assert json.loads(report_text)["shift_video"] == 12.0
+
+
+def test_learned_parity_plan_rejects_unpublished_refine_counts(monkeypatch):
+    monkeypatch.setattr(
+        learned.comfy.samplers,
+        "calculate_sigmas",
+        lambda *_args, **_kwargs: torch.linspace(1.0, 0.0, 9),
+    )
+    with pytest.raises(ValueError, match="one of 3, 4, or 5"):
+        learned.build_learned_two_pass_parity_plan(_FakeModel(), 8, 4, 2)
+
+
 def test_new_nodes_append_after_all_125_legacy_nodes_without_changing_old_order():
     import h3_audio_t8_pkg
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 128
-    assert ids[-3:] == [
+    assert len(ids) == 130
+    assert ids[-5:] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",
         "MiniMaxH3TwoPassSigmaPlanT8Advanced",
+        "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
+        "MiniMaxH3TwoPassDetailMixerT8Advanced",
     ]
     assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
 
@@ -312,17 +380,23 @@ def test_node_schemas_are_isolated_experimental_and_safe_by_default():
     learned_schema = MiniMaxH3LearnedLatentUpscaleT8Advanced.define_schema()
     reconcile_schema = MiniMaxH3TwoPassLatentReconcileT8Advanced.define_schema()
     sigma_schema = MiniMaxH3TwoPassSigmaPlanT8Advanced.define_schema()
+    parity_schema = MiniMaxH3LearnedTwoPassParityPlanT8Advanced.define_schema()
     learned_inputs = {item.id: item for item in learned_schema.inputs}
     reconcile_inputs = {item.id: item for item in reconcile_schema.inputs}
     sigma_inputs = {item.id: item for item in sigma_schema.inputs}
     assert learned_schema.is_experimental is True
     assert reconcile_schema.is_experimental is True
     assert sigma_schema.is_experimental is True
+    assert parity_schema.is_experimental is True
     assert learned_inputs["release_policy"].default == "offload_after"
     assert learned_inputs["aspect_policy"].default == "preserve_source"
     assert reconcile_inputs["audio_policy"].default == "auto"
     assert sigma_inputs["coarse_steps"].default == 4
     assert sigma_inputs["refine_steps"].default == 4
+    parity_inputs = {item.id: item for item in parity_schema.inputs}
+    assert parity_inputs["base_steps"].default == 8
+    assert parity_inputs["coarse_steps"].default == 4
+    assert parity_inputs["refine_steps"].default == 3
 
 
 def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditioning():
@@ -338,15 +412,16 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     nodes = {node["id"]: node for node in workflow["nodes"]}
     types = [node["type"] for node in workflow["nodes"]]
     assert types.count("MiniMaxH3AudioConditioningT8") == 2
-    assert types.count("MiniMaxH3DualClockSamplerT8") == 2
+    assert types.count("MiniMaxH3DualClockSamplerT8") == 1
     assert types.count("SamplerCustomAdvanced") == 2
-    assert types.count("MarkdownNote") >= 4
+    assert types.count("MarkdownNote") >= 5
     assert "MiniMaxH3LearnedLatentUpscaleT8Advanced" in types
     assert "MiniMaxH3TwoPassLatentReconcileT8Advanced" in types
-    assert "MiniMaxH3TwoPassSigmaPlanT8Advanced" in types
+    assert "MiniMaxH3LearnedTwoPassParityPlanT8Advanced" in types
+    assert "MiniMaxH3TwoPassDetailMixerT8Advanced" in types
 
-    low_conditioning = next(node for node in workflow["nodes"] if node["id"] == 6)
-    high_conditioning = next(node for node in workflow["nodes"] if node["id"] == 13)
+    low_conditioning = next(node for node in workflow["nodes"] if node["id"] == 7)
+    high_conditioning = next(node for node in workflow["nodes"] if node["id"] == 14)
     assert low_conditioning["widgets_values"][1:4] == [736, 416, 124]
     assert high_conditioning["widgets_values"][1:4] == [1120, 640, 124]
     assert low_conditioning["widgets_values"][0] == high_conditioning["widgets_values"][0]
@@ -354,11 +429,16 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert high_conditioning["widgets_values"][4] == "I2VA"
 
     links = {link[0]: link for link in workflow["links"]}
-    assert links[18][1:5] == [11, 1, 12, 0]
-    assert nodes[11]["outputs"][1]["name"] == "denoised_output"
-    assert links[19][1:5] == [8, 1, 18, 3]
-    assert nodes[12]["widgets_values"][-1] == "offload_after"
-    assert nodes[14]["widgets_values"] == ["auto"]
+    assert links[16][1:5] == [12, 1, 13, 0]
+    assert nodes[12]["outputs"][1]["name"] == "denoised_output"
+    assert links[26][1:5] == [9, 1, 16, 2]
+    assert links[32][1:5] == [16, 2, 19, 3]
+    assert nodes[13]["widgets_values"][-1] == "offload_after"
+    assert nodes[15]["widgets_values"] == ["auto"]
+    assert nodes[9]["widgets_values"] == [8, 4, 3]
+    assert nodes[16]["widgets_values"][0:2] == [6.0, 3.0]
+    assert nodes[16]["widgets_values"][2] is False
+    assert nodes[16]["widgets_values"][3] == 3
 
     link_ids = [link[0] for link in workflow["links"]]
     assert len(link_ids) == len(set(link_ids))
@@ -374,13 +454,18 @@ def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_c
     prompt = json.loads(fixture_path.read_text(encoding="utf-8"))
     assert prompt["12"]["inputs"]["sigmas"] == ["9", 0]
     assert prompt["13"]["inputs"]["av_latent"] == ["12", 1]
-    assert prompt["19"]["inputs"]["sigmas"] == ["9", 1]
+    assert prompt["16"]["inputs"]["refine_sigmas"] == ["9", 1]
+    assert prompt["19"]["inputs"]["sigmas"] == ["16", 2]
     assert prompt["7"]["inputs"]["width"] == 736
     assert prompt["7"]["inputs"]["height"] == 416
     assert prompt["14"]["inputs"]["width"] == 1120
     assert prompt["14"]["inputs"]["height"] == 640
     assert prompt["13"]["inputs"]["release_policy"] == "offload_after"
     assert prompt["15"]["inputs"]["audio_policy"] == "auto"
+    assert prompt["8"]["inputs"]["shift_video"] == 6.0
+    assert prompt["9"]["class_type"] == "MiniMaxH3LearnedTwoPassParityPlanT8Advanced"
+    assert prompt["9"]["inputs"]["refine_steps"] == 3
+    assert prompt["16"]["class_type"] == "MiniMaxH3TwoPassDetailMixerT8Advanced"
+    assert prompt["16"]["inputs"]["enable_tail"] is False
     assert prompt["21"]["class_type"] == "VHS_VideoCombine"
     assert prompt["21"]["inputs"]["format"] == "video/h265-mp4"
-    assert prompt["21"]["inputs"]["save_metadata"] is False

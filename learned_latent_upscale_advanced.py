@@ -16,6 +16,7 @@ import torch.nn.functional as F
 import comfy.model_management as model_management
 import comfy.model_patcher
 import comfy.nested_tensor
+import comfy.samplers
 import comfy.utils
 import folder_paths
 
@@ -32,6 +33,12 @@ ASPECT_POLICIES = ("preserve_source", "honor_dimensions_exp")
 PRECISIONS = ("fp16", "bf16", "fp32")
 RELEASE_POLICIES = ("offload_after", "clear_after", "keep_loaded")
 AUDIO_POLICIES = ("auto", "first_pass", "highres_template")
+UPSTREAM_REFERENCE_SHIFT_VIDEO = 6.0
+UPSTREAM_REFINE_VIDEO_SIGMAS = {
+    3: (0.8500, 0.6316, 0.3158, 0.0),
+    4: (0.9035, 0.8000, 0.6316, 0.3158, 0.0),
+    5: (0.9231, 0.8780, 0.8000, 0.6316, 0.3158, 0.0),
+}
 
 
 LATENTS_MEAN = (
@@ -806,3 +813,129 @@ def build_two_pass_sigma_plan(
         ],
     }
     return coarse_sigmas, refine_sigmas, json.dumps(report, ensure_ascii=False, sort_keys=True)
+
+
+def _extract_h3_shifts(model) -> tuple[float, float]:
+    model_sampling = model.get_model_object("model_sampling")
+    shift_video = getattr(model_sampling, "shift", None)
+    if shift_video is None:
+        shift_video = getattr(model_sampling, "shift_video", None)
+    if shift_video is None:
+        raise ValueError(
+            "The input MODEL does not expose a native-flow video shift. Connect the MODEL "
+            "output of the current MiniMax H3 Dual-Clock Sampler setup."
+        )
+    transformer_options = model.model_options.get("transformer_options", {})
+    shift_audio = transformer_options.get("minimax_h3_sigma_shift_audio")
+    if shift_audio is None:
+        shift_audio = getattr(model_sampling, "audio_shift", None)
+    if shift_audio is None:
+        raise ValueError(
+            "The input MODEL does not expose the H3 audio shift. Connect the MODEL output "
+            "of the current MiniMax H3 Dual-Clock Sampler setup."
+        )
+    shift_video = float(shift_video)
+    shift_audio = float(shift_audio)
+    if not math.isfinite(shift_video) or shift_video <= 0.0:
+        raise ValueError("MiniMax H3 video shift must be finite and greater than zero")
+    if not math.isfinite(shift_audio) or shift_audio <= 0.0:
+        raise ValueError("MiniMax H3 audio shift must be finite and greater than zero")
+    return shift_video, shift_audio
+
+
+def _inverse_shift_sigma(values: torch.Tensor, shift: float) -> torch.Tensor:
+    denominator = shift + values * (1.0 - shift)
+    if not bool(torch.all(denominator > 0.0)):
+        raise ValueError("Reference sigma shift produced a non-positive denominator")
+    return values / denominator
+
+
+def build_learned_two_pass_parity_plan(
+    model,
+    base_steps: int,
+    coarse_steps: int,
+    refine_steps: int,
+) -> tuple[torch.Tensor, torch.Tensor, str]:
+    """Reproduce the published LBH two-pass schedule while honoring H3's active shifts.
+
+    The upstream workflow uses a normal ``simple`` eight-step schedule, keeps its first
+    four intervals for the low-resolution pass, then starts a fresh high-resolution
+    pass from one of three manually published sigma sequences.  Those manual values are
+    defined at video shift 6.  Mapping through base-flow time preserves the same model
+    time when a user deliberately runs another H3 video shift.
+    """
+    base_steps = int(base_steps)
+    coarse_steps = int(coarse_steps)
+    refine_steps = int(refine_steps)
+    if base_steps < 2 or base_steps > 1000:
+        raise ValueError("base_steps must be between 2 and 1000")
+    if coarse_steps < 1 or coarse_steps >= base_steps:
+        raise ValueError("coarse_steps must satisfy 1 <= coarse_steps < base_steps")
+    if refine_steps not in UPSTREAM_REFINE_VIDEO_SIGMAS:
+        raise ValueError("refine_steps must be one of 3, 4, or 5 for upstream parity")
+
+    shift_video, shift_audio = _extract_h3_shifts(model)
+    model_sampling = model.get_model_object("model_sampling")
+    full_sigmas = comfy.samplers.calculate_sigmas(
+        model_sampling,
+        "simple",
+        base_steps,
+    ).detach().to(device="cpu", dtype=torch.float32)
+    if full_sigmas.numel() != base_steps + 1:
+        raise RuntimeError(
+            "ComfyUI simple scheduler returned an unexpected number of sigmas: "
+            f"expected {base_steps + 1}, got {full_sigmas.numel()}"
+        )
+    if not bool(torch.all(full_sigmas[:-1] > full_sigmas[1:])) or float(full_sigmas[-1]) != 0.0:
+        raise RuntimeError("ComfyUI simple scheduler did not return a strict H3 descent to zero")
+    coarse_sigmas = full_sigmas[: coarse_steps + 1].clone()
+
+    reference_sigmas = torch.tensor(
+        UPSTREAM_REFINE_VIDEO_SIGMAS[refine_steps],
+        dtype=torch.float64,
+    )
+    reference_base_q = _inverse_shift_sigma(
+        reference_sigmas,
+        UPSTREAM_REFERENCE_SHIFT_VIDEO,
+    )
+    refine_sigmas = shift_sigma(reference_base_q, shift_video).to(dtype=torch.float32)
+    if not bool(torch.all(refine_sigmas[:-1] > refine_sigmas[1:])) or float(refine_sigmas[-1]) != 0.0:
+        raise RuntimeError("Mapped upstream refine schedule is not a strict descent to zero")
+
+    coarse_audio = shift_sigma(
+        _inverse_shift_sigma(coarse_sigmas.to(dtype=torch.float64), shift_video),
+        shift_audio,
+    )
+    refine_audio = shift_sigma(reference_base_q, shift_audio)
+    report = {
+        "schema_version": 2,
+        "node": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
+        "status": "upstream_schedule_reproduced",
+        "source": "LBH-123-AI Comfyui_Minimax_h3_latent_Upscaler workflow",
+        "coarse_scheduler": "comfy.simple",
+        "base_steps": base_steps,
+        "coarse_steps": coarse_steps,
+        "refine_steps": refine_steps,
+        "total_nfe": coarse_steps + refine_steps,
+        "shift_video": shift_video,
+        "shift_audio": shift_audio,
+        "reference_shift_video": UPSTREAM_REFERENCE_SHIFT_VIDEO,
+        "reference_refine_video_sigmas": reference_sigmas.tolist(),
+        "reference_refine_base_q": reference_base_q.tolist(),
+        "coarse_video_sigmas": coarse_sigmas.tolist(),
+        "coarse_audio_sigmas": coarse_audio.tolist(),
+        "refine_video_sigmas": refine_sigmas.tolist(),
+        "refine_audio_sigmas": refine_audio.tolist(),
+        "requirements": [
+            "Feed pass-1 denoised_output into the learned latent upscaler.",
+            "Use fresh RandomNoise for pass 2 and decode SamplerCustomAdvanced output.",
+            "Synchronize or rebuild visual conditioning for the enlarged latent.",
+            "Apply Tail/Bias/STG/Restart only through the dedicated two-pass detail setup.",
+        ],
+        "previous_linear_q_plan_denied": True,
+    }
+    return coarse_sigmas, refine_sigmas, json.dumps(
+        report,
+        ensure_ascii=False,
+        sort_keys=True,
+    )
