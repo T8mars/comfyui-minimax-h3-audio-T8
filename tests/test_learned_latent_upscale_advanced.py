@@ -1,0 +1,386 @@
+from __future__ import annotations
+
+import asyncio
+import json
+from pathlib import Path
+
+import pytest
+import torch
+import torch.nn.functional as F
+
+import comfy.nested_tensor
+
+from h3_audio_t8_pkg import learned_latent_upscale_advanced as learned
+from h3_audio_t8_pkg.nodes_learned_latent_upscale_advanced import (
+    MiniMaxH3LearnedLatentUpscaleT8Advanced,
+    MiniMaxH3TwoPassLatentReconcileT8Advanced,
+    MiniMaxH3TwoPassSigmaPlanT8Advanced,
+)
+
+
+def _av_latent(height=26, width=46, *, audio_mask=1.0):
+    video = torch.randn((1, 24, 7, height, width))
+    audio = torch.randn((1, 32, 2, 176))
+    video_mask = torch.ones_like(video)
+    audio_mask_tensor = torch.full_like(audio, audio_mask)
+    return {
+        "samples": comfy.nested_tensor.NestedTensor((video, audio)),
+        "noise_mask": comfy.nested_tensor.NestedTensor((video_mask, audio_mask_tensor)),
+        "custom": {"preserved": True},
+    }
+
+
+def test_checkpoint_contract_is_exact_and_rejects_unknown_shapes():
+    state = {
+        key: torch.empty(shape, device="meta", dtype=torch.float16)
+        for key, shape in learned.EXPECTED_STATE_CONTRACT.items()
+    }
+    report = learned.validate_learned_resizer_state_dict(state)
+    assert report["tensor_count"] == 322
+    assert report["channels"] == 24
+    assert report["base_channels"] == 512
+
+    state["conv_in.weight"] = torch.empty((511, 24, 3, 3, 3), device="meta")
+    with pytest.raises(ValueError, match="shape_mismatches"):
+        learned.validate_learned_resizer_state_dict(state)
+
+
+@pytest.mark.parametrize(
+    ("mode", "kwargs"),
+    [
+        ("scale_by", {"scale_by": 1.5}),
+        ("target_megapixels", {"target_megapixels": 0.7}),
+        ("target_dimensions", {"target_width": 1152, "target_height": 640}),
+    ],
+)
+def test_all_geometry_modes_are_h3_legal_and_aspect_safe(mode, kwargs):
+    values = {
+        "source_latent_width": 46,
+        "source_latent_height": 26,
+        "size_mode": mode,
+        "scale_by": 1.5,
+        "target_megapixels": 0.7,
+        "target_width": 1152,
+        "target_height": 640,
+        "aspect_policy": "preserve_source",
+        "max_anisotropy": 1.05,
+    }
+    values.update(kwargs)
+    geometry = learned.learned_upscale_geometry(**values)
+    assert geometry["output_width"] % 32 == 0
+    assert geometry["output_height"] % 32 == 0
+    assert geometry["scale_x"] >= 1.0
+    assert geometry["scale_y"] >= 1.0
+    assert geometry["anisotropy"] <= 1.05
+    assert geometry["output_width"] * geometry["output_height"] <= learned.MAX_H3_PIXELS
+
+
+def test_dimension_mode_rejects_large_anisotropic_stretch():
+    with pytest.raises(ValueError, match="anisotropic scale"):
+        learned.learned_upscale_geometry(
+            46,
+            26,
+            "target_dimensions",
+            1.5,
+            0.7,
+            1344,
+            512,
+            "honor_dimensions_exp",
+            1.05,
+        )
+
+
+class _ResizeNetwork:
+    def __call__(self, value, effective_scale, target_size):
+        assert effective_scale > 1.0
+        return F.interpolate(value, size=target_size, mode="trilinear", align_corners=False)
+
+
+class _FailNetwork:
+    def __call__(self, *_args, **_kwargs):
+        raise RuntimeError("synthetic inference failure")
+
+
+class _FakePatcher:
+    def __init__(self, network):
+        self.model = network
+        self.load_device = torch.device("cpu")
+
+
+def _patch_model_manager(monkeypatch, network):
+    patcher = _FakePatcher(network)
+    entry = learned._CachedModel(
+        patcher=patcher,
+        path=Path("fixture.safetensors"),
+        sha256=learned.KNOWN_MODEL_SHA256,
+        precision="fp16",
+        contract={"tensor_count": 322},
+    )
+    unloads = []
+    monkeypatch.setattr(learned, "_load_cached_model", lambda *_args: (entry, False))
+    monkeypatch.setattr(learned.model_management, "get_torch_device", lambda: torch.device("cpu"))
+    monkeypatch.setattr(
+        learned.model_management, "intermediate_device", lambda: torch.device("cpu")
+    )
+    monkeypatch.setattr(learned.model_management, "load_models_gpu", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        learned.model_management,
+        "unload_model_and_clones",
+        lambda value: unloads.append(value),
+    )
+    monkeypatch.setattr(learned.model_management, "soft_empty_cache", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(learned, "_drop_cached_entry", lambda _entry: None)
+    return patcher, unloads
+
+
+def test_learned_upscale_preserves_joint_audio_and_resizes_only_video(monkeypatch):
+    patcher, unloads = _patch_model_manager(monkeypatch, _ResizeNetwork())
+    latent = _av_latent()
+    source_video, source_audio = tuple(latent["samples"].unbind())
+    _source_video_mask, source_audio_mask = tuple(latent["noise_mask"].unbind())
+
+    output, width, height, report_text = learned.learned_upscale_h3_av_latent(
+        latent,
+        "fixture.safetensors",
+        "target_dimensions",
+        1.5,
+        0.7,
+        1152,
+        640,
+        "preserve_source",
+        1.05,
+        "fp16",
+        "offload_after",
+    )
+    output_video, output_audio = tuple(output["samples"].unbind())
+    output_video_mask, output_audio_mask = tuple(output["noise_mask"].unbind())
+    assert width % 32 == 0 and height % 32 == 0
+    assert output_video.shape[:3] == source_video.shape[:3]
+    assert output_video.shape[-2:] == (height // 16, width // 16)
+    assert output_audio is source_audio
+    assert output_audio_mask is source_audio_mask
+    assert output_video_mask.shape == output_video.shape
+    assert output["custom"] is latent["custom"]
+    assert json.loads(report_text)["audio_preserved"] is True
+    assert unloads == [patcher]
+
+
+def test_learned_upscale_always_releases_on_inference_error(monkeypatch):
+    patcher, unloads = _patch_model_manager(monkeypatch, _FailNetwork())
+    with pytest.raises(RuntimeError, match="synthetic inference failure"):
+        learned.learned_upscale_h3_av_latent(
+            _av_latent(),
+            "fixture.safetensors",
+            "scale_by",
+            1.5,
+            0.7,
+            1152,
+            640,
+            "preserve_source",
+            1.05,
+            "fp16",
+            "keep_loaded",
+        )
+    assert unloads == [patcher]
+
+
+def _conditioning(height: int, width: int):
+    return [
+        [
+            torch.zeros((1, 4)),
+            {
+                "minimax_keyframes": [
+                    {
+                        "resolved_frame_index": 0,
+                        "latent": torch.zeros((1, 24, 1, height, width)),
+                    }
+                ],
+                "minimax_refs": [
+                    {
+                        "kind": "image",
+                        "latent": torch.zeros((1, 24, 1, 16, 16)),
+                        "latent_h": 16,
+                        "latent_w": 16,
+                    }
+                ],
+            },
+        ]
+    ]
+
+
+def test_reconcile_requires_rebuilt_high_resolution_keyframes():
+    learned_latent = _av_latent(40, 72)
+    template = _av_latent(40, 72)
+    with pytest.raises(ValueError, match="Conditioning node again"):
+        learned.reconcile_two_pass_h3_latent(
+            learned_latent,
+            template,
+            _conditioning(26, 46),
+            "auto",
+        )
+
+
+def test_reconcile_uses_template_audio_for_locked_source_and_preserves_highres_metadata():
+    learned_latent = _av_latent(40, 72, audio_mask=1.0)
+    template = _av_latent(40, 72, audio_mask=0.0)
+    learned_video, learned_audio = tuple(learned_latent["samples"].unbind())
+    template_video, template_audio = tuple(template["samples"].unbind())
+    template["batch_index"] = [7]
+    output, positive, report_text = learned.reconcile_two_pass_h3_latent(
+        learned_latent,
+        template,
+        _conditioning(40, 72),
+        "auto",
+    )
+    output_video, output_audio = tuple(output["samples"].unbind())
+    assert output_video is learned_video
+    assert output_audio is template_audio
+    assert output_audio is not learned_audio
+    assert output["batch_index"] is template["batch_index"]
+    assert positive is not None
+    report = json.loads(report_text)
+    assert report["audio_source"] == "highres_template"
+    assert report["conditioning"] == {"keyframes": 1, "refs": 1}
+    assert template_video.shape == output_video.shape
+
+
+def test_reconcile_uses_first_pass_audio_when_template_is_fully_denoised():
+    first = _av_latent(40, 72, audio_mask=1.0)
+    template = _av_latent(40, 72, audio_mask=1.0)
+    _video, first_audio = tuple(first["samples"].unbind())
+    output, _, report_text = learned.reconcile_two_pass_h3_latent(
+        first, template, _conditioning(40, 72), "auto"
+    )
+    assert tuple(output["samples"].unbind())[1] is first_audio
+    assert json.loads(report_text)["audio_source"] == "first_pass"
+
+
+def test_reconcile_rejects_reference_shape_metadata_mismatch():
+    positive = _conditioning(40, 72)
+    positive[0][1]["minimax_refs"][0]["latent_w"] = 15
+    with pytest.raises(ValueError, match="metadata/latent mismatch"):
+        learned.reconcile_two_pass_h3_latent(
+            _av_latent(40, 72), _av_latent(40, 72), positive, "auto"
+        )
+
+
+class _FakeSampling:
+    shift = 12.0
+    audio_shift = 3.0
+
+
+class _FakeModel:
+    def __init__(self):
+        self.model_options = {
+            "transformer_options": {"minimax_h3_sigma_shift_audio": 3.0}
+        }
+
+    def get_model_object(self, name):
+        assert name == "model_sampling"
+        return _FakeSampling()
+
+
+def test_two_pass_sigma_plan_uses_one_base_flow_trajectory_and_actual_shifts():
+    coarse, refine, report_text = learned.build_two_pass_sigma_plan(_FakeModel(), 4, 4, 0.5)
+    expected_coarse_q = torch.linspace(1.0, 0.5, 5)
+    expected_refine_q = torch.linspace(0.5, 0.0, 5)
+    assert torch.equal(coarse, learned.shift_sigma(expected_coarse_q, 12.0))
+    assert torch.equal(refine, learned.shift_sigma(expected_refine_q, 12.0))
+    assert coarse[-1] == refine[0]
+    assert refine[-1] == 0
+    report = json.loads(report_text)
+    assert report["total_nfe"] == 8
+    assert report["shift_video"] == 12.0
+    assert report["shift_audio"] == 3.0
+
+
+def test_new_nodes_append_after_all_125_legacy_nodes_without_changing_old_order():
+    import h3_audio_t8_pkg
+
+    classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
+    ids = [node.define_schema().node_id for node in classes]
+    assert len(ids) == 128
+    assert ids[-3:] == [
+        "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+        "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+        "MiniMaxH3TwoPassSigmaPlanT8Advanced",
+    ]
+    assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
+
+
+def test_node_schemas_are_isolated_experimental_and_safe_by_default():
+    learned_schema = MiniMaxH3LearnedLatentUpscaleT8Advanced.define_schema()
+    reconcile_schema = MiniMaxH3TwoPassLatentReconcileT8Advanced.define_schema()
+    sigma_schema = MiniMaxH3TwoPassSigmaPlanT8Advanced.define_schema()
+    learned_inputs = {item.id: item for item in learned_schema.inputs}
+    reconcile_inputs = {item.id: item for item in reconcile_schema.inputs}
+    sigma_inputs = {item.id: item for item in sigma_schema.inputs}
+    assert learned_schema.is_experimental is True
+    assert reconcile_schema.is_experimental is True
+    assert sigma_schema.is_experimental is True
+    assert learned_inputs["release_policy"].default == "offload_after"
+    assert learned_inputs["aspect_policy"].default == "preserve_source"
+    assert reconcile_inputs["audio_policy"].default == "auto"
+    assert sigma_inputs["coarse_steps"].default == 4
+    assert sigma_inputs["refine_steps"].default == 4
+
+
+def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditioning():
+    workflow_path = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "13-latent-upscale"
+        / "2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json"
+    )
+    workflow = json.loads(workflow_path.read_text(encoding="utf-8"))
+    assert workflow["version"] == 0.4
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = [node["type"] for node in workflow["nodes"]]
+    assert types.count("MiniMaxH3AudioConditioningT8") == 2
+    assert types.count("MiniMaxH3DualClockSamplerT8") == 2
+    assert types.count("SamplerCustomAdvanced") == 2
+    assert types.count("MarkdownNote") >= 4
+    assert "MiniMaxH3LearnedLatentUpscaleT8Advanced" in types
+    assert "MiniMaxH3TwoPassLatentReconcileT8Advanced" in types
+    assert "MiniMaxH3TwoPassSigmaPlanT8Advanced" in types
+
+    low_conditioning = next(node for node in workflow["nodes"] if node["id"] == 6)
+    high_conditioning = next(node for node in workflow["nodes"] if node["id"] == 13)
+    assert low_conditioning["widgets_values"][1:4] == [736, 416, 124]
+    assert high_conditioning["widgets_values"][1:4] == [1120, 640, 124]
+    assert low_conditioning["widgets_values"][0] == high_conditioning["widgets_values"][0]
+    assert low_conditioning["widgets_values"][4] == "I2VA"
+    assert high_conditioning["widgets_values"][4] == "I2VA"
+
+    links = {link[0]: link for link in workflow["links"]}
+    assert links[18][1:5] == [11, 1, 12, 0]
+    assert nodes[11]["outputs"][1]["name"] == "denoised_output"
+    assert links[19][1:5] == [8, 1, 18, 3]
+    assert nodes[12]["widgets_values"][-1] == "offload_after"
+    assert nodes[14]["widgets_values"] == ["auto"]
+
+    link_ids = [link[0] for link in workflow["links"]]
+    assert len(link_ids) == len(set(link_ids))
+
+
+def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_contract():
+    fixture_path = (
+        Path(__file__).resolve().parent
+        / "fixtures"
+        / "api"
+        / "learned_latent_two_pass_i2va_advanced_api.json"
+    )
+    prompt = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert prompt["12"]["inputs"]["sigmas"] == ["9", 0]
+    assert prompt["13"]["inputs"]["av_latent"] == ["12", 1]
+    assert prompt["19"]["inputs"]["sigmas"] == ["9", 1]
+    assert prompt["7"]["inputs"]["width"] == 736
+    assert prompt["7"]["inputs"]["height"] == 416
+    assert prompt["14"]["inputs"]["width"] == 1120
+    assert prompt["14"]["inputs"]["height"] == 640
+    assert prompt["13"]["inputs"]["release_policy"] == "offload_after"
+    assert prompt["15"]["inputs"]["audio_policy"] == "auto"
+    assert prompt["21"]["class_type"] == "VHS_VideoCombine"
+    assert prompt["21"]["inputs"]["format"] == "video/h265-mp4"
+    assert prompt["21"]["inputs"]["save_metadata"] is False

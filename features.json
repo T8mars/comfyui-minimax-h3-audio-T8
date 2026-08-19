@@ -21,12 +21,12 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 71,
-    "installed_user_workflows": 71
+    "project_workflows": 72,
+    "installed_user_workflows": 72
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
-    "category_count": 12,
+    "category_count": 13,
     "layout": "one primary purpose directory per importable frontend workflow; no flat JSON duplicates",
     "category_readme_contract": "each category documents purpose, validated outcomes, usage guidance and limitations",
     "installed_user_root": "ComfyUI/user/default/workflows/MiniMax H3 T8",
@@ -43,7 +43,8 @@
       "09-hybrid-model",
       "10-speed",
       "11-studio-production",
-      "12-system-memory"
+      "12-system-memory",
+      "13-latent-upscale"
     ]
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
@@ -179,8 +180,46 @@
     "MiniMaxH3SPEEDSpectrumDatasetFinalizeT8Advanced",
     "MiniMaxH3SPEEDSpectrumDatasetFileT8Advanced",
     "MiniMaxH3SPEEDModelVAEFingerprintT8Advanced",
-    "MiniMaxH3SPEEDCalibrationWindowT8Advanced"
+    "MiniMaxH3SPEEDCalibrationWindowT8Advanced",
+    "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+    "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+    "MiniMaxH3TwoPassSigmaPlanT8Advanced"
   ],
+  "experimental_learned_latent_two_pass": {
+    "category": "T8/MiniMax H3/Latent/Experimental",
+    "nodes": [
+      "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+      "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+      "MiniMaxH3TwoPassSigmaPlanT8Advanced"
+    ],
+    "model": {
+      "directory": "ComfyUI/models/latent_upscale_models",
+      "filename": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "sha256": "043E5A48E161610EF6C3EA974645220354D06FA618ABCA15F76D084812EB55C2",
+      "tensor_contract": "322 FP16 tensors; 24-channel 3D input/output; 512 base channels; 12 residual blocks per side; temporal kernel 5",
+      "downloaded_by_plugin": false
+    },
+    "contracts": [
+      "the existing stable interpolation node and all first 125 node IDs remain unchanged; these three nodes append at the registry tail",
+      "only the H3 video latent is learned-upscaled; the native joint audio latent and audio clock are preserved",
+      "all output pixel dimensions are exactly divisible by 32 and remain within the existing 1920x1088-area H3 cap",
+      "the default release policy selectively offloads only the learned-resizer patcher after inference; exceptions always unload it and never call global unload_all_models",
+      "a second current H3 Conditioning node must rebuild keyframes and media payload for the high-resolution canvas; stale low-resolution keyframes fail closed",
+      "the two-pass schedule is split in base-flow q and mapped through the actual 12/3-style shifts carried by MODEL; default 4+4 preserves eight total joint AV NFE",
+      "the first sampler must feed denoised_output into the learned upscaler; the high-resolution Conditioning template is authoritative for masks and lock/remix audio"
+    ],
+    "validated_real_probe": {
+      "date": "2026-08-19",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 187eda8ef5e588c6a5765cad53e482765edae052; isolated plugin plus VideoHelperSuite",
+      "graph": "FL2VA full INT8 plus Turbo EMA; I2VA 736x416x124 low 4 steps; learned 3D video-latent upscale to 1120x640; rebuilt high-resolution Conditioning; high 4 steps; native joint AV decode",
+      "sampling": "all 8 joint AV forwards completed; low pass 52.9 seconds and high pass 184.5 seconds",
+      "learned_model": "exact published 690,592,672-byte checkpoint loaded; synthetic GPU probe emitted finite [1,24,7,40,70] video latent while preserving exact audio object and selectively released its GPU weights",
+      "media": "H.265 output passed fatal decoder-error validation at 1120x640, 124 frames, 24fps, 32kHz stereo and A/V duration difference below one frame; SHA-256 53F10C8CFB6EC0584679F33101EB6A5687491FED4089E646FE2A2675F53F5430",
+      "save_boundary": "VideoHelperSuite H.264 produced one corrupt frame and metadata-enabled H.264 raced final moov writing; the example therefore uses H.265 with save_metadata=false",
+      "memory": "coarse sampling observed about 1,940MiB minimum free whole-device VRAM; this was not a continuous calibrated peak trace and is not a universal 16GiB safety claim"
+    },
+    "status": "clean-room implementation, focused contracts, real model loading, one full 4+4 I2VA joint-AV run and strict H.265 media validation passed; perceptual superiority, broader tasks and universal memory safety remain Experimental and unproven"
+  },
   "experimental_speed_spatial_progressive": {
     "category": "T8/MiniMax H3/SPEED/Experimental",
     "nodes": [

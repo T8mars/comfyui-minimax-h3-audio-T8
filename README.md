@@ -1,7 +1,7 @@
 # MiniMax H3 Audio T8
 
-面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.33.1`，共注册
-125 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
+面向当前 ComfyUI 原生 MiniMax H3 的独立 T8 节点扩展。当前版本为 `1.34.0`，共注册
+128 个节点。SPEED整链现在以独立EXP执行档机械跑通T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid和
 Turbo8代表链；T2VA、FL2VA和Ref2VA三条同输入、同seed、同20 NFE控制分别实测约
 2.18×、2.21×和2.30×端到端加速，但用户盲审三组全部选择全分辨率基线，FL2VA的SPEED A与
 Ref2VA的SPEED B被明确判为画面明显崩坏。当前手工14粗+6全分辨率计划已被固定配置质量门否决；
@@ -10,6 +10,10 @@ Ref2VA的SPEED B被明确判为画面明显崩坏。当前手工14粗+6全分辨
 净加速，峰值显存反而明显升高且跌破512MiB余量门，因此当前SPEED实现仍被否决为稳定功能。
 SPEED继续为EXP；稳定节点、默认参数和
 `sampling.py`保持不变。
+`1.34.0`在原125个节点后追加3个学习型Latent Advanced节点：直接接收H3联合AV latent，只用固定
+3D神经网络放大24通道视频潜空间并保持音频对象不变；第二套Conditioning在目标画布重建首帧和参考媒体，
+Reconcile拒绝旧尺寸条件；Sigma Plan按MODEL实际video/audio shift把默认8 NFE拆成低分辨率4步和
+高分辨率4步。原普通插值`Latent Upscale by 32`、旧工作流和稳定采样数学均未改动。
 此前新增的隔离混合细节采样器可选择组合尾段细化、平滑模型时间偏置、联合音画
 Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG附加弱分支和联合AV Transformer
 前向成本；此前的五个隔离SPEED Advanced节点、五条独立细节实验、默认无影响的动态 Guidance 与
@@ -34,13 +38,14 @@ Rectified-Flow Restart与H3时空引导，并分别报告真实积分NFE、STG�
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Parity` | 实验 | 隔离复现上游FaceRefine的21/51高斯轨迹、逐帧去噪、音频锁和24/24回贴，并提供MANUAL512 REL机械基线校验 |
 | `T8/MiniMax H3/Quality/Experimental/Face Refine Multi-Person` | 实验 | 原生SAM3.1按镜头分色追踪2～3人、CPU参考身份建议、逐角色H3修复与审片后顺序合成 |
 | `T8/MiniMax H3/Latent` | 稳定 | 32像素整除、比例误差最小化的普通/H3联合latent空间放大 |
+| `T8/MiniMax H3/Latent/Experimental` | 实验 | 学习型3D视频latent放大、目标画布条件重建检查和二阶段双时钟Sigma计划 |
 | `T8/MiniMax H3/SPEED/Experimental` | 实验 | H3空间频谱标定、渐进画布计划、原始多模态条件源和整链分阶段采样 |
 
 ## 工作流分类目录
 
-全部可导入前端工作流已经从单层列表整理到 `examples/workflows` 下的12个功能目录，并同步到
+全部可导入前端工作流已经从单层列表整理到 `examples/workflows` 下的13个功能目录，并同步到
 ComfyUI用户工作流菜单 `MiniMax H3 T8`。目录从 `01-basic-generation` 到
-`12-system-memory` 排序；每个目录都有独立 `README.md`，记录该批工作流的用途、已验证成果、
+`13-latent-upscale` 排序；每个目录都有独立 `README.md`，记录该批工作流的用途、已验证成果、
 推荐入口、使用方法和不能外推的边界。工作流JSON继续保留发布日期前缀，移动目录不修改其画布内容、
 节点参数或连接关系。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 
@@ -70,10 +75,17 @@ MiniMax H3 实现；可选语音校验才延迟导入 `faster-whisper` 或 `tran
 SHA-256为`9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03`。节点按行为检查
 `SAM31Tracker + track_video_with_detection`，旧SAM3或未知包装器会明确拒绝，不按文件名猜版本。
 
+学习型Latent路线另需将
+[`minimax_h3_latent_upscaler_3d_fp16.safetensors`](https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler)
+放到`ComfyUI/models/latent_upscale_models`。本机固定文件为690,592,672字节，SHA-256
+`043E5A48E161610EF6C3EA974645220354D06FA618ABCA15F76D084812EB55C2`。模型权重不随插件分发；
+本实现根据公开张量合同clean-room实现，不依赖或复制
+[`Comfyui_Minimax_h3_latent_Upscaler`](https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler)代码。
+
 目录内的`YUNET_SOURCE.json`、`ANIME_FACE_SOURCE.json`和`YUNET_LICENSE.txt`记录固定revision、
 来源、哈希和许可。YuNet不识别纯动漫并非故障；动漫模型也不能作为真人或身份验证器。
-当前718项完整回归、改动范围Ruff与compileall通过，127份非artifact JSON严格解析；71份项目与71份已安装用户前端工作流
-已按12个功能目录递归解析且相对路径/逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
+当前734项完整回归、改动范围Ruff与compileall通过，129份非artifact JSON严格解析；72份项目与72份已安装用户前端工作流
+已按13个功能目录递归解析且相对路径/逐文件哈希一致，diff check与白名单启动继续使用ComfyUI
 `v0.33.0@7fe8a61385`；上一轮Qwen缓存/H3
 真实生成兼容探针使用`v0.32.0-16@ddbaa8752`，较大范围真实生成矩阵仍以
 `0.31.0@cbbc9dab1`为主基线。Face Refine已在当前`v0.33.0@7fe8a61385`完成画幅安全的
@@ -83,6 +95,15 @@ WIDER FACE验证图、39,123个有效人脸上完成集成评估：默认0.35的
 62.23%/64.99%，0.60为86.10%/56.94%，且`<16px`召回从43.60%降到32.25%。因此不强改默认
 阈值，仍要求人工审核Plan；这些证据不授予真实画质、多人身份安全、跨环境或通用显存结论。
 运行环境为 Python 3.10+。模型、VAE、CLIP 和可选 LoRA仍需按具体任务自行安装。
+
+`1.34.0`的真实I2VA探针使用FL2VA full INT8、Turbo EMA、同一首帧/提示词/seed，先在
+736×416×124执行4步，再以学习型3D模型放大到1120×640并重建高分辨率Conditioning后继续4步；
+8次联合AV前向全部完成，低/高阶段约52.9/184.5秒。最终H.265为1120×640、124帧、24fps、
+32kHz双声道，A/V时差小于1帧，并通过fatal decoder-error检查；SHA-256为
+`53F10C8CFB6EC0584679F33101EB6A5687491FED4089E646FE2A2675F53F5430`。本机VHS H.264路线曾出现
+一帧损坏，开启元数据还触发过`moov`写入竞态，因此示例固定H.265且`save_metadata=false`。
+粗采样最低整卡余量约1,940MiB，不是连续峰值标定；单条机械成功不能证明画质优于同NFE全分辨率、
+也不能外推Ref2VA/Hybrid/Long Video或通用16GB安全。
 
 `1.27.2`保留此前追加的6个字面以`Advanced`结尾的多人节点，并从多人角色参考节点移除
 `rights_confirmed`界面控件与执行门槛；旧API残留字段会被兼容忽略。其余旧节点ID、顺序、输入、
@@ -464,12 +485,18 @@ Scheduled Audio Injection的默认`report_only`与实际
 | MiniMax H3 Multi-Face Repair Job / 单角色修复任务 (Advanced) | 为一个角色的一个镜头窗口生成source-bound、17n+5、默认MANUAL512的Parity修复计划；可选自动目标脸高，旧crop-factor模式保持默认 |
 | MiniMax H3 Multi-Face Composite / 多人候选合成 (Advanced) | 顺序应用已审片候选，默认拒绝人物mask重叠并验证mask外像素逐位不变；音频不参与回贴 |
 | Latent Upscale by 32 / 32整除潜空间放大 (T8) | 按显式8/16像素latent合同放大，输出宽高严格32整除；比例优先模式报告不可避免的残余误差，H3联合latent不改音频 |
+| MiniMax H3 Learned Latent Upscale (Advanced) | 以固定3D模型只放大H3视频latent；严格校验权重、32像素画布、4倍上限和2MP面积，音频原样保留并可定向卸载放大模型 |
+| MiniMax H3 Two-Pass Latent Reconcile (Advanced) | 把放大结果与目标画布重新生成的Conditioning/template合并；旧尺寸keyframe、参考元数据和mask不一致时拒绝 |
+| MiniMax H3 Two-Pass Sigma Plan (Advanced) | 从MODEL实际video/audio shift构建低/高两段base-flow Sigma；默认4+4保持8次联合AV NFE |
 
 最小可运行示例见
-[`examples/workflows/12-system-memory/2026-08-16_H3_Latent_Upscale_By32.json`](examples/workflows/12-system-memory/2026-08-16_H3_Latent_Upscale_By32.json)。
+[`examples/workflows/13-latent-upscale/2026-08-16_H3_Latent_Upscale_By32.json`](examples/workflows/13-latent-upscale/2026-08-16_H3_Latent_Upscale_By32.json)；
+学习型I2VA二阶段示例见
+[`examples/workflows/13-latent-upscale/2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json`](examples/workflows/13-latent-upscale/2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json)。
 示例使用ComfyUI普通`EmptyLatentImage`，所以显式选择8像素/latent；连接本包H3 Conditioning输出的
 联合AV latent时应保留默认16。不要把已包含首尾帧/参考图空间条件的AV latent随意放大后继续沿用
-旧尺寸Conditioning；新节点只负责latent几何与音频保持，不会自动重编码那些条件媒体。
+旧尺寸Conditioning；普通插值节点只负责latent几何与音频保持，不会自动重编码那些条件媒体。
+学习型二阶段示例必须使用第二个目标尺寸Conditioning和Reconcile节点完成这一步。
 
 `MiniMax H3 Audio Conditioning (T8)` 与 Long Video Conditioning 的 `task_type` 下拉框会显示中英双语说明：
 
@@ -642,6 +669,7 @@ API与可导入前端示例：
 - `tests/fixtures/api/scheduled_audio_injection_advanced_api.json` / `examples/workflows/02-audio-control/2026-08-13_H3_Scheduled_Audio_Injection_Advanced_EXP.json`
 - `tests/fixtures/api/av_decode_safety_advanced_api.json` / `examples/workflows/11-studio-production/2026-08-13_H3_AV_Decode_Safety_Advanced.json`
 - `tests/fixtures/api/trajectory_probe_advanced_api.json` / `examples/workflows/12-system-memory/2026-08-13_H3_Trajectory_Probe_Advanced_EXP.json`
+- `tests/fixtures/api/learned_latent_two_pass_i2va_advanced_api.json` / `examples/workflows/13-latent-upscale/2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json`
 - `tests/fixtures/api/face_refine_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Advanced_EXP.json`
 - `tests/fixtures/api/face_refine_anime_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-16_H3_Face_Refine_Anime_Advanced_EXP.json`
 - `tests/fixtures/api/face_refine_parity_advanced_api.json` / `examples/workflows/06-face-refine/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json`

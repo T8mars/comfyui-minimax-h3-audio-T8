@@ -13,6 +13,30 @@ to `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion
 originally recorded on 2026-08-06 against source commit
 `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.34.0 learned H3 latent two-pass route (2026-08-19)
+
+Three append-only Advanced nodes implement a clean-room H3-specific route: exact 322-tensor
+checkpoint validation and 3D video-latent upscale, high-resolution AV/template reconciliation, and
+a base-flow 4+4 sigma split derived from the MODEL video/audio shifts. The first 125 node IDs,
+stable interpolation node, old workflows, and `sampling.py` remain unchanged.
+
+The installed FP16 checkpoint is 690,592,672 bytes with SHA-256
+`043E5A48E161610EF6C3EA974645220354D06FA618ABCA15F76D084812EB55C2`. A synthetic CUDA probe
+expanded `[1,24,7,26,46]` to finite `[1,24,7,40,70]`, preserved the exact joint-audio object and
+released the selected upscaler. A full I2VA run then completed low 736x416x124 4-step sampling,
+learned upscale, rebuilt 1120x640 Conditioning, strict reconcile, high 4-step sampling and native AV
+decode. The low/high denoising stages took approximately 52.9/184.5 seconds.
+
+VideoHelperSuite H.264 exposed two independent delivery failures on this machine: metadata-enabled
+muxing could read the intermediate before its `moov` atom was finalized, and metadata-disabled H.264
+contained one decoder-fatal frame. The shipped example therefore uses H.265 with metadata disabled.
+That final output passed fatal decoder-error checks at 1120x640, 124 frames, 24fps, 32kHz stereo and
+less than one-frame A/V duration difference; SHA-256 is
+`53F10C8CFB6EC0584679F33101EB6A5687491FED4089E646FE2A2675F53F5430`.
+
+This validates the mechanical route, not a quality claim. No same-NFE full-resolution perceptual
+control, Ref2VA/Hybrid/Long Video matrix, continuous peak trace or cross-GPU result exists yet.
+
 ## 1.33.1 H3 SPEED formal calibration and controlled denial (2026-08-19)
 
 The user-provided `h3_speed_blind_review.json` was preserved byte-for-byte in the ignored local

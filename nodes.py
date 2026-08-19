@@ -22,6 +22,9 @@ from .nodes_trajectory_probe_advanced import (
 )
 from .nodes_motion_quality_advanced import MOTION_QUALITY_ADVANCED_NODE_CLASSES
 from .nodes_latent_upscale import LATENT_UPSCALE_NODE_CLASSES
+from .nodes_learned_latent_upscale_advanced import (
+    LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES,
+)
 
 from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av_output
 from .conditioning import build_conditioning
@@ -447,7 +450,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *MULTIFACE_REFINE_ADVANCED_NODE_CLASSES,
                 *DYNAMIC_GUIDANCE_ADVANCED_NODE_CLASSES,
                 *DETAIL_SAMPLING_ADVANCED_NODE_CLASSES,
-                *SPEED_ADVANCED_NODE_CLASSES]
+                *SPEED_ADVANCED_NODE_CLASSES,
+                *LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():

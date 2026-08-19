@@ -1,10 +1,22 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
 > Frontend workflows are organized under `examples/workflows/01-basic-generation` through
-> `examples/workflows/12-system-memory`. Each category contains an independent `README.md` with
+> `examples/workflows/13-latent-upscale`. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
+
+> Project v1.34.0 appends three isolated learned-latent Advanced nodes after the existing 125 IDs.
+> The H3 joint AV node upscales only the 24-channel video latent with the fixed 3D checkpoint,
+> preserves audio, aligns every output to 32 pixels and selectively unloads only the upscaler.
+> A second high-resolution Conditioning plus strict Reconcile prevents stale keyframe/reference
+> geometry; a shift-aware Sigma Plan splits the default eight joint AV NFE into 4+4 passes.
+> One 736x416 to 1120x640 I2VA run completed all eight forwards and produced a strict-decode-clean
+> 124-frame, 24fps, 32kHz-stereo H.265 output. This is mechanical evidence only: perceptual gain,
+> other task families and universal 16GB safety remain unproven. The stable interpolation node and
+> sampler math are unchanged. The source gate passes 734 tests, changed-scope Ruff, compileall,
+> 129 non-artifact JSON parses, 128-node append-only registration and 72 frontend workflows across
+> 13 dated categories against ComfyUI `187eda8ef5e588c6a5765cad53e482765edae052`.
 
 > Project v1.33.1 records the completed SPEED blind review and formal 100-clip calibration before
 > any further promotion. T2VA,

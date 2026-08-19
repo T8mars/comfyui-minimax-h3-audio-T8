@@ -181,7 +181,7 @@ def test_frontend_example_is_loadable_and_uses_plain_latent_scale_explicitly():
         Path(__file__).resolve().parents[1]
         / "examples"
         / "workflows"
-        / "12-system-memory"
+        / "13-latent-upscale"
         / "2026-08-16_H3_Latent_Upscale_By32.json"
     )
     workflow = json.loads(workflow_path.read_text(encoding="utf-8"))

@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 125
+    assert len(ids) == 128
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -289,6 +289,14 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for detail_schema in schemas[109:115]:
         assert detail_schema.is_experimental is True
         assert detail_schema.category == "T8/MiniMax H3/Quality/Experimental"
+    assert ids[125:128] == [
+        "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+        "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+        "MiniMaxH3TwoPassSigmaPlanT8Advanced",
+    ]
+    for learned_upscale_schema in schemas[125:128]:
+        assert learned_upscale_schema.is_experimental is True
+        assert learned_upscale_schema.category == "T8/MiniMax H3/Latent/Experimental"
     tail_detail_inputs = {item.id: item for item in schemas[109].inputs}
     assert tail_detail_inputs["extra_tail_steps"].default == 1
     assert tail_detail_inputs["spacing"].default == "video_sigma_linear"
