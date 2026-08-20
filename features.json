@@ -36,12 +36,12 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 72,
-    "installed_user_workflows": 72
+    "project_workflows": 82,
+    "installed_user_workflows": 82
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
-    "category_count": 13,
+    "category_count": 14,
     "layout": "one primary purpose directory per importable frontend workflow; no flat JSON duplicates",
     "category_readme_contract": "each category documents purpose, validated outcomes, usage guidance and limitations",
     "installed_user_root": "ComfyUI/user/default/workflows/MiniMax H3 T8",
@@ -59,7 +59,8 @@
       "10-speed",
       "11-studio-production",
       "12-system-memory",
-      "13-latent-upscale"
+      "13-latent-upscale",
+      "14-prompt-relay"
     ]
   },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
@@ -200,8 +201,143 @@
     "MiniMaxH3TwoPassLatentReconcileT8Advanced",
     "MiniMaxH3TwoPassSigmaPlanT8Advanced",
     "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
-    "MiniMaxH3TwoPassDetailMixerT8Advanced"
+    "MiniMaxH3TwoPassDetailMixerT8Advanced",
+    "MiniMaxH3PromptRelayPlanT8Advanced",
+    "MiniMaxH3PromptRelayConditioningT8Advanced",
+    "MiniMaxH3PromptRelayQueryRouteT8Advanced",
+    "MiniMaxH3PromptRelayLongVideoPlanT8Advanced",
+    "MiniMaxH3PromptRelayLongVideoConditioningT8Advanced",
+    "MiniMaxH3PromptPacketRelayPlanT8Advanced",
+    "MiniMaxH3PromptRelayEventT8Advanced",
+    "MiniMaxH3PromptRelayPreviewT8Advanced",
+    "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
   ],
+  "experimental_prompt_relay_advanced": {
+    "category": "T8/MiniMax H3/Conditioning/Experimental",
+    "nodes": [
+      "MiniMaxH3PromptRelayPlanT8Advanced",
+      "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "MiniMaxH3PromptRelayQueryRouteT8Advanced",
+      "MiniMaxH3PromptPacketRelayPlanT8Advanced",
+      "MiniMaxH3PromptRelayEventT8Advanced",
+      "MiniMaxH3PromptRelayPreviewT8Advanced",
+      "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
+    ],
+    "paper": "Prompt Relay, arXiv:2604.10030v1",
+    "default_math_profile": "paper_v1",
+    "default_epsilon": 0.1,
+    "implementation": "authoritative native H3 Qwen token binding plus structured local-text-key bias; video_only_paper routes target-video queries, while the separately inserted joint_av_exp route also maps native H3 target-audio query positions onto the same event coordinates; one authenticated chainable Event contract feeds both the standard Plan and the Studio Packet bridge without changing legacy text inputs; bounded query chunks; MODEL/CONDITIONING pairing travels through standard model_conds rather than mutating shared extra_conds; no dense SxS mask; no copied 50-layer forward; no global monkey patch",
+    "query_routes": {
+      "video_only_paper": "default and backward-compatible; only target-video queries receive direct local-event bias",
+      "joint_av_exp": "opt-in H3 extension; target audio and video queries receive direct local-event bias on their native packed time grids; not validated by the Prompt Relay paper"
+    },
+    "p1_scope": "six visual task contracts with explicit apply_exp and importable NOTE-equipped templates for T2VA, I2VA, FL2VA, L2VA, Ref2VA and Hybrid; real probes cover all six tasks; all four stable audio modes preserve their existing conditioning contracts; corrected Alpha8 Turbo8 is supported only downstream of Prompt Relay; joint_av_exp is isolated behind a third append-only Advanced route node; append-only Prompt Packet bridge and chainable Event nodes preserve Unified Cast and Sound Canvas output as the authoritative global prompt while keeping local events explicit",
+    "prompt_packet_bridge": {
+      "input": "authenticated H3_T8_PROMPT_PACKET with backend=minimax_h3",
+      "event_source": "authenticated chainable H3_T8_PROMPT_RELAY_EVENTS when connected; explicit events_json remains the backward-compatible fallback; no automatic scene splitting or LLM rewrite",
+      "duration": "round packet duration at 24fps, then align upward to the H3 17n+5 frame grid",
+      "fail_closed": "wrong schema/backend/compiler flag, packet hash mismatch, invalid duration, malformed events, hidden timing in auto_equal or ranges outside the existing Relay contract",
+      "frontend_workflow": "examples/workflows/14-prompt-relay/2026-08-20_H3_Studio_Prompt_Packet_Relay_Stock20_Advanced_EXP.json",
+      "verification": "829 tests, Ruff, compileall, 142 non-artifact JSON parses, 139/139 feature nodes in isolated live object_info, exact legacy Plan required-input order plus optional Event input, plan-only Event-to-Resource-Estimate-to-Preview READY and all-disabled Event-to-Preview BYPASS executions, stable sampling hash and 85-workflow project/user relative-path SHA parity passed"
+    },
+    "chainable_event_input": {
+      "type": "H3_T8_PROMPT_RELAY_EVENTS",
+      "contract": "append-only sequential events with authenticated collection hash; maximum 32; each event has prompt/start/end",
+      "standard_plan": "optional input appended after all legacy Plan widgets; when disconnected the prior function path and output remain exact, when connected it overrides local_prompts/time_ranges",
+      "packet_bridge": "the same chain overrides events_json while the Prompt Packet remains the global fact source",
+      "frontend_workflows": [
+        "examples/workflows/14-prompt-relay/2026-08-20_H3_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json",
+        "examples/workflows/14-prompt-relay/2026-08-20_H3_Studio_Prompt_Packet_Relay_Stock20_Advanced_EXP.json"
+      ]
+    },
+    "prompt_relay_preview": {
+      "node": "MiniMaxH3PromptRelayPreviewT8Advanced",
+      "contract": "authenticated Plan pass-through output plus ready flag, event count, concise timeline text and machine-readable report; validates H3 17n+5 frame alignment, 24fps timing, event order, bounds, coverage and declared gap/overlap policy",
+      "execution": "output node writes the READY timeline into ComfyUI history/UI without loading UNET, CLIP or VAE and without sampling",
+      "frontend": "all eleven generation templates route Plan through Preview before Conditioning/Query Route; a separate model-free Plan Preview workflow contains three chainable Events and three local NOTE blocks",
+      "runtime_probe": "an isolated localhost:8197 API graph containing only three Event nodes, Plan and Preview completed and returned READY for 124 frames, 5.166667 seconds and three requested event intervals; report records model_loaded=false and sampling_executed=false",
+      "boundary": "READY certifies only the plan/hash/timeline contract; it is not a visual, audio, motion-adherence, speed or memory-safety result"
+    },
+    "prompt_relay_resource_estimate": {
+      "node": "MiniMaxH3PromptRelayResourceEstimateT8Advanced",
+      "contract": "authenticated Plan pass-through plus native H3 target video/audio row math, explicit reference-row allowances, estimated packed sequence length and bounded chunk-bias peak; zero/one-event passthrough reports zero actual Relay bias",
+      "execution": "pure CPU arithmetic; does not load MODEL, CLIP or VAE, does not encode media and does not sample",
+      "scope": "only the explicit Prompt Relay bias tensor and packed-row planning proxy; UTF-8 bytes plus an editable allowance is not the authoritative Qwen token count",
+      "runtime_probe": "isolated localhost:8197 registered all 139 feature nodes and executed Plan -> Resource Estimate -> Preview for 736x416x124, three events and chunk 256; it reported frame_rows=299, target video/audio rows=11063/414, estimated packed rows=11924, peak explicit BF16/FP16 bias=5.82MiB, plus a standard-canvas explicit-bias matrix of 5.82MiB at 736x416, 13.43MiB at 1152x640 and 37.28MiB at 1920x1088; no model/media/sampling work ran, and the server was stopped afterward",
+      "boundary": "never reports safe_to_try or universal 16GB safety and does not estimate weights, full attention activations, backend scratch buffers, VBAR residency or allocator fragmentation"
+    },
+    "timeline_input_guards": {
+      "frames": "explicit frame ranges require integer indices and use an inclusive end",
+      "seconds_percent": "seconds use boundary values; percent is restricted to 0..100",
+      "ordering": "explicit event rows must be listed in chronological start order; declared gap/overlap policy remains independently enforced",
+      "coverage": "every resolved event must span at least five frames and remain inside the target timeline"
+    },
+    "single_event_passthrough": "apply_exp with exactly one local event returns the original MODEL and stable CONDITIONING without installing a Prompt Relay binding or attention patch; users should normally merge that text into global_prompt",
+    "zero_event_passthrough": "an empty local prompt, empty events_json, or connected all-disabled typed Event chain produces an authenticated global-only Plan; Preview reports BYPASS, normal Conditioning keeps the original MODEL and stable CONDITIONING, and the Long Video composition keeps only its required scoped layout patch",
+    "safe_default": "report_only",
+    "fail_closed": [
+      "non-native or changed tokenizer/core contracts",
+      "MODEL and CONDITIONING binding mismatch",
+      "LoRA weight patch or bypass injection connected before Prompt Relay",
+      "existing optimized attention override, diffusion wrapper or block replacement",
+      "reference_only without add_source_as_reference=true",
+      "joint_av_exp combined with lock_source; use video_only_paper plus mux_audio instead"
+    ],
+    "validated_real_probe": {
+      "date": "2026-08-20",
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 187eda8ef; FL2VA pruned INT8; Qwen3-VL NVFP4; native H3 video/audio VAEs",
+      "controls": "T2VA native audio, 736x416x124, Stock20 stable dual clock, shift 12/3, BasicGuider, identical compiled prompt and seed 2608203001; only report_only versus apply_exp changed",
+      "media": "both paths strictly decoded as 124 frames at 24fps for 5.1667 seconds with 32kHz stereo audio; no blackdetect or freezedetect event",
+      "sampled_logic": "frames 0/20/40/41/60/81/82/100/123 in both paths showed the requested raise-right-hand, turn-and-walk, then camera-pull-back order",
+      "timing": "baseline 244.01s then warm relay 239.23s; order is confounded, so no speed conclusion",
+      "audio": "both mean -14.1dB with zero clipped PCM samples; decoded waveform correlation 0.7476, confirming that target-video-only routing can still indirectly alter joint audio",
+      "blind_review": "artifacts/prompt-relay-stock20-v1/blind/blind_review.html; human preference pending"
+    },
+    "validated_combo_probes": {
+      "native_euler20": "T2VA native audio, 736x416x124, Euler/native_flow 20 steps; 249.18s; 124 frames at 24fps plus 32kHz stereo audio; three strict decode rounds per stream; requested event order visible",
+      "turbo8_pruned": "Prompt Relay then corrected Alpha8 bypass LoRA then dual-clock Turbo8; pruned FL2VA exercised 208 matching adapter entries; 126.13s; strict media decode and event order passed",
+      "turbo8_full": "full non-pruned FL2VA exercised all 259 adapter entries; 736x416x124, 8 steps, shift 12/3; 137.55s; output SHA256 7772CAC30A0CAE3E130D60BDDB0E64777BA30002AA53FB89073040B6B997D3E7; video and audio each passed three strict decode rounds; raise-hand, turn-and-walk, pull-back order visible",
+      "fl2va_lock_source": "full FL2VA plus first/last frames, lock_source and downstream Alpha8 Turbo8; 736x416x124; output SHA256 99D773C2023BFD7FB31C77C1BBD16F8FB1A5BDB3BBB42B849B47210BF8450260; muxed source waveform versus output AAC correlation 0.99750; use mux_audio rather than decoded AV audio for source preservation",
+      "l2va_sequential_cache": "after a separate Relay plan had executed in the same 8197 process, a different L2VA plan completed 8/8 steps without stale extra_conds contamination; 736x416x124 plus 32kHz stereo; video and audio each passed three strict decode rounds; output SHA256 73F619234F21AE07D539FC1383C78524B34B884F0DABC6F8C127DB62E170CD25",
+    "joint_av_turbo8": "full non-pruned FL2VA plus explicit joint_av_exp route then corrected Alpha8 bypass LoRA and dual-clock Turbo8; 139.07s; 736x416x124 plus 32kHz stereo; video and audio each passed three strict decode rounds; event-order contact sheet passed; RMS audio about -14.03dB and peak -2.53dBFS; output SHA256 B4296FFF9F8B2557D9D81449931E3CB9B4E2C08CAF4401DE69F6057249D88FAC",
+      "joint_av_timing_ab": "one controlled same-prompt/seed/full-FL2VA/Alpha8/Turbo8 pair with bell, footsteps and thunder windows; video_only_paper and joint_av_exp both produced 736x416x124 plus 32kHz stereo and passed three strict decode rounds per stream; SHA256 DA35FF691A0192DB882A5F408C3292E5803C51253E84EF42BC7D345577EE3A49 versus 10C0A4DDF8B3432806A5A84B4EA9755DCE3A34775BDDF23C7C385C26635FEC4F; perceptual preference is intentionally left unresolved"
+    },
+    "controlled_task_pair_audit": {
+      "coverage": "one same-input, same-seed, same-NFE baseline/Relay pair for each of T2VA, I2VA, FL2VA, L2VA, Ref2VA-image, Hybrid, Ref2VA paired reference video plus matching soundtrack, and Ref2VA standalone reference audio; 16 final files total",
+      "media": "all 16 files strictly decode as 736x416, 124 frames at 24fps with 32kHz stereo audio; no black frame, frozen transition or clipped PCM sample was detected",
+      "anchors": "I2VA first-frame SSIM baseline/Relay 0.86622/0.86557; FL2VA first 0.87960/0.88117 and last 0.84172/0.84286; L2VA last 0.83790/0.84040; Hybrid first 0.86291/0.86167",
+      "audio_waveform_correlation": "baseline versus Relay: T2VA 0.74762, I2VA 0.90826, FL2VA lock_source 1.00000, L2VA 0.62663, Ref2VA-image 0.94495, Hybrid 0.76075, reference video plus soundtrack 0.97026, standalone reference audio 0.99348; only lock_source plus mux_audio is expected to preserve the source waveform",
+      "reference_media_probes": "paired two-second reference video plus its own soundtrack completed in 362.27/396.69s baseline/Relay; standalone reference audio completed in 229.37/256.84s. Reference-versus-output waveform correlation was near zero or negative, which is expected for semantic/stochastic reference generation and must not be interpreted as either perceptual success or failure",
+      "reference_media_human_review": "single authorized reviewer, full videos: the paired reference-video-plus-soundtrack baseline and Relay looked approximately equal; in the standalone-reference-audio pair, the Relay clip (the second/last clip) had somewhat higher prompt adherence. This is one material/seed and one reviewer, not a general quality or audio-preference result",
+      "frontend_workflows": [
+        "examples/workflows/14-prompt-relay/2026-08-20_H3_Prompt_Relay_RefVideoAudio_Stock20_Advanced_EXP.json",
+        "examples/workflows/14-prompt-relay/2026-08-20_H3_Prompt_Relay_RefAudio_Stock20_Advanced_EXP.json"
+      ],
+      "artifact": "artifacts/prompt-relay-existing-ab-audit-v1/existing_controlled_pairs_report.json (local-only, gitignored)",
+      "boundary": "mechanical and proxy evidence plus one single-reviewer prompt-adherence observation only; reference identity, general visual preference, sound meaning and listening preference remain unresolved. The two reference-media Relay runs were slower than their immediately preceding baselines, so no zero-overhead or speed claim is permitted"
+    },
+    "scientific_boundary": "the paper validates Wan2.2 T2V, not H3 joint AV; Stock20, native Euler20, full-FL2VA Alpha8 Turbo8, FL2VA lock_source, sequential L2VA, reference-video-plus-soundtrack, standalone-reference-audio and one opt-in joint_av_exp probe passed their stated mechanical/media checks, but this is not a broad quality comparison; joint_av_exp has not yet demonstrated better event-timed sound than video_only_paper; lock_source preserves the separately muxed source waveform, while native/remix/reference_only audio can still change through the shared transformer; reference-media waveform correlation is not a semantic or perceptual metric; no speed, general audio non-regression or universal 16GiB claim"
+  },
+  "experimental_prompt_relay_long_video_advanced": {
+    "category": "T8/MiniMax H3/Long Video/Experimental",
+    "nodes": [
+      "MiniMaxH3PromptRelayLongVideoPlanT8Advanced",
+      "MiniMaxH3PromptRelayLongVideoConditioningT8Advanced"
+    ],
+    "safe_default": "report_only",
+    "implementation": "projects a single global Prompt Relay plan onto each Long Video render window using render_start=accepted_timeline_start-context_frames, keeps every event's original width/sigma while translating packed time coordinates, then composes the existing scoped Long Video extra_conds payload repair with the bounded Prompt Relay attention wrapper on cloned MODEL objects only",
+    "compatibility": "append-only; the existing Long Video Planner, Context Load, Conditioning, save/accept/orchestrator nodes and every existing workflow keep their schemas and defaults",
+    "fail_closed": [
+      "segment 0 with nonzero context or continuation without 5/22/39-frame context",
+      "timeline values off the native 24fps grid",
+      "accepted timeline outside either the rendered segment or the global Prompt Relay duration",
+      "projected Plan segment/length/context mismatch",
+      "pre-existing LoRA, runtime injection, attention override, diffusion wrapper, block replacement or object patch",
+      "joint_av_exp combined with lock_source"
+    ],
+    "verification": "absolute-time projection, cross-boundary sigma preservation, wrong-window rejection, segment-zero and 22-frame continuation repaired-layout MODEL/CONDITIONING pairing, append-only schema and importable workflow tests pass; one real full-FL2VA plus corrected-Alpha8 Turbo8 segment0-to-segment1 chain completed at 736x416 with 22 context frames, yielding 124 plus 102 frames, no event restart, three strict decode rounds per video/audio stream, and whole-device peaks of about 15478/14984MiB",
+    "scientific_boundary": "video_only_paper remains the default; all global event keys remain tokenized per segment for exact global-time decay, which favors correctness over minimal text-token cost; the one real continuation proves mechanical timing and media compatibility only; the raw PCM boundary jump still requires listening, and there is no broad long-video quality, universal 16GiB safety or joint-audio advantage claim"
+  },
   "experimental_learned_latent_two_pass": {
     "category": "T8/MiniMax H3/Latent/Experimental",
     "nodes": [

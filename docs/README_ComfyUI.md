@@ -1,10 +1,20 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
 > Frontend workflows are organized under `examples/workflows/01-basic-generation` through
-> `examples/workflows/13-latent-upscale`. Each category contains an independent `README.md` with
+> `examples/workflows/14-prompt-relay`. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
+
+> Project v1.36.0 adds an append-only MiniMax H3 Prompt Relay suite: authenticated event plans,
+> model-free timeline preview and resource estimates, H3 packed-attention routing, Studio Packet and
+> Long Video bridges, and eleven generation templates covering T2VA/I2VA/FL2VA/L2VA/Ref2VA/Hybrid,
+> reference video with its matching soundtrack, standalone reference audio, joint AV and corrected
+> Alpha8 Turbo8 ordering. Eight controlled baseline/Relay pairs produced sixteen strict-decode-clean
+> 736x416x124 AV files. One reviewer found the reference-video pair approximately equal and the
+> standalone-reference-audio Relay clip somewhat better in prompt adherence; this remains a
+> single-material result, not a general quality, audio, speed or 16GB-safety claim. Stable sampler
+> mathematics and existing node schemas remain unchanged.
 
 > The current unreleased prompt-tag compatibility fix preserves strict failure for ambiguous or
 > explicitly disconnected reference tags, while accepting three mechanically unambiguous legacy

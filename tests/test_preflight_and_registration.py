@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 130
+    assert len(ids) == 139
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -297,6 +297,40 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for learned_upscale_schema in schemas[125:128]:
         assert learned_upscale_schema.is_experimental is True
         assert learned_upscale_schema.category == "T8/MiniMax H3/Latent/Experimental"
+    assert ids[130:133] == [
+        "MiniMaxH3PromptRelayPlanT8Advanced",
+        "MiniMaxH3PromptRelayConditioningT8Advanced",
+        "MiniMaxH3PromptRelayQueryRouteT8Advanced",
+    ]
+    for prompt_relay_schema in schemas[130:133]:
+        assert prompt_relay_schema.is_experimental is True
+        assert prompt_relay_schema.category == "T8/MiniMax H3/Conditioning/Experimental"
+    assert ids[133:135] == [
+        "MiniMaxH3PromptRelayLongVideoPlanT8Advanced",
+        "MiniMaxH3PromptRelayLongVideoConditioningT8Advanced",
+    ]
+    for prompt_relay_long_video_schema in schemas[133:135]:
+        assert prompt_relay_long_video_schema.is_experimental is True
+        assert prompt_relay_long_video_schema.category == (
+            "T8/MiniMax H3/Long Video/Experimental"
+        )
+    assert ids[135:137] == [
+        "MiniMaxH3PromptPacketRelayPlanT8Advanced",
+        "MiniMaxH3PromptRelayEventT8Advanced",
+    ]
+    for prompt_packet_schema in schemas[135:137]:
+        assert prompt_packet_schema.is_experimental is True
+        assert prompt_packet_schema.category == (
+            "T8/MiniMax H3/Conditioning/Experimental"
+        )
+    assert ids[137] == "MiniMaxH3PromptRelayPreviewT8Advanced"
+    assert schemas[137].is_experimental is True
+    assert schemas[137].is_output_node is True
+    assert schemas[137].category == "T8/MiniMax H3/Conditioning/Experimental"
+    assert ids[138] == "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
+    assert schemas[138].is_experimental is True
+    assert schemas[138].is_output_node is True
+    assert schemas[138].category == "T8/MiniMax H3/Conditioning/Experimental"
     tail_detail_inputs = {item.id: item for item in schemas[109].inputs}
     assert tail_detail_inputs["extra_tail_steps"].default == 1
     assert tail_detail_inputs["spacing"].default == "video_sigma_linear"

@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.35.2** · 节点约 130 个 · GPL-3.0-or-later
+当前版本：**1.36.0** · 节点 139 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -60,6 +60,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `11-studio-production` | 生产、字幕、时间线和批量辅助 |
 | `12-system-memory` | 预检、显存、缓存、VBAR 和释放策略 |
 | `13-latent-upscale` | 32 倍数对齐的 latent 放大 |
+| `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力（实验） |
 
 每个目录都有自己的 `README.md`，说明适用场景、参数建议和已知限制。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 
@@ -103,7 +104,16 @@ models/face_detection/checkpoints
 - 宽高应为 32 的倍数；官方高分辨率参考可到约 `1920×1088`，但实际上限取决于显卡、帧数和参考数量。
 - 常用帧数遵循 H3 的网格约束，例如 22、124、362；不要只按“秒数”猜可用帧数。
 - 16GB 显卡不要默认视为所有任务安全。先用较小画布/短片段通过预检，再逐步增加规模。
-- SPEED、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
+- SPEED、Prompt Relay、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
+- Prompt Relay 与 Turbo8 组合时，连接顺序必须是 `UNET → Prompt Relay Conditioning → 修正 Alpha8 Bypass LoRA → DualClock Sampler`；把 LoRA 接在 Relay 前面会被主动拒绝。
+- Prompt Relay 需要保留输入原声时使用 `lock_source`，并把节点的 `mux_audio` 接到最终保存节点；`native/remix/reference_only`仍可能因 H3 联合 AV Transformer 而改变声音。
+- Prompt Relay 默认 `video_only_paper` 不改变旧工作流；只有显式插入 `Query Route`并选择`joint_av_exp`，才会把局部事件时间扩展到目标音频。该模式是H3实验扩展，不是论文已验证能力。
+- `14-prompt-relay` 已提供 T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid 六种视觉任务模板，以及参考视频+同编号音轨、独立参考音频、联合AV和Turbo8模板；各任务的图片/视频/音频接线、模型顺序和已验证边界写在画布 NOTE 中。
+- 六种视觉任务以及“参考视频+同音轨”“独立参考音频”现均至少有一组同输入、同seed、同NFE的baseline/Relay机械对照：16条成片均为736×416×124、24fps、32kHz双声道，严格音视频解码通过且无黑帧、冻结或削波；I2VA/FL2VA/L2VA/Hybrid的首尾帧锚点代理没有出现明显回退。该结果只关闭媒体与锚点合同，不代表Relay必然改善动作、身份、画质或声音；参考音轨不是原波形复制，感知优劣仍需观看和试听。
+- 局部动作可用多个 `Prompt Relay Event Advanced` 节点逐项复制串联，并连接普通 Plan 或 Studio Packet桥接；普通Plan未连接时继续读取旧`local_prompts/time_ranges`，Packet桥接未连接时继续读取旧`events_json`。Studio 的 `Unified Cast + Sound Canvas + Prompt Compiler`编译结果仍是全局画面/声音事实源，节点不会自动拆剧情或改写事件。
+- Prompt Relay显式时间范围必须按开始时间排列；`frames`只接受整数帧，`percent`只接受`0..100`。零个事件（包括整条Event链全部关闭）会只保留全局提示并无补丁直通；只有一个事件时也不安装补丁，通常应直接并入`global_prompt`。
+- `Prompt Relay Preview Advanced`可以在不加载UNET、CLIP、VAE且不执行采样的情况下检查事件帧段、秒数、覆盖关系和Plan哈希；`Prompt Relay Resource Estimate Advanced`还能按画布、参考素材数量和query chunk估算H3 packed行数及Relay显式bias峰值，并在同一报告中列出736×416、1152×640、1920×1088三档矩阵。后者只是一项内存规划代理，不包含模型权重、完整attention激活、VAE/CLIP、VBAR或碎片，绝不等同于“16GB安全”。`14-prompt-relay`里的11份生成模板已内联Preview，另附一份纯时间线/资源预检工作流。
+- Long Video需要分段事件时，使用独立的`Prompt Relay Long Video Window/Conditioning Advanced`；全局Plan只创建一次，本地渲染起点按`accepted timeline start - context overlap`计算。旧Long Video节点与旧工作流未改。本机已完成一条736×416、Turbo8、22帧上下文的segment 0→1真实链：输出124+102帧、事件没有从头重启、视频/音频各3轮严格解码通过，整卡峰值约15478/14984MiB。该单条结果仍只证明机械与时间线可用；最终音频接缝需试听，不能外推为普遍画质或16GB安全。
 
 ## 故障排查
 

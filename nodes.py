@@ -7,6 +7,19 @@ from .nodes_context_ir_advanced import CONTEXT_IR_ADVANCED_NODE_CLASSES
 from .nodes_qwen_prefix_cache_advanced import (
     QWEN_PREFIX_CACHE_ADVANCED_NODE_CLASSES,
 )
+from .nodes_prompt_relay_advanced import PROMPT_RELAY_ADVANCED_NODE_CLASSES
+from .nodes_prompt_relay_long_video_advanced import (
+    PROMPT_RELAY_LONG_VIDEO_ADVANCED_NODE_CLASSES,
+)
+from .nodes_prompt_relay_packet_advanced import (
+    PROMPT_RELAY_PACKET_ADVANCED_NODE_CLASSES,
+)
+from .nodes_prompt_relay_preview_advanced import (
+    PROMPT_RELAY_PREVIEW_ADVANCED_NODE_CLASSES,
+)
+from .nodes_prompt_relay_resource_estimate_advanced import (
+    PROMPT_RELAY_RESOURCE_ESTIMATE_ADVANCED_NODE_CLASSES,
+)
 from .nodes_repair_execution_advanced import (
     REPAIR_EXECUTION_ADVANCED_NODE_CLASSES,
 )
@@ -455,7 +468,12 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *DETAIL_SAMPLING_ADVANCED_NODE_CLASSES,
                 *SPEED_ADVANCED_NODE_CLASSES,
                 *LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES,
-                *TWO_PASS_DETAIL_ADVANCED_NODE_CLASSES]
+                *TWO_PASS_DETAIL_ADVANCED_NODE_CLASSES,
+                *PROMPT_RELAY_ADVANCED_NODE_CLASSES,
+                *PROMPT_RELAY_LONG_VIDEO_ADVANCED_NODE_CLASSES,
+                *PROMPT_RELAY_PACKET_ADVANCED_NODE_CLASSES,
+                *PROMPT_RELAY_PREVIEW_ADVANCED_NODE_CLASSES,
+                *PROMPT_RELAY_RESOURCE_ESTIMATE_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():

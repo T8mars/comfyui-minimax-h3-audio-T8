@@ -1,5 +1,20 @@
 # Third-party notices
 
+## Prompt Relay research and community implementations
+
+The MiniMax H3 Prompt Relay Advanced implementation derives the temporal-penalty equation from
+[`Prompt Relay` (arXiv:2604.10030v1)](https://arxiv.org/abs/2604.10030v1) and was designed after
+reviewing the public interaction and implementation approaches in the following fixed revisions:
+
+- [`GordonChen19/Prompt-Relay@0ad2b227`](https://github.com/GordonChen19/Prompt-Relay/tree/0ad2b22741ab09e89e7981aba8980ced29a707b9)
+- [`kijai/ComfyUI-PromptRelay@ca5d4e3e`](https://github.com/kijai/ComfyUI-PromptRelay/tree/ca5d4e3edb6abd9c2a4c68a3a6798eec1980f450)
+- [`yichengup/ComfyUI-YCNodes-MiniMax-H3@ca9447bd`](https://github.com/yichengup/ComfyUI-YCNodes-MiniMax-H3/tree/ca9447bd21048f37539f9f15250831fcfdf481c7)
+
+The runtime code in this repository is H3-specific: it binds the exact native Qwen token stream,
+targets MiniMax H3 packed joint audio-video self-attention, streams target-video query chunks, and
+does not copy a whole Wan/LTX/H3 Transformer forward or create a dense sequence-squared mask. The
+three community repositories are not runtime dependencies and no model weights are redistributed.
+
 ## SPEED: Spectral Progressive Diffusion
 
 The isolated MiniMax H3 SPEED Advanced implementation is a clean-room adaptation of the public

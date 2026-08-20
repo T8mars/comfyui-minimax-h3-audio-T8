@@ -563,6 +563,7 @@ def build_long_video_conditioning(
     persistent_identity_image=None,
     persistent_identity_strategy: str = "single_reference",
     persistent_identity_interval: int = 1,
+    return_details: bool = False,
 ):
     if width % CANVAS_MULTIPLE or height % CANVAS_MULTIPLE:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -876,7 +877,7 @@ def build_long_video_conditioning(
         "warnings": warnings,
     }
     output_audio = final_audio if final_audio is not None else drive_audio
-    return (
+    result = (
         conditioning,
         latent,
         output_audio,
@@ -884,6 +885,18 @@ def build_long_video_conditioning(
         media_map,
         json.dumps(report, ensure_ascii=False, indent=2),
     )
+    if not return_details:
+        return result
+    details = {
+        "tokens": tokens,
+        "keyframes": keyframes,
+        "refs": refs,
+        "resolved_task": resolved_task,
+        "frame_count": frame_count,
+        "audio_mode": mode,
+        "context_active": context_active,
+    }
+    return (*result, details)
 
 
 def _ref_advance(ref: dict) -> float:
@@ -937,34 +950,15 @@ def _locate_ref_segments(layout, keyframes: list[dict], refs: list[dict]) -> dic
     return located
 
 
-def repair_long_video_payload(out: dict, kwargs: dict) -> dict:
-    if int(kwargs.get(LONG_VIDEO_CONDITIONING_KEY, 0) or 0) != LONG_VIDEO_SCHEMA:
-        return out
-    cond = out.get("minimax_payload")
-    payload = getattr(cond, "cond", None) if cond is not None else None
-    if not isinstance(payload, dict):
-        raise RuntimeError("Long-video model patch could not access the MiniMax H3 payload")
-
-    keyframes = list(kwargs.get("minimax_keyframes") or [])
-    refs = list(kwargs.get("minimax_refs") or [])
-    payload["cond_video_latents"] = [
-        keyframe["latent"] for keyframe in keyframes if "latent" in keyframe
-    ] + [
-        ref["latent"]
-        for ref in refs
-        if ref.get("kind") != HYBRID_KEYFRAME_SENTINEL and "latent" in ref
-    ]
-    payload["cond_audio_latents"] = [
-        ref["audio_latent"] for ref in refs if ref.get("audio_latent") is not None
-    ]
-    if kwargs.get("minimax_frame_count") is not None:
-        payload["frame_count"] = kwargs["minimax_frame_count"]
-
-    layout = payload.get("layout")
+def repair_long_video_layout(
+    layout,
+    keyframes: list[dict],
+    refs: list[dict],
+    frame_count: int | None,
+):
     if layout is None:
         raise RuntimeError("Long-video MiniMax H3 payload has no PackedLayout")
     text_len, latent_t = int(layout.signature[0]), int(layout.signature[1])
-    frame_count = payload.get("frame_count")
     ref_offset = sum(_ref_advance(ref) for ref in refs)
 
     cond_segments = [(start, stop) for start, stop, kind in layout.segments if kind == "cond"]
@@ -1001,6 +995,38 @@ def repair_long_video_payload(out: dict, kwargs: dict) -> dict:
         start, stop = located[ref_index]
         layout.position_ids[start:stop, 0] += shift
 
+    return layout
+
+
+def repair_long_video_payload(out: dict, kwargs: dict) -> dict:
+    if int(kwargs.get(LONG_VIDEO_CONDITIONING_KEY, 0) or 0) != LONG_VIDEO_SCHEMA:
+        return out
+    cond = out.get("minimax_payload")
+    payload = getattr(cond, "cond", None) if cond is not None else None
+    if not isinstance(payload, dict):
+        raise RuntimeError("Long-video model patch could not access the MiniMax H3 payload")
+
+    keyframes = list(kwargs.get("minimax_keyframes") or [])
+    refs = list(kwargs.get("minimax_refs") or [])
+    payload["cond_video_latents"] = [
+        keyframe["latent"] for keyframe in keyframes if "latent" in keyframe
+    ] + [
+        ref["latent"]
+        for ref in refs
+        if ref.get("kind") != HYBRID_KEYFRAME_SENTINEL and "latent" in ref
+    ]
+    payload["cond_audio_latents"] = [
+        ref["audio_latent"] for ref in refs if ref.get("audio_latent") is not None
+    ]
+    if kwargs.get("minimax_frame_count") is not None:
+        payload["frame_count"] = kwargs["minimax_frame_count"]
+
+    layout = repair_long_video_layout(
+        payload.get("layout"),
+        keyframes,
+        refs,
+        payload.get("frame_count"),
+    )
     expected_video_latents = sum(kind in {"cond", "ref_img"} for _, _, kind in layout.segments)
     expected_audio_latents = sum(kind == "ref_audio" for _, _, kind in layout.segments)
     if len(payload["cond_video_latents"]) != expected_video_latents:
@@ -1022,13 +1048,29 @@ def patch_long_video_model(model):
         raise ValueError("model is not a ComfyUI MODEL patcher")
     patched = model.clone()
     original = patched.get_model_object("extra_conds")
+    original_function = getattr(original, "__func__", original)
     if getattr(original, "_t8_multikeyframe_patch_version", None) is not None:
         raise ValueError(
             "MiniMax H3 Long Video Conditioning and Multi-Keyframe Advanced cannot be "
             "stacked until their patch order has been validated"
         )
-    if getattr(original, "_t8_long_video_patch_version", None) == LONG_VIDEO_PATCH_VERSION:
-        return patched
+    if (
+        getattr(original_function, "_t8_long_video_patch_version", None)
+        == LONG_VIDEO_PATCH_VERSION
+    ):
+        if "extra_conds" in getattr(patched, "object_patches", {}):
+            return patched
+        restored = getattr(
+            original_function,
+            "_t8_long_video_original_extra_conds",
+            None,
+        )
+        if restored is None:
+            raise RuntimeError(
+                "Long Video found a live v1 extra_conds patch without its native restore "
+                "contract; restart ComfyUI before retrying"
+            )
+        original = restored
 
     base_model = patched.model
     if type(base_model).__name__ != "MiniMaxH3":
@@ -1041,6 +1083,7 @@ def patch_long_video_model(model):
         return repair_long_video_payload(out, kwargs)
 
     _patched_extra_conds._t8_long_video_patch_version = LONG_VIDEO_PATCH_VERSION
+    _patched_extra_conds._t8_long_video_original_extra_conds = original
     patched.add_object_patch("extra_conds", types.MethodType(_patched_extra_conds, base_model))
     return patched
 

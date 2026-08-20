@@ -239,6 +239,8 @@ def build_conditioning(
     ref_videos=None,
     ref_video_audios=None,
     ref_audios=None,
+    *,
+    return_details: bool = False,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -432,4 +434,22 @@ def build_conditioning(
     ]
     report_lines.extend(f"warning: {warning}" for warning in prompt_warnings)
     output_audio = final_audio if final_audio is not None else drive_audio
-    return conditioning, latent, output_audio, conditioned_prompt, media_map, "\n".join(report_lines)
+    result = (
+        conditioning,
+        latent,
+        output_audio,
+        conditioned_prompt,
+        media_map,
+        "\n".join(report_lines),
+    )
+    if not return_details:
+        return result
+    details = {
+        "tokens": tokens,
+        "keyframes": keyframes,
+        "refs": refs,
+        "resolved_task": resolved_task,
+        "frame_count": frame_count,
+        "audio_mode": mode,
+    }
+    return (*result, details)

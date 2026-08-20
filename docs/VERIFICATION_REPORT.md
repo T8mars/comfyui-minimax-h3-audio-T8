@@ -5,13 +5,34 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.35.1 checkpoint passed all 741 tests against the configured ComfyUI source tree
+The current 1.36.0 checkpoint passed all 829 tests against the configured ComfyUI source tree
 `187eda8ef5e588c6a5765cad53e482765edae052`; its real learned-latent generation used the one-key runtime
 entry point `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
 on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5fdf`, while the wider
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.36.0 Prompt Relay release (2026-08-20)
+
+Seven append-only Prompt Relay Advanced nodes provide authenticated multi-event plans, H3 target-video
+query routing, an opt-in joint-AV route, chainable Event and Studio Packet bridges, model-free Preview,
+and bounded resource estimates. Two more append-only nodes project one global Relay plan into the
+existing Long Video windows. Existing Conditioning and sampler schemas remain unchanged, and stable
+`sampling.py` retains SHA-256
+`111DA5E52B28F2424F57B36F88DB63E3EA02B538A8CDFDEA1C8AD2F122AD7BB5`.
+
+The release includes eleven generation templates plus one model-free plan/estimate preview. Controlled
+same-input, same-seed, same-NFE baseline/Relay pairs cover T2VA, I2VA, FL2VA, L2VA, Ref2VA image,
+Hybrid, paired reference video plus matching soundtrack, and standalone reference audio. All sixteen
+outputs strictly decoded as 736x416, 124-frame, 24fps video with 32kHz stereo audio and showed no
+black/frozen transition or clipped PCM sample. A single reviewer judged the paired reference-video
+results approximately equal and the standalone-reference-audio Relay result somewhat better in prompt
+adherence. This is not evidence of universal quality, semantic-audio, speed, or 16GB safety.
+
+Final release gates passed: 829 pytest cases, Ruff, compileall, 142 non-artifact JSON parses, 139-node
+append-only registration, 85/85 project/user workflow relative-path SHA parity, `git diff --check`, and
+the stable sampler hash above.
 
 ## Unreleased prompt-tag compatibility hotfix (2026-08-20)
 
