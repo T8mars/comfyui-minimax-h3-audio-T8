@@ -150,6 +150,8 @@ def test_two_pass_detail_mixer_preserves_external_refine_schedule_when_disabled(
     assert report["status"] == "parity_passthrough"
     assert report["external_refine_schedule_authoritative"] is True
     assert report["phase_scope"] == "high_resolution_refine_only"
+    assert "rebases" in report["partial_start_clock_contract"]
+    assert report["audio_completion_owner"] == "pass_2_when_audio_is_unmasked"
 
 
 def test_two_pass_detail_mixer_tail_three_augments_only_refine_schedule(monkeypatch):

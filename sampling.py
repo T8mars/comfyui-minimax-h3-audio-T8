@@ -115,6 +115,59 @@ def _audio_step_scale(
     return flat_scale + denoise_mask * (dual_scale - flat_scale)
 
 
+def _rebase_partial_audio_start(
+    model,
+    x: torch.Tensor,
+    sigma_video,
+    *,
+    video_values: int,
+    shift_video: float,
+    shift_audio: float,
+) -> torch.Tensor:
+    """Move a partial custom-sampler restart onto the H3 audio clock.
+
+    Comfy's generic KSAMPLER initializes every packed stream with ``sigma_video``.
+    That is exact at a full ``sigma=1`` start, where H3's video and audio clocks
+    coincide.  A learned-upscale refinement starts below one, however, and the
+    direct/unscaled audio stream must instead start at ``sigma_audio``.  Rebuild
+    only that slice from KSAMPLER's actual initialization terms so noise_scale and
+    dtype/device details remain authoritative.
+
+    Plain callable models used by unit tests or third-party direct invocation do
+    not expose KSAMPLER's ``noise``/``latent_image`` state; those calls retain the
+    historical behavior rather than guessing initialization terms.
+    """
+    noise = getattr(model, "noise", None)
+    latent_image = getattr(model, "latent_image", None)
+    if not isinstance(noise, torch.Tensor) or not isinstance(latent_image, torch.Tensor):
+        return x
+    if noise.shape != x.shape or latent_image.shape != x.shape:
+        return x
+
+    sigma_video = torch.as_tensor(sigma_video, device=x.device, dtype=x.dtype)
+    sigma_audio = torch.as_tensor(
+        time_shift_sigma(sigma_video, shift_video, shift_audio),
+        device=x.device,
+        dtype=x.dtype,
+    )
+    if bool(torch.isclose(sigma_video, sigma_audio, rtol=0.0, atol=1.0e-7).all()):
+        return x
+    if bool((sigma_video <= 0.0).any()):
+        raise ValueError("MiniMax H3 partial audio restart requires a positive initial sigma")
+
+    audio_x = x[..., video_values:]
+    audio_latent = latent_image[..., video_values:].to(device=x.device, dtype=x.dtype)
+    sigma_shape = sigma_video.shape[:1] + (1,) * (audio_x.ndim - 1)
+    sigma_video = sigma_video.reshape(sigma_shape)
+    sigma_audio = sigma_audio.reshape(sigma_shape)
+
+    # Recover the exact scaled-noise term used by CONST without assuming
+    # model_sampling.noise_scale, then rebuild x_audio at its own clock.
+    scaled_noise = (audio_x - (1.0 - sigma_video) * audio_latent) / sigma_video
+    rebased_audio = sigma_audio * scaled_noise + (1.0 - sigma_audio) * audio_latent
+    return torch.cat((x[..., :video_values], rebased_audio), dim=-1)
+
+
 def sample_minimax_h3_dual_clock_euler(
     model,
     x,
@@ -142,6 +195,15 @@ def sample_minimax_h3_dual_clock_euler(
         if denoise_mask.shape[-1] != packed_values:
             raise ValueError("MiniMax H3 denoise mask does not match the packed AV latent")
         audio_mask = denoise_mask[..., video_values:]
+
+    x = _rebase_partial_audio_start(
+        model,
+        x,
+        sigmas[0],
+        video_values=video_values,
+        shift_video=shift_video,
+        shift_audio=shift_audio,
+    )
 
     s_in = x.new_ones([x.shape[0]])
     for step in comfy.utils.model_trange(len(sigmas) - 1, disable=disable):

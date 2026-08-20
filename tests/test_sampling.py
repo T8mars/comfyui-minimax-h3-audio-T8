@@ -8,6 +8,7 @@ import torch
 
 import comfy.model_sampling
 import comfy.nested_tensor
+import comfy.samplers
 
 from h3_audio_t8_pkg.sampling import (
     DEFAULT_SAMPLER_NAME,
@@ -88,6 +89,41 @@ def test_current_h3_raw_audio_velocity_uses_audio_clock_without_legacy_slope():
     assert callbacks[-1]["denoised"] == pytest.approx(output)
 
 
+def test_partial_schedule_rebases_custom_audio_start_onto_audio_clock():
+    sigmas = torch.tensor([0.9, 0.5, 0.0])
+    latent_image = torch.tensor([[[2.0, 2.0]]])
+    noise = torch.tensor([[[6.0, 6.0]]])
+    flat_start = sigmas[0] * noise + (1.0 - sigmas[0]) * latent_image
+    first_model_input = []
+
+    class FakeSamplerModel:
+        def __init__(self):
+            self.noise = noise
+            self.latent_image = latent_image
+
+        def __call__(self, x, _sigma, **_kwargs):
+            first_model_input.append(x.detach().clone())
+            return x
+
+    sample_minimax_h3_dual_clock_euler(
+        FakeSamplerModel(),
+        flat_start,
+        sigmas,
+        disable=True,
+        video_values=1,
+        packed_values=2,
+        shift_video=12.0,
+        shift_audio=3.0,
+        audio_velocity_is_raw=True,
+    )
+
+    sigma_audio = time_shift_sigma(sigmas[0], 12.0, 3.0)
+    expected_audio = sigma_audio * noise[..., 1:] + (1.0 - sigma_audio) * latent_image[..., 1:]
+    assert first_model_input[0][..., :1] == pytest.approx(flat_start[..., :1])
+    assert first_model_input[0][..., 1:] == pytest.approx(expected_audio)
+    assert not torch.equal(first_model_input[0][..., 1:], flat_start[..., 1:])
+
+
 def test_zero_audio_denoise_mask_keeps_flat_inpaint_endpoint_semantics():
     sigmas = native_flow_sigmas(4, 12.0)
 
@@ -108,6 +144,84 @@ def test_zero_audio_denoise_mask_keeps_flat_inpaint_endpoint_semantics():
         shift_audio=3.0,
     )
     assert output[..., 2:] == pytest.approx(torch.full((1, 1, 2), 0.25))
+
+
+def test_comfy_inpaint_wrapper_limits_zero_mask_audio_change_to_float_roundoff():
+    sigmas = native_flow_sigmas(4, 12.0)
+    latent_image = torch.tensor([[[0.0, 0.0, 7.0, -3.0]]])
+    noise = torch.tensor([[[1.0, -1.0, 2.0, 4.0]]])
+    denoise_mask = torch.tensor([[[1.0, 1.0, 0.0, 0.0]]])
+
+    class FakeBaseModel:
+        @staticmethod
+        def scale_latent_inpaint(*, latent_image, **_kwargs):
+            return latent_image
+
+    class FakeDenoiser:
+        inner_model = FakeBaseModel()
+
+        @staticmethod
+        def __call__(x, _sigma, **_kwargs):
+            return torch.full_like(x, 0.25)
+
+    inpaint_model = comfy.samplers.KSamplerX0Inpaint(FakeDenoiser(), sigmas)
+    inpaint_model.latent_image = latent_image
+    inpaint_model.noise = noise
+    output = sample_minimax_h3_dual_clock_euler(
+        inpaint_model,
+        noise,
+        sigmas,
+        extra_args={"denoise_mask": denoise_mask},
+        disable=True,
+        video_values=2,
+        packed_values=4,
+        shift_video=12.0,
+        shift_audio=3.0,
+        audio_velocity_is_raw=True,
+    )
+
+    audio_roundoff = torch.amax(torch.abs(output[..., 2:] - latent_image[..., 2:]))
+    assert float(audio_roundoff) <= 1e-6
+    assert not torch.equal(output[..., :2], latent_image[..., :2])
+
+
+def test_partial_schedule_rebase_preserves_explicit_zero_mask_audio_lock():
+    sigmas = torch.tensor([0.9, 0.5, 0.0])
+    latent_image = torch.tensor([[[0.0, 0.0, 7.0, -3.0]]])
+    noise = torch.tensor([[[1.0, -1.0, 2.0, 4.0]]])
+    denoise_mask = torch.tensor([[[1.0, 1.0, 0.0, 0.0]]])
+    flat_start = sigmas[0] * noise + (1.0 - sigmas[0]) * latent_image
+
+    class FakeBaseModel:
+        @staticmethod
+        def scale_latent_inpaint(*, latent_image, **_kwargs):
+            return latent_image
+
+    class FakeDenoiser:
+        inner_model = FakeBaseModel()
+
+        @staticmethod
+        def __call__(x, _sigma, **_kwargs):
+            return torch.full_like(x, 0.25)
+
+    inpaint_model = comfy.samplers.KSamplerX0Inpaint(FakeDenoiser(), sigmas)
+    inpaint_model.latent_image = latent_image
+    inpaint_model.noise = noise
+    output = sample_minimax_h3_dual_clock_euler(
+        inpaint_model,
+        flat_start,
+        sigmas,
+        extra_args={"denoise_mask": denoise_mask},
+        disable=True,
+        video_values=2,
+        packed_values=4,
+        shift_video=12.0,
+        shift_audio=3.0,
+        audio_velocity_is_raw=True,
+    )
+
+    assert output[..., 2:] == pytest.approx(latent_image[..., 2:], abs=1e-6)
+    assert not torch.equal(output[..., :2], latent_image[..., :2])
 
 
 class FakeModelConfig:

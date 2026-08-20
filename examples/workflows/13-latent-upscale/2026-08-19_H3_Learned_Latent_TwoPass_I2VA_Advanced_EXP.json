@@ -1206,7 +1206,7 @@
       ],
       "size": [
         390,
-        202
+        262
       ],
       "flags": {},
       "order": 14,
@@ -1232,6 +1232,22 @@
           "type": "COMBO",
           "widget": {
             "name": "audio_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "second_pass_audio_source",
+          "type": "COMBO",
+          "widget": {
+            "name": "second_pass_audio_source"
+          },
+          "link": null
+        },
+        {
+          "name": "second_pass_audio_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "second_pass_audio_strength"
           },
           "link": null
         }
@@ -1263,7 +1279,9 @@
         "Node name for S&R": "MiniMaxH3TwoPassLatentReconcileT8Advanced"
       },
       "widgets_values": [
-        "auto"
+        "auto",
+        "legacy_policy",
+        0.0
       ]
     },
     {
@@ -1666,7 +1684,7 @@
       "type": "MiniMaxH3AVDecodeT8",
       "title": "Decode HIGH AV",
       "pos": [
-        4840,
+        5280,
         0
       ],
       "size": [
@@ -1674,7 +1692,7 @@
         158
       ],
       "flags": {},
-      "order": 19,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -1730,7 +1748,7 @@
       "type": "VHS_VideoCombine",
       "title": "Save synchronized MP4",
       "pos": [
-        5280,
+        5720,
         0
       ],
       "size": [
@@ -1738,7 +1756,7 @@
         396
       ],
       "flags": {},
-      "order": 20,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -1846,7 +1864,7 @@
         280
       ],
       "flags": {},
-      "order": 21,
+      "order": 22,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1870,7 +1888,7 @@
         280
       ],
       "flags": {},
-      "order": 22,
+      "order": 23,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1894,7 +1912,7 @@
         280
       ],
       "flags": {},
-      "order": 23,
+      "order": 24,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1902,7 +1920,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 3 · Required pass handoff / 二采接线\nPass 1 must feed `denoised_output` into the learned upscaler. HIGH Conditioning is rebuilt after the upscaler reports its actual aligned size, then Reconcile verifies the contract. Pass 2 uses fresh RandomNoise; AV Decode receives sampler `output`, not `denoised_output`."
+        "## 3 · Required pass handoff + audio clock / 二采接线与音频时钟\nPass 1 must feed `denoised_output` into the learned upscaler. HIGH Conditioning is rebuilt after the upscaler reports its actual aligned size, then Reconcile verifies the contract. Keep Reconcile at `second_pass_audio_source=legacy_policy` for native author parity: pass 2 must complete both video and audio. The custom dual-clock sampler rebases the partial pass-2 audio start from video sigma onto its own audio sigma before the first model call. Do not insert Two-Pass Audio Audit here; that node is only for an intentional zero-mask source lock. AV Decode receives the pass-2 sampler output directly."
       ]
     },
     {
@@ -1918,7 +1936,7 @@
         280
       ],
       "flags": {},
-      "order": 24,
+      "order": 25,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1942,7 +1960,7 @@
         280
       ],
       "flags": {},
-      "order": 25,
+      "order": 26,
       "mode": 0,
       "inputs": [],
       "outputs": [],

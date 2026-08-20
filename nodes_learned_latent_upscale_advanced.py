@@ -8,7 +8,9 @@ from .learned_latent_upscale_advanced import (
     AUDIO_POLICIES,
     PRECISIONS,
     RELEASE_POLICIES,
+    SECOND_PASS_AUDIO_SOURCES,
     SIZE_MODES,
+    audit_two_pass_h3_audio,
     build_learned_two_pass_parity_plan,
     build_two_pass_sigma_plan,
     learned_upscale_h3_av_latent,
@@ -118,6 +120,31 @@ class MiniMaxH3TwoPassLatentReconcileT8Advanced(io.ComfyNode):
                         "otherwise it continues the first-pass audio."
                     ),
                 ),
+                io.Combo.Input(
+                    "second_pass_audio_source",
+                    options=list(SECOND_PASS_AUDIO_SOURCES),
+                    default="legacy_policy",
+                    optional=True,
+                    tooltip=(
+                        "legacy_policy preserves old saved-workflow behavior. first_pass is the "
+                        "explicit audio-lock route: reuse pass-1 audio while pass 2 refines video. "
+                        "For native author-parity generation, keep legacy_policy so pass 2 can "
+                        "finish the joint audio trajectory."
+                    ),
+                ),
+                io.Float.Input(
+                    "second_pass_audio_strength",
+                    default=0.0,
+                    min=0.0,
+                    max=1.0,
+                    step=0.01,
+                    optional=True,
+                    tooltip=(
+                        "Pass-2 audio denoise only for an explicit non-legacy source. Use 0 to "
+                        "lock the selected audio exactly; values above 0 deliberately regenerate "
+                        "it and remain experimental."
+                    ),
+                ),
             ],
             outputs=[
                 io.Latent.Output("av_latent"),
@@ -129,6 +156,71 @@ class MiniMaxH3TwoPassLatentReconcileT8Advanced(io.ComfyNode):
     @classmethod
     def execute(cls, **kwargs):
         return io.NodeOutput(*reconcile_two_pass_h3_latent(**kwargs))
+
+
+class MiniMaxH3TwoPassAudioAuditT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3TwoPassAudioAuditT8Advanced",
+            display_name=(
+                "MiniMax H3 Two-Pass Audio Audit / H3二采音频硬校验 (Advanced)"
+            ),
+            description=(
+                "Compares the audio latent immediately before and after pass 2. In the "
+                "explicit strength-0 lock route it allows only bounded floating-point roundoff, "
+                "then restores the exact input audio before decode. Larger changes fail closed, "
+                "preventing a mechanically valid but sonically rewritten result from being saved. "
+                "Do not insert this node into the native author-parity route: native pass 2 must "
+                "complete audio as well as video."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                io.Latent.Input(
+                    "second_pass_input",
+                    tooltip="Connect the Reconcile AV latent that enters pass 2.",
+                ),
+                io.Latent.Input(
+                    "second_pass_output",
+                    tooltip="Connect pass-2 SamplerCustomAdvanced output.",
+                ),
+                io.Float.Input(
+                    "expected_audio_strength",
+                    default=0.0,
+                    min=0.0,
+                    max=1.0,
+                    step=0.01,
+                    tooltip="Must match Reconcile second_pass_audio_strength.",
+                ),
+                io.Boolean.Input(
+                    "fail_on_locked_mismatch",
+                    default=True,
+                    tooltip="At strength 0, stop the workflow if audio differs after pass 2.",
+                ),
+                io.Float.Input(
+                    "locked_atol",
+                    default=1e-5,
+                    min=0.0,
+                    max=1.0,
+                    step=1e-7,
+                    tooltip=(
+                        "Maximum sampler roundoff allowed before failure. After the check, "
+                        "locked audio is replaced by the exact pass-2 input latent."
+                    ),
+                ),
+            ],
+            outputs=[
+                io.Latent.Output("verified_av_latent"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        values = audit_two_pass_h3_audio(**kwargs)
+        return io.NodeOutput(*values, ui={"text": (values[1],)})
 
 
 class MiniMaxH3TwoPassSigmaPlanT8Advanced(io.ComfyNode):
@@ -224,4 +316,8 @@ LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES = [
     MiniMaxH3TwoPassLatentReconcileT8Advanced,
     MiniMaxH3TwoPassSigmaPlanT8Advanced,
     MiniMaxH3LearnedTwoPassParityPlanT8Advanced,
+]
+
+LEARNED_LATENT_AUDIO_AUDIT_ADVANCED_NODE_CLASSES = [
+    MiniMaxH3TwoPassAudioAuditT8Advanced,
 ]

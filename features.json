@@ -63,6 +63,112 @@
       "14-prompt-relay"
     ]
   },
+  "learned_two_pass_audio_lock_advanced": {
+    "status": "implemented as an explicit opt-in lock tool; withdrawn from the native recommended graph after human listening",
+    "date": "2026-08-21",
+    "nodes": [
+      "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+      "MiniMaxH3TwoPassAudioAuditT8Advanced"
+    ],
+    "legacy_compatibility": "existing audio_policy behavior remains available through second_pass_audio_source=legacy_policy",
+    "recommended_contract": "native author-parity uses legacy_policy and lets pass 2 complete audio; first_pass plus strength 0 is only an explicit lock experiment",
+    "sampling_semantics": "a zero audio mask preserves the selected latent mechanically but may freeze an unfinished pass-1 audio estimate and alter lip-sync conditioning",
+    "runtime_guard": "audio audit rejects changes above 1e-5 sampler roundoff and restores the exact pass-2 input audio latent before decode",
+    "joint_av_note": "the lock stream remains present for H3 joint attention, but the native default leaves audio unmasked so the second joint AV stage can finish it",
+    "real_h3_verification": {
+      "prompt_id": "14b75733-7eb0-4bcb-bc2b-210eecd996bb",
+      "geometry": "736x416x124 pass 1 to learned 1472x832x124 pass 2",
+      "schedule": "simple8 coarse calls 0-3 plus published 3-call refine schedule, shift 12/3",
+      "audio_audit_max_abs": 1.1920928955078125e-7,
+      "audio_audit_rmse": 1.0963865371138581e-8,
+      "audio_relocked_exact_before_decode": true,
+      "execution_seconds": 475.21,
+      "observed_device_memory_mib": 15753,
+      "output_sha256": "B63D11C709356E5939F83FF16788EFD565C677D667918FA99F4F6CCBCC452326",
+      "decoded_pcm_f32le_sha256": "a7c292ac999a13a2debf739cd409cc05ca773f679a372f0ac387a82de9e5acc3",
+      "media": "HEVC 1472x832, 124 frames at 24fps; AAC 32kHz stereo; A/V duration delta 14.667ms",
+      "strict_decode": "video-only, audio-only and combined FFmpeg -xerror/-err_detect explode all passed",
+      "audio_sanity": "no NaN/Inf/denormals; overall peak about -4.16dB"
+    },
+    "human_review_correction": "the mechanically locked output was audibly wrong; it is retained as negative evidence and is not a native default",
+    "verification": "historical 839-test mechanical lock gate passed, but the perceptual gate failed and supersedes that recommendation",
+    "stable_sampling_changed": false
+  },
+  "learned_two_pass_partial_audio_clock_repair": {
+    "status": "implemented and verified on one real native-audio I2VA A/B with user listening",
+    "date": "2026-08-21",
+    "root_cause": "Comfy generic KSAMPLER initialized all packed AV values at the partial pass-2 video sigma although H3 shift 12/3 maps video sigma 0.9035 to audio sigma about 0.701",
+    "repair": "before the first custom dual-clock model call, recover the exact KSAMPLER scaled-noise term and rebuild only the audio slice on its own projected sigma; video state, noise, schedule and NFE are unchanged",
+    "native_workflow_contract": "second_pass_audio_source=legacy_policy, no Audio Audit in the graph, and SamplerCustomAdvanced pass-2 output connects directly to AV Decode",
+    "explicit_lock_compatibility": "first_pass/highres_template source controls and Two-Pass Audio Audit remain registered for intentional zero-mask routes; partial-start zero-mask preservation has a dedicated regression",
+    "real_h3_verification": {
+      "native_prompt_id": "19f64127-5185-436f-9e7b-b9e44ffd9ab8",
+      "custom_fixed_prompt_id": "baaf7b1f-f70b-45c6-9ec2-0ed5febfc57a",
+      "geometry": "736x416x124 pass 1 to learned 1472x832x124 pass 2",
+      "schedule": "same prompt, seed, model and published 4+3-call schedule; shift 12/3",
+      "native_output": "MiniMaxH3/learned_latent_twopass_i2va_native_av_euler_ab_20260821_00001-audio.mp4",
+      "custom_fixed_output": "MiniMaxH3/learned_latent_twopass_i2va_fast_audio_clock_fix_20260821_00001-audio.mp4",
+      "native_output_sha256": "EEE4DF987566CA885F30F8EE23E70D0255CB0CDE86EF9CB458AF82FC8871B651",
+      "custom_fixed_output_sha256": "49F4495A70C80AEC18CD83D6FC8B8C264988C9307ECBC9FCBD9F18EBFA48DD34",
+      "decoded_pcm_correlation": 0.94909455,
+      "decoded_pcm_rmse": 0.06363,
+      "native_execution_seconds": 469.09,
+      "custom_fixed_execution_seconds": 471.345,
+      "media": "both 1472x832, 124 frames at 24fps with AAC 32kHz stereo; video-only, audio-only and combined strict decode passed for both",
+      "human_listening": "the user confirmed both the native ModelSamplingAV/Euler output and repaired custom dual-clock output sound normal"
+    },
+    "scope": "one native-audio I2VA clock-repair material plus one later shared speech fixture covering native, lock_source, remix_source=0.20 and reference_only; broader materials, trained phoneme-sync, general quality and universal 16GB safety remain unverified",
+    "verification": "841 project tests, changed-scope Ruff, compileall, all non-artifact JSON parses, project/user workflow SHA parity, six strict media decode checks and git diff check passed",
+    "stable_sampling_changed": true
+  },
+  "learned_two_pass_audio_mode_speech_validation": {
+    "status": "four modes completed real learned two-pass generation and one user completed full audio/lip review with no issues",
+    "date": "2026-08-21",
+    "shared_contract": "same front-facing image, licensed 5.152s LibriSpeech utterance, seed 2608215001, 736x416x124 to learned 1472x832x124, shift 12/3 and published 4+3 calls",
+    "source_audio_sha256": "9F43B22327A871CC11B8689507568CB2FCC9F9BA31D769FEF08AE47574E09C74",
+    "runs": {
+      "lock_source": {
+        "prompt_id": "da1e8f81-5c22-462d-912f-b4ceb58d2572",
+        "execution_seconds": 478.30,
+        "output_sha256": "E151D72AEA192D391E5F62285AF19C910476AB016416F888A5C0BDEA00575E53",
+        "source_pcm_correlation": 0.9997696,
+        "source_lag_ms": 0.0,
+        "output_audio": "conditioning mux_audio"
+      },
+      "remix_source_0_20": {
+        "prompt_id": "fe150edf-6d86-473a-b521-f2ce7f68e2a2",
+        "execution_seconds": 520.98,
+        "output_sha256": "FAC8B9F0A76C2B8E291FF5A7B74BF34754B2FA32F872044700C849E41EA4C59D",
+        "source_pcm_correlation": 0.8705903,
+        "source_lag_ms": -1.0,
+        "above_8khz_energy_percent": 0.0077209,
+        "output_audio": "generated AV Decode audio"
+      },
+      "reference_only": {
+        "prompt_id": "f249d33f-4a22-4008-820c-0040dc08b204",
+        "execution_seconds": 461.91,
+        "output_sha256": "47B647360E09A502516EDA6E23545774FA5069BE8E6E1B6F32437AE3BC53A5CF",
+        "source_pcm_correlation": 0.8492765,
+        "source_lag_ms": -1.03125,
+        "output_audio": "blank target audio regenerated with the source as Audio 1 reference"
+      },
+      "native": {
+        "prompt_id": "76a19361-10c5-431a-af3b-8d0809be1943",
+        "execution_seconds": 458.06,
+        "output_sha256": "9D268CD152558A2FC9E811E0847DCBD6D2B0B1BA1CC30EFF2B4F647925FC1DC7",
+        "source_pcm_correlation": 0.02549,
+        "asr_wer": 0.0,
+        "decoded_rms_dbfs": -10.976,
+        "decoded_sample_peak_dbfs": 2.499,
+        "output_audio": "generated AV Decode audio without source input"
+      }
+    },
+    "media": "all four outputs are HEVC 1472x832, 124 frames at 24fps plus AAC 32kHz stereo; video-only, audio-only and combined strict decodes passed",
+    "asr": "all outputs contain the complete target sentence; source/lock/remix/reference share the recording's Lake-versus-Link ambiguity while native has 15-word WER 0",
+    "mouth_proxy": "68-landmark face coverage was 124/124 for every output and the three source-audio mouth-aperture tracks correlated 0.9446 to 0.9728; this untrained proxy is not SyncNet evidence",
+    "human_review": "the user watched and listened to all four complete files, reported no issues and explicitly approved the review",
+    "scope": "single image, utterance, seed, model and reviewer; no comparative superiority, trained phoneme-sync, multilingual, speaker-identity, cross-GPU or universal 16GB claim"
+  },
   "audio_modes": ["native", "reference_only", "lock_source", "remix_source"],
   "audio_frontend_workflows": {
     "native": "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json",
@@ -210,7 +316,8 @@
     "MiniMaxH3PromptPacketRelayPlanT8Advanced",
     "MiniMaxH3PromptRelayEventT8Advanced",
     "MiniMaxH3PromptRelayPreviewT8Advanced",
-    "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
+    "MiniMaxH3PromptRelayResourceEstimateT8Advanced",
+    "MiniMaxH3TwoPassAudioAuditT8Advanced"
   ],
   "experimental_prompt_relay_advanced": {
     "category": "T8/MiniMax H3/Conditioning/Experimental",

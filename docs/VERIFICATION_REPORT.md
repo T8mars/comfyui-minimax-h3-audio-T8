@@ -5,13 +5,126 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.36.0 checkpoint passed all 829 tests against the configured ComfyUI source tree
-`187eda8ef5e588c6a5765cad53e482765edae052`; its real learned-latent generation used the one-key runtime
-entry point `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
+The current 1.36.2 checkpoint repairs partial-start audio-clock initialization in the custom
+dual-clock sampler and restores the native learned-I2VA graph's pass-2 audio completion. It is
+validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
+learned-latent generation used the one-key runtime entry point
+`0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
 on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5fdf`, while the wider
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.36.2 learned two-pass partial audio-clock repair (2026-08-21)
+
+The author's current I2VA workflow carries pass-1 audio around the learned 3D video upscaler, then
+feeds the reunited AV latent into a second unmasked sampler. That second stage is the owner of the
+final native audio; the pass-1 audio is not a finished asset. Human listening invalidated this
+project's preceding zero-mask recommendation: its latent audit passed, but the decoded sound was
+clearly wrong.
+
+The remaining custom-sampler mismatch occurred before its first pass-2 model call. Comfy's generic
+KSAMPLER initialized every packed value using the partial video sigma. For the published I2VA start
+of video sigma `0.9035` with shifts 12/3, the audio stream must instead start near sigma `0.701`.
+`sampling.py` now recovers the exact scaled-noise term from KSAMPLER's actual `noise` and
+`latent_image`, then rebuilds only the audio slice as
+`sigma_audio * scaled_noise + (1 - sigma_audio) * audio_latent`. It leaves video, random noise,
+schedule, model, dtype/device policy and NFE unchanged. Full sigma-1 starts remain identical, and a
+dedicated partial-start zero-mask test proves the explicit lock route still reaches its latent.
+
+Two real 736x416x124 to 1472x832x124, 4+3-call outputs used the same prompt, seed and model. Native
+`ModelSamplingAV + Euler` prompt `19f64127-5185-436f-9e7b-b9e44ffd9ab8` completed in about 469.09s;
+repaired custom dual-clock prompt `baaf7b1f-f70b-45c6-9ec2-0ed5febfc57a` completed in about 471.35s.
+Both are 124-frame 24fps video with 32kHz stereo audio, and the user confirmed both sound normal.
+Decoded PCM correlation between them is `0.94909455` with RMSE about `0.06363`; their near-equal
+runtimes do not establish a speed advantage. Native output SHA-256 is
+`EEE4DF987566CA885F30F8EE23E70D0255CB0CDE86EF9CB458AF82FC8871B651`; repaired custom output
+SHA-256 is `49F4495A70C80AEC18CD83D6FC8B8C264988C9307ECBC9FCBD9F18EBFA48DD34`.
+Video-only, audio-only and combined FFmpeg strict decodes passed for both files; each has a
+5.166667s video stream and 5.152s audio stream, a 14.667ms difference below one 24fps frame.
+
+The shipped native graph now uses `second_pass_audio_source=legacy_policy`, omits the output-node
+Audio Audit, and connects pass-2 output directly to AV Decode. The append-only Audio Audit node and
+explicit source/strength fields remain registered for intentional locks, but they are no longer a
+native recommendation. This initial result covered one native I2VA material only. The controlled
+four-mode speech validation below subsequently closed `lock_source`, `remix_source=0.20`,
+`reference_only`, and native speech review for one shared fixture. Broader materials, trained
+phoneme-sync measurement, general quality and universal 16GB safety remain unverified. Final gates
+passed 841 project tests, changed-scope Ruff, compileall, every non-artifact JSON parse,
+project/user workflow SHA parity, strict media decode checks and `git diff --check`.
+
+### Controlled four-mode speech and lip-review closure (2026-08-21)
+
+One front-facing image and the same licensed LibriSpeech utterance were used to exercise all four
+audio modes through the repaired learned two-pass route. The exact 5.152s, 32kHz stereo source has
+SHA-256 `9F43B22327A871CC11B8689507568CB2FCC9F9BA31D769FEF08AE47574E09C74` and says
+"All the time he was talking to me, his angry little eyes were following Lake." Every run used seed
+`2608215001`, 736x416x124 pass 1, learned 2x video-latent upscale, 1472x832x124 pass 2, shifts 12/3,
+and the same published 4+3-call schedule. The three source-audio modes used Hybrid conditioning;
+native used I2VA without an audio input.
+
+| Mode | Prompt ID | Runtime | Output SHA-256 | Output-audio contract |
+|---|---|---:|---|---|
+| `lock_source` | `da1e8f81-5c22-462d-912f-b4ceb58d2572` | 478.30s | `E151D72AEA192D391E5F62285AF19C910476AB016416F888A5C0BDEA00575E53` | Conditioning `mux_audio`; source waveform retained |
+| `remix_source=0.20` | `fe150edf-6d86-473a-b521-f2ce7f68e2a2` | 520.98s | `FAC8B9F0A76C2B8E291FF5A7B74BF34754B2FA32F872044700C849E41EA4C59D` | generated AV Decode audio |
+| `reference_only` | `f249d33f-4a22-4008-820c-0040dc08b204` | 461.91s | `47B647360E09A502516EDA6E23545774FA5069BE8E6E1B6F32437AE3BC53A5CF` | blank target audio regenerated with `<Audio 1>` reference |
+| `native` | `76a19361-10c5-431a-af3b-8d0809be1943` | 458.06s | `9D268CD152558A2FC9E811E0847DCBD6D2B0B1BA1CC30EFF2B4F647925FC1DC7` | generated AV Decode audio; no source input |
+
+All four outputs contain 124 HEVC frames at 1472x832 and 24fps plus 5.152s AAC at 32kHz stereo;
+video-only, audio-only and combined strict decodes passed. Relative to the decoded source,
+`lock_source` had correlation `0.9997696` at zero lag, confirming the direct-source contract.
+`remix_source=0.20` had correlation `0.8705903` at about -1ms and reduced above-8kHz energy from
+`0.01858%` to `0.00772%`, so even a low denoise strength is not a transparent bypass.
+`reference_only` had correlation `0.8492765` at about -1.03ms, but its code path starts from blank
+target audio and regenerates it; similarity does not make it equivalent to `remix_source=1`.
+Native correlation to the unrelated source waveform was `0.02549`. Its decoded RMS was about
+`-10.98dBFS` and sample peak about `+2.50dBFS`, so the bounded review passed but downstream level or
+true-peak limiting remains prudent.
+
+Checksum-verified faster-whisper-small.en recognized the complete sentence in every output.
+The source, lock, remix and reference files shared the source recording's `Lake`/`Link` ambiguity;
+native matched the written 15-word target with WER 0. A 68-landmark proxy detected the face in
+124/124 frames for all four outputs. The three source-audio modes had pairwise mouth-aperture
+correlations from `0.9446` to `0.9728`, but raw mouth-aperture/audio-envelope correlation is not a
+trained SyncNet metric and was not treated as proof of phoneme alignment.
+
+The user then watched and listened to all four complete outputs and reported no issues, explicitly
+approving the review. This is the decisive subjective pass for this bounded fixture. It verifies
+that all four modes are usable through the repaired learned two-pass chain on this one image,
+utterance, seed, model and reviewer. It does not establish comparative superiority, speaker-identity
+preservation across voices, trained phoneme-sync accuracy, multilingual behavior, repeated-memory
+safety, cross-GPU behavior, or a universal 16GB guarantee.
+
+## 1.36.1 learned two-pass audio lock — default withdrawn (2026-08-20)
+
+`MiniMaxH3TwoPassLatentReconcileT8Advanced` now keeps its legacy `audio_policy` route while adding
+independent optional `second_pass_audio_source` and `second_pass_audio_strength` controls. The
+shipped learned I2VA graph explicitly selects `first_pass` and `0.0`, so pass 1 owns native audio
+generation/remix and pass 2 retains the first-pass audio stream under a nested zero mask while the
+joint AV Transformer refines video against it.
+
+The append-only 140th node, `MiniMaxH3TwoPassAudioAuditT8Advanced`, checks the actual pass-2 input
+mask and compares audio latents before/after sampling. It permits at most `1e-5` float32 sampler
+roundoff, fails closed above that threshold, and then replaces the sampled audio with the exact
+pass-2 input audio before AV decode. Existing 139 node IDs and ordering are unchanged; stable
+`sampling.py` and EXP multi-rate sampling mathematics are unchanged.
+
+One real prompt `14b75733-7eb0-4bcb-bc2b-210eecd996bb` ran 736x416x124 pass 1, learned 2x video
+latent upscale, and 1472x832x124 pass 2 with shift 12/3 and the published 4+3-call schedule. The raw
+pass-2 audio difference was max-abs `1.1920928955078125e-7`, RMSE
+`1.0963865371138581e-8`; the audit then reported `locked_audio_replaced_exact`. Total execution was
+475.21 seconds and observed whole-device use reached approximately 15,753MiB. The final H.265/AAC
+file SHA-256 is `B63D11C709356E5939F83FF16788EFD565C677D667918FA99F4F6CCBCC452326`;
+decoded float32 PCM SHA-256 is
+`A7C292AC999A13A2DEBF739CD409CC05CA773F679A372F0AC387A82DE9E5ACC3`. Video-only, audio-only and
+combined strict FFmpeg decodes passed. Media is 1472x832, 124 frames at 24fps with 32kHz stereo;
+the 14.667ms A/V duration difference is below one 24fps frame. Audio contained no NaN/Inf/denormal
+values and peaked near -4.16dB.
+
+The gate passed 839 project tests, focused Ruff, compileall, frontend/API workflow contract checks,
+append-only 140-node registration and `git diff --check`. It proved only that a zero-mask latent was
+preserved. Subsequent complete listening found the sound wrong, so v1.36.2 supersedes the default;
+the hashes and metrics above remain as negative historical evidence, not a quality claim.
 
 ## 1.36.0 Prompt Relay release (2026-08-20)
 

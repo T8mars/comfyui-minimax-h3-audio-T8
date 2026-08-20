@@ -33,6 +33,7 @@ ASPECT_POLICIES = ("preserve_source", "honor_dimensions_exp")
 PRECISIONS = ("fp16", "bf16", "fp32")
 RELEASE_POLICIES = ("offload_after", "clear_after", "keep_loaded")
 AUDIO_POLICIES = ("auto", "first_pass", "highres_template")
+SECOND_PASS_AUDIO_SOURCES = ("legacy_policy", "first_pass", "highres_template")
 UPSTREAM_WORKFLOW_COMMIT = "64fc9d4c7e2c03e8c61d6886182e3309365a1962"
 UPSTREAM_REFINE_VIDEO_SIGMAS = {
     3: (0.9035, 0.6316, 0.3158, 0.0),
@@ -686,9 +687,19 @@ def reconcile_two_pass_h3_latent(
     highres_template: dict,
     positive,
     audio_policy: str,
+    second_pass_audio_source: str = "legacy_policy",
+    second_pass_audio_strength: float = 0.0,
 ) -> tuple[dict, Any, str]:
     if audio_policy not in AUDIO_POLICIES:
         raise ValueError(f"Unknown audio_policy {audio_policy!r}; expected one of {AUDIO_POLICIES}")
+    if second_pass_audio_source not in SECOND_PASS_AUDIO_SOURCES:
+        raise ValueError(
+            f"Unknown second_pass_audio_source {second_pass_audio_source!r}; "
+            f"expected one of {SECOND_PASS_AUDIO_SOURCES}"
+        )
+    second_pass_audio_strength = float(second_pass_audio_strength)
+    if not math.isfinite(second_pass_audio_strength) or not 0.0 <= second_pass_audio_strength <= 1.0:
+        raise ValueError("second_pass_audio_strength must be finite and between 0 and 1")
     learned_video, learned_audio = _nested_parts(learned_latent["samples"], "learned samples")
     template_video, template_audio = _nested_parts(
         highres_template["samples"], "high-resolution template samples"
@@ -734,9 +745,13 @@ def reconcile_two_pass_h3_latent(
         if tuple(template_audio_mask.shape) != tuple(template_audio.shape):
             raise ValueError("High-resolution template audio noise_mask shape mismatch")
         locked_or_partial_audio = bool(torch.any(template_audio_mask < 1.0).item())
-    if audio_policy == "highres_template" or (
-        audio_policy == "auto" and locked_or_partial_audio
-    ):
+    if second_pass_audio_source == "legacy_policy":
+        use_template_audio = audio_policy == "highres_template" or (
+            audio_policy == "auto" and locked_or_partial_audio
+        )
+    else:
+        use_template_audio = second_pass_audio_source == "highres_template"
+    if use_template_audio:
         selected_audio = template_audio
         selected_audio_source = "highres_template"
     else:
@@ -744,24 +759,156 @@ def reconcile_two_pass_h3_latent(
         selected_audio_source = "first_pass"
     output = highres_template.copy()
     output["samples"] = comfy.nested_tensor.NestedTensor((learned_video, selected_audio))
-    if template_mask is not None:
+    if second_pass_audio_source == "legacy_policy" and template_mask is not None:
         output["noise_mask"] = comfy.nested_tensor.NestedTensor(
             (template_video_mask, template_audio_mask)
         )
+    elif second_pass_audio_source != "legacy_policy":
+        if template_video_mask is None:
+            template_video_mask = torch.ones_like(template_video)
+            video_mask_source = "generated_all_ones"
+        else:
+            video_mask_source = "highres_template"
+        explicit_audio_mask = torch.full_like(selected_audio, second_pass_audio_strength)
+        output["noise_mask"] = comfy.nested_tensor.NestedTensor(
+            (template_video_mask, explicit_audio_mask)
+        )
+        template_audio_mask = explicit_audio_mask
+    else:
+        video_mask_source = "none"
+    if second_pass_audio_source == "legacy_policy" and template_mask is not None:
+        video_mask_source = "highres_template"
+    audio_mask_min = None
+    audio_mask_max = None
+    if template_audio_mask is not None:
+        audio_mask_min = float(torch.amin(template_audio_mask).item())
+        audio_mask_max = float(torch.amax(template_audio_mask).item())
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "node": "MiniMaxH3TwoPassLatentReconcileT8Advanced",
         "status": "ok",
         "video_shape": list(learned_video.shape),
         "audio_shape": list(selected_audio.shape),
         "audio_policy": audio_policy,
         "audio_source": selected_audio_source,
+        "second_pass_audio_source": second_pass_audio_source,
+        "second_pass_audio_strength": (
+            None
+            if second_pass_audio_source == "legacy_policy"
+            else second_pass_audio_strength
+        ),
+        "second_pass_audio_contract": (
+            "legacy_template_mask"
+            if second_pass_audio_source == "legacy_policy"
+            else "explicit_source_and_strength"
+        ),
+        "second_pass_audio_locked": bool(
+            template_audio_mask is not None and audio_mask_max == 0.0
+        ),
+        "second_pass_audio_mask_min": audio_mask_min,
+        "second_pass_audio_mask_max": audio_mask_max,
+        "second_pass_video_mask_source": video_mask_source,
         "template_has_mask": template_mask is not None,
         "template_audio_locked_or_partial": locked_or_partial_audio,
         "conditioning": condition_counts,
         "highres_template_metadata_authoritative": True,
     }
     return output, positive_out, json.dumps(report, ensure_ascii=False, sort_keys=True)
+
+
+def audit_two_pass_h3_audio(
+    second_pass_input: dict,
+    second_pass_output: dict,
+    expected_audio_strength: float,
+    fail_on_locked_mismatch: bool,
+    locked_atol: float,
+) -> tuple[dict, str]:
+    expected_audio_strength = float(expected_audio_strength)
+    locked_atol = float(locked_atol)
+    if not math.isfinite(expected_audio_strength) or not 0.0 <= expected_audio_strength <= 1.0:
+        raise ValueError("expected_audio_strength must be finite and between 0 and 1")
+    if not math.isfinite(locked_atol) or locked_atol < 0.0:
+        raise ValueError("locked_atol must be finite and non-negative")
+
+    input_video, input_audio = _nested_parts(
+        second_pass_input["samples"], "second-pass input samples"
+    )
+    output_video, output_audio = _nested_parts(
+        second_pass_output["samples"], "second-pass output samples"
+    )
+    if tuple(input_video.shape) != tuple(output_video.shape):
+        raise ValueError(
+            "Second-pass video shape changed unexpectedly: "
+            f"input={tuple(input_video.shape)}, output={tuple(output_video.shape)}"
+        )
+    if tuple(input_audio.shape) != tuple(output_audio.shape):
+        raise ValueError(
+            "Second-pass audio shape changed unexpectedly: "
+            f"input={tuple(input_audio.shape)}, output={tuple(output_audio.shape)}"
+        )
+    if not torch.isfinite(input_audio).all() or not torch.isfinite(output_audio).all():
+        raise ValueError("Second-pass audio audit found NaN or Inf")
+
+    input_mask = second_pass_input.get("noise_mask")
+    if input_mask is None:
+        raise ValueError(
+            "Second-pass input has no noise_mask; audio preservation cannot be audited"
+        )
+    _video_mask, audio_mask = _nested_parts(input_mask, "second-pass input noise_mask")
+    if tuple(audio_mask.shape) != tuple(input_audio.shape):
+        raise ValueError("Second-pass audio noise_mask shape mismatch")
+    audio_mask_min = float(torch.amin(audio_mask).item())
+    audio_mask_max = float(torch.amax(audio_mask).item())
+    if (
+        abs(audio_mask_min - expected_audio_strength) > 1e-6
+        or abs(audio_mask_max - expected_audio_strength) > 1e-6
+    ):
+        raise ValueError(
+            "Second-pass audio mask does not match expected_audio_strength: "
+            f"expected={expected_audio_strength}, min={audio_mask_min}, max={audio_mask_max}"
+        )
+
+    delta = output_audio.to(dtype=torch.float32) - input_audio.to(dtype=torch.float32)
+    max_abs = float(torch.amax(torch.abs(delta)).item())
+    rmse = float(torch.sqrt(torch.mean(delta.square())).item())
+    exact_equal = bool(torch.equal(input_audio, output_audio))
+    within_tolerance = max_abs <= locked_atol
+    locked_mode = expected_audio_strength == 0.0
+    if locked_mode and fail_on_locked_mismatch and not within_tolerance:
+        raise ValueError(
+            "Second-pass locked audio changed during sampling: "
+            f"max_abs={max_abs}, rmse={rmse}, allowed_atol={locked_atol}. "
+            "Do not decode or save this result."
+        )
+
+    verified_output = second_pass_output
+    if locked_mode:
+        verified_output = second_pass_output.copy()
+        verified_output["samples"] = comfy.nested_tensor.NestedTensor(
+            (output_video, input_audio)
+        )
+
+    report = {
+        "schema_version": 1,
+        "node": "MiniMaxH3TwoPassAudioAuditT8Advanced",
+        "status": (
+            "locked_audio_replaced_exact" if locked_mode and within_tolerance else "measured"
+        ),
+        "audio_shape": list(input_audio.shape),
+        "expected_audio_strength": expected_audio_strength,
+        "audio_mask_min": audio_mask_min,
+        "audio_mask_max": audio_mask_max,
+        "locked_mode": locked_mode,
+        "fail_on_locked_mismatch": bool(fail_on_locked_mismatch),
+        "locked_atol": locked_atol,
+        "audio_exact_equal": exact_equal,
+        "audio_within_tolerance": within_tolerance,
+        "audio_max_abs": max_abs,
+        "audio_rmse": rmse,
+        "audio_relocked_exact": locked_mode,
+        "sampled_latent_returned_unchanged": not locked_mode,
+    }
+    return verified_output, json.dumps(report, ensure_ascii=False, sort_keys=True)
 
 
 def build_two_pass_sigma_plan(

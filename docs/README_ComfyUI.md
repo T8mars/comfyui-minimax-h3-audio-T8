@@ -6,6 +6,23 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.36.2 repairs the learned two-pass custom sampler at a partial schedule start. Comfy's
+> generic KSAMPLER initially applies the video sigma to the whole packed AV latent; at pass-2 video
+> sigma `0.9035`, H3 shift 12/3 requires audio sigma about `0.701`. Before the first model call the
+> custom dual-clock sampler now reconstructs only the audio slice on that audio clock from the actual
+> KSAMPLER noise/latent terms. The native I2VA example again lets pass 2 complete joint AV and connects
+> its output directly to AV Decode. Same prompt/seed/model native Euler and repaired custom outputs
+> were both judged normal by the user; their decoded PCM correlation is about `0.9491`.
+
+> The v1.36.1 `first_pass + 0.0` Audio Audit path remains available only as an explicit lock tool.
+> Although it proved latent preservation, listening showed that it froze an unfinished pass-1 audio
+> estimate and sounded wrong. It is therefore removed from the native default graph. This correction
+> was followed by a controlled speech run using one image, one 5.152s licensed LibriSpeech source,
+> seed `2608215001`, and the same 4+3 learned two-pass schedule. `lock_source`,
+> `remix_source=0.20`, `reference_only`, and native speech all produced valid 1472x832/24fps/32kHz
+> stereo files, and the user completed full audio/lip review with no issues. This closes the four-mode
+> gate only for that material and reviewer; it is not a universal lip-sync, voice-quality, or 16GB claim.
+
 > Project v1.36.0 adds an append-only MiniMax H3 Prompt Relay suite: authenticated event plans,
 > model-free timeline preview and resource estimates, H3 packed-attention routing, Studio Packet and
 > Long Video bridges, and eleven generation templates covering T2VA/I2VA/FL2VA/L2VA/Ref2VA/Hybrid,

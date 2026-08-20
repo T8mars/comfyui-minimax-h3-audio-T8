@@ -1090,6 +1090,11 @@ def setup_two_pass_detail_mixer_sampling(
         "model_time_biased_calls": model_time_biased_calls,
         "enabled_mechanisms": enabled,
         "external_refine_schedule_authoritative": True,
+        "partial_start_clock_contract": (
+            "custom dual-clock sampler rebases the pass-2 audio start from video sigma "
+            "onto its projected audio sigma before the first model call"
+        ),
+        "audio_completion_owner": "pass_2_when_audio_is_unmasked",
         "shift_video": float(shift_video),
         "shift_audio": float(shift_audio),
         "children": {

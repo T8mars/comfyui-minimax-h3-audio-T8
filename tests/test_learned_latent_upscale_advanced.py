@@ -14,6 +14,7 @@ from h3_audio_t8_pkg import learned_latent_upscale_advanced as learned
 from h3_audio_t8_pkg.nodes_learned_latent_upscale_advanced import (
     MiniMaxH3LearnedLatentUpscaleT8Advanced,
     MiniMaxH3LearnedTwoPassParityPlanT8Advanced,
+    MiniMaxH3TwoPassAudioAuditT8Advanced,
     MiniMaxH3TwoPassLatentReconcileT8Advanced,
     MiniMaxH3TwoPassSigmaPlanT8Advanced,
 )
@@ -256,6 +257,150 @@ def test_reconcile_uses_first_pass_audio_when_template_is_fully_denoised():
     assert json.loads(report_text)["audio_source"] == "first_pass"
 
 
+def test_reconcile_explicitly_locks_first_pass_audio_for_second_pass():
+    first = _av_latent(40, 72, audio_mask=1.0)
+    template = _av_latent(40, 72, audio_mask=0.2)
+    _first_video, first_audio = tuple(first["samples"].unbind())
+    template_video_mask, _template_audio_mask = tuple(template["noise_mask"].unbind())
+
+    output, _, report_text = learned.reconcile_two_pass_h3_latent(
+        first,
+        template,
+        _conditioning(40, 72),
+        "auto",
+        "first_pass",
+        0.0,
+    )
+
+    _output_video, output_audio = tuple(output["samples"].unbind())
+    output_video_mask, output_audio_mask = tuple(output["noise_mask"].unbind())
+    assert output_audio is first_audio
+    assert output_video_mask is template_video_mask
+    assert torch.count_nonzero(output_audio_mask).item() == 0
+    report = json.loads(report_text)
+    assert report["schema_version"] == 2
+    assert report["second_pass_audio_source"] == "first_pass"
+    assert report["second_pass_audio_strength"] == 0.0
+    assert report["second_pass_audio_locked"] is True
+    assert report["second_pass_audio_mask_min"] == 0.0
+    assert report["second_pass_audio_mask_max"] == 0.0
+
+
+def test_reconcile_explicit_audio_contract_builds_video_mask_and_supports_partial_exp():
+    first = _av_latent(40, 72)
+    template = _av_latent(40, 72)
+    template.pop("noise_mask")
+    _template_video, template_audio = tuple(template["samples"].unbind())
+
+    output, _, report_text = learned.reconcile_two_pass_h3_latent(
+        first,
+        template,
+        _conditioning(40, 72),
+        "first_pass",
+        "highres_template",
+        0.25,
+    )
+
+    output_video_mask, output_audio_mask = tuple(output["noise_mask"].unbind())
+    assert tuple(output["samples"].unbind())[1] is template_audio
+    assert torch.all(output_video_mask == 1.0)
+    assert torch.all(output_audio_mask == 0.25)
+    report = json.loads(report_text)
+    assert report["second_pass_video_mask_source"] == "generated_all_ones"
+    assert report["second_pass_audio_locked"] is False
+    assert report["second_pass_audio_mask_min"] == pytest.approx(0.25)
+    assert report["second_pass_audio_mask_max"] == pytest.approx(0.25)
+
+
+@pytest.mark.parametrize(
+    ("source", "strength", "message"),
+    [
+        ("unknown", 0.0, "second_pass_audio_source"),
+        ("first_pass", -0.01, "second_pass_audio_strength"),
+        ("first_pass", float("nan"), "second_pass_audio_strength"),
+    ],
+)
+def test_reconcile_rejects_invalid_second_pass_audio_contract(source, strength, message):
+    with pytest.raises(ValueError, match=message):
+        learned.reconcile_two_pass_h3_latent(
+            _av_latent(40, 72),
+            _av_latent(40, 72),
+            _conditioning(40, 72),
+            "auto",
+            source,
+            strength,
+        )
+
+
+def test_two_pass_audio_audit_accepts_exact_locked_audio_and_relocks_output():
+    before = _av_latent(40, 72, audio_mask=0.0)
+    after = before.copy()
+    before_video, before_audio = tuple(before["samples"].unbind())
+    after["samples"] = comfy.nested_tensor.NestedTensor(
+        (before_video + 1.0, before_audio.clone())
+    )
+
+    output, report_text = learned.audit_two_pass_h3_audio(
+        before,
+        after,
+        expected_audio_strength=0.0,
+        fail_on_locked_mismatch=True,
+        locked_atol=0.0,
+    )
+
+    assert output is not after
+    _output_video, output_audio = tuple(output["samples"].unbind())
+    assert output_audio is before_audio
+    report = json.loads(report_text)
+    assert report["status"] == "locked_audio_replaced_exact"
+    assert report["audio_exact_equal"] is True
+    assert report["audio_relocked_exact"] is True
+    assert report["audio_max_abs"] == 0.0
+    assert report["audio_rmse"] == 0.0
+
+
+def test_two_pass_audio_audit_accepts_roundoff_then_replaces_with_exact_input_audio():
+    before = _av_latent(40, 72, audio_mask=0.0)
+    after = before.copy()
+    video, audio = tuple(before["samples"].unbind())
+    rounded_audio = audio.clone()
+    rounded_audio[..., 0] += 5e-6
+    after["samples"] = comfy.nested_tensor.NestedTensor((video, rounded_audio))
+
+    output, report_text = learned.audit_two_pass_h3_audio(
+        before, after, 0.0, True, 1e-5
+    )
+
+    assert tuple(output["samples"].unbind())[1] is audio
+    report = json.loads(report_text)
+    assert report["audio_exact_equal"] is False
+    assert report["audio_within_tolerance"] is True
+    assert report["audio_relocked_exact"] is True
+
+
+def test_two_pass_audio_audit_fails_closed_when_locked_audio_changes():
+    before = _av_latent(40, 72, audio_mask=0.0)
+    after = before.copy()
+    video, audio = tuple(before["samples"].unbind())
+    changed_audio = audio.clone()
+    changed_audio[..., 0] += 1e-4
+    after["samples"] = comfy.nested_tensor.NestedTensor((video, changed_audio))
+
+    with pytest.raises(ValueError, match="locked audio changed"):
+        learned.audit_two_pass_h3_audio(before, after, 0.0, True, 0.0)
+
+
+def test_two_pass_audio_audit_rejects_missing_or_wrong_mask_contract():
+    before = _av_latent(40, 72, audio_mask=0.2)
+    after = before.copy()
+    with pytest.raises(ValueError, match="expected_audio_strength"):
+        learned.audit_two_pass_h3_audio(before, after, 0.0, True, 0.0)
+
+    before.pop("noise_mask")
+    with pytest.raises(ValueError, match="has no noise_mask"):
+        learned.audit_two_pass_h3_audio(before, after, 0.0, True, 0.0)
+
+
 def test_reconcile_rejects_reference_shape_metadata_mismatch():
     positive = _conditioning(40, 72)
     positive[0][1]["minimax_refs"][0]["latent_w"] = 15
@@ -370,7 +515,7 @@ def test_new_nodes_append_after_all_125_legacy_nodes_without_changing_old_order(
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 139
+    assert len(ids) == 140
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",
@@ -393,6 +538,7 @@ def test_new_nodes_append_after_all_125_legacy_nodes_without_changing_old_order(
     ]
     assert ids[137] == "MiniMaxH3PromptRelayPreviewT8Advanced"
     assert ids[138] == "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
+    assert ids[139] == "MiniMaxH3TwoPassAudioAuditT8Advanced"
     assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
 
 
@@ -401,6 +547,7 @@ def test_node_schemas_are_isolated_experimental_and_safe_by_default():
     reconcile_schema = MiniMaxH3TwoPassLatentReconcileT8Advanced.define_schema()
     sigma_schema = MiniMaxH3TwoPassSigmaPlanT8Advanced.define_schema()
     parity_schema = MiniMaxH3LearnedTwoPassParityPlanT8Advanced.define_schema()
+    audio_audit_schema = MiniMaxH3TwoPassAudioAuditT8Advanced.define_schema()
     learned_inputs = {item.id: item for item in learned_schema.inputs}
     reconcile_inputs = {item.id: item for item in reconcile_schema.inputs}
     sigma_inputs = {item.id: item for item in sigma_schema.inputs}
@@ -408,10 +555,20 @@ def test_node_schemas_are_isolated_experimental_and_safe_by_default():
     assert reconcile_schema.is_experimental is True
     assert sigma_schema.is_experimental is True
     assert parity_schema.is_experimental is True
+    assert audio_audit_schema.is_experimental is True
+    assert audio_audit_schema.is_output_node is True
     assert learned_inputs["release_policy"].default == "offload_after"
     assert learned_inputs["aspect_policy"].default == "preserve_source"
     assert learned_inputs["scale_by"].default == 2.0
     assert reconcile_inputs["audio_policy"].default == "auto"
+    assert reconcile_inputs["second_pass_audio_source"].default == "legacy_policy"
+    assert reconcile_inputs["second_pass_audio_source"].optional is True
+    assert reconcile_inputs["second_pass_audio_strength"].default == 0.0
+    assert reconcile_inputs["second_pass_audio_strength"].optional is True
+    audio_audit_inputs = {item.id: item for item in audio_audit_schema.inputs}
+    assert audio_audit_inputs["expected_audio_strength"].default == 0.0
+    assert audio_audit_inputs["fail_on_locked_mismatch"].default is True
+    assert audio_audit_inputs["locked_atol"].default == 1e-5
     assert sigma_inputs["coarse_steps"].default == 4
     assert sigma_inputs["refine_steps"].default == 4
     parity_inputs = {item.id: item for item in parity_schema.inputs}
@@ -440,6 +597,7 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert "MiniMaxH3TwoPassLatentReconcileT8Advanced" in types
     assert "MiniMaxH3LearnedTwoPassParityPlanT8Advanced" in types
     assert "MiniMaxH3TwoPassDetailMixerT8Advanced" in types
+    assert "MiniMaxH3TwoPassAudioAuditT8Advanced" not in types
 
     low_conditioning = next(node for node in workflow["nodes"] if node["id"] == 7)
     high_conditioning = next(node for node in workflow["nodes"] if node["id"] == 14)
@@ -463,7 +621,8 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert any(link[1:5] == [16, 2, 19, 3] for link in workflow["links"])
     assert nodes[13]["widgets_values"][2] == 2.0
     assert nodes[13]["widgets_values"][-1] == "offload_after"
-    assert nodes[15]["widgets_values"] == ["auto"]
+    assert nodes[15]["widgets_values"] == ["auto", "legacy_policy", 0.0]
+    assert any(link[1:5] == [19, 0, 20, 0] for link in workflow["links"])
     assert nodes[9]["widgets_values"] == [8, 4, 3]
     assert nodes[16]["widgets_values"][0:2] == [12.0, 3.0]
     assert nodes[16]["widgets_values"][2] is False
@@ -493,6 +652,10 @@ def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_c
     assert prompt["14"]["inputs"]["height"] == ["13", 2]
     assert prompt["13"]["inputs"]["release_policy"] == "offload_after"
     assert prompt["15"]["inputs"]["audio_policy"] == "auto"
+    assert prompt["15"]["inputs"]["second_pass_audio_source"] == "legacy_policy"
+    assert prompt["15"]["inputs"]["second_pass_audio_strength"] == 0.0
+    assert "22" not in prompt
+    assert prompt["20"]["inputs"]["av_latent"] == ["19", 0]
     assert prompt["5"]["inputs"]["lora_name"] == (
         "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors"
     )
