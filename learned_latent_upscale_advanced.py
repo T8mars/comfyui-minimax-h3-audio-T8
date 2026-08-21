@@ -26,7 +26,7 @@ from .sampling import shift_sigma
 
 PIXELS_PER_H3_LATENT = 16
 PIXEL_ALIGNMENT = 32
-MAX_H3_PIXELS = 1920 * 1088
+H3_OFFICIAL_REFERENCE_PIXELS = 1920 * 1088
 KNOWN_MODEL_SHA256 = "043e5a48e161610ef6c3ea974645220354d06fa618abca15f76d084812eb55c2"
 SIZE_MODES = ("scale_by", "target_megapixels", "target_dimensions")
 ASPECT_POLICIES = ("preserve_source", "honor_dimensions_exp")
@@ -422,11 +422,6 @@ def learned_upscale_geometry(
             "Learned latent resize only supports non-shrinking geometry: "
             f"source={source_width}x{source_height}, target={output_width}x{output_height}"
         )
-    if output_width * output_height > MAX_H3_PIXELS:
-        raise ValueError(
-            f"Target {output_width}x{output_height} exceeds the MiniMax H3 2.0MP cap "
-            f"({MAX_H3_PIXELS:,} pixels)"
-        )
     scale_x = output_width / source_width
     scale_y = output_height / source_height
     if max(scale_x, scale_y) > 4.0:
@@ -439,6 +434,8 @@ def learned_upscale_geometry(
             f"Requested anisotropic scale {scale_x:.5f}x{scale_y:.5f} has ratio "
             f"{anisotropy:.5f}, above max_anisotropy={float(max_anisotropy):.5f}"
         )
+    output_pixels = output_width * output_height
+    exceeds_official_reference_area = output_pixels > H3_OFFICIAL_REFERENCE_PIXELS
     return {
         "source_width": source_width,
         "source_height": source_height,
@@ -454,6 +451,15 @@ def learned_upscale_geometry(
         * 100.0,
         "size_mode": size_mode,
         "aspect_policy": aspect_policy,
+        "output_pixels": output_pixels,
+        "official_reference_pixels": H3_OFFICIAL_REFERENCE_PIXELS,
+        "exceeds_official_reference_area": exceeds_official_reference_area,
+        "memory_warning": (
+            "Output exceeds the 1920x1088 official reference area. Execution is allowed; "
+            "the user is responsible for VRAM, host-memory, runtime, and output validation."
+            if exceeds_official_reference_area
+            else None
+        ),
     }
 
 

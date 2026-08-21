@@ -522,10 +522,11 @@
     "contracts": [
       "the existing stable interpolation node and all first 128 node IDs remain unchanged; the parity plan and two-pass detail mixer append at the registry tail",
       "only the H3 video latent is learned-upscaled; the native joint audio latent and audio clock are preserved",
-      "all output pixel dimensions are exactly divisible by 32 and remain within the existing 1920x1088-area H3 cap",
+      "all output pixel dimensions are exactly divisible by 32; the learned upscaler no longer hard-blocks output above the 1920x1088 reference area and instead reports explicit memory/runtime risk",
+      "the high-resolution Conditioning in the provided two-pass workflows explicitly opts into canvases above the reference area; the stable Conditioning default remains fail-closed so old workflows do not silently change behavior",
       "the default release policy selectively offloads only the learned-resizer patcher after inference; exceptions always unload it and never call global unload_all_models",
       "a second current H3 Conditioning node must rebuild keyframes and media payload for the high-resolution canvas; stale low-resolution keyframes fail closed",
-      "the corrected parity plan reproduces upstream workflow commit 64fc9d4: native shift 12/3, the simple-8 low-pass split and the published raw refine video sigmas without a guessed shift-6 remap",
+      "the corrected parity plan keeps native shift 12/3 and the simple-8 low-pass split; its new default is four low-resolution plus four high-resolution joint AV calls using published refine sigmas 0.9035,0.8,0.6316,0.3158,0, while saved explicit three/five-call workflows remain compatible",
       "the first sampler must feed denoised_output into the learned upscaler; the high-resolution Conditioning template is authoritative for masks and lock/remix audio",
       "the learned upscaler defaults to scale_by=2.0 and its actual aligned width/height outputs directly drive high-resolution Conditioning, so changing scale does not require a duplicate manual canvas",
       "the default quantized-model workflow uses LoraLoaderBypassModelOnly with the SHA-verified comfyui_alpha8 LightX2V LoRA; the superseded plain comfyui conversion is rejected because it applies about 16x excessive LoRA update",
@@ -543,7 +544,15 @@
       "save_boundary": "VideoHelperSuite H.264 produced one corrupt frame and metadata-enabled H.264 raced final moov writing; the example therefore uses H.265 with save_metadata=false",
       "memory": "the corrected 2x run peaked at about 15170.3MiB whole-device use on the tested RTX 4060 Ti 16GiB; no three-cold/three-warm matrix was run, so this is not a universal 16GiB safety claim"
     },
-    "status": "clean-room learned network is tensor-exact against the upstream checkpoint implementation on a fixed synthetic latent; the corrected upstream-current multiplier workflow, automatic high-resolution size binding, alpha8 LoRA route, 4+3 I2VA graph and strict H.265 media validation passed. Perceptual superiority, broader tasks and universal memory safety remain Experimental and unproven"
+    "current_4plus4_speech_probe": {
+      "date": "2026-08-21",
+      "graph": "I2VA 736x416x124 low four calls, learned 3D scale_by=2.0 to 1472x832, rebuilt high-resolution Conditioning and published four-call refine profile at shift 12/3; logs completed 4/4 plus 4/4 joint AV forwards",
+      "prompt": "one exact Mandarin utterance: 你在干嘛呢，我在这里呀，看看效果如何; no music, extra words or repeated mumbling requested",
+      "runtime": "authoritative ComfyUI execution timestamps report 1572.264 seconds on the RTX 4060 Ti 16GiB system; DynamicVRAM weight streaming dominated runtime, so success is not a speed or universal-memory claim",
+      "media": "H.265 plus AAC output strictly decoded with zero video/audio errors at 1472x832, 124 frames, 24fps, 32kHz stereo and 14.667ms A/V duration difference",
+      "asr": "local faster-whisper-small Mandarin transcription was 你在干嘛呢 我在这里啊 看看效果如何; after punctuation/spacing normalization it differed only by 呀->啊, character error rate 1/16=6.25%. This proves intelligibility for one generated clip, not perceptual parity or voice quality"
+    },
+    "status": "clean-room learned network is tensor-exact against the upstream checkpoint implementation on a fixed synthetic latent; the historical corrected 4+3 probe, automatic high-resolution size binding, alpha8 LoRA route and strict H.265 media validation passed. The current workflow default is 4+4 so both video and audio receive eight joint Transformer evaluations; its new Mandarin speech probe is tracked separately. Perceptual superiority, broader tasks and universal memory safety remain Experimental and unproven"
   },
   "experimental_speed_spatial_progressive": {
     "category": "T8/MiniMax H3/SPEED/Experimental",

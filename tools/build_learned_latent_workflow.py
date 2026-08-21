@@ -13,13 +13,14 @@ except ImportError:  # Direct execution puts tools/ on sys.path.
 
 NOTES = (
     (
-        "1 · Current upstream parity / 当前上游基线",
-        "## 1 · Current upstream parity / 当前上游基线\n"
-        "This graph follows LBH-123-AI workflow commit `64fc9d4`: corrected LightX2V "
+        "1 · Validated 4+4 standard / 已验证4+4标准版",
+        "## 1 · Validated 4+4 standard / 已验证4+4标准版\n"
+        "This graph keeps the corrected LightX2V "
         "FL2V Turbo `comfyui_alpha8` conversion at loader strength 1.0, "
         "I2V shift `12/3`, Comfy `simple` 8-step schedule split after four low-resolution "
-        "calls, then the published raw 3-call refine sigmas `0.9035, 0.6316, 0.3158, 0`. "
-        "Do not remap those values through a guessed shift-6 reference.",
+        "calls, then the published four-call refine profile "
+        "`0.9035, 0.8, 0.6316, 0.3158, 0`. The added `0.8` interval is a real joint AV "
+        "Transformer call, not a tail step. Saved explicit three/five-call graphs remain compatible.",
     ),
     (
         "2 · Change only one size / 只改一个倍率",
@@ -39,15 +40,17 @@ NOTES = (
     (
         "4 · Optional detail and memory / 可选细节与显存",
         "## 4 · Optional detail and memory / 可选细节与显存\n"
-        "Keep Tail/Bias/STG/Restart OFF for upstream parity. They alter the HIGH refine path "
+        "Keep Tail/Bias/STG/Restart OFF for the reviewed standard route. They alter the HIGH refine path "
         "and require a separate A/B review. Learned latent upscale saves first-pass compute, "
-        "not the high-resolution peak VRAM. `offload_after` releases only the learned resizer.",
+        "not the high-resolution peak VRAM. `offload_after` releases only the learned resizer. "
+        "The learned upscaler permits output above the 1920x1088 reference area, while HIGH "
+        "Conditioning explicitly opts in and reports the user-owned VRAM/runtime risk.",
     ),
     (
         "5 · Starting values / 建议参数",
         "## 5 · Known-good starting values / 建议参数\n"
         "LOW `736x416x124`; scale mode `scale_by`; scale `2.0`; output `1472x832`; "
-        "video/audio shift `12/3`; base/coarse/refine `8/4/3`; Euler; all optional detail "
+        "video/audio shift `12/3`; base/coarse/refine `8/4/4`; Euler; all optional detail "
         "toggles OFF. Use only the `_comfyui_alpha8` LightX2V conversion; the superseded "
         "plain `_comfyui` file applies 16x excessive LoRA strength and destroys frames.",
     ),
@@ -91,7 +94,7 @@ def main() -> int:
         type=Path,
         default=Path(
             "examples/workflows/13-latent-upscale/"
-            "2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json"
+            "2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json"
         ),
     )
     args = parser.parse_args()
@@ -100,7 +103,7 @@ def main() -> int:
     workflow = convert(
         prompt,
         object_info,
-        "MiniMax H3 learned latent two-pass I2VA · upstream parity",
+        "MiniMax H3 learned latent two-pass I2VA · validated 4+4 standard",
     )
     append_notes(workflow)
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.37.0"
+version = "1.37.1"
 description = "MiniMax H3 FETA motion enhancement, learned latent two-pass upscale, mixed detail sampling, joint AV audio, Hybrid, multi-keyframe, long-video, and Ref2VA nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"

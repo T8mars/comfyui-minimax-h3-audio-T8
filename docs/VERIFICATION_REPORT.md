@@ -5,9 +5,9 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.37.0 checkpoint appends the isolated Enhance-A-Video / FETA Advanced experiment while
-preserving the 1.36.2 partial-start audio-clock repair and native learned-I2VA pass-2 audio completion.
-It is
+The current 1.37.1 checkpoint updates learned two-pass generation to eight joint AV calls, preserves
+the 1.36.2 partial-start audio-clock repair, and retains the isolated 1.37.0 Enhance-A-Video / FETA
+experiment. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
 `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
@@ -15,6 +15,27 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.37.1 learned two-pass 4+4 and high-resolution opt-in (2026-08-21)
+
+The learned I2VA two-pass default now uses four low-resolution and four high-resolution Euler
+intervals. The high-resolution schedule is
+`0.9035, 0.8, 0.6316, 0.3158, 0`; because Euler executes one model call per interval, this is eight
+joint video/audio Transformer calls in total instead of the former seven-call 4+3 graph. Saved
+workflows that explicitly store three or five refine calls continue to load with their prior values.
+
+A real corrected-Alpha8 I2VA run used a 736x416x124 first pass, learned 2x video-latent upscale,
+1472x832x124 second pass, shifts 12/3, and the Mandarin sentence
+“你在干嘛呢，我在这里呀，看看效果如何”. The resulting 124-frame 24fps file contains finite
+32kHz stereo audio and passed strict video/audio decode. Local multilingual ASR differed only on
+“呀/啊” after normalization (CER 1/16); this is one-material intelligibility evidence, not a
+universal voice-quality or lip-sync claim.
+
+The learned latent upscaler no longer treats the official 1920x1088 reference area as a hard 2MP
+execution cap. It preserves 32-pixel alignment, maximum 4x scale and aspect-ratio safeguards while
+reporting above-reference-area memory risk. Stable Conditioning remains fail-closed by default;
+only the newly appended optional high-resolution flag permits a larger requested canvas. Existing
+workflows omit that flag and retain the previous rejection behavior.
 
 ## 1.37.0 Enhance-A-Video / FETA Advanced experiment (2026-08-21)
 

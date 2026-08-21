@@ -516,9 +516,16 @@ def test_task_type_frontend_labels_preserve_canonical_backend_values():
         item for item in conditioning.define_schema().inputs
         if item.id == "task_type"
     )
+    highres_opt_in = next(
+        item for item in conditioning.define_schema().inputs
+        if item.id == "allow_above_reference_area"
+    )
     assert task_type.options == [
         "auto", "T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid",
     ]
+    assert highres_opt_in.default is False
+    assert highres_opt_in.optional is True
+    assert conditioning.define_schema().inputs[-1].id == "allow_above_reference_area"
 
     package_root = Path(__file__).resolve().parents[1]
     assert h3_audio_t8_pkg.WEB_DIRECTORY == "./web"

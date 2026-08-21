@@ -459,6 +459,14 @@
           "type": "IMAGE",
           "link": null,
           "shape": 7
+        },
+        {
+          "name": "allow_above_reference_area",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_above_reference_area"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -503,7 +511,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "A woman in red Hanfu spins rapidly through the night sky, flowing silk and synchronized wind ambience, cinematic lighting.",
+        "Locked-off medium close-up of the woman facing camera. She says clearly in Mandarin exactly once: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> Natural synchronized lip movement, clear dry voice, no added words, no repeated mumbling, no music, no subtitles.",
         736,
         416,
         124,
@@ -514,7 +522,8 @@
         0,
         true,
         "match",
-        "official_2_to_15s"
+        "official_2_to_15s",
+        false
       ]
     },
     {
@@ -621,7 +630,7 @@
     {
       "id": 9,
       "type": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
-      "title": "Published LBH schedule · simple8 split4 + refine3",
+      "title": "Published LBH schedule · simple8 split4 + refine4 · 8 total NFE",
       "pos": [
         1320,
         0
@@ -692,7 +701,7 @@
       "widgets_values": [
         8,
         4,
-        3
+        4
       ]
     },
     {
@@ -1139,6 +1148,14 @@
           "type": "IMAGE",
           "link": null,
           "shape": 7
+        },
+        {
+          "name": "allow_above_reference_area",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_above_reference_area"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -1182,7 +1199,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "A woman in red Hanfu spins rapidly through the night sky, flowing silk and synchronized wind ambience, cinematic lighting.",
+        "Locked-off medium close-up of the woman facing camera. She says clearly in Mandarin exactly once: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> Natural synchronized lip movement, clear dry voice, no added words, no repeated mumbling, no music, no subtitles.",
         1344,
         768,
         124,
@@ -1193,7 +1210,8 @@
         0,
         true,
         "match",
-        "official_2_to_15s"
+        "official_2_to_15s",
+        true
       ]
     },
     {
@@ -1845,7 +1863,7 @@
       "widgets_values": [
         24,
         0,
-        "MiniMaxH3/learned_latent_twopass_i2va_upstream_parity_v2_exp",
+        "MiniMaxH3/learned_latent_twopass_i2va_standard_4plus4_speech",
         "video/h265-mp4",
         false,
         true
@@ -1854,7 +1872,7 @@
     {
       "id": 22,
       "type": "MarkdownNote",
-      "title": "1 · Current upstream parity / 当前上游基线",
+      "title": "1 · Validated 4+4 standard / 已验证4+4标准版",
       "pos": [
         0,
         -440
@@ -1872,7 +1890,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 1 · Current upstream parity / 当前上游基线\nThis graph follows LBH-123-AI workflow commit `64fc9d4`: corrected LightX2V FL2V Turbo `comfyui_alpha8` conversion at loader strength 1.0, I2V shift `12/3`, Comfy `simple` 8-step schedule split after four low-resolution calls, then the published raw 3-call refine sigmas `0.9035, 0.6316, 0.3158, 0`. Do not remap those values through a guessed shift-6 reference."
+        "## 1 · Eight-call two-pass route / 八次联合AV前向\nThis graph uses the published four-call refine profile: corrected LightX2V FL2V Turbo `comfyui_alpha8` conversion at loader strength 1.0, I2V shift `12/3`, Comfy `simple` 8-step schedule split after four low-resolution calls, then raw refine sigmas `0.9035, 0.8, 0.6316, 0.3158, 0`. The extra call is the high-noise `0.8` interval, not a tail step."
       ]
     },
     {
@@ -1944,7 +1962,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 4 · Optional detail and memory / 可选细节与显存\nKeep Tail/Bias/STG/Restart OFF for upstream parity. They alter the HIGH refine path and require a separate A/B review. Learned latent upscale saves first-pass compute, not the high-resolution peak VRAM. `offload_after` releases only the learned resizer."
+        "## 4 · Optional detail and memory / 可选细节与显存\nKeep Tail/Bias/STG/Restart OFF for the reviewed standard route. They alter the HIGH refine path and require a separate A/B review. Learned latent upscale saves first-pass compute, not the high-resolution peak VRAM. `offload_after` releases only the learned resizer. The learned upscaler permits output above the 1920x1088 reference area; HIGH Conditioning explicitly opts in and reports the user-owned VRAM/runtime risk."
       ]
     },
     {
@@ -1968,7 +1986,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 5 · Known-good starting values / 建议参数\nLOW `736x416x124`; scale mode `scale_by`; scale `2.0`; output `1472x832`; video/audio shift `12/3`; base/coarse/refine `8/4/3`; Euler; all optional detail toggles OFF. Use only the `_comfyui_alpha8` LightX2V conversion; the superseded plain `_comfyui` file applies 16x excessive LoRA strength and destroys frames."
+        "## 5 · Known-good starting values / 建议参数\nLOW `736x416x124`; scale mode `scale_by`; scale `2.0`; output `1472x832`; video/audio shift `12/3`; base/coarse/refine `8/4/4`; Euler; all optional detail toggles OFF. Use only the `_comfyui_alpha8` LightX2V conversion; the superseded plain `_comfyui` file applies 16x excessive LoRA strength and destroys frames."
       ]
     }
   ],
@@ -2304,7 +2322,7 @@
         120
       ]
     },
-    "workflow_title": "MiniMax H3 learned latent two-pass I2VA · upstream parity"
+    "workflow_title": "MiniMax H3 learned latent two-pass I2VA · validated 4+4 standard"
   },
   "version": 0.4
 }

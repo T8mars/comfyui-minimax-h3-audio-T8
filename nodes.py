@@ -136,6 +136,17 @@ class MiniMaxH3AudioConditioningT8(io.ComfyNode):
                 io.Autogrow.Input("ref_videos", optional=True, template=io.Autogrow.TemplatePrefix(input=io.Image.Input("ref_video", tooltip="IMAGE frame batch at 24fps."), prefix="ref_video_", min=0, max=3)),
                 io.Autogrow.Input("ref_video_audios", optional=True, template=io.Autogrow.TemplatePrefix(input=io.Audio.Input("ref_video_audio"), prefix="ref_video_audio_", min=0, max=3)),
                 io.Autogrow.Input("ref_audios", optional=True, template=io.Autogrow.TemplatePrefix(input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3)),
+                io.Boolean.Input(
+                    "allow_above_reference_area",
+                    default=False,
+                    optional=True,
+                    advanced=True,
+                    tooltip=(
+                        "Allows an explicitly requested canvas above the 1920x1088 reference "
+                        "area. Intended for learned two-pass high-resolution workflows; no "
+                        "VRAM guarantee is implied. Old workflows remain false by default."
+                    ),
+                ),
             ],
             outputs=[
                 io.Conditioning.Output(display_name="positive"),
@@ -152,12 +163,13 @@ class MiniMaxH3AudioConditioningT8(io.ComfyNode):
                 audio_denoise_strength, add_source_as_reference, prompt_primary_audio_ordinal,
                 strict_prompt_tags, ref_image_size, reference_video_policy, drive_audio=None,
                 final_audio=None, first_frame=None, last_frame=None, ref_images=None, ref_videos=None,
-                ref_video_audios=None, ref_audios=None):
+                ref_video_audios=None, ref_audios=None, allow_above_reference_area=False):
         return io.NodeOutput(*build_conditioning(
             clip, video_vae, audio_vae, prompt, width, height, length, task_type, audio_mode,
             audio_denoise_strength, add_source_as_reference, prompt_primary_audio_ordinal,
             strict_prompt_tags, ref_image_size, reference_video_policy, drive_audio, final_audio,
             first_frame, last_frame, ref_images, ref_videos, ref_video_audios, ref_audios,
+            allow_above_reference_area=allow_above_reference_area,
         ))
 
 

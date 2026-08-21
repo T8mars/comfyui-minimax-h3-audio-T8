@@ -19,7 +19,13 @@ USER_CATEGORY = (
     / "MiniMax H3 T8"
     / "13-latent-upscale"
 )
-BASE = CATEGORY / "2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json"
+BASE = (
+    CATEGORY
+    / "2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json"
+)
+LEGACY_BASE_FILENAMES = (
+    "2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json",
+)
 
 SPEECH = "All the time he was talking to me, his angry little eyes were following Lake."
 SOURCE_AUDIO = "h3_twopass_voice_5683_5p152s.flac"
@@ -108,7 +114,9 @@ VARIANTS = (
         "prefix": "MiniMaxH3/learned_twopass_i2va_native_speech",
         "prompt": (
             "Locked-off medium close-up of the woman facing camera. She says clearly: "
-            f"<d>{SPEECH}</d> Natural, precise synchronized lip movements. Minimal head motion, "
+            "<d>你在干嘛呢，我在这里呀，看看效果如何。</d> Natural, precise synchronized "
+            "lip movements. Speak the complete Chinese sentence exactly once, with no added "
+            "mumbling or repeated words. Minimal head motion, "
             "no music, no subtitles."
         ),
         "audio_contract": (
@@ -212,12 +220,13 @@ def build_variant(base: dict, variant: dict) -> dict:
 
     _set_note(
         _node(workflow, 22),
-        f"1 · {variant['label']} · tested route",
+        f"1 · {variant['label']} · current 4+4 route",
         (
-            f"## 1 · {variant['label']} / 已审核路线\n"
-            "This workflow preserves the reviewed 4+3 learned two-pass route: LOW 736x416x124, "
+            f"## 1 · {variant['label']} / 当前4+4路线\n"
+            "This workflow uses the 4+4 learned two-pass route: LOW 736x416x124, "
             "2x learned video-latent upscale, HIGH 1472x832x124, shift 12/3, and seed 2608215001. "
-            "Replace the first image and, where present, the loaded audio for your own material."
+            "The fourth refine call inserts the published video sigma 0.8 instead of adding a "
+            "tail step. Replace the first image and, where present, the loaded audio for your own material."
         ),
     )
     _set_note(
@@ -245,12 +254,14 @@ def build_variant(base: dict, variant: dict) -> dict:
     )
     _set_note(
         _node(workflow, 26),
-        "5 · Bounded validation result",
+        "5 · Validation scope after 4+4 update",
         (
-            "## 5 · Bounded validation / 有限验证\n"
-            "The four saved variants completed real HEVC/AAC generation and one reviewer approved "
-            "their complete audio and visible lip motion. This is evidence for one image, utterance, "
-            "seed, model, and reviewer—not a universal lip-sync, voice-identity, quality, or 16GB claim."
+            "## 5 · Validation scope / 验证边界\n"
+            "The standard 4+4 Mandarin native-speech graph completed real HEVC/AAC generation, "
+            "strict decode, and ASR intelligibility checks. The older per-audio-mode review used "
+            "4+3; this file now uses the corrected 4+4 schedule but this exact mode/seed was not "
+            "re-rendered in the current round. Listen again before making a mode-specific quality "
+            "claim. Nothing here proves universal lip-sync, voice identity, quality, or 16GB safety."
         ),
     )
     return workflow
@@ -262,6 +273,11 @@ def main() -> int:
     user_base = USER_CATEGORY / BASE.name
     shutil.copyfile(BASE, user_base)
     print(user_base)
+    for legacy_filename in LEGACY_BASE_FILENAMES:
+        legacy_path = USER_CATEGORY / legacy_filename
+        if legacy_path.is_file():
+            legacy_path.unlink()
+            print(f"removed legacy workflow: {legacy_path}")
     for variant in VARIANTS:
         workflow = build_variant(base, variant)
         payload = json.dumps(workflow, ensure_ascii=False, indent=2) + "\n"

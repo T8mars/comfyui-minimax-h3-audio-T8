@@ -74,7 +74,27 @@ def test_all_geometry_modes_are_h3_legal_and_aspect_safe(mode, kwargs):
     assert geometry["scale_x"] >= 1.0
     assert geometry["scale_y"] >= 1.0
     assert geometry["anisotropy"] <= 1.05
-    assert geometry["output_width"] * geometry["output_height"] <= learned.MAX_H3_PIXELS
+    assert geometry["output_pixels"] == geometry["output_width"] * geometry["output_height"]
+    assert geometry["exceeds_official_reference_area"] is False
+
+
+def test_geometry_allows_above_official_2mp_reference_area_with_explicit_warning():
+    geometry = learned.learned_upscale_geometry(
+        source_latent_width=46,
+        source_latent_height=26,
+        size_mode="target_megapixels",
+        scale_by=2.0,
+        target_megapixels=4.0,
+        target_width=1152,
+        target_height=640,
+        aspect_policy="preserve_source",
+        max_anisotropy=1.05,
+    )
+    assert geometry["output_pixels"] > learned.H3_OFFICIAL_REFERENCE_PIXELS
+    assert geometry["exceeds_official_reference_area"] is True
+    assert "Execution is allowed" in geometry["memory_warning"]
+    assert geometry["output_width"] % 32 == 0
+    assert geometry["output_height"] % 32 == 0
 
 
 def test_dimension_mode_rejects_large_anisotropic_stretch():
@@ -578,7 +598,10 @@ def test_node_schemas_are_isolated_experimental_and_safe_by_default():
     parity_inputs = {item.id: item for item in parity_schema.inputs}
     assert parity_inputs["base_steps"].default == 8
     assert parity_inputs["coarse_steps"].default == 4
-    assert parity_inputs["refine_steps"].default == 3
+    assert parity_inputs["refine_steps"].default == 4
+    assert learned_inputs["target_megapixels"].max == 8.0
+    assert learned_inputs["target_width"].max == 4096
+    assert learned_inputs["target_height"].max == 4096
 
 
 def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditioning():
@@ -587,7 +610,7 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
         / "examples"
         / "workflows"
         / "13-latent-upscale"
-        / "2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json"
+        / "2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json"
     )
     workflow = json.loads(workflow_path.read_text(encoding="utf-8"))
     assert workflow["version"] == 0.4
@@ -610,6 +633,8 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert low_conditioning["widgets_values"][0] == high_conditioning["widgets_values"][0]
     assert low_conditioning["widgets_values"][4] == "I2VA"
     assert high_conditioning["widgets_values"][4] == "I2VA"
+    assert low_conditioning["widgets_values"][-1] is False
+    assert high_conditioning["widgets_values"][-1] is True
 
     width_link = next(
         link for link in workflow["links"] if link[1:5] == [13, 1, 14, 4]
@@ -627,10 +652,17 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert nodes[13]["widgets_values"][-1] == "offload_after"
     assert nodes[15]["widgets_values"] == ["auto", "legacy_policy", 0.0]
     assert any(link[1:5] == [19, 0, 20, 0] for link in workflow["links"])
-    assert nodes[9]["widgets_values"] == [8, 4, 3]
+    assert nodes[9]["widgets_values"] == [8, 4, 4]
     assert nodes[16]["widgets_values"][0:2] == [12.0, 3.0]
     assert nodes[16]["widgets_values"][2] is False
     assert nodes[16]["widgets_values"][3] == 3
+    note_text = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    assert "8/4/4" in note_text
+    assert "8/4/3" not in note_text
 
     link_ids = [link[0] for link in workflow["links"]]
     assert len(link_ids) == len(set(link_ids))
@@ -650,6 +682,8 @@ def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_c
     assert prompt["19"]["inputs"]["sigmas"] == ["16", 2]
     assert prompt["7"]["inputs"]["width"] == 736
     assert prompt["7"]["inputs"]["height"] == 416
+    assert "allow_above_reference_area" not in prompt["7"]["inputs"]
+    assert prompt["14"]["inputs"]["allow_above_reference_area"] is True
     assert prompt["13"]["inputs"]["size_mode"] == "scale_by"
     assert prompt["13"]["inputs"]["scale_by"] == 2.0
     assert prompt["14"]["inputs"]["width"] == ["13", 1]
@@ -666,7 +700,7 @@ def test_api_two_pass_i2va_fixture_is_dependency_complete_and_matches_frontend_c
     assert prompt["5"]["class_type"] == "LoraLoaderBypassModelOnly"
     assert prompt["8"]["inputs"]["shift_video"] == 12.0
     assert prompt["9"]["class_type"] == "MiniMaxH3LearnedTwoPassParityPlanT8Advanced"
-    assert prompt["9"]["inputs"]["refine_steps"] == 3
+    assert prompt["9"]["inputs"]["refine_steps"] == 4
     assert prompt["16"]["class_type"] == "MiniMaxH3TwoPassDetailMixerT8Advanced"
     assert prompt["16"]["inputs"]["enable_tail"] is False
     assert prompt["21"]["class_type"] == "VHS_VideoCombine"

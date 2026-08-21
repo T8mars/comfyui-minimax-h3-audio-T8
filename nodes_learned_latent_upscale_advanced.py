@@ -32,8 +32,10 @@ class MiniMaxH3LearnedLatentUpscaleT8Advanced(io.ComfyNode):
             description=(
                 "Runs the verified 24-channel learned 3D H3 latent-resizer checkpoint on "
                 "video only while preserving the native joint audio latent. Output pixel "
-                "dimensions are exactly divisible by 32. The default unloads this upscaler "
-                "from the GPU after every execution without unloading the user's H3 models."
+                "dimensions are exactly divisible by 32. Resolutions above the official "
+                "1920x1088 reference area are allowed and reported as a memory risk instead "
+                "of being blocked. The default unloads this upscaler from the GPU after every "
+                "execution without unloading the user's H3 models."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -46,10 +48,10 @@ class MiniMaxH3LearnedLatentUpscaleT8Advanced(io.ComfyNode):
                 io.Combo.Input("size_mode", options=list(SIZE_MODES), default="scale_by"),
                 io.Float.Input("scale_by", default=2.0, min=1.0, max=4.0, step=0.01),
                 io.Float.Input(
-                    "target_megapixels", default=0.70, min=0.01, max=2.0, step=0.01
+                    "target_megapixels", default=0.70, min=0.01, max=8.0, step=0.01
                 ),
-                io.Int.Input("target_width", default=1152, min=32, max=1920, step=32),
-                io.Int.Input("target_height", default=640, min=32, max=1088, step=32),
+                io.Int.Input("target_width", default=1152, min=32, max=4096, step=32),
+                io.Int.Input("target_height", default=640, min=32, max=4096, step=32),
                 io.Combo.Input(
                     "aspect_policy",
                     options=list(ASPECT_POLICIES),
@@ -291,11 +293,13 @@ class MiniMaxH3LearnedTwoPassParityPlanT8Advanced(io.ComfyNode):
                 io.Int.Input("coarse_steps", default=4, min=1, max=999),
                 io.Int.Input(
                     "refine_steps",
-                    default=3,
+                    default=4,
                     min=3,
                     max=5,
                     tooltip=(
-                        "Published parity profiles exist only for 3, 4, or 5 refine calls."
+                        "Defaults to the published four-call high-resolution profile so the "
+                        "4+4 graph executes eight total joint AV forwards. Saved workflows "
+                        "that explicitly store 3 or 5 remain compatible."
                     ),
                 ),
             ],

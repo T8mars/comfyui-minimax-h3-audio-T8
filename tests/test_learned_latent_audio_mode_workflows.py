@@ -91,7 +91,7 @@ def test_saved_two_pass_audio_mode_workflow_contracts(
     nodes = {node["id"]: node for node in workflow["nodes"]}
     links = {link[0]: link for link in workflow["links"]}
 
-    assert nodes[9]["widgets_values"] == [8, 4, 3]
+    assert nodes[9]["widgets_values"] == [8, 4, 4]
     assert nodes[13]["widgets_values"][2] == 2.0
     assert nodes[16]["widgets_values"][:3] == [12.0, 3.0, False]
     assert nodes[16]["widgets_values"][-1] == SEED
@@ -100,6 +100,15 @@ def test_saved_two_pass_audio_mode_workflow_contracts(
     assert nodes[15]["widgets_values"][1:] == ["legacy_policy", 0.0]
     assert nodes[7]["widgets_values"][0] == nodes[14]["widgets_values"][0]
     assert "<d>" in nodes[7]["widgets_values"][0]
+    assert nodes[7]["widgets_values"][-1] is False
+    assert nodes[14]["widgets_values"][-1] is True
+    note_text = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    assert "4+4" in note_text
+    assert "this exact mode/seed was not re-rendered" in note_text
 
     for conditioning_id in (7, 14):
         values = nodes[conditioning_id]["widgets_values"]

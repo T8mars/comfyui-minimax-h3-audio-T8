@@ -6,6 +6,13 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.37.1 updates learned latent two-pass generation to a default 4+4 schedule, so the
+> low- and high-resolution stages execute eight joint AV Transformer calls in total. The standard
+> Mandarin speech probe completed at 1472x832x124 with strict video/audio decode and intelligible
+> speech. Learned upscale no longer imposes a 2MP execution ban; larger outputs require an explicit
+> high-resolution Conditioning opt-in and remain subject to user-owned VRAM and runtime risk. Saved
+> workflows that explicitly use three or five refine calls remain compatible.
+
 > Project v1.37.0 appends two isolated Enhance-A-Video / FETA Advanced nodes and five importable
 > 0.7MP workflows without changing the preceding 140 node IDs or stable sampler mathematics. The
 > clean-room H3 adapter computes the paper's temporal CFI from target-video Q/K, delegates actual

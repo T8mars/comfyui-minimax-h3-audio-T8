@@ -150,7 +150,7 @@ def test_orphan_video_soundtrack_is_rejected():
         build_conditioning(**args)
 
 
-def test_canvas_allows_1080p_area_and_rejects_above_it():
+def test_canvas_allows_1080p_area_and_requires_explicit_opt_in_above_it():
     args = base_args()
     args.update({
         "width": 1920,
@@ -169,3 +169,9 @@ def test_canvas_allows_1080p_area_and_rejects_above_it():
     args.update({"width": 1952, "height": 1088})
     with pytest.raises(ValueError, match="2,088,960"):
         build_conditioning(**args)
+
+    args["allow_above_reference_area"] = True
+    _conditioning, latent, *_rest, report = build_conditioning(**args)
+    video, _audio = latent["samples"].unbind()
+    assert video.shape[-2:] == (68, 122)
+    assert "execution was explicitly allowed" in report

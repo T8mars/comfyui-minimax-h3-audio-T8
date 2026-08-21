@@ -4,7 +4,7 @@
 
 ## 工作流
 
-- `2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json`：I2VA按公开原版schedule执行低分辨率4步、学习型latent放大、高分辨率3步；二采专用Mixer默认旁路，可显式开启Tail/Bias/STG/Restart。
+- `2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json`：标准I2VA二次采样；默认执行低分辨率4步、学习型latent放大、高分辨率4步，共8次联合AV前向。新增的是高噪声`0.8`落点，不是尾段步骤。二采专用Mixer默认旁路。
 - `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Lock_Source_Advanced_EXP.json`：清晰语音`lock_source`，LOW/HIGH均连接同一drive audio，最终保存必须接HIGH Conditioning的`mux_audio`。
 - `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Remix_Source_020_Advanced_EXP.json`：清晰语音`remix_source=0.20`，保留源节奏并由模型重混，最终保存AV Decode生成音频。
 - `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Reference_Only_Advanced_EXP.json`：源音频只作为`<Audio 1>`节奏/语速参考，目标声音重新生成，最终保存AV Decode音频。
@@ -17,16 +17,16 @@
 
 当前已确认本地和上游网络的322个参数及固定随机输入输出逐位一致。最新示例固定到上游工作流
 `64fc9d4`的I2VA合同：FL2VA full INT8、正确`comfyui_alpha8` LightX2V LoRA、量化底模bypass加载、
-shift 12/3、低清`simple8`前4步，以及高分原始3步sigma
-`0.9035, 0.6316, 0.3158, 0`。不要使用缺少PEFT alpha处理的普通`_comfyui`文件；它会把LoRA更新
+shift 12/3、低清`simple8`前4步，以及高分原始4步sigma
+`0.9035, 0.8, 0.6316, 0.3158, 0`。不要使用缺少PEFT alpha处理的普通`_comfyui`文件；它会把LoRA更新
 放大约16倍并造成整幅融化。
 
 高分第二阶段从video sigma `0.9035`开始时，shift 12/3对应的audio sigma约为`0.701`。Comfy通用
 Custom Sampler会先按video sigma初始化整个packed AV latent；T8自定义双时钟现在会在第一次模型调用前，
-只把audio slice从video时钟精确重建到audio时钟。该修复保留video初态和随机噪声，不改上游3D网络、
-4+3 schedule或总NFE。
+只把audio slice从video时钟精确重建到audio时钟。该修复保留video初态和随机噪声，不改上游3D网络；
+当前默认4+4共8 NFE。
 
-真实I2VA 4+3链使用736×416低清latent和`scale_by=2.0`，节点输出1472×832并自动连接高分
+历史真实I2VA 4+3基线使用736×416低清latent和`scale_by=2.0`，节点输出1472×832并自动连接高分
 Conditioning宽高，无需维护第二套尺寸。任务626.969秒完成，输出1472×832、124帧、24fps、32kHz
 双声道，视频/音频严格解码通过；8帧检查未见前一错误LoRA样本的整幅崩坏。单素材仍不能证明普遍
 画质或显存优势，因此继续保留Advanced/EXP。
@@ -34,11 +34,17 @@ Conditioning宽高，无需维护第二套尺寸。任务626.969秒完成，输�
 302.85秒，媒体合同与严格解码通过。它不是本轮1472×832、corrected alpha8路线的同图A/B，只证明
 节点可以串联，不自动证明画质增益。
 
+2026-08-21新默认4+4中文对白实测使用句子“你在干嘛呢，我在这里呀，看看效果如何”，
+日志完整执行低清4/4+高分4/4联合AV前向。RTX 4060 Ti 16GB上按ComfyUI任务时间戳计算总耗时
+1572.264秒，主要受DynamicVRAM权重换页影响。成片1472×832、124帧、24fps、32kHz双声道，
+视频/音频严格解码零错误。本地Whisper识别只将“呀”识别为“啊”，归一化CER为1/16=6.25%；
+这只证明该单条音频内容可辨，听感是否较旧4+3改善仍需人耳评审。
+
 ## 使用方法
 
 1. 第一套 Conditioning 使用低分辨率；第一采样器必须把 `denoised_output` 接到 Learned Latent Upscale，不能使用仍处在中间噪声状态的 `output`。
 2. 第二套 Conditioning 必须用相同提示词、首帧、参考媒体和时长；其宽高直接连接Learned Latent Upscale的`width/height`输出。用户只改`scale_by`，不要再手填第二套高分尺寸。Reconcile会拒绝低分辨率旧keyframe，避免 `cond_video_rows` 错配。
-3. 使用`Learned Two-Pass Parity Plan`，默认`base_steps=8 / coarse_steps=4 / refine_steps=3 / shift 12/3`；旧`Two-Pass Sigma Plan`保留老工作流兼容，但不再作为原版复现推荐。
+3. 使用`Learned Two-Pass Parity Plan`，默认`base_steps=8 / coarse_steps=4 / refine_steps=4 / shift 12/3`；旧工作流若已保存`refine_steps=3/5`仍按原值加载。旧`Two-Pass Sigma Plan`继续保留兼容。
 4. Parity Plan的`coarse_sigmas`接第一采样器；`refine_sigmas`接`Two-Pass Detail Mixer.refine_sigmas`。Mixer的MODEL、SAMPLER、SIGMAS三路接第二采样器。
 5. Mixer全部开关关闭时严格透传高分辨率refine schedule；需要Tail +3时只打开`enable_tail=true`并保留`extra_tail_steps=3`。Bias/STG/Restart可组合但会改变联合音画预测，必须试听审片。
 6. `Temporal Detail Enhance`不能接在latent放大和第二采样器之间；它只能接在AV Decode的IMAGE输出之后，AUDIO直接旁路到保存节点。
@@ -56,9 +62,9 @@ Conditioning宽高，无需维护第二套尺寸。任务626.969秒完成，输�
 
 ## 边界
 
-这是二阶段生成，不是把最终视频直接锐化。模型最大只允许4倍空间放大、输出仍受H3 2.0MP面积上限；不能据单次运行宣称普遍更清晰或16GB永不OOM。Ref2VA、Hybrid、多关键帧和Long Video需分别验证后再扩展，不应从I2VA结果直接外推。
+这是二阶段生成，不是把最终视频直接锐化。模型最大仍只允许4倍空间放大，但节点不再用2MP面积上限阻止执行：目标像素可按原作者范围设置到8MP/4096边长，超过1920×1088参考面积时只报告显存风险，由用户决定是否运行。不能据单次运行宣称普遍更清晰或16GB永不OOM。
 
-2026-08-21同prompt/seed/model/4+3 NFE检查中，Comfy原生`ModelSamplingAV + Euler`输出与修正后的
+2026-08-21的历史同prompt/seed/model/4+3 NFE检查中，Comfy原生`ModelSamplingAV + Euler`输出与修正后的
 T8自定义双时钟输出均由用户完整试听确认为声音正常；二者解码PCM相关约`0.9491`。此前第一阶段audio
 零mask硬锁版本由用户明确判定声音异常，已撤销为默认。随后同一正脸首帧、5.152秒LibriSpeech语音、
 seed `2608215001`和相同4+3路线分别完成`lock_source`、`remix_source=0.20`、`reference_only`与native

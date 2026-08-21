@@ -459,6 +459,14 @@
           "type": "IMAGE",
           "link": null,
           "shape": 7
+        },
+        {
+          "name": "allow_above_reference_area",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_above_reference_area"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -503,7 +511,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "Locked-off medium close-up of the woman facing camera. She says clearly: <d>All the time he was talking to me, his angry little eyes were following Lake.</d> Natural, precise synchronized lip movements. Minimal head motion, no music, no subtitles.",
+        "Locked-off medium close-up of the woman facing camera. She says clearly: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> Natural, precise synchronized lip movements. Speak the complete Chinese sentence exactly once, with no added mumbling or repeated words. Minimal head motion, no music, no subtitles.",
         736,
         416,
         124,
@@ -514,7 +522,8 @@
         0,
         true,
         "match",
-        "official_2_to_15s"
+        "official_2_to_15s",
+        false
       ]
     },
     {
@@ -621,7 +630,7 @@
     {
       "id": 9,
       "type": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
-      "title": "Published LBH schedule · simple8 split4 + refine3",
+      "title": "Published LBH schedule · simple8 split4 + refine4 · 8 total NFE",
       "pos": [
         1320,
         0
@@ -692,7 +701,7 @@
       "widgets_values": [
         8,
         4,
-        3
+        4
       ]
     },
     {
@@ -1139,6 +1148,14 @@
           "type": "IMAGE",
           "link": null,
           "shape": 7
+        },
+        {
+          "name": "allow_above_reference_area",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_above_reference_area"
+          },
+          "link": null
         }
       ],
       "outputs": [
@@ -1182,7 +1199,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "Locked-off medium close-up of the woman facing camera. She says clearly: <d>All the time he was talking to me, his angry little eyes were following Lake.</d> Natural, precise synchronized lip movements. Minimal head motion, no music, no subtitles.",
+        "Locked-off medium close-up of the woman facing camera. She says clearly: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> Natural, precise synchronized lip movements. Speak the complete Chinese sentence exactly once, with no added mumbling or repeated words. Minimal head motion, no music, no subtitles.",
         1344,
         768,
         124,
@@ -1193,7 +1210,8 @@
         0,
         true,
         "match",
-        "official_2_to_15s"
+        "official_2_to_15s",
+        true
       ]
     },
     {
@@ -1854,7 +1872,7 @@
     {
       "id": 22,
       "type": "MarkdownNote",
-      "title": "1 · I2VA native speech · tested route",
+      "title": "1 · I2VA native speech · current 4+4 route",
       "pos": [
         0,
         -440
@@ -1872,7 +1890,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 1 · I2VA native speech / 已审核路线\nThis workflow preserves the reviewed 4+3 learned two-pass route: LOW 736x416x124, 2x learned video-latent upscale, HIGH 1472x832x124, shift 12/3, and seed 2608215001. Replace the first image and, where present, the loaded audio for your own material."
+        "## 1 · I2VA native speech / 当前4+4路线\nThis workflow uses the 4+4 learned two-pass route: LOW 736x416x124, 2x learned video-latent upscale, HIGH 1472x832x124, shift 12/3, and seed 2608215001. The fourth refine call inserts the published video sigma 0.8 instead of adding a tail step. Replace the first image and, where present, the loaded audio for your own material."
       ]
     },
     {
@@ -1950,7 +1968,7 @@
     {
       "id": 26,
       "type": "MarkdownNote",
-      "title": "5 · Bounded validation result",
+      "title": "5 · Validation scope after 4+4 update",
       "pos": [
         2160,
         -440
@@ -1968,7 +1986,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 5 · Bounded validation / 有限验证\nThe four saved variants completed real HEVC/AAC generation and one reviewer approved their complete audio and visible lip motion. This is evidence for one image, utterance, seed, model, and reviewer—not a universal lip-sync, voice-identity, quality, or 16GB claim."
+        "## 5 · Validation scope / 验证边界\nThe standard 4+4 Mandarin native-speech graph completed real HEVC/AAC generation, strict decode, and ASR intelligibility checks. The older per-audio-mode review used 4+3; this file now uses the corrected 4+4 schedule but this exact mode/seed was not re-rendered in the current round. Listen again before making a mode-specific quality claim. Nothing here proves universal lip-sync, voice identity, quality, or 16GB safety."
       ]
     }
   ],
@@ -2304,7 +2322,7 @@
         120
       ]
     },
-    "workflow_title": "MiniMax H3 learned latent two-pass I2VA · upstream parity"
+    "workflow_title": "MiniMax H3 learned latent two-pass I2VA · validated 4+4 standard"
   },
   "version": 0.4
 }

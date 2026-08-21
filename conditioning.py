@@ -241,13 +241,17 @@ def build_conditioning(
     ref_audios=None,
     *,
     return_details: bool = False,
+    allow_above_reference_area: bool = False,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
-    if width * height > MAX_PIXELS:
+    canvas_pixels = width * height
+    exceeds_reference_area = canvas_pixels > MAX_PIXELS
+    if exceeds_reference_area and not allow_above_reference_area:
         raise ValueError(
-            f"Requested canvas has {width * height:,} pixels and exceeds the configured "
-            f"MiniMax H3 2.0MP cap of {MAX_PIXELS:,} pixels (1920x1088); reduce width/height"
+            f"Requested canvas has {canvas_pixels:,} pixels and exceeds the configured "
+            f"MiniMax H3 reference area of {MAX_PIXELS:,} pixels (1920x1088); reduce "
+            "width/height or explicitly enable allow_above_reference_area"
         )
     if not 0.0 <= audio_denoise_strength <= 1.0:
         raise ValueError("audio_denoise_strength must be between 0 and 1")
@@ -429,9 +433,15 @@ def build_conditioning(
         f"task={resolved_task}",
         f"audio_mode={mode}",
         f"frames={frame_count} ({frame_count / FPS:.3f}s at 24fps)",
+        f"canvas={width}x{height} ({canvas_pixels:,} pixels)",
         f"pictures={len(picture_labels)}, videos={len(video_labels)}, audios={len(audio_labels)}",
         f"source_audio_tag={'<Audio ' + str(source_audio_ordinal) + '>' if source_audio_ordinal else 'none'}",
     ]
+    if exceeds_reference_area:
+        report_lines.append(
+            "warning: canvas exceeds the 1920x1088 reference area; execution was explicitly "
+            "allowed and VRAM/runtime risk is owned by the user"
+        )
     report_lines.extend(f"warning: {warning}" for warning in prompt_warnings)
     output_audio = final_audio if final_audio is not None else drive_audio
     result = (
@@ -451,5 +461,8 @@ def build_conditioning(
         "resolved_task": resolved_task,
         "frame_count": frame_count,
         "audio_mode": mode,
+        "canvas_pixels": canvas_pixels,
+        "exceeds_reference_area": exceeds_reference_area,
+        "allow_above_reference_area": bool(allow_above_reference_area),
     }
     return (*result, details)
