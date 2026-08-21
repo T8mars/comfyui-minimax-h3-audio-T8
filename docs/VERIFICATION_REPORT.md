@@ -5,9 +5,8 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.37.1 checkpoint updates learned two-pass generation to eight joint AV calls, preserves
-the 1.36.2 partial-start audio-clock repair, and retains the isolated 1.37.0 Enhance-A-Video / FETA
-experiment. It is
+The current 1.38.0 checkpoint appends the isolated native-reference EAV composer, retains the
+1.37.1 learned two-pass eight-call update and the 1.36.2 partial-start audio-clock repair. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
 `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
@@ -15,6 +14,20 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.38.0 Enhance-A-Video Ref2VA / task-Hybrid composer (2026-08-21)
+
+The 143rd append-only node enables only native Stock20 Ref2VA and task-Hybrid conditioning. It does
+not modify the preceding EAV node, node IDs, stable sampler, or conditioning schema. At runtime it
+reconstructs and validates the pinned H3 PackedLayout sequence—text, optional first/last condition,
+reference image/audio blocks, target audio, then target video—and refuses any changed order or size.
+FETA still measures target-video Q/K and directly scales only the target-video output slice.
+
+Deterministic tests cover image, audio and video-audio reference sizes, Ref2VA/Hybrid classification,
+malformed layouts, disabled identity, append-only registration and two NOTE-equipped importable
+workflows. Prompt Relay, ordinary LoRA, Sage, BlockCache, STG, Long Video, model-Hybrid artifacts,
+interior keyframes and denoise masks remain fail-closed. No real 0.7MP reference-task A/B has yet
+passed, so this release makes no claim of visual improvement, audio non-inferiority or 16GiB safety.
 
 ## 1.37.1 learned two-pass 4+4 and high-resolution opt-in (2026-08-21)
 

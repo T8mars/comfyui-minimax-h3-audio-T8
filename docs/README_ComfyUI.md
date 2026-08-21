@@ -6,6 +6,13 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.38.0 appends an isolated Stock20 Enhance-A-Video Reference Composer for native
+> Ref2VA and task-Hybrid packed layouts. The original EAV node keeps its previous schema and
+> fail-closed reference behavior. The new route validates the exact native reference segment order
+> and sizes, computes CFI from target-video Q/K only, and directly scales only target-video output
+> rows. Two importable workflows and deterministic routing tests are included; real 0.7MP reference
+> A/B, audio non-inferiority, visual superiority and general 16GiB safety remain unproven.
+
 > Project v1.37.1 updates learned latent two-pass generation to a default 4+4 schedule, so the
 > low- and high-resolution stages execute eight joint AV Transformer calls in total. The standard
 > Mandarin speech probe completed at 1472x832x124 with strict video/audio decode and intelligible

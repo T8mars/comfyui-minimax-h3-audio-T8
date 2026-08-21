@@ -31,6 +31,8 @@ EAV_WRAPPER_KEY = "t8_h3_eav_feta_v1"
 EAV_MODES = ("disabled", "report_only", "apply_exp")
 EAV_SAMPLING_PROFILES = ("stock20", "turbo8_alpha8")
 EAV_VISUAL_TASKS = ("T2VA", "I2VA", "FL2VA", "L2VA")
+EAV_REFERENCE_TASKS = ("Ref2VA", "Hybrid")
+EAV_ALL_TASKS = EAV_VISUAL_TASKS + EAV_REFERENCE_TASKS
 EAV_TURBO8_BYPASS_HOOKS = 208
 
 ATTENTION_FORWARD_SHA256S = {
@@ -99,33 +101,87 @@ def _pixel_frame_count(latent_frames: int) -> int:
     )
 
 
-def _classify_visual_task(keyframes, *, latent_frames: int) -> str:
+def _classify_visual_task(keyframes, *, latent_frames: int, refs=None) -> str:
     keyframes = list(keyframes or ())
     if not keyframes:
-        return "T2VA"
-    final_frame = _pixel_frame_count(latent_frames) - 1
-    positions = []
-    for keyframe in keyframes:
-        if not isinstance(keyframe, Mapping):
-            raise RuntimeError("H3 EAV keyframe payload is not a mapping")
-        if keyframe.get("latent") is None or keyframe.get("audio_latent") is not None:
+        visual_task = "T2VA"
+    else:
+        final_frame = _pixel_frame_count(latent_frames) - 1
+        positions = []
+        for keyframe in keyframes:
+            if not isinstance(keyframe, Mapping):
+                raise RuntimeError("H3 EAV keyframe payload is not a mapping")
+            if keyframe.get("latent") is None or keyframe.get("audio_latent") is not None:
+                raise RuntimeError(
+                    "H3 EAV currently accepts only stable visual first/last-frame guides"
+                )
+            try:
+                positions.append(int(keyframe["resolved_frame_index"]))
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError("H3 EAV keyframe position is missing or invalid") from exc
+        if positions == [0]:
+            visual_task = "I2VA"
+        elif positions == [final_frame]:
+            visual_task = "L2VA"
+        elif positions == [0, final_frame]:
+            visual_task = "FL2VA"
+        else:
             raise RuntimeError(
-                "H3 EAV currently accepts only stable visual first/last-frame guides"
+                "H3 EAV supports only stable first/last-frame keyframe layouts; "
+                f"observed positions={positions}, expected final_frame={final_frame}"
             )
-        try:
-            positions.append(int(keyframe["resolved_frame_index"]))
-        except (KeyError, TypeError, ValueError) as exc:
-            raise RuntimeError("H3 EAV keyframe position is missing or invalid") from exc
-    if positions == [0]:
-        return "I2VA"
-    if positions == [final_frame]:
-        return "L2VA"
-    if positions == [0, final_frame]:
-        return "FL2VA"
-    raise RuntimeError(
-        "H3 EAV supports only stable T2VA/I2VA/FL2VA/L2VA keyframe layouts; "
-        f"observed positions={positions}, expected final_frame={final_frame}"
-    )
+    if refs:
+        return "Ref2VA" if visual_task == "T2VA" else "Hybrid"
+    return visual_task
+
+
+def _reference_segment_contract(refs) -> list[tuple[str, int]]:
+    """Rebuild the pinned native PackedLayout reference segment sizes."""
+    expected: list[tuple[str, int]] = []
+    for index, block in enumerate(refs or ()):
+        if not isinstance(block, Mapping):
+            raise RuntimeError(f"H3 EAV reference block {index} is not a mapping")
+        kind = str(block.get("kind", ""))
+        if kind == "image":
+            try:
+                height = int(block["latent_h"])
+                width = int(block["latent_w"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError("H3 EAV image reference grid is missing or invalid") from exc
+            if height <= 0 or width <= 0 or height % 2 or width % 2:
+                raise RuntimeError("H3 EAV image reference grid must be positive and 2-aligned")
+            expected.append(("ref_img", (height // 2) * (width // 2)))
+        elif kind == "audio":
+            try:
+                audio_t = int(block["ref_audio_t"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError("H3 EAV audio reference length is missing or invalid") from exc
+            if audio_t < 0:
+                raise RuntimeError("H3 EAV audio reference length cannot be negative")
+            if audio_t:
+                expected.append(("ref_audio", audio_t * 2))
+        elif kind in {"video", "video_audio"}:
+            try:
+                latent_t = int(block["latent_t"])
+                height = int(block["latent_h"])
+                width = int(block["latent_w"])
+                audio_t = int(block["ref_audio_t"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError("H3 EAV video reference grid is missing or invalid") from exc
+            if latent_t <= 0 or height <= 0 or width <= 0 or height % 2 or width % 2:
+                raise RuntimeError(
+                    "H3 EAV video reference grid must have positive time and 2-aligned space"
+                )
+            if audio_t < 0:
+                raise RuntimeError("H3 EAV video reference audio length cannot be negative")
+            if audio_t:
+                expected.append(("ref_audio", audio_t * 2))
+            expected.append(("ref_img", latent_t * (height // 2) * (width // 2)))
+        else:
+            raise RuntimeError(
+                f"H3 EAV reference block {index} has unsupported kind {kind!r}"
+            )
+    return expected
 
 
 def _turbo8_bypass_contract(model) -> dict:
@@ -358,10 +414,12 @@ def _runtime_route(
     start_progress: float,
     end_progress: float,
     allowed_tasks=EAV_VISUAL_TASKS,
+    allow_reference_blocks: bool = False,
 ) -> dict:
     if denoise_mask is not None or audio_denoise_mask is not None:
         raise RuntimeError("H3 EAV rejects video/audio denoise masks")
-    if payload.get("refs"):
+    refs = list(payload.get("refs") or ())
+    if refs and not allow_reference_blocks:
         raise RuntimeError("H3 EAV currently rejects Ref2VA/Hybrid reference blocks")
     try:
         video, audio = x[0], x[1]
@@ -376,8 +434,6 @@ def _runtime_route(
     segments = list(layout.segments)
     video_segments = [segment for segment in segments if segment[2] == "video"]
     audio_segments = [segment for segment in segments if segment[2] == "audio"]
-    if any(kind in {"cond_audio", "ref_img", "ref_audio"} for _, _, kind in segments):
-        raise RuntimeError("H3 EAV currently accepts visual first/last-frame conditions only")
     if len(video_segments) != 1 or len(audio_segments) != 1:
         raise RuntimeError("H3 EAV could not uniquely isolate target audio/video rows")
     audio_start, audio_end, _ = audio_segments[0]
@@ -386,7 +442,8 @@ def _runtime_route(
         raise RuntimeError("H3 EAV requires target audio/video as the final packed segments")
 
     frames = int(video.shape[2])
-    task = _classify_visual_task(payload.get("keyframes"), latent_frames=frames)
+    keyframes = list(payload.get("keyframes") or ())
+    task = _classify_visual_task(keyframes, latent_frames=frames, refs=refs)
     if task not in set(allowed_tasks):
         raise RuntimeError(f"H3 EAV task {task} is outside the enabled task scope")
     video_rows = int(video_end - video_start)
@@ -399,12 +456,25 @@ def _runtime_route(
     )
     if spatial_tokens != expected_spatial:
         raise RuntimeError("H3 EAV target-video token order/grid contract did not match H3")
-    cond_segments = [segment for segment in segments if segment[2] == "cond"]
-    expected_cond_count = 0 if task == "T2VA" else (2 if task == "FL2VA" else 1)
-    if len(cond_segments) != expected_cond_count or any(
-        int(end - start) != spatial_tokens for start, end, _kind in cond_segments
-    ):
-        raise RuntimeError("H3 EAV visual condition rows do not match the stable task layout")
+    visual_task = _classify_visual_task(keyframes, latent_frames=frames)
+    expected_cond_count = 0 if visual_task == "T2VA" else (2 if visual_task == "FL2VA" else 1)
+    expected_segments = [("text", int(context.shape[1]))]
+    expected_segments.extend(("cond", spatial_tokens) for _ in range(expected_cond_count))
+    expected_segments.extend(_reference_segment_contract(refs))
+    expected_segments.extend(
+        [
+            ("audio", int(audio_end - audio_start)),
+            ("video", int(video_end - video_start)),
+        ]
+    )
+    actual_segments = [
+        (str(kind), int(end - start)) for start, end, kind in segments
+    ]
+    if actual_segments != expected_segments:
+        raise RuntimeError(
+            "H3 EAV PackedLayout segment order/sizes differ from the pinned native contract: "
+            f"expected={expected_segments}, observed={actual_segments}"
+        )
     if tuple(layout.signature) != (
         int(context.shape[1]),
         frames,
@@ -428,6 +498,7 @@ def _runtime_route(
         "sigma_video": sigma_video,
         "progress_video": progress_video,
         "active": float(start_progress) <= progress_video <= float(end_progress),
+        "reference_block_count": len(refs),
     }
 
 
@@ -581,6 +652,9 @@ def build_eav_model(
     max_workspace_mib: int,
     g_hard_limit: float,
     sampling_profile: str = "stock20",
+    allowed_tasks=EAV_VISUAL_TASKS,
+    allow_reference_blocks: bool = False,
+    composer_profile: str = "isolated_visual",
 ):
     mode = str(mode)
     if mode not in EAV_MODES:
@@ -595,6 +669,17 @@ def build_eav_model(
         raise ValueError("H3 EAV g_hard_limit must be between 1 and 3")
 
     sampling_profile = str(sampling_profile)
+    allowed_tasks = tuple(str(task) for task in allowed_tasks)
+    if not allowed_tasks or not set(allowed_tasks).issubset(set(EAV_ALL_TASKS)):
+        raise ValueError(f"H3 EAV received an invalid task scope: {allowed_tasks!r}")
+    if allow_reference_blocks and not set(allowed_tasks).issubset(set(EAV_REFERENCE_TASKS)):
+        raise ValueError(
+            "H3 EAV reference composer can enable only Ref2VA/Hybrid task scopes"
+        )
+    if not allow_reference_blocks and any(
+        task in set(EAV_REFERENCE_TASKS) for task in allowed_tasks
+    ):
+        raise ValueError("H3 EAV reference tasks require the explicit reference composer")
     sigma_contract = _validate_sigma_schedule(sigmas, sampling_profile)
     config = {
         "schema": EAV_PATCH_VERSION,
@@ -602,7 +687,9 @@ def build_eav_model(
         "paper": "Enhance-A-Video, arXiv:2502.07508v3",
         "reference_commit": "16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
         "adapter_scope": "target_video_only_full3d_h3_exp",
-        "task_scope": list(EAV_VISUAL_TASKS),
+        "composer_profile": str(composer_profile),
+        "task_scope": list(allowed_tasks),
+        "allow_reference_blocks": bool(allow_reference_blocks),
         "sampling_profile": sampling_profile,
         "tau": float(tau),
         "start_video_progress": float(start_video_progress),
@@ -634,7 +721,12 @@ def build_eav_model(
     config["notes"] = [
         "report_only computes CFI/g but leaves the attention output unchanged",
         "apply_exp follows the paper residual gain pattern through an H3 full-3D adapter",
-        "T2VA/I2VA/FL2VA/L2VA are isolated mechanically; references and masks remain rejected",
+        (
+            "Ref2VA/Hybrid native reference segments are explicitly audited while only target-video "
+            "rows are measured/scaled; denoise masks remain rejected"
+            if allow_reference_blocks
+            else "T2VA/I2VA/FL2VA/L2VA are isolated mechanically; references and masks remain rejected"
+        ),
         "Prompt Relay, BlockCache, Sage object patches and STG remain rejected",
         "Turbo8 accepts only the corrected 208-module Alpha8 bypass LoRA at strength 1.0",
         "the runtime audit after sampling is authoritative for observed g and call counts",
@@ -673,7 +765,8 @@ def build_eav_model(
                 audio_denoise_mask=kwargs.get("audio_denoise_mask"),
                 start_progress=float(start_video_progress),
                 end_progress=float(end_video_progress),
-                allowed_tasks=EAV_VISUAL_TASKS,
+                allowed_tasks=allowed_tasks,
+                allow_reference_blocks=bool(allow_reference_blocks),
             )
             forward_index = runtime.begin_forward(
                 sigma_video=route["sigma_video"],

@@ -9,13 +9,18 @@ import torch
 import h3_audio_t8_pkg.enhance_a_video_advanced as eav_module
 from h3_audio_t8_pkg.conditioning import build_packed_layout
 from h3_audio_t8_pkg.enhance_a_video_advanced import (
+    EAV_REFERENCE_TASKS,
     EAVRuntime,
+    _reference_segment_contract,
     _runtime_route,
     _validate_stock20_sigmas,
     build_eav_model,
     exact_chunked_cfi,
     finalize_eav_runtime,
     route_eav_attention,
+)
+from h3_audio_t8_pkg.nodes_enhance_a_video_advanced import (
+    MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
 )
 from comfy.model_patcher import ModelPatcher
 from comfy.patcher_extension import PatcherInjection
@@ -310,6 +315,135 @@ def test_runtime_route_accepts_stable_visual_tasks_and_uses_final_video_grid():
         )
 
 
+def test_reference_segment_contract_matches_native_packed_layout():
+    refs = [
+        {"kind": "image", "latent_h": 6, "latent_w": 8},
+        {"kind": "audio", "ref_audio_t": 5},
+        {
+            "kind": "video_audio",
+            "latent_t": 3,
+            "latent_h": 4,
+            "latent_w": 6,
+            "ref_audio_t": 7,
+        },
+    ]
+    assert _reference_segment_contract(refs) == [
+        ("ref_img", 12),
+        ("ref_audio", 10),
+        ("ref_audio", 14),
+        ("ref_img", 18),
+    ]
+
+
+def test_reference_composer_routes_ref2va_and_hybrid_without_touching_legacy_scope():
+    text_len, frames, height, width, audio_t = 8, 7, 8, 10, 12
+    x = [
+        torch.zeros((1, 24, frames, height, width)),
+        torch.zeros((1, 32, 2, audio_t)),
+    ]
+    context = torch.zeros((1, text_len, 4))
+    image_ref = {"kind": "image", "latent_h": 6, "latent_w": 8}
+
+    ref_layout = build_packed_layout(
+        text_len, frames, height, width, audio_t, refs=[image_ref]
+    )
+    ref_route = _runtime_route(
+        x=x,
+        timestep=torch.tensor([500.0]),
+        context=context,
+        payload={"layout": ref_layout, "keyframes": [], "refs": [image_ref]},
+        denoise_mask=None,
+        audio_denoise_mask=None,
+        start_progress=0.0,
+        end_progress=1.0,
+        allowed_tasks=EAV_REFERENCE_TASKS,
+        allow_reference_blocks=True,
+    )
+    assert ref_route["task"] == "Ref2VA"
+    assert ref_route["reference_block_count"] == 1
+    assert ref_route["audio_end"] == ref_route["video_start"]
+    assert ref_route["video_end"] == ref_layout.seq_len
+
+    keyframe = {
+        "resolved_frame_index": 0,
+        "latent": torch.zeros((1, 24, 1, height, width)),
+    }
+    hybrid_layout = build_packed_layout(
+        text_len,
+        frames,
+        height,
+        width,
+        audio_t,
+        keyframes=[keyframe],
+        refs=[image_ref],
+    )
+    hybrid_route = _runtime_route(
+        x=x,
+        timestep=torch.tensor([500.0]),
+        context=context,
+        payload={
+            "layout": hybrid_layout,
+            "keyframes": [keyframe],
+            "refs": [image_ref],
+        },
+        denoise_mask=None,
+        audio_denoise_mask=None,
+        start_progress=0.0,
+        end_progress=1.0,
+        allowed_tasks=EAV_REFERENCE_TASKS,
+        allow_reference_blocks=True,
+    )
+    assert hybrid_route["task"] == "Hybrid"
+
+    bad_layout = build_packed_layout(
+        text_len,
+        frames,
+        height,
+        width,
+        audio_t,
+        refs=[{"kind": "image", "latent_h": 4, "latent_w": 4}],
+    )
+    with pytest.raises(RuntimeError, match="segment order/sizes"):
+        _runtime_route(
+            x=x,
+            timestep=torch.tensor([500.0]),
+            context=context,
+            payload={"layout": bad_layout, "keyframes": [], "refs": [image_ref]},
+            denoise_mask=None,
+            audio_denoise_mask=None,
+            start_progress=0.0,
+            end_progress=1.0,
+            allowed_tasks=EAV_REFERENCE_TASKS,
+            allow_reference_blocks=True,
+        )
+
+
+def test_reference_composer_node_is_append_only_stock20_and_disabled_is_identity():
+    schema = MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced.define_schema()
+    inputs = {item.id: item for item in schema.inputs}
+    assert schema.is_experimental is True
+    assert schema.node_id == "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
+    assert "sampling_profile" not in inputs
+    model = object()
+    output = MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced.execute(
+        model=model,
+        sigmas=_stock20_sigmas(),
+        mode="disabled",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+    )
+    returned_model, runtime, report_json = output.result
+    report = json.loads(report_json)
+    assert returned_model is model
+    assert isinstance(runtime, EAVRuntime)
+    assert report["task_scope"] == ["Ref2VA", "Hybrid"]
+    assert report["allow_reference_blocks"] is True
+    assert report["sampling_profile"] == "stock20"
+
+
 def test_disabled_returns_exact_original_model_and_tau_zero_is_not_used_as_off_switch():
     model = object()
     returned, runtime, report_json = build_eav_model(
@@ -573,6 +707,49 @@ def test_extended_eav_workflows_are_importable_and_strictly_wired(
     else:
         assert not loras
 
+    for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type
+
+
+@pytest.mark.parametrize(
+    ("task", "has_first"),
+    [("Ref2VA", False), ("Hybrid", True)],
+)
+def test_reference_eav_workflows_use_the_isolated_composer(task, has_first):
+    path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "07-motion-detail"
+        / f"2026-08-21_H3_Enhance_A_Video_FETA_{task}_Stock20_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    by_type = {}
+    for node in workflow["nodes"]:
+        by_type.setdefault(node["type"], []).append(node)
+    links = {link[0]: link for link in workflow["links"]}
+    conditioning = by_type["MiniMaxH3AudioConditioningT8"][0]
+    composer = by_type["MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"][0]
+    assert "MiniMaxH3EnhanceAVideoT8Advanced" not in by_type
+    assert conditioning["widgets_values"][1:5] == [1152, 640, 124, task]
+    assert composer["widgets_values"] == ["apply_exp", 4.0, 0.0, 1.0, 32, 1.5]
+    assert composer["inputs"][-1]["name"] == "g_hard_limit"
+    assert bool(conditioning["inputs"][17]["link"] is not None) is has_first
+    assert conditioning["inputs"][18]["link"] is None
+    assert conditioning["inputs"][19]["name"] == "ref_images.ref_image_0"
+    assert conditioning["inputs"][19]["link"] is not None
+    assert len(by_type["LoadImage"]) == 1 + int(has_first)
+    assert len(by_type["MarkdownNote"]) == 3
+    report = workflow["extra"]["t8_enhance_a_video"]
+    assert "real 0.7MP A/B remains pending" in report["real_probe"]
+
+    reference_link = links[conditioning["inputs"][19]["link"]]
+    assert nodes[reference_link[1]]["type"] == "LoadImage"
+    assert reference_link[2:] == [0, conditioning["id"], 19, "IMAGE"]
     for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])

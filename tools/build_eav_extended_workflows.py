@@ -103,11 +103,26 @@ def _notes(workflow: dict, *, task: str, profile: str) -> None:
         key=lambda node: node["id"],
     )
     schedule = "Stock20 / 20 NFE" if profile == "stock20" else "Turbo8 / 8 NFE"
+    if task in {"Ref2VA", "Hybrid"}:
+        scope_text = (
+            "本模板使用独立 Reference Composer：参考图只参与原生 H3 packed layout，FETA 仍只量测和"
+            "缩放目标视频行；参考图、首帧、文本与音频行不会被直接缩放。普通 EAV 节点仍拒绝参考块。"
+        )
+        conflict_text = (
+            "仅支持未打补丁的原生 Stock20；Prompt Relay、普通LoRA、BlockCache、Sage、STG、Long Video、"
+            "模型权重 Hybrid artifact 与 denoise mask 仍会主动拒绝。这里的 Hybrid 是任务类型，不是混合权重模型。"
+        )
+    else:
+        scope_text = (
+            "EAV 只从目标视频 Q/K 计算跨帧 CFI，并只直接缩放目标视频输出；首帧/尾帧条件段不会被直接缩放。"
+        )
+        conflict_text = (
+            "Ref2VA、Hybrid、denoise mask、Prompt Relay、BlockCache、Sage、STG 和其他 attention/block wrapper "
+            "仍会主动拒绝。"
+        )
     note_nodes[0]["widgets_values"] = (
         f"## 正确连接与任务范围\n\n当前模板：**{task}、{schedule}、1152×640、124帧**。"
-        "EAV 只从目标视频 Q/K 计算跨帧 CFI，并只直接缩放目标视频输出；首帧/尾帧条件段不会被直接缩放。"
-        "Runtime Audit 必须输出 `apply_exp_verified`。Ref2VA、Hybrid、denoise mask、Prompt Relay、BlockCache、"
-        "Sage、STG 和其他 attention/block wrapper 仍会主动拒绝。"
+        f"{scope_text}Runtime Audit 必须输出 `apply_exp_verified`。{conflict_text}"
     )
     note_nodes[1]["widgets_values"] = (
         "## 参数与 A/B 方法\n\n`mode=disabled` 才是严格旁路；`tau=0` 不是关闭。"
@@ -141,6 +156,7 @@ def _set_orders(workflow: dict) -> None:
         "MiniMaxH3AudioConditioningT8": 7,
         "MiniMaxH3DualClockSamplerT8": 8,
         "MiniMaxH3EnhanceAVideoT8Advanced": 9,
+        "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced": 9,
         "RandomNoise": 10,
         "BasicGuider": 11,
         "SamplerCustomAdvanced": 12,
@@ -165,11 +181,28 @@ def build(task: str, profile: str) -> tuple[str, dict]:
     conditioning["title"] = f"{task} 0.7MP controlled input"
     conditioning["widgets_values"][0] = PROMPT
     conditioning["widgets_values"][1:5] = [1152, 640, 124, task]
-    eav["widgets_values"][-1] = profile
+    reference_task = task in {"Ref2VA", "Hybrid"}
+    if reference_task:
+        eav["type"] = "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
+        eav["properties"]["Node name for S&R"] = eav["type"]
+        eav["inputs"] = eav["inputs"][:-1]
+        eav["widgets_values"] = eav["widgets_values"][:-1]
+    else:
+        eav["widgets_values"][-1] = profile
     eav["title"] = f"EAV/FETA tau4 · {task} · {profile}"
     _notes(workflow, task=task, profile=profile)
 
     if task in {"I2VA", "FL2VA"}:
+        first = _load_image_node(
+            int(workflow["last_node_id"]) + 1,
+            "First-frame anchor · replace with your own image",
+            "codex_prompt_relay_fl2va_first.png",
+            [300, -520],
+        )
+        workflow["last_node_id"] = first["id"]
+        workflow["nodes"].append(first)
+        _append_link(workflow, first, 0, conditioning, 17, "IMAGE")
+    if task == "Hybrid":
         first = _load_image_node(
             int(workflow["last_node_id"]) + 1,
             "First-frame anchor · replace with your own image",
@@ -189,6 +222,25 @@ def build(task: str, profile: str) -> tuple[str, dict]:
         workflow["last_node_id"] = last["id"]
         workflow["nodes"].append(last)
         _append_link(workflow, last, 0, conditioning, 18, "IMAGE")
+
+    if reference_task:
+        reference = _load_image_node(
+            int(workflow["last_node_id"]) + 1,
+            "Reference image · identity / costume / appearance",
+            "replace_with_authorized_reference.png",
+            [690 if task == "Hybrid" else 300, -520],
+        )
+        workflow["last_node_id"] = reference["id"]
+        workflow["nodes"].append(reference)
+        conditioning["inputs"].append(
+            {
+                "name": "ref_images.ref_image_0",
+                "type": "IMAGE",
+                "link": None,
+                "shape": 7,
+            }
+        )
+        _append_link(workflow, reference, 0, conditioning, 19, "IMAGE")
 
     if profile == "turbo8_alpha8":
         lora = _lora_node(int(workflow["last_node_id"]) + 1)
@@ -211,7 +263,11 @@ def build(task: str, profile: str) -> tuple[str, dict]:
         "paper": "arXiv:2502.07508v3",
         "reference_commit": "16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
         "canvas": "1152x640x124",
-        "real_probe": "one disabled/apply 0.7MP pair passed runtime audit and three strict media decodes",
+        "real_probe": (
+            "mechanical native-layout and registration coverage passed; real 0.7MP A/B remains pending"
+            if reference_task
+            else "one disabled/apply 0.7MP pair passed runtime audit and three strict media decodes"
+        ),
         "quality_status": "mechanical_media_pass_quality_audio_noninferiority_unproven",
     }
     _set_orders(workflow)
@@ -238,6 +294,8 @@ def main() -> None:
         ("FL2VA", "stock20"),
         ("L2VA", "stock20"),
         ("T2VA", "turbo8_alpha8"),
+        ("Ref2VA", "stock20"),
+        ("Hybrid", "stock20"),
     ]
     for task, profile in specs:
         filename, workflow = build(task, profile)

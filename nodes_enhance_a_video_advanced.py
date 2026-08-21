@@ -153,7 +153,99 @@ class MiniMaxH3EnhanceAVideoAuditT8Advanced(io.ComfyNode):
         return io.NodeOutput(latent, report_json, ui={"text": (report_json,)})
 
 
+class MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
+            display_name=(
+                "MiniMax H3 Enhance-A-Video Ref2VA / Hybrid Composer (Advanced EXP)"
+            ),
+            description=(
+                "Isolated Stock20 composer for native Ref2VA or Hybrid conditioning. It audits "
+                "the exact reference-segment layout, computes FETA only from target-video Q/K, "
+                "and never directly scales reference, text, condition, or target-audio rows."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect an unpatched native Stock20 H3 model. LoRA, Prompt Relay, Sage, "
+                        "BlockCache, STG, Long Video and model-Hybrid artifacts remain rejected."
+                    ),
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact 20-step Stock20 SIGMAS sent to the sampler.",
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled is exact bypass; report_only audits without modifying output; "
+                        "apply_exp enables FETA. tau=0 is not an off switch."
+                    ),
+                ),
+                io.Float.Input("tau", default=4.0, min=-32.0, max=32.0, step=0.25),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer planning budget only; not total workflow VRAM.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(
+            *build_eav_model(
+                **kwargs,
+                sampling_profile="stock20",
+                allowed_tasks=("Ref2VA", "Hybrid"),
+                allow_reference_blocks=True,
+                composer_profile="native_reference_stock20_v1",
+            )
+        )
+
+
 ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES = [
     MiniMaxH3EnhanceAVideoT8Advanced,
     MiniMaxH3EnhanceAVideoAuditT8Advanced,
+    MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
 ]

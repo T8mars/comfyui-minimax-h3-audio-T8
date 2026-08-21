@@ -12,6 +12,8 @@
 - `H3_Enhance_A_Video_FETA_FL2VA_Stock20`：首尾帧生音视频；首尾图必须分别接入正确插槽。
 - `H3_Enhance_A_Video_FETA_L2VA_Stock20`：尾帧生音视频；只接尾帧，不伪装成 I2VA。
 - `H3_Enhance_A_Video_FETA_T2VA_Turbo8`：仅接受修正 Alpha8、208个 bypass hooks、strength 1.0 的严格 Turbo8 实验模板。
+- `H3_Enhance_A_Video_FETA_Ref2VA_Stock20`：独立 Reference Composer；参考图进入原生参考块，FETA 只处理目标视频行。
+- `H3_Enhance_A_Video_FETA_Hybrid_Stock20`：首帧 + 独立参考图的任务型 Hybrid；不要与混合模型权重节点混淆。
 - 其他单路线工作流用于A/B诊断。
 
 ## 当前成果
@@ -26,4 +28,4 @@ FETA 路线已完成 736×416 与 1152×640 两档、124帧、20步、同 seed �
 
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
-FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。当前只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA、Hybrid、Prompt Relay、BlockCache、Sage、STG、其他 LoRA、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。
+FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务模板已通过精确PackedLayout和导入接线回归，但真实0.7MP A/B仍未完成。Prompt Relay、BlockCache、Sage、STG、Long Video、其他 LoRA、模型权重 Hybrid、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。

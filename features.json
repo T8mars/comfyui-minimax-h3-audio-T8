@@ -319,20 +319,22 @@
     "MiniMaxH3PromptRelayResourceEstimateT8Advanced",
     "MiniMaxH3TwoPassAudioAuditT8Advanced",
     "MiniMaxH3EnhanceAVideoT8Advanced",
-    "MiniMaxH3EnhanceAVideoAuditT8Advanced"
+    "MiniMaxH3EnhanceAVideoAuditT8Advanced",
+    "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
   ],
   "experimental_enhance_a_video_advanced": {
-    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates, but visual superiority, audio non-inferiority and general 16GiB safety are not established",
+    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; isolated native Stock20 Ref2VA/task-Hybrid composer passes deterministic layout and workflow gates but still lacks a real 0.7MP A/B; visual superiority, audio non-inferiority and general 16GiB safety are not established",
     "date": "2026-08-21",
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [
       "MiniMaxH3EnhanceAVideoT8Advanced",
-      "MiniMaxH3EnhanceAVideoAuditT8Advanced"
+      "MiniMaxH3EnhanceAVideoAuditT8Advanced",
+      "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
     ],
     "paper": "Enhance-A-Video, arXiv:2502.07508v3",
     "reference_commit": "NUS-HPC-AI-Lab/Enhance-A-Video@16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
     "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks, the existing attention backend remains authoritative, and only target-video output rows receive the direct residual gain",
-    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; Ref2VA, Hybrid, Prompt Relay, ordinary LoRA, BlockCache, Sage object patches, STG, interior keyframes and denoise masks fail closed",
+    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer now accepts native Ref2VA and task-Hybrid packed layouts while preserving the original node's fail-closed contract; Prompt Relay, ordinary LoRA, BlockCache, Sage object patches, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks remain rejected",
     "audio_boundary": "target-audio rows are never directly scaled, but H3 joint packed attention can change audio indirectly in later blocks; listening and signal audit are mandatory",
     "memory_boundary": "max_workspace_mib bounds the planned temporal score workspace only; it is not a whole-workflow VRAM guarantee",
     "frontend_workflows": [
@@ -340,8 +342,11 @@
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_I2VA_Stock20_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_FL2VA_Stock20_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_L2VA_Stock20_Advanced_EXP.json",
-      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_T2VA_Turbo8_Advanced_EXP.json"
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_T2VA_Turbo8_Advanced_EXP.json",
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Ref2VA_Stock20_Advanced_EXP.json",
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json"
     ],
+    "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; no real 0.7MP reference-task A/B has been completed yet, so quality, audio non-inferiority and 16GiB safety remain unproven",
     "validated_real_probe": {
       "environment": "RTX 4060 Ti 16GiB; ComfyUI 187eda8ef5e588c6a5765cad53e482765edae052; FL2VA pruned INT8; Qwen3-VL NVFP4; video/audio VAE",
       "controls": "same prompt, seed 2608217001, 736x416x124 at 24fps, native dual-clock Stock20, no LoRA/cache/attention wrapper; baseline disabled versus apply_exp tau4",
