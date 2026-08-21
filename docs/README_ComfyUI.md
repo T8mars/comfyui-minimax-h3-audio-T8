@@ -6,6 +6,13 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.39.1 republishes the five learned-latent two-pass frontend templates as one coherent
+> 4+4 workflow set: standard I2VA, native speech, `lock_source`, `remix_source=0.20`, and
+> `reference_only`. Every graph uses four low-resolution plus four high-resolution joint-AV model
+> calls, the high-resolution Conditioning follows the learned upscaler's aligned width/height, and
+> the upscaler reports rather than prohibits outputs above the former 2MP reference area. This is a
+> workflow/packaging release; it does not change the 144-node runtime registry or stable sampler.
+
 > Project v1.39.0 appends an isolated Enhance-A-Video + Strict Sage composer without changing the
 > preceding 143 node IDs, old schemas, or stable sampling. The composer owns the H3 FETA route and
 > `sageattention.sageattn` HND backend, refuses external full-block attention patches, and never

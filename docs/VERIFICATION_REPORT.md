@@ -5,8 +5,10 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.39.0 checkpoint appends an isolated EAV + Strict Sage composer and closes one real
-0.7MP T2VA no-fallback Sage call/runtime/media probe. It retains the 1.38.2 real Ref2VA and
+The current 1.39.1 checkpoint republishes the complete learned-latent two-pass workflow set with
+the already-validated 4+4 schedule and keeps the 144-node runtime registry unchanged. It retains
+the 1.39.0 isolated EAV + Strict Sage composer and its real 0.7MP T2VA no-fallback Sage
+call/runtime/media probe, the 1.38.2 real Ref2VA and
 task-Hybrid EAV pairs, the deterministic strict diagnostic decoder, and the
 1.37.1 learned two-pass eight-call update and the 1.36.2 partial-start audio-clock repair. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
@@ -16,6 +18,27 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.39.1 learned two-pass workflow-set publication (2026-08-21)
+
+The importable `13-latent-upscale` set now presents the same current contract in all five learned
+two-pass generation templates: standard I2VA, native Mandarin speech, Hybrid `lock_source`, Hybrid
+`remix_source=0.20`, and Hybrid `reference_only`. Each graph stores
+`base_steps=8/coarse_steps=4/refine_steps=4`, so it executes four low-resolution and four
+high-resolution joint-AV model calls. The fourth refine interval inserts the published high-noise
+`0.8` sigma point; it is not an extra tail-detail step.
+
+High-resolution Conditioning receives the learned upscaler's aligned width and height directly,
+and explicitly opts into canvases above the former 1920x1088 reference area. The upscaler keeps its
+32-pixel alignment, aspect safeguards, 4x scale limit, and risk report, but does not impose a hard
+2MP execution ban. Native/remix/reference outputs save decoded pass-2 audio; `lock_source` saves the
+Conditioning `mux_audio`. The canvas NOTE blocks state these different audio-ownership contracts.
+
+This patch release does not add or reorder nodes, change a node schema/default, or alter stable
+sampling mathematics. The five JSON files were already exercised by structural regression, while
+the real 4+4 Mandarin native-speech route completed strict video/audio decode and intelligibility
+checking. The older per-mode human review used the 4+3 schedule, so it remains bounded historical
+evidence rather than a new 4+4 quality guarantee.
 
 ## 1.39.0 EAV + Strict Sage composer (2026-08-21)
 
