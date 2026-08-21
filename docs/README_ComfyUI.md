@@ -6,6 +6,14 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.37.0 appends two isolated Enhance-A-Video / FETA Advanced nodes and five importable
+> 0.7MP workflows without changing the preceding 140 node IDs or stable sampler mathematics. The
+> clean-room H3 adapter computes the paper's temporal CFI from target-video Q/K, delegates actual
+> attention to the existing backend, and directly scales only target-video output rows. Controlled
+> Stock20 T2VA/I2VA/FL2VA/L2VA and strict corrected-Alpha8 Turbo8 T2VA pairs passed runtime audits
+> and strict media decoding. They do not establish a stable visual-quality advantage, audio
+> non-inferiority, or universal 16GiB safety; unsupported wrapper combinations remain fail-closed.
+
 > Project v1.36.2 repairs the learned two-pass custom sampler at a partial schedule start. Comfy's
 > generic KSAMPLER initially applies the video sigma to the whole packed AV latent; at pass-2 video
 > sigma `0.9035`, H3 shift 12/3 requires audio sigma about `0.701`. Before the first model call the

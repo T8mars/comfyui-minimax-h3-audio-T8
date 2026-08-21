@@ -1,5 +1,15 @@
 # Third-party notices
 
+## Enhance-A-Video / FETA research
+
+The isolated MiniMax H3 Enhance-A-Video Advanced implementation is a clean-room H3 adaptation of
+the equations described in [`Enhance-A-Video` (arXiv:2502.07508v3)](https://arxiv.org/abs/2502.07508v3).
+The reference implementation was reviewed at fixed revision
+[`NUS-HPC-AI-Lab/Enhance-A-Video@16a7899e`](https://github.com/NUS-HPC-AI-Lab/Enhance-A-Video/tree/16a7899e6f55f85ea19f1d3a415c6dc0c4096176),
+which is licensed under Apache-2.0. That repository is not a runtime dependency, no source file is
+copied, and the H3 joint audio-video adapter is explicitly experimental because the paper did not
+evaluate MiniMax H3 or joint audio-video generation.
+
 ## Prompt Relay research and community implementations
 
 The MiniMax H3 Prompt Relay Advanced implementation derives the temporal-penalty equation from

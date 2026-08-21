@@ -1,0 +1,580 @@
+from __future__ import annotations
+
+import json
+from types import SimpleNamespace
+
+import pytest
+import torch
+
+import h3_audio_t8_pkg.enhance_a_video_advanced as eav_module
+from h3_audio_t8_pkg.conditioning import build_packed_layout
+from h3_audio_t8_pkg.enhance_a_video_advanced import (
+    EAVRuntime,
+    _runtime_route,
+    _validate_stock20_sigmas,
+    build_eav_model,
+    exact_chunked_cfi,
+    finalize_eav_runtime,
+    route_eav_attention,
+)
+from comfy.model_patcher import ModelPatcher
+from comfy.patcher_extension import PatcherInjection
+from comfy.weight_adapter.bypass import BypassInjectionManager
+
+
+class MiniMaxH3Model(torch.nn.Module):
+    pass
+
+
+class _NativeH3Base(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.diffusion_model = MiniMaxH3Model()
+
+    def extra_conds(self, **_kwargs):
+        return {}
+
+
+_NativeH3Base.extra_conds.__module__ = "comfy.model_base"
+
+
+def _model_patcher() -> ModelPatcher:
+    return ModelPatcher(
+        _NativeH3Base(),
+        load_device=torch.device("cpu"),
+        offload_device=torch.device("cpu"),
+    )
+
+
+def _allow_fixture_core(monkeypatch):
+    monkeypatch.setattr(eav_module, "_source_sha256", lambda _source: "fixture")
+    monkeypatch.setattr(eav_module, "ATTENTION_FORWARD_SHA256S", {"fixture"})
+    monkeypatch.setattr(eav_module, "PACKED_LAYOUT_SHA256S", {"fixture"})
+    monkeypatch.setattr(eav_module, "MODEL_FORWARD_SHA256S", {"fixture"})
+    monkeypatch.setattr(eav_module, "PATCHIFY_VIDEO_SHA256S", {"fixture"})
+
+
+def _stock20_sigmas():
+    return torch.cat((torch.linspace(1.0, 0.05, 20), torch.zeros(1)))
+
+
+def _turbo8_sigmas():
+    return torch.cat((torch.linspace(1.0, 0.08, 8), torch.zeros(1)))
+
+
+def _add_alpha8_bypass(model, *, hook_count=208, strength=1.0):
+    manager = BypassInjectionManager()
+    manager.hooks = [
+        SimpleNamespace(multiplier=strength, module=object()) for _ in range(hook_count)
+    ]
+
+    def inject_all(_model_patcher):
+        return len(manager.hooks)
+
+    def eject_all(_model_patcher):
+        return len(manager.hooks)
+
+    model.set_injections(
+        "bypass_lora", [PatcherInjection(inject=inject_all, eject=eject_all)]
+    )
+    return model
+
+
+def _dense_off_diagonal_cfi(q, k, frames, spatial_tokens):
+    _, heads, _, dim = q.shape
+    q_grid = q[0].reshape(heads, frames, spatial_tokens, dim).permute(2, 0, 1, 3)
+    k_grid = k[0].reshape(heads, frames, spatial_tokens, dim).permute(2, 0, 1, 3)
+    attention = torch.matmul(q_grid * (dim**-0.5), k_grid.transpose(-2, -1))
+    attention = attention.to(torch.float32).softmax(dim=-1)
+    diagonal = torch.eye(frames, dtype=torch.bool)[None, None]
+    return attention.masked_fill(diagonal, 0).sum() / (
+        spatial_tokens * heads * frames * (frames - 1)
+    )
+
+
+def test_exact_chunked_cfi_matches_dense_off_diagonal_formula():
+    torch.manual_seed(41)
+    frames, spatial, heads, dim = 7, 11, 3, 8
+    q = torch.randn((1, heads, frames * spatial, dim))
+    k = torch.randn_like(q)
+    expected = _dense_off_diagonal_cfi(q, k, frames, spatial)
+    actual, chunk, workspace = exact_chunked_cfi(
+        q,
+        k,
+        frames=frames,
+        spatial_tokens=spatial,
+        max_workspace_mib=4,
+    )
+    assert torch.allclose(actual, expected, atol=1e-7, rtol=1e-6)
+    assert 1 <= chunk <= spatial
+    assert workspace <= 4 * 1024 * 1024
+
+
+def test_chunk_size_does_not_change_cfi():
+    torch.manual_seed(42)
+    frames, spatial, heads, dim = 9, 97, 4, 16
+    q = torch.randn((1, heads, frames * spatial, dim))
+    k = torch.randn_like(q)
+    small, *_ = exact_chunked_cfi(
+        q, k, frames=frames, spatial_tokens=spatial, max_workspace_mib=4
+    )
+    large, *_ = exact_chunked_cfi(
+        q, k, frames=frames, spatial_tokens=spatial, max_workspace_mib=64
+    )
+    assert torch.allclose(small, large, atol=1e-7, rtol=1e-6)
+
+
+def test_time_major_reshape_tracks_each_spatial_position_across_frames():
+    frames, spatial, heads, dim = 3, 2, 1, 2
+    q = torch.zeros((1, heads, frames * spatial, dim))
+    k = torch.zeros_like(q)
+    # Time-major rows are [t0s0,t0s1,t1s0,t1s1,t2s0,t2s1].
+    for time in range(frames):
+        q[0, 0, time * spatial + 0] = torch.tensor([float(time + 1), 0.0])
+        k[0, 0, time * spatial + 0] = torch.tensor([float(time + 1), 0.0])
+        q[0, 0, time * spatial + 1] = torch.tensor([0.0, float(time + 1)])
+        k[0, 0, time * spatial + 1] = torch.tensor([0.0, float(time + 1)])
+    actual, *_ = exact_chunked_cfi(
+        q, k, frames=frames, spatial_tokens=spatial, max_workspace_mib=4
+    )
+    expected = _dense_off_diagonal_cfi(q, k, frames, spatial)
+    assert torch.allclose(actual, expected, atol=1e-7, rtol=1e-6)
+
+
+def test_attention_router_scales_only_target_video_rows(monkeypatch):
+    seq_len, audio_start, audio_end, video_start, video_end = 12, 4, 6, 6, 12
+    frames, spatial, heads, dim = 3, 2, 1, 2
+    q = torch.randn((1, heads, seq_len, dim))
+    k = torch.randn_like(q)
+    v = torch.randn_like(q)
+    baseline = torch.arange(seq_len * 4, dtype=torch.float32).reshape(1, seq_len, 4)
+
+    delegated = []
+
+    def delegate(*_args, **_kwargs):
+        value = baseline.clone()
+        delegated.append(value)
+        return value
+
+    monkeypatch.setattr(eav_module.attention_module, "optimized_attention", delegate)
+    runtime = EAVRuntime({"mode": "apply_exp"})
+    route = {
+        "seq_len": seq_len,
+        "audio_start": audio_start,
+        "audio_end": audio_end,
+        "video_start": video_start,
+        "video_end": video_end,
+        "frames": frames,
+        "spatial_tokens": spatial,
+        "active": True,
+        "max_workspace_mib": 4,
+        "tau": 4.0,
+        "g_hard_limit": 3.0,
+        "runtime": runtime,
+        "forward_index": runtime.begin_forward(
+            sigma_video=0.5,
+            progress_video=0.5,
+            route={
+                "active": True,
+                "frames": frames,
+                "spatial_tokens": spatial,
+                "seq_len": seq_len,
+                "audio_start": audio_start,
+                "audio_end": audio_end,
+                "video_start": video_start,
+                "video_end": video_end,
+            },
+        ),
+        "mode": "apply_exp",
+    }
+    output = route_eav_attention(
+        q,
+        k,
+        v,
+        heads,
+        skip_reshape=True,
+        transformer_options={eav_module.EAV_RUNTIME_KEY: route},
+    )
+    assert output is delegated[0]
+    assert torch.equal(output[:, :video_start], baseline[:, :video_start])
+    assert torch.equal(output[:, audio_start:audio_end], baseline[:, audio_start:audio_end])
+    assert not torch.equal(output[:, video_start:video_end], baseline[:, video_start:video_end])
+
+
+def test_report_only_is_output_identity(monkeypatch):
+    seq_len, frames, spatial, heads, dim = 12, 3, 2, 1, 2
+    q = torch.randn((1, heads, seq_len, dim))
+    k = torch.randn_like(q)
+    baseline = torch.randn((1, seq_len, 4))
+    monkeypatch.setattr(
+        eav_module.attention_module,
+        "optimized_attention",
+        lambda *_args, **_kwargs: baseline,
+    )
+    runtime = EAVRuntime({"mode": "report_only"})
+    base_route = {
+        "active": True,
+        "frames": frames,
+        "spatial_tokens": spatial,
+        "seq_len": seq_len,
+        "audio_start": 4,
+        "audio_end": 6,
+        "video_start": 6,
+        "video_end": 12,
+    }
+    route = {
+        **base_route,
+        "max_workspace_mib": 4,
+        "tau": 4.0,
+        "g_hard_limit": 3.0,
+        "runtime": runtime,
+        "forward_index": runtime.begin_forward(
+            sigma_video=0.5, progress_video=0.5, route=base_route
+        ),
+        "mode": "report_only",
+    }
+    output = route_eav_attention(
+        q,
+        k,
+        torch.randn_like(q),
+        heads,
+        skip_reshape=True,
+        transformer_options={eav_module.EAV_RUNTIME_KEY: route},
+    )
+    assert output is baseline
+
+
+def test_runtime_route_accepts_stable_visual_tasks_and_uses_final_video_grid():
+    text_len, frames, height, width, audio_t = 8, 7, 8, 10, 12
+    x = [
+        torch.zeros((1, 24, frames, height, width)),
+        torch.zeros((1, 32, 2, audio_t)),
+    ]
+    latent = torch.zeros((1, 24, 1, height, width))
+    tasks = {
+        "T2VA": [],
+        "I2VA": [{"resolved_frame_index": 0, "latent": latent}],
+        "L2VA": [{"resolved_frame_index": 21, "latent": latent}],
+        "FL2VA": [
+            {"resolved_frame_index": 0, "latent": latent},
+            {"resolved_frame_index": 21, "latent": latent},
+        ],
+    }
+    for expected_task, keyframes in tasks.items():
+        layout = build_packed_layout(
+            text_len, frames, height, width, audio_t, keyframes=keyframes
+        )
+        route = _runtime_route(
+            x=x,
+            timestep=torch.tensor([500.0]),
+            context=torch.zeros((1, text_len, 4)),
+            payload={"layout": layout, "keyframes": keyframes, "refs": []},
+            denoise_mask=None,
+            audio_denoise_mask=None,
+            start_progress=0.0,
+            end_progress=1.0,
+        )
+        assert route["task"] == expected_task
+        assert route["frames"] == frames
+        assert route["spatial_tokens"] == (height // 2) * (width // 2)
+        assert route["audio_end"] == route["video_start"]
+        assert route["video_end"] == layout.seq_len
+
+    bad_keyframes = [{"resolved_frame_index": 10, "latent": latent}]
+    bad_layout = build_packed_layout(
+        text_len, frames, height, width, audio_t, keyframes=bad_keyframes
+    )
+    with pytest.raises(RuntimeError, match="positions"):
+        _runtime_route(
+            x=x,
+            timestep=torch.tensor([500.0]),
+            context=torch.zeros((1, text_len, 4)),
+            payload={"layout": bad_layout, "keyframes": bad_keyframes, "refs": []},
+            denoise_mask=None,
+            audio_denoise_mask=None,
+            start_progress=0.0,
+            end_progress=1.0,
+        )
+
+    plain_layout = build_packed_layout(text_len, frames, height, width, audio_t)
+    with pytest.raises(RuntimeError, match="Ref2VA/Hybrid"):
+        _runtime_route(
+            x=x,
+            timestep=torch.tensor([500.0]),
+            context=torch.zeros((1, text_len, 4)),
+            payload={"layout": plain_layout, "keyframes": [], "refs": [object()]},
+            denoise_mask=None,
+            audio_denoise_mask=None,
+            start_progress=0.0,
+            end_progress=1.0,
+        )
+
+
+def test_disabled_returns_exact_original_model_and_tau_zero_is_not_used_as_off_switch():
+    model = object()
+    returned, runtime, report_json = build_eav_model(
+        model,
+        _stock20_sigmas(),
+        mode="disabled",
+        tau=0.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+    )
+    assert returned is model
+    assert isinstance(runtime, EAVRuntime)
+    report = json.loads(report_json)
+    assert any("tau=0 is not an off switch" in note for note in report["notes"])
+
+
+def test_stock20_and_model_conflicts_fail_closed(monkeypatch):
+    _validate_stock20_sigmas(_stock20_sigmas())
+    with pytest.raises(ValueError, match="21 sigma"):
+        _validate_stock20_sigmas(torch.linspace(1.0, 0.0, 9))
+
+    _allow_fixture_core(monkeypatch)
+    model = _model_patcher()
+    model.model_options["transformer_options"]["optimized_attention_override"] = object()
+    with pytest.raises(RuntimeError, match="attention override"):
+        build_eav_model(
+            model,
+            _stock20_sigmas(),
+            mode="apply_exp",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+        )
+
+
+def test_turbo8_requires_exact_alpha8_bypass_contract(monkeypatch):
+    _allow_fixture_core(monkeypatch)
+    model = _add_alpha8_bypass(_model_patcher())
+    patched, _runtime, report_json = build_eav_model(
+        model,
+        _turbo8_sigmas(),
+        mode="report_only",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+        sampling_profile="turbo8_alpha8",
+    )
+    assert patched is not model
+    report = json.loads(report_json)
+    assert report["sigma_contract"]["nfe"] == 8
+    assert report["turbo_contract"]["hook_count"] == 208
+    assert report["turbo_contract"]["strength_min"] == pytest.approx(1.0)
+
+    with pytest.raises(RuntimeError, match="208-module"):
+        build_eav_model(
+            _add_alpha8_bypass(_model_patcher(), hook_count=207),
+            _turbo8_sigmas(),
+            mode="apply_exp",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+            sampling_profile="turbo8_alpha8",
+        )
+    with pytest.raises(RuntimeError, match="strength 1.0"):
+        build_eav_model(
+            _add_alpha8_bypass(_model_patcher(), strength=0.75),
+            _turbo8_sigmas(),
+            mode="apply_exp",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+            sampling_profile="turbo8_alpha8",
+        )
+
+
+def test_runtime_audit_requires_20_forwards_and_50_blocks_each():
+    runtime = EAVRuntime(
+        {
+            "mode": "apply_exp",
+            "sampling_profile": "stock20",
+            "sigma_contract": {"nfe": 20},
+        }
+    )
+    route = {
+        "active": True,
+        "frames": 37,
+        "spatial_tokens": 299,
+        "seq_len": 12000,
+        "audio_start": 500,
+        "audio_end": 914,
+        "video_start": 914,
+        "video_end": 12000,
+        "task": "T2VA",
+    }
+    for index in range(20):
+        forward = runtime.begin_forward(
+            sigma_video=1.0 - index / 20,
+            progress_video=index / 20,
+            route=route,
+        )
+        for _ in range(50):
+            runtime.record(forward, g=1.1, cfi=0.02, chunk_rows=8, workspace=1024)
+    latent = {"samples": torch.zeros(1)}
+    returned, report_json = finalize_eav_runtime(latent, runtime)
+    assert returned is latent
+    report = json.loads(report_json)
+    assert report["status"] == "apply_exp_verified"
+    assert report["g_min"] == pytest.approx(1.1)
+    assert report["attention_measurement_count"] == 1000
+    assert len(report["forwards"]) == 20
+    assert report["forwards"][0]["attention_count"] == 50
+    assert report["forwards"][0]["task"] == "T2VA"
+    assert "g_values" not in report["forwards"][0]
+
+
+def test_frontend_workflow_is_stock20_t2va_opt_in_and_link_consistent():
+    path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "07-motion-detail"
+        / "2026-08-21_H3_Enhance_A_Video_FETA_Stock20_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    by_type = {node["type"]: node for node in workflow["nodes"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert sum(node["type"] == "MarkdownNote" for node in nodes.values()) == 3
+    assert "LoraLoaderBypassModelOnly" not in by_type
+    assert "MiniMaxH3PromptRelayConditioningT8Advanced" not in by_type
+
+    conditioning = by_type["MiniMaxH3AudioConditioningT8"]
+    dual = by_type["MiniMaxH3DualClockSamplerT8"]
+    eav = by_type["MiniMaxH3EnhanceAVideoT8Advanced"]
+    audit = by_type["MiniMaxH3EnhanceAVideoAuditT8Advanced"]
+    assert conditioning["widgets_values"][1:5] == [1152, 640, 124, "T2VA"]
+    assert dual["widgets_values"] == [
+        20,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+    ]
+    assert eav["widgets_values"] == [
+        "apply_exp",
+        4.0,
+        0.0,
+        1.0,
+        32,
+        1.5,
+        "stock20",
+    ]
+
+    links = {link[0]: link for link in workflow["links"]}
+
+    def source_for_input(node, name):
+        item = next(value for value in node["inputs"] if value["name"] == name)
+        link = links[item["link"]]
+        return nodes[link[1]], link[2]
+
+    assert source_for_input(eav, "model") == (dual, 0)
+    assert source_for_input(eav, "sigmas") == (dual, 2)
+    assert source_for_input(audit, "runtime") == (eav, 1)
+    for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type
+
+
+@pytest.mark.parametrize(
+    ("filename", "task", "profile", "first_image", "last_image", "steps"),
+    [
+        (
+            "2026-08-21_H3_Enhance_A_Video_FETA_I2VA_Stock20_Advanced_EXP.json",
+            "I2VA",
+            "stock20",
+            True,
+            False,
+            20,
+        ),
+        (
+            "2026-08-21_H3_Enhance_A_Video_FETA_FL2VA_Stock20_Advanced_EXP.json",
+            "FL2VA",
+            "stock20",
+            True,
+            True,
+            20,
+        ),
+        (
+            "2026-08-21_H3_Enhance_A_Video_FETA_L2VA_Stock20_Advanced_EXP.json",
+            "L2VA",
+            "stock20",
+            False,
+            True,
+            20,
+        ),
+        (
+            "2026-08-21_H3_Enhance_A_Video_FETA_T2VA_Turbo8_Advanced_EXP.json",
+            "T2VA",
+            "turbo8_alpha8",
+            False,
+            False,
+            8,
+        ),
+    ],
+)
+def test_extended_eav_workflows_are_importable_and_strictly_wired(
+    filename, task, profile, first_image, last_image, steps
+):
+    path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "07-motion-detail"
+        / filename
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    by_type = {}
+    for node in workflow["nodes"]:
+        by_type.setdefault(node["type"], []).append(node)
+    links = {link[0]: link for link in workflow["links"]}
+    conditioning = by_type["MiniMaxH3AudioConditioningT8"][0]
+    dual = by_type["MiniMaxH3DualClockSamplerT8"][0]
+    eav = by_type["MiniMaxH3EnhanceAVideoT8Advanced"][0]
+    assert conditioning["widgets_values"][1:5] == [1152, 640, 124, task]
+    assert dual["widgets_values"] == [
+        steps,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+    ]
+    assert eav["widgets_values"][-1] == profile
+    assert len(by_type.get("LoadImage", [])) == int(first_image) + int(last_image)
+    assert bool(conditioning["inputs"][17]["link"] is not None) is first_image
+    assert bool(conditioning["inputs"][18]["link"] is not None) is last_image
+    assert len(by_type.get("MarkdownNote", [])) == 3
+
+    loras = by_type.get("LoraLoaderBypassModelOnly", [])
+    if profile == "turbo8_alpha8":
+        assert len(loras) == 1
+        assert loras[0]["widgets_values"] == [
+            "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+            1.0,
+        ]
+        dual_model_link = links[dual["inputs"][0]["link"]]
+        assert dual_model_link[1] == loras[0]["id"]
+    else:
+        assert not loras
+
+    for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type

@@ -5,8 +5,9 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.36.2 checkpoint repairs partial-start audio-clock initialization in the custom
-dual-clock sampler and restores the native learned-I2VA graph's pass-2 audio completion. It is
+The current 1.37.0 checkpoint appends the isolated Enhance-A-Video / FETA Advanced experiment while
+preserving the 1.36.2 partial-start audio-clock repair and native learned-I2VA pass-2 audio completion.
+It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
 `0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a`. The preceding Qwen-cache/H3 compatibility probe ran
@@ -14,6 +15,26 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.37.0 Enhance-A-Video / FETA Advanced experiment (2026-08-21)
+
+Two append-only Advanced nodes adapt the temporal cross-frame intensity equation from
+Enhance-A-Video (`arXiv:2502.07508v3`) to MiniMax H3 full-3D packed attention. The implementation
+uses target-video Q/K only, computes exact temporal CFI in bounded spatial chunks, delegates the
+actual attention calculation to the already selected backend, and directly scales only the fresh
+target-video output slice. Target audio is never directly scaled, but later joint-AV blocks can
+still alter it indirectly.
+
+Controlled 1152x640x124 pairs cover Stock20 T2VA, I2VA, FL2VA and L2VA plus strict corrected-Alpha8
+Turbo8 T2VA. Every accepted output is 124 frames at 24fps with finite 32kHz stereo audio and passed
+three strict FFmpeg decode attempts. Active Stock20 routes observed 20x50 block measurements and the
+Turbo8 route observed 8x50. Removing an unnecessary full packed-output clone produced decode-exact
+equivalence on the repeated I2VA seed, but its whole-device headroom still fell to about 271MiB.
+
+The release conclusion is deliberately bounded: mechanical and media contracts pass, while stable
+visual superiority, audio non-inferiority and general 16GiB safety remain unproven. Ref2VA/Hybrid,
+Prompt Relay, Sage object patches, BlockCache, STG, Long Video, ordinary LoRA, interior keyframes and
+denoise masks remain fail-closed until explicit composers receive separate controlled validation.
 
 ## 1.36.2 learned two-pass partial audio-clock repair (2026-08-21)
 

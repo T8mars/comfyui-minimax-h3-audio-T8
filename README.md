@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.36.2** · 节点 140 个 · GPL-3.0-or-later
+当前版本：**1.37.0** · 节点 142 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -55,7 +55,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `04-long-video` | 分段生成、长视频、断点恢复和拼接 |
 | `05-speech-dialogue` | 单人语音、对白、演绎和 ADR（实验） |
 | `06-face-refine` | 单人/多人脸部修复与 SAM3.1 追踪（实验） |
-| `07-motion-detail` | 动态细节、尾段采样和质量对照（实验） |
+| `07-motion-detail` | 动态细节、尾段采样、FETA 时序注意力增强和质量对照（实验） |
 | `08-multi-keyframe` | 中间关键帧和关键帧计划（实验） |
 | `09-hybrid-model` | FL2VA/Ref2VA 混合模型研究（实验） |
 | `10-speed` | SPEED 多分辨率采样研究（实验） |
@@ -107,6 +107,7 @@ models/face_detection/checkpoints
 - 常用帧数遵循 H3 的网格约束，例如 22、124、362；不要只按“秒数”猜可用帧数。
 - 16GB 显卡不要默认视为所有任务安全。先用较小画布/短片段通过预检，再逐步增加规模。
 - SPEED、Prompt Relay、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
+- Enhance-A-Video / FETA 节点按论文公式从目标视频 Q/K 计算跨帧 CFI，只直接增强目标视频 attention 输出。Advanced EXP 当前支持 Stock20 的 T2VA / I2VA / FL2VA / L2VA，以及严格限定的修正 Alpha8 Turbo8 T2VA；五类 0.7MP 实测均通过机械与媒体合同，但没有证明稳定画质提升，部分路线会明显改变联合音频，且 16GB 余量很窄，因此不作为默认推荐。
 - Prompt Relay 与 Turbo8 组合时，连接顺序必须是 `UNET → Prompt Relay Conditioning → 修正 Alpha8 Bypass LoRA → DualClock Sampler`；把 LoRA 接在 Relay 前面会被主动拒绝。
 - Prompt Relay 需要保留输入原声时使用 `lock_source`，并把节点的 `mux_audio` 接到最终保存节点；`native/remix/reference_only`仍可能因 H3 联合 AV Transformer 而改变声音。
 - Prompt Relay 默认 `video_only_paper` 不改变旧工作流；只有显式插入 `Query Route`并选择`joint_av_exp`，才会把局部事件时间扩展到目标音频。该模式是H3实验扩展，不是论文已验证能力。

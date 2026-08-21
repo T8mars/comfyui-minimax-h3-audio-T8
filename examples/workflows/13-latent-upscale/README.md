@@ -5,6 +5,10 @@
 ## 工作流
 
 - `2026-08-19_H3_Learned_Latent_TwoPass_I2VA_Advanced_EXP.json`：I2VA按公开原版schedule执行低分辨率4步、学习型latent放大、高分辨率3步；二采专用Mixer默认旁路，可显式开启Tail/Bias/STG/Restart。
+- `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Lock_Source_Advanced_EXP.json`：清晰语音`lock_source`，LOW/HIGH均连接同一drive audio，最终保存必须接HIGH Conditioning的`mux_audio`。
+- `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Remix_Source_020_Advanced_EXP.json`：清晰语音`remix_source=0.20`，保留源节奏并由模型重混，最终保存AV Decode生成音频。
+- `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Reference_Only_Advanced_EXP.json`：源音频只作为`<Audio 1>`节奏/语速参考，目标声音重新生成，最终保存AV Decode音频。
+- `2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Native_Speech_Advanced_EXP.json`：不连接源音频的native语音基线，LOW/HIGH提示词相同并由pass 2完成联合AV。
 - `2026-08-16_H3_Latent_Upscale_By32.json`：普通插值latent放大，只负责32像素整除和画幅误差报告，不创造学习型细节。
 
 ## 模型与成果
@@ -56,5 +60,7 @@ Conditioning宽高，无需维护第二套尺寸。任务626.969秒完成，输�
 
 2026-08-21同prompt/seed/model/4+3 NFE检查中，Comfy原生`ModelSamplingAV + Euler`输出与修正后的
 T8自定义双时钟输出均由用户完整试听确认为声音正常；二者解码PCM相关约`0.9491`。此前第一阶段audio
-零mask硬锁版本由用户明确判定声音异常，已撤销为默认。这个结论只覆盖当前native I2VA样本，不能外推到
-`lock_source`、`remix_source`、`reference_only`或含对白的通用口型质量。
+零mask硬锁版本由用户明确判定声音异常，已撤销为默认。随后同一正脸首帧、5.152秒LibriSpeech语音、
+seed `2608215001`和相同4+3路线分别完成`lock_source`、`remix_source=0.20`、`reference_only`与native
+清晰语音生成；四条完整成片均由用户试听/观看后审核通过。上述四个保存工作流固定该次连线和参数，
+但结论仍只覆盖单图、单语音、单seed、单模型和单评审，不能外推为通用音素同步、音色保持或16GB保证。

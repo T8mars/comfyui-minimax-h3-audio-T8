@@ -44,6 +44,7 @@ from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av
 from .conditioning import build_conditioning
 from .nodes_dialogue_audio_exp import DIALOGUE_AUDIO_NODE_CLASSES
 from .nodes_environment_audit_advanced import ENVIRONMENT_AUDIT_ADVANCED_NODE_CLASSES
+from .nodes_enhance_a_video_advanced import ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_advanced import FACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_parity_advanced import FACE_REFINE_PARITY_ADVANCED_NODE_CLASSES
 from .nodes_multiface_refine_advanced import MULTIFACE_REFINE_ADVANCED_NODE_CLASSES
@@ -475,7 +476,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *PROMPT_RELAY_PACKET_ADVANCED_NODE_CLASSES,
                 *PROMPT_RELAY_PREVIEW_ADVANCED_NODE_CLASSES,
                 *PROMPT_RELAY_RESOURCE_ESTIMATE_ADVANCED_NODE_CLASSES,
-                *LEARNED_LATENT_AUDIO_AUDIT_ADVANCED_NODE_CLASSES]
+                *LEARNED_LATENT_AUDIO_AUDIT_ADVANCED_NODE_CLASSES,
+                *ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES]
 
 
 def comfy_entrypoint():
