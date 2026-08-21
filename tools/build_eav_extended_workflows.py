@@ -157,6 +157,7 @@ def _set_orders(workflow: dict) -> None:
         "MiniMaxH3DualClockSamplerT8": 8,
         "MiniMaxH3EnhanceAVideoT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced": 9,
+        "MiniMaxH3EnhanceAVideoSageComposerT8Advanced": 9,
         "RandomNoise": 10,
         "BasicGuider": 11,
         "SamplerCustomAdvanced": 12,
@@ -276,6 +277,70 @@ def build(task: str, profile: str) -> tuple[str, dict]:
     return filename, workflow
 
 
+def build_strict_sage_workflow() -> tuple[str, dict]:
+    filename, workflow = build("T2VA", "stock20")
+    eav = _node(workflow, 13)
+    eav["type"] = "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
+    eav["title"] = "EAV/FETA tau4 + Strict Sage HND · T2VA · Stock20"
+    eav["size"] = [560, 440]
+    eav["properties"]["Node name for S&R"] = eav["type"]
+    eav["inputs"].insert(
+        2,
+        {
+            "name": "task_scope",
+            "type": "COMBO",
+            "widget": {"name": "task_scope"},
+            "link": None,
+        },
+    )
+    eav["widgets_values"].insert(0, "visual")
+    save = _node(workflow, 12)
+    save["widgets_values"]["filename_prefix"] = (
+        "MiniMaxH3_EAV/eav_strict_sage_t2va_stock20_tau4_exp"
+    )
+    notes = sorted(
+        (node for node in workflow["nodes"] if node["type"] == "MarkdownNote"),
+        key=lambda node: node["id"],
+    )
+    notes[0]["title"] = "① Strict Sage 正确接法"
+    notes[0]["widgets_values"] = (
+        "## 只使用这一个组合节点\n\n不要再串 KJNodes 的 MiniMax H3 Sage Patch、全局"
+        "attention override、BlockCache 或 STG。本节点同时拥有 FETA 路由和严格 Sage HND 后端；"
+        "Runtime Audit 必须显示20次forward、每次50个FETA测量，并且每次50个成功Sage调用、"
+        "failure=0、fallback=0。"
+    )
+    notes[1]["title"] = "② 模式、范围与 A/B"
+    notes[1]["widgets_values"] = (
+        "## 参数\n\n`task_scope=visual`支持T2VA/I2VA/FL2VA/L2VA；参考任务请显式改为"
+        "`reference`且只用Stock20。`disabled`完全旁路Sage和FETA；`report_only`仍运行Sage、"
+        "只关闭FETA增益；`apply_exp`同时运行两者。比较时固定素材、prompt、seed、尺寸和NFE。"
+    )
+    notes[2]["title"] = "③ 科学边界与显存"
+    notes[2]["widgets_values"] = (
+        "## 当前结论\n\n该节点不会像ComfyUI原生Sage那样在内核异常时静默回退，失败会直接停止。"
+        "本机一条1152×640×124、Stock20实测命中20×50次FETA测量和20×50次Sage调用，"
+        "failure=0、fallback=0，并通过三轮严格音视频解码；这不保证比原生attention更快、"
+        "更省显存或画质更好。FETA只直接缩放目标视频行，但H3是联合AV Transformer，音频仍可能"
+        "间接变化，必须看片并试听。"
+    )
+    workflow["extra"]["t8_enhance_a_video"] = {
+        "scope": "T2VA Stock20 EAV plus Strict Sage Advanced EXP",
+        "paper": "Enhance-A-Video arXiv:2502.07508v3",
+        "attention_backend": "sageattention.sageattn HND no fallback",
+        "canvas": "1152x640x124",
+        "validation_status": (
+            "one real 1152x640x124 Stock20 run passed 20x50 FETA measurements, "
+            "20x50 strict Sage calls, zero failures/fallbacks and three strict AV decodes"
+        ),
+        "quality_status": "quality_speed_memory_audio_claims_false",
+    }
+    _set_orders(workflow)
+    return (
+        "2026-08-21_H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20_Advanced_EXP.json",
+        workflow,
+    )
+
+
 def main() -> None:
     BASE_WORKFLOW = json.loads(BASE.read_text(encoding="utf-8"))
     base_conditioning = _node(BASE_WORKFLOW, 6)
@@ -302,6 +367,12 @@ def main() -> None:
         (WORKFLOW_DIR / filename).write_text(
             json.dumps(workflow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
+
+    sage_filename, sage_workflow = build_strict_sage_workflow()
+    (WORKFLOW_DIR / sage_filename).write_text(
+        json.dumps(sage_workflow, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     INSTALLED.mkdir(parents=True, exist_ok=True)
     for path in sorted(WORKFLOW_DIR.glob("*.json")):

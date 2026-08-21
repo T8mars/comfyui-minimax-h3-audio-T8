@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 143
+    assert len(ids) == 144
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -333,12 +333,13 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert schemas[139].is_experimental is True
     assert schemas[139].is_output_node is True
     assert schemas[139].category == "T8/MiniMax H3/Latent/Experimental"
-    assert ids[140:143] == [
+    assert ids[140:144] == [
         "MiniMaxH3EnhanceAVideoT8Advanced",
         "MiniMaxH3EnhanceAVideoAuditT8Advanced",
         "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
+        "MiniMaxH3EnhanceAVideoSageComposerT8Advanced",
     ]
-    for eav_schema in schemas[140:143]:
+    for eav_schema in schemas[140:144]:
         assert eav_schema.is_experimental is True
         assert eav_schema.category == "T8/MiniMax H3/Quality/Experimental"
     assert schemas[138].is_output_node is True

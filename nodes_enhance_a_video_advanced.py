@@ -5,6 +5,7 @@ from comfy_api.latest import io
 from .enhance_a_video_advanced import (
     EAV_MODES,
     EAV_RUNTIME_TYPE,
+    EAV_SAGE_TASK_SCOPES,
     EAV_SAMPLING_PROFILES,
     build_eav_model,
     finalize_eav_runtime,
@@ -244,8 +245,139 @@ class MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced(io.ComfyNode):
         )
 
 
+class MiniMaxH3EnhanceAVideoSageComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoSageComposerT8Advanced",
+            display_name="MiniMax H3 Enhance-A-Video + Strict Sage (Advanced EXP)",
+            description=(
+                "Owns both the H3 FETA route and a strict SageAttention HND backend. "
+                "It refuses external Sage object patches and never silently falls back to "
+                "PyTorch attention. Use this node instead of stacking the standalone EAV "
+                "node with a third-party MiniMax H3 Sage patch."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect a native H3 model with no attention/object/block patch. "
+                        "For turbo8_alpha8, apply only the corrected 208-module Alpha8 "
+                        "bypass LoRA before this node."
+                    ),
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact SIGMAS sent to the sampler.",
+                ),
+                io.Combo.Input(
+                    "task_scope",
+                    options=list(EAV_SAGE_TASK_SCOPES),
+                    default="visual",
+                    tooltip=(
+                        "visual: T2VA/I2VA/FL2VA/L2VA. reference: Ref2VA/Hybrid and "
+                        "Stock20 only. Scope is explicit so task routing cannot silently drift."
+                    ),
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled returns the original model and runs neither Sage nor FETA. "
+                        "report_only still runs Sage but does not apply the FETA gain. "
+                        "apply_exp runs both."
+                    ),
+                ),
+                io.Float.Input(
+                    "tau",
+                    default=4.0,
+                    min=-32.0,
+                    max=32.0,
+                    step=0.25,
+                    tooltip="Experimental FETA weight; 4 is a candidate, not an H3 optimum.",
+                ),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer budget only; not a whole-workflow VRAM claim.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Combo.Input(
+                    "sampling_profile",
+                    options=list(EAV_SAMPLING_PROFILES),
+                    default="stock20",
+                    tooltip=(
+                        "reference scope is intentionally Stock20-only. visual scope also "
+                        "accepts the audited corrected Alpha8 Turbo8 path."
+                    ),
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        task_scope = str(kwargs.pop("task_scope"))
+        sampling_profile = str(kwargs.get("sampling_profile", "stock20"))
+        if task_scope == "visual":
+            allowed_tasks = ("T2VA", "I2VA", "FL2VA", "L2VA")
+            allow_reference_blocks = False
+        elif task_scope == "reference":
+            if sampling_profile != "stock20":
+                raise ValueError(
+                    "H3 EAV + Strict Sage reference scope currently requires stock20"
+                )
+            allowed_tasks = ("Ref2VA", "Hybrid")
+            allow_reference_blocks = True
+        else:
+            raise ValueError(f"Unknown H3 EAV + Strict Sage task scope {task_scope!r}")
+        return io.NodeOutput(
+            *build_eav_model(
+                **kwargs,
+                allowed_tasks=allowed_tasks,
+                allow_reference_blocks=allow_reference_blocks,
+                composer_profile=f"strict_sage_{task_scope}_v1",
+                attention_backend="strict_sage_hnd",
+            )
+        )
+
 ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES = [
     MiniMaxH3EnhanceAVideoT8Advanced,
     MiniMaxH3EnhanceAVideoAuditT8Advanced,
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoSageComposerT8Advanced,
 ]

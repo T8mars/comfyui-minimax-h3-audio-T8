@@ -1,6 +1,6 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.38.2",
+  "version": "1.39.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-08-21",
@@ -12,6 +12,7 @@
   "python": "3.10+",
   "external_runtime_dependencies": [],
   "optional_runtime_dependencies": [
+    "sageattention for the opt-in Enhance-A-Video + Strict Sage Advanced EXP composer; stable and disabled routes do not require it",
     "faster-whisper with a local multilingual CTranslate2 model for ASR verification/alignment",
     "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting",
     "OpenCV with FaceDetectorYN plus the pinned local YuNet 2023mar ONNX file for the default real-person Face Refine detector; no runtime download",

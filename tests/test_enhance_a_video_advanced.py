@@ -21,8 +21,12 @@ from h3_audio_t8_pkg.enhance_a_video_advanced import (
 )
 from h3_audio_t8_pkg.nodes_enhance_a_video_advanced import (
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoSageComposerT8Advanced,
 )
 from h3_audio_t8_pkg.tools.build_eav_reference_probe_prompts import build_prompt
+from h3_audio_t8_pkg.tools.build_eav_sage_probe_prompt import (
+    build_prompt as build_sage_prompt,
+)
 from comfy.model_patcher import ModelPatcher
 from comfy.patcher_extension import PatcherInjection
 from comfy.weight_adapter.bypass import BypassInjectionManager
@@ -250,6 +254,88 @@ def test_report_only_is_output_identity(monkeypatch):
     assert output is baseline
 
 
+def test_strict_sage_router_is_authoritative_and_audited(monkeypatch):
+    seq_len, frames, spatial, heads, dim = 12, 3, 2, 1, 2
+    q = torch.randn((1, heads, seq_len, dim))
+    k = torch.randn_like(q)
+    v = torch.randn_like(q)
+    baseline = torch.randn((1, seq_len, heads * dim))
+    calls = []
+
+    def strict_backend(*_args, **kwargs):
+        calls.append(kwargs)
+        return baseline
+
+    monkeypatch.setattr(eav_module, "_strict_sage_attention", strict_backend)
+    monkeypatch.setattr(
+        eav_module.attention_module,
+        "optimized_attention",
+        lambda *_args, **_kwargs: pytest.fail("native backend must not run"),
+    )
+    runtime = EAVRuntime({"mode": "report_only", "attention_backend": "strict_sage_hnd"})
+    base_route = {
+        "active": True,
+        "frames": frames,
+        "spatial_tokens": spatial,
+        "seq_len": seq_len,
+        "audio_start": 4,
+        "audio_end": 6,
+        "video_start": 6,
+        "video_end": 12,
+    }
+    route = {
+        **base_route,
+        "attention_backend": "strict_sage_hnd",
+        "max_workspace_mib": 4,
+        "tau": 4.0,
+        "g_hard_limit": 3.0,
+        "runtime": runtime,
+        "forward_index": runtime.begin_forward(
+            sigma_video=0.5, progress_video=0.5, route=base_route
+        ),
+        "mode": "report_only",
+    }
+    output = route_eav_attention(
+        q,
+        k,
+        v,
+        heads,
+        skip_reshape=True,
+        transformer_options={eav_module.EAV_RUNTIME_KEY: route},
+    )
+    assert output is baseline
+    assert len(calls) == 1
+    report = runtime.snapshot(consume=False)
+    assert report["strict_sage_call_count"] == 1
+    assert report["strict_sage_calls_per_forward"] == [1]
+    assert report["strict_sage_failure_count"] == 0
+    assert report["strict_sage_fallback_count"] == 0
+
+
+def test_strict_sage_rejects_non_native_tensor_contract_before_kernel():
+    q = torch.zeros((1, 1, 4, 8), dtype=torch.float16)
+    with pytest.raises(RuntimeError, match="one CUDA device"):
+        eav_module._strict_sage_attention(
+            q,
+            q,
+            q,
+            1,
+            mask=None,
+            skip_reshape=True,
+            skip_output_reshape=False,
+        )
+    with pytest.raises(RuntimeError, match="HND input/output"):
+        eav_module._strict_sage_attention(
+            q,
+            q,
+            q,
+            1,
+            mask=None,
+            skip_reshape=False,
+            skip_output_reshape=False,
+        )
+
+
 def test_runtime_route_accepts_stable_visual_tasks_and_uses_final_video_grid():
     text_len, frames, height, width, audio_t = 8, 7, 8, 10, 12
     x = [
@@ -445,6 +531,90 @@ def test_reference_composer_node_is_append_only_stock20_and_disabled_is_identity
     assert report["sampling_profile"] == "stock20"
 
 
+def test_strict_sage_composer_is_append_only_and_disabled_is_exact_identity(monkeypatch):
+    schema = MiniMaxH3EnhanceAVideoSageComposerT8Advanced.define_schema()
+    inputs = {item.id: item for item in schema.inputs}
+    assert schema.node_id == "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
+    assert schema.is_experimental is True
+    assert inputs["task_scope"].default == "visual"
+    assert inputs["sampling_profile"].default == "stock20"
+
+    monkeypatch.setattr(
+        eav_module,
+        "_strict_sage_contract",
+        lambda: pytest.fail("disabled must not inspect or load Sage"),
+    )
+    model = object()
+    output = MiniMaxH3EnhanceAVideoSageComposerT8Advanced.execute(
+        model=model,
+        sigmas=_stock20_sigmas(),
+        task_scope="visual",
+        mode="disabled",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+        sampling_profile="stock20",
+    )
+    returned_model, runtime, report_json = output.result
+    report = json.loads(report_json)
+    assert returned_model is model
+    assert isinstance(runtime, EAVRuntime)
+    assert report["attention_backend"] == "strict_sage_hnd"
+    assert report["task_scope"] == ["T2VA", "I2VA", "FL2VA", "L2VA"]
+    assert report["notes"][0].startswith("disabled returns the original MODEL")
+
+
+def test_strict_sage_composer_binds_audited_backend_and_rejects_reference_turbo(
+    monkeypatch,
+):
+    _allow_fixture_core(monkeypatch)
+    monkeypatch.setattr(
+        eav_module,
+        "_strict_sage_contract",
+        lambda: {
+            "backend": "sageattention.sageattn",
+            "package_version": "fixture",
+            "silent_fallback": False,
+        },
+    )
+    output = MiniMaxH3EnhanceAVideoSageComposerT8Advanced.execute(
+        model=_model_patcher(),
+        sigmas=_stock20_sigmas(),
+        task_scope="visual",
+        mode="report_only",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+        sampling_profile="stock20",
+    )
+    patched, _runtime, report_json = output.result
+    report = json.loads(report_json)
+    assert report["attention_backend"] == "strict_sage_hnd"
+    assert report["attention_backend_contract"]["silent_fallback"] is False
+    installed = patched.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    assert installed._t8_h3_eav_patch_version == eav_module.EAV_PATCH_VERSION
+
+    with pytest.raises(ValueError, match="reference scope currently requires stock20"):
+        MiniMaxH3EnhanceAVideoSageComposerT8Advanced.execute(
+            model=object(),
+            sigmas=_turbo8_sigmas(),
+            task_scope="reference",
+            mode="disabled",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+            sampling_profile="turbo8_alpha8",
+        )
+
+
 @pytest.mark.parametrize("task", ["Ref2VA", "Hybrid"])
 @pytest.mark.parametrize("mode", ["disabled", "apply_exp"])
 def test_reference_probe_prompts_are_same_seed_same_nfe_controlled_pairs(task, mode):
@@ -588,6 +758,43 @@ def test_runtime_audit_requires_20_forwards_and_50_blocks_each():
     assert "g_values" not in report["forwards"][0]
 
 
+def test_runtime_audit_requires_all_strict_sage_calls_without_fallback():
+    runtime = EAVRuntime(
+        {
+            "mode": "apply_exp",
+            "sampling_profile": "stock20",
+            "attention_backend": "strict_sage_hnd",
+            "sigma_contract": {"nfe": 20},
+        }
+    )
+    route = {
+        "active": True,
+        "frames": 37,
+        "spatial_tokens": 299,
+        "seq_len": 12000,
+        "audio_start": 500,
+        "audio_end": 914,
+        "video_start": 914,
+        "video_end": 12000,
+        "task": "T2VA",
+    }
+    for index in range(20):
+        forward = runtime.begin_forward(
+            sigma_video=1.0 - index / 20,
+            progress_video=index / 20,
+            route=route,
+        )
+        for _ in range(50):
+            runtime.record(forward, g=1.1, cfi=0.02, chunk_rows=8, workspace=1024)
+            runtime.record_strict_sage_call(forward)
+    _latent, report_json = finalize_eav_runtime({"samples": torch.zeros(1)}, runtime)
+    report = json.loads(report_json)
+    assert report["status"] == "apply_exp_verified"
+    assert report["strict_sage_call_count"] == 1000
+    assert report["strict_sage_calls_per_forward"] == [50] * 20
+    assert report["strict_sage_fallback_count"] == 0
+
+
 def test_frontend_workflow_is_stock20_t2va_opt_in_and_link_consistent():
     path = (
         __import__("pathlib").Path(__file__).resolve().parents[1]
@@ -642,6 +849,73 @@ def test_frontend_workflow_is_stock20_t2va_opt_in_and_link_consistent():
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
         assert nodes[source]["outputs"][output_slot]["type"] == link_type
         assert nodes[target]["inputs"][input_slot]["type"] == link_type
+
+
+def test_strict_sage_frontend_workflow_uses_one_composer_and_three_notes():
+    path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "07-motion-detail"
+        / "2026-08-21_H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    by_type = {node["type"]: node for node in workflow["nodes"]}
+    composer = by_type["MiniMaxH3EnhanceAVideoSageComposerT8Advanced"]
+    assert "MiniMaxH3EnhanceAVideoT8Advanced" not in by_type
+    assert "MiniMaxH3MemoryEfficientSageAttentionPatch" not in by_type
+    assert [item["name"] for item in composer["inputs"]] == [
+        "model",
+        "sigmas",
+        "task_scope",
+        "mode",
+        "tau",
+        "start_video_progress",
+        "end_video_progress",
+        "max_workspace_mib",
+        "g_hard_limit",
+        "sampling_profile",
+    ]
+    assert composer["widgets_values"] == [
+        "visual",
+        "apply_exp",
+        4.0,
+        0.0,
+        1.0,
+        32,
+        1.5,
+        "stock20",
+    ]
+    assert sum(node["type"] == "MarkdownNote" for node in nodes.values()) == 3
+    notes = "\n".join(
+        node["widgets_values"]
+        for node in nodes.values()
+        if node["type"] == "MarkdownNote"
+    )
+    assert "failure=0" in notes
+    assert "fallback=0" in notes
+    assert workflow["extra"]["t8_enhance_a_video"]["quality_status"].endswith(
+        "claims_false"
+    )
+
+
+def test_strict_sage_real_probe_is_same_seed_canvas_and_nfe_as_existing_t2va_pair():
+    graph = build_sage_prompt()
+    conditioning = graph["5"]["inputs"]
+    composer = graph["7"]
+    assert [conditioning[key] for key in ("width", "height", "length")] == [
+        1152,
+        640,
+        124,
+    ]
+    assert conditioning["task_type"] == "T2VA"
+    assert graph["6"]["inputs"]["steps"] == 20
+    assert graph["8"]["inputs"]["noise_seed"] == 2608217001
+    assert composer["class_type"] == "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
+    assert composer["inputs"]["task_scope"] == "visual"
+    assert composer["inputs"]["mode"] == "apply_exp"
+    assert composer["inputs"]["sampling_profile"] == "stock20"
 
 
 @pytest.mark.parametrize(

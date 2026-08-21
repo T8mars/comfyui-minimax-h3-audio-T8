@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import inspect
 import json
 import math
@@ -30,6 +31,8 @@ EAV_RUNTIME_KEY = "t8_h3_eav_runtime"
 EAV_WRAPPER_KEY = "t8_h3_eav_feta_v1"
 EAV_MODES = ("disabled", "report_only", "apply_exp")
 EAV_SAMPLING_PROFILES = ("stock20", "turbo8_alpha8")
+EAV_ATTENTION_BACKENDS = ("native_optimized", "strict_sage_hnd")
+EAV_SAGE_TASK_SCOPES = ("visual", "reference")
 EAV_VISUAL_TASKS = ("T2VA", "I2VA", "FL2VA", "L2VA")
 EAV_REFERENCE_TASKS = ("Ref2VA", "Hybrid")
 EAV_ALL_TASKS = EAV_VISUAL_TASKS + EAV_REFERENCE_TASKS
@@ -255,6 +258,8 @@ class EAVRuntime:
                 "cfi_values": [],
                 "chunk_rows": [],
                 "workspace_estimate_bytes": [],
+                "strict_sage_call_count": 0,
+                "strict_sage_failures": [],
             }
             self._forwards.append(forward)
             return int(forward["index"])
@@ -266,6 +271,18 @@ class EAVRuntime:
             forward["cfi_values"].append(float(cfi))
             forward["chunk_rows"].append(int(chunk_rows))
             forward["workspace_estimate_bytes"].append(int(workspace))
+
+    def record_strict_sage_call(self, forward_index: int):
+        with self._lock:
+            forward = self._forwards[int(forward_index)]
+            forward["strict_sage_call_count"] += 1
+
+    def record_strict_sage_failure(self, forward_index: int, exc: BaseException):
+        with self._lock:
+            forward = self._forwards[int(forward_index)]
+            forward["strict_sage_failures"].append(
+                f"{type(exc).__name__}: {exc}"
+            )
 
     def abort(self, exc: BaseException):
         with self._lock:
@@ -280,6 +297,7 @@ class EAVRuntime:
                 g_values = list(forward["g_values"])
                 cfi_values = list(forward["cfi_values"])
                 workspaces = list(forward["workspace_estimate_bytes"])
+                sage_failures = list(forward["strict_sage_failures"])
                 forwards.append(
                     {
                         key: value
@@ -290,6 +308,7 @@ class EAVRuntime:
                             "cfi_values",
                             "chunk_rows",
                             "workspace_estimate_bytes",
+                            "strict_sage_failures",
                         }
                     }
                     | {
@@ -306,6 +325,8 @@ class EAVRuntime:
                         "workspace_estimate_peak_mib": (
                             max(workspaces, default=0) / (1024 * 1024)
                         ),
+                        "strict_sage_failure_count": len(sage_failures),
+                        "strict_sage_failures": sage_failures,
                     }
                 )
             active = [forward for forward in forwards if forward["active"]]
@@ -320,6 +341,16 @@ class EAVRuntime:
                 "attention_calls_per_active_forward": [
                     int(forward["attention_count"]) for forward in active
                 ],
+                "strict_sage_call_count": sum(
+                    int(forward["strict_sage_call_count"]) for forward in forwards
+                ),
+                "strict_sage_calls_per_forward": [
+                    int(forward["strict_sage_call_count"]) for forward in forwards
+                ],
+                "strict_sage_failure_count": sum(
+                    int(forward["strict_sage_failure_count"]) for forward in forwards
+                ),
+                "strict_sage_fallback_count": 0,
                 "g_min": min(all_g) if all_g else None,
                 "g_mean": sum(all_g) / len(all_g) if all_g else None,
                 "g_max": max(all_g) if all_g else None,
@@ -547,6 +578,156 @@ def exact_chunked_cfi(
     return cfi.to(dtype=torch.float32), int(chunk_rows), int(estimated_workspace)
 
 
+def _strict_sage_contract() -> dict:
+    available = bool(getattr(attention_module, "SAGE_ATTENTION_IS_AVAILABLE", False))
+    kernel = getattr(attention_module, "sageattn", None)
+    if not available or not callable(kernel):
+        raise RuntimeError(
+            "H3 EAV + Strict Sage requires a working sageattention installation"
+        )
+    try:
+        signature = inspect.signature(kernel)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage could not audit the sageattn call signature"
+        ) from exc
+    required = {"q", "k", "v", "tensor_layout", "is_causal", "sm_scale"}
+    if not required.issubset(signature.parameters):
+        raise RuntimeError(
+            "H3 EAV + Strict Sage found an unsupported sageattn call signature: "
+            f"{signature}"
+        )
+    try:
+        version = importlib.metadata.version("sageattention")
+    except importlib.metadata.PackageNotFoundError:
+        version = "unknown"
+    return {
+        "backend": "sageattention.sageattn",
+        "package_version": version,
+        "signature": str(signature),
+        "tensor_layout": "HND",
+        "is_causal": False,
+        "smooth_k": False,
+        "silent_fallback": False,
+        "scope": "native MiniMax H3 main DiT packed attention only",
+    }
+
+
+def _strict_sage_attention(
+    q,
+    k,
+    v,
+    heads,
+    *,
+    mask,
+    skip_reshape,
+    skip_output_reshape,
+    **kwargs,
+):
+    if mask is not None:
+        raise RuntimeError("H3 EAV + Strict Sage does not accept attention masks")
+    if not skip_reshape or skip_output_reshape:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage requires the native H3 HND input/output contract"
+        )
+    if kwargs.get("enable_gqa", False):
+        raise RuntimeError("H3 EAV + Strict Sage does not accept GQA")
+    if kwargs.get("low_precision_attention", True) is False:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage cannot honor low_precision_attention=False"
+        )
+    if not all(isinstance(value, torch.Tensor) for value in (q, k, v)):
+        raise RuntimeError("H3 EAV + Strict Sage requires tensor Q/K/V inputs")
+    if q.ndim != 4 or q.shape != k.shape or q.shape != v.shape:
+        raise RuntimeError("H3 EAV + Strict Sage requires equal 4D Q/K/V tensors")
+    batch, observed_heads, _rows, dim_head = q.shape
+    if batch != 1 or observed_heads != int(heads) or dim_head < 1:
+        raise RuntimeError("H3 EAV + Strict Sage received an invalid H3 head layout")
+    if q.device.type != "cuda" or k.device != q.device or v.device != q.device:
+        raise RuntimeError("H3 EAV + Strict Sage requires Q/K/V on one CUDA device")
+    if q.dtype not in {torch.float16, torch.bfloat16} or not (
+        k.dtype == q.dtype == v.dtype
+    ):
+        raise RuntimeError(
+            "H3 EAV + Strict Sage requires matching FP16 or BF16 Q/K/V tensors"
+        )
+
+    kernel = getattr(attention_module, "sageattn", None)
+    if not bool(
+        getattr(attention_module, "SAGE_ATTENTION_IS_AVAILABLE", False)
+    ) or not callable(kernel):
+        raise RuntimeError("H3 EAV + Strict Sage kernel became unavailable at runtime")
+    try:
+        output = kernel(
+            q,
+            k,
+            v,
+            tensor_layout="HND",
+            is_causal=False,
+            sm_scale=kwargs.get("scale"),
+            smooth_k=False,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage kernel failed; no PyTorch-attention fallback was used"
+        ) from exc
+    if not isinstance(output, torch.Tensor) or output.shape != q.shape:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage kernel returned an unexpected tensor shape"
+        )
+    return output.transpose(1, 2).reshape(batch, -1, int(heads) * dim_head)
+
+
+def _delegate_eav_attention(
+    q,
+    k,
+    v,
+    heads,
+    *,
+    route,
+    mask,
+    attn_precision,
+    skip_reshape,
+    skip_output_reshape,
+    transformer_options,
+    delegate_kwargs,
+):
+    backend = str(route.get("attention_backend", "native_optimized"))
+    if backend == "native_optimized":
+        return attention_module.optimized_attention(
+            q,
+            k,
+            v,
+            heads,
+            mask=mask,
+            attn_precision=attn_precision,
+            skip_reshape=skip_reshape,
+            skip_output_reshape=skip_output_reshape,
+            transformer_options=transformer_options,
+            **delegate_kwargs,
+        )
+    if backend != "strict_sage_hnd":
+        raise RuntimeError(f"Unknown H3 EAV attention backend {backend!r}")
+    try:
+        output = _strict_sage_attention(
+            q,
+            k,
+            v,
+            heads,
+            mask=mask,
+            skip_reshape=skip_reshape,
+            skip_output_reshape=skip_output_reshape,
+            **delegate_kwargs,
+        )
+    except Exception as exc:
+        route["runtime"].record_strict_sage_failure(
+            int(route["forward_index"]), exc
+        )
+        raise
+    route["runtime"].record_strict_sage_call(int(route["forward_index"]))
+    return output
+
+
 def route_eav_attention(
     q,
     k,
@@ -583,17 +764,18 @@ def route_eav_attention(
     if q.ndim != 4 or q.shape[0] != 1 or q.shape[1] != heads:
         raise RuntimeError("H3 EAV requires batch-1 packed attention")
 
-    output = attention_module.optimized_attention(
+    output = _delegate_eav_attention(
         q,
         k,
         v,
         heads,
+        route=route,
         mask=None,
         attn_precision=attn_precision,
         skip_reshape=True,
         skip_output_reshape=False,
         transformer_options=transformer_options,
-        **delegate_kwargs,
+        delegate_kwargs=delegate_kwargs,
     )
     if not route["active"]:
         return output
@@ -655,6 +837,7 @@ def build_eav_model(
     allowed_tasks=EAV_VISUAL_TASKS,
     allow_reference_blocks: bool = False,
     composer_profile: str = "isolated_visual",
+    attention_backend: str = "native_optimized",
 ):
     mode = str(mode)
     if mode not in EAV_MODES:
@@ -669,6 +852,9 @@ def build_eav_model(
         raise ValueError("H3 EAV g_hard_limit must be between 1 and 3")
 
     sampling_profile = str(sampling_profile)
+    attention_backend = str(attention_backend)
+    if attention_backend not in EAV_ATTENTION_BACKENDS:
+        raise ValueError(f"Unknown H3 EAV attention backend {attention_backend!r}")
     allowed_tasks = tuple(str(task) for task in allowed_tasks)
     if not allowed_tasks or not set(allowed_tasks).issubset(set(EAV_ALL_TASKS)):
         raise ValueError(f"H3 EAV received an invalid task scope: {allowed_tasks!r}")
@@ -691,6 +877,8 @@ def build_eav_model(
         "task_scope": list(allowed_tasks),
         "allow_reference_blocks": bool(allow_reference_blocks),
         "sampling_profile": sampling_profile,
+        "attention_backend": attention_backend,
+        "attention_backend_scope": "native MiniMax H3 main DiT packed attention only",
         "tau": float(tau),
         "start_video_progress": float(start_video_progress),
         "end_video_progress": float(end_video_progress),
@@ -718,6 +906,9 @@ def build_eav_model(
     contracts = _assert_core_contract(model, sampling_profile=sampling_profile)
     config["core_hashes"] = contracts["core_hashes"]
     config["turbo_contract"] = contracts["turbo_contract"]
+    config["attention_backend_contract"] = (
+        _strict_sage_contract() if attention_backend == "strict_sage_hnd" else None
+    )
     config["notes"] = [
         "report_only computes CFI/g but leaves the attention output unchanged",
         "apply_exp follows the paper residual gain pattern through an H3 full-3D adapter",
@@ -727,7 +918,12 @@ def build_eav_model(
             if allow_reference_blocks
             else "T2VA/I2VA/FL2VA/L2VA are isolated mechanically; references and masks remain rejected"
         ),
-        "Prompt Relay, BlockCache, Sage object patches and STG remain rejected",
+        (
+            "the explicit Strict Sage composer owns the audited Sage backend; external Sage "
+            "object patches remain rejected"
+            if attention_backend == "strict_sage_hnd"
+            else "Prompt Relay, BlockCache, Sage object patches and STG remain rejected"
+        ),
         "Turbo8 accepts only the corrected 208-module Alpha8 bypass LoRA at strength 1.0",
         "the runtime audit after sampling is authoritative for observed g and call counts",
     ]
@@ -781,6 +977,7 @@ def build_eav_model(
                     "g_hard_limit": float(g_hard_limit),
                     "runtime": runtime,
                     "forward_index": forward_index,
+                    "attention_backend": attention_backend,
                 }
             )
             transformer_options[EAV_RUNTIME_KEY] = route
@@ -827,6 +1024,20 @@ def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
                 "H3 EAV expected exactly 50 main DiT attention measurements per active "
                 f"forward, observed {active_counts}"
             )
+        if report["config"].get("attention_backend") == "strict_sage_hnd":
+            expected_backend_calls = [50] * expected_nfe
+            observed_backend_calls = report["strict_sage_calls_per_forward"]
+            if observed_backend_calls != expected_backend_calls:
+                raise RuntimeError(
+                    "H3 EAV + Strict Sage expected exactly 50 successful Sage calls per "
+                    f"model forward, observed {observed_backend_calls}"
+                )
+            if report["strict_sage_failure_count"] or report[
+                "strict_sage_fallback_count"
+            ]:
+                raise RuntimeError(
+                    "H3 EAV + Strict Sage detected a kernel failure or backend fallback"
+                )
         report["status"] = "report_only_verified" if mode == "report_only" else "apply_exp_verified"
     report["quality_claim"] = (
         "mechanically audited only; visual motion/detail and joint-AV audio quality require "

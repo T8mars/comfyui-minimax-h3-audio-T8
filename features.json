@@ -36,8 +36,8 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 94,
-    "installed_user_workflows": 94
+    "project_workflows": 97,
+    "installed_user_workflows": 97
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
@@ -320,21 +320,23 @@
     "MiniMaxH3TwoPassAudioAuditT8Advanced",
     "MiniMaxH3EnhanceAVideoT8Advanced",
     "MiniMaxH3EnhanceAVideoAuditT8Advanced",
-    "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
+    "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
+    "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
   ],
   "experimental_enhance_a_video_advanced": {
-    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; visual superiority, audio non-inferiority and general 16GiB safety are not established",
+    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; an isolated Strict Sage composer also passes one real 0.7MP Stock20 call/runtime/media audit; visual superiority, audio non-inferiority and general 16GiB safety are not established",
     "date": "2026-08-21",
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [
       "MiniMaxH3EnhanceAVideoT8Advanced",
       "MiniMaxH3EnhanceAVideoAuditT8Advanced",
-      "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
+      "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
+      "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
     ],
     "paper": "Enhance-A-Video, arXiv:2502.07508v3",
     "reference_commit": "NUS-HPC-AI-Lab/Enhance-A-Video@16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
-    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks, the existing attention backend remains authoritative, and only target-video output rows receive the direct residual gain",
-    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer now accepts native Ref2VA and task-Hybrid packed layouts while preserving the original node's fail-closed contract; Prompt Relay, ordinary LoRA, BlockCache, Sage object patches, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks remain rejected",
+    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks and only target-video output rows receive the direct residual gain; legacy composers preserve the existing backend, while the explicit Strict Sage composer owns and audits sageattention.sageattn",
+    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer accepts native Ref2VA and task-Hybrid; an append-only Strict Sage composer owns the native HND Sage kernel route and requires 50 successful no-fallback Sage calls per forward; one real T2VA Stock20 run passed the mechanical call and media gates, while quality, speed, listening and repeated-memory validation remain pending; Prompt Relay, ordinary LoRA, external Sage object patches, BlockCache, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks remain rejected",
     "audio_boundary": "target-audio rows are never directly scaled, but H3 joint packed attention can change audio indirectly in later blocks; listening and signal audit are mandatory",
     "memory_boundary": "max_workspace_mib bounds the planned temporal score workspace only; it is not a whole-workflow VRAM guarantee",
     "frontend_workflows": [
@@ -344,11 +346,13 @@
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_L2VA_Stock20_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_T2VA_Turbo8_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Ref2VA_Stock20_Advanced_EXP.json",
-      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json"
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json",
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20_Advanced_EXP.json"
     ],
     "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; one real same-seed Stock20 0.7MP disabled/apply pair for each task also passes runtime and media gates, while quality, audio non-inferiority and general 16GiB safety remain unproven",
     "validation_tools": [
       "tools/build_eav_reference_probe_prompts.py",
+      "tools/build_eav_sage_probe_prompt.py",
       "tools/build_eav_blind_review.py"
     ],
     "validated_real_probe": {
@@ -387,6 +391,16 @@
       "container_recovery": "the first Ref2VA disabled and Hybrid apply H.264 containers each contained one repeatable bad packet; in both cases ComfyUI cache evidence showed every upstream model/conditioning/sampling/decode node was cached while only VHS packaging reran, and the accepted re-encoded files passed all deterministic media gates",
       "blind_review": "a deterministic two-pair hash-traceable anonymous package was generated locally; ratings are still pending and generated media is not shipped in the plugin package",
       "decision": "Ref2VA and task-Hybrid are mechanically accepted within the isolated native Stock20 reference composer. Ref2VA apply falling to 417MiB headroom denies general 16GiB safety, and the automatic differences do not determine perceptual quality, reference adherence or audio non-inferiority"
+    },
+    "validated_strict_sage_0p7mp_probe": {
+      "environment": "RTX 4060 Ti 16GiB; ComfyUI 0.33.0 at 187eda8ef5e588c6a5765cad53e482765edae052; sageattention 2.2.0+cu130torch2.9.0andhigher.post4; FL2VA pruned INT8; Qwen3-VL NVFP4; video/audio VAE",
+      "controls": "same T2VA prompt and seed 2608217001 as the existing native-attention 0.7MP EAV pair; 1152x640x124 at 24fps; native dual-clock Stock20; apply_exp tau4; no LoRA, BlockCache, STG, Prompt Relay or external attention patch",
+      "runtime": "20 model forwards; exactly 50 FETA measurements and 50 successful strict Sage HND calls per forward; 1000 of each total; zero kernel failures and zero fallbacks; g min/mean/max 1.000000/1.000341/1.046687; planned CFI workspace peak 31.585MiB",
+      "media": "H.264 1152x640, 124 frames at 24fps plus finite AAC 32kHz stereo; 14.667ms A/V duration delta; three deterministic single-thread strict video, audio and combined decode attempts passed; SHA-256 A9ABDA116404A319F4F453DD26EE792E0949656BF2885A098E7239D2F7832C65",
+      "comparison": "against the same-seed native-attention EAV apply output, video SSIM was 0.8641 and PSNR 26.1157dB; audio zero-lag correlation was 0.9145 and Sage/native RMS ratio 1.0546. These are difference measurements, not quality or listening rankings",
+      "memory": "15-second polling observed approximately 730MiB minimum whole-device headroom. The sparse observation clears 512MiB only narrowly and is not a true peak or a general 16GiB guarantee",
+      "performance": "full prompt execution was approximately 683.3 seconds, including model load, sampling, decode and save; no matched hot/cold timing control exists, so no acceleration claim is made",
+      "decision": "strict no-fallback Sage routing, full H3 call counts and media mechanics pass one real T2VA probe; human review, repeated cold/warm runs, other task scopes and quality/audio/performance/memory claims remain open"
     },
     "quality_claim": false,
     "audio_noninferiority_claim": false,

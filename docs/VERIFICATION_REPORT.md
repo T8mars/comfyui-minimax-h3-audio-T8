@@ -5,8 +5,9 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.38.2 checkpoint closes one real 0.7MP Ref2VA and one task-Hybrid EAV
-disabled/apply mechanical pair, makes the strict diagnostic decoder deterministic, and retains the
+The current 1.39.0 checkpoint appends an isolated EAV + Strict Sage composer and closes one real
+0.7MP T2VA no-fallback Sage call/runtime/media probe. It retains the 1.38.2 real Ref2VA and
+task-Hybrid EAV pairs, the deterministic strict diagnostic decoder, and the
 1.37.1 learned two-pass eight-call update and the 1.36.2 partial-start audio-clock repair. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
@@ -15,6 +16,37 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.39.0 EAV + Strict Sage composer (2026-08-21)
+
+The 144th append-only node owns both the H3 FETA route and the local
+`sageattention.sageattn` HND backend. It exists because a third-party MiniMax H3 Sage patch that
+replaces each block's full `Attention.forward` bypasses the optimized-attention observation point
+used by the existing EAV adapter. The composer therefore refuses external attention/object/block
+patches and calls Sage directly. Kernel errors fail closed; there is no silent PyTorch-attention
+fallback. `disabled` still returns the exact original model without loading or checking Sage.
+
+One T2VA probe used the same prompt and seed `2608217001` as the existing native-attention EAV
+control, with 1152x640x124, 24fps and dual-clock Stock20. It completed 20 model forwards with
+exactly 50 FETA measurements and 50 successful strict Sage calls per forward: 1000 of each, zero
+kernel failures and zero fallbacks. Reported FETA gain min/mean/max was
+`1.000000/1.000341/1.046687`, and the planned CFI workspace peaked at 31.585MiB.
+
+The accepted output is H.264 1152x640, 124 frames at 24fps with finite AAC 32kHz stereo and a
+14.667ms A/V duration difference. Three deterministic single-thread strict video, audio and
+combined decode attempts all passed. Its SHA-256 is
+`A9ABDA116404A319F4F453DD26EE792E0949656BF2885A098E7239D2F7832C65`. A contact-sheet review found
+no black or corrupt sampled frame. Against the same-seed native-attention EAV apply output, video
+SSIM was 0.8641, PSNR 26.1157dB, audio zero-lag correlation 0.9145 and Sage/native RMS ratio
+1.0546. These values establish that the backend changes the joint AV result, not that it improves
+quality or sound.
+
+Full prompt execution took about 683.3 seconds including load, sampling, decode and save. Sparse
+15-second polling observed about 730MiB minimum whole-device headroom, which is not a true peak and
+clears the 512MiB project floor only narrowly. There is no matched hot/cold timing control, repeated
+cold/warm matrix, human blind review or listening test. The node therefore remains Advanced EXP and
+makes no claim of visual superiority, audio non-inferiority, acceleration, lower VRAM use or general
+16GiB safety.
 
 ## 1.38.2 EAV reference-task 0.7MP validation (2026-08-21)
 

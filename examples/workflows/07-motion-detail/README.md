@@ -14,6 +14,7 @@
 - `H3_Enhance_A_Video_FETA_T2VA_Turbo8`：仅接受修正 Alpha8、208个 bypass hooks、strength 1.0 的严格 Turbo8 实验模板。
 - `H3_Enhance_A_Video_FETA_Ref2VA_Stock20`：独立 Reference Composer；参考图进入原生参考块，FETA 只处理目标视频行。
 - `H3_Enhance_A_Video_FETA_Hybrid_Stock20`：首帧 + 独立参考图的任务型 Hybrid；不要与混合模型权重节点混淆。
+- `H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20`：由单一组合节点同时绑定FETA与严格Sage HND后端；不要再串第三方H3 Sage节点。
 - 其他单路线工作流用于A/B诊断。
 
 ## 当前成果
@@ -31,3 +32,5 @@ Ref2VA 和任务型 Hybrid 也各完成一组 1152×640、124帧、Stock20 的 d
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
 FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务已通过精确PackedLayout、导入接线和单组真实0.7MP A/B机械门，但尚未完成用户盲评。Prompt Relay、BlockCache、Sage、STG、Long Video、其他 LoRA、模型权重 Hybrid、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。
+
+Strict Sage模板是一个独立追加路线：组合节点直接调用本机 `sageattention.sageattn` 的HND内核，并由Runtime Audit要求每次模型前向50个成功Sage调用、零失败、零静默回退。KJNodes的MiniMax H3 Sage节点会整块替换`Attention.forward`并绕过FETA观测入口，因此不能与普通EAV节点串联。本机单条1152×640×124、Stock20实测完成20次前向、1000次FETA测量和1000次Sage调用；H.264/AAC成片通过视频、音频和联合三轮严格解码。与同seed原生attention增强端相比，视频SSIM约0.8641、音频相关约0.9145，只证明结果发生变化；尚无人工盲评，也不授予画质、速度、音频非劣或通用16GB安全结论。

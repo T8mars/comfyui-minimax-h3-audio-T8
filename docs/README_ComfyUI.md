@@ -6,6 +6,15 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.39.0 appends an isolated Enhance-A-Video + Strict Sage composer without changing the
+> preceding 143 node IDs, old schemas, or stable sampling. The composer owns the H3 FETA route and
+> `sageattention.sageattn` HND backend, refuses external full-block attention patches, and never
+> silently falls back to PyTorch attention. One real 1152x640x124 Stock20 T2VA probe completed
+> 20x50 FETA measurements and 20x50 successful Sage calls with zero failures/fallbacks; the H.264/AAC
+> output passed three strict video/audio/combined decodes. This single mechanical result does not
+> establish better image quality, audio non-inferiority, acceleration, lower VRAM use, or universal
+> 16GiB safety.
+
 > Project v1.38.2 completes one real 1152x640x124 Stock20 Ref2VA and one task-Hybrid
 > disabled/apply EAV pair. Both apply paths completed 20x50 runtime audits and all accepted media
 > passed deterministic strict video/audio decoding. Ref2VA apply left about 417MiB whole-device
