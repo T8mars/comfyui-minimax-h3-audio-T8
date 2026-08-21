@@ -5,8 +5,9 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.39.1 checkpoint republishes the complete learned-latent two-pass workflow set with
-the already-validated 4+4 schedule and keeps the 144-node runtime registry unchanged. It retains
+The current 1.39.2 checkpoint appends an isolated EAV + Prompt Relay composer as node 145 and an
+importable Stock20 T2VA workflow. It retains the complete learned-latent two-pass workflow set with
+the already-validated 4+4 schedule and all preceding 144 node IDs unchanged. It also retains
 the 1.39.0 isolated EAV + Strict Sage composer and its real 0.7MP T2VA no-fallback Sage
 call/runtime/media probe, the 1.38.2 real Ref2VA and
 task-Hybrid EAV pairs, the deterministic strict diagnostic decoder, and the
@@ -18,6 +19,26 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.39.2 EAV + Prompt Relay composer (2026-08-21)
+
+The 145th append-only node resolves a real ownership conflict rather than weakening either
+standalone node's fail-closed checks. Prompt Relay and EAV both require one H3 diffusion wrapper and
+one `optimized_attention_override`; directly stacking them is therefore invalid. The composer
+accepts only a current authenticated Prompt Relay MODEL with a complete binding and at least two
+events, removes the standalone owner from a clone, validates the EAV task/layout contract, and
+installs one combined wrapper. Within each attention call, Relay routing runs first and the FETA
+gain is then applied only to target-video output rows. No additional model forward is introduced.
+
+`disabled` returns the exact incoming Relay MODEL and disables only FETA, which provides a clean
+Relay-only versus Relay+EAV single-variable control. This initial frontend route is restricted to
+native Stock20 T2VA; unaudited Turbo tasks, reference layouts, ordinary LoRA, external Sage,
+BlockCache, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks fail
+closed. Deterministic tests cover binding tamper rejection, disabled identity, wrapper ownership,
+operation order, target-video-only scaling, append-only registration and frontend wiring through
+Runtime Audit. Real 0.7MP generation, perceptual review, listening, repeated cold/warm memory and
+general 16GiB safety are not complete, so this release makes no quality, audio, speed or memory
+claim.
 
 ## 1.39.1 learned two-pass workflow-set publication (2026-08-21)
 

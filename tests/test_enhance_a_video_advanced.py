@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import h3_audio_t8_pkg.enhance_a_video_advanced as eav_module
+import h3_audio_t8_pkg.prompt_relay_advanced as prompt_relay_module
 from h3_audio_t8_pkg.conditioning import build_packed_layout
 from h3_audio_t8_pkg.enhance_a_video_advanced import (
     EAV_REFERENCE_TASKS,
@@ -15,14 +16,18 @@ from h3_audio_t8_pkg.enhance_a_video_advanced import (
     _runtime_route,
     _validate_stock20_sigmas,
     build_eav_model,
+    build_eav_prompt_relay_model,
     exact_chunked_cfi,
     finalize_eav_runtime,
     route_eav_attention,
+    route_eav_prompt_relay_attention,
 )
 from h3_audio_t8_pkg.nodes_enhance_a_video_advanced import (
+    MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced,
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
     MiniMaxH3EnhanceAVideoSageComposerT8Advanced,
 )
+from h3_audio_t8_pkg.prompt_relay_advanced import patch_prompt_relay_model
 from h3_audio_t8_pkg.tools.build_eav_reference_probe_prompts import build_prompt
 from h3_audio_t8_pkg.tools.build_eav_sage_probe_prompt import (
     build_prompt as build_sage_prompt,
@@ -62,6 +67,68 @@ def _allow_fixture_core(monkeypatch):
     monkeypatch.setattr(eav_module, "PACKED_LAYOUT_SHA256S", {"fixture"})
     monkeypatch.setattr(eav_module, "MODEL_FORWARD_SHA256S", {"fixture"})
     monkeypatch.setattr(eav_module, "PATCHIFY_VIDEO_SHA256S", {"fixture"})
+
+
+def _allow_prompt_relay_fixture_core(monkeypatch):
+    monkeypatch.setattr(prompt_relay_module, "_source_sha256", lambda _source: "fixture")
+    monkeypatch.setattr(prompt_relay_module, "ATTENTION_FORWARD_SHA256S", {"fixture"})
+    monkeypatch.setattr(prompt_relay_module, "PACKED_LAYOUT_SHA256S", {"fixture"})
+    monkeypatch.setattr(prompt_relay_module, "TOKENIZER_SHA256S", {"fixture"})
+    monkeypatch.setattr(prompt_relay_module, "EXTRA_CONDS_SHA256S", {"fixture"})
+
+
+def _relay_binding(*, task="t2va", query_route="video_only_paper"):
+    binding = {
+        "schema": prompt_relay_module.PROMPT_RELAY_PATCH_VERSION,
+        "plan_hash": "plan-fixture",
+        "compiled_prompt_sha256": "prompt-fixture",
+        "text_len": 4,
+        "prompt_token_count": 4,
+        "prompt_token_sha256": "tokens-fixture",
+        "events": [
+            {
+                "event_index": 0,
+                "text_key_start": 0,
+                "text_key_end": 2,
+                "midpoint": 1.0,
+                "window": 1.0,
+                "sigma": 1.0,
+            },
+            {
+                "event_index": 1,
+                "text_key_start": 2,
+                "text_key_end": 4,
+                "midpoint": 4.0,
+                "window": 1.0,
+                "sigma": 1.0,
+            },
+        ],
+        "query_route": query_route,
+        "task": task,
+        "keyframe_count": 0,
+        "reference_block_count": 0,
+        "layout_contract": {
+            "schema": 1,
+            "signature": [4, 3, 2, 2, 1],
+            "seq_len": 12,
+            "segments": [[0, 4, "text"], [4, 6, "audio"], [6, 12, "video"]],
+            "position_shape": [12, 3],
+            "position_dtype": "torch.int64",
+            "position_sha256": "positions-fixture",
+            "contract_hash": "layout-fixture",
+        },
+    }
+    binding["binding_hash"] = prompt_relay_module._sha256_json(binding)
+    return binding
+
+
+def _relay_model(monkeypatch, *, task="t2va", query_route="video_only_paper"):
+    _allow_prompt_relay_fixture_core(monkeypatch)
+    return patch_prompt_relay_model(
+        _model_patcher(),
+        _relay_binding(task=task, query_route=query_route),
+        query_chunk_rows=64,
+    )[0]
 
 
 def _stock20_sigmas():
@@ -615,6 +682,229 @@ def test_strict_sage_composer_binds_audited_backend_and_rejects_reference_turbo(
         )
 
 
+def test_prompt_relay_composer_schema_is_append_only_and_explains_order():
+    schema = MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced.define_schema()
+    assert schema.node_id == "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced"
+    assert [item.id for item in schema.inputs] == [
+        "model",
+        "sigmas",
+        "mode",
+        "tau",
+        "start_video_progress",
+        "end_video_progress",
+        "max_workspace_mib",
+        "g_hard_limit",
+        "sampling_profile",
+    ]
+    assert "does not add model forwards" in schema.description
+
+
+def test_prompt_relay_composer_disabled_preserves_exact_relay_model(monkeypatch):
+    _allow_fixture_core(monkeypatch)
+    relay_model = _relay_model(monkeypatch)
+    returned, runtime, report_json = build_eav_prompt_relay_model(
+        relay_model,
+        _stock20_sigmas(),
+        mode="disabled",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+        sampling_profile="stock20",
+    )
+    assert returned is relay_model
+    assert isinstance(runtime, EAVRuntime)
+    report = json.loads(report_json)
+    assert report["prompt_relay_contract"]["task"] == "T2VA"
+    assert report["prompt_relay_contract"]["adds_model_forwards"] is False
+    override = returned.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    assert override._t8_prompt_relay_binding_hash == _relay_binding()["binding_hash"]
+
+
+def test_prompt_relay_composer_replaces_exact_relay_owner_and_keeps_provenance(
+    monkeypatch,
+):
+    _allow_fixture_core(monkeypatch)
+    relay_model = _relay_model(monkeypatch, query_route="joint_av_exp")
+    patched, runtime, report_json = build_eav_prompt_relay_model(
+        relay_model,
+        _stock20_sigmas(),
+        mode="apply_exp",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+        sampling_profile="stock20",
+    )
+    report = json.loads(report_json)
+    assert report["composer_profile"] == "prompt_relay_t2va_joint_av_exp_v1"
+    assert report["prompt_relay_contract"]["query_route"] == "joint_av_exp"
+    assert report["prompt_relay_contract"]["event_count"] == 2
+    wrapper_type = eav_module.comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    assert patched.get_wrappers(
+        wrapper_type, prompt_relay_module.PROMPT_RELAY_WRAPPER_KEY
+    ) == []
+    assert patched.get_wrappers(wrapper_type, eav_module.EAV_WRAPPER_KEY) == []
+    assert len(
+        patched.get_wrappers(wrapper_type, eav_module.EAV_PROMPT_RELAY_WRAPPER_KEY)
+    ) == 1
+    override = patched.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    assert (
+        override._t8_h3_eav_prompt_relay_patch_version
+        == eav_module.EAV_PROMPT_RELAY_PATCH_VERSION
+    )
+    assert override._t8_h3_eav_patch_version == eav_module.EAV_PATCH_VERSION
+    assert override._t8_prompt_relay_binding_hash == _relay_binding(
+        query_route="joint_av_exp"
+    )["binding_hash"]
+    assert patched.get_attachment(prompt_relay_module.PROMPT_RELAY_WRAPPER_KEY) is None
+    attachment = patched.get_attachment(eav_module.EAV_PROMPT_RELAY_WRAPPER_KEY)
+    assert attachment["prompt_relay"]["adds_model_forwards"] is False
+    assert runtime.config["attention_backend"] == "native_optimized"
+
+
+def test_prompt_relay_composer_rejects_tampered_binding_and_unaudited_turbo_task(
+    monkeypatch,
+):
+    _allow_fixture_core(monkeypatch)
+    tampered = _relay_model(monkeypatch)
+    tampered.get_attachment(prompt_relay_module.PROMPT_RELAY_WRAPPER_KEY)[
+        "binding"
+    ]["task"] = "i2va"
+    with pytest.raises(RuntimeError, match="binding hash is invalid"):
+        build_eav_prompt_relay_model(
+            tampered,
+            _stock20_sigmas(),
+            mode="report_only",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+            sampling_profile="stock20",
+        )
+
+    relay_i2va = _relay_model(monkeypatch, task="i2va")
+    with pytest.raises(ValueError, match="limited to audited T2VA"):
+        build_eav_prompt_relay_model(
+            relay_i2va,
+            _turbo8_sigmas(),
+            mode="disabled",
+            tau=4.0,
+            start_video_progress=0.0,
+            end_video_progress=1.0,
+            max_workspace_mib=32,
+            g_hard_limit=1.5,
+            sampling_profile="turbo8_alpha8",
+        )
+
+
+def test_combined_attention_runs_relay_then_scales_only_target_video(monkeypatch):
+    torch.manual_seed(901)
+    seq_len, heads, dim = 12, 1, 2
+    q = torch.randn((1, heads, seq_len, dim))
+    k = torch.randn_like(q)
+    v = torch.randn_like(q)
+
+    def _identity_attention(query, *_args, **_kwargs):
+        return query.permute(0, 2, 1, 3).reshape(1, query.shape[2], -1).clone()
+
+    monkeypatch.setattr(
+        prompt_relay_module.attention_module,
+        "optimized_attention",
+        _identity_attention,
+    )
+    monkeypatch.setattr(
+        prompt_relay_module.attention_module,
+        "attention_pytorch",
+        _identity_attention,
+    )
+    runtime = EAVRuntime({"mode": "apply_exp"})
+    base_route = {
+        "active": True,
+        "frames": 3,
+        "spatial_tokens": 2,
+        "seq_len": seq_len,
+        "audio_start": 4,
+        "audio_end": 6,
+        "video_start": 6,
+        "video_end": 12,
+        "task": "T2VA",
+    }
+    forward = runtime.begin_forward(
+        sigma_video=0.5,
+        progress_video=0.5,
+        route=base_route,
+    )
+    eav_route = {
+        **base_route,
+        "max_workspace_mib": 4,
+        "tau": 4.0,
+        "g_hard_limit": 3.0,
+        "runtime": runtime,
+        "forward_index": forward,
+        "mode": "apply_exp",
+    }
+    query_times = torch.arange(6, dtype=torch.float32)
+    relay_route = {
+        "binding_hash": "fixture",
+        "query_route": "video_only_paper",
+        "seq_len": seq_len,
+        "audio_start": 4,
+        "audio_end": 6,
+        "video_start": 6,
+        "video_end": 12,
+        "query_segments": (
+            {
+                "kind": "video",
+                "start": 6,
+                "end": 12,
+                "query_times": query_times,
+            },
+        ),
+        "events": (
+            {
+                "text_key_start": 0,
+                "text_key_end": 2,
+                "midpoint": 1.0,
+                "window": 1.0,
+                "sigma": 1.0,
+            },
+            {
+                "text_key_start": 2,
+                "text_key_end": 4,
+                "midpoint": 4.0,
+                "window": 1.0,
+                "sigma": 1.0,
+            },
+        ),
+    }
+    output = route_eav_prompt_relay_attention(
+        q,
+        k,
+        v,
+        heads,
+        skip_reshape=True,
+        transformer_options={
+            eav_module.EAV_RUNTIME_KEY: eav_route,
+            prompt_relay_module.PROMPT_RELAY_RUNTIME_KEY: relay_route,
+        },
+        query_chunk_rows=64,
+    )
+    baseline = _identity_attention(q)
+    assert torch.equal(output[:, :6], baseline[:, :6])
+    assert not torch.equal(output[:, 6:], baseline[:, 6:])
+    snapshot = runtime.snapshot(consume=False)
+    assert snapshot["attention_measurement_count"] == 1
+    assert snapshot["forwards"][0]["attention_count"] == 1
+
+
 @pytest.mark.parametrize("task", ["Ref2VA", "Hybrid"])
 @pytest.mark.parametrize("mode", ["disabled", "apply_exp"])
 def test_reference_probe_prompts_are_same_seed_same_nfe_controlled_pairs(task, mode):
@@ -916,6 +1206,68 @@ def test_strict_sage_real_probe_is_same_seed_canvas_and_nfe_as_existing_t2va_pai
     assert composer["inputs"]["task_scope"] == "visual"
     assert composer["inputs"]["mode"] == "apply_exp"
     assert composer["inputs"]["sampling_profile"] == "stock20"
+
+
+def test_prompt_relay_eav_frontend_workflow_has_one_owner_and_audited_handoff():
+    path = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "examples"
+        / "workflows"
+        / "07-motion-detail"
+        / "2026-08-21_H3_Enhance_A_Video_FETA_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    by_type = {node["type"]: node for node in workflow["nodes"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert sum(node["type"] == "MarkdownNote" for node in nodes.values()) == 3
+    assert "MiniMaxH3EnhanceAVideoT8Advanced" not in by_type
+    assert "MiniMaxH3EnhanceAVideoSageComposerT8Advanced" not in by_type
+    assert "LoraLoaderBypassModelOnly" not in by_type
+    relay = by_type["MiniMaxH3PromptRelayConditioningT8Advanced"]
+    dual = by_type["MiniMaxH3DualClockSamplerT8"]
+    composer = by_type["MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced"]
+    audit = by_type["MiniMaxH3EnhanceAVideoAuditT8Advanced"]
+    guider = by_type["BasicGuider"]
+    sampler = by_type["SamplerCustomAdvanced"]
+    decode = by_type["MiniMaxH3AVDecodeT8"]
+    assert relay["widgets_values"][-2:] == ["apply_exp", 256]
+    assert dual["widgets_values"] == [
+        20,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow",
+    ]
+    assert composer["widgets_values"] == [
+        "apply_exp",
+        4.0,
+        0.0,
+        1.0,
+        32,
+        1.5,
+        "stock20",
+    ]
+    links = {link[0]: link for link in workflow["links"]}
+
+    def source_for_input(node, name):
+        item = next(value for value in node["inputs"] if value["name"] == name)
+        link = links[item["link"]]
+        return nodes[link[1]], link[2]
+
+    assert source_for_input(dual, "model") == (relay, 0)
+    assert source_for_input(composer, "model") == (dual, 0)
+    assert source_for_input(composer, "sigmas") == (dual, 2)
+    assert source_for_input(guider, "model") == (composer, 0)
+    assert source_for_input(audit, "av_latent") == (sampler, 0)
+    assert source_for_input(audit, "runtime") == (composer, 1)
+    assert source_for_input(decode, "av_latent") == (audit, 0)
+    for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
+        assert nodes[target]["inputs"][input_slot]["link"] == link_id
+        assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
+        assert nodes[source]["outputs"][output_slot]["type"] == link_type
+        assert nodes[target]["inputs"][input_slot]["type"] == link_type
 
 
 @pytest.mark.parametrize(

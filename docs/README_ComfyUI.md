@@ -6,6 +6,14 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.39.2 appends an isolated Enhance-A-Video + Prompt Relay composer as node 145. A
+> standalone EAV model and standalone Relay model cannot be stacked because both own the same H3
+> diffusion wrapper and optimized-attention entry. The composer authenticates the existing Relay
+> binding, executes Relay routing first, then applies FETA gain only to target-video output rows in
+> the same attention call. It adds no model forward and `disabled` preserves the exact Relay MODEL.
+> This release includes one Stock20 T2VA frontend template and deterministic contract/runtime-audit
+> handoff tests; real 0.7MP quality, listening, repeated-memory and general 16GiB gates remain open.
+
 > Project v1.39.1 republishes the five learned-latent two-pass frontend templates as one coherent
 > 4+4 workflow set: standard I2VA, native speech, `lock_source`, `remix_source=0.20`, and
 > `reference_only`. Every graph uses four low-resolution plus four high-resolution joint-AV model

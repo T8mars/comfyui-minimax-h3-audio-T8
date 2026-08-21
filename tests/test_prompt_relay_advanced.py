@@ -613,6 +613,7 @@ def test_prompt_relay_then_bypass_lora_clone_preserves_binding(monkeypatch):
     assert downstream.get_attachment(PROMPT_RELAY_WRAPPER_KEY) == {
         "patch_version": prompt_relay_module.PROMPT_RELAY_PATCH_VERSION,
         "binding_hash": "fixture-binding",
+        "binding": {"binding_hash": "fixture-binding"},
         "query_chunk_rows": 256,
         "core_hashes": core_hashes,
     }

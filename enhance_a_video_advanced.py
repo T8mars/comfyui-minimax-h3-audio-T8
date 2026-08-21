@@ -29,6 +29,8 @@ EAV_RUNTIME_TYPE = "H3_T8_EAV_RUNTIME"
 EAV_PATCH_VERSION = 1
 EAV_RUNTIME_KEY = "t8_h3_eav_runtime"
 EAV_WRAPPER_KEY = "t8_h3_eav_feta_v1"
+EAV_PROMPT_RELAY_WRAPPER_KEY = "t8_h3_eav_prompt_relay_v1"
+EAV_PROMPT_RELAY_PATCH_VERSION = 1
 EAV_MODES = ("disabled", "report_only", "apply_exp")
 EAV_SAMPLING_PROFILES = ("stock20", "turbo8_alpha8")
 EAV_ATTENTION_BACKENDS = ("native_optimized", "strict_sage_hnd")
@@ -777,6 +779,11 @@ def route_eav_attention(
         transformer_options=transformer_options,
         delegate_kwargs=delegate_kwargs,
     )
+    return _apply_eav_output_gain(q, k, output, route)
+
+
+def _apply_eav_output_gain(q, k, output, route):
+    """Measure FETA once for a main H3 block and scale target-video rows only."""
     if not route["active"]:
         return output
 
@@ -821,6 +828,265 @@ def route_eav_attention(
         g.to(device=output.device, dtype=output.dtype)
     )
     return output
+
+
+def route_eav_prompt_relay_attention(
+    q,
+    k,
+    v,
+    heads,
+    mask=None,
+    attn_precision=None,
+    skip_reshape=False,
+    skip_output_reshape=False,
+    transformer_options=None,
+    *,
+    query_chunk_rows: int,
+    **kwargs,
+):
+    """Run authenticated Prompt Relay attention, then apply target-video FETA gain."""
+    from .prompt_relay_advanced import (
+        PROMPT_RELAY_RUNTIME_KEY,
+        route_prompt_relay_attention,
+    )
+
+    transformer_options = transformer_options or {}
+    relay_route = transformer_options.get(PROMPT_RELAY_RUNTIME_KEY)
+    eav_route = transformer_options.get(EAV_RUNTIME_KEY)
+    relay_active = relay_route is not None and q.shape[-2] == int(relay_route["seq_len"])
+    eav_active = eav_route is not None and q.shape[-2] == int(eav_route["seq_len"])
+    if relay_active != eav_active:
+        raise RuntimeError(
+            "H3 EAV + Prompt Relay runtime routes disagree on the active packed sequence"
+        )
+    output = route_prompt_relay_attention(
+        q,
+        k,
+        v,
+        heads,
+        mask=mask,
+        attn_precision=attn_precision,
+        skip_reshape=skip_reshape,
+        skip_output_reshape=skip_output_reshape,
+        transformer_options=transformer_options,
+        query_chunk_rows=int(query_chunk_rows),
+        **kwargs,
+    )
+    if not eav_active:
+        return output
+    return _apply_eav_output_gain(q, k, output, eav_route)
+
+
+def build_eav_prompt_relay_model(
+    model,
+    sigmas: torch.Tensor,
+    *,
+    mode: str,
+    tau: float,
+    start_video_progress: float,
+    end_video_progress: float,
+    max_workspace_mib: int,
+    g_hard_limit: float,
+    sampling_profile: str = "stock20",
+):
+    """Replace one exact Relay patch with a single Relay→FETA composer owner."""
+    from .prompt_relay_advanced import (
+        PROMPT_RELAY_PATCH_VERSION,
+        PROMPT_RELAY_PAYLOAD_KEY,
+        PROMPT_RELAY_RUNTIME_KEY,
+        PROMPT_RELAY_WRAPPER_KEY,
+        _runtime_route as _prompt_relay_runtime_route,
+        prompt_relay_model_contract,
+    )
+
+    relay = prompt_relay_model_contract(model)
+    binding = dict(relay["binding"])
+    task_lookup = {
+        "t2va": "T2VA",
+        "i2va": "I2VA",
+        "fl2va": "FL2VA",
+        "l2va": "L2VA",
+        "ref2va": "Ref2VA",
+        "hybrid": "Hybrid",
+    }
+    task_key = str(binding.get("task", "")).lower()
+    if task_key not in task_lookup:
+        raise RuntimeError(
+            f"H3 EAV + Prompt Relay received unsupported bound task {task_key!r}"
+        )
+    task = task_lookup[task_key]
+    sampling_profile = str(sampling_profile)
+    reference_task = task in set(EAV_REFERENCE_TASKS)
+    if reference_task and sampling_profile != "stock20":
+        raise ValueError("H3 EAV + Prompt Relay reference tasks currently require stock20")
+    if sampling_profile == "turbo8_alpha8" and task != "T2VA":
+        raise ValueError(
+            "H3 EAV + Prompt Relay turbo8_alpha8 is currently limited to audited T2VA"
+        )
+
+    clean = model.clone()
+    wrapper_type = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    clean.remove_wrappers_with_key(wrapper_type, PROMPT_RELAY_WRAPPER_KEY)
+    clean.model_options["transformer_options"].pop("optimized_attention_override", None)
+    if hasattr(clean, "remove_attachments"):
+        clean.remove_attachments(PROMPT_RELAY_WRAPPER_KEY)
+
+    eav_model, runtime, _report = build_eav_model(
+        clean,
+        sigmas,
+        mode=mode,
+        tau=tau,
+        start_video_progress=start_video_progress,
+        end_video_progress=end_video_progress,
+        max_workspace_mib=max_workspace_mib,
+        g_hard_limit=g_hard_limit,
+        sampling_profile=sampling_profile,
+        allowed_tasks=(task,),
+        allow_reference_blocks=reference_task,
+        composer_profile=f"prompt_relay_{task_key}_{binding['query_route']}_v1",
+    )
+    relay_summary = {
+        "patch_version": PROMPT_RELAY_PATCH_VERSION,
+        "plan_hash": str(binding["plan_hash"]),
+        "binding_hash": str(binding["binding_hash"]),
+        "layout_contract_hash": str(binding["layout_contract"]["contract_hash"]),
+        "query_route": str(binding["query_route"]),
+        "query_chunk_rows": int(relay["query_chunk_rows"]),
+        "event_count": len(binding["events"]),
+        "task": task,
+        "composition_order": "prompt_relay_attention_then_target_video_feta_gain",
+        "adds_model_forwards": False,
+    }
+    runtime.config["prompt_relay_contract"] = relay_summary
+    runtime.config["notes"] = [
+        "one combined wrapper owns both authenticated Prompt Relay and H3 FETA",
+        "Relay routes local text attention first; FETA then scales only target-video output rows",
+        "the composer adds no model forwards; the runtime audit still requires the exact schedule NFE and 50 H3 main blocks per active forward",
+        "joint_av_exp may directly bias target-audio queries, while FETA never directly scales audio rows; full audio review remains required",
+        "BlockCache, STG, Long Video, Sage and unknown wrappers remain rejected",
+    ]
+    if str(mode) == "disabled":
+        return model, runtime, _json(runtime.config)
+
+    eav_model.remove_wrappers_with_key(wrapper_type, EAV_WRAPPER_KEY)
+    eav_model.model_options["transformer_options"].pop(
+        "optimized_attention_override", None
+    )
+    if hasattr(eav_model, "remove_attachments"):
+        eav_model.remove_attachments(EAV_WRAPPER_KEY)
+    expected_hash = str(binding["binding_hash"])
+
+    def _combined_wrapper(
+        executor,
+        x,
+        timestep,
+        context,
+        transformer_options=None,
+        **kwargs,
+    ):
+        transformer_options = transformer_options if transformer_options is not None else {}
+        if len(executor.wrappers) != 1:
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay detected another diffusion wrapper after binding"
+            )
+        installed = transformer_options.get("optimized_attention_override")
+        if (
+            getattr(installed, "_t8_h3_eav_prompt_relay_patch_version", None)
+            != EAV_PROMPT_RELAY_PATCH_VERSION
+            or getattr(installed, "_t8_prompt_relay_binding_hash", None)
+            != expected_hash
+        ):
+            raise RuntimeError("H3 EAV + Prompt Relay attention owner was replaced")
+        replacements = transformer_options.get("patches_replace", {})
+        if isinstance(replacements, Mapping) and any(
+            bool(value) for value in replacements.values()
+        ):
+            raise RuntimeError("H3 EAV + Prompt Relay refuses runtime block replacements")
+        supplied_hash = kwargs.pop(PROMPT_RELAY_PAYLOAD_KEY, None)
+        if supplied_hash != expected_hash:
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay MODEL and CONDITIONING binding hashes differ"
+            )
+        payload = kwargs.get("minimax_payload")
+        if not isinstance(payload, Mapping):
+            raise RuntimeError("H3 EAV + Prompt Relay could not find minimax_payload")
+        if EAV_RUNTIME_KEY in transformer_options or PROMPT_RELAY_RUNTIME_KEY in transformer_options:
+            raise RuntimeError("Nested H3 EAV + Prompt Relay runtime state was refused")
+        try:
+            relay_route = _prompt_relay_runtime_route(
+                payload.get("layout"), binding, x[0].device
+            )
+            eav_route = _runtime_route(
+                x=x,
+                timestep=timestep,
+                context=context,
+                payload=payload,
+                denoise_mask=kwargs.get("denoise_mask"),
+                audio_denoise_mask=kwargs.get("audio_denoise_mask"),
+                start_progress=float(start_video_progress),
+                end_progress=float(end_video_progress),
+                allowed_tasks=(task,),
+                allow_reference_blocks=reference_task,
+            )
+            if str(eav_route["task"]).lower() != task_key:
+                raise RuntimeError(
+                    "H3 EAV runtime task does not match the authenticated Prompt Relay binding"
+                )
+            forward_index = runtime.begin_forward(
+                sigma_video=eav_route["sigma_video"],
+                progress_video=eav_route["progress_video"],
+                route=eav_route,
+            )
+            eav_route.update(
+                {
+                    "mode": str(mode),
+                    "tau": float(tau),
+                    "max_workspace_mib": int(max_workspace_mib),
+                    "g_hard_limit": float(g_hard_limit),
+                    "runtime": runtime,
+                    "forward_index": forward_index,
+                    "attention_backend": "native_optimized",
+                }
+            )
+            transformer_options[PROMPT_RELAY_RUNTIME_KEY] = relay_route
+            transformer_options[EAV_RUNTIME_KEY] = eav_route
+            return executor(x, timestep, context, transformer_options, **kwargs)
+        except BaseException as exc:
+            runtime.abort(exc)
+            raise
+        finally:
+            transformer_options.pop(PROMPT_RELAY_RUNTIME_KEY, None)
+            transformer_options.pop(EAV_RUNTIME_KEY, None)
+
+    def _combined_attention(*args, **kwargs):
+        return route_eav_prompt_relay_attention(
+            *args,
+            query_chunk_rows=int(relay["query_chunk_rows"]),
+            **kwargs,
+        )
+
+    eav_model.add_wrapper_with_key(
+        wrapper_type,
+        EAV_PROMPT_RELAY_WRAPPER_KEY,
+        _combined_wrapper,
+    )
+    eav_model.set_model_optimized_attention(_combined_attention)
+    installed = eav_model.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    installed._t8_h3_eav_patch_version = EAV_PATCH_VERSION
+    installed._t8_prompt_relay_binding_hash = expected_hash
+    installed._t8_h3_eav_prompt_relay_patch_version = EAV_PROMPT_RELAY_PATCH_VERSION
+    if hasattr(eav_model, "set_attachments"):
+        eav_model.set_attachments(
+            EAV_PROMPT_RELAY_WRAPPER_KEY,
+            {
+                "patch_version": EAV_PROMPT_RELAY_PATCH_VERSION,
+                "eav_config": dict(runtime.config),
+                "prompt_relay": relay_summary,
+            },
+        )
+    return eav_model, runtime, _json(runtime.config)
 
 
 def build_eav_model(

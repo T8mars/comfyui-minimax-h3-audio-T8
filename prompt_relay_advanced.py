@@ -935,11 +935,103 @@ def _install_prompt_relay_model(
             {
                 "patch_version": PROMPT_RELAY_PATCH_VERSION,
                 "binding_hash": expected_hash,
+                "binding": dict(binding),
                 "query_chunk_rows": int(query_chunk_rows),
                 "core_hashes": core_hashes,
             },
         )
     return patched, core_hashes
+
+
+def prompt_relay_model_contract(model) -> dict:
+    """Return the exact authenticated Relay contract installed on ``model``.
+
+    This is intentionally stricter than checking an attribute on the current
+    attention override.  Explicit composers use it before replacing the
+    standalone Relay wrapper with one combined owner; foreign wrappers,
+    truncated attachments, or modified bindings must never be treated as a
+    compatible Relay model.
+    """
+    if not hasattr(model, "get_attachment") or not hasattr(model, "get_wrappers"):
+        raise ValueError("Prompt Relay composer requires a ComfyUI MODEL patcher")
+    attachment = model.get_attachment(PROMPT_RELAY_WRAPPER_KEY)
+    if not isinstance(attachment, Mapping):
+        raise RuntimeError(
+            "Prompt Relay composer requires the MODEL output of an applied Prompt Relay "
+            "Conditioning node"
+        )
+    if int(attachment.get("patch_version", -1)) != PROMPT_RELAY_PATCH_VERSION:
+        raise RuntimeError("Prompt Relay composer received an unsupported patch version")
+    binding = attachment.get("binding")
+    if not isinstance(binding, Mapping):
+        raise RuntimeError(
+            "Prompt Relay MODEL attachment predates the authenticated composer contract; "
+            "rerun the current Prompt Relay Conditioning node"
+        )
+    binding = dict(binding)
+    required = {
+        "schema",
+        "plan_hash",
+        "binding_hash",
+        "events",
+        "query_route",
+        "task",
+        "layout_contract",
+    }
+    missing = sorted(required.difference(binding))
+    if missing:
+        raise RuntimeError(
+            "Prompt Relay MODEL attachment is incomplete: " + ", ".join(missing)
+        )
+    if int(binding["schema"]) != PROMPT_RELAY_PATCH_VERSION:
+        raise RuntimeError("Prompt Relay binding schema does not match the installed patch")
+    claimed_hash = str(binding["binding_hash"])
+    unsigned = dict(binding)
+    unsigned.pop("binding_hash", None)
+    if _sha256_json(unsigned) != claimed_hash:
+        raise RuntimeError("Prompt Relay MODEL attachment binding hash is invalid")
+    if str(attachment.get("binding_hash", "")) != claimed_hash:
+        raise RuntimeError("Prompt Relay MODEL attachment and binding hashes differ")
+    if str(binding["query_route"]) not in PROMPT_RELAY_QUERY_ROUTES:
+        raise RuntimeError("Prompt Relay MODEL attachment has an unknown query route")
+    if len(list(binding["events"])) <= 1:
+        raise RuntimeError(
+            "Prompt Relay composer requires at least two active events; zero/single-event "
+            "plans are intentional passthroughs"
+        )
+    try:
+        query_chunk_rows = int(attachment["query_chunk_rows"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError("Prompt Relay MODEL attachment has no valid query chunk size") from exc
+    if not 32 <= query_chunk_rows <= 2048:
+        raise RuntimeError("Prompt Relay MODEL attachment query chunk size is out of range")
+
+    wrapper_type = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    active_wrapper_groups = {
+        str(key): list(value)
+        for key, value in getattr(model, "wrappers", {}).get(wrapper_type, {}).items()
+        if bool(value)
+    }
+    if set(active_wrapper_groups) != {PROMPT_RELAY_WRAPPER_KEY} or len(
+        active_wrapper_groups[PROMPT_RELAY_WRAPPER_KEY]
+    ) != 1:
+        raise RuntimeError(
+            "Prompt Relay composer requires exactly one standalone Relay diffusion wrapper"
+        )
+    transformer = getattr(model, "model_options", {}).get("transformer_options", {})
+    override = transformer.get("optimized_attention_override")
+    if getattr(override, "_t8_prompt_relay_binding_hash", None) != claimed_hash:
+        raise RuntimeError("Prompt Relay attention override does not match its binding")
+    replacements = transformer.get("patches_replace", {})
+    if isinstance(replacements, Mapping) and any(bool(value) for value in replacements.values()):
+        raise RuntimeError("Prompt Relay composer refuses block/attention replacements")
+    return {
+        "patch_version": PROMPT_RELAY_PATCH_VERSION,
+        "binding": binding,
+        "binding_hash": claimed_hash,
+        "query_chunk_rows": query_chunk_rows,
+        "core_hashes": dict(attachment.get("core_hashes") or {}),
+    }
 
 
 def patch_prompt_relay_model(model, binding: Mapping, query_chunk_rows: int):

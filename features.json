@@ -321,7 +321,8 @@
     "MiniMaxH3EnhanceAVideoT8Advanced",
     "MiniMaxH3EnhanceAVideoAuditT8Advanced",
     "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
-    "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
+    "MiniMaxH3EnhanceAVideoSageComposerT8Advanced",
+    "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced"
   ],
   "experimental_enhance_a_video_advanced": {
     "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; an isolated Strict Sage composer also passes one real 0.7MP Stock20 call/runtime/media audit; visual superiority, audio non-inferiority and general 16GiB safety are not established",
@@ -331,12 +332,13 @@
       "MiniMaxH3EnhanceAVideoT8Advanced",
       "MiniMaxH3EnhanceAVideoAuditT8Advanced",
       "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced",
-      "MiniMaxH3EnhanceAVideoSageComposerT8Advanced"
+      "MiniMaxH3EnhanceAVideoSageComposerT8Advanced",
+      "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced"
     ],
     "paper": "Enhance-A-Video, arXiv:2502.07508v3",
     "reference_commit": "NUS-HPC-AI-Lab/Enhance-A-Video@16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
-    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks and only target-video output rows receive the direct residual gain; legacy composers preserve the existing backend, while the explicit Strict Sage composer owns and audits sageattention.sageattn",
-    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer accepts native Ref2VA and task-Hybrid; an append-only Strict Sage composer owns the native HND Sage kernel route and requires 50 successful no-fallback Sage calls per forward; one real T2VA Stock20 run passed the mechanical call and media gates, while quality, speed, listening and repeated-memory validation remain pending; Prompt Relay, ordinary LoRA, external Sage object patches, BlockCache, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks remain rejected",
+    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks and only target-video output rows receive the direct residual gain; legacy composers preserve the existing backend, the explicit Strict Sage composer owns and audits sageattention.sageattn, and the Prompt Relay composer replaces the two mutually exclusive standalone attention owners with one authenticated Relay-then-FETA route",
+    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer accepts native Ref2VA and task-Hybrid; an append-only Strict Sage composer owns the native HND Sage kernel route and requires 50 successful no-fallback Sage calls per forward; the append-only Prompt Relay composer accepts only an authenticated current Relay MODEL with at least two events, preserves disabled Relay identity, performs Relay attention before target-video FETA gain, adds no model forwards and rejects Turbo8 tasks other than T2VA; its deterministic contract tests pass but the required real 0.7MP control, audio review and repeated-memory gate are still pending; ordinary LoRA, external Sage object patches, BlockCache, STG, Long Video, model-Hybrid artifacts, interior keyframes and denoise masks remain rejected",
     "audio_boundary": "target-audio rows are never directly scaled, but H3 joint packed attention can change audio indirectly in later blocks; listening and signal audit are mandatory",
     "memory_boundary": "max_workspace_mib bounds the planned temporal score workspace only; it is not a whole-workflow VRAM guarantee",
     "frontend_workflows": [
@@ -347,7 +349,8 @@
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_T2VA_Turbo8_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Ref2VA_Stock20_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json",
-      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20_Advanced_EXP.json"
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20_Advanced_EXP.json",
+      "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json"
     ],
     "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; one real same-seed Stock20 0.7MP disabled/apply pair for each task also passes runtime and media gates, while quality, audio non-inferiority and general 16GiB safety remain unproven",
     "validation_tools": [

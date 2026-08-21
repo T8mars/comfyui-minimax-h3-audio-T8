@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.39.1** · 节点 144 个 · GPL-3.0-or-later
+当前版本：**1.39.2** · 节点 145 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -110,6 +110,7 @@ models/face_detection/checkpoints
 - SPEED、Prompt Relay、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
 - Enhance-A-Video / FETA 节点按论文公式从目标视频 Q/K 计算跨帧 CFI，只直接增强目标视频 attention 输出。原节点继续支持 Stock20 的 T2VA / I2VA / FL2VA / L2VA，以及严格限定的修正 Alpha8 Turbo8 T2VA；独立 Reference Composer 只开放原生 Stock20 Ref2VA 和任务型 Hybrid，不改变旧节点合同。上述七类路线现均至少完成一组 0.7MP 同输入、同 seed 的 disabled/apply 机械与媒体对照；Ref2VA 增强端最低显存余量仅约 417MiB，低于项目 512MiB 门槛。自动指标只能证明轨迹和联合音频发生变化，不能证明画质、参考遵循或声音更好，因此所有路线仍不宣称稳定提质、音频非劣或通用16GB安全。
 - `Enhance-A-Video + Strict Sage Advanced EXP`由一个组合节点同时拥有 FETA 路由和本机 SageAttention HND 后端，避免第三方整块 Attention patch 绕过 FETA。它不会静默回退到 PyTorch attention；本机一条 1152×640×124、Stock20 实测完成 1000 次 FETA 测量和 1000 次 Sage 调用，失败/回退为 0，并通过三轮严格音视频解码。该单条机械验证不代表画质更好、声音非劣、速度更快或通用 16GB 安全；使用时不要再叠加 KJ Sage、BlockCache、STG 或其他全局 attention patch。
+- `Enhance-A-Video + Prompt Relay Composer Advanced EXP`解决两个独立节点争用同一Attention入口的问题：它验证现有Relay绑定后，在一次路由中先执行局部事件Relay，再只对目标视频输出行应用FETA；关闭FETA时保留原Relay MODEL。当前仅开放Stock20 T2VA，确定性合同与可导入示例已通过，真实0.7MP画质、听感、重复显存和16GB安全仍未完成，不作为稳定提质路线宣传。
 - Prompt Relay 与 Turbo8 组合时，连接顺序必须是 `UNET → Prompt Relay Conditioning → 修正 Alpha8 Bypass LoRA → DualClock Sampler`；把 LoRA 接在 Relay 前面会被主动拒绝。
 - Prompt Relay 需要保留输入原声时使用 `lock_source`，并把节点的 `mux_audio` 接到最终保存节点；`native/remix/reference_only`仍可能因 H3 联合 AV Transformer 而改变声音。
 - Prompt Relay 默认 `video_only_paper` 不改变旧工作流；只有显式插入 `Query Route`并选择`joint_av_exp`，才会把局部事件时间扩展到目标音频。该模式是H3实验扩展，不是论文已验证能力。

@@ -8,6 +8,7 @@ from .enhance_a_video_advanced import (
     EAV_SAGE_TASK_SCOPES,
     EAV_SAMPLING_PROFILES,
     build_eav_model,
+    build_eav_prompt_relay_model,
     finalize_eav_runtime,
 )
 
@@ -375,9 +376,109 @@ class MiniMaxH3EnhanceAVideoSageComposerT8Advanced(io.ComfyNode):
             )
         )
 
+
+class MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced",
+            display_name="MiniMax H3 Enhance-A-Video + Prompt Relay (Advanced EXP)",
+            description=(
+                "Explicitly replaces one authenticated Prompt Relay wrapper with a single "
+                "combined owner. Relay performs its local-event attention route first; FETA "
+                "then scales only target-video output rows. It does not add model forwards."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect the MODEL output of Prompt Relay Conditioning in apply_exp "
+                        "with at least two active events. For turbo8_alpha8, apply the corrected "
+                        "Alpha8 bypass LoRA after Relay and before this composer."
+                    ),
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact SIGMAS sent to the sampler.",
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled preserves Prompt Relay exactly and disables only EAV; "
+                        "report_only measures FETA after Relay without scaling; apply_exp "
+                        "enables the target-video gain."
+                    ),
+                ),
+                io.Float.Input(
+                    "tau",
+                    default=4.0,
+                    min=-32.0,
+                    max=32.0,
+                    step=0.25,
+                    tooltip="Experimental FETA weight; 4 is a candidate, not an H3 optimum.",
+                ),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer budget only; not total workflow VRAM.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Combo.Input(
+                    "sampling_profile",
+                    options=list(EAV_SAMPLING_PROFILES),
+                    default="stock20",
+                    tooltip=(
+                        "stock20 supports the bound visual/reference task. turbo8_alpha8 is "
+                        "strictly limited to T2VA with the corrected 208-hook bypass LoRA."
+                    ),
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*build_eav_prompt_relay_model(**kwargs))
+
 ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES = [
     MiniMaxH3EnhanceAVideoT8Advanced,
     MiniMaxH3EnhanceAVideoAuditT8Advanced,
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
     MiniMaxH3EnhanceAVideoSageComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced,
 ]

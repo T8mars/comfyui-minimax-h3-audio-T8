@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIR = ROOT / "examples" / "workflows" / "07-motion-detail"
 BASE = WORKFLOW_DIR / "2026-08-21_H3_Enhance_A_Video_FETA_Stock20_Advanced_EXP.json"
+PROMPT_RELAY_BASE = (
+    ROOT
+    / "examples"
+    / "workflows"
+    / "14-prompt-relay"
+    / "2026-08-20_H3_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json"
+)
 INSTALLED = (
     ROOT.parents[1]
     / "user"
@@ -97,6 +105,21 @@ def _append_link(workflow: dict, source: dict, output_slot: int, target: dict, i
     return link_id
 
 
+def _remove_link(workflow: dict, link_id: int) -> None:
+    link = next(link for link in workflow["links"] if int(link[0]) == int(link_id))
+    _, source_id, output_slot, target_id, input_slot, _link_type = link
+    source = _node(workflow, int(source_id))
+    target = _node(workflow, int(target_id))
+    source_links = source["outputs"][int(output_slot)].get("links") or []
+    source["outputs"][int(output_slot)]["links"] = [
+        value for value in source_links if int(value) != int(link_id)
+    ]
+    target["inputs"][int(input_slot)]["link"] = None
+    workflow["links"] = [
+        value for value in workflow["links"] if int(value[0]) != int(link_id)
+    ]
+
+
 def _notes(workflow: dict, *, task: str, profile: str) -> None:
     note_nodes = sorted(
         (node for node in workflow["nodes"] if node["type"] == "MarkdownNote"),
@@ -158,6 +181,7 @@ def _set_orders(workflow: dict) -> None:
         "MiniMaxH3EnhanceAVideoT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoSageComposerT8Advanced": 9,
+        "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced": 9,
         "RandomNoise": 10,
         "BasicGuider": 11,
         "SamplerCustomAdvanced": 12,
@@ -341,6 +365,108 @@ def build_strict_sage_workflow() -> tuple[str, dict]:
     )
 
 
+def build_prompt_relay_workflow() -> tuple[str, dict]:
+    workflow = json.loads(PROMPT_RELAY_BASE.read_text(encoding="utf-8"))
+    eav_source = json.loads(BASE.read_text(encoding="utf-8"))
+    composer = deepcopy(_node(eav_source, 13))
+    audit = deepcopy(
+        next(
+            node
+            for node in eav_source["nodes"]
+            if node["type"] == "MiniMaxH3EnhanceAVideoAuditT8Advanced"
+        )
+    )
+    composer["id"] = int(workflow["last_node_id"]) + 1
+    composer["type"] = "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced"
+    composer["title"] = "One owner: Prompt Relay attention → target-video FETA gain"
+    composer["pos"] = [1260, -250]
+    composer["size"] = [560, 400]
+    composer["properties"]["Node name for S&R"] = composer["type"]
+    composer["widgets_values"] = ["apply_exp", 4.0, 0.0, 1.0, 32, 1.5, "stock20"]
+    for item in composer["inputs"]:
+        item["link"] = None
+    for item in composer["outputs"]:
+        item["links"] = []
+
+    audit["id"] = composer["id"] + 1
+    audit["title"] = "Verify exact NFE + 50 FETA measurements per active forward"
+    audit["pos"] = [2220, 20]
+    for item in audit["inputs"]:
+        item["link"] = None
+    for item in audit["outputs"]:
+        item["links"] = []
+    workflow["nodes"].extend([composer, audit])
+    workflow["last_node_id"] = audit["id"]
+
+    # Relay Conditioning remains the owner of MODEL/CONDITIONING binding.  DualClock
+    # produces the exact schedule, then the composer replaces the standalone Relay
+    # attention owner before BasicGuider.  Audit sits between sampling and AV decode.
+    _remove_link(workflow, 8)
+    _remove_link(workflow, 15)
+    dual = _node(workflow, 7)
+    guider = _node(workflow, 8)
+    sampler = _node(workflow, 10)
+    decode = _node(workflow, 11)
+    _append_link(workflow, dual, 0, composer, 0, "MODEL")
+    _append_link(workflow, dual, 2, composer, 1, "SIGMAS")
+    _append_link(workflow, composer, 0, guider, 0, "MODEL")
+    _append_link(workflow, sampler, 0, audit, 0, "LATENT")
+    _append_link(workflow, composer, 1, audit, 1, "H3_T8_EAV_RUNTIME")
+    _append_link(workflow, audit, 0, decode, 0, "LATENT")
+
+    for node_id, position in {
+        8: [1600, 30],
+        9: [1600, 160],
+        10: [1880, 30],
+        11: [2520, 30],
+        12: [2860, 0],
+    }.items():
+        _node(workflow, node_id)["pos"] = position
+    _node(workflow, 12)["widgets_values"]["filename_prefix"] = (
+        "MiniMaxH3_EAV/eav_prompt_relay_t2va_stock20_tau4_exp"
+    )
+
+    notes = sorted(
+        (node for node in workflow["nodes"] if node["type"] == "MarkdownNote"),
+        key=lambda node: node["id"],
+    )
+    notes[0]["title"] = "① 唯一正确组合顺序"
+    notes[0]["widgets_values"] = (
+        "## Prompt Relay → DualClock → EAV+Relay Composer\n\nPrompt Relay Conditioning必须是"
+        "`apply_exp`且至少有两条启用事件。它先绑定MODEL与CONDITIONING；DualClock生成精确Stock20"
+        "SIGMAS；本组合器再把两个互斥attention owner替换为一个。不要同时串普通EAV节点、Strict Sage、"
+        "BlockCache、STG或其他diffusion/attention patch。"
+    )
+    notes[1]["title"] = "② 组合数学与审计"
+    notes[1]["widgets_values"] = (
+        "## 不增加NFE\n\n每个H3主块先执行Prompt Relay的局部文本时间路由，再由FETA从同一完整"
+        "目标视频Q/K计算CFI，只缩放目标视频attention输出行。Stock20仍必须正好20次模型前向；"
+        "Runtime Audit必须显示每个启用前向50次FETA测量。`mode=disabled`只关闭EAV并保留Relay，"
+        "适合做同Relay基线；`tau=0`不是严格关闭。"
+    )
+    notes[2]["title"] = "③ 音频、画质与显存边界"
+    notes[2]["widgets_values"] = (
+        "## 当前仍是Advanced / EXP\n\n本例是`video_only_paper`：Relay不直接给目标音频query加时间"
+        "bias，FETA也不直接缩放音频行；但H3是联合AV Transformer，声音仍可能被后续共享层间接改变。"
+        "切到`joint_av_exp`时Relay会直接路由音频query，更必须完整试听。`max_workspace_mib`只约束FETA"
+        "分数缓冲，不是整卡显存保证。先固定素材/seed/NFE做disabled/apply单变量对照。"
+    )
+    workflow.setdefault("extra", {})["t8_enhance_a_video_prompt_relay"] = {
+        "scope": "T2VA Stock20 Prompt Relay plus EAV Advanced EXP",
+        "composition_order": "prompt_relay_attention_then_target_video_feta_gain",
+        "adds_model_forwards": False,
+        "expected_nfe": 20,
+        "expected_feta_measurements_per_active_forward": 50,
+        "validation_status": "deterministic_contract_pass_real_0p7mp_pair_pending",
+        "quality_audio_memory_claims": False,
+    }
+    _set_orders(workflow)
+    return (
+        "2026-08-21_H3_Enhance_A_Video_FETA_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json",
+        workflow,
+    )
+
+
 def main() -> None:
     BASE_WORKFLOW = json.loads(BASE.read_text(encoding="utf-8"))
     base_conditioning = _node(BASE_WORKFLOW, 6)
@@ -371,6 +497,12 @@ def main() -> None:
     sage_filename, sage_workflow = build_strict_sage_workflow()
     (WORKFLOW_DIR / sage_filename).write_text(
         json.dumps(sage_workflow, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    relay_filename, relay_workflow = build_prompt_relay_workflow()
+    (WORKFLOW_DIR / relay_filename).write_text(
+        json.dumps(relay_workflow, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
