@@ -6,6 +6,12 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.40.0 appends EAV + BlockCache, EAV + STG, and EAV + Long Video as
+> nodes 146-148 without changing the first 145 node IDs or stable sampling. Only low-load
+> deterministic contracts, registration, importable workflows, and project/user SHA parity were
+> checked; pressure, repeated-memory, quality, listening, speed, and general 16GiB claims remain
+> explicitly unvalidated.
+>
 > Project v1.39.2 appends an isolated Enhance-A-Video + Prompt Relay composer as node 145. A
 > standalone EAV model and standalone Relay model cannot be stacked because both own the same H3
 > diffusion wrapper and optimized-attention entry. The composer authenticates the existing Relay

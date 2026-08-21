@@ -11,6 +11,7 @@
 - `Long_Video_Background_22F_ScenePlusIdentity`：同时携带场景和身份上下文。
 - `Prompt_Relay_Long_Video_Turbo8_Advanced`：整条长视频只创建一次全局事件时间线；每段按
   `timeline_start - context_frames`投影到本地渲染窗口，再与既有Long Video上下文补丁隔离组合。
+- `Enhance_A_Video_Long_Video_Accepted_22F_Stock20_Advanced`：原生Stock20逐段EAV；Long Video继续拥有上下文/layout，组合节点为每段创建独立Runtime Audit。
 
 ## 当前成果
 
@@ -27,3 +28,10 @@ Prompt Relay长视频示例必须先运行segment 0并成功保存AV tail，再�
 设为默认。当前新增路线已完成一条真实segment 0→1链：736×416、Turbo8、22帧上下文，输出
 124+102帧，事件顺序没有重启，视频/音频各3轮严格解码通过；整卡峰值约15478/14984MiB。
 接缝处没有静音断层，但原始PCM边界跳变仍需最终试听，因此继续标EXP，不宣传普遍画质或16GB安全。
+
+EAV长视频模板固定为原生Stock20，不使用旧Turbo LoRA。正确顺序是
+`Long Video Conditioning → DualClock → EAV+Long Video Composer → Guider`；Planner的
+`segment_index/context_frames`必须同时连接Conditioning与Composer。segment 0要求0帧上下文，
+续段只接受5/22/39帧并核对运动keyframe偏移。每段独立要求20次前向、每个活跃前向50次FETA测量；
+候选保存、人工接受、manifest和断点恢复仍由既有Long Video节点负责。当前只完成低负载合同、注册、
+导入接线和项目/用户文件一致性检查，没有压力测试，不宣称接缝更好、音频非劣、提速、省显存或通用16GB安全。

@@ -21,6 +21,11 @@ from comfy.ldm.minimax.model import (
 from comfy.ldm.modules import attention as attention_module
 from comfy.model_base import MiniMaxH3 as MiniMaxH3BaseModel
 
+from .detail_sampling_advanced import (
+    _parse_h3_blocks,
+    apply_h3_spatiotemporal_guidance,
+)
+
 
 # Clean-room H3 adapter derived from the equations in Enhance-A-Video / FETA.
 # Paper: arXiv:2502.07508v3. Reference implementation (Apache-2.0):
@@ -31,6 +36,15 @@ EAV_RUNTIME_KEY = "t8_h3_eav_runtime"
 EAV_WRAPPER_KEY = "t8_h3_eav_feta_v1"
 EAV_PROMPT_RELAY_WRAPPER_KEY = "t8_h3_eav_prompt_relay_v1"
 EAV_PROMPT_RELAY_PATCH_VERSION = 1
+EAV_BLOCK_CACHE_WRAPPER_KEY = "t8_h3_eav_block_cache_v1"
+EAV_BLOCK_CACHE_PATCH_VERSION = 1
+EAV_STG_WRAPPER_KEY = "t8_h3_eav_stg_v1"
+EAV_STG_PATCH_VERSION = 1
+EAV_STG_BRANCH_KEY = "t8_h3_eav_stg_branch_v1"
+EAV_LONG_VIDEO_WRAPPER_KEY = "t8_h3_eav_long_video_v1"
+EAV_LONG_VIDEO_PATCH_VERSION = 1
+BLOCK_CACHE_KEY = "minimax_h3_block_cache_t8"
+BLOCK_CACHE_WRAPPER_KEY = "minimax_h3_block_cache_t8"
 EAV_MODES = ("disabled", "report_only", "apply_exp")
 EAV_SAMPLING_PROFILES = ("stock20", "turbo8_alpha8")
 EAV_ATTENTION_BACKENDS = ("native_optimized", "strict_sage_hnd")
@@ -51,6 +65,21 @@ MODEL_FORWARD_SHA256S = {
 }
 PATCHIFY_VIDEO_SHA256S = {
     "b53a83b308cd69152a27f79a9e36f296f74f9f9a8ba8889319f8d32609cda645",
+}
+BLOCK_CACHE_OUTER_WRAPPER_SHA256S = {
+    "6a150ac20157ae73ba9b6669b9af4350f818c9234c327af7812728c7d792f4cd",
+}
+BLOCK_CACHE_DIFFUSION_WRAPPER_SHA256S = {
+    "408e4d515653bee5b9c3bd06165f9247e7b3a2cf5c5fce9a321dba9b25ca7226",
+}
+BLOCK_CACHE_CLASS_SHA256S = {
+    "85f5bf37cc5c8828b28e15e6ba4ec4a3c31608c08458dd3d3445ac372403b7a5",
+}
+BLOCK_CACHE_PATCH_CALL_SHA256S = {
+    "58f154e9de31d6fd8c38c8454f91fe04b27b62f64028641f1b846726bf4e6cac",
+}
+BLOCK_CACHE_CONFIG_CLASS_SHA256S = {
+    "eb1661386fc2e5c489da2caff6856f747964a305114af858d9b470599e894388",
 }
 
 
@@ -238,7 +267,15 @@ class EAVRuntime:
         self._aborted = None
         self._forwards: list[dict] = []
 
-    def begin_forward(self, *, sigma_video: float, progress_video: float, route: Mapping) -> int:
+    def begin_forward(
+        self,
+        *,
+        sigma_video: float,
+        progress_video: float,
+        route: Mapping,
+        branch: str = "main",
+        skipped_blocks=(),
+    ) -> int:
         with self._lock:
             if self._consumed:
                 self._run_index += 1
@@ -250,6 +287,8 @@ class EAVRuntime:
                 "sigma_video": float(sigma_video),
                 "progress_video": float(progress_video),
                 "active": bool(route["active"]),
+                "branch": str(branch),
+                "skipped_blocks": [int(value) for value in skipped_blocks],
                 "task": str(route.get("task", "unknown")),
                 "frames": int(route["frames"]),
                 "spatial_tokens": int(route["spatial_tokens"]),
@@ -262,6 +301,7 @@ class EAVRuntime:
                 "workspace_estimate_bytes": [],
                 "strict_sage_call_count": 0,
                 "strict_sage_failures": [],
+                "block_cache_decision": None,
             }
             self._forwards.append(forward)
             return int(forward["index"])
@@ -285,6 +325,16 @@ class EAVRuntime:
             forward["strict_sage_failures"].append(
                 f"{type(exc).__name__}: {exc}"
             )
+
+    def record_block_cache_decision(self, forward_index: int, decision: str):
+        decision = str(decision)
+        if decision not in {"full", "hit"}:
+            raise ValueError(f"Unknown H3 BlockCache decision {decision!r}")
+        with self._lock:
+            forward = self._forwards[int(forward_index)]
+            if forward["block_cache_decision"] is not None:
+                raise RuntimeError("H3 EAV BlockCache decision was recorded twice")
+            forward["block_cache_decision"] = decision
 
     def abort(self, exc: BaseException):
         with self._lock:
@@ -374,9 +424,32 @@ class EAVRuntime:
             return report
 
 
-def _assert_core_contract(model, *, sampling_profile: str) -> dict:
+def _assert_no_sampler_guidance_hooks(model, *, owner: str) -> None:
+    options = getattr(model, "model_options", {})
+    conflict_keys = (
+        "sampler_cfg_function",
+        "sampler_pre_cfg_function",
+        "sampler_post_cfg_function",
+        "sampler_calc_cond_batch_function",
+        "model_function_wrapper",
+    )
+    conflicts = [key for key in conflict_keys if bool(options.get(key))]
+    if conflicts:
+        raise RuntimeError(
+            f"{owner} refuses existing sampler/model guidance hooks: "
+            + ", ".join(conflicts)
+        )
+
+
+def _assert_core_contract(
+    model,
+    *,
+    sampling_profile: str,
+    allowed_live_extra_conds_patch_versions: tuple[int, ...] = (),
+) -> dict:
     if not hasattr(model, "clone") or not hasattr(model, "add_wrapper_with_key"):
         raise ValueError("H3 EAV requires a ComfyUI MODEL patcher")
+    _assert_no_sampler_guidance_hooks(model, owner="H3 EAV")
     base = getattr(model, "model", None)
     if not isinstance(base, MiniMaxH3BaseModel):
         if type(getattr(base, "diffusion_model", None)).__name__ != "MiniMaxH3Model":
@@ -422,18 +495,174 @@ def _assert_core_contract(model, *, sampling_profile: str) -> dict:
     else:
         raise ValueError(f"Unknown H3 EAV sampling profile {sampling_profile!r}")
     object_patches = getattr(model, "object_patches", {})
-    conflict_names = sorted(
-        key
-        for key in object_patches
-        if key.startswith("diffusion_model.blocks.")
-        or key in {"diffusion_model._forward", "diffusion_model.forward", "extra_conds"}
-    )
+    conflict_names = []
+    for key, value in object_patches.items():
+        if key == "extra_conds" and allowed_live_extra_conds_patch_versions:
+            function = getattr(value, "__func__", value)
+            version = getattr(function, "_t8_long_video_patch_version", None)
+            if version in set(allowed_live_extra_conds_patch_versions):
+                continue
+        if key.startswith("diffusion_model.blocks.") or key in {
+            "diffusion_model._forward",
+            "diffusion_model.forward",
+            "extra_conds",
+        }:
+            conflict_names.append(key)
+    conflict_names.sort()
     if conflict_names:
         raise RuntimeError(
             "H3 EAV cannot stack with existing H3 object patches: "
             + ", ".join(conflict_names)
         )
     return {"core_hashes": hashes, "turbo_contract": turbo_contract}
+
+
+def _assert_block_cache_contract(model) -> dict:
+    """Authenticate the separately installed T8 BlockCache without importing it.
+
+    The composer calls the already-attached BlockCache diffusion wrapper instead of
+    copying its cache/finalization implementation. Source hashes deliberately pin
+    the inter-project boundary so an upstream cache change fails closed until the
+    combined contract is reviewed again.
+    """
+    if not hasattr(model, "get_wrappers") or not hasattr(
+        model, "remove_wrappers_with_key"
+    ):
+        raise ValueError("H3 EAV + BlockCache requires a current ComfyUI MODEL patcher")
+
+    transformer = getattr(model, "model_options", {}).get("transformer_options", {})
+    prototype = transformer.get(BLOCK_CACHE_KEY)
+    if prototype is None:
+        raise RuntimeError(
+            "H3 EAV + BlockCache requires the MODEL output of MiniMaxH3BlockCacheT8"
+        )
+    total_blocks = int(getattr(prototype, "total_blocks", -1))
+    if total_blocks != 50:
+        raise RuntimeError(
+            "H3 EAV + BlockCache requires the native 50-block H3 cache contract"
+        )
+
+    config = getattr(prototype, "config", None)
+    required_config = (
+        "residual_diff_threshold",
+        "start_percent",
+        "end_percent",
+        "max_consecutive_hits",
+        "cache_device",
+        "metric_stride",
+        "verbose",
+    )
+    if config is None or any(not hasattr(config, key) for key in required_config):
+        raise RuntimeError("H3 EAV + BlockCache cache configuration is incomplete")
+    config_report = {key: getattr(config, key) for key in required_config}
+    threshold = float(config_report["residual_diff_threshold"])
+    start_percent = float(config_report["start_percent"])
+    end_percent = float(config_report["end_percent"])
+    max_hits = int(config_report["max_consecutive_hits"])
+    metric_stride = int(config_report["metric_stride"])
+    cache_device = str(config_report["cache_device"])
+    if not 0.0 <= threshold <= 1.0:
+        raise RuntimeError("H3 EAV + BlockCache residual threshold is outside 0..1")
+    if not 0.0 <= start_percent < end_percent <= 1.0:
+        raise RuntimeError("H3 EAV + BlockCache sampling window is invalid")
+    if not 1 <= max_hits <= 10 or not 1 <= metric_stride <= 32:
+        raise RuntimeError("H3 EAV + BlockCache cache limits are invalid")
+    if cache_device != "cpu":
+        raise RuntimeError(
+            "H3 EAV + BlockCache first contract requires cache_device=cpu; GPU cache "
+            "adds unaudited VRAM pressure"
+        )
+
+    wrapper_type = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    outer_type = comfy.patcher_extension.WrappersMP.OUTER_SAMPLE
+    diffusion_wrappers = list(model.get_wrappers(wrapper_type, BLOCK_CACHE_WRAPPER_KEY))
+    outer_wrappers = list(model.get_wrappers(outer_type, BLOCK_CACHE_WRAPPER_KEY))
+    if len(diffusion_wrappers) != 1 or len(outer_wrappers) != 1:
+        raise RuntimeError(
+            "H3 EAV + BlockCache requires exactly one cache diffusion wrapper and "
+            "one execution-scoped outer wrapper"
+        )
+    wrappers = getattr(model, "wrappers", {})
+    wrapper_inventory = {
+        kind: {
+            str(key): len(values)
+            for key, values in keyed.items()
+            if bool(values)
+        }
+        for kind, keyed in wrappers.items()
+        if isinstance(keyed, Mapping)
+        and any(bool(values) for values in keyed.values())
+    }
+    expected_inventory = {
+        outer_type: {BLOCK_CACHE_WRAPPER_KEY: 1},
+        wrapper_type: {BLOCK_CACHE_WRAPPER_KEY: 1},
+    }
+    if wrapper_inventory != expected_inventory:
+        raise RuntimeError(
+            "H3 EAV + BlockCache refuses additional model/sample wrappers: "
+            f"observed={wrapper_inventory}"
+        )
+
+    replacements = transformer.get("patches_replace", {})
+    if not isinstance(replacements, Mapping) or set(replacements) != {"dit"}:
+        raise RuntimeError("H3 EAV + BlockCache replacement scope is not exact")
+    dit_replacements = replacements.get("dit")
+    expected_keys = {("double_block", 0), ("double_block", 49)}
+    if not isinstance(dit_replacements, Mapping) or set(dit_replacements) != expected_keys:
+        raise RuntimeError(
+            "H3 EAV + BlockCache requires only the boundary block 0/49 replacements"
+        )
+    for key, patch in dit_replacements.items():
+        if int(getattr(patch, "block_index", -1)) != int(key[1]):
+            raise RuntimeError("H3 EAV + BlockCache boundary patch identity is invalid")
+
+    hashes = {
+        "outer_wrapper": _source_sha256(outer_wrappers[0]),
+        "diffusion_wrapper": _source_sha256(diffusion_wrappers[0]),
+        "cache_class": _source_sha256(type(prototype)),
+        "patch_call": _source_sha256(type(next(iter(dit_replacements.values()))).__call__),
+        "config_class": _source_sha256(type(config)),
+    }
+    expected_hashes = {
+        "outer_wrapper": BLOCK_CACHE_OUTER_WRAPPER_SHA256S,
+        "diffusion_wrapper": BLOCK_CACHE_DIFFUSION_WRAPPER_SHA256S,
+        "cache_class": BLOCK_CACHE_CLASS_SHA256S,
+        "patch_call": BLOCK_CACHE_PATCH_CALL_SHA256S,
+        "config_class": BLOCK_CACHE_CONFIG_CLASS_SHA256S,
+    }
+    mismatches = [
+        key for key, value in hashes.items() if value not in expected_hashes[key]
+    ]
+    if mismatches:
+        raise RuntimeError(
+            "H3 EAV + BlockCache has not validated the installed cache contract: "
+            + ", ".join(f"{key}={hashes[key]}" for key in mismatches)
+        )
+
+    return {
+        "prototype": prototype,
+        "diffusion_wrapper": diffusion_wrappers[0],
+        "replacements": dict(dit_replacements),
+        "report": {
+            "patch_version": EAV_BLOCK_CACHE_PATCH_VERSION,
+            "source_hashes": hashes,
+            "total_blocks": total_blocks,
+            "boundary_blocks": [0, 49],
+            "cache_device": cache_device,
+            "config": {
+                "residual_diff_threshold": threshold,
+                "start_percent": start_percent,
+                "end_percent": end_percent,
+                "max_consecutive_hits": max_hits,
+                "metric_stride": metric_stride,
+                "verbose": bool(config_report["verbose"]),
+            },
+            "composition_order": (
+                "EAV_on_each_executed_block; BlockCache_may_reuse_cached_blocks_1_to_49"
+            ),
+            "adds_model_forwards": False,
+        },
+    }
 
 
 def _runtime_route(
@@ -448,11 +677,12 @@ def _runtime_route(
     end_progress: float,
     allowed_tasks=EAV_VISUAL_TASKS,
     allow_reference_blocks: bool = False,
+    long_video_contract: Mapping | None = None,
 ) -> dict:
     if denoise_mask is not None or audio_denoise_mask is not None:
         raise RuntimeError("H3 EAV rejects video/audio denoise masks")
     refs = list(payload.get("refs") or ())
-    if refs and not allow_reference_blocks:
+    if refs and not allow_reference_blocks and long_video_contract is None:
         raise RuntimeError("H3 EAV currently rejects Ref2VA/Hybrid reference blocks")
     try:
         video, audio = x[0], x[1]
@@ -476,7 +706,43 @@ def _runtime_route(
 
     frames = int(video.shape[2])
     keyframes = list(payload.get("keyframes") or ())
-    task = _classify_visual_task(keyframes, latent_frames=frames, refs=refs)
+    if long_video_contract is None:
+        task = _classify_visual_task(keyframes, latent_frames=frames, refs=refs)
+        expected_cond_count = None
+    else:
+        from .long_video import (
+            CONTEXT_FRAME_STEPS,
+            LONG_VIDEO_PATCH_VERSION,
+            MOTION_FRAME_INDEX,
+            step_offsets,
+        )
+
+        if int(payload.get("t8_long_video_patch_version", -1)) != LONG_VIDEO_PATCH_VERSION:
+            raise RuntimeError("H3 EAV + Long Video requires the repaired runtime payload")
+        segment_index = int(long_video_contract["segment_index"])
+        context_frames = int(long_video_contract["context_frames"])
+        motion_keyframes = [
+            item for item in keyframes if MOTION_FRAME_INDEX in item
+        ]
+        if segment_index == 0:
+            if context_frames != 0 or motion_keyframes:
+                raise RuntimeError(
+                    "H3 EAV + Long Video segment 0 cannot contain motion context"
+                )
+            task = "LongVideoSegment0"
+        else:
+            expected_steps = int(CONTEXT_FRAME_STEPS[context_frames])
+            observed_offsets = [
+                int(item[MOTION_FRAME_INDEX]) for item in motion_keyframes
+            ]
+            expected_offsets = [int(value) for value in step_offsets(expected_steps)]
+            if observed_offsets != expected_offsets:
+                raise RuntimeError(
+                    "H3 EAV + Long Video motion-context offsets changed: "
+                    f"observed={observed_offsets}, expected={expected_offsets}"
+                )
+            task = "LongVideoMotion"
+        expected_cond_count = len(keyframes)
     if task not in set(allowed_tasks):
         raise RuntimeError(f"H3 EAV task {task} is outside the enabled task scope")
     video_rows = int(video_end - video_start)
@@ -489,8 +755,11 @@ def _runtime_route(
     )
     if spatial_tokens != expected_spatial:
         raise RuntimeError("H3 EAV target-video token order/grid contract did not match H3")
-    visual_task = _classify_visual_task(keyframes, latent_frames=frames)
-    expected_cond_count = 0 if visual_task == "T2VA" else (2 if visual_task == "FL2VA" else 1)
+    if expected_cond_count is None:
+        visual_task = _classify_visual_task(keyframes, latent_frames=frames)
+        expected_cond_count = (
+            0 if visual_task == "T2VA" else (2 if visual_task == "FL2VA" else 1)
+        )
     expected_segments = [("text", int(context.shape[1]))]
     expected_segments.extend(("cond", spatial_tokens) for _ in range(expected_cond_count))
     expected_segments.extend(_reference_segment_contract(refs))
@@ -1104,6 +1373,10 @@ def build_eav_model(
     allow_reference_blocks: bool = False,
     composer_profile: str = "isolated_visual",
     attention_backend: str = "native_optimized",
+    stg_contract: Mapping | None = None,
+    long_video_contract: Mapping | None = None,
+    allowed_live_extra_conds_patch_versions: tuple[int, ...] = (),
+    wrapper_key: str = EAV_WRAPPER_KEY,
 ):
     mode = str(mode)
     if mode not in EAV_MODES:
@@ -1122,9 +1395,18 @@ def build_eav_model(
     if attention_backend not in EAV_ATTENTION_BACKENDS:
         raise ValueError(f"Unknown H3 EAV attention backend {attention_backend!r}")
     allowed_tasks = tuple(str(task) for task in allowed_tasks)
-    if not allowed_tasks or not set(allowed_tasks).issubset(set(EAV_ALL_TASKS)):
+    valid_tasks = (
+        {"LongVideoSegment0", "LongVideoMotion"}
+        if long_video_contract is not None
+        else set(EAV_ALL_TASKS)
+    )
+    if not allowed_tasks or not set(allowed_tasks).issubset(valid_tasks):
         raise ValueError(f"H3 EAV received an invalid task scope: {allowed_tasks!r}")
-    if allow_reference_blocks and not set(allowed_tasks).issubset(set(EAV_REFERENCE_TASKS)):
+    if (
+        long_video_contract is None
+        and allow_reference_blocks
+        and not set(allowed_tasks).issubset(set(EAV_REFERENCE_TASKS))
+    ):
         raise ValueError(
             "H3 EAV reference composer can enable only Ref2VA/Hybrid task scopes"
         )
@@ -1154,6 +1436,10 @@ def build_eav_model(
         "direct_audio_scaling": False,
         "output_scaling": "in_place_target_video_slice_no_full_packed_clone",
         "sigma_contract": sigma_contract,
+        "stg_contract": dict(stg_contract) if stg_contract is not None else None,
+        "long_video_contract": (
+            dict(long_video_contract) if long_video_contract is not None else None
+        ),
         "scientific_boundary": (
             "H3 is a joint packed AV Transformer. This adapter computes temporal CFI from "
             "target-video Q/K and directly scales only target-video attention output rows, "
@@ -1169,7 +1455,13 @@ def build_eav_model(
         ]
         return model, runtime, _json(config)
 
-    contracts = _assert_core_contract(model, sampling_profile=sampling_profile)
+    contracts = _assert_core_contract(
+        model,
+        sampling_profile=sampling_profile,
+        allowed_live_extra_conds_patch_versions=tuple(
+            int(value) for value in allowed_live_extra_conds_patch_versions
+        ),
+    )
     config["core_hashes"] = contracts["core_hashes"]
     config["turbo_contract"] = contracts["turbo_contract"]
     config["attention_backend_contract"] = (
@@ -1210,8 +1502,56 @@ def build_eav_model(
         if getattr(installed, "_t8_h3_eav_patch_version", None) != EAV_PATCH_VERSION:
             raise RuntimeError("H3 EAV attention override was replaced after binding")
         replacements = transformer_options.get("patches_replace", {})
-        if isinstance(replacements, Mapping) and any(bool(v) for v in replacements.values()):
-            raise RuntimeError("H3 EAV detected a runtime block replacement and refused it")
+        branch = "main"
+        skipped_blocks = []
+        if stg_contract is None:
+            if EAV_STG_BRANCH_KEY in transformer_options:
+                raise RuntimeError("H3 EAV found an unauthenticated STG branch marker")
+            if isinstance(replacements, Mapping) and any(
+                bool(v) for v in replacements.values()
+            ):
+                raise RuntimeError("H3 EAV detected a runtime block replacement and refused it")
+        else:
+            marker = transformer_options.get(EAV_STG_BRANCH_KEY)
+            if marker is None:
+                if isinstance(replacements, Mapping) and any(
+                    bool(v) for v in replacements.values()
+                ):
+                    raise RuntimeError(
+                        "H3 EAV + STG main branch received a block replacement"
+                    )
+            else:
+                expected_marker = stg_contract["weak_branch_marker"]
+                if not isinstance(marker, Mapping) or dict(marker) != dict(
+                    expected_marker
+                ):
+                    raise RuntimeError("H3 EAV + STG weak branch marker was invalid")
+                skipped_blocks = [
+                    int(value) for value in stg_contract["double_blocks"]
+                ]
+                dit = (
+                    replacements.get("dit", {})
+                    if isinstance(replacements, Mapping)
+                    else {}
+                )
+                expected_keys = {
+                    ("double_block", int(value)) for value in skipped_blocks
+                }
+                if set(replacements) != {"dit"} or set(dit) != expected_keys:
+                    raise RuntimeError(
+                        "H3 EAV + STG weak branch block replacements changed"
+                    )
+                for patch in dit.values():
+                    if (
+                        getattr(patch, "_t8_h3_stg_patch_version", None)
+                        != EAV_STG_PATCH_VERSION
+                        or getattr(patch, "_t8_h3_stg_binding_hash", None)
+                        != stg_contract["binding_hash"]
+                    ):
+                        raise RuntimeError(
+                            "H3 EAV + STG weak branch skip patch was not authenticated"
+                        )
+                branch = "stg_weak"
         payload = kwargs.get("minimax_payload")
         if not isinstance(payload, Mapping):
             raise RuntimeError("H3 EAV could not find the native H3 minimax_payload")
@@ -1229,11 +1569,14 @@ def build_eav_model(
                 end_progress=float(end_video_progress),
                 allowed_tasks=allowed_tasks,
                 allow_reference_blocks=bool(allow_reference_blocks),
+                long_video_contract=long_video_contract,
             )
             forward_index = runtime.begin_forward(
                 sigma_video=route["sigma_video"],
                 progress_video=route["progress_video"],
                 route=route,
+                branch=branch,
+                skipped_blocks=skipped_blocks,
             )
             route.update(
                 {
@@ -1256,15 +1599,467 @@ def build_eav_model(
 
     patched.add_wrapper_with_key(
         comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL,
-        EAV_WRAPPER_KEY,
+        str(wrapper_key),
         _diffusion_wrapper,
     )
     patched.set_model_optimized_attention(route_eav_attention)
     installed = patched.model_options["transformer_options"]["optimized_attention_override"]
     installed._t8_h3_eav_patch_version = EAV_PATCH_VERSION
     if hasattr(patched, "set_attachments"):
-        patched.set_attachments(EAV_WRAPPER_KEY, dict(config))
+        patched.set_attachments(str(wrapper_key), dict(config))
     return patched, runtime, _json(config)
+
+
+def build_eav_stg_model(
+    model,
+    sigmas: torch.Tensor,
+    *,
+    mode: str,
+    tau: float,
+    start_video_progress: float,
+    end_video_progress: float,
+    max_workspace_mib: int,
+    g_hard_limit: float,
+    stg_scale: float,
+    stg_double_blocks: str,
+    stg_start_progress: float,
+    stg_end_progress: float,
+    shift_video: float,
+    rescale: float,
+):
+    """Compose FETA with the project's H3 skip-block STG as one audited owner."""
+    _assert_no_sampler_guidance_hooks(model, owner="H3 EAV + STG")
+    contracts = _assert_core_contract(model, sampling_profile="stock20")
+    blocks = _parse_h3_blocks(stg_double_blocks)
+    scale = float(stg_scale)
+    start = float(stg_start_progress)
+    end = float(stg_end_progress)
+    shift = float(shift_video)
+    if not math.isfinite(scale) or not 0.0 <= scale <= 5.0:
+        raise ValueError("H3 EAV + STG scale must be finite and between 0 and 5")
+    if not 0.0 <= start < end <= 1.0:
+        raise ValueError("H3 EAV + STG progress must satisfy 0 <= start < end <= 1")
+    if not math.isfinite(shift) or shift <= 0.0:
+        raise ValueError("H3 EAV + STG shift_video must be finite and positive")
+    if not math.isfinite(float(rescale)) or float(rescale) != 0.0:
+        raise ValueError("H3 EAV + STG requires rescale=0")
+
+    schedule = torch.as_tensor(sigmas).detach().float().cpu().flatten()
+    if schedule.numel() < 2:
+        raise ValueError("H3 EAV + STG requires a non-empty sigma schedule")
+    call_sigmas = schedule[:-1]
+    denominator = shift + call_sigmas * (1.0 - shift)
+    if not bool((denominator > 0).all()):
+        raise ValueError("H3 EAV + STG shift produced an invalid progress denominator")
+    progress = 1.0 - call_sigmas / denominator
+    weak_mask = (progress >= start) & (progress <= end)
+    if scale <= 0.0:
+        weak_mask = torch.zeros_like(weak_mask, dtype=torch.bool)
+    weak_flags = weak_mask.tolist()
+    expected_branches = []
+    for weak in weak_flags:
+        expected_branches.append("main")
+        if bool(weak):
+            expected_branches.append("stg_weak")
+    contract = {
+        "schema": EAV_STG_PATCH_VERSION,
+        "applied": bool(scale > 0.0),
+        "scale": scale,
+        "double_blocks": blocks,
+        "start_progress": start,
+        "end_progress": end,
+        "shift_video": shift,
+        "rescale": float(rescale),
+        "base_nfe": int(call_sigmas.numel()),
+        "expected_weak_forwards": int(sum(bool(value) for value in weak_flags)),
+        "expected_total_forwards": len(expected_branches),
+        "expected_branches": expected_branches,
+        "feta_on_main_and_weak": True,
+        "weak_feta_measurements_when_active": 50 - len(blocks),
+    }
+    binding_payload = json.dumps(
+        contract, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    contract["binding_hash"] = hashlib.sha256(binding_payload).hexdigest()
+    marker = {
+        "schema": EAV_STG_PATCH_VERSION,
+        "binding_hash": contract["binding_hash"],
+        "branch": "stg_weak",
+        "skipped_double_blocks": blocks,
+    }
+    contract["weak_branch_marker"] = marker
+
+    patched, runtime, _report_json = build_eav_model(
+        model,
+        sigmas,
+        mode=mode,
+        tau=tau,
+        start_video_progress=start_video_progress,
+        end_video_progress=end_video_progress,
+        max_workspace_mib=max_workspace_mib,
+        g_hard_limit=g_hard_limit,
+        sampling_profile="stock20",
+        allowed_tasks=EAV_VISUAL_TASKS,
+        allow_reference_blocks=False,
+        composer_profile="stg_visual_stock20_v1",
+        attention_backend="native_optimized",
+        stg_contract=contract,
+        wrapper_key=EAV_STG_WRAPPER_KEY,
+    )
+    runtime.config["core_hashes"] = contracts["core_hashes"]
+    runtime.config["turbo_contract"] = None
+    runtime.config["stg_contract"] = dict(contract)
+    runtime.config["notes"] = [
+        "one composer owns EAV routing plus the single H3 STG post-CFG hook",
+        "EAV runs on both the main conditional forward and the STG weak forward so the guidance difference is not confounded by enabling FETA on only one branch",
+        f"main forwards execute 50 measured blocks; active STG weak forwards skip {blocks} and therefore execute {50 - len(blocks)} measured blocks",
+        "mode=disabled disables only EAV and keeps STG as the explicit comparison baseline",
+        "STG adds one shared audio-video Transformer forward in each configured active step and can change sound as well as picture",
+        "quality, audio non-inferiority, performance and 16GiB safety are not assumed",
+    ]
+    stg_model, stg_report_json = apply_h3_spatiotemporal_guidance(
+        patched,
+        scale=scale,
+        double_blocks=",".join(str(value) for value in blocks),
+        start_progress=start,
+        end_progress=end,
+        shift_video=shift,
+        rescale=float(rescale),
+        weak_branch_marker=(EAV_STG_BRANCH_KEY, marker),
+    )
+    runtime.config["stg_node_report"] = json.loads(stg_report_json)
+    if stg_model is not model and hasattr(stg_model, "set_attachments"):
+        stg_model.set_attachments(
+            EAV_STG_WRAPPER_KEY,
+            {
+                "patch_version": EAV_STG_PATCH_VERSION,
+                "eav_config": dict(runtime.config),
+                "stg_contract": dict(contract),
+            },
+        )
+    return stg_model, runtime, _json(runtime.config)
+
+
+def _assert_long_video_contract(model, *, segment_index: int, context_frames: int) -> dict:
+    from .long_video import CONTEXT_FRAME_STEPS, LONG_VIDEO_PATCH_VERSION
+
+    segment_index = int(segment_index)
+    context_frames = int(context_frames)
+    if segment_index < 0:
+        raise ValueError("H3 EAV + Long Video segment_index cannot be negative")
+    if segment_index == 0:
+        if context_frames != 0:
+            raise ValueError("H3 EAV + Long Video segment 0 requires context_frames=0")
+    elif context_frames not in CONTEXT_FRAME_STEPS:
+        raise ValueError(
+            "H3 EAV + Long Video continuation context_frames must be 5, 22, or 39"
+        )
+    object_patches = getattr(model, "object_patches", {})
+    patched_extra_conds = object_patches.get("extra_conds")
+    if patched_extra_conds is None:
+        raise RuntimeError(
+            "H3 EAV + Long Video requires the MODEL output of Long Video Conditioning"
+        )
+    function = getattr(patched_extra_conds, "__func__", patched_extra_conds)
+    version = getattr(function, "_t8_long_video_patch_version", None)
+    original = getattr(function, "_t8_long_video_original_extra_conds", None)
+    if version != LONG_VIDEO_PATCH_VERSION or not callable(original):
+        raise RuntimeError("H3 EAV + Long Video extra_conds patch is not authentic")
+    contract = {
+        "schema": EAV_LONG_VIDEO_PATCH_VERSION,
+        "long_video_patch_version": int(version),
+        "segment_index": segment_index,
+        "context_frames": context_frames,
+        "expected_motion_latent_steps": (
+            0 if segment_index == 0 else int(CONTEXT_FRAME_STEPS[context_frames])
+        ),
+        "extra_conds_patch_sha256": _source_sha256(function),
+        "resume_scope": "execution_local_eav_runtime_per_segment",
+    }
+    binding = json.dumps(
+        contract, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    contract["binding_hash"] = hashlib.sha256(binding).hexdigest()
+    return contract
+
+
+def build_eav_long_video_model(
+    model,
+    sigmas: torch.Tensor,
+    *,
+    segment_index: int,
+    context_frames: int,
+    mode: str,
+    tau: float,
+    start_video_progress: float,
+    end_video_progress: float,
+    max_workspace_mib: int,
+    g_hard_limit: float,
+):
+    """Compose scoped Long Video layout repair with one per-segment FETA owner."""
+    from .long_video import LONG_VIDEO_PATCH_VERSION
+
+    contract = _assert_long_video_contract(
+        model,
+        segment_index=segment_index,
+        context_frames=context_frames,
+    )
+    core = _assert_core_contract(
+        model,
+        sampling_profile="stock20",
+        allowed_live_extra_conds_patch_versions=(LONG_VIDEO_PATCH_VERSION,),
+    )
+    patched, runtime, _report_json = build_eav_model(
+        model,
+        sigmas,
+        mode=mode,
+        tau=tau,
+        start_video_progress=start_video_progress,
+        end_video_progress=end_video_progress,
+        max_workspace_mib=max_workspace_mib,
+        g_hard_limit=g_hard_limit,
+        sampling_profile="stock20",
+        allowed_tasks=("LongVideoSegment0", "LongVideoMotion"),
+        allow_reference_blocks=True,
+        composer_profile="long_video_segment_stock20_v1",
+        attention_backend="native_optimized",
+        long_video_contract=contract,
+        allowed_live_extra_conds_patch_versions=(LONG_VIDEO_PATCH_VERSION,),
+        wrapper_key=EAV_LONG_VIDEO_WRAPPER_KEY,
+    )
+    runtime.config["core_hashes"] = core["core_hashes"]
+    runtime.config["long_video_contract"] = dict(contract)
+    runtime.config["notes"] = [
+        "Long Video Conditioning remains the only extra_conds/layout owner; EAV owns only its per-segment diffusion and attention route",
+        "segment_index and context_frames force a fresh execution-local EAV runtime, so resume never reuses a consumed audit token from an earlier segment",
+        "segment 0 requires no motion context; continuation segments require the exact 5/22/39-frame motion-keyframe offsets from the immediately preceding accepted context",
+        "each Stock20 segment is audited independently for 20 model forwards and 50 active block measurements per forward",
+        "quality, seam continuity, audio non-inferiority, performance and 16GiB safety are not assumed",
+    ]
+    if hasattr(patched, "set_attachments") and patched is not model:
+        patched.set_attachments(
+            EAV_LONG_VIDEO_WRAPPER_KEY,
+            {
+                "patch_version": EAV_LONG_VIDEO_PATCH_VERSION,
+                "eav_config": dict(runtime.config),
+                "long_video_contract": dict(contract),
+            },
+        )
+    return patched, runtime, _json(runtime.config)
+
+
+def build_eav_block_cache_model(
+    model,
+    sigmas: torch.Tensor,
+    *,
+    mode: str,
+    tau: float,
+    start_video_progress: float,
+    end_video_progress: float,
+    max_workspace_mib: int,
+    g_hard_limit: float,
+):
+    """Compose one authenticated CPU BlockCache owner with target-video FETA.
+
+    The cache's own outer-sample wrapper remains authoritative for creating and
+    releasing execution-local cache state. Its diffusion wrapper is called from
+    the combined owner so cache-hit H3 finalization is not duplicated here.
+    """
+    cache_contract = _assert_block_cache_contract(model)
+    clean = model.clone()
+    wrapper_type = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    clean.remove_wrappers_with_key(wrapper_type, BLOCK_CACHE_WRAPPER_KEY)
+
+    transformer = clean.model_options.get("transformer_options", {}).copy()
+    transformer.pop(BLOCK_CACHE_KEY, None)
+    replacements = transformer.get("patches_replace", {})
+    replacements = dict(replacements) if isinstance(replacements, Mapping) else {}
+    replacements.pop("dit", None)
+    if replacements:
+        transformer["patches_replace"] = replacements
+    else:
+        transformer.pop("patches_replace", None)
+    clean.model_options["transformer_options"] = transformer
+
+    patched, runtime, _report_json = build_eav_model(
+        clean,
+        sigmas,
+        mode=mode,
+        tau=tau,
+        start_video_progress=start_video_progress,
+        end_video_progress=end_video_progress,
+        max_workspace_mib=max_workspace_mib,
+        g_hard_limit=g_hard_limit,
+        sampling_profile="stock20",
+        allowed_tasks=EAV_VISUAL_TASKS,
+        allow_reference_blocks=False,
+        composer_profile="block_cache_visual_stock20_v1",
+        attention_backend="native_optimized",
+    )
+    runtime.config["block_cache_contract"] = dict(cache_contract["report"])
+    runtime.config["notes"] = [
+        "the installed T8 CPU BlockCache outer wrapper still owns execution-scoped cache allocation and release",
+        "one combined diffusion wrapper runs EAV on every block that actually executes and delegates cache-hit finalization to the authenticated BlockCache wrapper",
+        "a cache miss must record 50 active FETA measurements; a cache hit must record only block 0, because blocks 1-49 are reused rather than executed",
+        "the first combined contract is native Stock20 visual tasks only; reference tasks, Turbo8, GPU cache, Prompt Relay, Sage, STG and Long Video remain rejected",
+        "joint H3 layers can still change audio indirectly; cache speed, visual quality, audio non-inferiority and 16GiB safety are not assumed",
+    ]
+    if str(mode) == "disabled":
+        return model, runtime, _json(runtime.config)
+
+    patched.remove_wrappers_with_key(wrapper_type, EAV_WRAPPER_KEY)
+    patched_transformer = patched.model_options.get("transformer_options", {}).copy()
+    patched_transformer[BLOCK_CACHE_KEY] = cache_contract["prototype"]
+    patched.model_options["transformer_options"] = patched_transformer
+    for (block_name, block_index), replacement in cache_contract[
+        "replacements"
+    ].items():
+        patched.set_model_patch_replace(
+            replacement,
+            "dit",
+            block_name,
+            int(block_index),
+        )
+
+    installed = patched.model_options["transformer_options"].get(
+        "optimized_attention_override"
+    )
+    if getattr(installed, "_t8_h3_eav_patch_version", None) != EAV_PATCH_VERSION:
+        raise RuntimeError("H3 EAV + BlockCache lost the EAV attention owner while composing")
+    installed._t8_h3_eav_block_cache_patch_version = EAV_BLOCK_CACHE_PATCH_VERSION
+    block_cache_diffusion_wrapper = cache_contract["diffusion_wrapper"]
+    prototype = cache_contract["prototype"]
+
+    def _combined_wrapper(
+        executor,
+        x,
+        timestep,
+        context,
+        transformer_options=None,
+        **kwargs,
+    ):
+        transformer_options = transformer_options if transformer_options is not None else {}
+        if len(executor.wrappers) != 1:
+            raise RuntimeError(
+                "H3 EAV + BlockCache detected another diffusion wrapper after binding"
+            )
+        active_attention = transformer_options.get("optimized_attention_override")
+        if (
+            getattr(active_attention, "_t8_h3_eav_patch_version", None)
+            != EAV_PATCH_VERSION
+            or getattr(
+                active_attention, "_t8_h3_eav_block_cache_patch_version", None
+            )
+            != EAV_BLOCK_CACHE_PATCH_VERSION
+        ):
+            raise RuntimeError("H3 EAV + BlockCache attention owner was replaced")
+        runtime_cache = transformer_options.get(BLOCK_CACHE_KEY)
+        if runtime_cache is None or runtime_cache is prototype:
+            raise RuntimeError(
+                "H3 EAV + BlockCache requires its execution-scoped outer sample wrapper"
+            )
+        runtime_config = getattr(runtime_cache, "config", None)
+        if (
+            int(getattr(runtime_cache, "total_blocks", -1)) != 50
+            or runtime_config is None
+            or str(getattr(runtime_config, "cache_device", "")) != "cpu"
+        ):
+            raise RuntimeError("H3 EAV + BlockCache runtime cache contract drifted")
+        replacements = transformer_options.get("patches_replace", {})
+        dit_replacements = (
+            replacements.get("dit", {}) if isinstance(replacements, Mapping) else {}
+        )
+        if set(dit_replacements) != {("double_block", 0), ("double_block", 49)}:
+            raise RuntimeError("H3 EAV + BlockCache runtime boundary patches changed")
+
+        payload = kwargs.get("minimax_payload")
+        if not isinstance(payload, Mapping):
+            raise RuntimeError("H3 EAV + BlockCache could not find minimax_payload")
+        if EAV_RUNTIME_KEY in transformer_options:
+            raise RuntimeError("Nested H3 EAV + BlockCache runtime state was refused")
+        try:
+            route = _runtime_route(
+                x=x,
+                timestep=timestep,
+                context=context,
+                payload=payload,
+                denoise_mask=kwargs.get("denoise_mask"),
+                audio_denoise_mask=kwargs.get("audio_denoise_mask"),
+                start_progress=float(start_video_progress),
+                end_progress=float(end_video_progress),
+                allowed_tasks=EAV_VISUAL_TASKS,
+                allow_reference_blocks=False,
+            )
+            forward_index = runtime.begin_forward(
+                sigma_video=route["sigma_video"],
+                progress_video=route["progress_video"],
+                route=route,
+            )
+            route.update(
+                {
+                    "mode": str(mode),
+                    "tau": float(tau),
+                    "max_workspace_mib": int(max_workspace_mib),
+                    "g_hard_limit": float(g_hard_limit),
+                    "runtime": runtime,
+                    "forward_index": forward_index,
+                    "attention_backend": "native_optimized",
+                }
+            )
+            transformer_options[EAV_RUNTIME_KEY] = route
+            before = (
+                int(getattr(runtime_cache, "total_forwards", -1)),
+                int(getattr(runtime_cache, "full_forwards", -1)),
+                int(getattr(runtime_cache, "cache_hits", -1)),
+            )
+            result = block_cache_diffusion_wrapper(
+                executor,
+                x,
+                timestep,
+                context,
+                transformer_options,
+                **kwargs,
+            )
+            after = (
+                int(getattr(runtime_cache, "total_forwards", -1)),
+                int(getattr(runtime_cache, "full_forwards", -1)),
+                int(getattr(runtime_cache, "cache_hits", -1)),
+            )
+            delta = tuple(end - start for start, end in zip(before, after, strict=True))
+            if delta == (1, 1, 0):
+                decision = "full"
+            elif delta == (1, 0, 1):
+                decision = "hit"
+            else:
+                raise RuntimeError(
+                    "H3 EAV + BlockCache observed an unauditable cache transition: "
+                    f"before={before}, after={after}"
+                )
+            runtime.record_block_cache_decision(forward_index, decision)
+            return result
+        except BaseException as exc:
+            runtime.abort(exc)
+            raise
+        finally:
+            transformer_options.pop(EAV_RUNTIME_KEY, None)
+
+    patched.add_wrapper_with_key(
+        wrapper_type,
+        EAV_BLOCK_CACHE_WRAPPER_KEY,
+        _combined_wrapper,
+    )
+    if hasattr(patched, "remove_attachments"):
+        patched.remove_attachments(EAV_WRAPPER_KEY)
+    if hasattr(patched, "set_attachments"):
+        patched.set_attachments(
+            EAV_BLOCK_CACHE_WRAPPER_KEY,
+            {
+                "patch_version": EAV_BLOCK_CACHE_PATCH_VERSION,
+                "eav_config": dict(runtime.config),
+                "block_cache": dict(cache_contract["report"]),
+            },
+        )
+    return patched, runtime, _json(runtime.config)
 
 
 def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
@@ -1274,22 +2069,125 @@ def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
     mode = report["config"]["mode"]
     if report["aborted"]:
         raise RuntimeError("H3 EAV sampling aborted: " + report["aborted"])
+    stg_contract = report["config"].get("stg_contract")
     if mode == "disabled":
-        report["status"] = "disabled_identity"
+        if stg_contract is not None and bool(stg_contract.get("applied")):
+            report["status"] = "eav_disabled_stg_active"
+        elif report["config"].get("long_video_contract") is not None:
+            report["status"] = "eav_disabled_long_video_passthrough"
+        else:
+            report["status"] = "disabled_identity"
     else:
         expected_nfe = int(report["config"]["sigma_contract"]["nfe"])
-        if report["model_forward_count"] != expected_nfe:
+        expected_total_forwards = expected_nfe
+        if stg_contract is not None:
+            expected_total_forwards = int(stg_contract["expected_total_forwards"])
+        if report["model_forward_count"] != expected_total_forwards:
             raise RuntimeError(
                 f"H3 EAV {report['config']['sampling_profile']} audit expected "
-                f"{expected_nfe} model forwards, observed "
+                f"{expected_total_forwards} model forwards, observed "
                 f"{report['model_forward_count']}"
             )
-        active_counts = report["attention_calls_per_active_forward"]
-        if not active_counts or any(count != 50 for count in active_counts):
-            raise RuntimeError(
-                "H3 EAV expected exactly 50 main DiT attention measurements per active "
-                f"forward, observed {active_counts}"
+        block_cache_contract = report["config"].get("block_cache_contract")
+        if stg_contract is not None:
+            forwards = report["forwards"]
+            observed_branches = [str(forward.get("branch", "main")) for forward in forwards]
+            expected_branches = [str(value) for value in stg_contract["expected_branches"]]
+            if observed_branches != expected_branches:
+                raise RuntimeError(
+                    "H3 EAV + STG branch sequence disagrees with the sigma contract: "
+                    f"observed={observed_branches}, expected={expected_branches}"
+                )
+            skipped_blocks = tuple(int(value) for value in stg_contract["double_blocks"])
+            weak_measurements = 50 - len(skipped_blocks)
+            for forward in forwards:
+                branch = str(forward.get("branch", "main"))
+                expected_skipped = skipped_blocks if branch == "stg_weak" else ()
+                observed_skipped = tuple(int(value) for value in forward.get("skipped_blocks", ()))
+                if observed_skipped != expected_skipped:
+                    raise RuntimeError(
+                        "H3 EAV + STG skipped-block audit failed: "
+                        f"branch={branch}, observed={observed_skipped}, expected={expected_skipped}"
+                    )
+                expected_count = 0
+                if bool(forward["active"]):
+                    expected_count = weak_measurements if branch == "stg_weak" else 50
+                if int(forward["attention_count"]) != expected_count:
+                    raise RuntimeError(
+                        "H3 EAV + STG attention measurements disagree with the branch: "
+                        f"branch={branch}, active={forward['active']}, "
+                        f"observed={forward['attention_count']}, expected={expected_count}"
+                    )
+            observed_weak = observed_branches.count("stg_weak")
+            expected_weak = int(stg_contract["expected_weak_forwards"])
+            if observed_weak != expected_weak:
+                raise RuntimeError(
+                    "H3 EAV + STG weak-forward count drifted: "
+                    f"observed={observed_weak}, expected={expected_weak}"
+                )
+            report["stg"] = {
+                "base_nfe": expected_nfe,
+                "weak_forwards": observed_weak,
+                "total_joint_av_forwards": len(forwards),
+                "skipped_double_blocks": list(skipped_blocks),
+                "active_main_measurements": 50,
+                "active_weak_measurements": weak_measurements,
+                "eav_applied_to_main_and_weak": True,
+            }
+        elif block_cache_contract is None:
+            active_counts = report["attention_calls_per_active_forward"]
+            if not active_counts or any(count != 50 for count in active_counts):
+                raise RuntimeError(
+                    "H3 EAV expected exactly 50 main DiT attention measurements per active "
+                    f"forward, observed {active_counts}"
+                )
+        else:
+            forwards = report["forwards"]
+            decisions = [forward.get("block_cache_decision") for forward in forwards]
+            if not decisions or any(value not in {"full", "hit"} for value in decisions):
+                raise RuntimeError(
+                    "H3 EAV + BlockCache requires one audited full/hit decision per forward; "
+                    f"observed {decisions}"
+                )
+            if decisions[0] != "full":
+                raise RuntimeError("H3 EAV + BlockCache first forward must warm with a full pass")
+            consecutive_hits = 0
+            max_observed_hits = 0
+            for forward, decision in zip(forwards, decisions, strict=True):
+                expected_count = 0
+                if bool(forward["active"]):
+                    expected_count = 1 if decision == "hit" else 50
+                if int(forward["attention_count"]) != expected_count:
+                    raise RuntimeError(
+                        "H3 EAV + BlockCache attention measurements disagree with the "
+                        f"cache decision: decision={decision}, active={forward['active']}, "
+                        f"observed={forward['attention_count']}, expected={expected_count}"
+                    )
+                consecutive_hits = consecutive_hits + 1 if decision == "hit" else 0
+                max_observed_hits = max(max_observed_hits, consecutive_hits)
+            configured_max_hits = int(
+                block_cache_contract["config"]["max_consecutive_hits"]
             )
+            if max_observed_hits > configured_max_hits:
+                raise RuntimeError(
+                    "H3 EAV + BlockCache exceeded its consecutive-hit contract: "
+                    f"observed={max_observed_hits}, configured={configured_max_hits}"
+                )
+            hit_count = decisions.count("hit")
+            full_count = decisions.count("full")
+            report["block_cache"] = {
+                "model_forwards": len(decisions),
+                "full_forwards": full_count,
+                "cache_hits": hit_count,
+                "hit_rate": hit_count / len(decisions),
+                "max_consecutive_hits_observed": max_observed_hits,
+                "active_measurements_expected_from_decisions": sum(
+                    0
+                    if not bool(forward["active"])
+                    else (1 if decision == "hit" else 50)
+                    for forward, decision in zip(forwards, decisions, strict=True)
+                ),
+            }
         if report["config"].get("attention_backend") == "strict_sage_hnd":
             expected_backend_calls = [50] * expected_nfe
             observed_backend_calls = report["strict_sage_calls_per_forward"]
@@ -1304,7 +2202,48 @@ def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
                 raise RuntimeError(
                     "H3 EAV + Strict Sage detected a kernel failure or backend fallback"
                 )
-        report["status"] = "report_only_verified" if mode == "report_only" else "apply_exp_verified"
+        long_video_contract = report["config"].get("long_video_contract")
+        if long_video_contract is not None:
+            expected_task = (
+                "LongVideoSegment0"
+                if int(long_video_contract["segment_index"]) == 0
+                else "LongVideoMotion"
+            )
+            observed_tasks = [str(forward.get("task")) for forward in report["forwards"]]
+            if observed_tasks != [expected_task] * expected_nfe:
+                raise RuntimeError(
+                    "H3 EAV + Long Video segment task drifted: "
+                    f"observed={observed_tasks}, expected={expected_task}"
+                )
+            report["long_video"] = {
+                "segment_index": int(long_video_contract["segment_index"]),
+                "context_frames": int(long_video_contract["context_frames"]),
+                "binding_hash": str(long_video_contract["binding_hash"]),
+                "model_forwards": expected_nfe,
+                "execution_local_runtime_consumed": True,
+            }
+        if stg_contract is not None:
+            report["status"] = (
+                "report_only_stg_verified"
+                if mode == "report_only"
+                else "apply_exp_stg_verified"
+            )
+        elif long_video_contract is not None:
+            report["status"] = (
+                "report_only_long_video_segment_verified"
+                if mode == "report_only"
+                else "apply_exp_long_video_segment_verified"
+            )
+        elif block_cache_contract is None:
+            report["status"] = (
+                "report_only_verified" if mode == "report_only" else "apply_exp_verified"
+            )
+        else:
+            report["status"] = (
+                "report_only_block_cache_verified"
+                if mode == "report_only"
+                else "apply_exp_block_cache_verified"
+            )
     report["quality_claim"] = (
         "mechanically audited only; visual motion/detail and joint-AV audio quality require "
         "the controlled baseline/apply A/B review"

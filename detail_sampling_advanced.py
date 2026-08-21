@@ -518,6 +518,7 @@ def apply_h3_spatiotemporal_guidance(
     end_progress: float,
     shift_video: float,
     rescale: float,
+    weak_branch_marker: tuple[str, dict] | None = None,
 ) -> tuple[Any, str]:
     if not math.isfinite(scale) or not 0.0 <= scale <= 5.0:
         raise ValueError("scale must be finite and between 0 and 5")
@@ -550,6 +551,20 @@ def apply_h3_spatiotemporal_guidance(
     diffusion_model = getattr(getattr(model, "model", None), "diffusion_model", None)
     if not isinstance(diffusion_model, MiniMaxH3Model):
         raise ValueError("H3 STG requires a native ComfyUI MiniMax H3 diffusion MODEL")
+    if model.model_options.get("sampler_post_cfg_function"):
+        raise ValueError(
+            "H3 STG refuses an existing sampler_post_cfg_function; use one explicit "
+            "composer instead of stacking guidance hooks"
+        )
+
+    marker_key = None
+    marker_value = None
+    if weak_branch_marker is not None:
+        marker_key, marker_value = weak_branch_marker
+        marker_key = str(marker_key)
+        if not marker_key or not isinstance(marker_value, dict):
+            raise ValueError("H3 STG weak branch marker is invalid")
+        marker_value = dict(marker_value)
 
     transformer_options = model.model_options.get("transformer_options", {})
     replacements = transformer_options.get("patches_replace", {}).get("dit", {})
@@ -562,6 +577,10 @@ def apply_h3_spatiotemporal_guidance(
 
     def skip_block(args, _extra_args):
         return args
+
+    if marker_value is not None:
+        skip_block._t8_h3_stg_patch_version = int(marker_value["schema"])
+        skip_block._t8_h3_stg_binding_hash = str(marker_value["binding_hash"])
 
     def post_cfg_function(args):
         sigma = args["sigma"]
@@ -601,6 +620,12 @@ def apply_h3_spatiotemporal_guidance(
                 "double_block",
                 block,
             )
+        if marker_key is not None:
+            transformer_options = stg_options["transformer_options"].copy()
+            if marker_key in transformer_options:
+                raise RuntimeError("H3 STG weak branch marker was already present")
+            transformer_options[marker_key] = dict(marker_value)
+            stg_options["transformer_options"] = transformer_options
         (weak_prediction,) = comfy.samplers.calc_cond_batch(
             args["model"],
             [cond],
@@ -626,6 +651,7 @@ def apply_h3_spatiotemporal_guidance(
         "shift_video": float(shift_video),
         "rescale": float(rescale),
         "extra_joint_av_forward_per_active_step": 1,
+        "weak_branch_marker_key": marker_key,
         "joint_av_notice": (
             "H3 STG perturbs the shared packed audio-video Transformer. It is not a "
             "face repair node and can change both picture and sound."

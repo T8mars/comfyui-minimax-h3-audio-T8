@@ -16,6 +16,8 @@
 - `H3_Enhance_A_Video_FETA_Hybrid_Stock20`：首帧 + 独立参考图的任务型 Hybrid；不要与混合模型权重节点混淆。
 - `H3_Enhance_A_Video_FETA_Strict_Sage_T2VA_Stock20`：由单一组合节点同时绑定FETA与严格Sage HND后端；不要再串第三方H3 Sage节点。
 - `H3_Enhance_A_Video_FETA_Prompt_Relay_T2VA_Stock20`：由单一组合节点先执行Prompt Relay局部事件路由，再只对目标视频输出行施加FETA；不要串两个独立Attention拥有者。
+- `H3_Enhance_A_Video_FETA_BlockCache_T2VA_Stock20`：依赖单独安装的T8 BlockCache；按`UNET → BlockCache → DualClock → Composer`连接，由组合节点按cache hit/full实际执行块数审计FETA。
+- `H3_Enhance_A_Video_FETA_STG_T2VA_Stock20`：由单一组合节点同时拥有FETA与STG；FETA一致作用于主/弱分支，并审计额外联合AV前向。
 - 其他单路线工作流用于A/B诊断。
 
 ## 当前成果
@@ -32,8 +34,12 @@ Ref2VA 和任务型 Hybrid 也各完成一组 1152×640、124帧、Stock20 的 d
 
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
-FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务已通过精确PackedLayout、导入接线和单组真实0.7MP A/B机械门，但尚未完成用户盲评。Prompt Relay、BlockCache、Sage、STG、Long Video、其他 LoRA、模型权重 Hybrid、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。
+FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务已通过精确PackedLayout、导入接线和单组真实0.7MP A/B机械门，但尚未完成用户盲评。普通EAV仍会拒绝Prompt Relay、BlockCache、Sage、STG、Long Video、其他LoRA、模型权重Hybrid、任意中间关键帧和denoise mask；已经提供的Prompt Relay、Strict Sage和BlockCache显式Composer必须使用各自隔离工作流，不能把普通节点的报错绕开继续跑。
 
 Strict Sage模板是一个独立追加路线：组合节点直接调用本机 `sageattention.sageattn` 的HND内核，并由Runtime Audit要求每次模型前向50个成功Sage调用、零失败、零静默回退。KJNodes的MiniMax H3 Sage节点会整块替换`Attention.forward`并绕过FETA观测入口，因此不能与普通EAV节点串联。本机单条1152×640×124、Stock20实测完成20次前向、1000次FETA测量和1000次Sage调用；H.264/AAC成片通过视频、音频和联合三轮严格解码。与同seed原生attention增强端相比，视频SSIM约0.8641、音频相关约0.9145，只证明结果发生变化；尚无人工盲评，也不授予画质、速度、音频非劣或通用16GB安全结论。
 
 Prompt Relay组合模板同样是隔离追加路线。普通EAV和普通Prompt Relay都需要拥有同一个diffusion wrapper与`optimized_attention_override`，所以不能直接串联；组合节点会验证当前Relay绑定、至少两个事件、PackedLayout与wrapper归属，然后在一次attention调用中依次执行Relay路由和FETA目标视频增益。`disabled`仅关闭FETA并保留原Relay MODEL不变，适合作为单变量对照。当前只开放Stock20 T2VA；确定性合同、注册顺序、导入接线和Runtime Audit交接已通过，但真实0.7MP生成、听感、重复显存和质量门仍待完成，因此不得宣传提质、音频非劣或16GB安全。
+
+BlockCache组合模板要求另行安装`comfyui-minimax-h3-blockcache-T8`，并只接受已核对源码哈希的50块H3 CPU缓存合同。原BlockCache的outer-sample wrapper继续负责每次采样的缓存克隆和释放；组合器只接管diffusion owner，full前向审计实际执行的50个块，cache hit只审计仍执行的block 0。模板把阈值设为较保守的`0.08`、最多连续命中2次，但这不是通用最优参数。当前仅完成低负载确定性合同、真实插件源码哈希和可导入工作流检查，没有重新做高负载模型测试，因此不宣称提速、提质、音频非劣或16GB安全。
+
+STG组合模板解决“普通EAV与独立STG不能安全手工叠加”的问题。一个节点拥有唯一post-CFG hook；主分支执行50个H3块，默认弱分支跳过block 25并执行49块，FETA在两条分支中采用同一规则，Runtime Audit按Stock20 SIGMAS核对主/弱顺序和额外前向数。默认`stg_scale=0.35`、进度`0.25～0.85`、`shift_video=12`、`rescale=0`只是保守起点。STG额外运行共享音视频Transformer，声音也可能变化；当前只完成低负载确定性合同、注册和工作流导入检查，不做压力测试，也不宣称提质、音频非劣、提速、省显存或通用16GB安全。

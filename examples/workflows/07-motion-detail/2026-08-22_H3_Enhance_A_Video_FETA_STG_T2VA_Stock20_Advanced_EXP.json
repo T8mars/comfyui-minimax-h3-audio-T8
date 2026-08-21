@@ -1,0 +1,1280 @@
+{
+  "id": "d42d6f0e-7e73-4e86-bc76-044ec9024404",
+  "revision": 0,
+  "last_node_id": 17,
+  "last_link_id": 21,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        320,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        170
+      ],
+      "size": [
+        320,
+        106
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          },
+          "link": null
+        },
+        {
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          },
+          "link": null
+        },
+        {
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        330
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        450
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "pos": [
+        380,
+        80
+      ],
+      "size": [
+        520,
+        560
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "name": "task_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "task_type"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_denoise_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "audio_denoise_strength"
+          },
+          "link": null
+        },
+        {
+          "name": "add_source_as_reference",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "add_source_as_reference"
+          },
+          "link": null
+        },
+        {
+          "name": "prompt_primary_audio_ordinal",
+          "type": "INT",
+          "widget": {
+            "name": "prompt_primary_audio_ordinal"
+          },
+          "link": null
+        },
+        {
+          "name": "strict_prompt_tags",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_prompt_tags"
+          },
+          "link": null
+        },
+        {
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          },
+          "link": null
+        },
+        {
+          "name": "reference_video_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "reference_video_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            5,
+            14
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "Night, one continuous cinematic shot on a rain-wet neon street. An adult woman in a red coat raises one hand, turns, then runs away from camera while the camera pulls rapidly upward until she becomes a small full-body figure in the street. Preserve her identity, natural anatomy, stable limbs, crisp clothing and smooth large-amplitude motion. No dialogue. Synchronized footsteps, coat movement, wind, traffic and distant city ambience.",
+        1152,
+        640,
+        124,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
+      ],
+      "title": "T2VA 0.7MP controlled input"
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "Stock20 native dual clock / required by EAV P1",
+      "pos": [
+        980,
+        40
+      ],
+      "size": [
+        390,
+        190
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 5
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            7,
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        20,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3EnhanceAVideoSTGComposerT8Advanced",
+      "title": "One owner: FETA on main + STG weak branches",
+      "pos": [
+        1430,
+        20
+      ],
+      "size": [
+        600,
+        540
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 7
+        },
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "tau",
+          "type": "FLOAT",
+          "widget": {
+            "name": "tau"
+          },
+          "link": null
+        },
+        {
+          "name": "start_video_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "start_video_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "end_video_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "end_video_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "max_workspace_mib",
+          "type": "INT",
+          "widget": {
+            "name": "max_workspace_mib"
+          },
+          "link": null
+        },
+        {
+          "name": "g_hard_limit",
+          "type": "FLOAT",
+          "widget": {
+            "name": "g_hard_limit"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_scale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_scale"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_double_blocks",
+          "type": "STRING",
+          "widget": {
+            "name": "stg_double_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_start_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_start_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "stg_end_progress",
+          "type": "FLOAT",
+          "widget": {
+            "name": "stg_end_progress"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "rescale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "rescale"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "H3_T8_EAV_RUNTIME",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3EnhanceAVideoSTGComposerT8Advanced"
+      },
+      "widgets_values": [
+        "apply_exp",
+        4.0,
+        0.0,
+        1.0,
+        32,
+        1.5,
+        0.35,
+        "25",
+        0.25,
+        0.85,
+        12.0,
+        0.0
+      ]
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [
+        2020,
+        190
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608217001,
+        "fixed"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [
+        2020,
+        40
+      ],
+      "size": [
+        230,
+        70
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        2300,
+        20
+      ],
+      "size": [
+        290,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 10
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 11
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 13
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3EnhanceAVideoAuditT8Advanced",
+      "title": "Required audit · main=50 measurements · STG weak=49",
+      "pos": [
+        2670,
+        20
+      ],
+      "size": [
+        440,
+        150
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
+          "name": "runtime",
+          "type": "H3_T8_EAV_RUNTIME",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3EnhanceAVideoAuditT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3AVDecodeT8",
+      "pos": [
+        3170,
+        20
+      ],
+      "size": [
+        280,
+        120
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 17
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 18
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        3570,
+        20
+      ],
+      "size": [
+        430,
+        500
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 20
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 21,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3_EAV/eav_stg_t2va_stock20_tau4_exp",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "① 只使用一个组合节点",
+      "pos": [
+        0,
+        760
+      ],
+      "size": [
+        900,
+        360
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": "## DualClock → EAV+STG Composer → Guider\n\n不要再串普通EAV或独立STG，也不要叠加BlockCache、Prompt Relay、Strict Sage、Long Video或其他CFG/model wrapper。首版只接受原生Stock20视觉任务。`mode=disabled`只关闭EAV，保留STG，适合做同STG基线。"
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "② 为什么主分支50、弱分支49",
+      "pos": [
+        1050,
+        760
+      ],
+      "size": [
+        930,
+        420
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": "## 同一FETA规则作用于两条分支\n\nSTG在0.25～0.85进度内增加一次弱分支联合AV前向，并跳过double block 25。主分支执行50块，弱分支执行49块，因此FETA分别记录50和49次；这样STG差值不会被‘只有主分支启用FETA’污染。Runtime Audit会按SIGMAS核对主/弱顺序和额外前向数量。"
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "③ 参数与科学边界",
+      "pos": [
+        2200,
+        760
+      ],
+      "size": [
+        870,
+        480
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "color": "#2d3f66",
+      "bgcolor": "#111827",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": "## 保守起点，不是通用最优\n\n建议先用`stg_scale=0.35`、block `25`、进度`0.25～0.85`、`shift_video=12`、`rescale=0`。STG额外运行的是共享音视频Transformer，画面和声音都可能变化；完整试听仍必要。这里只通过低负载确定性契约，不宣称提质、音频非劣、提速、省显存或通用16GB安全。"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      3,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      4,
+      0,
+      6,
+      1,
+      "VAE"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      6,
+      1,
+      7,
+      1,
+      "LATENT"
+    ],
+    [
+      6,
+      7,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      7,
+      2,
+      13,
+      1,
+      "SIGMAS"
+    ],
+    [
+      8,
+      13,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      6,
+      0,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "NOISE"
+    ],
+    [
+      11,
+      8,
+      0,
+      10,
+      1,
+      "GUIDER"
+    ],
+    [
+      12,
+      7,
+      1,
+      10,
+      2,
+      "SAMPLER"
+    ],
+    [
+      13,
+      7,
+      2,
+      10,
+      3,
+      "SIGMAS"
+    ],
+    [
+      14,
+      6,
+      1,
+      10,
+      4,
+      "LATENT"
+    ],
+    [
+      15,
+      10,
+      0,
+      14,
+      0,
+      "LATENT"
+    ],
+    [
+      16,
+      13,
+      1,
+      14,
+      1,
+      "H3_T8_EAV_RUNTIME"
+    ],
+    [
+      17,
+      14,
+      0,
+      11,
+      0,
+      "LATENT"
+    ],
+    [
+      18,
+      4,
+      0,
+      11,
+      1,
+      "VAE"
+    ],
+    [
+      19,
+      5,
+      0,
+      11,
+      2,
+      "VAE"
+    ],
+    [
+      20,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      21,
+      11,
+      1,
+      12,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "H3 loaders + Turbo LoRA (EMA)",
+      "bounding": [
+        -40,
+        -60,
+        820,
+        650
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "STABLE: video 4 / audio 4",
+      "bounding": [
+        840,
+        -60,
+        1080,
+        360
+      ],
+      "color": "#3f9e64",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Decode + synchronized MP4",
+      "bounding": [
+        1910,
+        -60,
+        850,
+        620
+      ],
+      "color": "#9e6d3f",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        70,
+        180
+      ]
+    },
+    "ue_links": [],
+    "t8_enhance_a_video": {
+      "scope": "T2VA stock20 Advanced EXP",
+      "paper": "arXiv:2502.07508v3",
+      "reference_commit": "16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
+      "canvas": "1152x640x124",
+      "real_probe": "one disabled/apply 0.7MP pair passed runtime audit and three strict media decodes",
+      "quality_status": "mechanical_media_pass_quality_audio_noninferiority_unproven"
+    },
+    "t8_enhance_a_video_stg": {
+      "scope": "native Stock20 visual tasks; one FETA plus STG composer",
+      "composition": "FETA on both main and skip-block weak branches",
+      "defaults": {
+        "stg_scale": 0.35,
+        "double_blocks": [
+          25
+        ],
+        "start_progress": 0.25,
+        "end_progress": 0.85,
+        "shift_video": 12.0,
+        "rescale": 0.0
+      },
+      "audit": "main=50 measurements; active weak=49; exact branch sequence from Stock20 SIGMAS",
+      "validation_status": "deterministic_low_load_contract_pass",
+      "quality_claim": false,
+      "audio_noninferiority_claim": false,
+      "performance_claim": false,
+      "memory_safe_claim": false
+    }
+  },
+  "version": 0.4
+}

@@ -95,6 +95,67 @@ def _lora_node(node_id: int) -> dict:
     }
 
 
+def _block_cache_node(node_id: int) -> dict:
+    return {
+        "id": node_id,
+        "type": "MiniMaxH3BlockCacheT8",
+        "title": "Conservative CPU BlockCache · threshold 0.08 · max 2 hits",
+        "pos": [380, -300],
+        "size": [560, 300],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+            {"name": "model", "type": "MODEL", "link": None},
+            {
+                "name": "residual_diff_threshold",
+                "type": "FLOAT",
+                "widget": {"name": "residual_diff_threshold"},
+                "link": None,
+            },
+            {
+                "name": "start_percent",
+                "type": "FLOAT",
+                "widget": {"name": "start_percent"},
+                "link": None,
+            },
+            {
+                "name": "end_percent",
+                "type": "FLOAT",
+                "widget": {"name": "end_percent"},
+                "link": None,
+            },
+            {
+                "name": "max_consecutive_hits",
+                "type": "INT",
+                "widget": {"name": "max_consecutive_hits"},
+                "link": None,
+            },
+            {
+                "name": "cache_device",
+                "type": "COMBO",
+                "widget": {"name": "cache_device"},
+                "link": None,
+            },
+            {
+                "name": "metric_stride",
+                "type": "INT",
+                "widget": {"name": "metric_stride"},
+                "link": None,
+            },
+            {
+                "name": "verbose",
+                "type": "BOOLEAN",
+                "widget": {"name": "verbose"},
+                "link": None,
+            },
+        ],
+        "outputs": [{"name": "MODEL", "type": "MODEL", "links": []}],
+        "properties": {"Node name for S&R": "MiniMaxH3BlockCacheT8"},
+        "widgets_values": [0.08, 0.08, 0.95, 2, "cpu", 8, False],
+    }
+
+
 def _append_link(workflow: dict, source: dict, output_slot: int, target: dict, input_slot: int, link_type: str) -> int:
     link_id = int(workflow["last_link_id"]) + 1
     workflow["last_link_id"] = link_id
@@ -176,12 +237,15 @@ def _set_orders(workflow: dict) -> None:
         "VAELoader": 2,
         "LoadImage": 4,
         "LoraLoaderBypassModelOnly": 6,
+        "MiniMaxH3BlockCacheT8": 6,
         "MiniMaxH3AudioConditioningT8": 7,
         "MiniMaxH3DualClockSamplerT8": 8,
         "MiniMaxH3EnhanceAVideoT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoSageComposerT8Advanced": 9,
         "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced": 9,
+        "MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced": 9,
+        "MiniMaxH3EnhanceAVideoSTGComposerT8Advanced": 9,
         "RandomNoise": 10,
         "BasicGuider": 11,
         "SamplerCustomAdvanced": 12,
@@ -467,6 +531,212 @@ def build_prompt_relay_workflow() -> tuple[str, dict]:
     )
 
 
+def build_block_cache_workflow() -> tuple[str, dict]:
+    _filename, workflow = build("T2VA", "stock20")
+    unet = _node(workflow, 1)
+    dual = _node(workflow, 7)
+    composer = _node(workflow, 13)
+    save = _node(workflow, 12)
+
+    block_cache = _block_cache_node(int(workflow["last_node_id"]) + 1)
+    workflow["last_node_id"] = block_cache["id"]
+    workflow["nodes"].append(block_cache)
+
+    # The external cache must bind before DualClock. The EAV composer then receives
+    # the exact cached MODEL plus the exact Stock20 SIGMAS from DualClock.
+    _remove_link(workflow, 1)
+    _append_link(workflow, unet, 0, block_cache, 0, "MODEL")
+    _append_link(workflow, block_cache, 0, dual, 0, "MODEL")
+
+    composer["type"] = "MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced"
+    composer["title"] = "One owner: CPU BlockCache lifecycle + executed-block FETA"
+    composer["size"] = [580, 380]
+    composer["properties"]["Node name for S&R"] = composer["type"]
+    composer["inputs"] = composer["inputs"][:-1]
+    composer["widgets_values"] = composer["widgets_values"][:-1]
+    dual["title"] = "Stock20 DualClock after authenticated CPU BlockCache"
+    _node(workflow, 14)["title"] = (
+        "Required audit · full=50 FETA measurements · cache hit=1"
+    )
+    save["widgets_values"]["filename_prefix"] = (
+        "MiniMaxH3_EAV/eav_blockcache_t2va_stock20_tau4_exp"
+    )
+
+    for node_id, position in {
+        7: [1000, 40],
+        13: [1450, 20],
+        8: [2070, 40],
+        9: [2070, 190],
+        10: [2350, 20],
+        14: [2720, 20],
+        11: [3210, 20],
+        12: [3610, 20],
+    }.items():
+        _node(workflow, node_id)["pos"] = position
+
+    notes = sorted(
+        (node for node in workflow["nodes"] if node["type"] == "MarkdownNote"),
+        key=lambda node: node["id"],
+    )
+    notes[0]["title"] = "① 唯一正确连接顺序与依赖"
+    notes[0]["widgets_values"] = (
+        "## UNET → BlockCache → DualClock → EAV+BlockCache Composer\n\n"
+        "需要另行安装 `comfyui-minimax-h3-blockcache-T8`。只使用这里的一个组合节点，"
+        "不要再串普通EAV、Prompt Relay、Strict Sage、STG、Long Video或其他wrapper。"
+        "首版仅接受原生Stock20视觉任务和`cache_device=cpu`；GPU缓存会因未审计显存压力而拒绝。"
+    )
+    notes[1]["title"] = "② 缓存参数、FETA参数与Runtime Audit"
+    notes[1]["widgets_values"] = (
+        "## 保守起点，不是通用最优值\n\n"
+        "本模板缓存阈值`0.08`、窗口`0.08～0.95`、最多连续命中`2`次、metric stride `8`。"
+        "阈值越大越容易命中，也越可能改变结果；请先保持0.08做单变量检查。FETA的`tau=4`也只是"
+        "候选值，严格关闭必须用`mode=disabled`。Runtime Audit必须显示首次为full；活跃full前向"
+        "记录50次FETA测量，cache hit只记录实际执行的block 0，即1次。"
+    )
+    notes[2]["title"] = "③ 当前证据边界与声音注意事项"
+    notes[2]["widgets_values"] = (
+        "## 仅通过低负载确定性合同\n\n"
+        "组合器已核对本机BlockCache源码哈希、50块合同、边界block 0/49替换、唯一outer/diffusion "
+        "wrapper与CPU缓存配置；没有为本组合重新进行大模型压力测试。缓存可能跳过block 1～49，"
+        "FETA只测量实际执行块。H3仍是联合AV Transformer，缓存和视频增益都可能间接改变声音。"
+        "目前不宣称提速、提质、音频非劣或16GB显存安全。"
+    )
+
+    workflow.setdefault("extra", {})["t8_enhance_a_video_block_cache"] = {
+        "scope": "native Stock20 visual tasks; external T8 CPU BlockCache plus EAV Advanced EXP",
+        "dependency": "T8mars/comfyui-minimax-h3-blockcache-T8 source-hash-pinned contract",
+        "composition_order": "block_cache_outer_lifecycle_then_combined_diffusion_owner",
+        "cache_defaults": {
+            "residual_diff_threshold": 0.08,
+            "start_percent": 0.08,
+            "end_percent": 0.95,
+            "max_consecutive_hits": 2,
+            "cache_device": "cpu",
+            "metric_stride": 8,
+        },
+        "audit": "active full=50 FETA measurements; active hit=1; first forward full",
+        "validation_status": "deterministic_low_load_contract_pass",
+        "quality_claim": False,
+        "audio_noninferiority_claim": False,
+        "performance_claim": False,
+        "memory_safe_claim": False,
+    }
+    _set_orders(workflow)
+    return (
+        "2026-08-22_H3_Enhance_A_Video_FETA_BlockCache_T2VA_Stock20_Advanced_EXP.json",
+        workflow,
+    )
+
+
+def build_stg_workflow() -> tuple[str, dict]:
+    _filename, workflow = build("T2VA", "stock20")
+    composer = _node(workflow, 13)
+    save = _node(workflow, 12)
+
+    composer["type"] = "MiniMaxH3EnhanceAVideoSTGComposerT8Advanced"
+    composer["title"] = "One owner: FETA on main + STG weak branches"
+    composer["size"] = [600, 540]
+    composer["properties"]["Node name for S&R"] = composer["type"]
+    composer["inputs"] = composer["inputs"][:-1]
+    composer["widgets_values"] = composer["widgets_values"][:-1]
+    composer["inputs"].extend(
+        [
+            {
+                "name": "stg_scale",
+                "type": "FLOAT",
+                "widget": {"name": "stg_scale"},
+                "link": None,
+            },
+            {
+                "name": "stg_double_blocks",
+                "type": "STRING",
+                "widget": {"name": "stg_double_blocks"},
+                "link": None,
+            },
+            {
+                "name": "stg_start_progress",
+                "type": "FLOAT",
+                "widget": {"name": "stg_start_progress"},
+                "link": None,
+            },
+            {
+                "name": "stg_end_progress",
+                "type": "FLOAT",
+                "widget": {"name": "stg_end_progress"},
+                "link": None,
+            },
+            {
+                "name": "shift_video",
+                "type": "FLOAT",
+                "widget": {"name": "shift_video"},
+                "link": None,
+            },
+            {
+                "name": "rescale",
+                "type": "FLOAT",
+                "widget": {"name": "rescale"},
+                "link": None,
+            },
+        ]
+    )
+    composer["widgets_values"].extend([0.35, "25", 0.25, 0.85, 12.0, 0.0])
+    _node(workflow, 14)["title"] = (
+        "Required audit · main=50 measurements · STG weak=49"
+    )
+    save["widgets_values"]["filename_prefix"] = (
+        "MiniMaxH3_EAV/eav_stg_t2va_stock20_tau4_exp"
+    )
+
+    notes = sorted(
+        (node for node in workflow["nodes"] if node["type"] == "MarkdownNote"),
+        key=lambda node: node["id"],
+    )
+    notes[0]["title"] = "① 只使用一个组合节点"
+    notes[0]["widgets_values"] = (
+        "## DualClock → EAV+STG Composer → Guider\n\n"
+        "不要再串普通EAV或独立STG，也不要叠加BlockCache、Prompt Relay、Strict Sage、Long Video"
+        "或其他CFG/model wrapper。首版只接受原生Stock20视觉任务。`mode=disabled`只关闭EAV，"
+        "保留STG，适合做同STG基线。"
+    )
+    notes[1]["title"] = "② 为什么主分支50、弱分支49"
+    notes[1]["widgets_values"] = (
+        "## 同一FETA规则作用于两条分支\n\n"
+        "STG在0.25～0.85进度内增加一次弱分支联合AV前向，并跳过double block 25。主分支执行50块，"
+        "弱分支执行49块，因此FETA分别记录50和49次；这样STG差值不会被‘只有主分支启用FETA’污染。"
+        "Runtime Audit会按SIGMAS核对主/弱顺序和额外前向数量。"
+    )
+    notes[2]["title"] = "③ 参数与科学边界"
+    notes[2]["widgets_values"] = (
+        "## 保守起点，不是通用最优\n\n"
+        "建议先用`stg_scale=0.35`、block `25`、进度`0.25～0.85`、`shift_video=12`、"
+        "`rescale=0`。STG额外运行的是共享音视频Transformer，画面和声音都可能变化；完整试听仍必要。"
+        "这里只通过低负载确定性契约，不宣称提质、音频非劣、提速、省显存或通用16GB安全。"
+    )
+    workflow.setdefault("extra", {})["t8_enhance_a_video_stg"] = {
+        "scope": "native Stock20 visual tasks; one FETA plus STG composer",
+        "composition": "FETA on both main and skip-block weak branches",
+        "defaults": {
+            "stg_scale": 0.35,
+            "double_blocks": [25],
+            "start_progress": 0.25,
+            "end_progress": 0.85,
+            "shift_video": 12.0,
+            "rescale": 0.0,
+        },
+        "audit": "main=50 measurements; active weak=49; exact branch sequence from Stock20 SIGMAS",
+        "validation_status": "deterministic_low_load_contract_pass",
+        "quality_claim": False,
+        "audio_noninferiority_claim": False,
+        "performance_claim": False,
+        "memory_safe_claim": False,
+    }
+    _set_orders(workflow)
+    return (
+        "2026-08-22_H3_Enhance_A_Video_FETA_STG_T2VA_Stock20_Advanced_EXP.json",
+        workflow,
+    )
+
+
 def main() -> None:
     BASE_WORKFLOW = json.loads(BASE.read_text(encoding="utf-8"))
     base_conditioning = _node(BASE_WORKFLOW, 6)
@@ -503,6 +773,18 @@ def main() -> None:
     relay_filename, relay_workflow = build_prompt_relay_workflow()
     (WORKFLOW_DIR / relay_filename).write_text(
         json.dumps(relay_workflow, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    cache_filename, cache_workflow = build_block_cache_workflow()
+    (WORKFLOW_DIR / cache_filename).write_text(
+        json.dumps(cache_workflow, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    stg_filename, stg_workflow = build_stg_workflow()
+    (WORKFLOW_DIR / stg_filename).write_text(
+        json.dumps(stg_workflow, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
 

@@ -7,8 +7,11 @@ from .enhance_a_video_advanced import (
     EAV_RUNTIME_TYPE,
     EAV_SAGE_TASK_SCOPES,
     EAV_SAMPLING_PROFILES,
+    build_eav_block_cache_model,
+    build_eav_long_video_model,
     build_eav_model,
     build_eav_prompt_relay_model,
+    build_eav_stg_model,
     finalize_eav_runtime,
 )
 
@@ -475,10 +478,325 @@ class MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced(io.ComfyNode):
     def execute(cls, **kwargs):
         return io.NodeOutput(*build_eav_prompt_relay_model(**kwargs))
 
+
+class MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced",
+            display_name="MiniMax H3 Enhance-A-Video + BlockCache (Advanced EXP)",
+            description=(
+                "Explicit Stock20 composer for the separately installed T8 BlockCache. "
+                "It runs FETA only in blocks that actually execute and audits one measurement "
+                "on a cache hit versus 50 on a full forward."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect DualClock MODEL after MiniMax H3 Block Cache (T8). The first "
+                        "contract requires CPU cache and refuses every other wrapper/patch."
+                    ),
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact native Stock20 SIGMAS sent to the sampler.",
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled preserves the exact BlockCache MODEL; report_only audits "
+                        "FETA without gain; apply_exp enables target-video gain."
+                    ),
+                ),
+                io.Float.Input(
+                    "tau",
+                    default=4.0,
+                    min=-32.0,
+                    max=32.0,
+                    step=0.25,
+                    tooltip="Experimental FETA weight; 4 is a candidate, not an H3 optimum.",
+                ),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer budget only; not total workflow VRAM.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*build_eav_block_cache_model(**kwargs))
+
+
+class MiniMaxH3EnhanceAVideoSTGComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoSTGComposerT8Advanced",
+            display_name="MiniMax H3 Enhance-A-Video + STG (Advanced EXP)",
+            description=(
+                "One explicit Stock20 owner for target-video FETA and skip-block STG. "
+                "FETA is applied consistently to both the main and weak branches; the "
+                "runtime audit verifies the exact extra joint audio-video forwards."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "Connect an unpatched native H3 model. Do not stack standalone STG, "
+                        "BlockCache, Prompt Relay, Sage, Long Video or another guidance hook."
+                    ),
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact native Stock20 SIGMAS sent to the sampler.",
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled keeps STG active but disables only EAV for a controlled "
+                        "baseline; report_only measures FETA on both branches; apply_exp "
+                        "also enables the target-video gain."
+                    ),
+                ),
+                io.Float.Input("tau", default=4.0, min=-32.0, max=32.0, step=0.25),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer budget only; not total workflow VRAM.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "stg_scale",
+                    default=0.35,
+                    min=0.0,
+                    max=5.0,
+                    step=0.05,
+                    tooltip=(
+                        "Strength of the extra weak-branch guidance. 0.35 is a conservative "
+                        "starting point, not a universal quality optimum."
+                    ),
+                ),
+                io.String.Input(
+                    "stg_double_blocks",
+                    default="25",
+                    tooltip="Comma-separated H3 double blocks skipped only by the weak branch.",
+                ),
+                io.Float.Input(
+                    "stg_start_progress",
+                    default=0.25,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                ),
+                io.Float.Input(
+                    "stg_end_progress",
+                    default=0.85,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                ),
+                io.Float.Input(
+                    "shift_video",
+                    default=12.0,
+                    min=0.01,
+                    max=64.0,
+                    step=0.1,
+                    advanced=True,
+                    tooltip="Must match the native H3 video clock used by the schedule.",
+                ),
+                io.Float.Input(
+                    "rescale",
+                    default=0.0,
+                    min=0.0,
+                    max=0.0,
+                    step=0.01,
+                    advanced=True,
+                    tooltip="Must remain 0; shared AV global-std rescale is not validated.",
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*build_eav_stg_model(**kwargs))
+
+
+class MiniMaxH3EnhanceAVideoLongVideoComposerT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3EnhanceAVideoLongVideoComposerT8Advanced",
+            display_name="MiniMax H3 Enhance-A-Video + Long Video (Advanced EXP)",
+            description=(
+                "Keeps Long Video Conditioning as the scoped layout owner and adds one "
+                "fresh EAV runtime per Stock20 segment. Segment/context inputs bind resume "
+                "state and prevent a consumed audit token from leaking across segments."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip="Connect the MODEL output of the matching Long Video Conditioning node.",
+                ),
+                io.Sigmas.Input(
+                    "sigmas",
+                    tooltip="Connect the exact native Stock20 SIGMAS sent to this segment sampler.",
+                ),
+                io.Int.Input(
+                    "segment_index",
+                    default=0,
+                    min=0,
+                    max=99999,
+                    force_input=True,
+                    tooltip="Connect Long Video Planner segment_index.",
+                ),
+                io.Int.Input(
+                    "context_frames",
+                    default=0,
+                    min=0,
+                    max=39,
+                    force_input=True,
+                    tooltip="Connect Long Video Planner context_frames (0, 5, 22 or 39).",
+                ),
+                io.Combo.Input(
+                    "mode",
+                    options=list(EAV_MODES),
+                    default="report_only",
+                    tooltip=(
+                        "disabled preserves the exact Long Video MODEL; report_only audits "
+                        "FETA without gain; apply_exp enables target-video gain."
+                    ),
+                ),
+                io.Float.Input("tau", default=4.0, min=-32.0, max=32.0, step=0.25),
+                io.Float.Input(
+                    "start_video_progress",
+                    default=0.0,
+                    min=0.0,
+                    max=0.99,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "end_video_progress",
+                    default=1.0,
+                    min=0.01,
+                    max=1.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "max_workspace_mib",
+                    default=32,
+                    min=4,
+                    max=512,
+                    step=4,
+                    advanced=True,
+                    tooltip="FETA score-buffer budget only; not total workflow VRAM.",
+                ),
+                io.Float.Input(
+                    "g_hard_limit",
+                    default=1.5,
+                    min=1.0,
+                    max=3.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                EAVRuntimeIO.Output("runtime"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        return io.NodeOutput(*build_eav_long_video_model(**kwargs))
+
 ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES = [
     MiniMaxH3EnhanceAVideoT8Advanced,
     MiniMaxH3EnhanceAVideoAuditT8Advanced,
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
     MiniMaxH3EnhanceAVideoSageComposerT8Advanced,
     MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoSTGComposerT8Advanced,
+    MiniMaxH3EnhanceAVideoLongVideoComposerT8Advanced,
 ]
