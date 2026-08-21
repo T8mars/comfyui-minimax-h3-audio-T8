@@ -347,6 +347,10 @@
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json"
     ],
     "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; no real 0.7MP reference-task A/B has been completed yet, so quality, audio non-inferiority and 16GiB safety remain unproven",
+    "validation_tools": [
+      "tools/build_eav_reference_probe_prompts.py",
+      "tools/build_eav_blind_review.py"
+    ],
     "validated_real_probe": {
       "environment": "RTX 4060 Ti 16GiB; ComfyUI 187eda8ef5e588c6a5765cad53e482765edae052; FL2VA pruned INT8; Qwen3-VL NVFP4; video/audio VAE",
       "controls": "same prompt, seed 2608217001, 736x416x124 at 24fps, native dual-clock Stock20, no LoRA/cache/attention wrapper; baseline disabled versus apply_exp tau4",

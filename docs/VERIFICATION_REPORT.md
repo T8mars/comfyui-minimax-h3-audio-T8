@@ -5,7 +5,8 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.38.0 checkpoint appends the isolated native-reference EAV composer, retains the
+The current 1.38.1 checkpoint adds deterministic reference-task probe and blind-review tooling for
+the isolated native-reference EAV composer, retains the
 1.37.1 learned two-pass eight-call update and the 1.36.2 partial-start audio-clock repair. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
@@ -14,6 +15,20 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.38.1 EAV reference validation tooling (2026-08-21)
+
+This patch adds a deterministic builder for controlled native Stock20 Ref2VA/task-Hybrid
+`disabled` versus `apply_exp` API prompts and a separate hash-traceable anonymous A/B review
+packager. The prompt builder fixes each pair to the same task-specific seed, 1152x640x124 canvas,
+20-step dual-clock schedule, model stack, reference image and media output contract. The review
+packager requires matching video/audio metadata, verifies copied media hashes, keeps the reveal key
+outside the public HTML, and exports missing ratings as ties.
+
+These additions are development and review infrastructure. They do not change any runtime node,
+schema, default, stable sampling implementation, or saved workflow. The real 0.7MP Ref2VA and
+task-Hybrid A/B matrix is still incomplete, so no visual-quality, audio non-inferiority, performance,
+or general 16GiB-safety conclusion is added by this patch.
 
 ## 1.38.0 Enhance-A-Video Ref2VA / task-Hybrid composer (2026-08-21)
 

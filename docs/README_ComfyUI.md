@@ -6,6 +6,11 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.38.1 adds deterministic Ref2VA/task-Hybrid reference-composer probe builders and a
+> hash-traceable anonymous A/B review packager. These are validation tools only: they do not change
+> the 143-node runtime contract, stable sampling, or existing workflows, and they do not turn the
+> still-incomplete real 0.7MP reference-task matrix into a quality, audio, or 16GiB-safety claim.
+
 > Project v1.38.0 appends an isolated Stock20 Enhance-A-Video Reference Composer for native
 > Ref2VA and task-Hybrid packed layouts. The original EAV node keeps its previous schema and
 > fail-closed reference behavior. The new route validates the exact native reference segment order

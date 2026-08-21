@@ -22,6 +22,7 @@ from h3_audio_t8_pkg.enhance_a_video_advanced import (
 from h3_audio_t8_pkg.nodes_enhance_a_video_advanced import (
     MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced,
 )
+from h3_audio_t8_pkg.tools.build_eav_reference_probe_prompts import build_prompt
 from comfy.model_patcher import ModelPatcher
 from comfy.patcher_extension import PatcherInjection
 from comfy.weight_adapter.bypass import BypassInjectionManager
@@ -442,6 +443,24 @@ def test_reference_composer_node_is_append_only_stock20_and_disabled_is_identity
     assert report["task_scope"] == ["Ref2VA", "Hybrid"]
     assert report["allow_reference_blocks"] is True
     assert report["sampling_profile"] == "stock20"
+
+
+@pytest.mark.parametrize("task", ["Ref2VA", "Hybrid"])
+@pytest.mark.parametrize("mode", ["disabled", "apply_exp"])
+def test_reference_probe_prompts_are_same_seed_same_nfe_controlled_pairs(task, mode):
+    graph = build_prompt(task, mode)
+    conditioning = graph["5"]["inputs"]
+    composer = graph["7"]
+    assert conditioning["task_type"] == task
+    assert [conditioning[key] for key in ("width", "height", "length")] == [1152, 640, 124]
+    assert conditioning["ref_images.ref_image_0"] == ["14", 0]
+    assert ("first_frame" in conditioning) is (task == "Hybrid")
+    assert composer["class_type"] == "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
+    assert composer["inputs"]["mode"] == mode
+    assert graph["6"]["inputs"]["steps"] == 20
+    assert graph["8"]["inputs"]["noise_seed"] == (
+        2608217302 if task == "Ref2VA" else 2608217303
+    )
 
 
 def test_disabled_returns_exact_original_model_and_tau_zero_is_not_used_as_off_switch():
