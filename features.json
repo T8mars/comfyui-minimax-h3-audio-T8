@@ -323,7 +323,7 @@
     "MiniMaxH3EnhanceAVideoReferenceComposerT8Advanced"
   ],
   "experimental_enhance_a_video_advanced": {
-    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; isolated native Stock20 Ref2VA/task-Hybrid composer passes deterministic layout and workflow gates but still lacks a real 0.7MP A/B; visual superiority, audio non-inferiority and general 16GiB safety are not established",
+    "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; visual superiority, audio non-inferiority and general 16GiB safety are not established",
     "date": "2026-08-21",
     "category": "T8/MiniMax H3/Quality/Experimental",
     "nodes": [
@@ -346,7 +346,7 @@
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Ref2VA_Stock20_Advanced_EXP.json",
       "examples/workflows/07-motion-detail/2026-08-21_H3_Enhance_A_Video_FETA_Hybrid_Stock20_Advanced_EXP.json"
     ],
-    "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; no real 0.7MP reference-task A/B has been completed yet, so quality, audio non-inferiority and 16GiB safety remain unproven",
+    "reference_composer_validation": "native PackedLayout segment order, exact reference token sizes, Ref2VA/Hybrid classification, append-only registration, disabled identity and two importable NOTE-equipped workflows pass deterministic tests; one real same-seed Stock20 0.7MP disabled/apply pair for each task also passes runtime and media gates, while quality, audio non-inferiority and general 16GiB safety remain unproven",
     "validation_tools": [
       "tools/build_eav_reference_probe_prompts.py",
       "tools/build_eav_blind_review.py"
@@ -379,6 +379,14 @@
       "t2va_turbo8_alpha8": "strict corrected 208-hook Alpha8 bypass contract at strength 1.0; eight forwards and 400 block measurements; g min/mean/max 1.000000/1.000726/1.045757; apply/disabled elapsed 391.021/377.116s and minimum headroom 787/3464MiB; SSIM 0.4264, median Laplacian ratio 0.9716, temporal-difference ratio 1.0983, audio cosine 0.6223 and RMS ratio 1.2413",
       "in_place_scaling_followup": "the initial full packed-output clone was removed and replaced by an in-place multiply on the fresh target-video slice; a repeated I2VA apply run was exactly identical after decode to the pre-change output (video SSIM 1.0, MAE 0, audio cosine approximately 1.0 and RMS ratio 1.0) and passed three strict decodes; observed elapsed was 914.238s versus 971.755s previously, but unmatched cold state prevents a speed claim, while whole-device headroom still fell to 271MiB and therefore failed the 512MiB safety gate",
       "decision": "all four added routes are mechanically accepted as Advanced EXP, but none passes a stable visual-quality claim; I2VA, L2VA and Turbo8 materially alter joint audio, FL2VA showed little change on this one pair, and the 495MiB L2VA baseline plus 271MiB in-place I2VA repeat deny a general 512MiB or universal 16GiB safety claim"
+    },
+    "validated_reference_0p7mp_pairs": {
+      "common_contract": "RTX 4060 Ti 16GiB; ComfyUI 187eda8ef5e588c6a5765cad53e482765edae052; 1152x640x124 at 24fps; native dual-clock Stock20; same prompt, task-specific seed and reference media within each disabled/apply pair; every accepted video is H.264 plus finite AAC 32kHz stereo and passed three deterministic single-thread strict video, audio and combined decode attempts",
+      "ref2va_stock20": "seed 2608217302; apply completed 20 forwards and 1000 block measurements with g min/mean/max 1.000000/1.000222/1.033226 and 31.585MiB planned workspace; apply/disabled elapsed 941.094/936.906s and whole-device headroom 417/1043MiB; SSIM 0.5611, median Laplacian ratio 1.0097, temporal-difference ratio 1.0102, audio cosine 0.8695 and RMS ratio 1.2253; the apply run failed the 512MiB safety floor",
+      "hybrid_stock20": "task-Hybrid means exact first-frame conditioning plus an independent image reference, not a model-weight Hybrid artifact; seed 2608217303; apply completed 20 forwards and 1000 block measurements with g min/mean/max 1.000000/1.000256/1.037641 and 31.585MiB planned workspace; apply/disabled elapsed 1062.594/990.406s and whole-device headroom 2413/719MiB; SSIM 0.7796, median Laplacian ratio 1.0259, temporal-difference ratio 0.9919, audio cosine 0.9867 and RMS ratio 1.0460",
+      "container_recovery": "the first Ref2VA disabled and Hybrid apply H.264 containers each contained one repeatable bad packet; in both cases ComfyUI cache evidence showed every upstream model/conditioning/sampling/decode node was cached while only VHS packaging reran, and the accepted re-encoded files passed all deterministic media gates",
+      "blind_review": "a deterministic two-pair hash-traceable anonymous package was generated locally; ratings are still pending and generated media is not shipped in the plugin package",
+      "decision": "Ref2VA and task-Hybrid are mechanically accepted within the isolated native Stock20 reference composer. Ref2VA apply falling to 417MiB headroom denies general 16GiB safety, and the automatic differences do not determine perceptual quality, reference adherence or audio non-inferiority"
     },
     "quality_claim": false,
     "audio_noninferiority_claim": false,

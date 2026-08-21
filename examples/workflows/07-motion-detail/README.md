@@ -24,8 +24,10 @@ FETA 路线已完成 736×416 与 1152×640 两档、124帧、20步、同 seed �
 
 追加的0.7MP单对照覆盖 I2VA、FL2VA、L2VA 和严格 Alpha8 Turbo8。四组增强端均完成预期的`20×50`或`8×50`审计，八条成片均为1152×640、124帧、24fps、32kHz双声道，并各通过三轮严格解码。FL2VA 本组变化很小；I2VA、L2VA、Turbo8 的轨迹和音频变化明显，但自动锐度没有提升证据。后续移除了完整packed输出的额外复制，复跑与旧输出逐帧/逐样本一致；但整卡最低余量仍曾降到271MiB，因此不宣称通用16GB安全。
 
+Ref2VA 和任务型 Hybrid 也各完成一组 1152×640、124帧、Stock20 的 disabled/apply 实测。两条增强端都命中20次前向、每次50个主块；接受成片均通过视频、音频和联合解码门。Ref2VA 的自动音频相关约0.8695且最低显存余量仅约417MiB，Hybrid约0.9867；这些值只说明差异大小，不能替代盲看、盲听或参考遵循审核。Hybrid在这里指“首帧条件 + 独立参考图”的任务类型，不是混合模型权重节点。
+
 ## 使用方法与注意事项
 
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
-FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务模板已通过精确PackedLayout和导入接线回归，但真实0.7MP A/B仍未完成。Prompt Relay、BlockCache、Sage、STG、Long Video、其他 LoRA、模型权重 Hybrid、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。
+FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled` 才是严格关闭；`tau=0` 不是关闭。普通 EAV 节点仍只接受无参考块的 T2VA / I2VA / FL2VA / L2VA；Turbo8 仅接受模板中的修正 Alpha8 bypass LoRA。Ref2VA / Hybrid 必须改用独立 Reference Composer，并且当前只开放原生 Stock20布局。两条参考任务已通过精确PackedLayout、导入接线和单组真实0.7MP A/B机械门，但尚未完成用户盲评。Prompt Relay、BlockCache、Sage、STG、Long Video、其他 LoRA、模型权重 Hybrid、任意中间关键帧和 denoise mask 仍会主动拒绝，不能把报错节点绕开继续跑。

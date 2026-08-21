@@ -5,8 +5,8 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.38.1 checkpoint adds deterministic reference-task probe and blind-review tooling for
-the isolated native-reference EAV composer, retains the
+The current 1.38.2 checkpoint closes one real 0.7MP Ref2VA and one task-Hybrid EAV
+disabled/apply mechanical pair, makes the strict diagnostic decoder deterministic, and retains the
 1.37.1 learned two-pass eight-call update and the 1.36.2 partial-start audio-clock repair. It is
 validated against ComfyUI source tree `187eda8ef5e588c6a5765cad53e482765edae052`; its real
 learned-latent generation used the one-key runtime entry point
@@ -15,6 +15,33 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.38.2 EAV reference-task 0.7MP validation (2026-08-21)
+
+Ref2VA and task-Hybrid each completed one controlled native Stock20 pair at 1152x640x124 and
+24fps. Every apply run executed 20 model forwards and exactly 50 H3 main-block measurements per
+forward. Ref2VA reported `g=1.000000/1.000222/1.033226` and task-Hybrid reported
+`1.000000/1.000256/1.037641`; both planned about 31.585MiB of bounded CFI workspace.
+
+The accepted four files are H.264 with finite AAC 32kHz stereo and passed three deterministic
+single-thread video, audio and combined strict-decode attempts. The first Ref2VA baseline and first
+Hybrid apply containers each had one bad H.264 packet; cache-only re-encoding was accepted only
+after history proved that every upstream model, conditioning, sampling and decode node was cached.
+No diffusion trajectory was rerun for that packaging recovery.
+
+Ref2VA apply/baseline wall times were 941.094/936.906 seconds with whole-device headroom about
+417/1043MiB. Task-Hybrid apply/baseline wall times were 1062.594/990.406 seconds with about
+2413/719MiB headroom. The different cache/load states forbid a general performance or memory
+comparison, while Ref2VA apply falling below the 512MiB project floor directly denies a general
+16GiB-safety claim. Automatic Ref2VA diagnostics were SSIM 0.5611, median Laplacian ratio 1.0097,
+temporal-difference ratio 1.0102, audio cosine 0.8695 and RMS ratio 1.2253. Task-Hybrid diagnostics
+were 0.7796, 1.0259, 0.9919, 0.9867 and 1.0460 respectively. These values measure difference, not
+which result is perceptually better. A two-pair hash-traceable blind package exists locally; human
+quality, reference-adherence and audio ratings remain pending.
+
+The SPEED quality analyzer now pins FFmpeg strict decoding to one thread. This matches the project's
+deterministic media gate and prevents thread-dependent H.264 decoder behavior from producing a false
+failure. No runtime node, node schema, workflow, default or stable sampler mathematics changed.
 
 ## 1.38.1 EAV reference validation tooling (2026-08-21)
 

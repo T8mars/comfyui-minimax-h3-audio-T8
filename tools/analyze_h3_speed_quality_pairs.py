@@ -33,6 +33,8 @@ def _strict_decode(path: Path, ffmpeg: str, attempts: int = 3) -> dict[str, Any]
                 "-xerror",
                 "-err_detect",
                 "explode",
+                "-threads",
+                "1",
                 "-i",
                 str(path),
                 "-f",

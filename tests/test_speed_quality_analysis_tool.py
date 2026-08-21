@@ -42,3 +42,4 @@ def test_strict_decode_makes_ffmpeg_decoder_errors_fatal(monkeypatch, tmp_path):
     assert result["passed"] is True
     assert "-xerror" in commands[0]
     assert commands[0][commands[0].index("-err_detect") + 1] == "explode"
+    assert commands[0][commands[0].index("-threads") + 1] == "1"

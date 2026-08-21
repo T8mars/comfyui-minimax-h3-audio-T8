@@ -6,6 +6,13 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.38.2 completes one real 1152x640x124 Stock20 Ref2VA and one task-Hybrid
+> disabled/apply EAV pair. Both apply paths completed 20x50 runtime audits and all accepted media
+> passed deterministic strict video/audio decoding. Ref2VA apply left about 417MiB whole-device
+> headroom, below the 512MiB project floor, so visual superiority, audio non-inferiority and general
+> 16GiB safety remain explicitly unproven. This patch also pins the offline strict decoder to one
+> thread; no runtime node, schema, workflow or stable sampler changed.
+
 > Project v1.38.1 adds deterministic Ref2VA/task-Hybrid reference-composer probe builders and a
 > hash-traceable anonymous A/B review packager. These are validation tools only: they do not change
 > the 143-node runtime contract, stable sampling, or existing workflows, and they do not turn the
