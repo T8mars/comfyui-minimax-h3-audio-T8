@@ -44,6 +44,9 @@ PACKED_LAYOUT_SHA256S = {
 }
 TOKENIZER_SHA256S = {
     "c05a3608337ea95d6703909a055a8c20b88a3b38d08e706e142daf5d2ff96b20",
+    # One-key runtime 0f1fa67: direct HF token IDs; binding still verifies the
+    # authoritative token tail, byte reconstruction and presentation tags.
+    "bed1e84fba459099df310aed267fb2c51bbd8a768b9727767300225afe28d361",
 }
 EXTRA_CONDS_SHA256S = {
     "e43a26358405187d5a9556c158843d9ffe150ac52591d1034f3cce422e565974",

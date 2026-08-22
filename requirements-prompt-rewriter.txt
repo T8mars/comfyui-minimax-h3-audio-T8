@@ -1,0 +1,8 @@
+# Optional MiniMax H3 Prompt Rewriter 8B runtime.
+# Install into the same Python environment used by ComfyUI.
+transformers>=4.57.1,<5
+huggingface-hub>=0.34,<1
+accelerate>=1.10,<2
+peft>=0.18,<0.21
+safetensors>=0.5,<1
+pillow>=10,<11

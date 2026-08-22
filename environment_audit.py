@@ -625,6 +625,38 @@ def audit_h3_environment(
             estimated_rows=rows["estimated_target_plus_single_image_rows"],
         )
 
+    gpu_info = runtime.get("gpu", {}) if isinstance(runtime, Mapping) else {}
+    compute_capability = (
+        gpu_info.get("compute_capability") if isinstance(gpu_info, Mapping) else None
+    )
+    capability_major = None
+    if (
+        isinstance(compute_capability, Sequence)
+        and len(compute_capability) >= 2
+        and not isinstance(compute_capability, (str, bytes))
+    ):
+        try:
+            capability_major = int(compute_capability[0])
+        except (TypeError, ValueError):
+            capability_major = None
+    if attention_backend == "sage_attention" and high_row_count:
+        if capability_major is not None and capability_major >= 12:
+            _issue(
+                high_risk,
+                "sage_sm120_high_token_output_corruption_risk",
+                "SageAttention on compute capability 12.x at high H3 token counts has a reported pure-noise output failure; use stock attention until that exact kernel path is validated.",
+                compute_capability=list(compute_capability),
+                estimated_rows=rows["estimated_target_plus_single_image_rows"],
+                gpu_name=gpu_info.get("name"),
+            )
+        elif capability_major is None:
+            _issue(
+                warnings,
+                "sage_gpu_architecture_unknown_at_high_token_count",
+                "GPU compute capability could not be verified for a high-token SageAttention request; import success alone does not establish output correctness.",
+                estimated_rows=rows["estimated_target_plus_single_image_rows"],
+            )
+
     if cache_backend in {"step_cache", "spectrum"}:
         _issue(
             warnings,

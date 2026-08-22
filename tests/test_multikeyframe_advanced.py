@@ -23,6 +23,7 @@ from h3_audio_t8_pkg.multikeyframe_advanced import (
     PAYLOAD_VISUAL_NOISE_AUGS_KEY,
     VISUAL_NOISE_AUGS_KEY,
     _condition_rows_with_augs,
+    _mask_row_values_compat,
     _segment_timestep_plan,
     _target_mask_timestep_rows,
     append_keyframe_plan,
@@ -446,7 +447,7 @@ def test_current_core_target_mask_rows_are_preserved_by_advanced_forward():
         4,
         4,
     )
-    expected_video_mask = minimax_model.mask_row_values(video_mask[0, 0], 1, 4, 4)
+    expected_video_mask = _mask_row_values_compat(video_mask[0, 0], 1, 4, 4)
     expected_video_rows = (1.0 - expected_video_mask * sigma_video).clamp(
         max=max(0.5, minimax_model.VISUAL_COND_TIMESTEP)
     )

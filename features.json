@@ -36,8 +36,8 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 97,
-    "installed_user_workflows": 97
+    "project_workflows": 106,
+    "installed_user_workflows": 106
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
@@ -332,8 +332,32 @@
     "MiniMaxH3MotionRecoverAVT8Advanced",
     "MiniMaxH3MotionSegmentPlanT8Advanced",
     "MiniMaxH3MotionWindowCollectT8Advanced",
-    "MiniMaxH3MotionAutoGateT8Advanced"
+    "MiniMaxH3MotionAutoGateT8Advanced",
+    "MiniMaxH3ExternalBlockSwapBridgeT8Advanced",
+    "MiniMaxH3LanPaintAVPrepareT8Advanced",
+    "MiniMaxH3LanPaintAVCompositeT8Advanced",
+    "MiniMaxH3PromptRewriter8BT8Advanced",
+    "MiniMaxH3PromptRewriterUnloadT8Advanced"
   ],
+  "github_opportunity_batch_2026_08_22": {
+    "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",
+    "items": {
+      "external_face_model_storage": "face detector aliases under ComfyUI/models may resolve through a directory symlink or junction to another volume; absolute/traversal inputs still fail closed and reports identify external storage",
+      "sage_sm120_guard": "environment audit warns for compute capability 12.x at high H3 token count and the Strict Sage composer refuses 50,000 or more packed rows instead of silently risking corrupted output",
+      "quick_start_subgraphs": "six ComfyUI native blueprints cover T2VA, I2VA/FL2VA, Ref2VA, Audio Drive, Long Video and Repair without changing the source nodes",
+      "prompt_rewriter_8b": "local-only LightX2V adapter on Qwen3-VL-8B with CPU offload, finally-path cleanup and default unload-after-generate; one 16GB real generation succeeded but was slow and truncated at a 256-token probe cap",
+      "lanpaint_av_repair": "H3 nested AV latent preparation plus source-safe image/audio compositing around the separately installed LanPaint sampler; image mask and audio intervals remain independent",
+      "external_blockswap_bridge": "duck-typed parameter bridge for the separately installed MiniMax H3 streaming runtime; it never accepts or modifies ComfyUI official MODEL objects"
+    },
+    "frontend_workflows": [
+      "examples/workflows/14-prompt-relay/2026-08-22_H3_Prompt_Rewriter_8B_Advanced_EXP.json",
+      "examples/workflows/03-image-video-edit/2026-08-22_H3_LanPaint_AV_Local_Repair_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_External_BlockSwap_Stock20_Advanced_EXP.json"
+    ],
+    "current_core_compatibility": "supports both the validated native H3 row-mask helper and the older one-key core by using the exact official 2x2 row-mask fallback only when the helper is absent; Prompt Relay separately admits the reviewed direct-HF-token-ID tokenizer hash while retaining authoritative token-tail, byte and presentation-tag checks",
+    "verification": "951 CPU unit/schema/import tests, changed-scope Ruff, compileall, JSON parse and git diff checks passed; one real 8B generation completed",
+    "validation_boundary": "no three-cold/three-warm, no stress test, no BlockSwap or LanPaint full H3 quality run, no universal 16GB claim"
+  },
   "experimental_enhance_a_video_advanced": {
     "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; an isolated Strict Sage composer also passes one real 0.7MP Stock20 call/runtime/media audit; visual superiority, audio non-inferiority and general 16GiB safety are not established",
     "date": "2026-08-21",

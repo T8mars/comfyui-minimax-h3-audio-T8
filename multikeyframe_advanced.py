@@ -432,6 +432,30 @@ def _segment_timestep_plan(layout, t_video: float, t_audio: float, visual_augs, 
     return segment_times
 
 
+def _mask_row_values_compat(mask, latent_t: int, latent_h: int, latent_w: int):
+    """Use the native row-mask helper when present, otherwise its official contract."""
+    native = getattr(minimax_model, "mask_row_values", None)
+    if native is not None:
+        return native(mask, latent_t, latent_h, latent_w)
+    if mask.ndim != 3 or int(mask.shape[0]) != int(latent_t):
+        raise ValueError("MiniMax H3 video denoise mask must be [T, H, W]")
+    if latent_h % 2 or latent_w % 2:
+        raise ValueError("MiniMax H3 latent mask canvas must be divisible by the 2x2 patch")
+    if mask.shape[-2] > latent_h or mask.shape[-1] > latent_w:
+        raise ValueError("MiniMax H3 video denoise mask exceeds the latent canvas")
+    padded = torch.nn.functional.pad(
+        mask,
+        (0, latent_w - mask.shape[-1], 0, latent_h - mask.shape[-2]),
+        mode="replicate",
+    )
+    values = padded.reshape(
+        latent_t, latent_h // 2, 2, latent_w // 2, 2
+    ).amax(dim=(2, 4)).reshape(-1)
+    if bool((values >= 1.0 - 1e-3).all()):
+        return None
+    return values
+
+
 def _target_mask_timestep_rows(
     denoise_mask,
     audio_denoise_mask,
@@ -447,13 +471,7 @@ def _target_mask_timestep_rows(
     video_rows = None
     audio_rows = None
     if denoise_mask is not None:
-        mask_row_values = getattr(minimax_model, "mask_row_values", None)
-        if mask_row_values is None:
-            raise RuntimeError(
-                "This ComfyUI build supplied a video denoise mask without the validated "
-                "MiniMax H3 row-mask contract"
-            )
-        mask = mask_row_values(
+        mask = _mask_row_values_compat(
             denoise_mask[0, 0].to(torch.float32), latent_t, latent_h, latent_w
         )
         if mask is not None:

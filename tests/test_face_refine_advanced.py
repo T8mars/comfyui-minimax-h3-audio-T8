@@ -20,6 +20,7 @@ from h3_audio_t8_pkg.face_refine_advanced import (
     YUNET_2023MAR_SHA256,
     _detect_local_anime_onnx_exp,
     _detect_local_opencv_yunet,
+    _resolve_detector_path,
     _select_track,
     build_face_refine_plan,
     inject_face_refine_video_latent,
@@ -159,6 +160,42 @@ def test_detector_options_include_comfy_ultralytics_face_models(monkeypatch, tmp
     monkeypatch.setattr(face_refine_module, "_model_root", lambda: model_root)
 
     assert "ultralytics/bbox/face_yolov8m.pt" in local_face_detector_options()
+
+
+def test_detector_options_and_resolver_accept_external_storage_symlink(
+    monkeypatch, tmp_path
+):
+    model_root = tmp_path / "models"
+    alias_dir = model_root / "face_detection"
+    external_dir = tmp_path / "cloud-model-volume"
+    external_dir.mkdir(parents=True)
+    external_model = external_dir / "face_detector.onnx"
+    external_model.write_bytes(b"external-detector")
+    model_root.mkdir()
+    try:
+        alias_dir.symlink_to(external_dir, target_is_directory=True)
+    except OSError as error:
+        pytest.skip(f"directory symlinks are unavailable in this test environment: {error}")
+
+    monkeypatch.setattr(face_refine_module, "_model_root", lambda: model_root.resolve())
+
+    assert "face_detection/face_detector.onnx" in local_face_detector_options()
+    assert _resolve_detector_path("face_detection/face_detector.onnx") == external_model.resolve()
+
+
+@pytest.mark.parametrize(
+    "unsafe_name",
+    ["../outside.onnx", "face_detection/../../outside.onnx"],
+)
+def test_detector_resolver_rejects_lexical_path_traversal(
+    monkeypatch, tmp_path, unsafe_name
+):
+    model_root = tmp_path / "models"
+    model_root.mkdir()
+    monkeypatch.setattr(face_refine_module, "_model_root", lambda: model_root.resolve())
+
+    with pytest.raises(ValueError, match="relative path under ComfyUI/models"):
+        _resolve_detector_path(unsafe_name)
 
 
 def test_anime_onnx_backend_decodes_raw_yolov8_and_runs_cpu_only(monkeypatch, tmp_path):

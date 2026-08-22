@@ -4,6 +4,8 @@
 
 ## 当前工作流
 
+- `2026-08-22_H3_Prompt_Rewriter_8B_Advanced_EXP.json`：独立的 LightX2V MiniMax H3 8B 提示词重写器，输出完整提示词、画面、环境声、非叙事音乐和卸载报告；默认生成后卸载，不把8B模型长期缓存到工作流中。
+
 - `2026-08-20_H3_Prompt_Relay_Plan_Preview_Advanced_EXP.json`：不加载 UNET、CLIP、VAE，也不采样；三条 Event 构建 Plan 后，先计算目标AV/参考素材的 packed 行数和Relay显式chunk bias估算，再在历史记录和节点 UI 中显示逐段帧号、秒数、提示词及 READY 状态。适合先检查时间线和显式bias规模，再打开正式生成工作流。
 - `2026-08-20_H3_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json`：T2VA、原生音频、Stock20、BasicGuider（CFG=false）、论文 `paper_v1` 默认公式；三条局部动作已改为可复制的链式 Event，画布内有三份 NOTE。
 - `2026-08-20_H3_Prompt_Relay_T2VA_Turbo8_Advanced_EXP.json`：T2VA、原生音频、完整 non-pruned FL2VA、修正后的 Alpha8 Turbo LoRA 与双时钟 8 步；唯一允许的模型顺序为 `UNET → Prompt Relay → Alpha8 LoRA → DualClock`。
@@ -33,6 +35,8 @@
 11. 使用 Studio 桥接模板时，不要把完整编译提示词再手工复制到另一份 Plan。Packet 是唯一全局事实源；同一Event链可直接连接Packet桥接。连线存在时事件链优先，`events_json`只作兼容回退。时长会按24fps取整并向上对齐到`17n+5`，实际结果以报告为准。
 
 ## 当前边界
+
+- 8B 重写器使用 Qwen3-VL-8B-Instruct 基座和 `MiniMax-H3-Prompt-Rewriter-LoRA-8B`，不复用现有 H3 32B CLIP；当前上游只覆盖 T2VA/I2VA/L2VA/FL2VA，不覆盖 Ref2VA。16GB 本机真实加载和生成成功，但 256 token 短测试约482秒且字段发生截断，因此结论是“可运行但不轻量”，不是实时可用保证。默认 `allow_hub_download=false`，模型须预先放入本地目录。
 
 - apply_exp 已按精确 PackedLayout 合同开放 T2VA/I2VA/FL2VA/L2VA/Ref2VA/Hybrid。`native`、`lock_source`、`remix_source`、`reference_only`沿用稳定 Conditioning 的原合同；Relay 只直接路由目标视频，音频不会获得局部时间权重。
 - 参考视频+音轨和独立参考音频均已完成一组736×416×124 Stock20同seed baseline/Relay实测：前者约362/397秒，后者约229/257秒，四条成片严格解码通过。长参考视频会增加固定packed rows和真实耗时；不要把参考音频宣传为波形复刻，也不要把单条结果外推为感知改善。

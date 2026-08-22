@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.42.0** · 节点 155 个 · GPL-3.0-or-later
+当前版本：**1.43.0** · 节点 160 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -38,7 +38,7 @@ comfy node install minimax-h3-audio-t8
 ComfyUI/custom_nodes/minimax-h3-audio-T8
 ```
 
-本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。
+本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。只有使用 8B 提示词重写器时才安装 `requirements-prompt-rewriter.txt`；依赖被限制在 Transformers 4.x、PEFT 0.18–0.20 和 Pillow 10.x，避免无关升级影响其他节点。
 
 ## 第一次使用
 
@@ -46,6 +46,20 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 2. 将工作流中的模型、图片、视频和音频替换为自己的文件。
 3. 初次运行建议使用 22 帧、较小画布和 stock sampler，确认能正常解码后再增加时长、分辨率或参考条件。
 4. 使用工作流中的 NOTE 节点作为参数说明；报告输出可用于排查标签、显存、音频和兼容性问题。
+
+### Quick Start 子图
+
+`subgraphs/` 提供 6 个 ComfyUI 原生 Quick Start 子图：T2VA、I2VA/FL2VA、Ref2VA、Audio Drive、Long Video 和 Repair。它们只封装现有节点并减少外露参数，不改变旧节点的输入顺序或默认值。详细说明见 [`subgraphs/README.md`](subgraphs/README.md)。
+
+### 可选高级扩展
+
+| 功能 | 入口 | 额外要求 | 当前结论 |
+| --- | --- | --- | --- |
+| 8B 提示词重写 | `14-prompt-relay/2026-08-22_H3_Prompt_Rewriter_8B_Advanced_EXP.json` | `requirements-prompt-rewriter.txt`、Qwen3-VL-8B 基座和 LightX2V LoRA | 16GB 本机可运行并能生成结构化结果，但 CPU 分片很慢；默认生成后卸载 |
+| LanPaint 局部 AV 修复 | `03-image-video-edit/2026-08-22_H3_LanPaint_AV_Local_Repair_Advanced_EXP.json` | 单独安装 `scraed/LanPaint` | 画面蒙版与音频秒区间分离，未声明区域回贴原始内容；尚未做高负载质量验证 |
+| 外部 BlockSwap | `12-system-memory/2026-08-22_H3_External_BlockSwap_Stock20_Advanced_EXP.json` | 单独安装 `xiaolibai-sys/ComfyUI-MiniMaxH3` | 只服务外部 `MINIMAX_H3_*` 类型，不接受官方 `MODEL`；16GB 未做压力认证 |
+
+这些扩展均为追加节点。未放入旧工作流时不会改变旧采样路径。外部项目及模型权重不随本仓库分发。
 
 ## 工作流目录
 
@@ -108,6 +122,8 @@ models/face_detection/checkpoints
 - 宽高应为 32 的倍数；`1920×1088`作为官方高分辨率参考面积，而不是学习型放大节点的执行禁令。该节点允许用户选择更大画布并报告高显存风险，实际能否完成取决于显卡、帧数和参考数量。
 - 常用帧数遵循 H3 的网格约束，例如 22、124、362；不要只按“秒数”猜可用帧数。
 - 16GB 显卡不要默认视为所有任务安全。先用较小画布/短片段通过预检，再逐步增加规模。
+- 人脸检测模型可以通过 `ComfyUI/models` 下的目录符号链接或 Junction 指向其他盘；节点仍拒绝绝对路径和路径穿越，并在报告中标记外部存储。
+- 环境审计会标记 RTX 50 系/compute capability 12.x 的 SageAttention 高 token 风险；Strict Sage 在 50,000 packed rows 以上直接拒绝执行，避免把可导入误当成高分辨率输出正确。
 - SPEED、Prompt Relay、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
 - Motion Recovery 是独立的“pass-1分析 → 问题段扩时 → 部分去噪V2V → 恢复原时钟”链，不是光流插帧、修脸或单采样器增强。Analyzer默认使用`auto_conservative_exp`，Auto Gate通过ComfyUI原生lazy input实现真正旁路：平静片ABSTAIN时不请求任何二采节点，并原样输出pass-1画面和音频。736×416×124真实平静T2VA已验证`second_pass_requested=false`，旁路与pass-1的MP4、解码画面及PCM哈希均一致。Stock20 T2VA、I2VA、FL2VA和独立Ref2VA模型现各有一条真实二采成片，均恢复为124帧并通过严格音视频解码；I2VA还生成了`pass1_original`、`pass2_recovered_exp`和`blend_exp`三种完整对白音轨。完整人工试听确认默认原音正常；纯`pass2_recovered_exp`在中段会突然变成远处声音再恢复，已降为诊断用途；`blend_exp`在本次`pass1_mix=0.8`素材中正常，但仍只是单素材EXP结论。多模态单条成功不代表稳定提质或通用16GB安全，FL2VA/Ref2VA/I2VA粗采余量均曾低于512MiB，不要在首轮叠加EAV/STG/RF Restart/BlockCache。
 - Enhance-A-Video / FETA 节点按论文公式从目标视频 Q/K 计算跨帧 CFI，只直接增强目标视频 attention 输出。原节点继续支持 Stock20 的 T2VA / I2VA / FL2VA / L2VA，以及严格限定的修正 Alpha8 Turbo8 T2VA；独立 Reference Composer 只开放原生 Stock20 Ref2VA 和任务型 Hybrid，不改变旧节点合同。上述七类路线现均至少完成一组 0.7MP 同输入、同 seed 的 disabled/apply 机械与媒体对照；Ref2VA 增强端最低显存余量仅约 417MiB，低于项目 512MiB 门槛。自动指标只能证明轨迹和联合音频发生变化，不能证明画质、参考遵循或声音更好，因此所有路线仍不宣称稳定提质、音频非劣或通用16GB安全。

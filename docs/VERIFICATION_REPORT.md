@@ -21,6 +21,36 @@ historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.43.0 append-only creator and compatibility helpers (2026-08-22)
+
+Version 1.43.0 preserves the first 155 registered node IDs, their input order, defaults, and stable
+sampling path. Five nodes are appended as IDs 156-160: an external MiniMax H3 BlockSwap parameter
+bridge, LanPaint AV prepare/composite nodes, and local Prompt Rewriter 8B generate/unload nodes.
+The BlockSwap and LanPaint implementations deliberately remain bridges to separately installed
+upstreams and do not redistribute or silently emulate those projects. The prompt rewriter pins the
+LightX2V 8B adapter/base contracts, defaults to unload after generation, and releases its own model
+references on success, error, and OOM paths without globally unloading the user's H3 stack after
+generation.
+
+Six ComfyUI-native Quick Start blueprints cover T2VA, I2VA/FL2VA, Ref2VA, Audio Drive, Long Video,
+and single-person repair. They contain existing node graphs with fewer exposed parameters and do not
+replace the full dated workflows. Face detector paths now preserve a lexical alias under
+`ComfyUI/models` while allowing that alias to resolve through a directory symlink or junction to
+external storage; absolute paths and traversal remain rejected. Environment Audit and the strict
+EAV/Sage composer now report or reject compute capability 12.x at 50,000 or more estimated packed
+rows rather than treating import success as output-correctness evidence. The H3 row-mask fallback
+implements the official 2x2 contract only when the newer core helper is absent, and Prompt Relay
+admits the separately reviewed tokenizer hash while retaining its token-tail, byte, and presentation-
+tag checks.
+
+The release gate passed 951 CPU unit/schema/import tests with four pre-existing Triton deprecation
+warnings. Ruff 0.14.8, compileall, 170 non-artifact JSON parses, version consistency, `git diff
+--check`, and `comfy node validate` also passed. The initial Registry CLI attempt completed its
+checks but crashed while printing a Unicode check mark through a GBK console; repeating under UTF-8
+returned exit code zero. One earlier 16GB Prompt Rewriter generation completed but was slow and
+truncated at the deliberately small 256-token probe cap. No three-cold/three-warm run, pressure test,
+full BlockSwap or LanPaint H3 quality run, or universal 16GB claim was performed for this release.
+
 ## 1.42.0 automatic Motion Recovery validation (2026-08-22)
 
 Motion Recovery now has seven append-only nodes. The analyzer defaults to

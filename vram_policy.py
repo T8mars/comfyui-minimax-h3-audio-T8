@@ -264,8 +264,11 @@ def runtime_snapshot() -> dict[str, Any]:
         result["gpu"]["device"] = str(device)
         if getattr(device, "type", None) == "cuda" and torch.cuda.is_available():
             free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+            capability = torch.cuda.get_device_capability(device)
             result["gpu"].update(
                 {
+                    "name": torch.cuda.get_device_name(device),
+                    "compute_capability": [int(capability[0]), int(capability[1])],
                     "whole_device_free_mib": free_bytes / MIB,
                     "whole_device_total_mib": total_bytes / MIB,
                     "whole_device_used_mib": (total_bytes - free_bytes) / MIB,

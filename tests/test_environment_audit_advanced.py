@@ -169,6 +169,29 @@ def test_environment_audit_flags_known_fp8_ref2va_sage_dynamic_high_token_profil
     )
 
 
+def test_environment_audit_blocks_sm120_sage_at_high_h3_token_count():
+    snapshot = _snapshot()
+    snapshot["runtime"]["gpu"].update(
+        {
+            "name": "future-sm120-gpu",
+            "compute_capability": [12, 0],
+        }
+    )
+    report = _audit(
+        snapshot,
+        width=1920,
+        height=1088,
+        length=362,
+        attention_backend="sage_attention",
+    )
+
+    assert report["status"] == "high_risk"
+    assert report["no_known_blocker"] is False
+    assert "sage_sm120_high_token_output_corruption_risk" in {
+        item["code"] for item in report["issues"]["high_risk"]
+    }
+
+
 def test_environment_audit_flags_host_resource_thrashing_without_predicting_peak():
     snapshot = _snapshot()
     snapshot["runtime"]["host"] = {

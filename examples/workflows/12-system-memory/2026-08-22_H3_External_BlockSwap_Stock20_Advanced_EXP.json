@@ -1,0 +1,1197 @@
+{
+  "id": "ec2f6783-2259-5253-902a-a98982c7e207",
+  "revision": 0,
+  "last_node_id": 16,
+  "last_link_id": 16,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3AttentionConfig",
+      "title": "RTX 50 系优先 PyTorch SDPA",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "backend"
+          },
+          "link": null
+        },
+        {
+          "name": "force_backend",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "force_backend"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "attention_config",
+          "type": "MINIMAX_H3_ATTN",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AttentionConfig"
+      },
+      "widgets_values": [
+        "sdpa_flash",
+        false
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3Loader",
+      "title": "外部流式运行时加载 pruned INT8",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "name": "attn_backend",
+          "type": "MINIMAX_H3_ATTN",
+          "link": 1,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MINIMAX_H3_MODEL",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3Loader"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3EncoderLoader",
+      "title": "外部运行时加载 H3 文本编码器",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "name": "use_final_norm",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_final_norm"
+          },
+          "link": null
+        },
+        {
+          "name": "group_size",
+          "type": "INT",
+          "widget": {
+            "name": "group_size"
+          },
+          "link": null
+        },
+        {
+          "name": "pin_memory",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pin_memory"
+          },
+          "link": null
+        },
+        {
+          "name": "disk_workers",
+          "type": "INT",
+          "widget": {
+            "name": "disk_workers"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "text_encoder",
+          "type": "MINIMAX_H3_TEXT_ENCODER",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3EncoderLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        false,
+        4,
+        true,
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3VAELoader",
+      "title": "外部运行时加载视频/音频 VAE",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_encoder",
+          "type": "MINIMAX_H3_AV_ENCODER",
+          "links": [
+            3,
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SimplePrompt",
+      "title": "Stock20 文生音视频提示词",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": null
+        },
+        {
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "name": "total_duration",
+          "type": "FLOAT",
+          "widget": {
+            "name": "total_duration"
+          },
+          "link": null
+        },
+        {
+          "name": "ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "negative_text",
+          "type": "STRING",
+          "widget": {
+            "name": "negative_text"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "MINIMAX_H3_PROMPT",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SimplePrompt"
+      },
+      "widgets_values": [
+        "夜晚的海边，一名女子迎着海风转身，衣摆自然飘动，浪声和脚步声清晰。",
+        "T2VA",
+        5.0,
+        "16:9",
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3Conditioning",
+      "title": "736×416 低负载起点",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        290
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text_encoder",
+          "type": "MINIMAX_H3_TEXT_ENCODER",
+          "link": 2
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "av_encoder",
+          "type": "MINIMAX_H3_AV_ENCODER",
+          "link": 3,
+          "shape": 7
+        },
+        {
+          "name": "fl_constraint",
+          "type": "MINIMAX_H3_FL_CONSTRAINT",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "package",
+          "type": "PACKAGE_DATA",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "prompt",
+          "type": "MINIMAX_H3_PROMPT",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "ref_max",
+          "type": "INT",
+          "widget": {
+            "name": "ref_max"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "MINIMAX_H3_COND",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "MINIMAX_H3_COND",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "MINIMAX_H3_LATENT",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3Conditioning"
+      },
+      "widgets_values": [
+        736,
+        416,
+        1280
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3ExternalBlockSwapBridgeT8Advanced",
+      "title": "外部 BlockSwap · 上游自动显存策略",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        608
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "profile",
+          "type": "COMBO",
+          "widget": {
+            "name": "profile"
+          },
+          "link": null
+        },
+        {
+          "name": "block_to_swap",
+          "type": "INT",
+          "widget": {
+            "name": "block_to_swap"
+          },
+          "link": null
+        },
+        {
+          "name": "hot_blocks",
+          "type": "INT",
+          "widget": {
+            "name": "hot_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "prefetch",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "prefetch"
+          },
+          "link": null
+        },
+        {
+          "name": "prefetch_count",
+          "type": "INT",
+          "widget": {
+            "name": "prefetch_count"
+          },
+          "link": null
+        },
+        {
+          "name": "pin_memory",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pin_memory"
+          },
+          "link": null
+        },
+        {
+          "name": "disk_workers",
+          "type": "INT",
+          "widget": {
+            "name": "disk_workers"
+          },
+          "link": null
+        },
+        {
+          "name": "auto_vram",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "auto_vram"
+          },
+          "link": null
+        },
+        {
+          "name": "vram_reserve_mb",
+          "type": "FLOAT",
+          "widget": {
+            "name": "vram_reserve_mb"
+          },
+          "link": null
+        },
+        {
+          "name": "offload_dit",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "offload_dit"
+          },
+          "link": null
+        },
+        {
+          "name": "dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "dtype"
+          },
+          "link": null
+        },
+        {
+          "name": "require_external_runtime",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "require_external_runtime"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "block_swap_args",
+          "type": "MINIMAX_H3_SWAP",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ExternalBlockSwapBridgeT8Advanced"
+      },
+      "widgets_values": [
+        "upstream_default_auto",
+        47,
+        0,
+        true,
+        2,
+        true,
+        2,
+        true,
+        0.0,
+        false,
+        "bfloat16",
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3KSampler",
+      "title": "Stock20 + BlockSwap（无 Turbo LoRA）",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        668
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MINIMAX_H3_MODEL",
+          "link": 5
+        },
+        {
+          "name": "positive",
+          "type": "MINIMAX_H3_COND",
+          "link": 6
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "name": "cfg",
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg"
+          },
+          "link": null
+        },
+        {
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        },
+        {
+          "name": "scheduler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler_name"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          },
+          "link": null
+        },
+        {
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          },
+          "link": null
+        },
+        {
+          "name": "use_adaln_cache",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_adaln_cache"
+          },
+          "link": null
+        },
+        {
+          "name": "adaln_prebake_batch",
+          "type": "INT",
+          "widget": {
+            "name": "adaln_prebake_batch"
+          },
+          "link": null
+        },
+        {
+          "name": "negative",
+          "type": "MINIMAX_H3_COND",
+          "link": 7,
+          "shape": 7
+        },
+        {
+          "name": "latent",
+          "type": "MINIMAX_H3_LATENT",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "teacache_args",
+          "type": "MINIMAX_H3_TEACACHE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "block_swap_args",
+          "type": "MINIMAX_H3_SWAP",
+          "link": 9,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "MINIMAX_H3_LATENT",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "stats",
+          "type": "STRING",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3KSampler"
+      },
+      "widgets_values": [
+        2608221002,
+        "fixed",
+        20,
+        1.0,
+        "euler",
+        "normal",
+        12.0,
+        3.0,
+        1.0,
+        false,
+        3
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3Decode",
+      "title": "外部运行时解码",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "MINIMAX_H3_LATENT",
+          "link": 10
+        },
+        {
+          "name": "av_encoder",
+          "type": "MINIMAX_H3_AV_ENCODER",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "IMAGE",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3Decode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "CreateVideo",
+      "title": "合并外部运行时输出",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 13,
+          "shape": 7
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "widget": {
+            "name": "bit_depth"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 11,
+      "type": "SaveVideo",
+      "title": "保存 BlockSwap 结果",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 14
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/external_blockswap_stock20",
+        "mp4"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "PreviewAny",
+      "title": "BlockSwap 参数报告",
+      "pos": [
+        440,
+        600
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "title": "外部采样统计",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "title": "NOTE 1 · 独立运行时，不接官方 MODEL",
+      "pos": [
+        -80,
+        -500
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 类型边界\n本桥输出 `MINIMAX_H3_SWAP`，只连接外部 `MiniMaxH3KSampler`；不能连接 ComfyUI 官方 `MODEL`/SamplerCustom。这样不会改变任何现有官方工作流，也不会让旧工作流参数移位。"
+      ],
+      "color": "#244a73",
+      "bgcolor": "#111827"
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "NOTE 2 · 外部项目与许可边界",
+      "pos": [
+        520,
+        -500
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 需要单独安装\n外部运行时：`xiaolibai-sys/ComfyUI-MiniMaxH3`，本机验证 revision：`099aa38c122cea030ce45a51eb1d83208b16a363`。上游当前未声明源码许可证，因此本仓库不复制或再分发其源码，只提供鸭子类型兼容桥。"
+      ],
+      "color": "#733f24",
+      "bgcolor": "#111827"
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "NOTE 3 · 推荐起点与未承诺项",
+      "pos": [
+        1120,
+        -500
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 推荐起点\n`upstream_default_auto`：47个交换块、0热块、prefetch=2、auto_vram=true。此例使用 Stock20/20步，不接原始 2688 AdaLN Turbo LoRA；RTX 50系选 `sdpa_flash`。16GB 尚未做压力认证，不等于保证不会 OOM，先从 736×416 / 5秒开始。"
+      ],
+      "color": "#24573a",
+      "bgcolor": "#111827"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      1,
+      "MINIMAX_H3_ATTN"
+    ],
+    [
+      2,
+      3,
+      0,
+      6,
+      0,
+      "MINIMAX_H3_TEXT_ENCODER"
+    ],
+    [
+      3,
+      4,
+      0,
+      6,
+      3,
+      "MINIMAX_H3_AV_ENCODER"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      6,
+      "MINIMAX_H3_PROMPT"
+    ],
+    [
+      5,
+      2,
+      0,
+      8,
+      0,
+      "MINIMAX_H3_MODEL"
+    ],
+    [
+      6,
+      6,
+      0,
+      8,
+      1,
+      "MINIMAX_H3_COND"
+    ],
+    [
+      7,
+      6,
+      1,
+      8,
+      12,
+      "MINIMAX_H3_COND"
+    ],
+    [
+      8,
+      6,
+      2,
+      8,
+      13,
+      "MINIMAX_H3_LATENT"
+    ],
+    [
+      9,
+      7,
+      0,
+      8,
+      15,
+      "MINIMAX_H3_SWAP"
+    ],
+    [
+      10,
+      8,
+      0,
+      9,
+      0,
+      "MINIMAX_H3_LATENT"
+    ],
+    [
+      11,
+      4,
+      0,
+      9,
+      1,
+      "MINIMAX_H3_AV_ENCODER"
+    ],
+    [
+      12,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      9,
+      1,
+      10,
+      2,
+      "AUDIO"
+    ],
+    [
+      14,
+      10,
+      0,
+      11,
+      0,
+      "VIDEO"
+    ],
+    [
+      15,
+      7,
+      1,
+      12,
+      0,
+      "*"
+    ],
+    [
+      16,
+      8,
+      1,
+      13,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 External BlockSwap Stock20 Advanced"
+  },
+  "version": 0.4
+}

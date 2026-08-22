@@ -881,7 +881,22 @@ def _strict_sage_contract() -> dict:
         "smooth_k": False,
         "silent_fallback": False,
         "scope": "native MiniMax H3 main DiT packed attention only",
+        "sm120_high_token_guard_rows": 50_000,
     }
+
+
+def _strict_sage_architecture_guard(rows: int, compute_capability) -> None:
+    if not isinstance(compute_capability, (tuple, list)) or len(compute_capability) < 2:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage could not verify the CUDA compute capability"
+        )
+    major, minor = int(compute_capability[0]), int(compute_capability[1])
+    if major >= 12 and int(rows) >= 50_000:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage blocks compute capability "
+            f"{major}.{minor} at {int(rows)} packed rows because this high-token kernel "
+            "profile has a reported pure-noise output failure; use stock attention"
+        )
 
 
 def _strict_sage_attention(
@@ -922,6 +937,13 @@ def _strict_sage_attention(
         raise RuntimeError(
             "H3 EAV + Strict Sage requires matching FP16 or BF16 Q/K/V tensors"
         )
+    try:
+        compute_capability = torch.cuda.get_device_capability(q.device)
+    except Exception as exc:
+        raise RuntimeError(
+            "H3 EAV + Strict Sage could not inspect the CUDA architecture"
+        ) from exc
+    _strict_sage_architecture_guard(int(q.shape[2]), compute_capability)
 
     kernel = getattr(attention_module, "sageattn", None)
     if not bool(

@@ -6,6 +6,16 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.43.0 keeps nodes 1-155 and their schemas/defaults unchanged, then appends five opt-in
+> nodes for an external BlockSwap contract, LanPaint AV preparation/compositing, and a local 8B
+> prompt rewriter with explicit unload. Six native Quick Start blueprints reuse existing nodes rather
+> than changing their contracts. This release also permits face-detector aliases under
+> `ComfyUI/models` to resolve through symlinks/junctions, adds an SM120 high-token Sage guard, and
+> preserves compatibility with both reviewed MiniMax H3 row-mask/tokenizer core variants. The full
+> CPU suite passed 951 tests; Ruff, compileall, 170 non-artifact JSON files, version consistency,
+> `git diff --check`, and `comfy node validate` passed. No new GPU stress, BlockSwap/LanPaint quality,
+> or universal 16GiB-safety claim is made.
+
 > Project v1.42.0 appends the seventh Motion Recovery node as an automatic native-lazy gate and
 > changes only the new analyzer's default to `auto_conservative_exp`. A real calm 736x416x124
 > Stock20 clip automatically abstained, requested no pass-2 inputs, and produced byte-identical MP4

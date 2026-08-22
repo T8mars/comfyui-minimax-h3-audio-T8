@@ -45,6 +45,31 @@ def _model_root() -> Path:
     return Path(folder_paths.models_dir).resolve()
 
 
+def _detector_alias_path(relative_name: str) -> Path:
+    """Resolve a detector through its models/ alias without rejecting storage symlinks."""
+    root = _model_root()
+    relative = Path(str(relative_name))
+    if relative.is_absolute() or not relative.parts or any(
+        part in {"", ".", ".."} for part in relative.parts
+    ):
+        raise ValueError("detector_model must be a relative path under ComfyUI/models")
+    alias = root.joinpath(*relative.parts)
+    try:
+        alias.relative_to(root)
+    except ValueError as error:
+        raise ValueError("detector_model must be a relative path under ComfyUI/models") from error
+    return alias
+
+
+def _detector_report_name(path: Path) -> str:
+    """Keep legacy relative reports while representing an external symlink safely."""
+    root = _model_root()
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return f"external_storage/{path.name}"
+
+
 def local_face_detector_options() -> list[str]:
     root = _model_root()
     candidates: set[str] = set()
@@ -64,7 +89,14 @@ def local_face_detector_options() -> list[str]:
                 lower = path.name.lower()
                 if "face" not in lower and "yolo" not in lower:
                     continue
-                candidates.add(path.resolve().relative_to(root).as_posix())
+                try:
+                    # Preserve the lexical models/ alias. Its resolved target may live on a
+                    # cloud volume or network mount, which is a supported ComfyUI layout.
+                    candidates.add(path.relative_to(root).as_posix())
+                except ValueError:
+                    # A provider may yield an unexpected entry outside the requested search
+                    # root. Ignore only that entry instead of aborting the whole plugin import.
+                    continue
     ordered = sorted(candidates)
     if YUNET_2023MAR_RELATIVE in ordered:
         ordered.remove(YUNET_2023MAR_RELATIVE)
@@ -84,12 +116,8 @@ def _resolve_detector_path(relative_name: str) -> Path:
             "automatic face detection requires a local detector under ComfyUI/models; "
             "no model is downloaded automatically"
         )
-    root = _model_root()
-    path = (root / str(relative_name)).resolve()
-    try:
-        path.relative_to(root)
-    except ValueError as error:
-        raise ValueError("detector_model must stay inside ComfyUI/models") from error
+    alias = _detector_alias_path(relative_name)
+    path = alias.resolve()
     if not path.is_file() or path.suffix.lower() not in {".pt", ".onnx"}:
         raise ValueError(f"Local detector does not exist or is unsupported: {relative_name}")
     return path
@@ -256,7 +284,7 @@ def _detect_local_opencv_yunet(
     official_match = model_hash == YUNET_2023MAR_SHA256
     return detections, {
         "backend": "local_opencv_yunet",
-        "model": path.relative_to(_model_root()).as_posix(),
+        "model": _detector_report_name(path),
         "model_sha256": model_hash,
         "official_opencv_zoo_match": official_match,
         "model_source": YUNET_2023MAR_SOURCE if official_match else None,
@@ -395,7 +423,7 @@ def _detect_local_anime_onnx_exp(
     return detections, {
         "backend": "local_anime_onnx_exp",
         "domain": "anime_only_experimental",
-        "model": path.relative_to(_model_root()).as_posix(),
+        "model": _detector_report_name(path),
         "model_sha256": model_hash,
         "official_deepghs_match": official_match,
         "model_source": ANIME_FACE_V14_N_SOURCE if official_match else None,
@@ -472,7 +500,7 @@ def _detect_local_ultralytics(
             comfy.model_management.soft_empty_cache()
     return detections, {
         "backend": "local_ultralytics",
-        "model": path.relative_to(_model_root()).as_posix(),
+        "model": _detector_report_name(path),
         "device": "cuda_auto" if device != "cpu" else "cpu",
         "network_download": False,
         "cached_after_execute": False,

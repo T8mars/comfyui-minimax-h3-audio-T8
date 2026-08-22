@@ -1,0 +1,552 @@
+{
+  "id": "7330fece-9e0e-5554-8798-47e1e9d55c68",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3PromptRewriter8BT8Advanced",
+      "title": "MiniMax H3 8B 提示词重写（生成后卸载）",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        890
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "task",
+          "type": "COMBO",
+          "widget": {
+            "name": "task"
+          },
+          "link": null
+        },
+        {
+          "name": "resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "resolution"
+          },
+          "link": null
+        },
+        {
+          "name": "duration",
+          "type": "INT",
+          "widget": {
+            "name": "duration"
+          },
+          "link": null
+        },
+        {
+          "name": "base_model_path",
+          "type": "STRING",
+          "widget": {
+            "name": "base_model_path"
+          },
+          "link": null
+        },
+        {
+          "name": "adapter_path",
+          "type": "STRING",
+          "widget": {
+            "name": "adapter_path"
+          },
+          "link": null
+        },
+        {
+          "name": "load_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "load_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "dtype"
+          },
+          "link": null
+        },
+        {
+          "name": "decoding",
+          "type": "COMBO",
+          "widget": {
+            "name": "decoding"
+          },
+          "link": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "max_new_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "max_new_tokens"
+          },
+          "link": null
+        },
+        {
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "name": "top_p",
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "name": "min_image_pixels",
+          "type": "INT",
+          "widget": {
+            "name": "min_image_pixels"
+          },
+          "link": null
+        },
+        {
+          "name": "max_image_pixels",
+          "type": "INT",
+          "widget": {
+            "name": "max_image_pixels"
+          },
+          "link": null
+        },
+        {
+          "name": "unload_after_generate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "unload_after_generate"
+          },
+          "link": null
+        },
+        {
+          "name": "free_comfy_models_before_load",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "free_comfy_models_before_load"
+          },
+          "link": null
+        },
+        {
+          "name": "allow_hub_download",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "allow_hub_download"
+          },
+          "link": null
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "enhanced_prompt",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "integrated_multimodal_description",
+          "type": "STRING",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "overall_soundscape",
+          "type": "STRING",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "non_diegetic_music",
+          "type": "STRING",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptRewriter8BT8Advanced"
+      },
+      "widgets_values": [
+        "夜晚的海边，一名女子迎着海风慢慢转身，远处浪声清晰。",
+        "T2VA — 文生音视频",
+        "16:9",
+        10,
+        "Qwen3-VL-8B-Instruct",
+        "MiniMax-H3-Prompt-Rewriter-LoRA-8B",
+        "auto_cpu_offload",
+        "bfloat16",
+        "greedy",
+        42,
+        "fixed",
+        1024,
+        0.7,
+        0.8,
+        65536,
+        1048576,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 2,
+      "type": "PreviewAny",
+      "title": "复制此完整提示词到 H3 Conditioning",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "PreviewAny",
+      "title": "画面描述",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "PreviewAny",
+      "title": "环境声描述",
+      "pos": [
+        440,
+        600
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "PreviewAny",
+      "title": "非叙事音乐描述",
+      "pos": [
+        440,
+        900
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "title": "加载、耗时与卸载报告",
+      "pos": [
+        440,
+        1200
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "NOTE 1 · 模型位置与规模",
+      "pos": [
+        -80,
+        -420
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 模型位置\n- 基座：`ComfyUI/models/text_encoders/Qwen3-VL-8B-Instruct`\n- LoRA：`ComfyUI/models/loras/MiniMax-H3-Prompt-Rewriter-LoRA-8B`\n本机已按固定 revision 下载。它是独立的 8B Qwen3-VL 模型，不能把现有 32B H3 CLIP 当成该 LoRA 的基座。"
+      ],
+      "color": "#244a73",
+      "bgcolor": "#111827"
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "NOTE 2 · 16GB 使用边界",
+      "pos": [
+        520,
+        -420
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 16GB 可运行，但并不快\n默认 `auto_cpu_offload + bfloat16`。本机真实加载成功且没有 OOM；256 token 上限的一次短测试约 482 秒。`max_new_tokens=1024` 能减少截断风险，但耗时可能更长。不要把它描述成轻量或实时节点。"
+      ],
+      "color": "#733f24",
+      "bgcolor": "#111827"
+    },
+    {
+      "id": 9,
+      "type": "MarkdownNote",
+      "title": "NOTE 3 · 输出与卸载",
+      "pos": [
+        1120,
+        -420
+      ],
+      "size": [
+        560,
+        270
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 推荐用法\n复制第一个输出到现有 H3 Conditioning 的 prompt。默认生成后在 `finally` 释放模型、处理器和 Accelerate hooks，并清理缓存；异常/OOM 路径也执行。当前上游只覆盖 T2VA、I2VA、L2VA、FL2VA，不支持 Ref2VA 提示词重写。"
+      ],
+      "color": "#24573a",
+      "bgcolor": "#111827"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "*"
+    ],
+    [
+      2,
+      1,
+      1,
+      3,
+      0,
+      "*"
+    ],
+    [
+      3,
+      1,
+      2,
+      4,
+      0,
+      "*"
+    ],
+    [
+      4,
+      1,
+      3,
+      5,
+      0,
+      "*"
+    ],
+    [
+      5,
+      1,
+      4,
+      6,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Prompt Rewriter 8B Advanced"
+  },
+  "version": 0.4
+}

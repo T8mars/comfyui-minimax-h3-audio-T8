@@ -501,6 +501,14 @@ def test_strict_sage_rejects_non_native_tensor_contract_before_kernel():
         )
 
 
+def test_strict_sage_architecture_guard_blocks_sm120_high_token_profile():
+    eav_module._strict_sage_architecture_guard(49_999, (12, 0))
+    eav_module._strict_sage_architecture_guard(200_000, (8, 9))
+
+    with pytest.raises(RuntimeError, match="pure-noise output failure"):
+        eav_module._strict_sage_architecture_guard(50_000, (12, 0))
+
+
 def test_runtime_route_accepts_stable_visual_tasks_and_uses_final_video_grid():
     text_len, frames, height, width, audio_t = 8, 7, 8, 10, 12
     x = [

@@ -20,6 +20,9 @@ from .nodes_prompt_relay_preview_advanced import (
 from .nodes_prompt_relay_resource_estimate_advanced import (
     PROMPT_RELAY_RESOURCE_ESTIMATE_ADVANCED_NODE_CLASSES,
 )
+from .nodes_prompt_rewriter_8b_advanced import (
+    PROMPT_REWRITER_8B_ADVANCED_NODE_CLASSES,
+)
 from .nodes_repair_execution_advanced import (
     REPAIR_EXECUTION_ADVANCED_NODE_CLASSES,
 )
@@ -36,6 +39,7 @@ from .nodes_trajectory_probe_advanced import (
 from .nodes_motion_quality_advanced import MOTION_QUALITY_ADVANCED_NODE_CLASSES
 from .nodes_motion_recovery_advanced import MOTION_RECOVERY_ADVANCED_NODE_CLASSES
 from .nodes_latent_upscale import LATENT_UPSCALE_NODE_CLASSES
+from .nodes_lanpaint_av_advanced import LANPAINT_AV_ADVANCED_NODE_CLASSES
 from .nodes_learned_latent_upscale_advanced import (
     LEARNED_LATENT_AUDIO_AUDIT_ADVANCED_NODE_CLASSES,
     LEARNED_LATENT_UPSCALE_ADVANCED_NODE_CLASSES,
@@ -45,6 +49,7 @@ from .audio_ops import decode_av_latent, inject_audio_latent, mix_audio, trim_av
 from .conditioning import build_conditioning
 from .nodes_dialogue_audio_exp import DIALOGUE_AUDIO_NODE_CLASSES
 from .nodes_environment_audit_advanced import ENVIRONMENT_AUDIT_ADVANCED_NODE_CLASSES
+from .nodes_external_blockswap_advanced import EXTERNAL_BLOCKSWAP_ADVANCED_NODE_CLASSES
 from .nodes_enhance_a_video_advanced import ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_advanced import FACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_parity_advanced import FACE_REFINE_PARITY_ADVANCED_NODE_CLASSES
@@ -491,7 +496,14 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *PROMPT_RELAY_RESOURCE_ESTIMATE_ADVANCED_NODE_CLASSES,
                 *LEARNED_LATENT_AUDIO_AUDIT_ADVANCED_NODE_CLASSES,
                 *ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES,
-                *MOTION_RECOVERY_ADVANCED_NODE_CLASSES]
+                *MOTION_RECOVERY_ADVANCED_NODE_CLASSES,
+                # Append-only compatibility rule: new node classes stay after all
+                # previously released IDs so old frontend widget serialization and
+                # registration-order contracts remain untouched.
+                *EXTERNAL_BLOCKSWAP_ADVANCED_NODE_CLASSES,
+                *LANPAINT_AV_ADVANCED_NODE_CLASSES,
+                *PROMPT_REWRITER_8B_ADVANCED_NODE_CLASSES,
+            ]
 
 
 def comfy_entrypoint():
