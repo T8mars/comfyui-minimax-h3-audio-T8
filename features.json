@@ -325,7 +325,14 @@
     "MiniMaxH3EnhanceAVideoPromptRelayComposerT8Advanced",
     "MiniMaxH3EnhanceAVideoBlockCacheComposerT8Advanced",
     "MiniMaxH3EnhanceAVideoSTGComposerT8Advanced",
-    "MiniMaxH3EnhanceAVideoLongVideoComposerT8Advanced"
+    "MiniMaxH3EnhanceAVideoLongVideoComposerT8Advanced",
+    "MiniMaxH3MotionOverloadAnalyzeT8Advanced",
+    "MiniMaxH3MotionRetimingPrepareT8Advanced",
+    "MiniMaxH3MotionRecoveryComposerT8Advanced",
+    "MiniMaxH3MotionRecoverAVT8Advanced",
+    "MiniMaxH3MotionSegmentPlanT8Advanced",
+    "MiniMaxH3MotionWindowCollectT8Advanced",
+    "MiniMaxH3MotionAutoGateT8Advanced"
   ],
   "experimental_enhance_a_video_advanced": {
     "status": "implemented Advanced EXP; controlled 0.7MP T2VA/I2VA/FL2VA/L2VA/Ref2VA/task-Hybrid Stock20 and strict Alpha8 Turbo8 T2VA pairs pass mechanical and media gates; an isolated Strict Sage composer also passes one real 0.7MP Stock20 call/runtime/media audit; visual superiority, audio non-inferiority and general 16GiB safety are not established",
@@ -442,6 +449,81 @@
     "memory_safe_claim": false,
     "stable_node_schema_changed": false,
     "stable_sampling_changed": false
+  },
+  "experimental_motion_recovery_advanced": {
+    "status": "implemented append-only automatic P0/P1/P2 mechanics with native lazy ABSTAIN, importable full-clip/windowed workflows and one real T2VA/I2VA/FL2VA/Ref2VA run each; visual superiority, final experimental-audio human listening and universal 16GiB safety remain unproven",
+    "date": "2026-08-22",
+    "category": "T8/MiniMax H3/Quality/Experimental/Motion Recovery",
+    "reference": "matlowai/ComfyUI-MAINodes@aadd17764007122700738095d71a3a4e8108c866",
+    "paper_boundary": "No corresponding peer-reviewed Motion Lab paper or arXiv implementation was found; the route is treated as an engineering hypothesis rather than a paper-standard algorithm.",
+    "nodes": [
+      "MiniMaxH3MotionOverloadAnalyzeT8Advanced",
+      "MiniMaxH3MotionRetimingPrepareT8Advanced",
+      "MiniMaxH3MotionRecoveryComposerT8Advanced",
+      "MiniMaxH3MotionRecoverAVT8Advanced",
+      "MiniMaxH3MotionSegmentPlanT8Advanced",
+      "MiniMaxH3MotionWindowCollectT8Advanced",
+      "MiniMaxH3MotionAutoGateT8Advanced"
+    ],
+    "implementation": [
+      "read-only overload analysis separates measurement from allocation and defaults to auto_conservative_exp; report_only and manual_ranges remain explicit diagnostics",
+      "the automatic route requires composite-score, profile-contrast and decoded residual-motion gates, so calm clips can abstain instead of always selecting a quantile",
+      "the automatic gate uses ComfyUI native lazy inputs: ABSTAIN returns the exact pass-1 IMAGE/AUDIO objects and never requests the connected second-pass branch",
+      "signed plans preserve the native H3 24fps, 17n+5 and (1,4,4,4,4) temporal mapping; legal-grid padding is attached to the last selected motion frame rather than silently stretching the clip tail",
+      "retiming preparation repeats selected decoded frames on CPU, encodes a longer H3 video latent and optionally phase-vocodes pass-1 audio only as a shared-Transformer seed",
+      "the composer truncates an existing schedule without MODEL wrappers or automatic EAV/STG/Restart/BlockCache stacking",
+      "exact video recovery selects one actual generated frame per hold group; final audio defaults to sample-exact pass-1 original",
+      "budgeted segment plans synchronously crop frames and pass-1 audio, while hash-isolated on-disk collection allows missing windows to be rerun without repeating completed windows",
+      "window banks default to float32 frame storage; the explicit float16_half_disk option is labeled non-pixel-exact"
+    ],
+    "validation": {
+      "route": "one low-load Stock20 T2VA windowed run; no stress or cold/warm repetition",
+      "canvas_frames_fps": "1152x640x124 at 24fps",
+      "sampling": "pass 1 native 20 NFE; pass 2 rebuilt its own expanded-latent DualClock and used the final 10 NFE",
+      "window": "source frames 24..96 inclusive; 73 world frames expanded to 175 and recovered to the original 124-frame clip",
+      "media": "baseline and recovered outputs decode fully as H.264 1152x640, 124 frames, 24fps with 32kHz stereo AAC",
+      "audio": "the pass1_original policy now carries an explicit signed marker through the window bank and bypasses float blending; unit coverage proves non-constant sample-exact passthrough, and the final validation remux has the same decoded PCM SHA-256 as pass 1",
+      "minimum_observed_free_vram_mib": 981,
+      "quality": "three hotspot contact frames show no obvious corruption or timing displacement; full subjective motion benefit remains unreviewed",
+      "calm_auto_abstain": {
+        "prompt_id": "2b82f4b3-ea95-49e4-adf7-5fad526ce9b0",
+        "contract": "real 736x416x124 Stock20 T2VA, 20 pass-1 calls, quiet locked-camera portrait with one Mandarin sentence",
+        "decision": "status=abstained, automatic_gate=false, should_repair=false, second_pass_requested=false, selected_branch=abstain_passthrough",
+        "identity": "routed/pass-1 MP4 SHA-256 both 5D01773935DA81F5313D3D5C02CDA7B7656696AE8A05D2A751677A3FAD4BD1F3; decoded video and PCM hashes also match",
+        "execution": "229.788 seconds; a separate poison-branch ComfyUI graph also succeeded only because the lazy second-pass input was not requested"
+      },
+      "multimodal_real_runs": {
+        "common": "736x416x124 at 24fps, native Stock20 dual-clock, 20 pass-1 calls plus final 10-call local second pass, manual 1.5s-3.5s hold-3 validation range, exact 124-frame recovery, H.264 plus 32kHz stereo AAC",
+        "i2va": "prompt a49b0853-c084-4030-a100-c989afb53a34; first frame 10A.jpg; 472.236 seconds; recovered safe-audio output SHA-256 AA8A5A8321FE996D418A54AB14EFC43DA493AD0B76D014FFC526140D8833F713",
+        "fl2va": "prompt 41f36b79-c14a-4482-a4bf-7c13f6087232; first/last 10A.jpg and 10b.jpg; 487.081 seconds; recovered output SHA-256 58A5F18D2C4B1B2BDB547F309591203E42452A8589D12AF1BC2FB0DC72F652DE",
+        "ref2va": "prompt 4012aa1d-ec83-41b7-8efc-faab7ef207f9; independent minimax_h3_ref2va_int8_convrot model plus Picture 1=10A.jpg; 472.493 seconds; recovered output SHA-256 E522D4A8A771B41E7530714CEC578E8FD1D06127B73D07D51DB3BAE8C68F5881",
+        "media_gate": "all baseline and recovered outputs passed strict video-only, audio-only and combined decoding; contact-sheet inspection confirms visible non-black modality outputs",
+        "memory": "coarse polling observed about 47.8MiB I2VA, 471.5MiB FL2VA and 113.5MiB Ref2VA minimum headroom; these runs succeed but fail the 512MiB project safety floor"
+      },
+      "experimental_audio_modes": {
+        "shared_i2va_run": "one generated second-pass latent branches to pass1_original, pass2_recovered_exp and blend_exp=0.8 without repeating Transformer sampling",
+        "files": "pass1_original SHA-256 AA8A5A8321FE996D418A54AB14EFC43DA493AD0B76D014FFC526140D8833F713; pass2_recovered_exp 94A29E495F79D0720443BFE0D656EB59D8B0DAF222AECE21CA42BABC9B1813AC; blend_exp 68A1F344F18648879777A85E557A3B4542637272D018473384EDBF0CFE54BB5E",
+        "strict_media": "all three complete 5.1667-second outputs passed video-only, audio-only and combined strict decoding",
+        "asr": "faster-whisper small multilingual recognized the complete target sentence in all modes; pass2 split it into three voiced segments while pass1/blend remained one segment",
+        "waveform": "against pass-1, pass2_recovered_exp correlation=0.473789 and RMS ratio=0.897629; blend_exp correlation=0.983856 and RMS ratio=0.897811; metrics diagnose change but do not replace listening",
+        "human_listening": "completed full-sequence user review: pass1_original normal; pass2_recovered_exp failed because the middle suddenly sounded distant before returning; blend_exp normal for this one clip at pass1_mix=0.8",
+        "decision": "keep pass1_original as the stable default; retain pass2_recovered_exp for diagnostics only; keep blend_exp opt-in with a single-clip 0.8-mix pass and no generalized audio-noninferiority claim"
+      }
+    },
+    "safety": [
+      "all seven nodes append after the first 148 node IDs and do not modify stable sampling.py",
+      "auto_conservative_exp is the analyzer default and the importable workflows include the native lazy Auto Gate; report_only remains an explicit diagnostic while schedule composition stays report_only by default",
+      "pass1_original is the default final audio mode",
+      "no global maximum pixel or expanded-frame prohibition is imposed; estimates and window budgets are reported instead",
+      "no three-cold/three-warm, continuous stress or critical-VRAM validation is planned; only sequential low-load gates are allowed"
+    ],
+    "claims": {
+      "quality_improvement": false,
+      "audio_noninferiority": false,
+      "universal_16gib_safety": false,
+      "paper_parity": false,
+      "old_workflow_compatibility": true
+    }
   },
   "experimental_prompt_relay_advanced": {
     "category": "T8/MiniMax H3/Conditioning/Experimental",

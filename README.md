@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.40.0** · 节点 148 个 · GPL-3.0-or-later
+当前版本：**1.42.0** · 节点 155 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -14,6 +14,7 @@
 - 32 倍数对齐的 3D latent 放大，避免官方放大节点造成宽高偏移
 - 长视频分段、断点续跑、时间线报告和音视频同步检查
 - 单人/多人脸部修复、SAM3.1 追踪、多帧关键帧和实验性动态细节增强
+- Motion Recovery动作过载分析、自动ABSTAIN懒旁路、局部时间超采样二采、原时钟恢复和分窗断点续跑（实验）
 - 语音、对白、演绎、ADR 和生产辅助节点（实验功能会明确标注）
 - 预检、显存/缓存报告、模型兼容检查和异常路径清理
 
@@ -56,7 +57,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `04-long-video` | 分段生成、长视频、断点恢复和拼接 |
 | `05-speech-dialogue` | 单人语音、对白、演绎和 ADR（实验） |
 | `06-face-refine` | 单人/多人脸部修复与 SAM3.1 追踪（实验） |
-| `07-motion-detail` | 动态细节、尾段采样、FETA 时序注意力增强和质量对照（实验） |
+| `07-motion-detail` | 动态细节、尾段采样、FETA 与 Motion Recovery 二采修复（实验） |
 | `08-multi-keyframe` | 中间关键帧和关键帧计划（实验） |
 | `09-hybrid-model` | FL2VA/Ref2VA 混合模型研究（实验） |
 | `10-speed` | SPEED 多分辨率采样研究（实验） |
@@ -108,6 +109,7 @@ models/face_detection/checkpoints
 - 常用帧数遵循 H3 的网格约束，例如 22、124、362；不要只按“秒数”猜可用帧数。
 - 16GB 显卡不要默认视为所有任务安全。先用较小画布/短片段通过预检，再逐步增加规模。
 - SPEED、Prompt Relay、动态细节、Hybrid、多帧关键帧、多人脸修复和语音节点目前按实验功能使用；未通过本机验证的组合会 fail-closed。
+- Motion Recovery 是独立的“pass-1分析 → 问题段扩时 → 部分去噪V2V → 恢复原时钟”链，不是光流插帧、修脸或单采样器增强。Analyzer默认使用`auto_conservative_exp`，Auto Gate通过ComfyUI原生lazy input实现真正旁路：平静片ABSTAIN时不请求任何二采节点，并原样输出pass-1画面和音频。736×416×124真实平静T2VA已验证`second_pass_requested=false`，旁路与pass-1的MP4、解码画面及PCM哈希均一致。Stock20 T2VA、I2VA、FL2VA和独立Ref2VA模型现各有一条真实二采成片，均恢复为124帧并通过严格音视频解码；I2VA还生成了`pass1_original`、`pass2_recovered_exp`和`blend_exp`三种完整对白音轨。完整人工试听确认默认原音正常；纯`pass2_recovered_exp`在中段会突然变成远处声音再恢复，已降为诊断用途；`blend_exp`在本次`pass1_mix=0.8`素材中正常，但仍只是单素材EXP结论。多模态单条成功不代表稳定提质或通用16GB安全，FL2VA/Ref2VA/I2VA粗采余量均曾低于512MiB，不要在首轮叠加EAV/STG/RF Restart/BlockCache。
 - Enhance-A-Video / FETA 节点按论文公式从目标视频 Q/K 计算跨帧 CFI，只直接增强目标视频 attention 输出。原节点继续支持 Stock20 的 T2VA / I2VA / FL2VA / L2VA，以及严格限定的修正 Alpha8 Turbo8 T2VA；独立 Reference Composer 只开放原生 Stock20 Ref2VA 和任务型 Hybrid，不改变旧节点合同。上述七类路线现均至少完成一组 0.7MP 同输入、同 seed 的 disabled/apply 机械与媒体对照；Ref2VA 增强端最低显存余量仅约 417MiB，低于项目 512MiB 门槛。自动指标只能证明轨迹和联合音频发生变化，不能证明画质、参考遵循或声音更好，因此所有路线仍不宣称稳定提质、音频非劣或通用16GB安全。
 - `Enhance-A-Video + Strict Sage Advanced EXP`由一个组合节点同时拥有 FETA 路由和本机 SageAttention HND 后端，避免第三方整块 Attention patch 绕过 FETA。它不会静默回退到 PyTorch attention；本机一条 1152×640×124、Stock20 实测完成 1000 次 FETA 测量和 1000 次 Sage 调用，失败/回退为 0，并通过三轮严格音视频解码。该单条机械验证不代表画质更好、声音非劣、速度更快或通用 16GB 安全；使用时不要再叠加 KJ Sage、BlockCache、STG 或其他全局 attention patch。
 - `Enhance-A-Video + Prompt Relay Composer Advanced EXP`解决两个独立节点争用同一Attention入口的问题：它验证现有Relay绑定后，在一次路由中先执行局部事件Relay，再只对目标视频输出行应用FETA；关闭FETA时保留原Relay MODEL。当前仅开放Stock20 T2VA，一组736×416×124、20步基础机械对照及严格媒体检查已通过，但余量低于512MiB；不作为稳定提质、音频非劣或16GB安全路线宣传。

@@ -6,6 +6,19 @@
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
 
+> Project v1.42.0 appends the seventh Motion Recovery node as an automatic native-lazy gate and
+> changes only the new analyzer's default to `auto_conservative_exp`. A real calm 736x416x124
+> Stock20 clip automatically abstained, requested no pass-2 inputs, and produced byte-identical MP4
+> plus identical decoded video/PCM hashes. Separate real I2VA, FL2VA, and Ref2VA 20+10-NFE runs
+> completed as 124-frame/24fps/32kHz-stereo media and passed strict decoding. The I2VA run also
+> produced `pass1_original`, `pass2_recovered_exp`, and `blend_exp` dialogue tracks; ASR preserved
+> the target sentence in all three. Full human listening accepted the exact pass-1 default, rejected
+> pure pass-2 recovery because its middle window suddenly sounded distant before returning, and
+> accepted `blend_exp` only for this one clip at `pass1_mix=0.8`. Pure pass-2 therefore remains
+> diagnostic-only, while blend remains opt-in rather than a new default. Observed whole-device
+> headroom fell below 512MiB in all three generation
+> routes, so no general 16GiB-safety or perceptual-quality claim is made.
+
 > Project v1.40.0 appends EAV + BlockCache, EAV + STG, and EAV + Long Video as
 > nodes 146-148 without changing the first 145 node IDs or stable sampling. Only low-load
 > deterministic contracts, registration, importable workflows, and project/user SHA parity were

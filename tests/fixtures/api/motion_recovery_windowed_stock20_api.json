@@ -1,0 +1,266 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "H3 FL2VA Stock20"}
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "H3 CLIP"}
+  },
+  "3": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "H3 video VAE"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "H3 audio VAE"}
+  },
+  "5": {
+    "inputs": {
+      "prompt": "Night, one continuous high-speed cinematic shot. An adult woman in flowing red Hanfu launches across a moonlit rooftop and spins rapidly through the air while the camera whip-pans with her. Between 1.5 and 3.5 seconds she completes the fastest turn and sword swing. Preserve coherent anatomy, stable limbs, crisp fabric folds and full motion amplitude. She says clearly in Mandarin exactly once: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> No repeated words, no subtitles. Synchronized voice, rushing wind, cloth movement, sword whooshes, sparks and distant night ambience.",
+      "width": 1152,
+      "height": 640,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": ["2", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "_meta": {"title": "Pass 1 T2VA conditioning"}
+  },
+  "6": {
+    "inputs": {
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": ["1", 0],
+      "av_latent": ["5", 1]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Native Stock20 dual clock"}
+  },
+  "7": {
+    "inputs": {"model": ["6", 0], "conditioning": ["5", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Shared guider"}
+  },
+  "8": {
+    "inputs": {"noise_seed": 2608222201},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Pass 1 noise"}
+  },
+  "9": {
+    "inputs": {
+      "noise": ["8", 0],
+      "guider": ["7", 0],
+      "sampler": ["6", 1],
+      "sigmas": ["6", 2],
+      "latent_image": ["5", 1]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Pass 1 baseline"}
+  },
+  "10": {
+    "inputs": {
+      "av_latent": ["9", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode pass 1"}
+  },
+  "11": {
+    "inputs": {
+      "av_latent": ["9", 0],
+      "frames": ["10", 0],
+      "mode": "auto_conservative_exp",
+      "manual_ranges": "",
+      "overload_threshold": 3.5,
+      "minimum_profile_contrast": 2.0,
+      "minimum_residual_motion": 0.01,
+      "max_hold": 3,
+      "bridge_tokens": 2,
+      "minimum_hot_frames": 5,
+      "fps": 24.0
+    },
+    "class_type": "MiniMaxH3MotionOverloadAnalyzeT8Advanced",
+    "_meta": {"title": "Analyze pass-1 motion"}
+  },
+  "12": {
+    "inputs": {
+      "frames": ["10", 0],
+      "baseline_audio": ["10", 1],
+      "motion_plan": ["11", 0],
+      "max_expanded_frames": 209,
+      "window_index": 0,
+      "handle_frames": 12,
+      "coverage": "hot_ranges_only"
+    },
+    "class_type": "MiniMaxH3MotionSegmentPlanT8Advanced",
+    "_meta": {"title": "Budgeted motion window"}
+  },
+  "13": {
+    "inputs": {
+      "frames": ["12", 0],
+      "motion_plan": ["12", 1],
+      "video_vae": ["3", 0],
+      "audio_seed_mode": "follow_original_0p5",
+      "audio_vae": ["4", 0],
+      "source_audio": ["12", 4]
+    },
+    "class_type": "MiniMaxH3MotionRetimingPrepareT8Advanced",
+    "_meta": {"title": "Retiming prepare"}
+  },
+  "14": {
+    "inputs": {
+      "av_latent": ["13", 0],
+      "sigmas": ["22", 2],
+      "motion_plan": ["13", 3],
+      "mode": "apply_exp",
+      "denoise_fraction": 0.48,
+      "minimum_second_pass_nfe": 2
+    },
+    "class_type": "MiniMaxH3MotionRecoveryComposerT8Advanced",
+    "_meta": {"title": "Partial second-pass schedule"}
+  },
+  "15": {
+    "inputs": {"noise_seed": 2608222201},
+    "class_type": "RandomNoise",
+    "_meta": {"title": "Pass 2 noise"}
+  },
+  "16": {
+    "inputs": {
+      "noise": ["15", 0],
+      "guider": ["23", 0],
+      "sampler": ["22", 1],
+      "sigmas": ["14", 1],
+      "latent_image": ["14", 0]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {"title": "Pass 2 motion recovery"}
+  },
+  "17": {
+    "inputs": {
+      "av_latent": ["16", 0],
+      "video_vae": ["3", 0],
+      "audio_vae": ["4", 0]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {"title": "Decode pass 2"}
+  },
+  "18": {
+    "inputs": {
+      "generated_frames": ["17", 0],
+      "generated_audio": ["17", 1],
+      "pass1_audio": ["12", 4],
+      "motion_plan": ["14", 2],
+      "audio_mode": "pass1_original",
+      "pass1_mix": 0.8
+    },
+    "class_type": "MiniMaxH3MotionRecoverAVT8Advanced",
+    "_meta": {"title": "Recover window AV clock"}
+  },
+  "19": {
+    "inputs": {
+      "baseline_frames": ["10", 0],
+      "baseline_audio": ["10", 1],
+      "recovered_segment": ["18", 0],
+      "recovered_audio": ["18", 1],
+      "window_plan": ["14", 2],
+      "run_name": "motion_recovery_0p7mp_probe",
+      "store_dir": "",
+      "write_window": true,
+      "store_dtype": "float32_exact",
+      "feather_frames": 6
+    },
+    "class_type": "MiniMaxH3MotionWindowCollectT8Advanced",
+    "_meta": {"title": "Collect signed windows"}
+  },
+  "20": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_MotionRecovery/stock20_0p7mp_windowed_probe",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["24", 0],
+      "audio": ["24", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save recovered result or pass-1 while waiting"}
+  },
+  "21": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "MiniMaxH3_MotionRecovery/stock20_0p7mp_baseline",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["10", 0],
+      "audio": ["10", 1]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {"title": "Save pass-1 baseline"}
+  },
+  "22": {
+    "inputs": {
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": ["1", 0],
+      "av_latent": ["13", 0]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {"title": "Pass 2 DualClock rebuilt for expanded latent"}
+  },
+  "23": {
+    "inputs": {"model": ["22", 0], "conditioning": ["5", 0]},
+    "class_type": "BasicGuider",
+    "_meta": {"title": "Pass 2 guider"}
+  },
+  "24": {
+    "inputs": {
+      "should_repair": ["11", 2],
+      "baseline_frames": ["10", 0],
+      "baseline_audio": ["10", 1],
+      "motion_plan": ["11", 0],
+      "repaired_frames": ["19", 0],
+      "repaired_audio": ["19", 1]
+    },
+    "class_type": "MiniMaxH3MotionAutoGateT8Advanced",
+    "_meta": {"title": "Automatic repair or exact pass-1 ABSTAIN"}
+  }
+}

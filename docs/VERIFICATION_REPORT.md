@@ -5,7 +5,7 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
-The current 1.40.0 checkpoint appends EAV + BlockCache, EAV + STG, and EAV + Long Video as nodes
+The retained 1.40.0 checkpoint appends EAV + BlockCache, EAV + STG, and EAV + Long Video as nodes
 146-148 while preserving the first 145 node IDs and stable sampling. It retains the isolated EAV +
 Prompt Relay composer and importable Stock20 T2VA workflow from 1.39.2, the complete learned-latent
 two-pass workflow set with the already-validated 4+4 schedule, and
@@ -20,6 +20,41 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## 1.42.0 automatic Motion Recovery validation (2026-08-22)
+
+Motion Recovery now has seven append-only nodes. The analyzer defaults to
+`auto_conservative_exp`, while `manual_ranges` and `report_only` remain explicit alternatives. The
+new Auto Gate marks its repaired frame/audio inputs as ComfyUI lazy inputs. A deterministic poison-
+branch runtime graph proved that an abstained plan never evaluated the connected pass-2 segment
+node; the gate returned the original frame and audio objects.
+
+A real calm Stock20 T2VA run at 736x416x124, 24fps and 20 NFE automatically failed the absolute
+residual-motion gate, returned `status=abstained`, `second_pass_requested=false`, and
+`baseline_object_passthrough=true`. Pass 1 and the routed result shared MP4 SHA-256
+`5D01773935DA81F5313D3D5C02CDA7B7656696AE8A05D2A751677A3FAD4BD1F3`; decoded video and PCM
+hashes were also identical. This proves actual pass-2 omission for that clip, not post-hoc selection
+after executing both branches.
+
+One real I2VA, FL2VA and independent-model Ref2VA route then completed at 736x416x124 with 20 pass-1
+and 10 pass-2 calls. Default-safe I2VA, FL2VA and Ref2VA final SHA-256 values were respectively
+`AA8A5A8321FE996D418A54AB14EFC43DA493AD0B76D014FFC526140D8833F713`,
+`58A5F18D2C4B1B2BDB547F309591203E42452A8589D12AF1BC2FB0DC72F652DE`, and
+`E522D4A8A771B41E7530714CEC578E8FD1D06127B73D07D51DB3BAE8C68F5881`. All recovered files were
+124-frame, 24fps, 32kHz-stereo media and passed strict video/audio decoding.
+
+The I2VA pass produced all three audio policies from the same pass-2 latent. Against pass 1,
+`pass1_original` correlation was effectively 1.0, `pass2_recovered_exp` correlation was 0.4738,
+and `blend_exp` correlation was 0.9839. Their complete-file SHA-256 values were
+`AA8A5A83...13AC`, `94A29E49...13AC`, and `68A1F344...BB5E`. CPU multilingual ASR recovered the complete target Mandarin
+sentence from every track. These measurements prove media integrity and speech-content retention;
+they do not prove subjective audio non-inferiority. The user then completed full-sequence listening:
+`pass1_original` sounded normal; `pass2_recovered_exp` suddenly became a distant voice in the middle
+and then returned, so it failed and is retained for diagnostics only; `blend_exp` sounded normal for
+this one clip at `pass1_mix=0.8`. That single blend pass is not generalized to other voices, prompts,
+windows or mix values. Coarse whole-device minima for I2VA, FL2VA and Ref2VA were
+approximately 47.8, 471.5 and 113.5MiB, all below the project's 512MiB gate. No pressure repeats
+were run, and quality, experimental-audio, and general 16GiB-safety claims remain false.
 
 ## 1.40.0 EAV composition closeout (2026-08-22)
 

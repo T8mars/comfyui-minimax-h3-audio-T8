@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 148
+    assert len(ids) == 155
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -346,6 +346,20 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for eav_schema in schemas[140:148]:
         assert eav_schema.is_experimental is True
         assert eav_schema.category == "T8/MiniMax H3/Quality/Experimental"
+    assert ids[148:155] == [
+        "MiniMaxH3MotionOverloadAnalyzeT8Advanced",
+        "MiniMaxH3MotionRetimingPrepareT8Advanced",
+        "MiniMaxH3MotionRecoveryComposerT8Advanced",
+        "MiniMaxH3MotionRecoverAVT8Advanced",
+        "MiniMaxH3MotionSegmentPlanT8Advanced",
+        "MiniMaxH3MotionWindowCollectT8Advanced",
+        "MiniMaxH3MotionAutoGateT8Advanced",
+    ]
+    for motion_recovery_schema in schemas[148:155]:
+        assert motion_recovery_schema.is_experimental is True
+        assert motion_recovery_schema.category == (
+            "T8/MiniMax H3/Quality/Experimental/Motion Recovery"
+        )
     assert schemas[138].is_output_node is True
     assert schemas[138].category == "T8/MiniMax H3/Conditioning/Experimental"
     tail_detail_inputs = {item.id: item for item in schemas[109].inputs}

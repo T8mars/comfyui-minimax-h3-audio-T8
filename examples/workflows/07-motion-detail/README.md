@@ -1,6 +1,6 @@
 # 高动态、尾段细节与混合采样
 
-这一组研究高速运动、小脸稳定和采样尾段细节，包括Dynamic Guidance、额外尾段NFE、Model-Time Bias、联合AV Restart、H3 STG、时域后处理、Mixer，以及实验性的 Enhance-A-Video / FETA 时序注意力增强。
+这一组研究高速运动、小脸稳定和采样尾段细节，包括Dynamic Guidance、额外尾段NFE、Model-Time Bias、联合AV Restart、H3 STG、时域后处理、Mixer、实验性的 Enhance-A-Video / FETA 时序注意力增强，以及独立的 Motion Recovery 二次V2V时间超采样链。
 
 ## 推荐入口
 
@@ -18,11 +18,31 @@
 - `H3_Enhance_A_Video_FETA_Prompt_Relay_T2VA_Stock20`：由单一组合节点先执行Prompt Relay局部事件路由，再只对目标视频输出行施加FETA；不要串两个独立Attention拥有者。
 - `H3_Enhance_A_Video_FETA_BlockCache_T2VA_Stock20`：依赖单独安装的T8 BlockCache；按`UNET → BlockCache → DualClock → Composer`连接，由组合节点按cache hit/full实际执行块数审计FETA。
 - `H3_Enhance_A_Video_FETA_STG_T2VA_Stock20`：由单一组合节点同时拥有FETA与STG；FETA一致作用于主/弱分支，并审计额外联合AV前向。
+- `H3_Motion_Recovery_Fullclip_Stock20`：736×416自动起步模板；Analyzer默认自动判定，只有确有动作过载才请求整段二采，平静片直接ABSTAIN并原样交付pass 1。
+- `H3_Motion_Recovery_Windowed_Stock20`：1152×640自动分窗模板；只有自动门通过才请求带handle的热点窗口，窗口结果按计划哈希落盘并支持中断续跑。
 - 其他单路线工作流用于A/B诊断。
+
+## Motion Recovery 使用方法
+
+Motion Recovery不是单采样增强，也不是修脸、锐化或光流插帧。它先读取pass-1最终AV latent和解码帧，估计动作过载，再把选中的世界帧重复到H3合法的`17n+5`时间格点，执行一次部分去噪V2V，最后从每个hold组选择一张真实生成帧恢复原始时钟。
+
+整段与分窗模板现在都默认使用`auto_conservative_exp`。Analyzer会同时检查复合运动峰值、热点/均值对比度、解码残差的绝对峰值和连续热点帧数；任一门不通过就输出`ABSTAIN`。末端Auto Gate使用ComfyUI原生lazy input，ABSTAIN时不会请求Prepare、二采或Collect，而是原样返回pass-1画面和音频。`manual_ranges`仅用于用户明确指定范围的诊断/强制实验，`report_only`只生成报告而不修复。
+
+二采Composer默认在示例中启用`apply_exp`，`denoise_fraction=0.48`表示保留现有Stock20 Sigma序列最后约48%的调用，不是把sigma设置为0.48。扩时latent的packed尺寸已经改变，pass 2必须从Prepare输出重新建立第二个DualClock和Guider，不能复用pass-1 sampler。hold建议从2～3开始；hold越大只代表更多有效帧和更高成本，不保证质量更好。首轮不要与EAV、STG、RF Restart或BlockCache叠加，这些组合尚未验收。
+
+声音默认采用`pass1_original`：拉伸后的pass-1声音只作为共享AV Transformer的二采引导，最终交付音轨仍来自pass 1，不经过phase-vocoder或音频VAE往返。Recover会把音频策略和计划签名传给Collect；Collect识别到`pass1_original`时直接保留完整基线波形，不对相同片段做浮点交叉淡化。真实I2VA清晰对白的完整人工试听结果是：默认原音正常；`pass2_recovered_exp`中段突然变成远处声音再恢复，不能作为交付音轨，只保留为诊断模式；`blend_exp`在`pass1_mix=0.8`的本次素材中正常，但仍需对新素材逐条试听。
+
+分窗模板中先查看`window_count`，再把`window_index`从0依次排到最后。保持相同`run_name`和签名计划即可续跑；Collect默认按parent plan hash隔离目录并用`float32_exact`保存，缺少窗口时原样输出pass-1基线。`float16_half_disk`更省磁盘，但不是像素精确。209帧只是单窗口默认预算，不是项目全局上限；项目不禁止用户使用更大像素或更多有效帧，也不把模板宣称为通用16GB安全。
 
 ## 当前成果
 
 五条路线均有同素材实测、自动指标和盲测工作流；Tail、Restart/STG、Model-Time Bias和Temporal Detail的作用机制不同。用户此前认为部分路线观感接近，项目没有把任何单路线强制设为全局最佳。
+
+Motion Recovery已完成一条低负载真实验收：Stock20 T2VA、1152×640、124帧、24fps、20步基线；手工热点窗口覆盖第24～96帧，73帧扩为175帧，二采取原Sigma尾段10次调用，恢复后仍为124帧。视频与音频流完整解码，最低观察整卡余量约981MiB；最终验收封装的32kHz双声道PCM哈希与pass-1一致。抽帧未见花屏、构图压缩或时钟错位，但这条素材的主观增益仍需完整观看，不能据此宣称普遍提高运动质量或通用16GB安全。
+
+自动ABSTAIN已用一条736×416×124、24fps、20步的真实平静人物T2VA验证：Analyzer因绝对残差运动峰值低于门槛自动输出`automatic_gate_failed`，Auto Gate报告`second_pass_requested=false`和`baseline_object_passthrough=true`。pass-1与最终路由文件的MP4、解码视频和PCM哈希分别完全一致，证明不是“执行二采后再丢弃”，而是实际没有请求二采lazy分支。
+
+任务模态不再只覆盖T2VA：I2VA、FL2VA与独立Ref2VA模型各完成一条736×416×124、20步pass 1加10次尾段二采的真实成片。三条最终结果均恢复到124帧、24fps和32kHz双声道，并通过严格视频/音频解码；I2VA同时生成三种完整对白音轨并通过自动ASR目标句检查。这些单条结果证明节点接线和媒体合同可执行，不证明普遍改善运动质量。I2VA、FL2VA与Ref2VA运行中观察到的最低整卡余量均曾低于512MiB，因此继续拒绝通用16GB安全声明，也不追加压力矩阵。
 
 FETA 路线已完成 736×416 与 1152×640 两档、124帧、20步、同 seed 基线/增强对照。0.7MP档20次前向和50个主块全部命中，`g=1.0000～1.0466`、平均约 `1.00034`，新增工作区约7.90MiB，总耗时约增加7.2%；两路均为1152×640、124帧、24fps、32kHz双声道并通过三轮严格解码。自动代理显示运动轨迹确有变化，但清晰度没有明确提升，声音也不是bit-exact，因此当前只证明机械可用，不证明稳定提质。
 
