@@ -1,4 +1,58 @@
 {
+  "lightx2v_sla_attention_advanced": {
+    "status": "implemented and validated for the v1.44.0 release as three append-only Advanced EXP nodes",
+    "date": "2026-08-22",
+    "nodes": [
+      "MiniMaxH3LightX2VSLAT8Advanced",
+      "MiniMaxH3LightX2VSLAAuditT8Advanced",
+      "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced"
+    ],
+    "implementation": "the strict loader authenticates and applies all 208 LoRA patches, reproduces the released LightX2V H3 dynamic block-routing math, and owns the Sage2 block-sparse attention call for every main H3 block; the append-only KJ Sage composer authenticates the complete 50-block KJ whole-forward patch and conditionally dispatches exactly one backend per call; a separate one-shot audit rejects missing calls, KJ bypass, dense fallback, kernel failure and reused runtime tokens",
+    "scientific_boundary": "this is LightX2V dynamic_sparse_attn routing-math plus Sage2 block-kernel parity inside ComfyUI, not the whole LightX2V inference runtime and not every sparse+linear branch of the general SLA paper",
+    "fixed_sources": {
+      "lightx2v_revision": "f8aee98b5462cca8d7288888146ebd95592bf266",
+      "model_revision": "10ade67cd15ff7a135fa35c2a0673ea96c839247",
+      "lora_filename": "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors",
+      "lora_sha256": "5CAE6DF40A06EA825F85FC8876C9EA1C9692C833A9AF07BB8B3BAC9CE2A71BAC",
+      "lora_bytes": 1956192992,
+      "lora_tensor_count": 624,
+      "lora_patch_count": 208
+    },
+    "strict_scope": "native H3 FL2VA only; exact first and last visual keyframes; batch 1; native_flow 4 NFE; video shift 6; audio shift 3; 56 heads x 128 dimensions; q-block 128, k-block 64; requested sparsity 85 percent",
+    "base_policy": "the LoRA metadata names the official BF16 FL2VA base; official_bf16_only enforces it, while auto_detect_exp permits but explicitly reports a quantized INT8 base as experimental",
+    "conflict_policy": "the original strict SLA node remains fail-closed on all external attention/object patches; only the dedicated composer accepts exactly 50 consistently bound and fingerprinted KJ MiniMax H3 Sage forwards, while Sol-Attn, FETA, Prompt Relay, BlockCache, STG, other overrides and partial/foreign patches remain rejected",
+    "optional_dependency": "spas-sage-attn 0.1.0 compatible wheel; the first audited backend is pinned to RTX 40-series sm89 and never silently falls back to dense attention",
+    "real_h3_verification": {
+      "prompt_id": "0deca16d-7b84-4310-b6cf-b34ed1b798df",
+      "hardware": "RTX 4060 Ti 16GiB, sm89",
+      "base": "MiniMax H3 FL2VA INT8 ConvRot compatibility experiment",
+      "geometry": "256x256x22",
+      "schedule": "4 NFE native_flow, video shift 6, audio shift 3",
+      "execution_seconds": 46.77,
+      "mapped_and_applied_patches": 208,
+      "model_forwards": 4,
+      "main_attention_calls_per_forward": [50, 50, 50, 50],
+      "sparse_kernel_calls_per_forward": [50, 50, 50, 50],
+      "dense_fallback_calls": 0,
+      "kernel_failures": 0,
+      "sequence_length": 870,
+      "key_blocks": 14,
+      "retained_key_blocks": 2,
+      "actual_retained_ratio": 0.14285714285714285,
+      "router_workspace_peak_mib": 0.3088,
+      "media": "ComfyUI/output/MiniMaxH3_SLA/sla_fl2va_int8_compat_256x256_22f_00001-audio.mp4"
+    },
+    "claims_withheld": [
+      "no visual-quality superiority claim before same-input same-seed dense-LoRA human A/B",
+      "no wall-clock speedup claim before BF16 0.7MP profiling",
+      "no audio non-inferiority claim before listening",
+      "no general 16GiB safety claim"
+    ],
+    "workflow": "examples/workflows/15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json",
+    "kj_sage_composer_workflow": "examples/workflows/15-sla-attention/2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json",
+    "stable_node_schema_changed": false,
+    "stable_sampling_changed": false
+  },
   "prompt_tag_compatibility_hotfix": {
     "status": "implemented locally; not yet released",
     "date": "2026-08-20",
@@ -36,12 +90,12 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 106,
-    "installed_user_workflows": 106
+    "project_workflows": 108,
+    "installed_user_workflows": 108
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
-    "category_count": 14,
+    "category_count": 15,
     "layout": "one primary purpose directory per importable frontend workflow; no flat JSON duplicates",
     "category_readme_contract": "each category documents purpose, validated outcomes, usage guidance and limitations",
     "installed_user_root": "ComfyUI/user/default/workflows/MiniMax H3 T8",
@@ -60,7 +114,8 @@
       "11-studio-production",
       "12-system-memory",
       "13-latent-upscale",
-      "14-prompt-relay"
+      "14-prompt-relay",
+      "15-sla-attention"
     ]
   },
   "learned_two_pass_audio_lock_advanced": {
@@ -337,7 +392,10 @@
     "MiniMaxH3LanPaintAVPrepareT8Advanced",
     "MiniMaxH3LanPaintAVCompositeT8Advanced",
     "MiniMaxH3PromptRewriter8BT8Advanced",
-    "MiniMaxH3PromptRewriterUnloadT8Advanced"
+    "MiniMaxH3PromptRewriterUnloadT8Advanced",
+    "MiniMaxH3LightX2VSLAT8Advanced",
+    "MiniMaxH3LightX2VSLAAuditT8Advanced",
+    "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced"
   ],
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",

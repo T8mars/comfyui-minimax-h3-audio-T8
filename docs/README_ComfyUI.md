@@ -1,10 +1,18 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
 > Frontend workflows are organized under `examples/workflows/01-basic-generation` through
-> `examples/workflows/14-prompt-relay`. Each category contains an independent `README.md` with
+> `examples/workflows/15-sla-attention`. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
+
+> Project v1.44.0 appends `MiniMaxH3LightX2VSLAKJSageComposerT8Advanced` after the strict SLA
+> loader and runtime audit. It accepts only the complete KJNodes MiniMax H3 50-block Sage forward
+> patch and gives each call one owner: SLA apply uses block-sparse Sage2, while dense control and
+> non-SLA calls keep KJ Sage. The original SLA node, all first 160 IDs, schemas/defaults and stable
+> sampling remain unchanged. A second dated FL2VA workflow documents the exact connection order.
+> 966 CPU tests, Ruff, compileall, JSON parsing, the installed KJ source contract and Registry
+> validation passed; no new GPU quality, speed, audio or general 16GiB claim is made.
 
 > Project v1.43.0 keeps nodes 1-155 and their schemas/defaults unchanged, then appends five opt-in
 > nodes for an external BlockSwap contract, LanPaint AV preparation/compositing, and a local 8B

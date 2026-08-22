@@ -18,5 +18,6 @@
 | `12-system-memory` | 环境审计、激活分块、前缀缓存、轨迹诊断和外部 BlockSwap 桥接 |
 | `13-latent-upscale` | 普通32整除放大、学习型3D latent放大与二阶段H3生成 |
 | `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力、可选联合AV路由与8B提示词重写 |
+| `15-sla-attention` | LightX2V Turbo-SLA LoRA、动态块稀疏 Sage2、KJ Sage单入口组合器与强制运行审计（实验） |
 
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。

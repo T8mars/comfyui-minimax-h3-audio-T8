@@ -1,5 +1,26 @@
 # Third-party notices
 
+## LightX2V MiniMax H3 Turbo-SLA and SpargeAttn kernel
+
+The optional MiniMax H3 LightX2V SLA Advanced node implements a clean-room ComfyUI adapter for the
+dynamic sparse-attention routing math reviewed at fixed LightX2V revision
+[`lightx2v/LightX2V@f8aee98b`](https://github.com/ModelTC/LightX2V/tree/f8aee98b5462cca8d7288888146ebd95592bf266).
+It authenticates a user-installed LoRA from fixed Hugging Face model revision
+[`lightx2v/Minimax-h3-Turbo-SLA@10ade67c`](https://huggingface.co/lightx2v/Minimax-h3-Turbo-SLA/tree/10ade67cd15ff7a135fa35c2a0673ea96c839247).
+Neither model weights nor LightX2V source files are redistributed by this repository.
+
+Sparse execution optionally calls the separately installed
+[`thu-ml/SpargeAttn`](https://github.com/thu-ml/SpargeAttn) `spas-sage-attn` package, which is
+distributed under the BSD 3-Clause License. The package is loaded only by the explicit sparse SLA
+route; stable nodes and the SLA disabled path do not depend on it. Users remain responsible for
+installing a wheel compatible with their ComfyUI Torch, CUDA and GPU architecture.
+
+The optional SLA + KJ Sage Composer interoperates with a separately installed
+[`kijai/ComfyUI-KJNodes`](https://github.com/kijai/ComfyUI-KJNodes) MiniMax H3 memory-efficient
+SageAttention patch, distributed under GPL-3.0. The composer authenticates and conditionally
+delegates that installed bound forward at runtime; no KJNodes source file is copied or redistributed
+by this repository. The ordinary SLA node remains independent of KJNodes.
+
 ## Enhance-A-Video / FETA research
 
 The isolated MiniMax H3 Enhance-A-Video Advanced implementation is a clean-room H3 adaptation of

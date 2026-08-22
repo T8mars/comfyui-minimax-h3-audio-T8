@@ -21,6 +21,43 @@ historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
 
+## 1.44.0 LightX2V SLA + KJ Sage Composer checkpoint (2026-08-22)
+
+Three append-only nodes add a strict LightX2V Turbo-SLA route and an isolated KJ Sage composer
+without changing the first 160 node IDs,
+their input order, defaults, or stable sampling code. The loader authenticates the fixed 1.956GB
+ComfyUI LoRA by size, SHA-256, metadata, tensor structure and exact 208-patch mapping. The original
+loader remains fail-closed on every external attention/object patch. The new composer accepts only
+the complete 50-block KJNodes MiniMax H3 Sage whole-forward set with matching bindings, structure
+and one source fingerprint. For SLA apply calls it selects the stock H3 forward so the call reaches
+the block-sparse Sage2 override; for dense control and calls outside the SLA route it delegates the
+installed KJ forward. No call evaluates both kernels. Sol-Attn and all other attention owners remain
+rejected. The audit token is single-use and additionally rejects any KJ bypass of the SLA apply path
+or incomplete KJ coverage of the dense-control path.
+
+The implementation follows the released LightX2V `dynamic_sparse_attn` routing math: 128-query and
+64-key blocks, mean-centred K, exact tail-aware block pooling, pooled QK scores, floor top-k at a
+requested 15% keep ratio, and Sage2 block-sparse execution. It is an H3 ComfyUI adapter for that
+released path, not the whole LightX2V inference runtime and not all sparse+linear branches described
+by the general SLA paper.
+
+One low-load real FL2VA probe completed on RTX 4060 Ti / sm89 with the current INT8 ConvRot base,
+the exact SLA LoRA, 256×256×22, four `native_flow` calls, video shift 6 and audio shift 3. All 208
+patches mapped and applied. Runtime Audit observed 4 model forwards, 50 main attention calls and 50
+sparse kernel calls in each forward (200 total), zero dense fallback and zero kernel failures. At
+sequence length 870, 2 of 14 key blocks were retained (14.2857%) and router workspace peaked near
+0.309MiB; end-to-end execution took 46.77 seconds. This closes the mechanical LoRA/router/kernel
+gate only. The upstream metadata names a BF16 FL2VA base, so the INT8 result remains an explicit
+compatibility experiment. Same-input dense-control human A/B, 0.7MP BF16 profiling, listening, and
+general 16GiB safety remain unclaimed.
+
+The compatibility implementation passed 85 focused registration/schema/router/workflow tests and
+the full 966-test CPU suite; four existing Triton deprecation warnings remain. Current installed
+KJNodes source passed the composer's function-name/QKV/Sage helper/head-chunk structural contract.
+Ruff, compileall, 110 JSON parses, `git diff --check`, and `comfy node validate` under UTF-8 passed.
+Both dated workflows are present in the project source and synchronized user menu (108/108 JSONs).
+No GPU generation, pressure test or quality/speed claim was added for the composer checkpoint.
+
 ## 1.43.0 append-only creator and compatibility helpers (2026-08-22)
 
 Version 1.43.0 preserves the first 155 registered node IDs, their input order, defaults, and stable
