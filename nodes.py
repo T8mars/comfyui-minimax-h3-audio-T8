@@ -1,11 +1,29 @@
 from __future__ import annotations
 
 from comfy_api.latest import ComfyExtension, io
+from .nodes_audio_integrity_advanced import (
+    AUDIO_INTEGRITY_ADVANCED_NODE_CLASSES,
+    AUDIO_PERCEPTUAL_DRIFT_ADVANCED_NODE_CLASSES,
+)
 from .nodes_activation_chunk_advanced import ACTIVATION_CHUNK_ADVANCED_NODE_CLASSES
 from .nodes_av_decode_safety_advanced import AV_DECODE_SAFETY_ADVANCED_NODE_CLASSES
 from .nodes_context_ir_advanced import CONTEXT_IR_ADVANCED_NODE_CLASSES
+from .nodes_creator_workspace_advanced import CREATOR_WORKSPACE_ADVANCED_NODE_CLASSES
+from .nodes_creator_runtime_advanced import (
+    CREATOR_RETENTION_ADVANCED_NODE_CLASSES,
+    CREATOR_RUNTIME_ADVANCED_NODE_CLASSES,
+)
 from .nodes_qwen_prefix_cache_advanced import (
     QWEN_PREFIX_CACHE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_raven_streaming_advanced import RAVEN_STREAMING_ADVANCED_NODE_CLASSES
+from .nodes_nfe_resume_advanced import NFE_RESUME_ADVANCED_NODE_CLASSES
+from .nodes_nfe_run_contract_advanced import NFE_RUN_CONTRACT_ADVANCED_NODE_CLASSES
+from .nodes_creator_artifact_quarantine_advanced import (
+    CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_prompt_semantic_audit_advanced import (
+    PROMPT_SEMANTIC_AUDIT_ADVANCED_NODE_CLASSES,
 )
 from .nodes_prompt_relay_advanced import PROMPT_RELAY_ADVANCED_NODE_CLASSES
 from .nodes_prompt_relay_long_video_advanced import (
@@ -23,6 +41,8 @@ from .nodes_prompt_relay_resource_estimate_advanced import (
 from .nodes_prompt_rewriter_8b_advanced import (
     PROMPT_REWRITER_8B_ADVANCED_NODE_CLASSES,
 )
+from .nodes_prompt_budget_advanced import PROMPT_BUDGET_ADVANCED_NODE_CLASSES
+from .nodes_prompt_provider_advanced import PROMPT_PROVIDER_ADVANCED_NODE_CLASSES
 from .nodes_repair_execution_advanced import (
     REPAIR_EXECUTION_ADVANCED_NODE_CLASSES,
 )
@@ -50,6 +70,9 @@ from .conditioning import build_conditioning
 from .nodes_dialogue_audio_exp import DIALOGUE_AUDIO_NODE_CLASSES
 from .nodes_environment_audit_advanced import ENVIRONMENT_AUDIT_ADVANCED_NODE_CLASSES
 from .nodes_external_blockswap_advanced import EXTERNAL_BLOCKSWAP_ADVANCED_NODE_CLASSES
+from .nodes_external_compatibility_advanced import (
+    EXTERNAL_COMPATIBILITY_ADVANCED_NODE_CLASSES,
+)
 from .nodes_enhance_a_video_advanced import ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_advanced import FACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_parity_advanced import FACE_REFINE_PARITY_ADVANCED_NODE_CLASSES
@@ -68,6 +91,14 @@ from .nodes_hybrid_model_advanced import (
     HYBRID_MODEL_MAINTENANCE_ADVANCED_NODE_CLASSES,
 )
 from .nodes_multirate_exp import MiniMaxH3MultiRateSamplerEXPT8
+from .nodes_native_latent_timeline_advanced import (
+    NATIVE_LATENT_CONTINUATION_ADVANCED_NODE_CLASSES,
+    NATIVE_LATENT_RESUME_ADVANCED_NODE_CLASSES,
+    NATIVE_LATENT_TIMELINE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_native_latent_checkpoint_advanced import (
+    NATIVE_LATENT_CHECKPOINT_ADVANCED_NODE_CLASSES,
+)
 from .nodes_multikeyframe_advanced import MULTIKEYFRAME_ADVANCED_NODE_CLASSES
 from .nodes_long_video_exp import (
     MiniMaxH3LongVideoConditioningT8,
@@ -505,6 +536,23 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *LANPAINT_AV_ADVANCED_NODE_CLASSES,
                 *PROMPT_REWRITER_8B_ADVANCED_NODE_CLASSES,
                 *SLA_ATTENTION_ADVANCED_NODE_CLASSES,
+                *AUDIO_INTEGRITY_ADVANCED_NODE_CLASSES,
+                *PROMPT_BUDGET_ADVANCED_NODE_CLASSES,
+                *CREATOR_WORKSPACE_ADVANCED_NODE_CLASSES,
+                *EXTERNAL_COMPATIBILITY_ADVANCED_NODE_CLASSES,
+                *NATIVE_LATENT_TIMELINE_ADVANCED_NODE_CLASSES,
+                *AUDIO_PERCEPTUAL_DRIFT_ADVANCED_NODE_CLASSES,
+                *CREATOR_RUNTIME_ADVANCED_NODE_CLASSES,
+                *PROMPT_PROVIDER_ADVANCED_NODE_CLASSES,
+                *CREATOR_RETENTION_ADVANCED_NODE_CLASSES,
+                *NATIVE_LATENT_RESUME_ADVANCED_NODE_CLASSES,
+                *NATIVE_LATENT_CHECKPOINT_ADVANCED_NODE_CLASSES,
+                *NATIVE_LATENT_CONTINUATION_ADVANCED_NODE_CLASSES,
+                *RAVEN_STREAMING_ADVANCED_NODE_CLASSES,
+                *NFE_RESUME_ADVANCED_NODE_CLASSES,
+                *CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
+                *PROMPT_SEMANTIC_AUDIT_ADVANCED_NODE_CLASSES,
+                *NFE_RUN_CONTRACT_ADVANCED_NODE_CLASSES,
             ]
 
 

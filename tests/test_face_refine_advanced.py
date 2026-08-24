@@ -183,6 +183,30 @@ def test_detector_options_and_resolver_accept_external_storage_symlink(
     assert _resolve_detector_path("face_detection/face_detector.onnx") == external_model.resolve()
 
 
+def test_detector_options_and_resolver_accept_external_storage_file_symlink(
+    monkeypatch, tmp_path
+):
+    """Regression for cloud installs whose individual model alias leaves models_dir."""
+    model_root = tmp_path / "private-models"
+    alias_dir = model_root / "yolo"
+    external_dir = tmp_path / "public-model-storage"
+    alias_dir.mkdir(parents=True)
+    external_dir.mkdir()
+    external_model = external_dir / "person_yolov8s-seg.pt"
+    external_model.write_bytes(b"external-yolo-detector")
+    alias = alias_dir / external_model.name
+    try:
+        alias.symlink_to(external_model)
+    except OSError as error:
+        pytest.skip(f"file symlinks are unavailable in this test environment: {error}")
+
+    monkeypatch.setattr(face_refine_module, "_model_root", lambda: model_root.resolve())
+
+    relative_name = "yolo/person_yolov8s-seg.pt"
+    assert relative_name in local_face_detector_options()
+    assert _resolve_detector_path(relative_name) == external_model.resolve()
+
+
 @pytest.mark.parametrize(
     "unsafe_name",
     ["../outside.onnx", "face_detection/../../outside.onnx"],

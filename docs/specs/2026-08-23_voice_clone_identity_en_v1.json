@@ -1,0 +1,55 @@
+{
+  "schema": "minimax_h3_t8_voice_clone_identity_formal_spec_v1",
+  "plan_id": "en_10speaker_10utterance_3seed_identity_v1",
+  "seeds": [2608233101, 2608233102, 2608233103],
+  "render_seconds": 8.0,
+  "steps": 20,
+  "sampler_name": "res_multistep",
+  "scheduler": "simple",
+  "shift_video": 12.0,
+  "shift_audio": 3.0,
+  "language_code": "en",
+  "studio_language": "English",
+  "text_set_scope": "reviewed_lexically_varied_not_phonetically_balanced_fixed_identity_panel_v1",
+  "minimum_independent_reviewers": 3,
+  "speaker_metadata": {
+    "dataset": "LibriSpeech SPEAKERS.TXT",
+    "revision": "3b0fb4edb15e5758aa88642b084620638d8af96d",
+    "relative_path": "SPEAKERS.TXT",
+    "source_url": "https://huggingface.co/datasets/s3prl/librispeech_metadata/resolve/3b0fb4edb15e5758aa88642b084620638d8af96d/SPEAKERS.TXT",
+    "sha256": "3350F093382F8BAA1D589C9F5A5CEE8EC3705E656F521D6EAFBAA31A5FCD8F76",
+    "label_semantics": "Corpus-provided binary F/M metadata used only as a coarse ABX blocking variable; not an inferred biological-sex or personal-identity claim."
+  },
+  "target_speakers": [
+    {"speaker_id": "6930", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "260", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "2961", "gender_label": "F", "split": "test-clean"},
+    {"speaker_id": "1995", "gender_label": "F", "split": "test-clean"},
+    {"speaker_id": "8455", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "4077", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "4507", "gender_label": "F", "split": "test-clean"},
+    {"speaker_id": "1089", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "61", "gender_label": "M", "split": "test-clean"},
+    {"speaker_id": "5683", "gender_label": "F", "split": "test-clean"}
+  ],
+  "utterances": [
+    {"utterance_id": "u01", "text": "The morning train is waiting beside the river."},
+    {"utterance_id": "u02", "text": "Please close the window before the rain begins."},
+    {"utterance_id": "u03", "text": "A small silver bell rang twice in the quiet hall."},
+    {"utterance_id": "u04", "text": "We found the blue notebook under the wooden chair."},
+    {"utterance_id": "u05", "text": "She carried warm tea across the narrow garden path."},
+    {"utterance_id": "u06", "text": "The old clock stopped just after midnight."},
+    {"utterance_id": "u07", "text": "Fresh bread cooled slowly beside the open door."},
+    {"utterance_id": "u08", "text": "Turn left at the bridge and follow the yellow lights."},
+    {"utterance_id": "u09", "text": "My brother promised to return before sunset."},
+    {"utterance_id": "u10", "text": "Soft wind moved through the pine trees all night."}
+  ],
+  "abx_standardization": {
+    "sample_rate": 32000,
+    "channels": 1,
+    "codec": "flac",
+    "container": "flac",
+    "loudness_normalization": false,
+    "duration_policy": "preserve_each_source"
+  }
+}

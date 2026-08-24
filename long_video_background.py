@@ -45,6 +45,23 @@ class UnsupportedBackgroundSchemaError(BackgroundJobError):
     pass
 
 
+def _normalize_binding_metadata(value: Mapping | None) -> dict:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise BackgroundJobError("binding_metadata must be a mapping")
+    try:
+        encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        normalized = json.loads(encoded)
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        raise BackgroundJobError("binding_metadata must contain JSON-safe metadata") from error
+    if not isinstance(normalized, dict):
+        raise BackgroundJobError("binding_metadata must be a JSON object")
+    if len(encoded.encode("utf-8")) > 4096:
+        raise BackgroundJobError("binding_metadata exceeds the 4KiB limit")
+    return normalized
+
+
 class _BackgroundProcessLease:
     def __init__(self, chain_id: str):
         self.chain_id = sanitize_chain_id(chain_id)
@@ -402,10 +419,34 @@ class BackgroundJobManager:
         state["format"] = BACKGROUND_STATE_FORMAT
         state["updated_unix"] = time.time()
         atomic_write_long_video_json(_state_path(state["chain_id"]), state)
-        if state.get("state") in {"completed", "cancelled", "detached"}:
+        # Failed jobs are terminal too. Keeping their process lease/snapshot alive blocks the
+        # documented one-requeue recovery path in the same ComfyUI process: attach_prompt creates
+        # a fresh job, then _bind_chain_lease rejects it because the old failed job still owns the
+        # chain. Release only after the failed state is durably written; the accepted manifest and
+        # previous_job_id remain the recovery authority.
+        if state.get("state") in {"completed", "failed", "cancelled", "detached"}:
             job_id = str(state.get("job_id") or "")
             self._release_chain_lease(str(state["chain_id"]), job_id)
             self._snapshots.pop(job_id, None)
+        return state
+
+    def _request_terminal_release(self, state: dict, reason: str) -> dict:
+        """Best-effort release for terminal/control paths.
+
+        Cancellation and failure must remain truthful even if ComfyUI rejects a release flag.
+        Record that secondary failure instead of replacing the primary terminal state.
+        """
+        state = dict(state)
+        release_policy = str(state.get("release_policy") or "clear_execution_cache")
+        state["release_reason"] = str(reason)
+        try:
+            self.runtime.request_release(release_policy)
+        except Exception as error:
+            state["last_release_error"] = str(error)[:4000]
+        else:
+            state["last_release_policy"] = release_policy
+            state["release_requested_unix"] = time.time()
+            state.pop("last_release_error", None)
         return state
 
     @staticmethod
@@ -530,6 +571,7 @@ class BackgroundJobManager:
         *,
         prompt_id: str | None = None,
         client_id: str | None = None,
+        binding_metadata: Mapping | None = None,
     ) -> dict:
         safe_chain = sanitize_chain_id(chain_id)
         if not isinstance(prompt, Mapping) or not prompt:
@@ -545,6 +587,7 @@ class BackgroundJobManager:
         prompt_id = str(prompt_id or self.runtime.current_prompt_id())
         client_id = client_id if client_id is not None else self.runtime.current_client_id()
         prompt_copy = _clean_prompt_snapshot(prompt)
+        binding_metadata = _normalize_binding_metadata(binding_metadata)
 
         with self._lock:
             newly_acquired_lease = self._acquire_chain_lease(safe_chain)
@@ -560,6 +603,15 @@ class BackgroundJobManager:
                         "The accepted manifest remained authoritative."
                     )
                     existing = None
+                if existing is not None:
+                    existing_binding = _normalize_binding_metadata(
+                        existing.get("binding_metadata")
+                    )
+                    if existing_binding != binding_metadata:
+                        raise BackgroundJobError(
+                            f"Chain '{safe_chain}' belongs to different binding metadata; "
+                            "use a new chain_id instead of reusing another workspace job"
+                        )
                 if (
                     existing is not None
                     and str(existing.get("active_prompt_id") or "") == prompt_id
@@ -576,6 +628,7 @@ class BackgroundJobManager:
                             "retry_delay_seconds": retry_delay_seconds,
                             "release_policy": release_policy,
                             "prompt_sha256": _prompt_sha256(prompt_copy),
+                            "binding_metadata": binding_metadata,
                         }
                     )
                 else:
@@ -628,6 +681,7 @@ class BackgroundJobManager:
                         "last_manifest_path": "",
                         "final_video_path": "",
                         "prompt_sha256": _prompt_sha256(prompt_copy),
+                        "binding_metadata": binding_metadata,
                         "created_unix": now,
                     }
                     if quarantined_state_path:
@@ -671,6 +725,7 @@ class BackgroundJobManager:
         monitor = None
         with self._lock:
             state = self._find_job(job_id)
+            accepted_prompt_id = str(state.get("active_prompt_id") or "")
             state.update(
                 {
                     "accepted_count": int(accepted_count),
@@ -678,6 +733,7 @@ class BackgroundJobManager:
                     "last_candidate_json_path": str(candidate_json_path),
                     "last_manifest_path": str(manifest_path),
                     "final_video_path": str(final_video_path or ""),
+                    "last_accepted_prompt_id": accepted_prompt_id,
                 }
             )
             if post_accept_error:
@@ -688,9 +744,11 @@ class BackgroundJobManager:
                         "last_error": str(post_accept_error),
                     }
                 )
+                state = self._request_terminal_release(state, "post_accept_failure")
                 return dict(self._write(state))
             if state.get("cancel_requested"):
                 state.update({"state": "cancelled", "active_prompt_id": ""})
+                state = self._request_terminal_release(state, "cancel_after_acceptance")
                 return dict(self._write(state))
             release_policy = str(state["release_policy"])
             try:
@@ -703,6 +761,7 @@ class BackgroundJobManager:
                     {
                         "state": "failed",
                         "active_prompt_id": "",
+                        "last_release_error": str(error)[:4000],
                         "last_error": (
                             "Accepted the segment but failed to apply release policy "
                             f"'{release_policy}': {error}"
@@ -779,7 +838,15 @@ class BackgroundJobManager:
     def fail_job(self, job_id: str, message: str) -> dict:
         with self._lock:
             state = self._find_job(job_id)
-            state.update({"state": "failed", "active_prompt_id": "", "last_error": str(message)})
+            state.update(
+                {
+                    "state": "failed",
+                    "last_failed_prompt_id": str(state.get("active_prompt_id") or ""),
+                    "active_prompt_id": "",
+                    "last_error": str(message),
+                }
+            )
+            state = self._request_terminal_release(state, "explicit_failure")
             return dict(self._write(state))
 
     def pause(self, chain_id: str) -> dict:
@@ -803,8 +870,10 @@ class BackgroundJobManager:
                         "last_control_result": result,
                     }
                 )
+                state = self._request_terminal_release(state, "pause_queued_prompt")
             elif location not in {"running"}:
                 state.update({"state": "paused", "active_prompt_id": ""})
+                state = self._request_terminal_release(state, "pause_inactive_prompt")
             return dict(self._write(state))
 
     def cancel(self, chain_id: str) -> dict:
@@ -829,10 +898,12 @@ class BackgroundJobManager:
             state.update(
                 {
                     "state": "cancelled",
+                    "last_cancelled_prompt_id": active_id,
                     "active_prompt_id": "",
                     "last_control_result": result,
                 }
             )
+            state = self._request_terminal_release(state, "cancel_prompt")
             return dict(self._write(state))
 
     def resume(self, chain_id: str) -> dict:
@@ -967,6 +1038,7 @@ class BackgroundJobManager:
                 state.update(
                     {
                         "state": "failed",
+                        "last_failed_prompt_id": prompt_id,
                         "active_prompt_id": "",
                         "last_error": (
                             "The prompt completed without the background terminal node advancing "
@@ -974,12 +1046,14 @@ class BackgroundJobManager:
                         ),
                     }
                 )
+                state = self._request_terminal_release(state, "missing_terminal_node")
                 self._write(state)
                 return
             if state.get("cancel_requested") or state.get("state") == "cancelled":
                 return
             if state.get("pause_requested"):
                 state.update({"state": "paused", "active_prompt_id": ""})
+                state = self._request_terminal_release(state, "pause_after_prompt_history")
                 self._write(state)
                 return
             retry_count = int(state.get("retry_count", 0))
@@ -989,15 +1063,18 @@ class BackgroundJobManager:
                 state.update(
                     {
                         "state": "failed",
+                        "last_failed_prompt_id": prompt_id,
                         "active_prompt_id": "",
                         "last_error": error_text,
                     }
                 )
+                state = self._request_terminal_release(state, "retry_exhausted")
                 self._write(state)
                 return
             state.update(
                 {
                     "state": "retry_wait",
+                    "last_failed_prompt_id": prompt_id,
                     "retry_count": retry_count + 1,
                     "last_error": error_text,
                 }
@@ -1036,6 +1113,7 @@ class BackgroundJobManager:
                         "last_error": "Retry prompt snapshot is unavailable after process restart.",
                     }
                 )
+                state = self._request_terminal_release(state, "retry_snapshot_unavailable")
                 self._write(state)
                 return
             try:

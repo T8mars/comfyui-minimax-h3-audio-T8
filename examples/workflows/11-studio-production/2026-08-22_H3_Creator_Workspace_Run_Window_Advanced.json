@@ -1,0 +1,133 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3StudioTimelineT8Advanced",
+      "title": "Existing Studio Timeline remains the single source of truth",
+      "pos": [0, 0], "size": [600, 560], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [
+        {"name": "project_id", "type": "STRING", "widget": {"name": "project_id"}, "link": null},
+        {"name": "shots_json", "type": "STRING", "widget": {"name": "shots_json"}, "link": null},
+        {"name": "default_backend", "type": "COMBO", "widget": {"name": "default_backend"}, "link": null},
+        {"name": "default_duration_seconds", "type": "FLOAT", "widget": {"name": "default_duration_seconds"}, "link": null},
+        {"name": "default_aspect_ratio", "type": "STRING", "widget": {"name": "default_aspect_ratio"}, "link": null},
+        {"name": "base_seed", "type": "INT", "widget": {"name": "base_seed"}, "link": null},
+        {"name": "seed_policy", "type": "COMBO", "widget": {"name": "seed_policy"}, "link": null},
+        {"name": "split_long_shots", "type": "BOOLEAN", "widget": {"name": "split_long_shots"}, "link": null},
+        {"name": "strict_exact_dialogue", "type": "BOOLEAN", "widget": {"name": "strict_exact_dialogue"}, "link": null},
+        {"name": "cast", "type": "H3_T8_UNIFIED_CAST", "link": null},
+        {"name": "sound_canvas", "type": "H3_T8_SOUND_CANVAS", "link": null}
+      ],
+      "outputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "links": [1, 2]},
+        {"name": "timeline_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3StudioTimelineT8Advanced"},
+      "widgets_values": [
+        "creator_demo",
+        "[{\"id\":\"opening\",\"prompt\":\"A calm cinematic opening\",\"duration_seconds\":3},{\"id\":\"action\",\"prompt\":\"The character runs through the station\",\"duration_seconds\":5},{\"id\":\"ending\",\"prompt\":\"A quiet resolved ending\",\"duration_seconds\":4}]",
+        "minimax_h3", 5.0, "16:9", 2608221001, "increment", true, true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3CreatorShotOverrideT8Advanced",
+      "title": "Editable card for shot 1: three reproducible variants",
+      "pos": [680, 0], "size": [600, 560], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "link": 1},
+        {"name": "shot_index", "type": "INT", "widget": {"name": "shot_index"}, "link": null},
+        {"name": "enabled", "type": "BOOLEAN", "widget": {"name": "enabled"}, "link": null},
+        {"name": "compiled_prompt_override", "type": "STRING", "widget": {"name": "compiled_prompt_override"}, "link": null},
+        {"name": "use_seed_override", "type": "BOOLEAN", "widget": {"name": "use_seed_override"}, "link": null},
+        {"name": "seed_override", "type": "INT", "widget": {"name": "seed_override"}, "link": null},
+        {"name": "variant_count", "type": "INT", "widget": {"name": "variant_count"}, "link": null},
+        {"name": "variant_seed_stride", "type": "INT", "widget": {"name": "variant_seed_stride"}, "link": null},
+        {"name": "media_roles_json", "type": "STRING", "widget": {"name": "media_roles_json"}, "link": null},
+        {"name": "retention_policy", "type": "COMBO", "widget": {"name": "retention_policy"}, "link": null},
+        {"name": "hold_policy", "type": "COMBO", "widget": {"name": "hold_policy"}, "link": null},
+        {"name": "hold_frames", "type": "INT", "widget": {"name": "hold_frames"}, "link": null},
+        {"name": "previous_edits", "type": "H3_T8_CREATOR_EDIT_PLAN", "link": null}
+      ],
+      "outputs": [
+        {"name": "edit_plan", "type": "H3_T8_CREATOR_EDIT_PLAN", "links": [3]},
+        {"name": "edit_plan_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorShotOverrideT8Advanced"},
+      "widgets_values": [1, true, "A faster but physically coherent station run; preserve the same person and wardrobe.", true, 2608222001, 3, 17, "{\"picture_1\":\"identity_reference\",\"audio_1\":\"voice_reference\"}", "keep_winner_and_metadata", "hold_last", 5]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3CreatorWorkspaceT8Advanced",
+      "title": "Run from shot 1 through shot 2; compile sidecar only",
+      "pos": [1360, 0], "size": [560, 300], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "link": 2},
+        {"name": "run_from_index", "type": "INT", "widget": {"name": "run_from_index"}, "link": null},
+        {"name": "run_to_index", "type": "INT", "widget": {"name": "run_to_index"}, "link": null},
+        {"name": "include_disabled_shots", "type": "BOOLEAN", "widget": {"name": "include_disabled_shots"}, "link": null},
+        {"name": "workspace_notes", "type": "STRING", "widget": {"name": "workspace_notes"}, "link": null},
+        {"name": "edit_plan", "type": "H3_T8_CREATOR_EDIT_PLAN", "link": 3}
+      ],
+      "outputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "links": [4]},
+        {"name": "run_summary", "type": "STRING", "links": null},
+        {"name": "sidecar_json", "type": "STRING", "links": null},
+        {"name": "workspace_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorWorkspaceT8Advanced"},
+      "widgets_values": [1, 2, false, "Only the selected range is exposed; no hidden queue operation."]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3CreatorWorkspaceShotSelectT8Advanced",
+      "title": "Explicitly select run position 0, variant 0 for existing H3 nodes",
+      "pos": [1980, 0], "size": [520, 220], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 4},
+        {"name": "run_position", "type": "INT", "widget": {"name": "run_position"}, "link": null},
+        {"name": "variant_index", "type": "INT", "widget": {"name": "variant_index"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "prompt_packet", "type": "H3_T8_PROMPT_PACKET", "links": null},
+        {"name": "compiled_prompt", "type": "STRING", "links": null},
+        {"name": "negative_prompt", "type": "STRING", "links": null},
+        {"name": "length", "type": "INT", "links": null},
+        {"name": "seed", "type": "INT", "links": null},
+        {"name": "shot_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorWorkspaceShotSelectT8Advanced"},
+      "widgets_values": [0, 0]
+    },
+    {
+      "id": 5, "type": "MarkdownNote", "title": "① 不新增采样器",
+      "pos": [0, 650], "size": [600, 300], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 复用Studio Timeline\n\n镜头卡只覆盖提示词、seed变体、媒体角色、保留策略和hold元数据。最终`compiled_prompt / length / seed`继续接现有H3 Conditioning、RandomNoise和采样器。没有新的采样数学。"]
+    },
+    {
+      "id": 6, "type": "MarkdownNote", "title": "② 从此处运行不是隐藏队列",
+      "pos": [680, 650], "size": [600, 300], "flags": {}, "order": 5, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## run_from / run_to\n\nWorkspace只编译选中区间和sidecar，不会自动Queue、不加载模型、不删除候选。用户仍需显式选择`run_position`和`variant_index`，因此旧工作流、缓存和取消行为不被暗中改变。"]
+    },
+    {
+      "id": 7, "type": "MarkdownNote", "title": "③ sidecar与保留策略",
+      "pos": [1360, 650], "size": [600, 300], "flags": {}, "order": 6, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 可复现但不自动删文件\n\nsidecar记录源timeline hash、override hash、每个候选seed、frame_count、retention policy和hold-map。真实3镜头会话已验证22/22/39帧、shot B三候选seed和variant 2显式选择；策略仍只是交付合同，当前节点不会根据`keep_accepted_only`删除任何素材。取消/缓存交互也仍需在真实生成期间验证。"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "H3_T8_STUDIO_TIMELINE"],
+    [2, 1, 0, 3, 0, "H3_T8_STUDIO_TIMELINE"],
+    [3, 2, 0, 3, 5, "H3_T8_CREATOR_EDIT_PLAN"],
+    [4, 3, 0, 4, 0, "H3_T8_CREATOR_WORKSPACE"]
+  ],
+  "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.75, "offset": [70, 80]}},
+  "version": 0.4
+}

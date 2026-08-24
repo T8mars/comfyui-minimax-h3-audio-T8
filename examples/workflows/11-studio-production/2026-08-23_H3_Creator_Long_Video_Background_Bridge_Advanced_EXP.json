@@ -1,0 +1,214 @@
+{
+  "last_node_id": 8,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3StudioTimelineT8Advanced",
+      "title": "Creator timeline: one shot must equal one Long Video segment",
+      "pos": [0, 0],
+      "size": [620, 540],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "project_id", "type": "STRING", "widget": {"name": "project_id"}, "link": null},
+        {"name": "shots_json", "type": "STRING", "widget": {"name": "shots_json"}, "link": null},
+        {"name": "default_backend", "type": "COMBO", "widget": {"name": "default_backend"}, "link": null},
+        {"name": "default_duration_seconds", "type": "FLOAT", "widget": {"name": "default_duration_seconds"}, "link": null},
+        {"name": "default_aspect_ratio", "type": "STRING", "widget": {"name": "default_aspect_ratio"}, "link": null},
+        {"name": "base_seed", "type": "INT", "widget": {"name": "base_seed"}, "link": null},
+        {"name": "seed_policy", "type": "COMBO", "widget": {"name": "seed_policy"}, "link": null},
+        {"name": "split_long_shots", "type": "BOOLEAN", "widget": {"name": "split_long_shots"}, "link": null},
+        {"name": "strict_exact_dialogue", "type": "BOOLEAN", "widget": {"name": "strict_exact_dialogue"}, "link": null},
+        {"name": "cast", "type": "H3_T8_UNIFIED_CAST", "link": null},
+        {"name": "sound_canvas", "type": "H3_T8_SOUND_CANVAS", "link": null}
+      ],
+      "outputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "links": [1, 2]},
+        {"name": "timeline_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3StudioTimelineT8Advanced"},
+      "widgets_values": [
+        "creator_long_video_bridge",
+        "[{\"id\":\"segment_0\",\"prompt\":\"A calm cinematic opening\",\"duration_seconds\":5},{\"id\":\"segment_1\",\"prompt\":\"The same character continues through the station\",\"duration_seconds\":5},{\"id\":\"segment_2\",\"prompt\":\"The scene resolves at sunrise\",\"duration_seconds\":5}]",
+        "minimax_h3",
+        5.0,
+        "16:9",
+        2608232001,
+        "increment",
+        true,
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3CreatorShotOverrideT8Advanced",
+      "title": "Three deterministic retry seeds for segment 0",
+      "pos": [700, 0],
+      "size": [570, 520],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "link": 1},
+        {"name": "shot_index", "type": "INT", "widget": {"name": "shot_index"}, "link": null},
+        {"name": "enabled", "type": "BOOLEAN", "widget": {"name": "enabled"}, "link": null},
+        {"name": "compiled_prompt_override", "type": "STRING", "widget": {"name": "compiled_prompt_override"}, "link": null},
+        {"name": "use_seed_override", "type": "BOOLEAN", "widget": {"name": "use_seed_override"}, "link": null},
+        {"name": "seed_override", "type": "INT", "widget": {"name": "seed_override"}, "link": null},
+        {"name": "variant_count", "type": "INT", "widget": {"name": "variant_count"}, "link": null},
+        {"name": "variant_seed_stride", "type": "INT", "widget": {"name": "variant_seed_stride"}, "link": null},
+        {"name": "media_roles_json", "type": "STRING", "widget": {"name": "media_roles_json"}, "link": null},
+        {"name": "retention_policy", "type": "COMBO", "widget": {"name": "retention_policy"}, "link": null},
+        {"name": "hold_policy", "type": "COMBO", "widget": {"name": "hold_policy"}, "link": null},
+        {"name": "hold_frames", "type": "INT", "widget": {"name": "hold_frames"}, "link": null},
+        {"name": "previous_edits", "type": "H3_T8_CREATOR_EDIT_PLAN", "link": null}
+      ],
+      "outputs": [
+        {"name": "edit_plan", "type": "H3_T8_CREATOR_EDIT_PLAN", "links": [3]},
+        {"name": "edit_plan_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorShotOverrideT8Advanced"},
+      "widgets_values": [0, true, "", false, 0, 3, 17, "{}", "keep_winner_and_metadata", "none", 0]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3CreatorWorkspaceT8Advanced",
+      "title": "Bound workspace identity; changing it requires a new chain_id",
+      "pos": [1340, 0],
+      "size": [570, 330],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "link": 2},
+        {"name": "run_from_index", "type": "INT", "widget": {"name": "run_from_index"}, "link": null},
+        {"name": "run_to_index", "type": "INT", "widget": {"name": "run_to_index"}, "link": null},
+        {"name": "include_disabled_shots", "type": "BOOLEAN", "widget": {"name": "include_disabled_shots"}, "link": null},
+        {"name": "workspace_notes", "type": "STRING", "widget": {"name": "workspace_notes"}, "link": null},
+        {"name": "edit_plan", "type": "H3_T8_CREATOR_EDIT_PLAN", "link": 3}
+      ],
+      "outputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "links": [4]},
+        {"name": "run_summary", "type": "STRING", "links": null},
+        {"name": "sidecar_json", "type": "STRING", "links": null},
+        {"name": "workspace_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorWorkspaceT8Advanced"},
+      "widgets_values": [0, -1, false, "Bridge template: accepted Long Video segments are Creator progress."]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3CreatorBackgroundStartT8Advanced",
+      "title": "Default review_only performs no queue action",
+      "pos": [1990, 0],
+      "size": [620, 390],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 4},
+        {"name": "chain_id", "type": "STRING", "widget": {"name": "chain_id"}, "link": null},
+        {"name": "execution_mode", "type": "COMBO", "widget": {"name": "execution_mode"}, "link": null},
+        {"name": "max_retries", "type": "INT", "widget": {"name": "max_retries"}, "link": null},
+        {"name": "retry_delay_seconds", "type": "FLOAT", "widget": {"name": "retry_delay_seconds"}, "link": null},
+        {"name": "release_policy", "type": "COMBO", "widget": {"name": "release_policy"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "links": [5]},
+        {"name": "chain_id", "type": "STRING", "links": null},
+        {"name": "auto_accept", "type": "BOOLEAN", "links": null},
+        {"name": "job_id", "type": "STRING", "links": null},
+        {"name": "background_state_json", "type": "STRING", "links": [6]}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorBackgroundStartT8Advanced"},
+      "widgets_values": ["creator_long_video_bridge_demo", "review_only", 2, 2.0, "clear_execution_cache"]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3CreatorBackgroundRunSelectT8Advanced",
+      "title": "accepted_count selects shot; retry_count selects seed variant",
+      "pos": [2700, 0],
+      "size": [650, 470],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 5},
+        {"name": "background_state_json", "type": "STRING", "link": 6},
+        {"name": "variant_policy", "type": "COMBO", "widget": {"name": "variant_policy"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "prompt_packet", "type": "H3_T8_PROMPT_PACKET", "links": null},
+        {"name": "compiled_prompt", "type": "STRING", "links": null},
+        {"name": "negative_prompt", "type": "STRING", "links": null},
+        {"name": "length", "type": "INT", "links": null},
+        {"name": "seed", "type": "INT", "links": null},
+        {"name": "run_position", "type": "INT", "links": null},
+        {"name": "variant_index", "type": "INT", "links": null},
+        {"name": "attempt_number", "type": "INT", "links": null},
+        {"name": "ready", "type": "BOOLEAN", "links": null},
+        {"name": "action", "type": "STRING", "links": null},
+        {"name": "shot_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorBackgroundRunSelectT8Advanced"},
+      "widgets_values": ["retry_as_variant_clamped"]
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "① This is an adapter for the proven Long Video background graph",
+      "pos": [0, 650],
+      "size": [1020, 390],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 必须接到现有Long Video后台成片链\n\n这不是独立采样工作流。把这5个节点插入`Long_Video_Background_22F`：用本节点的prompt/length/seed驱动原H3 Conditioning/Sampler；把Background Start输出的`job_id`和`auto_accept`接到现有`Auto Accept & Continue`，候选仍必须由Long Video Candidate Save生成。取消、运行中断、history、重试和accepted manifest继续由原后台控制器负责。"]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "② Safe default and exact progress contract",
+      "pos": [1080, 650],
+      "size": [1020, 390],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 默认不会自动跑\n\n`review_only`会阻止下游，便于先检查接线。只有明确改成`auto_accept_and_continue`才会自动接受每段并排下一段。Creator的一个shot必须严格对应Long Video manifest的一个segment；`accepted_count`决定下一shot，`retry_count`决定variant，超出variant数量时固定使用最后一个seed并在report标记clamped。"]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "③ Workspace hash binding and cancel controls",
+      "pos": [2160, 650],
+      "size": [1020, 390],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 不允许跨项目续跑\n\n后台状态只保存workspace hash、run_count等小型绑定元数据，不保存完整提示词。修改Timeline、覆盖、run window或seed后workspace hash会变化，必须换新的`chain_id`。Start节点右键区域会出现与原Long Video相同的status/pause/resume/cancel按钮；cancel可删除未运行任务或向正在运行的指定prompt发送interrupt，不会取消其他队列任务。"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "H3_T8_STUDIO_TIMELINE"],
+    [2, 1, 0, 3, 0, "H3_T8_STUDIO_TIMELINE"],
+    [3, 2, 0, 3, 5, "H3_T8_CREATOR_EDIT_PLAN"],
+    [4, 3, 0, 4, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [5, 4, 0, 5, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [6, 4, 4, 5, 1, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.64, "offset": [50, 65]}},
+  "version": 0.4
+}

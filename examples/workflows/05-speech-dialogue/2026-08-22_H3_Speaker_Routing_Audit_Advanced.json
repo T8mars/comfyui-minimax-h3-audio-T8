@@ -1,0 +1,139 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadAudio",
+      "title": "Reference voice A: replace with a clean single-speaker clip",
+      "pos": [0, 0],
+      "size": [390, 124],
+      "flags": {}, "order": 0, "mode": 0,
+      "inputs": [{"name": "audio", "type": "COMBO", "widget": {"name": "audio"}, "link": null}],
+      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadAudio"},
+      "widgets_values": ["replace_with_speaker_a.wav"]
+    },
+    {
+      "id": 2,
+      "type": "LoadAudio",
+      "title": "Reference voice B: must be a different waveform",
+      "pos": [0, 330],
+      "size": [390, 124],
+      "flags": {}, "order": 1, "mode": 0,
+      "inputs": [{"name": "audio", "type": "COMBO", "widget": {"name": "audio"}, "link": null}],
+      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [2]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadAudio"},
+      "widgets_values": ["replace_with_speaker_b.wav"]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3VoiceProfileT8",
+      "title": "Speaker A profile",
+      "pos": [450, 0], "size": [520, 430], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [
+        {"name": "voice_mode", "type": "COMBO", "widget": {"name": "voice_mode"}, "link": null},
+        {"name": "speaker_id", "type": "STRING", "widget": {"name": "speaker_id"}, "link": null},
+        {"name": "voice_description", "type": "STRING", "widget": {"name": "voice_description"}, "link": null},
+        {"name": "language", "type": "COMBO", "widget": {"name": "language"}, "link": null},
+        {"name": "rights_confirmed", "type": "BOOLEAN", "widget": {"name": "rights_confirmed"}, "link": null},
+        {"name": "reference_start_seconds", "type": "FLOAT", "widget": {"name": "reference_start_seconds"}, "link": null},
+        {"name": "reference_duration_seconds", "type": "FLOAT", "widget": {"name": "reference_duration_seconds"}, "link": null},
+        {"name": "highpass_60hz", "type": "BOOLEAN", "widget": {"name": "highpass_60hz"}, "link": null},
+        {"name": "peak_limit_minus_3_dbfs", "type": "BOOLEAN", "widget": {"name": "peak_limit_minus_3_dbfs"}, "link": null},
+        {"name": "reference_audio", "type": "AUDIO", "link": 1}
+      ],
+      "outputs": [
+        {"name": "voice_profile", "type": "H3_T8_VOICE_PROFILE", "links": [3]},
+        {"name": "prepared_reference_audio", "type": "AUDIO", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3VoiceProfileT8"},
+      "widgets_values": ["reference_voice", "speaker_a", "an adult female voice, low, calm and deliberate", "Chinese", true, 0, 0, true, true]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3VoiceProfileT8",
+      "title": "Speaker B profile",
+      "pos": [450, 500], "size": [520, 430], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [
+        {"name": "voice_mode", "type": "COMBO", "widget": {"name": "voice_mode"}, "link": null},
+        {"name": "speaker_id", "type": "STRING", "widget": {"name": "speaker_id"}, "link": null},
+        {"name": "voice_description", "type": "STRING", "widget": {"name": "voice_description"}, "link": null},
+        {"name": "language", "type": "COMBO", "widget": {"name": "language"}, "link": null},
+        {"name": "rights_confirmed", "type": "BOOLEAN", "widget": {"name": "rights_confirmed"}, "link": null},
+        {"name": "reference_start_seconds", "type": "FLOAT", "widget": {"name": "reference_start_seconds"}, "link": null},
+        {"name": "reference_duration_seconds", "type": "FLOAT", "widget": {"name": "reference_duration_seconds"}, "link": null},
+        {"name": "highpass_60hz", "type": "BOOLEAN", "widget": {"name": "highpass_60hz"}, "link": null},
+        {"name": "peak_limit_minus_3_dbfs", "type": "BOOLEAN", "widget": {"name": "peak_limit_minus_3_dbfs"}, "link": null},
+        {"name": "reference_audio", "type": "AUDIO", "link": 2}
+      ],
+      "outputs": [
+        {"name": "voice_profile", "type": "H3_T8_VOICE_PROFILE", "links": [4]},
+        {"name": "prepared_reference_audio", "type": "AUDIO", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3VoiceProfileT8"},
+      "widgets_values": ["reference_voice", "speaker_b", "an adult female voice, bright, quick and airy", "Chinese", true, 0, 0, true, true]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3DialogueScriptT8",
+      "title": "Exact speaker IDs bind every dialogue turn",
+      "pos": [1030, 170], "size": [620, 520], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [
+        {"name": "script", "type": "STRING", "widget": {"name": "script"}, "link": null},
+        {"name": "script_format", "type": "COMBO", "widget": {"name": "script_format"}, "link": null},
+        {"name": "default_language", "type": "COMBO", "widget": {"name": "default_language"}, "link": null},
+        {"name": "default_space", "type": "COMBO", "widget": {"name": "default_space"}, "link": null},
+        {"name": "voice_profiles.voice_profile_0", "type": "H3_T8_VOICE_PROFILE", "link": 3},
+        {"name": "voice_profiles.voice_profile_1", "type": "H3_T8_VOICE_PROFILE", "link": 4}
+      ],
+      "outputs": [
+        {"name": "dialogue_plan", "type": "H3_T8_SPEECH_PLAN", "links": [5]},
+        {"name": "plan_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3DialogueScriptT8"},
+      "widgets_values": ["speaker_a: 你在干嘛呢，我在这里呀。\nspeaker_b: 我刚刚看到你了。", "speaker_lines", "Chinese", "living_room"]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3SpeakerRoutingAuditT8Advanced",
+      "title": "Compile <Audio N> bindings; report-only PASS or ABSTAIN",
+      "pos": [1710, 250], "size": [520, 220], "flags": {}, "order": 5, "mode": 0,
+      "inputs": [
+        {"name": "dialogue_plan", "type": "H3_T8_SPEECH_PLAN", "link": 5},
+        {"name": "require_reference_voice", "type": "BOOLEAN", "widget": {"name": "require_reference_voice"}, "link": null},
+        {"name": "descriptor_similarity_threshold", "type": "FLOAT", "widget": {"name": "descriptor_similarity_threshold"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "dialogue_plan", "type": "H3_T8_SPEECH_PLAN", "links": null},
+        {"name": "pass_audit", "type": "BOOLEAN", "links": null},
+        {"name": "decision", "type": "STRING", "links": null},
+        {"name": "binding_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SpeakerRoutingAuditT8Advanced"},
+      "widgets_values": [true, 0.75]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "多人对白预检说明",
+      "pos": [1030, 730], "size": [1200, 300], "flags": {}, "order": 6, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 先绑定，再逐turn生成\n\n- 每个`speaker_id`必须唯一；审计器按人物第一次出场顺序编译`<Audio 1> / <Audio 2>`。\n- 两个人物连接同一份参考波形会`ABSTAIN`，而不是静默猜测。\n- `（喘息）`、`[laugh]`、`哈哈哈哈`等写在spoken text里会提示移入direction/performance字段，避免被当成要念出的文字。\n- 同性别描述本身不会失败；只有描述高度相似且缺少两份不同参考指纹时才提示歧义。\n- PASS只证明静态绑定明确，不证明H3生成时绝不会串音或换声。"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 9, "AUDIO"],
+    [2, 2, 0, 4, 9, "AUDIO"],
+    [3, 3, 0, 5, 4, "H3_T8_VOICE_PROFILE"],
+    [4, 4, 0, 5, 5, "H3_T8_VOICE_PROFILE"],
+    [5, 5, 0, 6, 0, "H3_T8_SPEECH_PLAN"]
+  ],
+  "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.8, "offset": [50, 80]}},
+  "version": 0.4
+}

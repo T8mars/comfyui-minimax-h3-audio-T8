@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.44.0** · 节点 163 个 · GPL-3.0-or-later
+当前版本：**1.45.0** · 节点 191 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -16,8 +16,20 @@
 - 单人/多人脸部修复、SAM3.1 追踪、多帧关键帧和实验性动态细节增强
 - Motion Recovery动作过载分析、自动ABSTAIN懒旁路、局部时间超采样二采、原时钟恢复和分窗断点续跑（实验）
 - 语音、对白、演绎、ADR 和生产辅助节点（实验功能会明确标注）
+- 音频完整性、参考相对音色漂移与多人对白路由预检：报告首尾边界、DC、削波、持续频谱/响度漂移、参考音频绑定和歧义，遇到风险返回 `ABSTAIN`，不自动修改素材
+- 提示词预算与角色媒体编译：统计字符/token、检查 `<Picture>/<Video>/<Audio>` 数量、顺序与人物绑定覆盖，原提示词连首尾空白也不静默删除
+- 提示词服务路由：默认本地原文直通，可显式连接 OpenAI/LM Studio/llama.cpp 或 Ollama；密钥仅从环境变量读取，Ollama默认请求后卸载（实验）
+- 提示词语义合同审计：用用户声明的必需/禁用动作词组、精确对白和媒体标签检查重写候选；默认继续输出原文，机械通过并经人工显式接受后才切换候选（实验）
+- Creator Workspace：在既有 Studio Timeline 上追加镜头覆盖、seed变体、运行区间、hold-map sidecar、显式运行回执与断点续跑计划；可选桥接现有Long Video后台取消/重试，同时提供不拉伸画面、A/B音轨分别试听的同步音画审片。候选保留计划默认只生成清单；另有双阶段、SHA锁定、可恢复的Quarantine节点，显式确认后只把文件移入输出目录内的隔离区，不提供永久删除（实验）
+- ClipProj 与 Sol-Attn 外部兼容审计：只检查插件版本、矩阵维度、硬件和补丁所有权，不复制、加载或执行外部实现（实验）
+- 原生 H3 latent 时间线拼接：按视频24fps/音频40Hz双时钟移除后续片段重复的5帧前缀，并在CPU组合完整AV latent（实验）
+- 原生 H3 Long Video续接拼接：同时核对Planner与Conditioning报告，按5/22/39帧真实上下文移除双时钟重叠；旧5帧通用拼接保持不变（实验）
+- 原生 H3 latent 恢复清单：分块计算联合AV、可选mask和元数据的精确SHA-256；重载后默认不一致即报错，不写文件、不冒充扩散内部断点恢复（实验）
+- 原生 H3 latent 检查点 Save/Load：把已经形成的完整联合AV latent、可选mask和受支持元数据保存为无pickle的safetensors，并在另一进程中按文件SHA与内容清单严格恢复；默认不保存，不等于采样中断后续跑NFE（实验）
+- 双时钟 Euler NFE 检查点/续跑：仅支持本项目 `dual_clock_euler + native_flow`；新增运行合约编译器会绑定最终提示词、媒体映射、报告和实际Conditioning张量，显式启用后在每个完整NFE边界原子保存联合AV状态，并可在新的ComfyUI进程中从剩余sigma继续。默认关闭，不支持DPM++、SDE/ancestral、第三方sampler或中断在Transformer前向内部的恢复（实验）
 - 预检、显存/缓存报告、模型兼容检查和异常路径清理
 - LightX2V Turbo-SLA LoRA、85% 动态块稀疏 Sage2、逐次运行审计，以及可选的KJ Sage单入口组合器（实验）
+- RAVEN Streaming外部运行时桥接：统一发布参数、在巨大权重载入前检查硬件/内存，并严格审计仅T2VA的因果分块请求（实验）
 
 稳定节点与 `Advanced`/`Experimental` 节点分开。高级节点采用追加式设计：未连接时不改变旧工作流、旧节点 ID、输入顺序和默认采样数学。
 
@@ -39,7 +51,7 @@ comfy node install minimax-h3-audio-t8
 ComfyUI/custom_nodes/minimax-h3-audio-T8
 ```
 
-本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。只有使用 8B 提示词重写器时才安装 `requirements-prompt-rewriter.txt`；依赖被限制在 Transformers 4.x、PEFT 0.18–0.20 和 Pillow 10.x，避免无关升级影响其他节点。LightX2V SLA 实验节点还需要与当前 Torch/CUDA 匹配的 `spas-sage-attn`；只有使用SLA + KJ Sage组合工作流时才需要另外安装 `ComfyUI-KJNodes`。
+本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。Long Video 的候选保存和最终拼接要求 `ffmpeg` 可从 `PATH` 调用；常规 ComfyUI 整合包通常已经包含，缺失时节点会在写入前给出明确错误。只有使用 8B 提示词重写器时才安装 `requirements-prompt-rewriter.txt`；依赖被限制在 Transformers 4.x、PEFT 0.18–0.20 和 Pillow 10.x，避免无关升级影响其他节点。LightX2V SLA 实验节点还需要与当前 Torch/CUDA 匹配的 `spas-sage-attn`；只有使用SLA + KJ Sage组合工作流时才需要另外安装 `ComfyUI-KJNodes`。
 
 ## 第一次使用
 
@@ -50,7 +62,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 
 ### Quick Start 子图
 
-`subgraphs/` 提供 6 个 ComfyUI 原生 Quick Start 子图：T2VA、I2VA/FL2VA、Ref2VA、Audio Drive、Long Video 和 Repair。它们只封装现有节点并减少外露参数，不改变旧节点的输入顺序或默认值。详细说明见 [`subgraphs/README.md`](subgraphs/README.md)。
+`subgraphs/` 提供 7 个 ComfyUI 原生 Quick Start 子图：T2VA、I2VA/FL2VA、Ref2VA、Audio Drive、Long Video、Repair 和 Creator AV Review。它们只封装现有节点并减少外露参数，不改变旧节点的输入顺序或默认值。Creator审片入口保持A/B音轨独立、并排视频无声且默认`ABSTAIN`，不会自动选择胜者。文件名统一使用日期开头的 ASCII 名称，避免 Registry 打包在部分 Windows/GBK 环境漏文件；导入后的子图标题和 NOTE 仍保留中英说明。详细说明见 [`subgraphs/README.md`](subgraphs/README.md)。
 
 ### 可选高级扩展
 
@@ -61,8 +73,37 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | 外部 BlockSwap | `12-system-memory/2026-08-22_H3_External_BlockSwap_Stock20_Advanced_EXP.json` | 单独安装 `xiaolibai-sys/ComfyUI-MiniMaxH3` | 只服务外部 `MINIMAX_H3_*` 类型，不接受官方 `MODEL`；16GB 未做压力认证 |
 | LightX2V Turbo-SLA | `15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json` | 固定 SLA LoRA、FL2VA、4 NFE/6V/3A 和匹配的 `spas-sage-attn` | 256×256×22 INT8 兼容机械验证通过；尚不宣称画质、速度、音频或通用16GB优势 |
 | SLA + KJ Sage组合器 | `15-sla-attention/2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json` | 上述SLA条件，加单独安装的 `ComfyUI-KJNodes` | 解决KJ完整forward绕过SLA的问题；每次Attention只选一个后端，当前完成结构与回归验证 |
+| 音频完整性审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Integrity_Audit_Advanced.json` | 无；纯CPU信号分析 | 输出PASS/ABSTAIN和证据，不修音；循环音乐可能触发尾首相似提示 |
+| 音色远近漂移审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Perceptual_Drift_Audit_Advanced.json` | 同内容、同时间线的基准和候选音频 | 真实试听异常的纯二采在1.4～3.6秒触发ABSTAIN，正常一采与本例80%混音PASS；它是声学复核提示，不诊断远场/混响/换声 |
+| 多人对白路由预检 | `05-speech-dialogue/2026-08-22_H3_Speaker_Routing_Audit_Advanced.json` | 每个角色独立参考音频 | 编译`<Audio N>`映射并检查重复波形、未结构化笑声/喘息和描述歧义 |
+| 提示词预算与角色编译 | `14-prompt-relay/2026-08-22_H3_Prompt_Budget_Role_Compiler_Advanced.json` | CLIP为可选输入 | 默认7000匹配当前官方H3 CLI提交上限；7000/7001与三人物映射已测。真实Qwen3-VL 8B/Boogu编译文本为140个token、规划估算153。当前ComfyUI无7000字符硬拦截，故不把API/CLI规则冒充本地tokenizer硬上限；视觉/时间戳token在Conditioning阶段另行加入 |
+| 提示词服务路由 | `14-prompt-relay/2026-08-23_H3_Prompt_Provider_Router_Advanced_EXP.json` | 本地服务无需密钥；远程服务的密钥通过环境变量提供 | 默认不联网；原始`<d>`对白先替换为不可猜测令牌，provider只有逐字返回唯一令牌且位置正确才会恢复，真实对白不上传；可选0～2次合同修复且不重传参考图，默认0保持旧请求数；CPU-only 8B已有一条严格合同通过，但把“旋转”改成“站立”，仍未通过语义质量门 |
+| 提示词语义合同审计 | `14-prompt-relay/2026-08-23_H3_Prompt_Semantic_Contract_Audit_Advanced_EXP.json` | 无；纯本地字符串审计 | 已知“旋转→站立”真实Provider回归会被拒绝并保留原文；空锚点ABSTAIN，非法合同、对白变化和源媒体标签丢失fail closed。词组PASS不等于通用语义等价，仍需人工复核 |
+| Creator Workspace | `11-studio-production/2026-08-22_H3_Creator_Workspace_Run_Window_Advanced.json` | 复用现有Studio Timeline | 真实3镜头计划、3候选seed、hold-map和显式选择已执行；不隐式排队、不写文件、不删除候选 |
+| 同步A/B预览 | `11-studio-production/2026-08-22_H3_Creator_Synchronized_AB_Advanced.json` | 输入两个IMAGE帧批次 | 真实39帧A/B已保持源像素并严格解码；几何不一致可强制ABSTAIN；仍不比较音频 |
+| 同步音画A/B审片 | `11-studio-production/2026-08-22_H3_Creator_Synchronized_AV_AB_Advanced.json` | 两条同内容、同起点且均带音轨的视频 | 保存无声并排画面并分别试听A/B音轨。1088×544近景真人合同以同一124帧latent得到243帧/10.125秒两路成片，精确双时钟、严格解码及1,125MiB最低余量通过；一名审阅者在所有画面/接缝/对白维度判平且无硬失败。该固定简单素材结果不等于普遍等价，仍不自动接受 |
+| Creator运行回执、续跑与可恢复隔离 | `11-studio-production/2026-08-23_H3_Creator_Run_Receipt_Resume_Advanced.json` | 复用Creator Workspace；运行结果由用户或外部执行器显式填写 | 记录completed/accepted/rejected/cancelled/failed并给出render/review/retry/complete；Retention Plan仍只生成keep/proposed-delete清单。Quarantine节点在示例中默认静音，先`prepare_only`核对路径/字节/SHA，再以精确plan hash、新epoch和显式确认移动到`output/MiniMaxH3/creator_quarantine`；同一receipt/epoch可restore或recover，不提供永久删除 |
+| Creator × Long Video后台桥 | `11-studio-production/2026-08-23_H3_Creator_Long_Video_Background_Bridge_Advanced_EXP.json` | 必须嵌入现有Long Video Background候选保存/自动接受成片链 | workspace hash绑定任务；accepted_count选镜头、retry_count选seed；默认review_only；真实256×256×22 H3采样在1/4步定向取消后显存回到基线+90MiB；另以合法124+119帧轻量控制链验证终态重新挂接、自动续排、Candidate Save/Auto Accept和最终AV合成，真实H3恢复成片质量仍待验收 |
+| ClipProj兼容审计 | `12-system-memory/2026-08-22_H3_ClipProj_Compatibility_Audit_Advanced_EXP.json` | 单独安装`ComfyUI-ClipProj` 0.1.13+ | 检查4B/8B投影维度、Qwen3-VL声明与加载模式；不加载模型，也不替换32B默认路径 |
+| Sol-Attn兼容审计 | `12-system-memory/2026-08-22_H3_Sol_Attn_Compatibility_Audit_Advanced_EXP.json` | 单独安装`ComfyUI-sol-attn` 0.6.2+ | 检查CUDA/BF16、架构与完整H3补丁所有权；不运行kernel，不作速度/显存结论 |
+| ClipProj 4B低负载T2VA桥 | `12-system-memory/2026-08-23_H3_ClipProj_4B_T2VA_Bridge_Advanced_EXP.json` | 官方ComfyUI格式Qwen3-VL 4B、4B v3.1矩阵和外部ClipProj | 短T2VA和1088×544近景真人I2VA均已真实生成。固定简单素材中4B与8B、4B与原生32B的单人盲评均为全维度平局且无硬失败，但这不建立普遍等价或非劣；32B继续默认。原生32B本次最低余量643MiB，仅证明这一条通过512MiB门，不代表普遍16GB安全；纯文本`qwen_3_4b`仍不可替代 |
+| ClipProj 8B完整T2VA桥 | `12-system-memory/2026-08-22_H3_ClipProj_8B_T2VA_Bridge_Advanced_EXP.json` | 8B Qwen3-VL、v3.1投影矩阵和外部ClipProj | 本机固定seed短T2VA已真实编码、生成并严格解码；只证明链路，其他模态和质量A/B仍待补 |
+| ClipProj 8B完整I2VA桥 | `12-system-memory/2026-08-22_H3_ClipProj_8B_I2VA_Bridge_Advanced_EXP.json` | 同上，并连接一张首帧图 | 本机256×256×22、4步I2VA已走通视觉塔与联合AV生成并严格解码3/3；不等于32B画质或对白遵循度已通过 |
+| ClipProj 8B完整FL2VA桥 | `12-system-memory/2026-08-22_H3_ClipProj_8B_FL2VA_Bridge_Advanced_EXP.json` | 同上，并连接独立首帧与尾帧 | 本机256×256×22、4步FL2VA已走通双视觉关键帧与联合AV生成并严格解码3/3；只证明短链执行，不证明长插值或32B画质等价 |
+| ClipProj 8B完整Ref2VA桥 | `12-system-memory/2026-08-22_H3_ClipProj_8B_Ref2VA_Bridge_Advanced_EXP.json` | 8B ClipProj、Ref2VA pruned INT8与一张参考图 | 本机Stock20短链及原生32B同seed机械对照均通过严格解码；身份代理未稳定过线且8B只余约62MiB，故不宣称质量等价、省显存或16GB安全 |
+| Sol-Attn保守T2VA桥 | `12-system-memory/2026-08-22_H3_Sol_Attn_T2VA_Conservative_Advanced_EXP.json` | 外部Sol-Attn 0.6.2+ | 4步默认dense百分比为0，首三/末块dense、exact conditioning KV、首次strict；本机0.737MP实跑记录5139 tokens并进入kernel，但单次顺序A/B未显示速度或显存优势；一名审阅者给出全平且没有失败备注，仍不足以提升为推荐路线 |
+| RAVEN Streaming受保护T2VA | `16-raven-streaming/2026-08-23_H3_RAVEN_Streaming_T2VA_Guarded_Advanced_EXP.json` | 单独安装外部RAVEN插件0.1.0、完整BF16 H3和 mandatory RAVEN LoRA | 真正采样/预览仍由外部节点执行；T8统一4步、12/3、2/2、cpu_pinned参数并检查T2VA合同。当前16GB/128GB机器低于已审阅资源范围，默认会在加载前拒绝，不宣称可运行 |
+| 原生latent时间线拼接 | `04-long-video/2026-08-22_H3_Native_Latent_Timeline_Concat_Advanced_EXP.json` | 输入完整H3嵌套AV latent，batch=1且画布一致 | 真实22+22→39帧单次解码、52000采样无损音频和重复hash已通过；旧32B路线两次未过512MiB余量门，另一个固定8B ClipProj短链以605MiB最低余量通过一次0.25秒采样门。独立段仍会换景，不能外推为无缝或通用16GB安全 |
+| 原生latent Long Video续接拼接 | `04-long-video/2026-08-23_H3_Native_Latent_Continuation_Concat_Advanced_EXP.json` | 上一段/累计时间线latent、本段采样完成latent，以及同一Planner与Conditioning的直连报告 | 精确移除5/22/39帧上下文；124+124在22帧context下得到226帧，默认要求音画上下文。最终隐藏尾帧须一次解码后再裁；不等于NFE断点恢复、无缝质量或省显存证明 |
+| 原生latent恢复清单 | `04-long-video/2026-08-23_H3_Native_Latent_Resume_Manifest_Advanced_EXP.json` | 输入已保存/重载的完整H3嵌套AV latent；恢复核对时同时粘贴旧`manifest_json` | SHA-256分块大小不影响摘要；默认`error`阻断内容、shape、dtype、mask或checkpoint ID不一致。节点不保存latent、不恢复NFE内部状态，也不作续段质量/显存保证 |
+| 原生latent检查点Save/Load | `04-long-video/2026-08-23_H3_Native_Latent_Checkpoint_Save_Load_Advanced_EXP.json` | 输入完整H3嵌套AV latent；首次保存需显式打开`confirm_save` | 文件限制在ComfyUI输出目录，唯一文件名、写入后校验和原子放置；独立进程严格恢复已逐tensor/mask/元数据核对一致。它只恢复已完成latent，不保存Transformer、采样器、队列或CUDA状态 |
+| 双时钟Euler NFE检查点/续跑 | `04-long-video/2026-08-23_H3_Dual_Clock_NFE_Checkpoint_Resume_Advanced_EXP.json` | 仅限`dual_clock_euler + native_flow`；必须填写精确模型合同，并把Conditioning的4路输出接入`NFE Run Contract`编译器，不能把普通`report`文本直接接到JSON输入 | 默认`disabled`且不写文件；一条256×256×22、4步真实H3任务已在第2步中断，由新ComfyUI进程续跑，最终联合AV latent、解码RGB与PCM均和不中断控制逐位一致。仅证明该固定合同，不支持多步历史、随机SDE或任意wrapper |
 
 这些扩展均为追加节点。未放入旧工作流时不会改变旧采样路径。外部项目及模型权重不随本仓库分发。
+
+以后生成的匿名评审页会先要求选择“可判断 / 原素材不足 / 播放问题 / 不确定”。只有“可判断”
+的组才统计 A/B/平；其余组明确记为 `ABSTAIN`，不会被误算成方法平局或质量通过。旧版评审 JSON
+仍可解析，已经完成的盲测页和私钥不会被重建工具覆写。
 
 ## 工作流目录
 
@@ -83,6 +124,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `13-latent-upscale` | 32 倍数对齐的 latent 放大 |
 | `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力（实验） |
 | `15-sla-attention` | LightX2V Turbo-SLA 动态块稀疏 attention（实验） |
+| `16-raven-streaming` | RAVEN因果分块流式T2VA与资源/合同保护（实验） |
 
 每个目录都有自己的 `README.md`，说明适用场景、参数建议和已知限制。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 
@@ -137,6 +179,11 @@ models/face_detection/checkpoints
 - 基础 `MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)`仍必须直接接干净的Dual-Clock模型并独占attention。若要保留KJ MiniMax H3 Sage，请使用专门的 `SLA + KJ Sage Composer`：连接顺序为 `Dual-Clock → KJ Sage → Composer`，不要再插入ModelAttentionBackend或Sol-Attn。SLA生成路径运行block-sparse Sage2，KJ只负责非SLA调用或 `dense_lora_control`；同一次Attention不会重复跑两个kernel。当前结论仍不等于画质更好、速度更快、音频非劣或普遍16GB安全。
 - Prompt Relay 与 Turbo8 组合时，连接顺序必须是 `UNET → Prompt Relay Conditioning → 修正 Alpha8 Bypass LoRA → DualClock Sampler`；把 LoRA 接在 Relay 前面会被主动拒绝。
 - Prompt Relay 需要保留输入原声时使用 `lock_source`，并把节点的 `mux_audio` 接到最终保存节点；`native/remix/reference_only`仍可能因 H3 联合 AV Transformer 而改变声音。
+- `drive_audio`是联合生成条件，不是确定性音素/口型约束。希望尽量保留原声时，使用
+  `audio_mode=lock_source`、`add_source_as_reference=true`，提示词引用实际编号的`<Audio N>`；
+  已知台词时再把逐字内容放入`<d>...</d>`。最终保存必须接`mux_audio`，不要误接AV Decode的
+  `generated_audio`。这些设置能够保留最终输入音轨并提高语义提示强度，但不能保证嘴型逐音素同步；
+  广播级精确口型需要在H3生成后使用专用唇形/人脸重定向工具。
 - Prompt Relay 默认 `video_only_paper` 不改变旧工作流；只有显式插入 `Query Route`并选择`joint_av_exp`，才会把局部事件时间扩展到目标音频。该模式是H3实验扩展，不是论文已验证能力。
 - `14-prompt-relay` 已提供 T2VA、I2VA、FL2VA、L2VA、Ref2VA、Hybrid 六种视觉任务模板，以及参考视频+同编号音轨、独立参考音频、联合AV和Turbo8模板；各任务的图片/视频/音频接线、模型顺序和已验证边界写在画布 NOTE 中。
 - 六种视觉任务以及“参考视频+同音轨”“独立参考音频”现均至少有一组同输入、同seed、同NFE的baseline/Relay机械对照：16条成片均为736×416×124、24fps、32kHz双声道，严格音视频解码通过且无黑帧、冻结或削波；I2VA/FL2VA/L2VA/Hybrid的首尾帧锚点代理没有出现明显回退。该结果只关闭媒体与锚点合同，不代表Relay必然改善动作、身份、画质或声音；参考音轨不是原波形复制，感知优劣仍需观看和试听。
@@ -148,6 +195,18 @@ models/face_detection/checkpoints
 ## 故障排查
 
 遇到 OOM、NaN、花屏、音频丢失或人脸跳动时，请保留完整 ComfyUI Error Report，并记录：任务类型、模型文件、宽高、帧数、采样器/调度器、是否双时钟、参考输入、音频采样率和所有显式媒体标签。常见原因是：输入尺寸未对齐、重复连接 Sigma/采样器、参考标签错位、把实验节点接到不兼容的旧 core，或显存不足后继续复用缓存。
+
+若KJNodes的`MiniMax H3 Mem Eff Sage Attention Patch`报
+`sageattention is not new enough ... or could not determine CUDA architecture`：
+
+1. 先运行`MiniMax H3 Environment Audit / 环境兼容审计 (Advanced)`，把
+   `attention_backend`设为`sage_attention`、`enforcement`保持`report_only`。
+2. 查看报告中的`environment.sageattention_runtime`。诊断会分别显示包/`core`导入错误、当前
+   KJNodes所需的六个core符号、wheel报告的`smXX`架构和当前GPU架构是否一致；它不加载H3模型，
+   也不执行attention kernel。
+3. “已安装最新版”本身不能证明兼容；Torch、CUDA、Python、GPU架构与Sage wheel必须同时匹配。
+   若诊断不通过，先移除KJ Sage节点改用stock attention，或为当前ComfyUI Python重装匹配wheel并
+   完整重启。不要让工作流静默降级后仍宣称正在使用Sage。
 
 ## 开发与回归
 

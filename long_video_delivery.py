@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import time
 import unicodedata
@@ -59,6 +61,127 @@ def _sha256_file(path: Path) -> str:
 def _tensor_sha256(tensor: torch.Tensor) -> str:
     raw = tensor.detach().cpu().contiguous().view(torch.uint8).numpy().tobytes()
     return hashlib.sha256(raw).hexdigest()
+
+
+def _interruption_check() -> None:
+    try:
+        import comfy.model_management
+
+        comfy.model_management.throw_exception_if_processing_interrupted()
+    except ImportError:
+        return
+
+
+def _cleanup_temporary(path: Path, active_error: BaseException | None = None) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as cleanup_error:
+        message = f"temporary file cleanup failed for {path}: {cleanup_error}"
+        if active_error is not None:
+            add_note = getattr(active_error, "add_note", None)
+            if callable(add_note):
+                add_note(message)
+            return
+        raise
+
+
+def _run_isolated_ffmpeg(args: list[str], log_path: Path) -> None:
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    with log_path.open("wb") as log:
+        process = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            creationflags=creation_flags,
+        )
+        try:
+            while process.poll() is None:
+                _interruption_check()
+                time.sleep(0.1)
+        except BaseException:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+            raise
+    if process.returncode:
+        tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        raise RuntimeError(
+            f"FFmpeg AAC mux failed with exit code {process.returncode}:\n{tail}"
+        )
+
+
+def _write_planar_audio_raw(path: Path, audio_array: np.ndarray) -> None:
+    if audio_array.ndim != 2 or int(audio_array.shape[0]) != 2:
+        raise ValueError("normalized audio must be planar stereo [2,samples]")
+    interleaved = np.ascontiguousarray(audio_array.T, dtype="<f4")
+    with path.open("wb") as handle:
+        handle.write(interleaved.tobytes())
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _mux_video_with_raw_audio(
+    video_path: Path,
+    raw_audio_path: Path,
+    output_path: Path,
+    *,
+    sample_rate: int,
+) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError(
+            "FFmpeg is required for crash-isolated AAC encoding in MiniMax H3 long-video delivery"
+        )
+    descriptor, log_name = tempfile.mkstemp(
+        prefix=f".{output_path.stem}.", suffix=".ffmpeg.log.tmp", dir=output_path.parent
+    )
+    os.close(descriptor)
+    log_path = Path(log_name)
+    try:
+        _run_isolated_ffmpeg(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-nostdin",
+                "-y",
+                "-i",
+                str(video_path),
+                "-f",
+                "f32le",
+                "-ar",
+                str(int(sample_rate)),
+                "-ac",
+                "2",
+                "-i",
+                str(raw_audio_path),
+                "-map",
+                "0:v:0",
+                "-map",
+                "1:a:0",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                # Preserve the manifest's exact logical sample boundary after AAC frame
+                # quantization. The decoder trims this bounded codec padding locally.
+                "-af",
+                "apad=pad_len=1024",
+                "-movflags",
+                "+faststart",
+                "-f",
+                "mp4",
+                str(output_path),
+            ],
+            log_path,
+        )
+    finally:
+        _cleanup_temporary(log_path, sys.exc_info()[1])
 
 
 def _chain_root(chain_id: str) -> Path:
@@ -647,14 +770,26 @@ def _write_mp4_atomic(
     )
     os.close(descriptor)
     temporary = Path(temporary_name)
+    descriptor, video_name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".video.mp4.tmp", dir=path.parent
+    )
+    os.close(descriptor)
+    video_temporary = Path(video_name)
+    descriptor, audio_name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".audio.f32.tmp", dir=path.parent
+    )
+    os.close(descriptor)
+    audio_temporary = Path(audio_name)
     try:
-        with av.open(str(temporary), mode="w", format="mp4") as output:
+        # Keep PyAV/libx264 video encoding in-process, but isolate AAC in FFmpeg. Repeated
+        # in-process PyAV AAC encoder creation has triggered an uncatchable Windows native
+        # floating-point exception during long test/queue sessions.
+        with av.open(str(video_temporary), mode="w", format="mp4") as output:
             video_stream = output.add_stream("libx264", rate=Fraction(fps, 1))
             video_stream.width = int(frames.shape[2])
             video_stream.height = int(frames.shape[1])
             video_stream.pix_fmt = "yuv420p10le" if bit_depth == 10 else "yuv420p"
             video_stream.options = {"crf": str(int(crf)), "preset": "medium"}
-            audio_stream = output.add_stream("aac", rate=sample_rate, layout="stereo")
 
             for image in frames:
                 image = image[..., :3].detach().float().clamp(0.0, 1.0).cpu()
@@ -666,22 +801,22 @@ def _write_mp4_atomic(
                     frame = av.VideoFrame.from_ndarray(array, format="rgb24")
                 output.mux(video_stream.encode(frame))
             output.mux(video_stream.encode(None))
-
-            audio_frame = av.AudioFrame.from_ndarray(
-                audio_array, format="fltp", layout="stereo"
-            )
-            audio_frame.sample_rate = sample_rate
-            audio_frame.pts = 0
-            audio_frame.time_base = Fraction(1, sample_rate)
-            output.mux(audio_stream.encode(audio_frame))
-            output.mux(audio_stream.encode(None))
+        _write_planar_audio_raw(audio_temporary, audio_array)
+        _mux_video_with_raw_audio(
+            video_temporary,
+            audio_temporary,
+            temporary,
+            sample_rate=sample_rate,
+        )
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        active_error = sys.exc_info()[1]
+        _cleanup_temporary(temporary, active_error)
+        _cleanup_temporary(video_temporary, active_error)
+        _cleanup_temporary(audio_temporary, active_error)
     return audio_report | {
         "path": str(path),
         "sha256": _sha256_file(path),
@@ -691,6 +826,7 @@ def _write_mp4_atomic(
         "fps": int(fps),
         "bit_depth": int(bit_depth),
         "crf": int(crf),
+        "audio_encoder_process": "isolated_ffmpeg_subprocess",
     }
 
 
@@ -1353,19 +1489,28 @@ def compose_accepted_long_video(
     )
     os.close(descriptor)
     temporary = Path(temporary_name)
+    descriptor, video_name = tempfile.mkstemp(
+        prefix=f".{output_path.stem}.", suffix=".video.mp4.tmp", dir=assembled_dir
+    )
+    os.close(descriptor)
+    video_temporary = Path(video_name)
+    descriptor, audio_name = tempfile.mkstemp(
+        prefix=f".{output_path.stem}.", suffix=".audio.f32.tmp", dir=assembled_dir
+    )
+    os.close(descriptor)
+    audio_temporary = Path(audio_name)
     seam_reports = []
     segment_reports = []
     encoded_frames = 0
     encoded_audio_samples = 0
     previous_last = None
     try:
-        with av.open(str(temporary), mode="w", format="mp4") as output:
+        with av.open(str(video_temporary), mode="w", format="mp4") as output:
             video_stream = output.add_stream("libx264", rate=Fraction(fps, 1))
             video_stream.width = width
             video_stream.height = height
             video_stream.pix_fmt = "yuv420p"
             video_stream.options = {"crf": str(int(crf)), "preset": "medium"}
-            audio_stream = output.add_stream("aac", rate=sample_rate, layout="stereo")
 
             # Video is decoded and encoded one frame at a time; no full-chain IMAGE tensor exists.
             for segment, path in verified:
@@ -1391,8 +1536,10 @@ def compose_accepted_long_video(
                     )
             output.mux(video_stream.encode(None))
 
-            # Audio is held one accepted segment at a time. Absolute manifest boundaries keep
-            # the total sample count invariant even when samples-per-frame is fractional.
+        # Audio is held one accepted segment at a time and streamed to a small raw temporary
+        # file. Absolute manifest boundaries keep the total sample count invariant even when
+        # samples-per-frame is fractional. AAC encoding/mux then runs outside this Python process.
+        with audio_temporary.open("wb") as audio_handle:
             for segment, path in verified:
                 expected = int(segment["audio_end_sample"]) - int(segment["audio_start_sample"])
                 audio_array, decode_report = _decode_audio_exact(path, sample_rate, expected)
@@ -1419,13 +1566,8 @@ def compose_accepted_long_video(
                     )
                     seam_reports.append(seam_report)
                 previous_last = audio_array[:, -1].copy()
-                audio_frame = av.AudioFrame.from_ndarray(
-                    audio_array, format="fltp", layout="stereo"
-                )
-                audio_frame.sample_rate = sample_rate
-                audio_frame.pts = encoded_audio_samples
-                audio_frame.time_base = Fraction(1, sample_rate)
-                output.mux(audio_stream.encode(audio_frame))
+                interleaved = np.ascontiguousarray(audio_array.T, dtype="<f4")
+                audio_handle.write(interleaved.tobytes())
                 encoded_audio_samples += expected
                 segment_reports.append(
                     {
@@ -1435,7 +1577,8 @@ def compose_accepted_long_video(
                         **decode_report,
                     }
                 )
-            output.mux(audio_stream.encode(None))
+            audio_handle.flush()
+            os.fsync(audio_handle.fileno())
         if encoded_frames != total_frames:
             raise RuntimeError(
                 f"Composed {encoded_frames} frames but manifest absolute end is {total_frames}"
@@ -1445,13 +1588,21 @@ def compose_accepted_long_video(
                 f"Composed {encoded_audio_samples} samples but manifest absolute end is "
                 f"{total_audio_samples}"
             )
+        _mux_video_with_raw_audio(
+            video_temporary,
+            audio_temporary,
+            temporary,
+            sample_rate=sample_rate,
+        )
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, output_path)
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        active_error = sys.exc_info()[1]
+        _cleanup_temporary(temporary, active_error)
+        _cleanup_temporary(video_temporary, active_error)
+        _cleanup_temporary(audio_temporary, active_error)
 
     report = {
         "schema": DELIVERY_SCHEMA,
@@ -1473,7 +1624,11 @@ def compose_accepted_long_video(
         "bridge_ms": float(bridge_ms) if audio_seam_policy == "cosine_bridge" else 0.0,
         "video_reencoded_h264": True,
         "audio_reencoded_aac": True,
-        "streaming_memory_scope": "one decoded video frame plus one segment PCM buffer",
+        "audio_encoder_process": "isolated_ffmpeg_subprocess",
+        "streaming_memory_scope": (
+            "one decoded video frame plus one segment PCM buffer; interleaved audio is staged "
+            "on disk before isolated AAC mux"
+        ),
         "segments": segment_reports,
         "seams": seam_reports,
     }

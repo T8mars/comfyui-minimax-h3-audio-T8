@@ -1,0 +1,64 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1, "type": "LoadImage", "title": "Candidate A frame or decoded video frame batch",
+      "pos": [0, 0], "size": [390, 124], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [{"name": "image", "type": "COMBO", "widget": {"name": "image"}, "link": null}],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [1]}, {"name": "MASK", "type": "MASK", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
+      "widgets_values": ["replace_with_candidate_a.png"]
+    },
+    {
+      "id": 2, "type": "LoadImage", "title": "Candidate B frame or decoded video frame batch",
+      "pos": [0, 260], "size": [390, 124], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [{"name": "image", "type": "COMBO", "widget": {"name": "image"}, "link": null}],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [2]}, {"name": "MASK", "type": "MASK", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
+      "widgets_values": ["replace_with_candidate_b.png"]
+    },
+    {
+      "id": 3, "type": "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
+      "title": "A/B labels are rendered above the comparison",
+      "pos": [470, 60], "size": [560, 400], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [
+        {"name": "frames_a", "type": "IMAGE", "link": 1},
+        {"name": "frames_b", "type": "IMAGE", "link": 2},
+        {"name": "label_a", "type": "STRING", "widget": {"name": "label_a"}, "link": null},
+        {"name": "label_b", "type": "STRING", "widget": {"name": "label_b"}, "link": null},
+        {"name": "seed_a", "type": "INT", "widget": {"name": "seed_a"}, "link": null},
+        {"name": "seed_b", "type": "INT", "widget": {"name": "seed_b"}, "link": null},
+        {"name": "winner", "type": "COMBO", "widget": {"name": "winner"}, "link": null},
+        {"name": "reviewer_notes", "type": "STRING", "widget": {"name": "reviewer_notes"}, "link": null},
+        {"name": "require_equal_geometry", "type": "BOOLEAN", "widget": {"name": "require_equal_geometry"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "comparison_frames", "type": "IMAGE", "links": [3]},
+        {"name": "winner", "type": "STRING", "links": null},
+        {"name": "selected_seed", "type": "INT", "links": null},
+        {"name": "review_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorSynchronizedCompareT8Advanced"},
+      "widgets_values": ["baseline", "variant", 2608222001, 2608222018, "ABSTAIN", "Watch the full clip before selecting A, B or TIE.", true]
+    },
+    {
+      "id": 4, "type": "PreviewImage", "title": "Labelled left/right comparison preview",
+      "pos": [1110, 60], "size": [500, 300], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 3}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 5, "type": "MarkdownNote", "title": "同步A/B边界",
+      "pos": [470, 520], "size": [1140, 330], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 不拉伸、不补帧\n\n- 左边始终是A，右边始终是B，顶部会写标签。\n- 空间尺寸不同只居中补黑边，不缩放；帧数不同只比较共同的前N帧。`require_equal_geometry=true`时尺寸或帧数不一致会强制ABSTAIN。\n- 要比较完整视频，把两个解码后的IMAGE帧批次接入，不要只用LoadImage单帧。真实39帧同尺寸素材已验证源像素逐值保持、输出视频严格解码3/3。\n- 当前节点不合并或判断音频；声音必须另外盲听。winner只是人工记录，不是自动画质指标。"]
+    }
+  ],
+  "links": [[1, 1, 0, 3, 0, "IMAGE"], [2, 2, 0, 3, 1, "IMAGE"], [3, 3, 0, 4, 0, "IMAGE"]],
+  "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.9, "offset": [100, 100]}},
+  "version": 0.4
+}

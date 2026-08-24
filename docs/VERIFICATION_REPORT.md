@@ -5,6 +5,136 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-24 — Creator and external-bridge human-review adjudication
+
+Three current `final` reviewer exports were checked against their exact private review IDs and
+SHA-bound keys, then analyzed with `tools/analyze_external_bridge_blind_review.py`. The Creator
+package returned one tie; reveal maps A to separate AV decode/media composition and B to native
+latent concat/one AV decode. The reviewer clarified that the first attached review package was too
+unclear to determine whether there was a problem, so this is
+`ABSTAIN_SOURCE_MATERIAL_INSUFFICIENT`, not equivalence or Creator acceptance.
+
+The ClipProj 8B/Sol package returned four ties. Reveal maps the three multimodal candidate arms to
+ClipProj Qwen3-VL 8B and their controls to native Qwen3-VL 32B. The review notes report broken faces
+on both sides for I2VA/FL2VA/Ref2VA, with broken pseudo-subtitles and/or overall picture quality in
+I2VA/FL2VA. These shared defects do not establish 8B noninferiority. The fourth pair maps A to
+Scheduled Sol-Attn at 5,139 tokens and B to native dense attention; it tied without a failure note,
+which is insufficient for quality or performance promotion.
+
+The same-input ClipProj 4B package returned two ties. Reveal maps 4B against 8B and 4B against native
+32B, respectively. The reviewer clarification identifies the third attached review package as too
+unclear for reliable judgement, so both are treated as source-material-insufficient abstentions,
+not 4B/8B/32B equivalence. The immutable source/analysis hashes and this interpretation boundary are
+recorded in ignored local evidence at
+`artifacts/blind-review-human-adjudication-20260824/report.json`. Native 32B remains the default;
+Creator auto-accept, ClipProj default replacement and Sol promotion remain denied.
+
+The review builder and analyzer now support an explicit per-pair assessability field with
+`assessable`, `source_material_insufficient`, `playback_problem` and `unsure`. Only assessable pairs
+contribute preference or blocking-failure counts. The other states produce explicit abstention
+decisions and cannot satisfy the promotion panel gate. Legacy v1 exports remain count/decision
+compatible by assuming assessable while marking that assumption separately; rebuilding an existing
+keyed package no longer overwrites its review page.
+
+Replacement evidence now uses a bright, frame-filling red mechanical metronome on white instead of
+the dark rain material. A Creator probe samples one 256x256x22 latent at eight NFE, reuses that exact
+latent twice, and compares native 22+22->39 AV-latent concat followed by one VAE decode against one
+source VAE decode followed by exact 5-video-frame/7200-audio-sample media composition. The isolated
+run completed in 35.125 seconds, peaked at 15,114 MiB with 996 MiB minimum sampled free VRAM, and
+returned below its baseline. Both review arms strictly decode as 39-frame H.264 plus 32 kHz stereo
+AAC; the lossless sources contain exactly 52,000 samples. An initial report failure was only the
+validator reusing the source probe's 22-frame constant; the corrected 39-frame contract and four
+focused tests pass without rerunning the model. Human seam/audio preference remains pending at
+`artifacts/creator-clear-av-runtime-v1/20260824-003322-885d6026/blind/blind_review.html`.
+
+The same clear prompt, seed `2608241001`, 256x256x22 geometry, eight NFE and 12/3 shifts also produced
+strictly decoded 4B and 8B ClipProj arms. Their single observed times were 55.563/44.219 seconds,
+peaks 14,953/14,991 MiB and minimum sampled free VRAM 1,157/1,119 MiB. An explicitly incomplete 4B
+versus 8B review page exists under `artifacts/clipproj-clear-triplet-runtime-v1/`; native 32B is not
+in that package. Its conservative preflight has twice observed only about 13.25-13.4 GiB free against
+a 14.5 GiB gate, so no forced 32B run or three-way quality claim was made. That gate is derived from
+the prior fixed native run: 15,127.725 MiB peak minus 1,156.5 MiB baseline equals 13,971.225 MiB
+incremental use; adding 512 MiB required headroom gives 14,483.225 MiB, rounded up to 14,500 MiB.
+The probe records this derivation and refuses CLI attempts to lower an arm below its reviewed floor.
+The latest check had only 12,997 MiB free, so a run would not have had evidence-backed capacity.
+
+The reviewer then submitted the replacement Creator and 4B-versus-8B exports with
+`assessability=unsure` and the same explicit reason: one-second material without a clearly visible
+human face is not sufficient. These exports are recorded as `ABSTAIN_REVIEWER_UNSURE`; their default
+tie fields are not counted as preferences. The fixed replacement contract is now one SHA-locked
+front-facing portrait (`10A.jpg`), I2VA, 512x256, 124 frames (5.167 seconds), eight NFE, shifts 12/3,
+seed `2608245001` and a Mandarin utterance. The 4B and 8B arms each strictly decoded 124 H.264 frames
+plus 32 kHz stereo AAC in 78.797/74.219 seconds. Their sampled peaks were 15,341/15,388 MiB with
+769/722 MiB minimum free. The keyed 5.167-second 4B-versus-8B page is at
+`artifacts/human-face-5s-clipproj-runtime-v1/blind-4b-vs-8b/review/blind_review.html`.
+
+The same 124-frame 4B latent was reused twice for the corrected Creator comparison. Native AV latent
+concat removes five repeated video frames and nine 40 Hz audio-latent steps, producing exactly 243
+frames and 405 audio-latent steps (324,000 samples, 10.125 seconds). Both the one-decode candidate and
+the separate-decode/media-compose control strictly decode as 512x256 H.264 plus 32 kHz stereo AAC.
+The isolated run completed in 94.375 seconds, peaked at 15,534 MiB, left 576 MiB minimum sampled free
+and returned below its baseline. Early, join and late frame inspection shows a clear chest-up human
+face rather than black, stretched or placeholder material. This is mechanical/assessability evidence;
+human seam, identity, lip, spoken-text and audio preference remain pending at
+`artifacts/human-face-5s-creator-av-runtime-v1/20260824-010638-22a8e5e5/blind/blind_review.html`.
+The latest native-32B preflight observed 13,809 MiB free against the unchanged evidence-derived
+14,500 MiB floor, so no forced 32B run or three-way claim was made.
+
+A no-model objective pass then strictly decoded all four replacement arms and found zero near-black,
+near-white or frozen-transition frames. Creator candidate/control full-video SSIM is about 0.98785
+and zero-lag audio cosine about 0.99998. At the 124-frame join, video absolute-difference means are
+2.793 for one-decode and 6.656 for separate-decode composition; both audio arms move from dialogue
+tail to near-silence across the join (about -61.8/-62.3 dB over the adjacent 250 ms windows), so the
+5.17-second point still requires human listening. ClipProj 4B/8B full-video SSIM is about 0.92467,
+while zero-lag audio cosine is only about 0.11389 and 8B RMS is about 60.2% of 4B. These metrics prove
+route difference and reject gross playback material failure; they do not rank perceptual quality,
+spoken-text accuracy or audio noninferiority. The report is at
+`artifacts/human-face-replacement-objective-analysis-20260824/objective_analysis.json`.
+
+For reviewer convenience, the two keyed long-material pairs are also combined into one immutable
+page with independent per-pair A/B randomization and assessability fields. The builder revalidates
+all three PASS reports, the common generation contract, reference-image SHA and media contracts;
+its private key contains two pairs and has SHA-256
+`9B8C80C2F3200DA99D58438A3F7FED3724B48A5E0C766BC75DBB226C91DAC845`. The public page does not expose
+the A/B method mapping and exports one `human_face_replacement_final_blind_review.json` at
+`artifacts/human-face-replacement-final-review-20260824/review/blind_review.html`.
+
+## 2026-08-23 — Real H3 NFE boundary interruption and fresh-process resume
+
+The earlier real probe exposed one workflow error before sampling: the plain-text H3 Conditioning
+`report` output had been connected to `run_contract_json`, whose contract is a non-empty JSON
+object. The sampler schema was not changed. A new final append-only
+`MiniMaxH3NFERunContractT8Advanced` node now compiles the exact conditioned prompt, canonical media
+map, Conditioning report and supported positive-conditioning tensor contents into deterministic
+JSON. Tensor hashing is chunked; chunk size changes transfer memory and speed but not the digest.
+The first 190 node IDs remain in their original positions and the compiler is node 191.
+
+Focused compiler, NFE, real-probe, registration and workflow tests pass 31/31; changed-scope Ruff
+also passes. The corrected real probe then fully SHA-256 hashed all six declared weight files and,
+after rechecking 13,835 MiB free VRAM and isolated port 8197, executed one fixed
+256x256x22 T2VA, four-NFE, 12/3-shift contract. The uninterrupted control completed in 18.875 s.
+The second graph was interrupted exactly after progress 2/4 and its checkpoint recorded two
+completed plus two remaining steps. A distinct ComfyUI process resumed the remaining two steps in
+12.937 s.
+
+The resumed and control native `samples_video` and `samples_audio` tensors are exact. Both MP4 files
+pass strict video-only, audio-only and combined decode, and decoded RGB plus PCM SHA-256 values are
+exact. Whole-device usage was 2,275 MiB before the isolated processes and 2,278 MiB after cleanup.
+The report is local evidence at
+`artifacts/nfe-resume-real-runtime-v1/20260823-220903-7aecbd23/validation_report.json`.
+
+The refreshed local Registry candidate is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-nfe-real-resume-final42.zip`: 301 entries,
+1,512,609 bytes, SHA-256
+`8D8399D0ACF472D786DB036D9987B360532CAC4FCB42E9027B9E416A5D30F82F`. Official validate/pack,
+zero duplicate/unsafe/excluded entries, 301/301 worktree byte parity, 133 workflows, seven Quick
+Start subgraphs and isolated 191/191 unique-node import all pass; the first 190 IDs remain in place.
+The real Git index remains empty and no root `node.zip` remains.
+
+This proves only the declared model/LoRA/Conditioning/seed/sampler/kernel contract. It does not prove
+mid-forward recovery, DPM++ or SDE/ancestral history, arbitrary wrappers/modalities/resolutions,
+cross-GPU determinism, repeated-run memory stability, lower VRAM or universal 16 GiB safety.
+
 The retained 1.40.0 checkpoint appends EAV + BlockCache, EAV + STG, and EAV + Long Video as nodes
 146-148 while preserving the first 145 node IDs and stable sampling. It retains the isolated EAV +
 Prompt Relay composer and importable Stock20 T2VA workflow from 1.39.2, the complete learned-latent
@@ -20,6 +150,1089 @@ on 2026-08-14 against ComfyUI `v0.32.0-16@ddbaa8752874c275290d054ee4fddd6e004f5f
 historical generation matrix below remains anchored to
 `0.31.0@cbbc9dab1f03d0d9a6caa8a8be7d77a7e37e1e44`. Historical LoRA conversion evidence was originally
 recorded on 2026-08-06 against source commit `563b98eefbe643a4cd510ee7f0b43e79880d5a3f`.
+
+## Long Video AAC process-isolation checkpoint (2026-08-23)
+
+A full-suite rerun terminated the Windows Python process with native floating-point exception
+`0xc0000093` at `long_video_delivery.py` while PyAV encoded AAC. The exact five-frame,
+128x128, 32kHz-stereo input succeeded when run alone. This is evidence of a repeated in-process
+native encoder-state boundary, not evidence that the candidate geometry or audio tensor was invalid;
+the exception cannot be caught by Python once the host process is terminated.
+
+Both Long Video candidate writing and final accepted composition now keep only PyAV/libx264 video
+encoding in the host. Normalized planar stereo is written as interleaved little-endian float32 to a
+temporary file, and a no-shell, cancellable FFmpeg child performs AAC encoding and stream-copy mux.
+Child failure, Python error and Comfy interruption terminate the child and clean video, audio, mux
+and log temporaries; only a successful, fsynced MP4 is atomically placed. One bounded 1024-sample
+AAC pad prevents codec frame quantization from making decoded audio shorter than the absolute
+manifest boundary. Composition continues to trim every accepted segment to its exact logical sample
+range, so the pad is codec-only and remains below one AAC frame.
+
+The complete Long Video Delivery module now passes 28 tests, including the formerly crashing legacy
+manifest migration, fractional five-frame sample boundaries, two-segment accepted composition,
+decoded final audio length, simulated child failure cleanup and raw stereo interleave. A second scope
+of the real media case plus all registration tests passes 35/35. Ruff and `py_compile` pass. The full
+repository suite was deliberately not repeated under the user's active low-load requirement; this
+checkpoint therefore closes the observed host-process AAC crash path, not every native codec,
+filesystem, FFmpeg-build, power-loss or whole-suite stability claim. FFmpeg on `PATH` is now an
+explicit requirement for Long Video candidate/final delivery.
+
+The resulting local Registry candidate is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-aac-isolation-final37.zip`: 299 entries,
+1,504,589 bytes, SHA-256
+`3879785D870CD3E41440B3BF01BC1C8FB01A14EB284705E4A8BCEFEA6369326A`. Registry validation,
+zero duplicate/unsafe/excluded entries, exact source-byte parity and isolated 190/190-node import
+all pass. Relative to `final36`, no entry was added or removed; only `long_video_delivery.py`, the
+root/category README files, `features.json` and `meta.json` changed. All 133 workflow JSON files and
+all seven Quick Start subgraphs are byte-identical. The real Git staged set remains empty and no root
+`node.zip` exists. `final36` is retained as the historical pre-isolation package.
+
+## ClipProj 4B asset and workflow gate (2026-08-23)
+
+The local files named `qwen_3_4b.safetensors` were not accepted merely because their hidden width
+is 2560. Their safetensors headers contain no visual, vision, merger or DeepStack tensors, proving
+that they are text-only Qwen3 checkpoints and therefore unsafe for this bridge. The reviewed
+ComfyUI single-file Qwen3-VL encoder was downloaded from Comfy-Org/Krea-2 revision
+`e5ea8b4dd7f38f348b138eb0fe29f92c0e367e96`; its 5,242,467,968 bytes hash to
+`54BD5144DF0BBC25DD6CCADFCB826B521445A1B06AE5A42570BDD2974CA87094`, and its header includes the
+visual tower plus a 2560-dimensional merger output. The v3.1 projection was downloaded from
+NicoLab28 revision `2ebdbcdc27a29a9607efdb221a9afcb9a0cdd808`; its 26,256,128 bytes hash to
+`0184E5C8D666A131962506D21949C2D8A8C6F33445B7B5E347E9A7E0A5BAA819`, with W shaped
+`[2560,5120]`.
+
+A dated frontend workflow is deterministically derived from the reviewed 8B T2VA workflow. The
+source 8B file remains byte-identical at SHA-256
+`F3245007CAAE3868B1811A541FAC9EFD392AE2EC56D4503B84A4499619E2E862`; the 4B derivative switches
+only the encoder family/file, projection and audit declaration, and uses a bounded 256x256x22 smoke
+geometry. It originally recorded `ASSET_CONTRACT_PASS_RUNTIME_PENDING`; after the guarded run below,
+the generator now records `ASSET_AND_SINGLE_T2VA_RUNTIME_PASS`. Twenty focused external-bridge and
+frontend-workflow tests passed before the runtime-state update. The earlier insufficient-headroom
+abstention remains evidence that the gate refused to compete with the user-owned service, not the
+current runtime conclusion.
+
+The follow-up adds `tools/run_clipproj_4b_real_probe.py` without changing a node, workflow or stable
+sampler. Its default invocation performs only dependency, reviewed byte-size, isolated-port and GPU
+headroom checks. An explicit `--confirm-run` first hashes only the experimental 4B encoder and
+projection against the fixed hashes above, then repeats the port and 12,000MiB free-VRAM gate before
+starting one private-database ComfyUI process on port 8197. It runs the fixed 256x256x22, four-NFE,
+12/3 dual-clock graph, strictly decodes video/audio/combined streams, requires exactly 22 decoded
+256x256 RGB frames plus 32kHz stereo AAC, records whole-device peak usage and terminates only its own
+process. Port 8188 is observation-only.
+
+Six focused tool tests pass; together with the reused NFE isolation infrastructure, 14 probe tests
+pass, and the external bridge plus registration scope passes 47 tests. Ruff and `py_compile` pass.
+An earlier no-consent preflight correctly returned `ABSTAIN_INSUFFICIENT_FREE_VRAM` at 3,360MiB free
+and started no process. On 2026-08-23, a later preflight observed localhost:8188 stopped, port 8197
+free and 13,649MiB free VRAM. Full encoder/projection hashes matched, then exactly one isolated process
+ran seed 123456789 at 256x256x22, four NFE and 12/3 shifts. It completed in 43.812 seconds; whole-device
+peak was 15,015MiB, minimum free was 1,095MiB and final use was 14MiB above the 2,461MiB baseline.
+Exact 22-frame H.264 plus 32kHz stereo AAC passed strict decode, and audio contained no NaN or Inf.
+The media SHA-256 is
+`839442EB88BC05C5433A579BC55C0E34803AEC45DCF7979B20EB3CA80B035E5A`. Evidence is retained in ignored
+artifact `artifacts/clipproj-4b-real-runtime-v1/20260823-213048-8066329d/`. This is a single mechanical
+runtime PASS, not a quality, listening, speedup, memory-saving, repeat-stability or general 16GiB claim.
+
+The probe now accepts an explicit `--seed` while retaining `123456789` as its default. A second
+guarded run used seed `2608228001`, exactly matching the existing ClipProj-8B and native-32B rain
+T2VA prompt, 256x256x22 geometry, four NFE and 12/3 shifts. It completed in 55.750 seconds, peaked at
+15,019MiB with 1,091MiB minimum free, and returned to the 2,199MiB baseline. The exact H.264/AAC
+container passed strict video/audio decode and hashes to
+`45E819736A025F23BE45854FF268375480D3CDD8A9EF7283CF4E68DCBF229F06`; evidence is in ignored artifact
+`artifacts/clipproj-4b-real-runtime-v1/20260823-223125-e90c8e04/`.
+
+Those three same-input outputs are packaged as two anonymous direct comparisons at
+`artifacts/clipproj-4b-vs-8b-32b-review-v1/blind-final/blind_review.html`: 4B versus 8B, and 4B versus
+native 32B. The deterministic seed places the 4B arm on opposite sides in the two pairs. All four
+copied AV files match the private-key SHA and strictly decode; the public page contains no source
+path or side-to-method mapping. This closes the confounded-seed mechanical gap only. Human visual
+and listening export, 4B multimodal behavior, repeated runs and any general equivalence or 16GiB
+claim remain open.
+
+`tools/analyze_clipproj_same_input_three_way.py` makes the comparison reproducible without loading
+any model. It extracts and exactly compares prompt, seed, geometry, task/audio mode, NFE and both
+shifts from all three API graphs; strictly decodes each joint-AV media file three times; preserves
+the structured runtime scope; and reports all three pairwise video/audio differences. The common
+contract hashes to `F836B902500CAB16925810A3471A16A6F9008908EE1A01D6341E30415213A62B`, and
+every mechanical check passes.
+
+Observed prompt-to-terminal times for 4B/8B/native-32B were 36.172/37.797/35.125 seconds, while
+whole-device peaks were 15,019.0/13,926.7/15,127.7MiB. Thus this single evidence does not show a 4B
+speed advantage, and 8B—not 4B—had the lowest observed peak. Mean SSIM for 4B-vs-8B,
+4B-vs-32B and 8B-vs-32B was about 0.731/0.730/0.653; zero-lag audio cosine was about
+0.316/0.759/0.299. These values show route differences and cannot rank perceptual quality or prove
+audio noninferiority. The report is
+`artifacts/clipproj-4b-vs-8b-32b-review-v1/objective_analysis.json`, 7,515 bytes, SHA-256
+`33A36467CA261B55FCEBF749DFE9FB6AE8BB7F8AF745C8A888022E5C41E029D7`.
+
+The objective-state Registry refresh is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-clipproj-objective-final44.zip`: 301 entries,
+1,512,931 bytes, SHA-256
+`9924AF1703DA2BEB80D2FA2642B97E5D2C0FE770ACE20024426086E6742A787C`. Official validation and pack
+pass. Its entry list exactly matches `final43`, and `features.json` is the only changed member and
+matches the current worktree bytes; nodes, workflows, subgraphs and stable sampling remain
+byte-identical. The real Git index remains untouched, there is no root `node.zip`, and the package
+is not committed or published.
+
+The local Registry refresh is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-clipproj-comparison-final43.zip`: 301 entries,
+1,512,540 bytes, SHA-256
+`CB821E7035DA9CE2402D408E2508E2587742C0FF44020B746B1D6DC3BFA41126`. Official validation and pack
+pass from an isolated tracked tree. Its entry list is identical to `final42`; the only changed
+archive member is `features.json`, which matches the worktree byte-for-byte. Therefore all 133
+workflows, seven Quick Start subgraphs, 191 runtime modules/nodes and the stable sampler remain
+byte-identical to the already imported `final42` candidate. No root `node.zip` remains, the real Git
+index is untouched, and this candidate is neither committed nor published.
+
+The corresponding local Registry candidate is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-clipproj-4b-final35.zip`: 299 entries,
+1,500,923 bytes, SHA-256
+`F6116C88CCE332817C79B38A86C84F2683822D70FBD376540A01B30973A7CB7D`. Registry validation passes;
+the archive contains 133 frontend workflows, seven Quick Start subgraphs and 190/190 unique nodes
+in the same order as source and `final34`. There are no duplicate, unsafe, excluded, missing-source
+or source-byte-mismatch entries. Relative to `final34`, it only appends the 4B workflow and updates
+`README.md`, the system-memory category guide and `features.json`. The real Git staged set remains
+empty and no root `node.zip` exists. This packaging result does not change the 4B runtime boundary.
+
+## Creator AV Review Quick Start checkpoint (2026-08-23)
+
+A seventh dated ASCII ComfyUI-native Quick Start subgraph now wraps the existing synchronized
+Creator audio/video review workflow. It exposes two aligned videos, their labels and seeds, the
+human winner and notes, the equal-geometry guard, and the silent-comparison filename prefix. Its
+outputs keep A and B audio separate, expose labelled comparison frames and the deliberately silent
+comparison video, and return both the human visual-review JSON and reference-relative audio-drift
+report. The winner remains `ABSTAIN` by default and no automatic quality or acceptance decision is
+introduced.
+
+The generator remains deterministic. All six previously released Quick Start JSON files retain
+their exact byte-level SHA-256 values; only
+`subgraphs/2026-08-23_H3_Quick_Creator_AV_Review.json` is appended. The underlying dated Creator AV
+workflow is source-hash locked. Twelve focused Quick Start and Creator workflow tests pass. This
+checkpoint performs no GPU generation and does not convert a mechanical drift PASS into a human
+quality result.
+
+The complete low-load release audit passes 1,153 tests with four existing Triton warnings, full
+Ruff, compileall over 292 non-artifact Python files, 197 non-artifact JSON parses, 132/132
+project-to-menu workflow SHA parity, unchanged stable `sampling.py`, and `git diff --check` with the
+existing CRLF notice. The final local candidate is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-creator-quickstart-final34.zip`: 298 entries,
+1,495,056 bytes, SHA-256
+`63D91180DE28E881F367B1182B98D0FBEC7BFAF1DDCB7E30B75A5B1332834B14`. Registry validation passes;
+the archive has 132 workflows, seven subgraphs, zero unsafe/duplicate/excluded/missing/mismatched
+entries, and isolated import returns the same ordered 190 node IDs as source and `final32`. Two
+earlier attempts were rejected before promotion: one packed only the real Git-tracked 1.44 tree,
+and one normalized 100 CRLF files instead of preserving source bytes. Neither is a release
+candidate. The real Git staged set remains empty and no root `node.zip` remains.
+
+## Prompt semantic contract audit checkpoint (2026-08-23)
+
+One independent Advanced EXP node is appended as runtime node 190 after the complete prior
+189-node prefix. It does not modify Prompt Provider Router, Prompt Budget, Prompt Rewriter 8B,
+stable sampling, or an existing workflow. The user supplies bounded strict JSON containing
+required and forbidden phrase groups scoped to the complete candidate or one H3 rewrite field.
+Latin phrases use token boundaries so `turn` does not match `return`; Chinese, Japanese and Korean
+phrases use normalized substring matching. Empty anchors ABSTAIN. Invalid JSON, unknown keys,
+duplicate IDs, missing required groups, present forbidden groups, exact-dialogue changes and lost
+source media tags fail closed.
+
+The `safe_prompt` output remains the exact original by default. A candidate is forwarded only when
+the mechanical audit passes and `accept_candidate_after_review` is explicitly enabled. The
+previously captured real CPU-only Ollama 8B result that changed `turns` into `stands still` now
+returns `REJECT`, with both `required_group_missing` and `forbidden_group_present`, even when the
+accept switch is enabled. This proves the declared lexical contract only; it is not a universal
+semantic-equivalence or prompt-quality classifier.
+
+Twelve focused tests and the complete 1,137-test CPU suite pass. Full Ruff, compileall over 288
+Python files, 196 non-artifact JSON parses, 190-node registration, 132-workflow schema and installed
+menu SHA parity, unchanged stable-sampling Git blob identity, and `git diff --check` also pass. The
+new Provider-to-Audit frontend workflow uses one official multiline-string source for both routes,
+contains three NOTE nodes, and defaults to local passthrough plus manual review.
+
+A clean alternate Git index produced
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-semantic-final25.zip`: 297 entries,
+1,485,318 bytes, SHA-256
+`5EB9D9BBE9220ACF19AB619C26E042F30DFD9124EB4682C17DC08BCE02C3F872`. It contains 132 workflows,
+six Quick Start subgraphs and all 190 runtime nodes, while excluded development, model and media
+paths are absent. Registry validation, source-byte parity and isolated 190/190 unique import pass;
+the first 189 node IDs exactly match `final23`, and the semantic audit is the sole new final mapping.
+The real Git index remains empty and no root `node.zip` remains. After this package was built, the
+external-bridge blind-review builder gained immutable-key replacement protection and
+`features.json` changed accordingly. `final25` is therefore a historical validated snapshot, not a
+byte-identical package of the current source; the next authorized publication must rebuild and
+repeat Registry/source-parity checks.
+
+That rebuild is now complete as the local-only `final27` candidate at
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-review-evidence-final27.zip`: 297 entries,
+1,485,460 bytes, SHA-256
+`D253E8FC2AEDB0DB15C553A88DD07B59CC454F4EEE278DA29F8F35314CA6FF93`. It contains 132 workflows,
+six Quick Start subgraphs and all 190 runtime nodes. There are zero duplicate, unsafe, excluded,
+missing-source or source-byte-mismatch entries. UTF-8 Registry validation passes; isolated import
+returns 190 unique nodes in exact source order, and the first 189 IDs exactly match `final23`.
+The real Git index remains empty and no root `node.zip` exists. Exact archive identity is recorded
+only outside the package so its metadata cannot recursively change its own hash.
+
+After the Prompt Budget contract was corrected to distinguish the current official 7000-character
+CLI submission ceiling from the local open-weight tokenizer boundary, the complete source passed
+1138 CPU tests, full Ruff, 196 non-artifact JSON parses and compileall. That source change makes
+`final27` historical. A separate temporary Git index then produced the local-only `final29` package
+at `artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-prompt-boundary-final29.zip`: 297 entries,
+1,486,285 bytes, SHA-256
+`BBC60ABAE51199FA00B5FDDF188EBA87ED16F702066A0FFEE96AF46B54580889`. It contains 132 workflows,
+six Quick Start subgraphs and all 190 runtime nodes. Registry validation passes in UTF-8 mode; there
+are zero duplicate, unsafe, excluded, missing-source or source-byte-mismatch entries. Isolated import
+returns 190 unique nodes in exact source/final27 order with zero input/output-contract differences
+when display text and tooltips are excluded. The real Git staged set remains empty and no root
+`node.zip` exists. Precise evidence is stored in the excluded `final29-prompt-boundary-results.json`.
+
+One later same-input, CPU-only `deepseek-r1:1.5b` probe exposed a thinking-only Ollama envelope and
+led only to a fail-closed diagnostic improvement; no node schema or default changed. The complete
+source then passed 1,140 CPU tests, full Ruff, compileall over 288 Python files, 196 non-artifact
+JSON parses, 190/190 unique registration, 132/132 workflow SHA parity and the unchanged stable
+sampling Git blob. The refreshed local-only `final30` package is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-provider-thinking-final30.zip`: 297 entries,
+1,483,238 bytes, SHA-256
+`F6130C50D8974FEB255113031ADB2DFA638F23237964E4A83AE0CC7FEB43325A`. Registry validation,
+security exclusions and current-source byte parity pass. Isolated import returns the same 190 IDs
+in the same order as `final29`, with zero input/output-contract differences after display text and
+tooltips are excluded. Only `prompt_provider_advanced.py`, `features.json` and the Prompt Relay
+directory README differ from `final29`; the real Git staged set remains empty and no root
+`node.zip` exists. Exact evidence is stored in the excluded
+`final30-provider-thinking-results.json`.
+
+## Dual-clock Euler NFE checkpoint/resume checkpoint (2026-08-23)
+
+One append-only Advanced EXP sampler setup is registered as node 188 after the three RAVEN bridge
+nodes. Its default `disabled` mode performs no file I/O and preserves the stable sampler path. The
+only resumable contract is this project's first-order, history-free `dual_clock_euler` integration
+with the `native_flow` schedule. Opt-in checkpoint mode writes after each completed joint-AV Euler
+step; each no-pickle safetensors file contains the post-step packed state, original processed noise
+and latent, optional packed denoise mask, and complete sigma schedule. A non-blocking same-path OS
+lock, output-root path confinement, write/read verification and atomic replacement protect the
+checkpoint boundary.
+
+Deterministic CPU tests prove that the disabled implementation is bit-exact against the stable Euler
+loop, a simulated exception on call three leaves only completed step two on disk, and resuming that
+state finishes bit-exact against an uninterrupted four-step control. A separate process then wrote
+the two-step checkpoint and exited; a second Python process loaded it and again produced a bit-exact
+final tensor. Valid safetensors payload tampering, traversal, symlinks, non-finite tensors, schema,
+seed, sigma, AV-layout, shift, audio-protocol, runtime-signature and explicit model/run-contract
+mismatches fail closed before continuation.
+
+This evidence does not cover DPM++ or any multistep derivative history, ancestral/SDE RNG state,
+native or third-party sampler internals, an interruption inside a Transformer forward, automatic
+cryptographic hashing of every loaded model weight, or real H3 CUDA restart media equivalence. The
+new complete frontend workflow remains default-disabled and explains these boundaries on canvas.
+
+The full low-load source gate now passes 1,106 CPU tests, full Ruff, compileall, 195 non-artifact
+JSON parses, 188-node registration, 131-workflow structure and installed-menu hash parity,
+unchanged stable `sampling.py` Git-blob identity, and `git diff --check`. A clean alternate-index
+Registry archive was written to
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-nfe-final20.zip`; it has 292 entries,
+1,465,447 bytes and SHA-256
+`71F1AD5E71AFD64556A5A75FA648B4543509DCA77D6F51EB6C8F94A05A2ADE64`. The archive contains
+131 workflows, six Quick Start subgraphs and the complete 188-node runtime, while tests, tools,
+docs, artifacts, agent metadata, `roadmap.md`, `SKILL.md`, local experiment data, models and media
+are absent. Registry validation passed. Isolated extraction registered 188/188 unique nodes in
+source order; all first 187 IDs exactly matched the preceding RAVEN package and the NFE setup was
+the sole final mapping. No root `node.zip` remains and the real Git index was not staged.
+
+## RAVEN external integration checkpoint (2026-08-23)
+
+Three Advanced nodes were appended after the previous 184-node prefix: one published/manual
+profile emitter, one guarded external-loader delegate and one strict request audit. The integration
+does not copy or replace the separately installed MIT RAVEN causal runtime, and the external
+`RAVENStreamingSampler` remains in the workflow so its streaming preview and incremental VAE path
+stay authoritative. Deterministic tests cover exact published values, manual deviations, pre-load
+resource blocking, quantized-base rejection, exact delegation, T2VA pass-through identity,
+mandatory 266-module/rank-128/alpha-128/strength-1 adapter checks, object-patch rejection and the
+explicit over-192-frame acknowledgement.
+
+The resulting source passes 1,098 CPU tests, full Ruff, compileall, 194 non-artifact JSON parses,
+187-node registration, 130-workflow structure and installed-menu hash parity, and `git diff --check`.
+The pinned external 0.1.0 API plus the current Comfy feature probe pass without loading weights.
+
+A clean alternate Git index then produced a 289-entry, 1,448,039-byte Registry archive at
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-raven-final19.zip`, SHA-256
+`181DB774DAA554A00CF5012245F849A03AC6D2434E229EB4D317CFEA904CF2A2`. It contains all 130
+frontend workflows, six Quick Start subgraphs, the web extension and the 187-node runtime. Tests,
+tools, docs, artifacts, agent metadata, `roadmap.md`, `SKILL.md`, local experiment data, archives,
+model weights and generated media are absent. `comfy node validate` passed. Isolated extraction
+registered 187/187 unique nodes in exact source order, all first 184 positions matched, and the
+three RAVEN nodes were last. The real Git index remained empty and no root `node.zip` remains.
+
+The external plugin and weights are not installed in the current runtime. Static upstream review
+was pinned to adapter revision `bcfa38138ddf1a5041af9880760815874138d4e1` and research revision
+`5a71a3cb0588ce2a9696ac23af6c78ac3f9929f3`. The local RTX 4060 Ti 16GB and approximately 128GB
+host RAM are below the reviewed envelope, so the default loader correctly refuses before loading.
+This checkpoint is schema/contract/workflow evidence only, not a RAVEN generation, image-detail,
+streaming-latency, physical-24GB or OOM-safety result.
+
+## 1.45.0 local creator, audit and prompt-budget checkpoint (2026-08-22)
+
+The existing Environment Audit now preserves the exact failure stage behind KJNodes' generic
+SageAttention architecture error when `sage_attention` is explicitly selected. It checks the
+package and `sageattention.core` imports, the six callable symbols consumed by the installed KJ
+MiniMax H3 patch, the wheel-reported `smXX` list and its match to the active GPU. The current embedded
+Python exposes all six symbols and reports `sm89` for the RTX 4060 Ti. Deterministic tests separately
+cover core-import failure, missing symbols, architecture mismatch and a matching contract. The audit
+does not import KJNodes, load H3 or execute an attention kernel, so a pass is not output-correctness
+or speed evidence.
+
+The same read-only audit now makes the MiniMax H3 `audio_scale` compatibility boundary explicit.
+Current ComfyUI `187eda8ef5e588c6a5765cad53e482765edae052` contains FLOW_AV merge
+`bdcb886a4705a03cf40f4a7226de9fc7c059fc90`; native `ModelSamplingAV` reports `4.0` for video/audio
+shift `12/3`. T8 stable and multi-rate custom samplers each report the intentional neutral value
+`1.0`, because those samplers already maintain separate video and audio clocks and must not apply
+the native carry scale a second time. The live source-contract snapshot returns
+`custom_sampling_compatible=true`; deterministic tests also cover unsupported and inconclusive
+states. This is a no-model/no-CUDA compatibility diagnostic, not a new sampling formula or a
+quality claim. The original GitHub issue still requires the reporter's environment to update and
+retest before it can be closed.
+
+The Audio Lock Source workflow and generated Quick Audio Drive subgraph now state the actual H3
+boundary: `lock_source` plus the final `mux_audio` preserves the input soundtrack, while
+`add_source_as_reference`, `<Audio N>` and an optional exact `<d>...</d>` transcript only strengthen
+the generative condition. H3 is not a deterministic phoneme/lip solver; exact production lip sync
+still requires a dedicated post-process. This documentation correction changes no conditioning
+schema, sampler default or saved-user workflow contract.
+
+Four append-only audit/compiler nodes preserve all 163 v1.44 IDs and stable sampling. Audio Integrity Audit is a
+CPU signal report for exact samples/duration, optional frame-boundary delta, non-finite values,
+opening discontinuity, persistent DC-offset boundaries using 100ms context on each side, clipping,
+and tail/head similarity. Speaker
+Routing Audit compiles first-use dialogue speakers to explicit `<Audio N>` ordinals and abstains on
+missing/duplicate references, unstructured vocalization text, or ambiguous same-descriptor routes.
+Audio Perceptual Drift Audit compares synchronized same-content candidates against an accepted
+reference using 500ms/100ms windows, a 24-band gain-normalized log-power envelope, level delta,
+an active-audio floor and a three-window persistence gate. Prompt Budget + Role Compiler reports Unicode/UTF-8 size, a labelled planning token estimate,
+optional connected-CLIP exact counts, media count/order, and subject-to-media assignments. None of
+the four modifies source audio, a dialogue plan, or silently truncates prompt text.
+
+The prompt compiler now also preserves leading/trailing prompt whitespace, reports connected but
+unassigned and source-prompt-only media ordinals, and distinguishes exact compiled-text counts from
+the visual/timestamp tokens inserted later by H3 Conditioning. Exact 7000-character PASS and
+7001-character ABSTAIN cases preserve the input byte-for-byte; a three-subject Picture/Video/Audio
+contract and explicit shared-audio path also pass deterministically. The validated ComfyUI MiniMax
+tokenizer source does not impose a 7000-character guard. The default 7000 ceiling nevertheless
+matches the current official MiniMax H3 CLI submission contract. These are distinct boundaries:
+the official CLI submission rule is enforced by default for compatibility, but is not presented as a local
+open-weight tokenizer hard limit or architectural quality guarantee. A configured ceiling above
+7000 produces an explicit official-compatibility warning and cannot raise the current official CLI limit.
+
+The connected-tokenizer path was also executed once against the existing
+`qwen3vl_8b_fp8_scaled.safetensors` using ComfyUI's Qwen3-VL 8B/Boogu loader on CPU. A mixed
+Chinese/English prompt containing `<Picture 1>`, `<Video 1>`, `<Audio 1>` plus one explicit
+picture/video/audio role binding compiled without truncation. The node returned `PASS`, 296 Unicode
+codepoints, a 153-token planning estimate and 140 tokenizer-exact `qwen3vl_8b` tokens, with no
+findings or warnings. ComfyUI reported a complete 10,097.97MB CPU load and 0.93-second execution;
+whole-device VRAM did not rise. This proves the real connected-tokenizer/count parser for this
+encoder, not that the official 7000-character submission rule is the open-weight tokenizer's hard
+limit or that other encoders tokenize identically.
+
+Four additional append-only Creator Workspace nodes reuse the existing Studio Timeline. Their
+non-destructive overlay records prompt/seed variants, media roles, retention and hold metadata;
+the workspace compiler records an explicit run window and reproducible sidecar; the selector emits
+the existing prompt/length/seed contract. The CPU synchronized comparison adds A/B labels, preserves
+source pixels by center-padding rather than resizing, trims only to the common frame count, and can
+force `ABSTAIN` on unequal geometry. These nodes never queue a prompt, load a model, write/delete
+media, replace Conditioning or alter sampling mathematics.
+
+Deterministic synthetic tests cover exact A/V boundary accounting, injected pop/DC/clipping/tail
+copy findings, unique and duplicate speaker bindings, role compilation, connected tokenizer
+counting, mapping overflow, and non-truncation. These tests prove implementation contracts only.
+The three user-reviewed Motion Recovery WAVs were then checked at low CPU load. The first
+short-window implementation falsely labelled normal speech amplitude as a DC jump; after changing
+the check to compare persistent 100ms context means, `pass1_original`, `pass2_recovered_exp` and
+`blend_exp` all pass the structural audit. The user-heard middle section of
+`pass2_recovered_exp` that sounds distant is a perceptual timbre/reverb change and is not detected
+by the structural checks. The new reference-relative drift audit was then run against the same
+three 5.152-second/32kHz stereo WAVs. `pass1_original` returned PASS with zero drift;
+`pass2_recovered_exp` returned ABSTAIN over 1.4-3.6s, spectral-drift p90 0.4385, level-delta p90
+7.66dB and waveform correlation 0.5006; `blend_exp` returned PASS with p90 0.1318/1.83dB and
+correlation 0.9861. This matches this one human label set but is not a general detector benchmark.
+Transcript scoring was also corrected so Unicode scripts are not silently discarded. CJK
+ideographs, kana and hangul use character-error units; accented Latin, Cyrillic, Arabic and other
+scripts use Unicode word units, while mixed CJK/Latin text uses a Unicode-alphanumeric CER
+denominator. Deterministic tests cover these normalization contracts and punctuation-only expected
+text now fails closed. This is metric-infrastructure evidence only: no 30-case-per-language H3
+generation corpus or multilingual listening gate has been completed.
+The standalone multilingual validator now adds a strict v2 design audit before ASR execution. By
+default each language needs 30 unique audio hashes, ten utterances, both described and clone modes,
+consistent text per utterance and three distinct seeds inside each identical utterance/mode/voice
+condition. It records manifest/audio SHA-256 identity,
+mean/median/p90 error and the fraction of cases below the per-case threshold. `--validate-only`
+checks those facts without importing Faster Whisper. Duplicate audio or an incomplete design denies
+the stable gate; it is not misreported as a speech-model quality failure.
+All fourteen previously generated real-H3 speech files were then transcribed with the pinned local
+multilingual Faster-Whisper small model on CPU INT8 using two threads and beam size one. Both English
+described-voice cases had WER 0 and the single Chinese described-voice case had CER 1/14. The eleven
+English clone cases had median WER 0 but mean WER 0.7841: six were at or below the 0.15 case threshold,
+one was 0.25, and four contained severe extra or non-target speech at 1.625-2.5. The validator now
+emits language-by-mode, condition and sorted outlier summaries so a favorable median cannot hide
+that split. The strict design and stable multilingual gates remain false: this is an unbalanced
+historical sample with only one Chinese case and no three-seed repeated cells. The fixed report is
+`artifacts/speech-multilingual-v2-pilot/historical-strict-asr-report-v2-breakdowns.json`, SHA-256
+`C2530B91F06CD3A371CD0FEA9E54003D13849F3DCB8EC571091AFB11F91E5902`.
+
+### Multilingual speech formal execution-plan checkpoint (2026-08-23)
+
+`tools/build_speech_multilingual_formal_matrix.py` now closes the reproducible execution-planning
+layer without submitting work to ComfyUI. The preregistered English/Chinese specification contains
+ten reviewed utterances per language, described and reference-clone modes, and three fixed seeds per
+cell, producing 120 deterministic API prompt files. Clone cases rotate ten local CC-BY-4.0
+LibriSpeech speakers whose source paths, durations and unique content hashes are validated before a
+plan is written. Chinese clone cases are explicitly cross-lingual references; the reviewed text set
+is lexically varied but not phonetically balanced. This design therefore does not satisfy the
+separate ten-speaker-by-ten-utterance identity or formal ABX requirement.
+
+The plan writer is byte-idempotent and rejects existing prompt drift. The collector rejects unsafe
+prefixes, missing or ambiguous output matches, undecodable/under-two-second audio, and duplicate
+audio content. It writes the strict multilingual manifest only when all 120 cases resolve uniquely;
+an incomplete later collection removes any stale derived manifest. Seven focused tool tests plus
+four existing Unicode/multilingual tests passed, as did Python compilation and Ruff through the
+available system Ruff executable. The generated `plan.json` SHA-256 is
+`119735A82B59ED5F1EDDBBD68A74B5A19B8742CBECCCCCB49F32DF6338C9CBE8`. A read-only scan of the
+current ComfyUI output found zero of 120 cases, with all rows `PENDING_MISSING_OUTPUT`; no strict
+manifest exists, `execution_started=false`, and `stable_multilingual_gate_pass=false`. No model,
+GPU, queue or running 8188 service was touched. This checkpoint proves the experiment and collection
+contracts only; generation, ASR, human transcript review, speaker identity and perceptual listening
+remain pending.
+
+`tools/run_speech_multilingual_formal_batch.py` now provides the missing bounded execution entry
+without weakening that boundary. It defaults to preflight-only, accepts loopback hosts only, rejects
+port 8188, requires a free private port and at least 12,000MiB free VRAM, and selects one missing case
+by default with a hard per-invocation limit of six. A confirmed run starts one tool-owned ComfyUI
+process on the private port with dedicated user/temp directories, an in-memory database and a matrix-
+local output root. It submits cases serially, atomically records every attempt, skips already collected
+cases, stops after the first failure and removes only its own process and lock. Every prompt is
+revalidated against the immutable plan SHA immediately before selection; source/reference identities,
+standard model/input paths, `unload_all_models`, output uniqueness and stale execution state are also
+fail-closed gates.
+
+Ten CPU tests cover safe defaults, prompt drift and mandatory unload, explicit 8188 rejection before
+GPU/model work, complete preflight gates, dry-run and failed-confirm behavior, serial success plus
+resume without duplicate submission, fail-fast recoverable state, active-lock rejection and ambiguous
+output rejection, plus startup-failure and timeout cleanup of the owned process and lock. Ruff and Python compilation pass. The real default preflight found all reviewed
+files and reference hashes, a free 8197 port, no output conflict and one correctly selected pending
+case. It observed the user's 8188 service and only 4,628MiB free VRAM, below the 12,000MiB gate, so it
+returned `ABSTAIN_INSUFFICIENT_FREE_VRAM` without starting 8197, loading a model or submitting a case.
+The formal collection therefore remains zero of 120 and no quality gate changes.
+
+### Voice-clone identity and ABX formal-plan checkpoint (2026-08-23)
+
+`tools/build_voice_clone_identity_formal_matrix.py` now closes the separate fixed-speaker identity
+planning gap without submitting any ComfyUI work. The immutable design contains ten licensed
+LibriSpeech `test-clean` targets, ten reviewed English utterances per target and three fixed seeds,
+producing 300 reference-voice API prompts. The associated 90-case ABX schedule assigns three distinct
+impostors and all three known seeds to every target. LibriSpeech's corpus-provided F/M label is used
+only as a coarse blocking variable: the selected source set contains six M-labelled and four
+F-labelled speakers, so every target has at least three same-label alternatives and no cross-label
+pitch shortcut is required. The label is not treated as inferred biological sex or personal identity.
+
+The 90 candidates are unique: nine utterances per target cover the 3-impostor-by-3-seed grid, while
+the tenth utterance remains a held-out generated cell inside the complete 300-case matrix. The plan
+pre-registers at least three independent reviewers, 0.80 identity accuracy, a 0.65 Wilson 95% lower
+bound, at most 0.20 abstentions and at most 0.05 invalid responses. Regardless of those future
+results, `high_fidelity_clone_claim` remains `NOT_ESTABLISHED` because fixed-set identity
+discrimination cannot establish naturalness, acting control, consent, safety or generalization.
+
+The plan and all 300 prompt files are byte-idempotent. `plan.json` SHA-256 is
+`3D9814B221BBDC1BE5D92766140B00AF24BFF6B5BAD88004DA80B6411C33F335`; the independent
+`identity_design.json` SHA-256 is
+`7AC44DCAEB30FA26A0D7E193C6682CC98002F1FD20ECC85917E65946BFF224FD`. Five identity-plan CPU tests cover
+the complete grid, same-label balanced impostors, prompt/source identity, compatibility with the
+bounded serial executor, byte-idempotence, drift rejection, empty collection and a complete reduced
+collection.
+
+Collection is deliberately two-stage. All 300 outputs must first be uniquely matched and decoded;
+only then can the tool emit a 32kHz mono FLAC standardization-job contract with no loudness
+normalization. `tools/materialize_voice_clone_abx_standardized.py` is now the only reviewed execution
+path for that contract. It defaults to preflight-only; explicit confirmation processes files serially,
+defaults to at most ten unique files per invocation, hard-limits the invocation to 25, atomically
+promotes each 32kHz mono FLAC and records resumable state after each file. It rejects input SHA drift,
+unsafe paths, symlinks, untracked/stale outputs, output hash drift and concurrent execution. It writes
+`abx_manifest.json` only after every A/B/X set is contract-identical and content-distinct and every
+candidate is unique. Formal manifests also request target-reference A/B positions balanced per target
+and globally; legacy manifests retain their previous independent-random behavior.
+
+The complete related scope passes 37 CPU tests plus standalone Ruff and Python compilation. The
+combined regression found and fixed a latent full-collection contract defect: generated manifests did
+not carry `audio_sha256/audio_contract`, so standardization-job creation would have raised only after
+all outputs had been collected. A reduced complete collection now exercises collection, bounded
+standardization, resume, final manifest and blind-package creation end to end. This is synthetic
+mechanical evidence, not a listening result. The current real collection is zero of 300 with every row
+`PENDING_MISSING_OUTPUT`. A real
+preflight reused the safe executor, observed the user 8188 service, selected exactly one pending clone
+case and found 4,250MiB free VRAM against the 12,000MiB gate. It returned
+`ABSTAIN_INSUFFICIENT_FREE_VRAM`; private port 8197 remained closed and no generation started.
+
+The resulting local Registry candidate is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-audio-asr-final36.zip`: 299 entries,
+1,501,774 bytes, SHA-256
+`1072FAF336FA2022F77E1CDA7032E51E3810D6AF65DE1A1EA348946BFAB96DAA`. Relative to `final35`,
+only `features.json` and the speech-workflow category guide changed; runtime sources, workflow JSON,
+all 190 node IDs and their order remain exact. Registry, exclusions and source-byte parity pass.
+
+After the formal identity standardizer and latest 4B no-consent preflight were documented, a fresh
+alternate-index build produced
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-voice-standardization-final38.zip`: 299 entries,
+1,507,229 bytes, SHA-256
+`D4A2ABA15A87997802678D41F176F4E6E8103EF225C91DD20E439ED3941FD858`. Official
+`comfy node validate` and `comfy node pack` ran under UTF-8 without touching the real Git index.
+The archive has zero duplicate, unsafe or excluded paths, exact byte parity with all 299 source
+files, 133 frontend workflows, seven Quick Start subgraphs and an isolated 190/190 unique-node
+import whose final ID remains `MiniMaxH3PromptSemanticContractAuditT8Advanced`. Relative to
+`final37`, no path was added or removed; only `features.json` and
+`examples/workflows/05-speech-dialogue/README.md` changed. The package does not include tests,
+tools, docs, artifacts, model weights, generated media, `roadmap.md` or `SKILL.md`; no root
+`node.zip` remains. This packages the mechanical implementation and its honest status text only;
+it does not convert the zero-of-300 collection or 4B resource abstention into a runtime/quality pass.
+Fifty-one changed-scope speech/audio tests, full Ruff, compileall and static JSON/workflow checks pass.
+A complete pytest rerun is not reported as passing because Windows terminated Python with native
+floating-point exception `0xc0000093` inside the unrelated long-video PyAV MP4 writer; it was not
+repeated under the user's active workload.
+Real opening-pop/tail-wrap calibration, multilingual/multi-speaker listening, wider false-positive
+testing and model-level causality remain unvalidated, so `PASS` is not perceptual certification and
+`ABSTAIN` is not a diagnosis.
+
+The voice-clone evidence now has a separate CPU-only blinded A/B/X packaging and analysis contract.
+The builder accepts audio-only target reference, impostor reference and generated candidate files,
+requires the same codec/sample-rate/channel/container contract, binds every copied file by SHA-256,
+and exposes only opaque case numbers in the browser. The private key retains speaker and target-side
+mapping. The analyzer merges uniquely named reviewer exports, preserves unanswered cases, and reports
+per-speaker accuracy, Wilson 95% lower bounds, abstain/invalid rates and explicit design coverage. Its
+default formal gate requires at least ten targets, three distinct impostors and three known seeds per
+target, plus three independent reviewers. Even a passing identity panel always leaves
+`high_fidelity_clone_claim=NOT_ESTABLISHED`.
+
+Applying that contract to the historical ten-speaker pilot found a confound before any listening:
+the human references were 16kHz mono while generated X clips were 32kHz stereo. The old package is
+therefore not countable. Originals remain untouched; separate 32kHz-mono FLAC copies produced a new
+ten-case opaque pilot page with thirty hash-verified media files. This upgraded pilot still has only
+one impostor and one utterance per target, unknown seed provenance and no human export, so its formal
+decision remains `ABSTAIN` and it provides no new clone-quality claim.
+
+Creator tests cover source-object immutability, deterministic variant seeds, run-window boundaries,
+hold maps, shot selection, pixel preservation, geometry abstention, frontend NOTE content and exact
+link-slot wiring. A real-data API session then compiled a three-shot 22/22/39-frame timeline over
+the native-latent review material, generated three deterministic shot-B variants, recorded explicit
+video/audio context roles plus a five-frame hold-first map and selected variant 2/seed 2608229136.
+The synchronized inputs were both `[39,256,256,3]`; the output was `[39,288,520,3]` with source
+pixels preserved exactly. All eight nodes executed in 1.688 seconds, whole-device VRAM stayed at
+the 1,156.5MiB baseline and the labelled MP4 passed strict video decode three of three times. The
+session deliberately retained `ABSTAIN`; human usability, audio review, real-generation cancel/cache
+interaction and any authorized filesystem cleanup remain pending. A later non-destructive retention
+plan now closes candidate classification only, as described below.
+
+Two further append-only Creator Runtime nodes now record explicit execution outcomes in a
+hash-bound immutable ledger and compile the next `render`, `review`, `retry` or `complete` action.
+They do not inspect ComfyUI history, infer cache hits, cancel a queue or touch artifact paths. An
+isolated CPU-only API graph used a 73/124-frame two-shot plan, recorded shot 0 variant 0 attempt 1 as
+`completed` and then `accepted`, and selected shot 1 variant 0 attempt 1 next. Requeueing the exact
+same graph reported nodes 1-5 cached; changing only the base seed reported no cached nodes. This
+validates ledger transitions, deterministic resume selection and ordinary ComfyUI graph-cache
+identity/invalidation. It does not validate H3-internal partial compute reuse, automatic history
+binding or cancellation of a live generation; those remain explicit future integration work.
+
+A ninth append-only Creator node now compiles artifact retention decisions from the validated
+workspace and immutable run ledger. It deduplicates canonical artifact manifests, applies the
+per-shot retention policy and emits separate keep and proposed-delete JSON manifests. It keeps
+completed-but-unreviewed candidates, rejects multiple accepted runs for one shot, rejects any
+path hint present in both lists and rejects deletion candidates that do not expose an explicit
+`path` field. The review-confirmation input defaults to false. Even after confirmation, the only
+positive terminal state is `READY_FOR_EXTERNAL_EXECUTOR`; `files_mutated=false`,
+`files_deleted=false` and `destructive_executor_included=false` remain invariant. Targeted tests
+cover awaiting acceptance, winner retention, metadata-only policy, keep/delete collisions and a
+rehashed invalid ledger. No test or runtime path opens, moves or deletes candidate media.
+
+Two more opt-in nodes now bridge Creator to the existing Long Video background runtime instead of
+introducing a second queue implementation. The Start node persists only a JSON-safe, 4KiB-bounded
+binding containing the Creator workspace hash and run count. The selector validates that binding,
+uses the durable accepted-manifest count as the next Creator run position, and maps the current
+automatic retry count to a deterministic seed variant. Cross-workspace chain reuse, impossible
+progress, early manifest completion and unsupported state all fail closed. `review_only` remains
+the default and blocks downstream generation. If explicitly enabled, queue deletion, targeted
+running-prompt interruption, history monitoring, retries, process leases and accepted promotion
+remain owned by the already-tested Long Video manager and terminal. Unit/schema/frontend tests
+cover this binding and selection path. A later live H3 probe, described below, closes exact
+active-sampler interruption and observed release for one low-load run only; unattended acceptance
+quality remains open.
+
+An isolated CPU-only ComfyUI service then loaded both live node schemas. The default
+`review_only` graph completed successfully and created no background state directory. A second
+lightweight graph explicitly enabled automatic mode but deliberately omitted the required Long
+Video Auto Accept terminal. Its foreground prompt completed, but the background history monitor
+correctly changed the job to `failed`, retained the exact foreground prompt ID and 64-character
+workspace binding, emitted the missing-terminal diagnosis and queued no continuation. This proves
+the live fail-closed history hook without loading H3; it is still not a live sampler-interrupt test.
+
+The same isolated service then loaded a temporary CPU-only output node that waited in 50ms
+increments while calling ComfyUI's normal interruption check. A bound Creator prompt genuinely
+reached `runtime_location=running`. The background cancel route targeted the identical prompt ID,
+returned `deleted_from_queue=false` and `interrupt_signalled=true`, and history ended with
+`execution_interrupted`. The durable job stayed `cancelled` with accepted/retry counts both zero;
+running and pending queues were empty. The temporary node, bytecode and test chain state were
+removed after validation. This proves the real PromptServer running-prompt interruption path and
+its Creator identity binding on CPU.
+
+A separate isolated localhost:8197 run then used the real Qwen3-VL 8B ClipProj path, INT8 H3
+model, Turbo4 LoRA and native dual-clock sampler at 256x256x22. The bound sampler reported progress
+1/4 before the cancel route targeted the exact prompt ID. History ended with
+`execution_interrupted`; accepted/retry counts stayed zero, both queues emptied, and the durable
+state recorded `unload_all_models` without a release error. Coarse whole-device memory observations
+were 2,999MiB before submission, 10,794MiB after interruption and 3,089MiB after the bounded
+release observation, a final delta of 90MiB. The isolated service and exact test-chain state were
+removed afterward. This validates one live H3 cancellation/release path, not repeated stability,
+media-quality parity or a universal 16GiB tier.
+
+The follow-up control-plane probe kept the production `124..362` render-window contract instead of
+weakening it for testing. It used ComfyUI's native empty MiniMax H3 AV latent, 64x64 deterministic
+frames and exact stereo silence to run two legal segments: 124 frames followed by 119 new frames
+after a five-frame context prefix. The first attempt exposed a real lifecycle bug: a failed job had
+requested model release but retained its process chain lease, so a new job could not bind. Failed
+states now release the lease and in-memory prompt snapshot only after the terminal state is durably
+written. A focused regression reattaches a fresh prompt in the same manager and preserves
+`previous_job_id`.
+
+After restarting only the isolated localhost:8197 service, a fresh job reattached to the same
+Creator workspace, atomically saved and accepted both candidates, queued exactly one second prompt,
+persisted the parent context and candidate identity, and composed a 243-frame/10.125-second MP4.
+Both observed histories completed successfully, the queue ended empty, `unload_all_models` was
+recorded without error, and ffprobe found H.264 video plus 44.1kHz stereo AAC. Whole-device memory
+ended at the probe baseline. This closes terminal reattachment and complete Candidate Save/Auto
+Accept/composition mechanics with lightweight media; it does not claim that a cancelled real H3
+sample can resume internal diffusion state, that unattended candidates have acceptable quality, or
+that real H3 resumed media has passed visual/listening review.
+
+A separate importable synchronized AV review workflow then used the same two 39-frame/256x256
+candidates through native `LoadVideo -> GetVideoComponents`. The visual branch kept the existing
+center-pad-without-resize contract and saved a deliberately silent 520x288/24fps/39-frame labelled
+comparison; it passed strict single-thread video decode three of three times and retained
+`winner=ABSTAIN`. The audio branch emitted independent PreviewAudio assets for A and B, then compared
+the aligned same-content tracks with the reference-relative drift audit. It returned PASS with
+waveform correlation 0.9842, spectral-drift p90 0.0735, absolute level-delta p90 0.2308dB and no
+persistent section. The candidate containers differed by 25ms of AAC duration, so this controlled
+probe allowed up to 42ms while preserving the node's ordinary 21ms workflow default. Output SHA-256
+was `0479AC59B8A8B5A69FD018F8A04C7E035F9B8932614473ACDD07ECADE7784D17`. This closes only the
+mechanical audio-preview/report wiring: PASS is not perceptual equivalence, the comparison video
+contains no audio by design, and no human winner or automatic acceptance is claimed.
+
+The same fixed 39-frame pair now has a standalone Creator synchronized-AV blind review package at
+`artifacts/creator-workspace-av-ab-v1/blind`. Both source containers and their opaque A/B copies
+match the private SHA-256 mapping and strictly decode complete video plus audio. The public HTML
+contains no source path, method name or side mapping. A new optional display contract binds the
+Creator-specific title, instructions and safe export basename into the immutable key; an optional
+analysis contract similarly binds the exact scientific generalization boundary. This closed a
+real report-semantic defect found during the mechanical reveal smoke test: a Creator page must not
+emit the older ClipProj/Sol-specific boundary. Existing external-bridge manifests that omit the
+new fields retain their previous private-key shape and idempotent rebuild behavior. Nine focused
+builder/analyzer tests, Ruff, py_compile and diff check passed. The all-tie smoke export is marked
+synthetic and proves only the page-to-analyzer contract; no human vote has been counted.
+
+Because the Creator status text changes `features.json`, `final38` is now historical. A fresh
+alternate-index `final39` candidate at
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-creator-review-final39.zip` contains 299
+entries, 133 frontend workflows, seven Quick Start subgraphs and 190 unique nodes. It is 1,507,243
+bytes with SHA-256
+`866F42C6F03702EAA7F76D8144909F87D4394E003FA065B2E8FF18B73A71C4D7`. Official validate/pack,
+zero duplicate/unsafe/excluded paths, all-source byte parity, and isolated 190/190 import with exact
+`features.json` node order passed. Relative to `final38`, no entry was added or removed and only
+`features.json` changed. The real Git index remained at zero staged files and no root `node.zip`
+remains. Review builders, tests, private keys and media are excluded from the Registry archive, so
+this package records the honest status without embedding evidence or converting the synthetic tie
+export into a human decision.
+
+Two pass-through external compatibility audits are also appended. ClipProj Audit requires one
+separately installed ComfyUI-ClipProj 0.1.13+ tree and checks ProjectedCLIP identity, Qwen3-VL
+declaration, safetensors header input/output dimensions and load mode without loading either model.
+Sol-Attn Audit requires one ComfyUI-sol-attn 0.6.2+ tree and checks CUDA/BF16 architecture, complete
+outer H3 patch ownership, fallback/fused markers and unreviewed wrapper conflicts without importing
+or executing its kernel. Synthetic plugin and header fixtures prove these fail-closed contracts only;
+no quality, speed, memory, audio or hardware-runtime claim is made.
+
+The current upstream trees were subsequently installed without modifying their source: ClipProj
+0.1.13 at `c01ba8fb8f41b4f2094dbd0b185cdc238fb6134c` and Sol-Attn 0.6.2 at
+`930a4d6e432ff8b8ed5e30ff2f72519b92d69bdf`. A real header-only ClipProj probe identified the
+existing `qwen3vl_8b_fp8_scaled.safetensors` as Qwen3-VL 8B/Boogu. The pinned v3.1 matrix from HF
+revision `2ebdbcdc27a29a9607efdb221a9afcb9a0cdd808` is 41,990,896 bytes, has SHA-256
+`DF0661849D0FD51DB66B0C9AA76F2C1C3EABD81B9A4745EDD2A4617AB24C87F7`, and contains `W [4096,5120]`.
+The real Sol source and RTX 4060 Ti SM89/BF16 hardware passed against a synthetic complete 50-block
+owner after the parser was fixed for upstream's bold Markdown version header.
+
+A separate low-load service then ran one fixed-seed 256x256x22 T2VA probe with four NFE, shifts
+12/3 and the same H3 base/LoRA controls. The 8B ClipProj route and native 32B control both passed
+strict video, audio and combined-container decoding. Cold whole-device peaks were 13,926.7 and
+15,127.7MiB respectively; process-private peaks were 60.44 and 69.10GiB. The 8B route therefore
+used about 1,201MiB less device peak in this one short run but took about 2.7 seconds longer. This
+does not establish visual quality, speed, modality-general behavior or a memory-safe tier.
+
+A separate ClipProj 8B I2VA probe then enabled the visual contract explicitly with
+`has_reference_images=true`. One real first frame entered both the H3 video-VAE keyframe path and
+the projected Qwen3-VL vision path. The fixed controls were 256x256x22, four NFE, shifts 12/3 and
+seed 2608228201; the prompt included Chinese text, the proper name `Lin Lan`, `<Picture 1>` and one
+very short Chinese utterance. The complete run finished in 36.125 seconds and saved exact 22-frame
+H264 plus 32kHz stereo AAC. Video-only, audio-only and combined-container FFmpeg decoding each
+passed three of three times. SHA-256 was
+`2D89E7B8535B7D0A2AE9C4E3B97E4E799650C2F45E3169D87D5EC442618EA8B8`.
+The source image resized to the 256x256 model canvas versus generated frame zero measured SSIM
+0.833372 and PSNR 26.7323dB; this is recorded only as an anchor-presence signal, not a quality score.
+Whole-device peak was 15,207.4MiB, leaving about 1,172.6MiB of the reported 16,380MiB device total;
+process-private peak was 63.43GiB and no thermal-throttle sample was observed. A same-seed native-32B
+control then completed in 33.718 seconds, peaked at 15,591.9MiB and passed strict decode 3/3; its
+SHA-256 was `0E91A2D693F5F8CD1818AA765A7EC330BDAA913742B9EFAD571E2769D122C57C`.
+The 8B/32B videos measured SSIM 0.9293, source-to-frame-zero SSIM 0.8334/0.8394, and PCM correlation
+0.8984. Both visual outputs showed an unwanted pseudo-Chinese subtitle-like overlay. No human speech
+listening or ASR acceptance was performed, so these mechanical similarities do not prove quality or
+spoken-text parity.
+
+A separate ClipProj 8B FL2VA probe then connected two distinct keyframes. The first and last images
+entered the H3 Conditioning `first_frame`/`last_frame` inputs, the audit kept
+`has_reference_images=true`, and the prompt bound them with `<Picture 1>` and `<Picture 2>`. Fixed
+controls were 256x256x22, four NFE, shifts 12/3 and seed 2608228301. The full run finished in 23.953
+seconds, produced H264 plus 32kHz stereo AAC, and passed video-only, audio-only and combined-container
+decoding three of three times. SHA-256 was
+`F656969E71B678B710FAD4B13385474D283ABD1F3E2509434A680AE1FE9902D2`. Whole-device peak was
+15,358.0MiB with about 1,022.0MiB headroom; process-private peak was about 63.87GiB, maximum sampled
+GPU temperature was 57C and no thermal-throttle sample was observed. First/last anchor SSIM was
+about 0.8354/0.5095 after the documented resize/center-cover transforms. These values only show that
+both visual anchors influenced the path; they are not quality scores. A same-seed native-32B control
+then completed in 31.078 seconds, peaked at 15,670.6MiB and passed strict decode 3/3; its SHA-256 was
+`684500D393C6EDA9CFC414C69280560AF8DA668929B3C3ABEFC96FEF794D6257`. The 8B/32B videos measured
+SSIM 0.7090; first-anchor SSIM was 0.8354/0.8462 and last-anchor SSIM 0.5095/0.5302. PCM correlation
+was only 0.5608 and RMS differed materially (0.1994/0.0858), so no audio non-inferiority claim is
+made. Long-duration interpolation, listening, 0.7MP and general 16GiB validation remain open.
+
+ClipProj 8B Ref2VA was then compared against the native 32B encoder with the same reference image,
+prompt, Ref2VA pruned INT8 model, 256x256x22 canvas, Stock20 schedule, shifts 12/3 and seed
+2608228401. No Turbo LoRA or external attention wrapper was used. Both routes produced exact
+22-frame H264 plus 32kHz stereo AAC and passed video-only, audio-only and combined-container decode
+three of three times. The 8B route completed in 22.907 seconds, peaked at 16,318.2MiB and left about
+61.8MiB headroom; its SHA-256 was
+`310AFE14E2673AAD0C2D25AAA8C831287DC32CAA619082EFC972FBA463607F6B`. The native-32B route took
+27.812 seconds, peaked at 16,018.2MiB and left about 361.8MiB; its SHA-256 was
+`8BF6034C8AE5AF820B128E6D6A2B976EBFC71EA9305E3F5027869EBFEF5D6F49`. YuNet+SFace similarity to
+the reference at frames 0/10/21 was 0.263/0.349/0.346 for 8B and 0.320/0.326/0.261 for 32B. These
+three-frame means (0.319/0.302) are matching aids, not quality scores, and neither path consistently
+cleared the project's usual 0.36 suggestion line. The 8B route fails the 512MiB safety gate and used
+about 300MiB more peak device memory in this sample. Human review, 0.7MP, multiple references,
+repeated runs and general quality/performance claims remain open.
+
+The first Sol run used `dense_percent=0.2`; logs showed only the dense prefix and its output SHA-256
+was identical to the native 32B control. With four NFE, that percentage kept all calls dense, so a
+successful node execution was not proof that Sol ran. Repeating the same short probe with
+`dense_percent=0.0` and mechanically lowering `min_tokens` from the production default 4096 to 256
+logged `Sol active (547 tokens)` and passed strict media decoding. The four-step frontend now keeps
+`dense_percent=0.0`; the 547-token probe closes only strict SM89 kernel execution.
+
+A subsequent single fixed-seed T2VA pair used 1152x640x22 (0.737MP), four NFE, shifts 12/3, the
+native 32B encoder, the same INT8 H3 base/Turbo LoRA and the production `min_tokens=4096`. The Sol
+route kept blocks 0-2 and -1 dense, exact conditioning KV, FP16/BF16 QK/PV and strict mode. Runtime
+logged `Sol active (5139 tokens)` on 46 of 50 blocks with no fallback. Sol and dense produced exact
+22-frame 24fps H264 plus 32kHz stereo AAC; video-only, audio-only and combined-container decoding
+each passed three of three times for both outputs. Telemetry durations were 49.281/41.828 seconds
+and whole-device peaks were 16,004.9/16,008.7MiB, leaving about 374.6/370.8MiB headroom. The Sol
+sampler-stage peak was 15,936.7MiB versus 14,588.2MiB for dense. Sol ran first and dense second, so
+timing and stage peaks are cache/order-confounded; by user policy no cold/warm repetition or stress
+run was added. The observed pair therefore shows neither a speed nor a memory advantage on this
+RTX 4060 Ti sample. Full-video SSIM was about 0.558, PCM zero-lag cosine about 0.719 and Sol RMS was
+about 1.290 times dense. These values prove that the sparse route materially changed the output;
+they do not rank visual quality, motion, rain-sound fidelity or audio non-inferiority. Human blind
+review, other modalities, repeated-run behavior and a general 16GiB safety claim remain open.
+Output SHA-256 values were
+`9EBB855A1CC5FF9183F135ECCEFFD5C637E93FFA854E986D8123F368B2DB5B4A` (Sol) and
+`31252919CB4F77BD2F9BEB1D0C30FCD04ADA644AFE372FD566784DE4BBA9320E` (dense).
+
+The three existing ClipProj 8B versus native-32B visual-reference controls and this Sol versus dense
+pair were then packaged into one deterministic four-pair anonymous review page under the ignored
+`artifacts/external-bridge-blind-review-v1/blind` directory. The public page contains only generic
+A/B media names, the common prompt and the relevant first/last/identity references; the private key
+retains source paths and SHA-256 mappings. Browser validation found four groups, eight decodable
+videos, four intact references, no method-name leak and all ratings in their default tie/none state.
+Synchronized muted playback advanced both videos together, and the package builder/export contract
+has dedicated tests. No human vote has been submitted, so none of these routes has crossed a
+perceptual-quality or audio-non-inferiority gate.
+
+`tools/analyze_external_bridge_blind_review.py` completes the local reveal path. It requires matching
+review/key schemas, the exact `review_id` and pair set, one A/B-to-control/candidate mapping per pair,
+known reference metrics and valid media SHA-256 fields. It maps omitted values to ties exactly as the
+page states, keeps private source media paths out of the analysis body, records the submitted review
+and key hashes, and reports ClipProj and Sol-Attn separately rather than pooling unlike treatments.
+An all-tie four-pair smoke export passed against the real private key and correctly kept quality,
+automatic-enable and generalization claims denied.
+
+A later evidence-lifecycle audit found one complete user export at
+`D:/Backup/Downloads/external_bridge_blind_review.json`, created at 00:22:45 local time with
+`review_id=clipproj-sol-20260823-v1`. The package in the same directory had been rebuilt at 00:23:51
+with `review_id=clipproj-sol-20260823-final`, so the strict analyzer correctly refused to reveal the
+older votes against the newer key. The ID was not edited and those votes are not counted. The
+builder now constructs the full prospective key before writing media and permits an existing output
+directory only when its stored key is exactly equal; changed review IDs, blind seeds, pair/source
+hashes or contracts must use a new directory, and a non-empty unkeyed directory is also rejected.
+Focused tests cover exact idempotent rebuild and both replacement failures.
+
+The current `clipproj-sol-20260823-final` package was then re-audited without running H3 or using
+the GPU. Rebuilding the exact manifest with blind seed `2608230101` succeeded idempotently against
+the immutable stored key. The HTML contains the `final` review ID and export schema but not the old
+`v1` ID. All eight A/B videos and four reference images matched the SHA-256 values of both their
+source files and the private key. FFmpeg strictly decoded every video; the first six were
+256x256x22 and the Sol pair was 1152x640x22, all at 24 fps with 32 kHz stereo audio as declared by
+their per-pair contracts. This proves that the current package is internally valid and does not
+repair or transfer the old votes. A new human export from the `final` page is still required before
+any ClipProj or Sol perceptual decision can be counted.
+
+The tenth appended node is a mechanical native H3 AV-latent timeline concat. Batch-1 segments must
+share canvas and dtype, video latent time must satisfy `5n+2`, and audio time must exactly match the
+rounded 24fps-to-40Hz clock. Each later segment loses exactly two video latent steps/five frames;
+audio removal is calculated from cumulative global rounding rather than a fixed 8/9-step guess.
+Deterministic tests cover 22+22=39 frames and three 124-frame segments=362 frames, exact mask parity
+and invalid geometry. A separate low-load real probe sampled two related-prompt, independently
+seeded 256x256x22 T2VA segments at Turbo8 and then performed one decode after native-grid concat.
+The combined output was exactly 39 frames. Source lossless audio had 29,600 samples/37 latent steps
+each; combined audio had 52,000 samples/65 steps after removing exactly nine steps/7,200 samples
+from segment B. An identical-seed repeat reproduced source A, source B and combined H264/AAC MP4s
+byte-for-byte. Each source and the combined file passed video-only, audio-only and combined strict
+FFmpeg decode three of three times.
+
+Compared with decoding the two latents separately and composing A plus B-from-frame-5, the one-decode
+boundary video MAD was 0.04269 versus 0.11164. The one-decode lossless audio single-sample jump was
+0.00104 versus 0.02231, but its adjacent 100ms RMS still changed by 8.32dB versus 8.85dB. This is a
+local smoothing signal, not evidence that independent diffusion states became continuous. The two
+runs completed in 72.41/70.58 seconds and peaked at 16,038.39/16,235.32MiB, leaving only
+341.11/144.18MiB whole-device headroom; both fail the 512MiB project safety gate. Continuation-
+conditioned quality, human review and general 16GiB safety remain open.
+
+On 2026-08-23 a separate guarded probe changed only that graph's text path from the native 32B
+encoder to the already audited Qwen3-VL 8B plus ClipProj v3.1 path. The two prompts, seeds
+`2608229101/2608229102`, 256x256 geometry, 22+22-to-39-frame contract, eight NFE per segment,
+12/3 dual clock, CPU concat and one final AV decode remained fixed. Before starting its private
+8197 process, the tool fully checked the 10,588,637,512-byte encoder as
+`4BA424CF...F66BCD` and the 41,990,896-byte projection as `DF066184...4C87F7`, then repeated the
+port and 12,000MiB free-VRAM gates. The only real run completed in 86.735 seconds. Across 288
+whole-device samples at 0.25-second intervals, peak usage was 15,505MiB and minimum free memory was
+605MiB, passing the fixed 512MiB sampled screen by 93MiB. After the private process stopped, usage
+was below its 2,203MiB baseline. Ports 8188 and 8197 were left inactive; the existing 11434 service
+was observed only and remained active.
+
+The accepted media is exactly 39 frames of 256x256 H264 with 32kHz stereo AAC and passes strict
+video, audio and combined decode; its SHA-256 is
+`DE9E61E44137A4C8A5FEE88DB62A8E25B1B29B4CEC8EFABB806439001D39842D`. The first validator
+incorrectly required the 52,000-sample lossless tensor/FLAC length from the AAC container and
+therefore returned a mechanical false negative. Read-only reanalysis established that both the
+prior 32B combined MP4 (`55BB1F7...19110`) and this 8B MP4 decode to exactly 51,200 AAC samples,
+while the prior lossless FLAC remains exactly 52,000 samples. The corrected validator preserves
+these as two different contracts and records that no model rerun occurred. This is one fixed local
+mechanical and sampled-headroom pass, not seamless-continuation evidence, an 8B/32B quality result,
+repeatability, a longer-chain result or a general 16GiB safety tier. Raw evidence is under ignored
+`artifacts/native-latent-clipproj-8b-real-runtime-v1/20260823-150501-92cbf70d`.
+
+The corresponding byte-exact local Registry refresh is
+`artifacts/releases/minimax-h3-audio-t8-v1.45.0-local-native-latent-8b-headroom-final45.zip`:
+301 entries, 1,513,672 bytes, SHA-256
+`B2A2555789649DD7C9E7EB4956CC06A8696108053D5261E72C361A68014CB13E`. Official UTF-8
+Registry validate/pack pass. All 301 archive members match current worktree bytes; there are zero
+duplicate, unsafe, excluded or missing-source paths, with 133 workflows and seven Quick Start
+subgraphs. Isolated import returns 191 registered/unique IDs matching `features.json`, ending with
+`MiniMaxH3NFERunContractT8Advanced`. Relative to `final44`, the entry list is exact and only
+`README.md` plus `features.json` changed. The real Git index stayed empty and no root `node.zip`
+remains. This is a local package candidate only; it has not been committed or published.
+
+An eighteenth append-only node now closes the content-identity half of the crash-resume contract
+without changing the earlier concat schema or any of the first 180 node IDs. Native Latent Resume
+Manifest hashes complete H3 video/audio latent samples, optional nested AV masks and supported
+non-volatile metadata in bounded CPU chunks. The checkpoint ID, shape, dtype and mask-presence
+facts are compared alongside the exact content SHA-256. An empty expected manifest creates a
+baseline; a supplied manifest defaults to `error` on mismatch, while explicit `report_only` returns
+`MISMATCH` with `resume_verified=false`. Deterministic tests prove identical hashes at one- and
+eight-MiB chunk sizes, exact-match acceptance, and rejection of sample, mask, metadata,
+checkpoint-ID, malformed-JSON and unsupported-metadata changes. The node writes no file, performs
+no sampling/VAE decode and excludes only its two declared volatile T8 report keys. It therefore
+does not persist a latent, resume diffusion-internal NFE state, release cached inputs or prove that
+an externally saved checkpoint survives a real process crash; those remain separate gates.
+
+One final append-only Prompt Provider Router occupies registry position 178 without changing the
+preceding 178 IDs or any stable workflow. Its default `local_passthrough` path returns the source
+prompt exactly and performs no network request. Opt-in routes use the pinned H3 Prompt Rewriter
+three-field contract with either OpenAI-compatible chat completions (OpenAI, LM Studio or
+llama.cpp) or native Ollama chat. Every request requires explicit confirmation; a non-loopback
+endpoint additionally requires explicit remote permission, HTTPS and an API key read only from a
+named uppercase environment variable. Loopback HTTP bypasses system proxies. Embedded URL
+credentials, redirects, oversized responses and invalid envelopes fail closed.
+
+T2VA sends no image. I2VA, L2VA and FL2VA require exactly the matching first/last IMAGE inputs and
+send bounded, downscaled JPEGs; raw audio is never uploaded. Strict output validation requires all
+three sections in order, required and supported Picture ordinals, unchanged source `<d>` dialogue
+blocks, and retained source Video/Audio tags. Ollama defaults `keep_alive=0` so the server is asked
+to unload after its response. The OpenAI-compatible protocol has no standardized model-unload
+operation, and GGUF remains owned by the external LM Studio/llama.cpp/Ollama service.
+
+Deterministic tests cover both provider envelopes, confirmation order, local/remote endpoint
+policy, environment-only keys, image packing, response bounds, interruption checkpoints and
+malformed-output refusal. An ephemeral real loopback HTTP server also completed the actual urllib
+request/response path.
+
+A single negative real-provider probe then started an isolated Ollama 0.32.15 listener on
+`127.0.0.1:11435`. `CUDA_VISIBLE_DEVICES=-1`, `GGML_VK_VISIBLE_DEVICES=-1`,
+`OLLAMA_VULKAN=false` and `OLLAMA_LLM_LIBRARY=cpu` produced a server log with `library=cpu` and
+`total_vram=0 B`; the existing listeners on 8188 and 11434 were not reused or stopped. The router
+sent one six-second T2VA prompt to `deepseek-r1:1.5b` with temperature zero, a 768-token bound and
+`keep_alive=0`. The real request completed in 25.295 seconds. The model exhausted all 768 output
+tokens, omitted `overall_soundscape` and `non_diegetic_music`, and changed the exact Chinese
+`<d>` dialogue block. Non-strict collection reported both findings, and re-validating the identical
+response with the default strict contract raised the intended `ValueError`. Request SHA-256 was
+`6F8A04E4...D394`; response-text SHA-256 was `570DEC73...0769`.
+
+Immediately after the response, the isolated server's `ollama ps` list was empty, which is bounded
+evidence that this Ollama version honored the requested unload for this one CPU model. The listener
+was then stopped; 8188 remained PID 44872 and the pre-existing 11434 service remained PID 16276.
+This closes one live Ollama transport/fail-closed/unload probe, not acceptable rewrite quality,
+OpenAI-compatible unload, blocking-socket cancellation latency or cross-provider compatibility.
+The dated importable workflow contains the complete privacy, upload and unload NOTE guidance.
+
+A second single-request probe used the complete local `deepseek-r1:8b` Q4_K_M blob
+(`6340DC32...F2BE`) under the same isolated CPU-only server. The router received all three fields in
+92.392 seconds; Ollama logged 1,161 prompt tokens and 672 generated tokens with no truncation.
+However, the response removed the source Chinese `<d>` dialogue entirely. Re-validating that same
+response with the default strict contract therefore raised the intended dialogue-preservation
+`ValueError`. Request SHA-256 was `D920DE7B...E058`; response-text SHA-256 was
+`A23FC430...C4C`. `ollama ps` was again empty after `keep_alive=0`, and the isolated listener was
+stopped. The stronger model improved field completeness but still did not pass the H3 contract.
+
+The blocking-I/O boundary was then exercised with two real `ThreadingHTTPServer` loopback sockets.
+A server that accepted the POST but withheld response headers exceeded a 0.1-second test timeout
+and is now normalized to an actionable `ValueError` instead of leaking a raw `TimeoutError`. A
+second server sent 16 response bytes, flushed, and stalled for 0.4 seconds. Using
+`HTTPResponse.read1()` rather than fill-oriented `read()` returned after that first socket read;
+the third ComfyUI interruption checkpoint stopped the request before 0.3 seconds and before the
+remaining body arrived. No worker thread is retained by the node. Cancellation before headers or
+the first response byte still cannot preempt the operating-system socket read and may wait for the
+configured timeout; the UI minimum remains one second. This closes the declared real socket
+timeout and streamed-chunk cancellation behavior without claiming impossible instantaneous cancel.
+
+The two live model failures shared one root risk: a generic provider could alter or remove an
+immutable source `<d>` block before the caller had any safe opportunity to recover it. The provider
+route now protects every occurrence with a deterministic token containing its ordinal and a
+12-hex SHA-256 prefix. Only tokens appearing exactly once inside the parsed
+`integrated_multimodal_description` are restored. Missing, edited, duplicated, unresolved or
+soundscape/music-misplaced tokens add findings and fail under the default strict policy. The node
+does not infer a speaker, timestamp or insertion point, and the local passthrough and pinned local
+8B rewriter paths are unchanged. Unit coverage also confirms the serialized provider body contains
+the token but not the source dialogue text.
+
+One final single-request CPU-only `deepseek-r1:8b` probe exercised the current guard. The request
+contained one protected token and no raw Chinese dialogue. Ollama logged 1,278 prompt tokens and
+753 generated tokens without truncation; the router completed in 99.915 seconds. The model again
+omitted the speech and therefore omitted the token. The router reported
+`protected_dialogue_tokens=1`, `restored_dialogue_tokens=0`, both the missing-token and original
+dialogue findings, and rejected the same output under strict validation. Request SHA-256 was
+`3C508816...4B8D`; raw/unchanged output SHA-256 was `ADBA1ADB...43F2`. The model unloaded after
+`keep_alive=0`, and the isolated listener was stopped. This proves the guard does not leak or
+invent dialogue when a model ignores it; a positive provider-quality gate remains open.
+
+The router now also exposes an append-only, default-zero `contract_repair_attempts` control. A
+failed candidate can be returned to the same provider for at most two deterministic text-only
+repair passes. The retry payload contains the protected source, opaque dialogue tokens, validation
+findings and the invalid raw candidate, but no reference-image bytes or restored source dialogue.
+Every candidate is re-parsed and revalidated from scratch; exhaustion remains a hard failure under
+the default strict policy. Unit tests cover one-failure-then-success, three-response exhaustion,
+request-count/hash reporting, no image re-upload and exact local dialogue restoration. This closes
+the retry contract mechanically, not the still-open real-provider quality gate.
+
+A final isolated CPU-only `deepseek-r1:8b` T2VA probe used the literal Chinese source dialogue
+`你在干嘛呢，我在这里呀。`, one protected token, temperature zero and a 1,024-token cap. It returned
+all three fields in 81.964 seconds, preserved the token exactly once in the integrated description,
+restored the original dialogue byte-for-byte, and produced zero deterministic findings. The first
+response passed, so `contract_repair_attempts_used=0`. Server logs again recorded `library=cpu` and
+`total_vram=0 B`; `ollama ps` was empty after `keep_alive=0`, port 11435 was stopped, and existing
+8188/11434 processes were preserved. The output nevertheless changed the requested turning action
+into standing still. This closes the open positive strict-contract gate, but it is not a human
+semantic-fidelity pass, cross-provider result or recommendation to make this model the default.
+
+The same source prompt was subsequently sent once to the already-present
+`deepseek-r1:1.5b` Q4_K_M model through a separate CPU-only listener on port 11435. This was a
+bounded cross-model negative probe, not an attempt to replace the still-deferred LightX2V 8B run:
+only 31.37 GiB of host memory and 484 MiB of VRAM were free, so loading the roughly 20 GiB BF16
+base-plus-adapter stack would have violated the low-resource gate. The small model received 1,272
+prompt tokens and generated the full 1,024-token allowance without server-side truncation. Its
+thinking-enabled chat template exposed no non-empty standard `message.content`, so the router
+raised `Provider returned an empty rewritten prompt` before parsing or human review. This is the
+intended fail-closed result; private reasoning is not silently promoted to a production H3 prompt.
+The response parser now distinguishes this observed thinking-only envelope and recommends either
+raising `max_new_tokens` or configuring the model to emit a final answer; an actually empty Ollama
+response keeps the original generic error. The change adds no node input and does not expose or
+return the private reasoning text.
+`keep_alive=0` again left zero loaded Ollama models, port 11435 was stopped, the existing 8188 and
+11434 PIDs were preserved, and GPU allocation stayed at 15,626 MiB. The result closes one
+same-input compatibility boundary but is neither a cross-provider comparison nor a semantic
+quality result.
+
+The authoritative Git history also corrected one stale planning record: Prompt Rewriter 8B,
+LanPaint AV, the external BlockSwap bridge and all six Quick Start subgraphs already entered
+`origin/main` through ancestor commit `620d87d`. They are not waiting inside this local checkpoint.
+The unpublished v1.45 batch instead contains the later Creator, ClipProj/Sol, Audio Integrity,
+native-latent timeline/checkpoint and prompt-budget additions described above.
+
+A pre-publication Registry audit first reproduced six omitted Unicode-named Quick Start files when
+packing through a Windows/GBK console. Only their package paths were renamed to dated ASCII names;
+their bilingual titles, NOTE text and graph contents remain unchanged. The pre-continuation checkpoint then
+added Native Latent Checkpoint Save/Load after the previous 181 IDs and rebuilt from the clean
+scratch index. `comfy node pack` produced a 284-entry, 1,423,698-byte ZIP containing all six
+subgraphs, 128 workflows, the web extension and required runtime modules. Tests, tools, docs,
+artifacts, `roadmap.md`, `SKILL.md`, `LOCAL_EXPERIMENT_DATA.md`, local agent metadata, model
+weights, generated media and archives were absent. The extracted ZIP imported through
+`comfy_entrypoint` with 183 registered and 183 unique nodes; all previous 181 IDs remained in exact
+order and Checkpoint Save/Load were the final two mappings. Optional dependency metadata and
+third-party notices pin the separately installed ComfyUI-ClipProj 0.1.13/MIT and ComfyUI-sol-attn
+0.6.2/Apache-2.0 revisions. The final local audit ZIP SHA-256 is
+`B0667461A8F474996C405B3B0ABA440BDFF6339CFA61F431A92D24268EDA6702`. `comfy node validate`
+passed under an explicit UTF-8 console environment. The real project Git index remained empty
+throughout the scratch build.
+
+The checkpoint Save/Load path also passed a distinct-process evidence gate. PID 25280 wrote and
+verified a completed 22-frame nested H3 AV latent, exited, and PID 8884 strictly loaded it using the
+independently retained manifest plus whole-file SHA. Load returned `MATCH_EXTERNAL`; video/audio
+tensors, FP16/BF16 dtypes, nested masks and supported metadata matched exactly. The stored file SHA
+was `C5079378B7DCA981CE361E0F8C155107BCEED219DA7BC51B24A9F0777C108DE6` and its exact-content
+SHA was `865085D76D92AF20548C21E6F28511D988F9FD69CCF915279249CF7FB82D1DB9`. This proves only
+completed-latent process replacement. It does not recover an interrupted diffusion iteration,
+Transformer/sampler derivative state, ComfyUI queue, model residency, CUDA allocator state or
+perceptual continuation.
+
+The next append-only node occupies position 183 without changing any of those first 183 mappings.
+Native Latent Continuation Concat accepts one complete accumulated AV latent, one sampled Long
+Video continuation, and the directly connected Planner and Conditioning reports that produced it.
+It requires matching schema, chain, segment index, render length, timeline start/end, active motion
+context and the native keyframe count. It then removes the full proven 5/22/39-frame context rather
+than the ordinary five-frame H3 prefix. Audio removal is derived from the cumulative 24fps-to-40Hz
+phase. The safe default additionally requires `video_and_audio` context and
+`timeline_audio_ref=true`; an explicit video-only policy keeps the structural trim but denies an
+audio-continuity claim. CPU coverage proves 124+124 with 22-frame context becomes 226 frames,
+video T=67 and audio T=377; chaining a 39-frame-context segment becomes 311 frames. Five-frame
+rounding, nested masks, exact-grid and hidden-tail final segments, closed-chain rejection, stale
+reports and mismatched audio policy are also covered. The workflow connects both reports directly
+and explains that the final hidden tail is trimmed only after one AV decode.
+
+A fresh `source-final17-native-latent-continuation` scratch index then produced a 285-entry,
+1,431,556-byte Registry ZIP with SHA-256
+`FA57D947640B7E544CA020AD33D2A16F9E437604ACD5AD94AFD30E0932882D42`. It contains 129 workflows,
+all six dated Quick Start subgraphs, the web extension and the 184-node runtime. Tests, tools, docs,
+artifacts, `roadmap.md`, `SKILL.md`, local experiment data, models and generated media remain absent.
+`comfy node validate` passed, and an isolated extraction imported 184 registered/184 unique nodes;
+its full ID order matches the source, all first 183 positions are unchanged, and the continuation
+concat is last. The package includes the new workflow and no root-level accidental `node.zip` was
+created.
+
+The completed current local checkpoint has 184 registered nodes and 129 importable frontend
+workflows. The full CPU suite passed 1088 tests with four pre-existing Triton deprecation warnings.
+Full-repository Ruff excluding ignored artifacts, compileall over 273 Python files, 193 non-artifact
+JSON parses, version consistency, unchanged stable-sampling Git blob, `git diff --check`, Registry
+validation, isolated package import and 129/129 project-to-user-workflow SHA parity passed. No GPU
+generation or pressure test was run for this increment. These gates prove the structural and
+packaging contract, not that a third-party sampler consumed the report, human continuity,
+interrupted-NFE recovery, lower VRAM or universal 16GiB safety. The batch remains uncommitted and
+unpublished.
+Subsequent isolated low-load
+probes added one ClipProj route, one strict Sol kernel execution, one repeated native-latent
+single-decode route, one Creator Workspace real-data session and one CPU-only real Qwen tokenizer
+count; none is publication, pressure, perceptual-quality or general memory-safety evidence.
 
 ## 1.44.0 LightX2V SLA + KJ Sage Composer checkpoint (2026-08-22)
 
@@ -3008,3 +4221,72 @@ is an output node and emitted its observed report into ComfyUI history during th
 - The installed `MiniMax H3 T8` user menu mirrors the same relative paths; verification compares each
   project/user JSON pair by relative path and SHA-256.
 - Moving a workflow changes only its filesystem location, not the JSON graph, widgets or links.
+
+## 0.6MP close-human replacement rerun (2026-08-24)
+
+The reviewer rejected the earlier 512x256 material as too small for a final quality decision. The
+replacement contract changes only the canvas to 1088x544 (591,872 decimal pixels); the SHA-locked
+`10A.jpg`, prompt, Mandarin dialogue, seed 2608245001, 124 frames, eight NFE and 12/3 dual clocks
+remain fixed. ClipProj 4B, ClipProj 8B and Creator were run strictly serially. Their observed
+prompt-to-terminal times were 326.531, 330.844 and 421.359 seconds; whole-device peaks were 15,013,
+14,974 and 14,985MiB, leaving 1,097, 1,136 and 1,125MiB minimum free VRAM. This clears the 512MiB
+gate for these three individual runs only and is not a general 16GiB safety claim.
+
+The Creator model run and both VAE decodes succeeded. Its first 243-frame media packaging attempt
+exposed a Windows FFmpeg/libx264 multithread native exit. No model rerun was performed. A two-frame
+probe and then the exact full 243-frame PNG sequence established that `libx264 -threads 1` was
+stable; the original PNG/FLAC evidence was then encoded into two strictly decodable 243-frame,
+10.125-second H.264/AAC arms. The recovery changes CPU encoder threading only, not the model output,
+frame order, audio, CRF or latent contract.
+
+All four review media passed the strict mechanical analyzer. Creator pair SSIM is approximately
+0.98794 and zero-lag audio cosine approximately 0.99999. ClipProj 4B/8B SSIM is approximately
+0.91783 and zero-lag audio cosine approximately 0.11440. These values do not select a perceptual
+winner. The final anonymous page is retained at
+`artifacts/human-face-0p6mp-final-review-20260824/review/blind_review.html`. One late 8B inspection
+frame has a visible block-like generative artifact, while full FFmpeg decoding reports no codec
+warnings. The user previously accepted an isolated bad frame, so the real output is retained rather
+than silently replacing a frame.
+
+The reviewer then submitted the formal export with SHA-256
+`FF62C1015403F2323CD08760A0586EA8CF1E5F9C344E7DA5322F6FD06BAFD561`. Review ID, private key and
+all copied media hashes match. Both pairs were marked assessable; overall, motion, audio, prompt
+adherence, stability, first-frame and identity preferences were all ties, with no blocking failure.
+The private mapping reveals a tie between native-latent concat followed by one VAE decode and
+separate VAE decode followed by media composition, plus a tie between ClipProj 4B and ClipProj 8B.
+The strict analysis report SHA is
+`C83B9EA41136804BD5B60FA144E0D25DFF6F4C6A425ACCE6EB36B4DFB29A0B95`. This closes the human gate
+for this fixed portrait and contract. It does not establish cross-material equivalence, so Creator
+auto-accept and ClipProj default replacement remain denied.
+
+The remaining native-32B arm was then attempted under the unchanged evidence-derived 14,500MiB
+start gate. One preflight observed only 14,494MiB and correctly abstained; a later preflight reached
+the gate, so exactly one isolated localhost:8197 run was allowed. It used the same SHA-locked image,
+prompt, seed, 1088x544 canvas, 124 frames, eight NFE and 12/3 shifts. H3 execution completed in
+326.797 seconds and the whole-device monitor observed 643MiB minimum free VRAM, clearing the 512MiB
+runtime gate by 131MiB. This is one fixed pass, not a repeated or general 16GiB safety result.
+
+The native output container retained one H.264 packet error although FFmpeg produced all 124 decoded
+frames; model execution, VAE decode, AAC and geometry checks succeeded. The model was not rerun. To
+avoid comparing a repaired native file against an untouched 4B encode, both arms were normalized with
+identical `libx264 preset=medium crf=18 threads=1 yuv420p` settings while copying their AAC streams.
+Both normalized media strictly decode and preserve the decoded-audio hash of their own source. Full-
+video source-to-normalized SSIM exceeds the reviewed 0.98 floor for both arms. The normalization
+report SHA-256 is `15010B52D2868173D51CE68836DF9103531887346F49C075012378834A4CB024`.
+
+The single controlled 4B/native-32B anonymous page is retained at
+`artifacts/human-face-0p6mp-4b-vs-native-20260824/review/blind_review.html`; its private key SHA-256 is
+`94E11C3262F2B1974E834EB0029B219118FE40048037D87C406C0287DCAB5413`. The public HTML contains no
+method mapping or source path.
+
+The reviewer submitted one complete export with SHA-256
+`5206CE16C6BFB90A22A0B455CCCA592747EC9CBD7A1391E05F5C7403DD184873`. Review and key IDs match,
+no values were omitted, and the pair was marked assessable with no blocking failure. Revealing the
+private key maps A to native MiniMax H3 32B and B to ClipProj 4B. Overall, motion, audio, prompt
+adherence, stability, first-frame and identity were all ties. The reviewer noted that the outputs
+were not identical but felt similar on this simple task. The strict analysis report SHA-256 is
+`A7C6C47843A257ACD0158986470F6CB4C24278763A387E5BDBFB7EB70E1B8359`.
+
+This closes the one-reviewer gate for this fixed simple portrait only. It does not establish general
+4B/32B equivalence, candidate quality noninferiority, complex prompt adherence, other modalities,
+repeated behavior or universal 16GiB safety. Native 32B therefore remains the default.

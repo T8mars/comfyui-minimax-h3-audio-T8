@@ -1,7 +1,7 @@
 {
   "id": "0dc7161d-d2a4-44d0-a46a-f2fa9c0d8f55",
   "revision": 0,
-  "last_node_id": 15,
+  "last_node_id": 16,
   "last_link_id": 25,
   "nodes": [
     {
@@ -442,7 +442,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "A singer performs in precise synchronization with <Audio 1>. Preserve the original timing, phrasing, rhythm, and natural lip movement in a cinematic medium close-up.",
+        "A singer visibly performs to <Audio 1> in a cinematic medium close-up. Preserve the source timing, phrasing, rhythm, and plausible mouth and body performance. If a transcript is known, include the exact spoken words in <d>...</d>.",
         736,
         416,
         124,
@@ -1055,6 +1055,30 @@
         0.0,
         5.0,
         24.0
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "Important: source audio is preserved; exact lip sync is not guaranteed / 重要：保留原音不等于强制口型",
+      "pos": [
+        850,
+        760
+      ],
+      "size": [
+        1040,
+        360
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## `lock_source` preserves the soundtrack; it is not a deterministic lip-sync solver / `lock_source`保留原音，但不是确定性口型算法\n\n- `drive_audio`接对齐后的AUDIO，`audio_mode=lock_source`，`add_source_as_reference=true`，并在提示词中引用对应`<Audio N>`。若已知台词，请把逐字文本同时写入`<d>...</d>`，这只能提高语义约束，不能保证逐音素对齐。\n- 最终保存必须使用Conditioning输出的`mux_audio`（本工作流经Output Trim后送入保存节点），不要误接AV Decode的`generated_audio`，否则可能听到模型重新生成的声音。\n- MiniMax H3是联合音画生成模型，不是Wav2Lip式强制唇形解算器。即使最终音轨与输入逐样本一致，嘴型仍可能说成别的内容。需要广播级精确口型时，应在H3出片后使用专用唇形/人脸重定向工具。\n- 先裁出目标窗口，再让画面时长匹配音频；多人、侧脸、遮挡、远景和快速转头会进一步降低嘴型可靠性。"
       ]
     }
   ],

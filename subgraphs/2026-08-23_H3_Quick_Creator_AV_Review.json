@@ -1,0 +1,1573 @@
+{
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "9b99d6f2-4032-5bc7-bc80-2fdbbd90835a",
+      "pos": [
+        100,
+        100
+      ],
+      "size": [
+        560,
+        0
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "baseline_video",
+          "label": "A基准视频",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "baseline_video"
+          }
+        },
+        {
+          "name": "candidate_video",
+          "label": "B候选视频",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "candidate_video"
+          }
+        },
+        {
+          "name": "label_a",
+          "label": "A标签",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "label_a"
+          }
+        },
+        {
+          "name": "label_b",
+          "label": "B标签",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "label_b"
+          }
+        },
+        {
+          "name": "seed_a",
+          "label": "A种子",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "seed_a"
+          }
+        },
+        {
+          "name": "seed_b",
+          "label": "B种子",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "seed_b"
+          }
+        },
+        {
+          "name": "winner_after_review",
+          "label": "人工结论",
+          "type": "COMBO",
+          "link": null,
+          "widget": {
+            "name": "winner_after_review"
+          }
+        },
+        {
+          "name": "reviewer_notes",
+          "label": "审片备注",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "reviewer_notes"
+          }
+        },
+        {
+          "name": "require_equal_geometry",
+          "label": "要求相同画布",
+          "type": "BOOLEAN",
+          "link": null,
+          "widget": {
+            "name": "require_equal_geometry"
+          }
+        },
+        {
+          "name": "output_prefix",
+          "label": "无声对比输出前缀",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "output_prefix"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "comparison_frames",
+          "localized_name": "并排对比画面",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "audio_a",
+          "localized_name": "A独立音轨",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "audio_b",
+          "localized_name": "B独立音轨",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "silent_comparison_video",
+          "localized_name": "无声对比视频",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "winner",
+          "localized_name": "人工结论",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "selected_seed",
+          "localized_name": "选中种子",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "visual_review_json",
+          "localized_name": "画面审片报告",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "audio_drift_decision",
+          "localized_name": "声音漂移结论",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "audio_drift_report",
+          "localized_name": "声音漂移报告",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "MiniMax H3 Quick Creator AV Review / 快速音画审片",
+      "properties": {
+        "proxyWidgets": [
+          [
+            "1",
+            "file"
+          ],
+          [
+            "3",
+            "file"
+          ],
+          [
+            "5",
+            "label_a"
+          ],
+          [
+            "5",
+            "label_b"
+          ],
+          [
+            "5",
+            "seed_a"
+          ],
+          [
+            "5",
+            "seed_b"
+          ],
+          [
+            "5",
+            "winner"
+          ],
+          [
+            "5",
+            "reviewer_notes"
+          ],
+          [
+            "5",
+            "require_equal_geometry"
+          ],
+          [
+            "7",
+            "filename_prefix"
+          ]
+        ],
+        "cnr_id": "minimax-h3-audio-t8",
+        "ver": "1.45.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.7"
+        }
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "version": 0.4,
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "9b99d6f2-4032-5bc7-bc80-2fdbbd90835a",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 15,
+          "lastLinkId": 31,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "MiniMax H3 Quick Creator AV Review / 快速音画审片",
+        "inputNode": {
+          "id": -10,
+          "bounding": [
+            0,
+            0,
+            120,
+            240
+          ]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [
+            3900,
+            0,
+            120,
+            220
+          ]
+        },
+        "inputs": [
+          {
+            "id": "b025b169-90a6-5ef9-998a-415f5950496b",
+            "name": "baseline_video",
+            "type": "COMBO",
+            "linkIds": [
+              13
+            ],
+            "label": "A基准视频",
+            "pos": [
+              20,
+              40
+            ]
+          },
+          {
+            "id": "82ed01a8-bb4b-5321-a446-735cc69129cd",
+            "name": "candidate_video",
+            "type": "COMBO",
+            "linkIds": [
+              14
+            ],
+            "label": "B候选视频",
+            "pos": [
+              20,
+              60
+            ]
+          },
+          {
+            "id": "e4009ddd-3078-5d80-89fa-27dcb3b7b86e",
+            "name": "label_a",
+            "type": "STRING",
+            "linkIds": [
+              15
+            ],
+            "label": "A标签",
+            "pos": [
+              20,
+              80
+            ]
+          },
+          {
+            "id": "fb8e555c-cc08-5b1b-a854-606d8d2a2b3c",
+            "name": "label_b",
+            "type": "STRING",
+            "linkIds": [
+              16
+            ],
+            "label": "B标签",
+            "pos": [
+              20,
+              100
+            ]
+          },
+          {
+            "id": "61c60319-d56e-5474-9649-4d30eea4d641",
+            "name": "seed_a",
+            "type": "INT",
+            "linkIds": [
+              17
+            ],
+            "label": "A种子",
+            "pos": [
+              20,
+              120
+            ]
+          },
+          {
+            "id": "67522817-a327-5118-a7c4-5ba61c80bf49",
+            "name": "seed_b",
+            "type": "INT",
+            "linkIds": [
+              18
+            ],
+            "label": "B种子",
+            "pos": [
+              20,
+              140
+            ]
+          },
+          {
+            "id": "19b32791-6066-558c-9d51-fc3e9cc877cd",
+            "name": "winner_after_review",
+            "type": "COMBO",
+            "linkIds": [
+              19
+            ],
+            "label": "人工结论",
+            "pos": [
+              20,
+              160
+            ]
+          },
+          {
+            "id": "758d82c8-f77f-5cf6-a2ec-7edbb0c184d9",
+            "name": "reviewer_notes",
+            "type": "STRING",
+            "linkIds": [
+              20
+            ],
+            "label": "审片备注",
+            "pos": [
+              20,
+              180
+            ]
+          },
+          {
+            "id": "85141a5b-5dfd-51dc-be74-2b4eafb22850",
+            "name": "require_equal_geometry",
+            "type": "BOOLEAN",
+            "linkIds": [
+              21
+            ],
+            "label": "要求相同画布",
+            "pos": [
+              20,
+              200
+            ]
+          },
+          {
+            "id": "265281ac-9dc6-5397-9ed0-cf5835338293",
+            "name": "output_prefix",
+            "type": "STRING",
+            "linkIds": [
+              22
+            ],
+            "label": "无声对比输出前缀",
+            "pos": [
+              20,
+              220
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "b87884a6-4d2e-549d-8247-382d0c93d0f7",
+            "name": "comparison_frames",
+            "type": "IMAGE",
+            "linkIds": [
+              23
+            ],
+            "localized_name": "并排对比画面",
+            "pos": [
+              3900,
+              40
+            ]
+          },
+          {
+            "id": "b9ede1e5-bb99-5ed0-9815-6865079c5b5f",
+            "name": "audio_a",
+            "type": "AUDIO",
+            "linkIds": [
+              24
+            ],
+            "localized_name": "A独立音轨",
+            "pos": [
+              3900,
+              60
+            ]
+          },
+          {
+            "id": "e5940828-7460-5845-bbb9-bbc825c13ac8",
+            "name": "audio_b",
+            "type": "AUDIO",
+            "linkIds": [
+              25
+            ],
+            "localized_name": "B独立音轨",
+            "pos": [
+              3900,
+              80
+            ]
+          },
+          {
+            "id": "ca37b02b-a142-5af0-a0f3-7989b800ab94",
+            "name": "silent_comparison_video",
+            "type": "VIDEO",
+            "linkIds": [
+              26
+            ],
+            "localized_name": "无声对比视频",
+            "pos": [
+              3900,
+              100
+            ]
+          },
+          {
+            "id": "2e40473d-ed7d-5268-9381-91d6a8ac7058",
+            "name": "winner",
+            "type": "STRING",
+            "linkIds": [
+              27
+            ],
+            "localized_name": "人工结论",
+            "pos": [
+              3900,
+              120
+            ]
+          },
+          {
+            "id": "5957b5cd-4fb8-5aa7-bdad-a2969b567917",
+            "name": "selected_seed",
+            "type": "INT",
+            "linkIds": [
+              28
+            ],
+            "localized_name": "选中种子",
+            "pos": [
+              3900,
+              140
+            ]
+          },
+          {
+            "id": "f41bac68-008a-5ab7-9c79-f54af82ab9f6",
+            "name": "visual_review_json",
+            "type": "STRING",
+            "linkIds": [
+              29
+            ],
+            "localized_name": "画面审片报告",
+            "pos": [
+              3900,
+              160
+            ]
+          },
+          {
+            "id": "3846f699-9ce0-5d6a-bbff-130544798a8a",
+            "name": "audio_drift_decision",
+            "type": "STRING",
+            "linkIds": [
+              30
+            ],
+            "localized_name": "声音漂移结论",
+            "pos": [
+              3900,
+              180
+            ]
+          },
+          {
+            "id": "b2f92136-83cc-593a-a6ae-0b6f180ede0b",
+            "name": "audio_drift_report",
+            "type": "STRING",
+            "linkIds": [
+              31
+            ],
+            "localized_name": "声音漂移报告",
+            "pos": [
+              3900,
+              200
+            ]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "LoadVideo",
+            "title": "A：已确认基准视频（替换文件）",
+            "pos": [
+              0,
+              0
+            ],
+            "size": [
+              390,
+              124
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "file",
+                "type": "COMBO",
+                "widget": {
+                  "name": "file"
+                },
+                "link": 13
+              }
+            ],
+            "outputs": [
+              {
+                "name": "VIDEO",
+                "type": "VIDEO",
+                "links": [
+                  1
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "LoadVideo"
+            },
+            "widgets_values": [
+              "replace_with_accepted_candidate_a.mp4"
+            ]
+          },
+          {
+            "id": 2,
+            "type": "GetVideoComponents",
+            "title": "A：拆出原帧、音频与fps",
+            "pos": [
+              440,
+              0
+            ],
+            "size": [
+              390,
+              110
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "video",
+                "type": "VIDEO",
+                "link": 1
+              }
+            ],
+            "outputs": [
+              {
+                "name": "images",
+                "type": "IMAGE",
+                "links": [
+                  3
+                ]
+              },
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "links": [
+                  8,
+                  10,
+                  24
+                ]
+              },
+              {
+                "name": "fps",
+                "type": "FLOAT",
+                "links": [
+                  6
+                ]
+              },
+              {
+                "name": "bit_depth",
+                "type": "INT",
+                "links": null
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "GetVideoComponents"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 3,
+            "type": "LoadVideo",
+            "title": "B：待审核候选视频（替换文件）",
+            "pos": [
+              0,
+              240
+            ],
+            "size": [
+              390,
+              124
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "file",
+                "type": "COMBO",
+                "widget": {
+                  "name": "file"
+                },
+                "link": 14
+              }
+            ],
+            "outputs": [
+              {
+                "name": "VIDEO",
+                "type": "VIDEO",
+                "links": [
+                  2
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "LoadVideo"
+            },
+            "widgets_values": [
+              "replace_with_candidate_b.mp4"
+            ]
+          },
+          {
+            "id": 4,
+            "type": "GetVideoComponents",
+            "title": "B：拆出原帧与待审音频",
+            "pos": [
+              440,
+              240
+            ],
+            "size": [
+              390,
+              110
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "video",
+                "type": "VIDEO",
+                "link": 2
+              }
+            ],
+            "outputs": [
+              {
+                "name": "images",
+                "type": "IMAGE",
+                "links": [
+                  4
+                ]
+              },
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "links": [
+                  9,
+                  11,
+                  25
+                ]
+              },
+              {
+                "name": "fps",
+                "type": "FLOAT",
+                "links": null
+              },
+              {
+                "name": "bit_depth",
+                "type": "INT",
+                "links": null
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "GetVideoComponents"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 5,
+            "type": "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
+            "title": "画面：不缩放的同步并排A/B",
+            "pos": [
+              900,
+              0
+            ],
+            "size": [
+              590,
+              400
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "frames_a",
+                "type": "IMAGE",
+                "link": 3
+              },
+              {
+                "name": "frames_b",
+                "type": "IMAGE",
+                "link": 4
+              },
+              {
+                "name": "label_a",
+                "type": "STRING",
+                "widget": {
+                  "name": "label_a"
+                },
+                "link": 15
+              },
+              {
+                "name": "label_b",
+                "type": "STRING",
+                "widget": {
+                  "name": "label_b"
+                },
+                "link": 16
+              },
+              {
+                "name": "seed_a",
+                "type": "INT",
+                "widget": {
+                  "name": "seed_a"
+                },
+                "link": 17
+              },
+              {
+                "name": "seed_b",
+                "type": "INT",
+                "widget": {
+                  "name": "seed_b"
+                },
+                "link": 18
+              },
+              {
+                "name": "winner",
+                "type": "COMBO",
+                "widget": {
+                  "name": "winner"
+                },
+                "link": 19
+              },
+              {
+                "name": "reviewer_notes",
+                "type": "STRING",
+                "widget": {
+                  "name": "reviewer_notes"
+                },
+                "link": 20
+              },
+              {
+                "name": "require_equal_geometry",
+                "type": "BOOLEAN",
+                "widget": {
+                  "name": "require_equal_geometry"
+                },
+                "link": 21
+              }
+            ],
+            "outputs": [
+              {
+                "name": "comparison_frames",
+                "type": "IMAGE",
+                "links": [
+                  5,
+                  23
+                ]
+              },
+              {
+                "name": "winner",
+                "type": "STRING",
+                "links": [
+                  27
+                ]
+              },
+              {
+                "name": "selected_seed",
+                "type": "INT",
+                "links": [
+                  28
+                ]
+              },
+              {
+                "name": "review_json",
+                "type": "STRING",
+                "links": [
+                  29
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "minimax-h3-audio-T8",
+              "Node name for S&R": "MiniMaxH3CreatorSynchronizedCompareT8Advanced"
+            },
+            "widgets_values": [
+              "accepted_baseline_A",
+              "candidate_B",
+              2608222001,
+              2608222018,
+              "ABSTAIN",
+              "先完整观看并分别试听A/B，再记录A、B或TIE。",
+              true
+            ]
+          },
+          {
+            "id": 6,
+            "type": "CreateVideo",
+            "title": "创建无声并排视频（声音另听）",
+            "pos": [
+              1560,
+              0
+            ],
+            "size": [
+              390,
+              220
+            ],
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "images",
+                "type": "IMAGE",
+                "link": 5
+              },
+              {
+                "name": "fps",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "fps"
+                },
+                "link": 6
+              },
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "link": null,
+                "shape": 7
+              },
+              {
+                "name": "bit_depth",
+                "type": "INT",
+                "widget": {
+                  "name": "bit_depth"
+                },
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": "VIDEO",
+                "type": "VIDEO",
+                "links": [
+                  7
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "CreateVideo"
+            },
+            "widgets_values": [
+              24.0,
+              8
+            ]
+          },
+          {
+            "id": 7,
+            "type": "SaveVideo",
+            "title": "保存带标签的无声画面对比",
+            "pos": [
+              2020,
+              0
+            ],
+            "size": [
+              390,
+              238
+            ],
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "video",
+                "type": "VIDEO",
+                "link": 7
+              },
+              {
+                "name": "filename_prefix",
+                "type": "STRING",
+                "widget": {
+                  "name": "filename_prefix"
+                },
+                "link": 22
+              },
+              {
+                "name": "format",
+                "type": "COMBO",
+                "widget": {
+                  "name": "format"
+                },
+                "link": null
+              },
+              {
+                "name": "codec",
+                "type": "COMFY_DYNAMICCOMBO_V3",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": "video",
+                "type": "VIDEO",
+                "links": [
+                  26
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "SaveVideo"
+            },
+            "widgets_values": [
+              "MiniMaxH3/creator_synchronized_av_ab_silent",
+              "mp4"
+            ]
+          },
+          {
+            "id": 8,
+            "type": "PreviewAudio",
+            "title": "试听A：已确认基准音频",
+            "pos": [
+              900,
+              470
+            ],
+            "size": [
+              390,
+              90
+            ],
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "link": 8
+              }
+            ],
+            "outputs": [
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "links": null
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "PreviewAudio"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 9,
+            "type": "PreviewAudio",
+            "title": "试听B：待审核候选音频",
+            "pos": [
+              900,
+              590
+            ],
+            "size": [
+              390,
+              90
+            ],
+            "flags": {},
+            "order": 8,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "link": 9
+              }
+            ],
+            "outputs": [
+              {
+                "name": "audio",
+                "type": "AUDIO",
+                "links": null
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "PreviewAudio"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 10,
+            "type": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced",
+            "title": "声音：同步同内容的参考相对漂移提示",
+            "pos": [
+              1360,
+              470
+            ],
+            "size": [
+              650,
+              500
+            ],
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "reference_audio",
+                "type": "AUDIO",
+                "link": 10
+              },
+              {
+                "name": "candidate_audio",
+                "type": "AUDIO",
+                "link": 11
+              },
+              {
+                "name": "analysis_window_ms",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "analysis_window_ms"
+                },
+                "link": null
+              },
+              {
+                "name": "hop_ms",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "hop_ms"
+                },
+                "link": null
+              },
+              {
+                "name": "active_rms_floor_dbfs",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "active_rms_floor_dbfs"
+                },
+                "link": null
+              },
+              {
+                "name": "spectral_drift_threshold",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "spectral_drift_threshold"
+                },
+                "link": null
+              },
+              {
+                "name": "level_delta_threshold_db",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "level_delta_threshold_db"
+                },
+                "link": null
+              },
+              {
+                "name": "persistent_window_count",
+                "type": "INT",
+                "widget": {
+                  "name": "persistent_window_count"
+                },
+                "link": null
+              },
+              {
+                "name": "max_duration_delta_ms",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "max_duration_delta_ms"
+                },
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": "candidate_audio",
+                "type": "AUDIO",
+                "links": null
+              },
+              {
+                "name": "pass_audit",
+                "type": "BOOLEAN",
+                "links": null
+              },
+              {
+                "name": "decision",
+                "type": "STRING",
+                "links": [
+                  30
+                ]
+              },
+              {
+                "name": "maximum_spectral_drift",
+                "type": "FLOAT",
+                "links": null
+              },
+              {
+                "name": "maximum_level_delta_db",
+                "type": "FLOAT",
+                "links": null
+              },
+              {
+                "name": "suspected_start_seconds",
+                "type": "FLOAT",
+                "links": null
+              },
+              {
+                "name": "suspected_end_seconds",
+                "type": "FLOAT",
+                "links": null
+              },
+              {
+                "name": "report_json",
+                "type": "STRING",
+                "links": [
+                  12,
+                  31
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "minimax-h3-audio-T8",
+              "Node name for S&R": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"
+            },
+            "widgets_values": [
+              500.0,
+              100.0,
+              -50.0,
+              0.3,
+              4.0,
+              3,
+              21.0
+            ]
+          },
+          {
+            "id": 11,
+            "type": "PreviewAny",
+            "title": "查看声音漂移时间段和证据",
+            "pos": [
+              2070,
+              500
+            ],
+            "size": [
+              390,
+              110
+            ],
+            "flags": {},
+            "order": 10,
+            "mode": 0,
+            "inputs": [
+              {
+                "name": "source",
+                "type": "*",
+                "link": 12
+              }
+            ],
+            "outputs": [
+              {
+                "name": "STRING",
+                "type": "STRING",
+                "links": null
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "Node name for S&R": "PreviewAny"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 12,
+            "type": "MarkdownNote",
+            "title": "① 输入必须对齐",
+            "pos": [
+              0,
+              440
+            ],
+            "size": [
+              800,
+              310
+            ],
+            "flags": {},
+            "order": 11,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [],
+            "properties": {
+              "Node name for S&R": "MarkdownNote"
+            },
+            "widgets_values": [
+              "## A是基准，B是候选\n\n- 两条视频必须表达同一内容、从同一时间点开始，并尽量具有相同帧率、帧数、画布和音频采样率。\n- 不要把不同台词、不同音乐、不同剪辑起点的素材送入感知漂移审计；这种比较本身没有科学意义。\n- `LoadVideo`不会强行把两条候选缩放成相同尺寸。若几何不同，画面对比节点会居中补黑边，并在默认严格模式下强制ABSTAIN。"
+            ]
+          },
+          {
+            "id": 13,
+            "type": "MarkdownNote",
+            "title": "② 画面对比使用方法",
+            "pos": [
+              0,
+              790
+            ],
+            "size": [
+              800,
+              330
+            ],
+            "flags": {},
+            "order": 12,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [],
+            "properties": {
+              "Node name for S&R": "MarkdownNote"
+            },
+            "widgets_values": [
+              "## 并排视频故意不带声音\n\n- 左侧始终为A，右侧始终为B，顶部写入标签。节点只裁到共同帧数，不插帧、不缩放、不改变源像素比例。\n- 保存的并排视频故意不接任何音轨，防止误把A或B的声音当成双方共同结果。\n- 完整观看后再把`winner`从`ABSTAIN`改成A、B或TIE。它只是人工记录字段，不是自动画质评分。"
+            ]
+          },
+          {
+            "id": 14,
+            "type": "MarkdownNote",
+            "title": "③ 声音必须分别完整试听",
+            "pos": [
+              1360,
+              1020
+            ],
+            "size": [
+              650,
+              350
+            ],
+            "flags": {},
+            "order": 13,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [],
+            "properties": {
+              "Node name for S&R": "MarkdownNote"
+            },
+            "widgets_values": [
+              "## 审计只提供复核线索\n\n- 分别完整播放`试听A`和`试听B`，重点听音色远近、混响、响度、对白完整性、音乐与音效。\n- 感知漂移节点默认用500ms窗、100ms步进，连续3窗异常才返回ABSTAIN；它不重采样、不修音，也不替代人耳。\n- PASS不是听感认证；ABSTAIN也不能证明远场、换声、混响或模型原因。最终结论必须由人完整试听。"
+            ]
+          },
+          {
+            "id": 15,
+            "type": "MarkdownNote",
+            "title": "④ 已验证边界",
+            "pos": [
+              2070,
+              660
+            ],
+            "size": [
+              390,
+              520
+            ],
+            "flags": {},
+            "order": 14,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [],
+            "properties": {
+              "Node name for S&R": "MarkdownNote"
+            },
+            "widgets_values": [
+              "## 当前只承诺机械审片路径\n\n- 39帧真实H3候选已验证画面不拉伸、源像素保持和严格解码。\n- 5.152秒真实同内容A/B中，节点能标出用户已确认的中段声音漂移；这只是单组标定。\n- 本工作流不生成视频、不自动选择胜者、不删除候选，也不保证检测所有音频问题。\n- 如素材没有音轨，两个PreviewAudio和漂移审计会按ComfyUI合同报错；请改用纯画面A/B工作流。"
+            ]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": 2,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 2,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": 4,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 3,
+            "origin_id": 2,
+            "origin_slot": 0,
+            "target_id": 5,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 4,
+            "origin_id": 4,
+            "origin_slot": 0,
+            "target_id": 5,
+            "target_slot": 1,
+            "type": "IMAGE"
+          },
+          {
+            "id": 5,
+            "origin_id": 5,
+            "origin_slot": 0,
+            "target_id": 6,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 6,
+            "origin_id": 2,
+            "origin_slot": 2,
+            "target_id": 6,
+            "target_slot": 1,
+            "type": "FLOAT"
+          },
+          {
+            "id": 7,
+            "origin_id": 6,
+            "origin_slot": 0,
+            "target_id": 7,
+            "target_slot": 0,
+            "type": "VIDEO"
+          },
+          {
+            "id": 8,
+            "origin_id": 2,
+            "origin_slot": 1,
+            "target_id": 8,
+            "target_slot": 0,
+            "type": "AUDIO"
+          },
+          {
+            "id": 9,
+            "origin_id": 4,
+            "origin_slot": 1,
+            "target_id": 9,
+            "target_slot": 0,
+            "type": "AUDIO"
+          },
+          {
+            "id": 10,
+            "origin_id": 2,
+            "origin_slot": 1,
+            "target_id": 10,
+            "target_slot": 0,
+            "type": "AUDIO"
+          },
+          {
+            "id": 11,
+            "origin_id": 4,
+            "origin_slot": 1,
+            "target_id": 10,
+            "target_slot": 1,
+            "type": "AUDIO"
+          },
+          {
+            "id": 12,
+            "origin_id": 10,
+            "origin_slot": 7,
+            "target_id": 11,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 13,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "COMBO"
+          },
+          {
+            "id": 14,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 3,
+            "target_slot": 0,
+            "type": "COMBO"
+          },
+          {
+            "id": 15,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 5,
+            "target_slot": 2,
+            "type": "STRING"
+          },
+          {
+            "id": 16,
+            "origin_id": -10,
+            "origin_slot": 3,
+            "target_id": 5,
+            "target_slot": 3,
+            "type": "STRING"
+          },
+          {
+            "id": 17,
+            "origin_id": -10,
+            "origin_slot": 4,
+            "target_id": 5,
+            "target_slot": 4,
+            "type": "INT"
+          },
+          {
+            "id": 18,
+            "origin_id": -10,
+            "origin_slot": 5,
+            "target_id": 5,
+            "target_slot": 5,
+            "type": "INT"
+          },
+          {
+            "id": 19,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": 5,
+            "target_slot": 6,
+            "type": "COMBO"
+          },
+          {
+            "id": 20,
+            "origin_id": -10,
+            "origin_slot": 7,
+            "target_id": 5,
+            "target_slot": 7,
+            "type": "STRING"
+          },
+          {
+            "id": 21,
+            "origin_id": -10,
+            "origin_slot": 8,
+            "target_id": 5,
+            "target_slot": 8,
+            "type": "BOOLEAN"
+          },
+          {
+            "id": 22,
+            "origin_id": -10,
+            "origin_slot": 9,
+            "target_id": 7,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 23,
+            "origin_id": 5,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 24,
+            "origin_id": 2,
+            "origin_slot": 1,
+            "target_id": -20,
+            "target_slot": 1,
+            "type": "AUDIO"
+          },
+          {
+            "id": 25,
+            "origin_id": 4,
+            "origin_slot": 1,
+            "target_id": -20,
+            "target_slot": 2,
+            "type": "AUDIO"
+          },
+          {
+            "id": 26,
+            "origin_id": 7,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 3,
+            "type": "VIDEO"
+          },
+          {
+            "id": 27,
+            "origin_id": 5,
+            "origin_slot": 1,
+            "target_id": -20,
+            "target_slot": 4,
+            "type": "STRING"
+          },
+          {
+            "id": 28,
+            "origin_id": 5,
+            "origin_slot": 2,
+            "target_id": -20,
+            "target_slot": 5,
+            "type": "INT"
+          },
+          {
+            "id": 29,
+            "origin_id": 5,
+            "origin_slot": 3,
+            "target_id": -20,
+            "target_slot": 6,
+            "type": "STRING"
+          },
+          {
+            "id": 30,
+            "origin_id": 10,
+            "origin_slot": 2,
+            "target_id": -20,
+            "target_slot": 7,
+            "type": "STRING"
+          },
+          {
+            "id": 31,
+            "origin_id": 10,
+            "origin_slot": 7,
+            "target_id": -20,
+            "target_slot": 8,
+            "type": "STRING"
+          }
+        ],
+        "extra": {
+          "ds": {
+            "scale": 0.72,
+            "offset": [
+              90,
+              70
+            ]
+          }
+        },
+        "category": "MiniMax H3 T8/Quick Start",
+        "description": "Human-reviewed synchronized A/B workspace for two aligned videos: it preserves source pixels, keeps A/B audio separate, saves a silent comparison video and reports reference-relative audio drift without choosing a winner automatically."
+      }
+    ]
+  },
+  "extra": {
+    "ue_links": []
+  }
+}

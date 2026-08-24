@@ -1,10 +1,252 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
 > Frontend workflows are organized under `examples/workflows/01-basic-generation` through
-> `examples/workflows/15-sla-attention`. Each category contains an independent `README.md` with
+> `examples/workflows/16-raven-streaming`. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
+
+> The current local 1.45.0 candidate appends a fail-closed Prompt Semantic Contract Audit as node
+> 190 after the complete prior 189-node prefix, then appends a read-only NFE Run Contract compiler
+> as node 191 without moving any prior ID. It checks only user-authored required/forbidden
+> phrase groups plus exact dialogue and media-tag preservation. Empty anchors ABSTAIN; a mechanical
+> pass still returns the original prompt until the user explicitly accepts the reviewed candidate.
+> The captured `turns` to `stands still` provider regression is rejected. The current source has
+> 133 workflows and 191 unique runtime nodes; the first 190 IDs exactly match the preceding package.
+> The prior `final27` ZIP is a historical snapshot from before the Prompt Budget official/local
+> boundary correction. `final29` is now historical because the Provider Router gained a
+> fail-closed diagnostic for Ollama models that return only `message.thinking` without final
+> `message.content`. The refreshed local-only `final30` package contains 297 entries, 132
+> workflows, six Quick Start subgraphs and 190 nodes. That package is now historical: the current
+> source adds the run-contract compiler and corrected NFE example wiring while preserving all 190
+> earlier positions. Its exact filename, size and
+> SHA remain in excluded local verification evidence. The complete source passes 1,140 CPU tests;
+> this lexical audit and thinking-only refusal are not a universal semantic
+> equivalence or prompt-quality claim.
+
+> One further append-only Advanced EXP node now adds exact step-boundary checkpoint/resume for the
+> project's `dual_clock_euler` sampler with the `native_flow` schedule. It is node 188 and defaults
+> to disabled/no-write. Opt-in writes atomically preserve the completed packed joint-AV Euler state,
+> original processed noise and latent, optional packed mask, and full sigma schedule in no-pickle
+> safetensors. Resume validates the exact operator-declared model/run contracts, seed, runtime patch
+> structure, AV layout, shifts, audio-velocity protocol and tensor digests before exposing only the
+> remaining sigmas. A true two-process CPU split run matches the uninterrupted control bit-for-bit.
+> This support deliberately excludes multistep-history samplers, ancestral/SDE RNG recovery,
+> third-party sampler state and interruption inside a model forward; real H3 restart media equivalence
+> remains unclaimed.
+> The clean final package audit contains 292 entries, 131 frontend workflows, six Quick Start
+> subgraphs and 188 unique runtime nodes. Isolated extraction preserved the exact 187-node prefix
+> from the prior RAVEN package and appended only the NFE resume setup.
+
+> The current local append-only RAVEN integration adds nodes 185-187 without changing the first
+> 184 IDs or stable sampling. It does not reimplement RAVEN. The Profile node emits one exact
+> parameter set to both the audit and the separately installed external sampler; the Guarded Loader
+> checks plugin/model/CUDA/BF16 and the reviewed memory envelope before delegating; the Request
+> Audit calls the external runtime's own T2VA conditioning, empty-latent and causal-MODEL contracts.
+> The current 16GB GPU / 128GB host is deliberately outside the default gate, so no local real
+> RAVEN generation, quality result or OOM-safety claim exists.
+
+> The six Quick Start subgraph files use dated ASCII filenames while keeping their bilingual graph
+> titles and NOTE text. This avoids a reproduced Registry-pack omission of Unicode paths on a
+> Windows/GBK console; it does not change any subgraph graph, node schema, default, or saved stable
+> workflow.
+
+> Project v1.45.0 appends twenty-one opt-in planning/report/concat/provider/checkpoint nodes after all 163 v1.44 IDs: Audio
+> Integrity Audit, Audio Perceptual Drift Audit, Speaker Routing Audit, and Prompt Budget + Role Compiler. They never edit audio,
+> reassign a speaker, or truncate a prompt; the prompt compiler now preserves leading/trailing whitespace too. Risk findings return `ABSTAIN`; exact tokenizer counts
+> are labelled exact only when the connected CLIP exposes countable token IDs. Four dated
+> importable workflows include NOTE guidance. Real H3 threshold/listening calibration remains open,
+> so these nodes do not claim to repair model leakage, pops, tail wrap, or voice swapping.
+> A real CPU-only Qwen3-VL 8B/Boogu tokenizer run then compiled mixed Chinese/English text,
+> `<Picture 1>`, `<Video 1>`, `<Audio 1>` and one explicit role binding without truncation. It
+> returned `PASS`, 140 exact tokens versus a 153-token planning estimate, no findings and no
+> warnings. Exact 7000-character PASS, 7001-character non-mutating ABSTAIN and a three-subject
+> media contract also pass. The default 7000 ceiling matches the current official MiniMax H3 CLI
+> submission contract. The validated ComfyUI MiniMax tokenizer has no 7000-character guard, so the
+> official CLI submission rule is not described as a local open-weight tokenizer hard limit or architectural
+> quality guarantee. Raising the local audit ceiling reports an official-compatibility warning and
+> never raises the current official CLI limit. The connected count covers compiled text only; H3 Conditioning
+> later inserts visual and timestamp tokens.
+> The appended Prompt Provider Router keeps local passthrough as its no-network default and can
+> explicitly call OpenAI-compatible servers (OpenAI, LM Studio or llama.cpp) or Ollama using the
+> same pinned three-field H3 rewrite contract. Every request requires confirmation; non-loopback
+> endpoints additionally require explicit remote permission, HTTPS and an API key read only from
+> an environment variable. I2VA/L2VA/FL2VA upload only bounded JPEG keyframes, never raw audio.
+> Ollama defaults `keep_alive=0`; OpenAI-compatible servers have no standardized unload call.
+> CPU-only Ollama 0.32.15 probes with `deepseek-r1:1.5b` and `deepseek-r1:8b` both reached the real
+> native chat endpoint. The 1.5B model exhausted 768 tokens, omitted two fields and damaged the
+> Chinese `<d>` block; the 8B model returned all three fields but removed the dialogue. The default
+> strict validator rejected both, and Ollama's loaded-model list was empty after each
+> `keep_alive=0` response. A real slow-loopback test also changed response reading to one socket
+> read per cancellation checkpoint and normalizes header/first-byte stalls to a bounded timeout.
+> These are fail-closed and lifecycle results, not a provider-quality pass.
+> The provider path now replaces each source `<d>...</d>` block with a deterministic opaque token
+> before serialization. It restores a literal only when that exact token appears once inside
+> `integrated_multimodal_description`; missing, edited, duplicated or misplaced tokens fail closed.
+> A further real 8B run confirmed that the raw Chinese dialogue was not uploaded, but that model
+> omitted the token and was therefore rejected with zero restoration. This improves privacy and
+> prevents corruption; it does not manufacture compliant output from an unsuitable model.
+> An appended `contract_repair_attempts` control can make zero to two text-only correction
+> requests after deterministic validation fails. It defaults to zero, never resends reference
+> images, never restores dialogue before validation, and never relaxes the final contract. With
+> Ollama `keep_alive=0`, each repair can reload the model; enable it only when that cost is intended.
+> A subsequent isolated CPU-only `deepseek-r1:8b` request passed the strict three-field and exact
+> Chinese-dialogue contract in 81.964 seconds without needing repair; `ollama ps` was empty after
+> the response and the isolated listener was stopped. It changed the requested turning action into
+> standing still, so this is a positive structural contract result, not a semantic-quality pass.
+> The reference-relative drift audit uses aligned 500ms windows and 24 gain-normalized log-power
+> bands, ignores reference windows below -50dBFS, and requires three persistent windows. Against
+> the previously human-reviewed Motion Recovery files, pass-1 returned PASS, the user-rejected
+> pure pass-2 returned ABSTAIN over 1.4-3.6s, and the accepted 80% pass-1 blend returned PASS. This
+> one-case calibration is a review cue only; it cannot prove distance, reverb, identity or cause.
+> The same local batch now adds nine Creator Workspace/runtime nodes over the existing Studio Timeline: a
+> non-destructive shot override, run-window/sidecar compiler, explicit shot/variant selector and
+> pixel-preserving CPU A/B preview, plus an immutable run receipt and deterministic resume planner.
+> They do not queue jobs, write/delete files, load models, replace
+> Conditioning or alter sampler math. One real-data API session compiled a three-shot 22/22/39
+> timeline, emitted three deterministic shot-B variants and a five-frame hold map, selected variant
+> 2, and compared two actual 39-frame H3 candidates without changing source pixels. The labelled
+> MP4 passed strict decode and peak VRAM did not rise above the 1,156.5MiB service baseline. Human
+> usability and human A/B judgement remain open. Retention candidate classification is now
+> implemented as a non-destructive plan; any authorized filesystem executor remains open. One separate low-load H3
+> active-sampler cancellation/release probe has passed; resumed media is still open.
+> One isolated CPU API graph recorded `completed` then `accepted` for the first shot and selected
+> the second shot for rendering. An identical requeue reported all dependent nodes cached, while
+> changing only the base seed invalidated them. This validates ordinary graph-cache identity, not
+> H3-internal resume or automatic cache detection; receipt outcomes and cache observations remain
+> explicit external facts.
+> An additional opt-in pair binds the Creator workspace hash to the existing Long Video background
+> manager and selects shots/seeds from accepted_count/retry_count. It reuses the established
+> targeted queue deletion, running-prompt interrupt, history retry, process lease and accepted
+> manifest; it does not add a second queue. `review_only` is the default, cross-workspace chain reuse
+> fails closed, and a complete Long Video Candidate Save/Auto Accept terminal is mandatory. The
+> adapter passed CPU/schema/frontend tests and one low-load live H3 cancellation/release run.
+> A separate isolated CPU PromptServer run did make the bound prompt enter `running` and then used
+> the real cancel route. It signalled interruption to the exact prompt ID, history emitted
+> `execution_interrupted`, accepted/retry stayed zero and both queues emptied. This validates the
+> CPU runtime cancellation plumbing. A later 256x256x22 H3 run cancelled the real sampler at
+> progress 1/4, recorded `unload_all_models`, emptied both queues and returned observed device use
+> to baseline+90MiB. Resumed media and automatic-accept quality remain open.
+> The run-receipt workflow now ends with an additional non-destructive Retention Plan node. It
+> validates the immutable ledger, applies each shot's retention policy and emits separate keep and
+> proposed-delete manifests. Completed-but-unreviewed candidates are always kept; ambiguous accepted
+> runs, keep/delete path overlap, or delete candidates without an explicit `path` fail closed. The
+> path-review switch defaults off. Even when enabled, the node only reports
+> `READY_FOR_EXTERNAL_EXECUTOR`: it never resolves, opens, moves or deletes a path, and this project
+> does not include a destructive executor.
+> A separate native ComfyUI workflow now loads two synchronized videos, preserves the existing
+> pixel-safe visual comparison, saves a deliberately silent side-by-side review video, exposes
+> independent A/B audio players and routes the same-content tracks through the reference-relative
+> drift audit. The real 39-frame pair produced a 520x288/24fps silent comparison that passed strict
+> video decode three of three times; both audio previews were emitted and the audit returned PASS
+> with waveform correlation 0.9842, spectral-drift p90 0.0735 and level-delta p90 0.2308dB.
+> This closes the mechanical audio-review path only; no human winner or perceptual equivalence is inferred.
+> The reviewer later rejected both short replacement pages as `unsure`: about one second without a
+> clear human face was not judgeable. The final replacement therefore uses SHA-locked `10A.jpg`,
+> 1088x544x124 I2VA, eight NFE, shifts 12/3, one close Mandarin utterance and the same seed. The
+> 4B/8B/native-32B arms each produce 5.167-second media. Creator reuses one 124-frame latent twice and
+> compares one-decode native concat against separate-decode composition as exact 243-frame,
+> 324,000-sample, 10.125-second arms. The final Creator and 4B/8B pairs were both marked assessable
+> and tied in every reviewed visual/audio dimension with no blocking failure. A later controlled
+> 4B/native-32B pair was also an assessable all-dimension tie; the reviewer noted that the outputs
+> were not identical but felt similar on this simple task. Native 32B was run only after the unchanged
+> 14,500MiB start gate passed and retained 643MiB minimum sampled free VRAM.
+> A no-model objective pass found zero black/white/frozen-transition frames in all four arms.
+> Creator one-decode has a lower numeric join-frame discontinuity than separate decode, but both
+> tracks fall from dialogue tail to near-silence around 5.17 seconds. ClipProj 4B/8B video remains
+> relatively similar while their audio differs materially in correlation and level. These signals
+> guide where to inspect/listen; they are deliberately not converted into an automatic winner.
+> A final convenience page combines the Creator and ClipProj long pairs while preserving independent
+> keyed A/B randomization and assessability. It exports one JSON after both groups are reviewed;
+> the private mapping remains outside the public HTML. These single-reviewer ties close only the fixed
+> simple portrait gates; they do not establish cross-material equivalence, automatic Creator acceptance,
+> ClipProj noninferiority or a universal 16GiB safety tier. Native 32B remains the default.
+> Two pass-through compatibility audits then inspect separately installed ClipProj and Sol-Attn
+> versions, dimensions, hardware and patch ownership without importing a kernel or loading a model.
+> One native latent timeline node mechanically joins complete H3 AV latents by removing each later
+> segment's repeated two latent steps/five video frames and deriving audio trims from the cumulative
+> 24fps/40Hz clocks. It defaults the combined latent to CPU but cannot evict ComfyUI's cached inputs.
+> One repeated low-load real H3 probe joined two 256x256x22 Turbo8 T2VA latents and decoded the
+> result once. It produced exact 39-frame video and 52,000-sample lossless audio after dropping
+> nine 40Hz audio steps/7,200 samples from the second segment. All three MP4 outputs repeated
+> byte-for-byte and passed three strict video/audio/combined decodes. Against separately decoded
+> composition, boundary video MAD fell from 0.11164 to 0.04269 and the single-sample audio jump
+> from 0.02231 to 0.00104, while the adjacent 100ms level gap remained 8.32dB. The independently
+> seeded segments still change state, and only 341.11/144.18MiB whole-device headroom remained;
+> this is not a seamless, quality-superior, VRAM-saving or 16GiB-safe claim.
+> A final append-only Native Latent Resume Manifest node computes an exact chunked SHA-256 over
+> complete H3 video/audio latent samples, optional nested AV masks and supported non-volatile
+> metadata. Empty expected JSON creates a baseline; supplying the old manifest defaults to an
+> error on any content, checkpoint-ID, shape, dtype or mask mismatch. One- and eight-MiB chunking
+> produced the same digest in CPU tests, and byte/mask/metadata mutations were detected. The node
+> writes no files and cannot recover diffusion-internal NFE state, so this closes only checkpoint
+> identity—not storage persistence, perceptual continuity, cache release or crash recovery itself.
+> Two final append-only Native Latent Checkpoint Save/Load nodes persist an already-formed complete
+> H3 nested AV latent, optional nested masks and supported metadata as no-pickle safetensors under a
+> bounded ComfyUI output store. Save defaults to disabled, uses a unique filename, verifies the
+> temporary payload before atomic placement, and returns the whole-file SHA plus the exact-content
+> manifest. Load always verifies the embedded content manifest and can additionally require the
+> independently retained manifest and file SHA. A completed Save in process 25280, process exit,
+> then strict Load in process 8884 returned `MATCH_EXTERNAL`; video/audio tensors, dtypes, masks and
+> metadata matched exactly. This is completed-latent process replacement, not recovery of an
+> interrupted diffusion iteration, Transformer/sampler state, ComfyUI queue, CUDA allocator, or
+> perceptual continuation.
+> One further append-only Native Latent Continuation Concat node consumes the exact Long Video
+> Planner and Conditioning reports that produced a sampled continuation. It verifies chain,
+> segment, render geometry, timeline start/end, active motion context and the native motion-
+> keyframe count, then removes the full proven 5/22/39-frame context on both the video and
+> cumulative audio clocks. A 124-frame timeline plus a 124-frame continuation with 22-frame
+> context produces 226 physical frames, video latent T=67 and audio latent T=377; a subsequent
+> 39-frame-context continuation produces 311 frames. The safe default requires prior video and
+> audio context. All segments remain in latent space for one final AV decode, and any final hidden
+> tail is trimmed only after that decode. These CPU contracts do not prove that an arbitrary
+> third-party sampler consumed the conditioning, perceptual continuity, lower VRAM or interrupted-
+> NFE recovery.
+> The real ClipProj 0.1.13 and Sol-Attn 0.6.2 source trees were then installed at fixed commits.
+> Header probes identified the existing 8B encoder as Qwen3-VL/Boogu and authenticated the
+> 41,990,896-byte v3.1 projection as 4096-to-5120. Real SM89/BF16 hardware plus a synthetic complete
+> 50-block owner passed the Sol audit. Two complete 736x416x124 T2VA templates now show the actual
+> external-node order. A separate low-load service then ran one fixed-seed 256x256x22, four-NFE
+> T2VA per route. ClipProj 8B, native 32B and active Sol all passed strict video/audio/container
+> decode. The 8B cold route used about 1201MiB less whole-device peak than the native 32B control in
+> this one short probe, but was about 2.7 seconds slower. Sol first entered its kernel at 547 tokens only
+> after the mechanical probe temporarily lowered `min_tokens` to 256. A previous
+> `dense_percent=0.2` four-step run stayed entirely dense and was byte-identical to the native
+> control, so the four-step workflow now defaults that field to zero while production
+> `min_tokens` remains 4096. A later same-seed 1152x640x22 T2VA pair kept that production threshold
+> and logged `Sol active (5139 tokens)` on 46/50 blocks in strict mode. Sol/dense completed in
+> 49.281/41.828 seconds and peaked at 16,004.9/16,008.7MiB; because Sol ran first and dense second,
+> the timing remains order/cache-confounded, and neither route cleared the 512MiB headroom gate.
+> Both passed separate video/audio/container decode 3/3. Video SSIM was about 0.558 and PCM
+> correlation about 0.719, proving a material route change rather than quality or audio parity.
+> Human blind review, repeated-memory and general 16GiB gates remain open.
+> ClipProj 8B also completed one separate I2VA visual-path probe: the first frame entered both the
+> VAE keyframe and Qwen3-VL vision path with `has_reference_images=true`. At 256x256x22, four NFE,
+> shifts 12/3 and seed 2608228201 it finished in 36.125 seconds, produced exact 22-frame H264 plus
+> 32kHz stereo AAC, and passed strict video/audio/container decode three of three times. Whole-device
+> peak was 15,207.4MiB with about 1,172.6MiB headroom. The Chinese/proper-name/short-dialogue prompt
+> was encoded. A same-seed native-32B control later completed in 33.718 seconds at a 15,591.9MiB
+> peak versus 36.125 seconds and 15,207.4MiB for 8B. Full-video SSIM was about 0.9293 and PCM
+> correlation about 0.8984, but both routes showed an unwanted pseudo-Chinese subtitle-like overlay
+> and the short utterance was not human-listened or ASR-accepted. This closes mechanical control,
+> not parity or a general 16GiB tier.
+> A second visual-path probe connected distinct first and last images for FL2VA, kept
+> `has_reference_images=true`, and used `<Picture 1>`/`<Picture 2>` for the two anchors. The fixed
+> 256x256x22, four-NFE, 12/3-shift run completed in 23.953 seconds and again passed strict
+> video/audio/container decode three of three times. Whole-device peak was 15,358.0MiB with about
+> 1,022.0MiB headroom. First/last anchor SSIM was about 0.8354/0.5095 after documented transforms;
+> these are path-presence diagnostics, not quality scores. Long interpolation, listening, 0.7MP
+> and general 16GiB gates remain open.
+> A same-seed native-32B FL2VA control then took 31.078 seconds and peaked at 15,670.6MiB versus
+> 23.953 seconds and 15,358.0MiB for 8B. Full-video SSIM was about 0.7090; first/last anchor SSIM
+> was 0.8354/0.5095 for 8B and 0.8462/0.5302 for 32B. PCM correlation was only about 0.5608 with a
+> substantial RMS difference, so listening remains mandatory and no audio non-inferiority claim is made.
+> Ref2VA then completed one same-seed Stock20 mechanical comparison without a Turbo LoRA. The 8B
+> and native-32B routes both emitted exact 256x256x22 H264/AAC and passed strict decode 3/3. The 8B
+> route took 22.907 seconds versus 27.812 seconds, but peaked at 16,318.2MiB versus 16,018.2MiB and
+> left only about 61.8MiB headroom. Three-frame SFace means were 0.319/0.302 respectively; neither
+> path consistently cleared the project's usual 0.36 suggestion threshold. This closes execution
+> and same-seed mechanical control only, not human quality parity, VRAM savings or 16GiB safety.
 
 > Project v1.44.0 appends `MiniMaxH3LightX2VSLAKJSageComposerT8Advanced` after the strict SLA
 > loader and runtime audit. It accepts only the complete KJNodes MiniMax H3 50-block Sage forward
@@ -486,6 +728,14 @@ The audit reports cumulative process I/O/page-fault and pinned-memory/GPU-health
 `tools/validate_h3_vram.py run` for before/after workload deltas and the conservative
 `fits/fits_with_thrashing/unsafe/unknown` classification. A single audit snapshot never proves
 that the current workflow caused the observed cumulative reads.
+
+In the current 1.45 development checkpoint, selecting `sage_attention` also makes this audit retain
+the exact SageAttention package/core import error, every core symbol required by the current KJNodes
+MiniMax H3 patch, the wheel's reported CUDA architectures and the active-GPU match. It performs no
+attention call. This separates incompatible wheels and architecture-probe failures without silently
+falling back. The Audio Lock Source and Quick Audio Drive examples likewise distinguish preserved
+`mux_audio` from deterministic lip synchronization: H3 can condition visual performance on an audio
+reference, but it does not enforce phoneme-exact mouth motion.
 
 The stable default sampler has also been run against the H3-era legacy ComfyUI
 `0.30.0@563b98eef` and current `cbbc9dab1` using the same plugin, model files, workflow and seed.

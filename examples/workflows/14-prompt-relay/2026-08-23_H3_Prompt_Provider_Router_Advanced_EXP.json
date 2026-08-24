@@ -1,0 +1,94 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3PromptProviderRouterT8Advanced",
+      "title": "Local-safe H3 prompt provider routing; review before Conditioning",
+      "pos": [0, 0],
+      "size": [760, 850],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "prompt", "type": "STRING", "widget": {"name": "prompt"}, "link": null},
+        {"name": "provider_mode", "type": "COMBO", "widget": {"name": "provider_mode"}, "link": null},
+        {"name": "task", "type": "COMBO", "widget": {"name": "task"}, "link": null},
+        {"name": "resolution", "type": "COMBO", "widget": {"name": "resolution"}, "link": null},
+        {"name": "duration", "type": "INT", "widget": {"name": "duration"}, "link": null},
+        {"name": "endpoint", "type": "STRING", "widget": {"name": "endpoint"}, "link": null},
+        {"name": "provider_model", "type": "STRING", "widget": {"name": "provider_model"}, "link": null},
+        {"name": "api_key_env", "type": "STRING", "widget": {"name": "api_key_env"}, "link": null},
+        {"name": "confirm_provider_request", "type": "BOOLEAN", "widget": {"name": "confirm_provider_request"}, "link": null},
+        {"name": "allow_remote_endpoint", "type": "BOOLEAN", "widget": {"name": "allow_remote_endpoint"}, "link": null},
+        {"name": "max_new_tokens", "type": "INT", "widget": {"name": "max_new_tokens"}, "link": null},
+        {"name": "temperature", "type": "FLOAT", "widget": {"name": "temperature"}, "link": null},
+        {"name": "top_p", "type": "FLOAT", "widget": {"name": "top_p"}, "link": null},
+        {"name": "maximum_image_edge", "type": "INT", "widget": {"name": "maximum_image_edge"}, "link": null},
+        {"name": "jpeg_quality", "type": "INT", "widget": {"name": "jpeg_quality"}, "link": null},
+        {"name": "timeout_seconds", "type": "FLOAT", "widget": {"name": "timeout_seconds"}, "link": null},
+        {"name": "maximum_response_bytes", "type": "INT", "widget": {"name": "maximum_response_bytes"}, "link": null},
+        {"name": "strict_output_contract", "type": "BOOLEAN", "widget": {"name": "strict_output_contract"}, "link": null},
+        {"name": "ollama_keep_alive", "type": "STRING", "widget": {"name": "ollama_keep_alive"}, "link": null},
+        {"name": "contract_repair_attempts", "type": "INT", "widget": {"name": "contract_repair_attempts"}, "link": null},
+        {"name": "first_frame", "type": "IMAGE", "link": null},
+        {"name": "last_frame", "type": "IMAGE", "link": null}
+      ],
+      "outputs": [
+        {"name": "enhanced_prompt", "type": "STRING", "links": null},
+        {"name": "integrated_multimodal_description", "type": "STRING", "links": null},
+        {"name": "overall_soundscape", "type": "STRING", "links": null},
+        {"name": "non_diegetic_music", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptProviderRouterT8Advanced"
+      },
+      "widgets_values": [
+        "A woman in a red Hanfu turns beneath moonlight and says <d>[Chinese] 你在干嘛呢，我在这里呀。</d>",
+        "local_passthrough — 本地原文直通",
+        "T2VA — 文生音视频",
+        "16:9",
+        10,
+        "",
+        "local-model",
+        "",
+        false,
+        false,
+        1024,
+        0.0,
+        1.0,
+        768,
+        85,
+        120.0,
+        262144,
+        true,
+        "0",
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MarkdownNote",
+      "title": "Provider Router 使用与隐私边界",
+      "pos": [810, 0],
+      "size": [760, 780],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": [
+        "## 默认不会联网\n\n- `local_passthrough`逐字返回原提示词；需要本项目本地8B重写时仍使用独立的 Prompt Rewriter 8B 节点。\n- `openai_compatible`适用于 OpenAI、LM Studio 和 llama.cpp。GGUF由LM Studio/llama.cpp服务加载，本节点不直接加载GGUF，也无法通过通用OpenAI协议保证卸载服务端模型。\n- `ollama_chat`适用于Ollama；默认`ollama_keep_alive=0`，请求响应后卸载该Ollama模型。\n\n## 联网前必须显式确认\n\n- 任意provider请求都必须打开`confirm_provider_request`。非本机地址还必须打开`allow_remote_endpoint`，且只接受HTTPS。\n- API密钥只能填写环境变量名，例如`OPENAI_API_KEY`，不要把密钥值写进节点。回环地址可不设置密钥。\n- I2VA/L2VA/FL2VA会把对应首尾帧缩到最长边768并编码为JPEG发送；T2VA不发送图片。不会发送原始音频。\n- 输出严格检查三字段顺序、非法Picture编号和原提示词中的`<d>...</d>`；仍必须人工审核后再把`enhanced_prompt`接入H3 Conditioning。\n- `contract_repair_attempts`默认0，保持旧工作流只请求一次；设为1或2时仅在合同失败后做确定性修复，不重新上传参考图，也不会放宽校验。Ollama配合`keep_alive=0`时每次修复可能重新加载模型。\n- 取消会在请求前、分块读取时和完成后检查，但单次socket阻塞仍可能等到`timeout_seconds`。"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [100, 100]}},
+  "version": 0.4
+}

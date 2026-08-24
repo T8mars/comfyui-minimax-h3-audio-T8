@@ -1,0 +1,282 @@
+{
+  "last_node_id": 11,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3StudioTimelineT8Advanced",
+      "title": "Existing Studio Timeline remains the immutable source",
+      "pos": [0, 0],
+      "size": [620, 540],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "project_id", "type": "STRING", "widget": {"name": "project_id"}, "link": null},
+        {"name": "shots_json", "type": "STRING", "widget": {"name": "shots_json"}, "link": null},
+        {"name": "default_backend", "type": "COMBO", "widget": {"name": "default_backend"}, "link": null},
+        {"name": "default_duration_seconds", "type": "FLOAT", "widget": {"name": "default_duration_seconds"}, "link": null},
+        {"name": "default_aspect_ratio", "type": "STRING", "widget": {"name": "default_aspect_ratio"}, "link": null},
+        {"name": "base_seed", "type": "INT", "widget": {"name": "base_seed"}, "link": null},
+        {"name": "seed_policy", "type": "COMBO", "widget": {"name": "seed_policy"}, "link": null},
+        {"name": "split_long_shots", "type": "BOOLEAN", "widget": {"name": "split_long_shots"}, "link": null},
+        {"name": "strict_exact_dialogue", "type": "BOOLEAN", "widget": {"name": "strict_exact_dialogue"}, "link": null},
+        {"name": "cast", "type": "H3_T8_UNIFIED_CAST", "link": null},
+        {"name": "sound_canvas", "type": "H3_T8_SOUND_CANVAS", "link": null}
+      ],
+      "outputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "links": [1]},
+        {"name": "timeline_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3StudioTimelineT8Advanced"},
+      "widgets_values": [
+        "creator_runtime_demo",
+        "[{\"id\":\"opening\",\"prompt\":\"A calm cinematic opening\",\"duration_seconds\":3},{\"id\":\"action\",\"prompt\":\"The same character runs through the station\",\"duration_seconds\":5},{\"id\":\"ending\",\"prompt\":\"A quiet resolved ending\",\"duration_seconds\":4}]",
+        "minimax_h3",
+        5.0,
+        "16:9",
+        2608231001,
+        "increment",
+        true,
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3CreatorWorkspaceT8Advanced",
+      "title": "Compile the explicit run window; no queue mutation",
+      "pos": [700, 0],
+      "size": [560, 300],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "timeline", "type": "H3_T8_STUDIO_TIMELINE", "link": 1},
+        {"name": "run_from_index", "type": "INT", "widget": {"name": "run_from_index"}, "link": null},
+        {"name": "run_to_index", "type": "INT", "widget": {"name": "run_to_index"}, "link": null},
+        {"name": "include_disabled_shots", "type": "BOOLEAN", "widget": {"name": "include_disabled_shots"}, "link": null},
+        {"name": "workspace_notes", "type": "STRING", "widget": {"name": "workspace_notes"}, "link": null},
+        {"name": "edit_plan", "type": "H3_T8_CREATOR_EDIT_PLAN", "link": null}
+      ],
+      "outputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "links": [2, 3, 5, 7]},
+        {"name": "run_summary", "type": "STRING", "links": null},
+        {"name": "sidecar_json", "type": "STRING", "links": null},
+        {"name": "workspace_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorWorkspaceT8Advanced"},
+      "widgets_values": [0, -1, false, "Receipt demo only; generation remains explicitly wired by the user."]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3CreatorRunReceiptT8Advanced",
+      "title": "Record observed attempt 1 as completed and waiting for review",
+      "pos": [1340, 0],
+      "size": [620, 500],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 2},
+        {"name": "run_position", "type": "INT", "widget": {"name": "run_position"}, "link": null},
+        {"name": "variant_index", "type": "INT", "widget": {"name": "variant_index"}, "link": null},
+        {"name": "attempt_number", "type": "INT", "widget": {"name": "attempt_number"}, "link": null},
+        {"name": "outcome", "type": "COMBO", "widget": {"name": "outcome"}, "link": null},
+        {"name": "prompt_id", "type": "STRING", "widget": {"name": "prompt_id"}, "link": null},
+        {"name": "cache_observation", "type": "COMBO", "widget": {"name": "cache_observation"}, "link": null},
+        {"name": "artifact_manifest_json", "type": "STRING", "widget": {"name": "artifact_manifest_json"}, "link": null},
+        {"name": "notes", "type": "STRING", "widget": {"name": "notes"}, "link": null},
+        {"name": "previous_ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "link": null}
+      ],
+      "outputs": [
+        {"name": "ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "links": [4]},
+        {"name": "event_json", "type": "STRING", "links": null},
+        {"name": "ledger_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorRunReceiptT8Advanced"},
+      "widgets_values": [0, 0, 1, "completed", "replace-with-real-prompt-id", "executed", "{\"video\":{\"path\":\"output/replace-with-real-candidate.mp4\"}}", "Record only an outcome actually seen in ComfyUI history/output."]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3CreatorRunReceiptT8Advanced",
+      "title": "After human review, accept the same attempt; artifact metadata is inherited",
+      "pos": [2040, 0],
+      "size": [620, 500],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 3},
+        {"name": "run_position", "type": "INT", "widget": {"name": "run_position"}, "link": null},
+        {"name": "variant_index", "type": "INT", "widget": {"name": "variant_index"}, "link": null},
+        {"name": "attempt_number", "type": "INT", "widget": {"name": "attempt_number"}, "link": null},
+        {"name": "outcome", "type": "COMBO", "widget": {"name": "outcome"}, "link": null},
+        {"name": "prompt_id", "type": "STRING", "widget": {"name": "prompt_id"}, "link": null},
+        {"name": "cache_observation", "type": "COMBO", "widget": {"name": "cache_observation"}, "link": null},
+        {"name": "artifact_manifest_json", "type": "STRING", "widget": {"name": "artifact_manifest_json"}, "link": null},
+        {"name": "notes", "type": "STRING", "widget": {"name": "notes"}, "link": null},
+        {"name": "previous_ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "link": 4}
+      ],
+      "outputs": [
+        {"name": "ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "links": [6, 8]},
+        {"name": "event_json", "type": "STRING", "links": null},
+        {"name": "ledger_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorRunReceiptT8Advanced"},
+      "widgets_values": [0, 0, 1, "accepted", "replace-with-real-prompt-id", "unknown", "{}", "Accepted only after reviewing the complete video and audio."]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3CreatorResumePlanT8Advanced",
+      "title": "Compute next explicit action after the accepted receipt",
+      "pos": [2740, 0],
+      "size": [580, 300],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 5},
+        {"name": "ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "link": 6}
+      ],
+      "outputs": [
+        {"name": "resume_plan", "type": "H3_T8_CREATOR_RESUME_PLAN", "links": null},
+        {"name": "action", "type": "STRING", "links": null},
+        {"name": "run_position", "type": "INT", "links": null},
+        {"name": "variant_index", "type": "INT", "links": null},
+        {"name": "attempt_number", "type": "INT", "links": null},
+        {"name": "summary", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorResumePlanT8Advanced"},
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "① 回执不是自动队列探针",
+      "pos": [0, 630],
+      "size": [760, 350],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 只记录真实观察\n\n`outcome`、`prompt_id`和`cache_observation`必须来自你实际看到的ComfyUI历史或输出。节点不会猜缓存命中，也不会自动Queue或Cancel。`completed`表示已经生成但等待人工复核；同一attempt随后只能`accepted`或`rejected`。"]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "② 继续位置的确定规则",
+      "pos": [820, 630],
+      "size": [760, 350],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## render / review / retry / complete\n\nPlanner按镜头顺序工作：存在`completed`时先要求review；否则优先未尝试的确定性variant；所有variant都失败、取消或拒绝后才返回retry并递增attempt。某镜头有一个`accepted`候选后才继续下一镜头。把返回的`run_position/variant_index`手动填入现有Shot Select。"]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "③ 不自动删候选，也不承诺缓存命中",
+      "pos": [1640, 630],
+      "size": [760, 350],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 默认仍不改文件\n\nLedger和Retention Plan都只生成内存合同及拟删除清单。新Quarantine节点默认`prepare_only`，只核对输出目录内的普通文件并计算SHA，不移动、不删除。只有Retention Plan完成全部accept、路径复核开关打开并输出`READY_FOR_EXTERNAL_EXECUTOR`后，才可能进入下一阶段。取消ComfyUI中的真实任务仍由用户或现有Long Video Background控制器执行。"]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3CreatorRetentionPlanT8Advanced",
+      "title": "Compile retention policy into reviewable keep/proposed-delete manifests",
+      "pos": [2740, 360],
+      "size": [620, 240],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": 7},
+        {"name": "confirm_artifact_paths_reviewed", "type": "BOOLEAN", "widget": {"name": "confirm_artifact_paths_reviewed"}, "link": null},
+        {"name": "ledger", "type": "H3_T8_CREATOR_RUN_LEDGER", "link": 8}
+      ],
+      "outputs": [
+        {"name": "retention_plan", "type": "H3_T8_CREATOR_RETENTION_PLAN", "links": [9]},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "keep_manifest_json", "type": "STRING", "links": null},
+        {"name": "proposed_delete_manifest_json", "type": "STRING", "links": null},
+        {"name": "summary", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorRetentionPlanT8Advanced"},
+      "widgets_values": [false]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3CreatorArtifactQuarantineT8Advanced",
+      "title": "Muted by default: prepare hashes first, quarantine only after a second explicit review",
+      "pos": [3440, 360],
+      "size": [680, 430],
+      "flags": {},
+      "order": 9,
+      "mode": 4,
+      "inputs": [
+        {"name": "retention_plan", "type": "H3_T8_CREATOR_RETENTION_PLAN", "link": 9},
+        {"name": "action", "type": "COMBO", "widget": {"name": "action"}, "link": null},
+        {"name": "execution_manifest_json", "type": "STRING", "widget": {"name": "execution_manifest_json"}, "link": null},
+        {"name": "expected_plan_hash", "type": "STRING", "widget": {"name": "expected_plan_hash"}, "link": null},
+        {"name": "execution_epoch", "type": "INT", "widget": {"name": "execution_epoch"}, "link": null},
+        {"name": "confirm_action", "type": "BOOLEAN", "widget": {"name": "confirm_action"}, "link": null},
+        {"name": "hash_chunk_megabytes", "type": "INT", "widget": {"name": "hash_chunk_megabytes"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "execution_manifest", "type": "H3_T8_CREATOR_QUARANTINE_MANIFEST", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "manifest_json", "type": "STRING", "links": null},
+        {"name": "file_count", "type": "INT", "links": null},
+        {"name": "total_bytes", "type": "INT", "links": null},
+        {"name": "receipt_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorArtifactQuarantineT8Advanced"},
+      "widgets_values": ["prepare_only", "", "", 0, false, 8]
+    },
+    {
+      "id": 11,
+      "type": "MarkdownNote",
+      "title": "④ 两阶段可恢复隔离，不提供永久删除",
+      "pos": [2460, 1040],
+      "size": [1660, 420],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 正确使用顺序\n\n1. 先完成所有镜头人工accept，并在Retention Plan中打开路径已复核开关；2. 将Quarantine节点取消静音，保持`prepare_only`执行一次，保存输出的`manifest_json`并核对每个相对路径、字节数和SHA；3. 再选择`quarantine`，粘贴完全相同的manifest，填写Retention Plan的精确`plan_hash`、新的正整数epoch并打开确认；4. 文件只会移动到`output/MiniMaxH3/creator_quarantine`，不会永久删除；5. 还原时粘贴receipt或原manifest，保持同一plan hash和epoch，选择`restore`；中断后用`recover_to_source`。越界路径、目录、链接、内容变化、重复epoch和源/隔离区同时存在都会拒绝。当前示例只有第一个镜头回执，默认Retention Plan不会READY，因此执行节点保持静音。"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "H3_T8_STUDIO_TIMELINE"],
+    [2, 2, 0, 3, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [3, 2, 0, 4, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [4, 3, 0, 4, 9, "H3_T8_CREATOR_RUN_LEDGER"],
+    [5, 2, 0, 5, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [6, 4, 0, 5, 1, "H3_T8_CREATOR_RUN_LEDGER"],
+    [7, 2, 0, 9, 0, "H3_T8_CREATOR_WORKSPACE"],
+    [8, 4, 0, 9, 2, "H3_T8_CREATOR_RUN_LEDGER"],
+    [9, 9, 0, 10, 0, "H3_T8_CREATOR_RETENTION_PLAN"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.72, "offset": [70, 80]}},
+  "version": 0.4
+}

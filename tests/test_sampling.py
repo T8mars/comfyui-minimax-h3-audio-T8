@@ -291,9 +291,9 @@ def test_explicit_defaults_are_identical_to_the_legacy_five_argument_call():
         "native_flow",
     )
 
-    assert type(implicit[0].get_model_object("model_sampling")) is type(
-        explicit[0].get_model_object("model_sampling")
-    )
+    implicit_sampling = implicit[0].get_model_object("model_sampling")
+    explicit_sampling = explicit[0].get_model_object("model_sampling")
+    assert implicit_sampling.__class__ is explicit_sampling.__class__
     assert implicit[1].sampler_function.__name__ == explicit[1].sampler_function.__name__
     assert torch.equal(implicit[2], explicit[2])
 

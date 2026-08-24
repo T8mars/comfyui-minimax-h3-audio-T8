@@ -1,0 +1,54 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3PromptBudgetCompilerT8Advanced",
+      "title": "No silent truncation: PASS or ABSTAIN before H3 Conditioning",
+      "pos": [0, 0], "size": [720, 650], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [
+        {"name": "prompt", "type": "STRING", "widget": {"name": "prompt"}, "link": null},
+        {"name": "character_limit", "type": "INT", "widget": {"name": "character_limit"}, "link": null},
+        {"name": "token_limit", "type": "INT", "widget": {"name": "token_limit"}, "link": null},
+        {"name": "picture_count", "type": "INT", "widget": {"name": "picture_count"}, "link": null},
+        {"name": "video_count", "type": "INT", "widget": {"name": "video_count"}, "link": null},
+        {"name": "audio_count", "type": "INT", "widget": {"name": "audio_count"}, "link": null},
+        {"name": "media_assignments_json", "type": "STRING", "widget": {"name": "media_assignments_json"}, "link": null},
+        {"name": "append_role_bindings", "type": "BOOLEAN", "widget": {"name": "append_role_bindings"}, "link": null},
+        {"name": "allow_shared_audio", "type": "BOOLEAN", "widget": {"name": "allow_shared_audio"}, "link": null},
+        {"name": "require_exact_token_count", "type": "BOOLEAN", "widget": {"name": "require_exact_token_count"}, "link": null},
+        {"name": "clip", "type": "CLIP", "link": null}
+      ],
+      "outputs": [
+        {"name": "compiled_prompt", "type": "STRING", "links": null},
+        {"name": "pass_audit", "type": "BOOLEAN", "links": null},
+        {"name": "decision", "type": "STRING", "links": null},
+        {"name": "character_count", "type": "INT", "links": null},
+        {"name": "estimated_token_count", "type": "INT", "links": null},
+        {"name": "exact_token_count", "type": "INT", "links": null},
+        {"name": "media_map_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3PromptBudgetCompilerT8Advanced"},
+      "widgets_values": [
+        "<Picture 1>中的主角听见<Audio 1>中的参考声音后转身，与<Video 1>的运动节奏保持一致。",
+        7000, 0, 1, 1, 1,
+        "{\"subjects\":[{\"subject_id\":\"lead\",\"picture_ordinal\":1,\"video_ordinal\":1,\"audio_ordinal\":1,\"role\":\"primary_character\"}]}",
+        true, false, false
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MarkdownNote",
+      "title": "提示词预算与角色绑定说明",
+      "pos": [780, 0], "size": [680, 600], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 连接到H3 Conditioning之前先运行\n\n- `picture/video/audio_count`必须填写实际连接数量；JSON中的ordinal超出数量会`ABSTAIN`。\n- 默认把角色绑定文本追加到提示词；原提示词连首尾空白也不删除。一个音频默认只能绑定一个人物；确实要共享时再打开`allow_shared_audio`。\n- report会列出已连接但未分配、提示词引用但未绑定的Picture/Video/Audio编号。这些是人工复核警告，不会把场景或环境参考误判成错误。\n- 默认7000字符匹配当前MiniMax官方H3 CLI提交上限。它不是本地open-weight tokenizer硬上限：当前ComfyUI无7000字符硬拦截。调高只改变本地审计并会报告官方不兼容，不能提高当前官方CLI上限。\n- 可选连接正式H3 CLIP；只有成功读出该tokenizer结构时`exact_token_count`才不是-1。该精确值只统计编译后的文本；图片/视频会在Conditioning阶段继续增加视觉和时间戳token。\n- 多人示例：每个subject分别填写`picture_ordinal`、`video_ordinal`、`audio_ordinal`与role；不要让同一音频意外绑定多人。\n- 本机Qwen3-VL 8B/Boogu实测：混合中英文和三类媒体标签、角色绑定共296字符，规划估算153 token，精确文本计数140，PASS且未截断。\n- 输出`compiled_prompt`接现有Conditioning的prompt；先检查decision/report。"]
+    }
+  ],
+  "links": [], "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.9, "offset": [100, 100]}},
+  "version": 0.4
+}

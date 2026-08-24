@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v7
+      - name: Verify synchronized release version
+        run: python3 tools/prepare_release_version.py --check
       - name: Publish custom node
         uses: Comfy-Org/publish-node-action@main
         with:

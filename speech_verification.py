@@ -5,7 +5,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import threading
 from typing import Mapping
 import unicodedata
@@ -41,9 +40,16 @@ _SPEAKER_MODEL = None
 _SPEAKER_EXTRACTOR = None
 _SPEAKER_MODEL_PATH: str | None = None
 _SPEAKER_LOCK = threading.Lock()
-_UNIT_PATTERN = re.compile(
-    r"[a-z0-9]+(?:'[a-z0-9]+)?|[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]",
-    flags=re.IGNORECASE,
+_CHARACTER_ERROR_RANGES = (
+    (0x3400, 0x4DBF),   # CJK Extension A
+    (0x4E00, 0x9FFF),   # CJK Unified Ideographs
+    (0xF900, 0xFAFF),   # CJK Compatibility Ideographs
+    (0x20000, 0x2FA1F), # CJK Extensions B-F and compatibility supplement
+    (0x3040, 0x30FF),   # Hiragana and Katakana
+    (0x31F0, 0x31FF),   # Katakana phonetic extensions
+    (0x1100, 0x11FF),   # Hangul Jamo
+    (0x3130, 0x318F),   # Hangul compatibility Jamo
+    (0xAC00, 0xD7AF),   # Hangul syllables
 )
 
 
@@ -51,8 +57,46 @@ def _json(data) -> str:
     return json.dumps(data, ensure_ascii=False, indent=2, default=str)
 
 
+def _uses_character_error_units(character: str) -> bool:
+    codepoint = ord(character)
+    return any(start <= codepoint <= end for start, end in _CHARACTER_ERROR_RANGES)
+
+
 def normalized_asr_units(text: str) -> list[str]:
-    return _UNIT_PATTERN.findall(str(text or "").lower().replace("’", "'"))
+    """Return Unicode-aware WER/CER units without silently dropping scripts.
+
+    CJK ideographs, Japanese kana and Korean jamo/syllables remain per-character
+    units. Other scripts use NFKC/casefolded Unicode word units, preserving
+    combining marks and internal apostrophes. This keeps Arabic, Cyrillic and
+    accented Latin text evaluable instead of treating it as an empty transcript.
+    """
+
+    normalized = unicodedata.normalize("NFKC", str(text or "")).casefold()
+    normalized = normalized.replace("’", "'").replace("ʼ", "'")
+    units: list[str] = []
+    word: list[str] = []
+
+    def flush_word() -> None:
+        if word:
+            units.append("".join(word))
+            word.clear()
+
+    for index, character in enumerate(normalized):
+        if _uses_character_error_units(character):
+            flush_word()
+            units.append(character)
+            continue
+        category = unicodedata.category(character)
+        if character.isalnum() or (category.startswith("M") and word):
+            word.append(character)
+            continue
+        next_character = normalized[index + 1] if index + 1 < len(normalized) else ""
+        if character == "'" and word and next_character.isalnum():
+            word.append(character)
+            continue
+        flush_word()
+    flush_word()
+    return units
 
 
 def _word_unit_stream(words: list[dict]) -> tuple[list[str], list[int]]:
@@ -84,30 +128,47 @@ def _levenshtein(expected: list[str], heard: list[str]) -> int:
 def transcript_metrics(expected: str, heard: str) -> dict:
     expected_units = normalized_asr_units(expected)
     heard_units = normalized_asr_units(heard)
-    distance = _levenshtein(expected_units, heard_units)
+    if not expected_units:
+        raise ValueError("expected transcript contains no evaluable Unicode letters or numbers")
+    word_unit_distance = _levenshtein(expected_units, heard_units)
     expected_nfkc = unicodedata.normalize("NFKC", str(expected or "")).casefold()
     heard_nfkc = unicodedata.normalize("NFKC", str(heard or "")).casefold()
     expected_characters = [character for character in expected_nfkc if character.isalnum()]
     heard_characters = [character for character in heard_nfkc if character.isalnum()]
     character_distance = _levenshtein(expected_characters, heard_characters)
-    contains_cjk = bool(
-        re.search(r"[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]", expected_nfkc)
-    )
+    contains_cjk = any(_uses_character_error_units(character) for character in expected_nfkc)
     primary_name = "CER" if contains_cjk else "WER"
+    if contains_cjk:
+        primary_distance = character_distance
+        primary_expected_count = len(expected_characters)
+        primary_heard_count = len(heard_characters)
+        primary_unit_mode = "unicode_alphanumeric_characters"
+    else:
+        primary_distance = word_unit_distance
+        primary_expected_count = len(expected_units)
+        primary_heard_count = len(heard_units)
+        primary_unit_mode = "unicode_words"
+    primary_error_rate = primary_distance / max(1, primary_expected_count)
     return {
         "expected_units": len(expected_units),
         "heard_units": len(heard_units),
-        "edit_distance": distance,
-        "word_or_character_error_rate": distance / max(1, len(expected_units)),
+        "word_unit_edit_distance": word_unit_distance,
+        "word_unit_error_rate": word_unit_distance / max(1, len(expected_units)),
+        "edit_distance": primary_distance,
+        "word_or_character_error_rate": primary_error_rate,
         "primary_metric": primary_name,
-        "primary_error_rate": distance / max(1, len(expected_units)),
+        "primary_unit_mode": primary_unit_mode,
+        "primary_expected_units": primary_expected_count,
+        "primary_heard_units": primary_heard_count,
+        "normalization": "Unicode NFKC + casefold; CJK/kana/hangul characters, other-script words",
+        "primary_error_rate": primary_error_rate,
         "character_error_rate": character_distance / max(1, len(expected_characters)),
         "character_edit_distance": character_distance,
         "expected_characters": len(expected_characters),
         "heard_characters": len(heard_characters),
         "normalized_similarity": max(
             0.0,
-            1.0 - distance / max(1, len(expected_units), len(heard_units)),
+            1.0 - primary_distance / max(1, primary_expected_count, primary_heard_count),
         ),
     }
 

@@ -23,6 +23,7 @@ from h3_audio_t8_pkg.speech import (
 )
 from h3_audio_t8_pkg.speech_verification import (
     exact_target_word_bounds,
+    normalized_asr_units,
     transcript_metrics,
     verify_speech_audio,
 )
@@ -170,6 +171,42 @@ def test_asr_metrics_and_exact_target_bounds_do_not_fuzzy_guess():
     assert transcript_metrics(expected, expected)["normalized_similarity"] == 1.0
     contaminated = "unrequested words " + expected
     assert transcript_metrics(expected, contaminated)["word_or_character_error_rate"] > 0
+
+
+def test_asr_units_preserve_accented_latin_cyrillic_and_arabic_words():
+    assert normalized_asr_units("L’été arrive déjà") == ["l'été", "arrive", "déjà"]
+    assert normalized_asr_units("Привет, мир") == ["привет", "мир"]
+    assert normalized_asr_units("مرحبا بالعالم") == ["مرحبا", "بالعالم"]
+    assert transcript_metrics("cafe\u0301 déjà", "café déjà")["primary_error_rate"] == 0.0
+
+    russian = transcript_metrics("Привет мир", "Привет")
+    arabic = transcript_metrics("مرحبا بالعالم", "مرحبا")
+    spanish = transcript_metrics("¿Dónde está José?", "¿Dónde está?")
+    assert russian["primary_metric"] == "WER" and russian["primary_error_rate"] == 0.5
+    assert arabic["primary_metric"] == "WER" and arabic["primary_error_rate"] == 0.5
+    assert spanish["primary_metric"] == "WER" and spanish["primary_error_rate"] == pytest.approx(1 / 3)
+
+
+def test_cjk_kana_hangul_and_extension_characters_use_cer_units():
+    for expected, heard in (
+        ("你好世界", "你好世间"),
+        ("こんにちは", "こんばんは"),
+        ("안녕하세요", "안녕하세오"),
+        ("𠀀人物", "𠀁人物"),
+    ):
+        metrics = transcript_metrics(expected, heard)
+        assert metrics["primary_metric"] == "CER"
+        assert metrics["primary_error_rate"] > 0.0
+
+    mixed = transcript_metrics("你好 H3 world", "你好 H4 world")
+    assert mixed["primary_metric"] == "CER"
+    assert mixed["primary_unit_mode"] == "unicode_alphanumeric_characters"
+    assert mixed["primary_error_rate"] == pytest.approx(1 / 9)
+
+
+def test_transcript_metrics_rejects_punctuation_only_expected_text():
+    with pytest.raises(ValueError, match="no evaluable Unicode"):
+        transcript_metrics("……！？", "")
 
 
 def test_asr_exact_target_mode_trims_and_retranscribes(monkeypatch):

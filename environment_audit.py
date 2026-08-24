@@ -18,11 +18,21 @@ MAX_PIXEL_AREA = 1920 * 1088
 VRAM_CAUTION_PIXEL_AREA = 1344 * 768
 
 KNOWN_CORE_COMMITS = {
+    "h3_flow_av_audio_scale": "bdcb886a4705a03cf40f4a7226de9fc7c059fc90",
     "video_vae_generic_chunked_io": "2a68ce33b4c9ea6ee4283e618a74560cefb32694",
     "attention_peak_clone": "62b3c94bd45154f6486c7abf1b9efcacee96ea69",
     "tiled_decode_nested_tensor_fix": "6233790c6dff26bf35113d46d6d3367b7041b1d8",
     "audio_vae_full_offload_fix": "2340099d93305bfdf4eaa29e9f8d32ec92d3035f",
 }
+
+KJ_SAGE_REQUIRED_CORE_SYMBOLS = (
+    "per_thread_int8_triton",
+    "per_warp_int8_cuda",
+    "per_block_int8_triton",
+    "per_channel_fp8",
+    "get_cuda_arch_versions",
+    "attn_false",
+)
 
 
 def canonical_json(value: Any, *, indent: int | None = None) -> str:
@@ -146,12 +156,116 @@ def _source_capability(
     )
 
 
+def _constant_property_value(owner: type, name: str) -> float | None:
+    descriptor = inspect.getattr_static(owner, name, None)
+    if not isinstance(descriptor, property) or descriptor.fget is None:
+        return None
+    try:
+        value = float(descriptor.fget(None))
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return value if math.isfinite(value) else None
+
+
+def collect_h3_audio_scale_snapshot() -> dict[str, Any]:
+    """Inspect the pre/post FLOW_AV contract without loading a model or CUDA kernel."""
+
+    result: dict[str, Any] = {
+        "inspected": True,
+        "core_protocol": "unknown",
+        "core_requires_model_sampling_audio_scale": None,
+        "native_model_sampling_av_available": False,
+        "native_audio_scale_12_over_3": None,
+        "stable_custom_audio_scale": None,
+        "multirate_custom_audio_scale": None,
+        "custom_sampling_compatible": None,
+        "errors": [],
+    }
+    try:
+        model_base = importlib.import_module("comfy.model_base")
+        minimax_base = getattr(model_base, "MiniMaxH3")
+        audio_scale_method = getattr(minimax_base, "audio_scale", None)
+        audio_scale_source = _safe_source(audio_scale_method)
+        requires_audio_scale = bool(
+            callable(audio_scale_method)
+            and audio_scale_source
+            and "model_sampling.audio_scale" in audio_scale_source
+        )
+        result["core_requires_model_sampling_audio_scale"] = requires_audio_scale
+        result["core_protocol"] = "flow_av" if requires_audio_scale else "legacy_dual_clock"
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "core_model_base",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+
+    try:
+        model_sampling = importlib.import_module("comfy.model_sampling")
+        native_cls = getattr(model_sampling, "ModelSamplingAV", None)
+        result["native_model_sampling_av_available"] = native_cls is not None
+        if native_cls is not None:
+            config = type(
+                "H3AudioScaleAuditConfig",
+                (),
+                {"sampling_settings": {"shift": 1.0, "multiplier": 1000}},
+            )()
+            native = native_cls(config)
+            native.set_parameters(shift=12.0, audio_shift=3.0)
+            result["native_audio_scale_12_over_3"] = float(native.audio_scale)
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "native_model_sampling_av",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+
+    try:
+        from .sampling import MiniMaxH3FlowSampling
+        from .sampling_multirate_exp import MiniMaxH3MultiRateFlowSamplingEXP
+
+        result["stable_custom_audio_scale"] = _constant_property_value(
+            MiniMaxH3FlowSampling, "audio_scale"
+        )
+        result["multirate_custom_audio_scale"] = _constant_property_value(
+            MiniMaxH3MultiRateFlowSamplingEXP, "audio_scale"
+        )
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "t8_custom_sampling",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+
+    core_requires = result["core_requires_model_sampling_audio_scale"]
+    neutral_custom_scales = (
+        result["stable_custom_audio_scale"] == 1.0
+        and result["multirate_custom_audio_scale"] == 1.0
+    )
+    if core_requires is None:
+        result["custom_sampling_compatible"] = None
+    elif core_requires:
+        result["custom_sampling_compatible"] = neutral_custom_scales
+    else:
+        # Legacy H3 never reads audio_scale, while the same neutral properties are
+        # harmless and keep one plugin build usable on both core generations.
+        result["custom_sampling_compatible"] = neutral_custom_scales
+    return result
+
+
 def _capabilities(git: Mapping[str, Any], sources: Mapping[str, str | None]) -> dict[str, Any]:
     model_source = sources.get("model")
     vae_source = sources.get("video_vae")
     native_source = sources.get("native_nodes")
     model_base_source = sources.get("model_base")
     ancestry = git.get("known_commit_ancestry", {})
+    audio_scale_snapshot = collect_h3_audio_scale_snapshot()
 
     try:
         model_sampling = importlib.import_module("comfy.model_sampling")
@@ -258,8 +372,32 @@ def _capabilities(git: Mapping[str, Any], sources: Mapping[str, str | None]) -> 
             "runtime ModelSamplingAV symbol inspection",
         )
 
+    audio_scale_compatible = audio_scale_snapshot.get("custom_sampling_compatible")
+    if audio_scale_compatible is None:
+        audio_scale_cap = _capability(
+            "unknown",
+            "MiniMax H3 audio-scale contract inspection was inconclusive",
+            **audio_scale_snapshot,
+            known_flow_av_commit_ancestor=ancestry.get("h3_flow_av_audio_scale"),
+        )
+    else:
+        audio_scale_cap = _capability(
+            "supported" if audio_scale_compatible else "unsupported",
+            (
+                "stable and multirate custom samplers expose neutral audio_scale=1.0 for the current FLOW_AV core"
+                if audio_scale_compatible
+                and audio_scale_snapshot.get("core_requires_model_sampling_audio_scale")
+                else "neutral custom audio-scale properties preserve the legacy dual-clock core contract"
+                if audio_scale_compatible
+                else "a custom H3 sampler does not satisfy the active core audio-scale contract"
+            ),
+            **audio_scale_snapshot,
+            known_flow_av_commit_ancestor=ancestry.get("h3_flow_av_audio_scale"),
+        )
+
     return {
         "native_model_sampling_av": native_av_cap,
+        "t8_custom_sampling_audio_scale": audio_scale_cap,
         "diffusion_model_wrapper": _source_capability(
             model_source,
             bool(model_source and "WrappersMP.DIFFUSION_MODEL" in model_source),
@@ -447,6 +585,100 @@ def _loaded_model_snapshot() -> dict[str, Any]:
     return result
 
 
+def collect_sageattention_snapshot() -> dict[str, Any]:
+    """Inspect the exact SageAttention core contract used by current KJNodes.
+
+    KJNodes intentionally catches every import/probe exception while initializing its
+    MiniMax H3 Sage patch, which collapses incompatible wheels, missing symbols and
+    CUDA-architecture probe failures into the same ``_cuda_archs is None`` message.
+    This read-only probe preserves the actual failure stage without importing KJNodes,
+    loading an H3 model or running a CUDA attention kernel.
+    """
+
+    result: dict[str, Any] = {
+        "inspected": True,
+        "package_imported": False,
+        "core_imported": False,
+        "package_version": None,
+        "package_file": None,
+        "core_file": None,
+        "required_symbols": {},
+        "missing_symbols": list(KJ_SAGE_REQUIRED_CORE_SYMBOLS),
+        "architectures": [],
+        "kj_contract_ready": False,
+        "errors": [],
+    }
+    try:
+        metadata = importlib.import_module("importlib.metadata")
+        result["package_version"] = metadata.version("sageattention")
+    except Exception:
+        # Several source/wheel builds do not publish distribution metadata. Import
+        # and symbol evidence below is authoritative for this compatibility check.
+        pass
+
+    try:
+        package = importlib.import_module("sageattention")
+        result["package_imported"] = True
+        result["package_file"] = str(getattr(package, "__file__", None))
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "package_import",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+        return result
+
+    try:
+        core = importlib.import_module("sageattention.core")
+        result["core_imported"] = True
+        result["core_file"] = str(getattr(core, "__file__", None))
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "core_import",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+        return result
+
+    symbols = {
+        name: callable(getattr(core, name, None))
+        for name in KJ_SAGE_REQUIRED_CORE_SYMBOLS
+    }
+    missing = [name for name, available in symbols.items() if not available]
+    result["required_symbols"] = symbols
+    result["missing_symbols"] = missing
+    if missing:
+        return result
+
+    try:
+        raw_architectures = core.get_cuda_arch_versions()
+        if isinstance(raw_architectures, str):
+            raw_architectures = [raw_architectures]
+        result["architectures"] = sorted(
+            {
+                str(item).strip().lower()
+                for item in (raw_architectures or [])
+                if str(item).strip()
+            }
+        )
+    except Exception as error:
+        result["errors"].append(
+            {
+                "stage": "cuda_architecture_probe",
+                "type": type(error).__name__,
+                "message": str(error),
+            }
+        )
+        return result
+
+    result["kj_contract_ready"] = bool(result["architectures"])
+    return result
+
+
 def collect_environment_snapshot(model: Any = None, positive: Any = None) -> dict[str, Any]:
     root = _discover_comfy_root()
     git = _git_snapshot(root)
@@ -508,6 +740,19 @@ def audit_h3_environment(
         raise ValueError("minimum_current_headroom_mib must be finite and non-negative")
 
     current = dict(snapshot) if snapshot is not None else collect_environment_snapshot(model, positive)
+    sage_runtime = current.get("sageattention_runtime")
+    if attention_backend == "sage_attention" and not isinstance(sage_runtime, Mapping):
+        if snapshot is None:
+            sage_runtime = collect_sageattention_snapshot()
+        else:
+            # Supplied snapshots are deterministic evidence fixtures or externally
+            # captured states. Never mix them with this machine's live Sage install.
+            sage_runtime = {
+                "inspected": False,
+                "kj_contract_ready": None,
+                "reason": "sageattention_runtime was absent from the supplied snapshot",
+            }
+        current["sageattention_runtime"] = sage_runtime
     capabilities = current.get("capabilities", {})
     runtime = current.get("runtime", {})
     patch_stack = current.get("model_patch_stack", {})
@@ -528,6 +773,20 @@ def audit_h3_environment(
             "Canvas area exceeds the plugin's 1920x1088 maximum contract.",
             pixels=pixels,
             maximum=MAX_PIXEL_AREA,
+        )
+    audio_scale_state = _state(capabilities, "t8_custom_sampling_audio_scale")
+    if audio_scale_state == "unsupported":
+        _issue(
+            hard,
+            "h3_custom_sampling_audio_scale_incompatible",
+            "The active ComfyUI MiniMax H3 core reads model_sampling.audio_scale, but the T8 custom sampling contract is incomplete.",
+            capability=capabilities.get("t8_custom_sampling_audio_scale"),
+        )
+    elif audio_scale_state == "unknown":
+        _issue(
+            unknown,
+            "h3_custom_sampling_audio_scale_unknown",
+            "The MiniMax H3 custom-sampler audio-scale compatibility contract could not be inspected.",
         )
     if width % 32 or height % 32:
         _issue(
@@ -630,6 +889,7 @@ def audit_h3_environment(
         gpu_info.get("compute_capability") if isinstance(gpu_info, Mapping) else None
     )
     capability_major = None
+    capability_minor = None
     if (
         isinstance(compute_capability, Sequence)
         and len(compute_capability) >= 2
@@ -637,8 +897,55 @@ def audit_h3_environment(
     ):
         try:
             capability_major = int(compute_capability[0])
+            capability_minor = int(compute_capability[1])
         except (TypeError, ValueError):
             capability_major = None
+            capability_minor = None
+    if attention_backend == "sage_attention" and isinstance(sage_runtime, Mapping):
+        if sage_runtime.get("inspected") is False:
+            _issue(
+                unknown,
+                "sageattention_runtime_not_inspected",
+                "The supplied environment snapshot does not include the SageAttention core contract.",
+            )
+        elif sage_runtime.get("package_imported") is not True or sage_runtime.get("core_imported") is not True:
+            _issue(
+                hard,
+                "sageattention_core_import_failed",
+                "SageAttention or sageattention.core failed to import in the active ComfyUI Python environment.",
+                errors=sage_runtime.get("errors", []),
+                package_version=sage_runtime.get("package_version"),
+            )
+        elif sage_runtime.get("missing_symbols"):
+            _issue(
+                hard,
+                "sageattention_kj_contract_symbols_missing",
+                "The installed SageAttention core does not expose every symbol required by the current KJNodes MiniMax H3 Sage patch.",
+                missing_symbols=list(sage_runtime.get("missing_symbols", [])),
+                package_version=sage_runtime.get("package_version"),
+            )
+        elif not sage_runtime.get("architectures"):
+            _issue(
+                hard,
+                "sageattention_cuda_architecture_undetected",
+                "SageAttention imported, but its CUDA architecture probe returned no usable architecture.",
+                errors=sage_runtime.get("errors", []),
+                package_version=sage_runtime.get("package_version"),
+            )
+        elif capability_major is not None and capability_minor is not None:
+            expected_architecture = f"sm{capability_major}{capability_minor}"
+            compiled_architectures = {
+                str(item).lower() for item in sage_runtime.get("architectures", [])
+            }
+            if expected_architecture not in compiled_architectures:
+                _issue(
+                    hard,
+                    "sageattention_cuda_architecture_mismatch",
+                    "The SageAttention wheel did not report a kernel architecture matching the active GPU.",
+                    expected=expected_architecture,
+                    reported=sorted(compiled_architectures),
+                    gpu_name=gpu_info.get("name"),
+                )
     if attention_backend == "sage_attention" and high_row_count:
         if capability_major is not None and capability_major >= 12:
             _issue(

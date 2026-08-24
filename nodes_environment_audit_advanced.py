@@ -17,7 +17,9 @@ class MiniMaxH3EnvironmentAuditT8Advanced(io.ComfyNode):
             description=(
                 "Read-only audit of the current ComfyUI H3 core, known fix ancestry, VAE "
                 "chunking/tiled-decode contracts, wrapper ownership, DynamicVRAM and a requested "
-                "workload. It never patches, unloads, downloads, or changes settings."
+                "workload. When Sage is selected it also preserves the exact package/core import, "
+                "KJ-required symbols and CUDA-architecture probe evidence. It never patches, "
+                "unloads, downloads, runs an attention kernel, or changes settings."
             ),
             category=CATEGORY,
             inputs=[

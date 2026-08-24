@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 163
+    assert len(ids) == 191
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -80,6 +80,48 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SpeechFinalizeT8",
         "MiniMaxH3SpeechStudioT8",
     ]
+    assert ids[163:165] == [
+        "MiniMaxH3AudioIntegrityAuditT8Advanced",
+        "MiniMaxH3SpeakerRoutingAuditT8Advanced",
+    ]
+    assert ids[165] == "MiniMaxH3PromptBudgetCompilerT8Advanced"
+    assert ids[166:170] == [
+        "MiniMaxH3CreatorShotOverrideT8Advanced",
+        "MiniMaxH3CreatorWorkspaceT8Advanced",
+        "MiniMaxH3CreatorWorkspaceShotSelectT8Advanced",
+        "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
+    ]
+    assert ids[170:172] == [
+        "MiniMaxH3ClipProjCompatibilityAuditT8Advanced",
+        "MiniMaxH3SolAttnCompatibilityAuditT8Advanced",
+    ]
+    assert ids[172] == "MiniMaxH3NativeLatentTimelineConcatT8Advanced"
+    assert ids[173] == "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"
+    assert ids[174:176] == [
+        "MiniMaxH3CreatorRunReceiptT8Advanced",
+        "MiniMaxH3CreatorResumePlanT8Advanced",
+    ]
+    assert ids[176:178] == [
+        "MiniMaxH3CreatorBackgroundStartT8Advanced",
+        "MiniMaxH3CreatorBackgroundRunSelectT8Advanced",
+    ]
+    assert ids[178] == "MiniMaxH3PromptProviderRouterT8Advanced"
+    assert ids[179] == "MiniMaxH3CreatorRetentionPlanT8Advanced"
+    assert ids[180] == "MiniMaxH3NativeLatentResumeManifestT8Advanced"
+    assert ids[181:183] == [
+        "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+        "MiniMaxH3NativeLatentCheckpointLoadT8Advanced",
+    ]
+    assert ids[183] == "MiniMaxH3NativeLatentContinuationConcatT8Advanced"
+    assert ids[184:187] == [
+        "MiniMaxH3RavenStreamingProfileT8Advanced",
+        "MiniMaxH3RavenGuardedLoaderT8Advanced",
+        "MiniMaxH3RavenRequestAuditT8Advanced",
+    ]
+    assert ids[187] == "MiniMaxH3NFEResumeSamplerT8Advanced"
+    assert ids[188] == "MiniMaxH3CreatorArtifactQuarantineT8Advanced"
+    assert ids[189] == "MiniMaxH3PromptSemanticContractAuditT8Advanced"
+    assert ids[190] == "MiniMaxH3NFERunContractT8Advanced"
 
     speech_ids = {
         "MiniMaxH3VoiceProfileT8",

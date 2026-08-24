@@ -21,6 +21,41 @@ SageAttention patch, distributed under GPL-3.0. The composer authenticates and c
 delegates that installed bound forward at runtime; no KJNodes source file is copied or redistributed
 by this repository. The ordinary SLA node remains independent of KJNodes.
 
+## ComfyUI-ClipProj interoperability
+
+The optional ClipProj audit and bridge workflows interoperate with a separately installed
+[`nicolab28/ComfyUI-ClipProj`](https://github.com/nicolab28/ComfyUI-ClipProj) tree. Local validation
+used version 0.1.13 at fixed revision `c01ba8fb8f41b4f2094dbd0b185cdc238fb6134c`, whose source is
+distributed under the MIT License. This repository does not copy or redistribute its source or any
+Qwen/ClipProj model weights. Stable MiniMax H3 workflows do not import it; the external
+`ClipProjApply` node and a user-supplied dimension-matched projection matrix are required only by
+explicitly selected ClipProj workflows.
+
+## ComfyUI-sol-attn interoperability
+
+The optional Sol-Attn audit and conservative workflow interoperate with a separately installed
+[`Saganaki22/ComfyUI-sol-attn`](https://github.com/Saganaki22/ComfyUI-sol-attn) tree. Local validation
+used version 0.6.2 at fixed revision `930a4d6e432ff8b8ed5e30ff2f72519b92d69bdf`, whose source is
+distributed under the Apache License 2.0. No upstream source or compiled kernel is redistributed by
+this repository. Stable, dense and disabled routes do not import Sol-Attn; users must install a
+Torch/CUDA/GPU-compatible build and explicitly select the Sol workflow.
+
+## MiniMax H3 RAVEN Streaming interoperability
+
+The optional guarded RAVEN workflow interoperates with a separately installed
+[`YanzuoLu/ComfyUI-MiniMax-H3-RAVEN-Streaming`](https://github.com/YanzuoLu/ComfyUI-MiniMax-H3-RAVEN-Streaming)
+version 0.1.0 at fixed revision `bcfa38138ddf1a5041af9880760815874138d4e1`, which is
+distributed under the MIT License. This repository does not copy its causal DiT, KV-cache,
+streaming VAE/preview implementation or any model weights. The external `RAVENStreamingSampler`
+remains the execution node; the T8 integration only delegates loading after a preflight and audits
+the request through the external runtime's own contracts.
+
+The research repository
+[`mvp-ai-lab/RAVEN`](https://github.com/mvp-ai-lab/RAVEN) was reviewed at revision
+`5a71a3cb0588ce2a9696ac23af6c78ac3f9929f3` and is licensed CC BY-NC 4.0. No source from that
+repository is included or adapted into this GPL package. Users must separately review the licenses
+and terms of the full MiniMax H3 base model and mandatory RAVEN Streaming LoRA.
+
 ## Enhance-A-Video / FETA research
 
 The isolated MiniMax H3 Enhance-A-Video Advanced implementation is a clean-room H3 adaptation of

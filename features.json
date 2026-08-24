@@ -1,4 +1,459 @@
 {
+  "prompt_semantic_contract_audit_advanced": {
+    "status": "implemented locally as one append-only Advanced EXP audit node; deterministic semantic/preservation/schema/workflow tests and the previously captured real 8B regression pass while the batch remains unpublished",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3PromptSemanticContractAuditT8Advanced",
+    "position": 189,
+    "contract": "accepts bounded strict JSON containing explicit required and forbidden phrase groups scoped to the full candidate or one of the three H3 rewrite fields; empty anchors ABSTAIN and malformed, duplicate or unknown contract content fails closed",
+    "preservation": "optionally requires exact dialogue-block multiplicity and source media-tag multiplicity, allows new media tags by default, and uses NFKC/casefold normalization with CJK substring matching plus Latin token boundaries",
+    "safety": "safe_prompt remains the exact original until the mechanical audit passes and accept_candidate_after_review is explicitly enabled; the candidate and report remain available for inspection",
+    "compatibility": "the previous 189 IDs, schemas, defaults, stable sampling.py and saved workflows remain unchanged; this node is appended at position 189 and is absent from every old workflow",
+    "workflow": "examples/workflows/14-prompt-relay/2026-08-23_H3_Prompt_Semantic_Contract_Audit_Advanced_EXP.json",
+    "validation": "12 focused tests cover the known turns-to-stands-still regression, explicit human acceptance, empty-anchor ABSTAIN, dialogue and media preservation, optional new-tag rejection, Unicode normalization, Latin boundaries, malformed/unknown/duplicate contracts, field structure and safe workflow defaults. The captured real CPU-only Ollama 8B result is mechanically REJECTed with required_group_missing plus forbidden_group_present. The complete source passes 1138 CPU tests, Ruff, compileall over 288 Python files, 196 non-artifact JSON parses, 190-node registration, 132-workflow schema/menu SHA parity, git diff check and stable sampling Git-blob parity",
+    "boundary": "phrase anchors prove only the user-declared lexical contract, not semantic equivalence, prompt quality, provider quality or generated-media quality"
+  },
+  "creator_artifact_quarantine_advanced": {
+    "status": "implemented locally as one append-only Advanced EXP executor; prepare/quarantine/restore, path-boundary, hash-lock, rollback, full source regression and clean 189-node Registry-package gates pass while real creator media quarantine remains deliberately unclaimed",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3CreatorArtifactQuarantineT8Advanced",
+    "position": 188,
+    "prepare_contract": "accepts only a hash-valid READY_FOR_EXTERNAL_EXECUTOR Creator Retention Plan whose paths were explicitly reviewed; prepare_only resolves regular files strictly below the current ComfyUI output root, rejects symlinks/junctions, directories, traversal, duplicates and pre-existing quarantine paths, then records byte size and SHA-256 without mutation",
+    "execution_contract": "quarantine requires the retained exact manifest, exact plan hash, a new positive epoch and confirm_action=true; files move atomically on the same output volume into output/MiniMaxH3/creator_quarantine with a per-step atomic journal and a receipt that embeds the reviewed manifest",
+    "recovery_contract": "restore and recover_to_source require the same plan, manifest and epoch, reject source/target conflicts or hash changes, and move verified files back to their original paths; partial quarantine errors attempt reverse-order rollback and leave a journal state for explicit recovery",
+    "safety": "prepare_only is the default, execution_epoch defaults to zero and confirm_action defaults false. Absolute paths are accepted only when already inside the active output root. No permanent-delete action exists, no directory is recursively moved, and the node never touches model, input, custom-node or arbitrary filesystem roots",
+    "compatibility": "the previous 188 IDs, schemas, defaults, stable sampling.py and saved workflows remain unchanged; this node is appended at position 188 and is never inserted into an old workflow",
+    "validation": "eight focused CPU filesystem tests cover exact prepare/quarantine/restore, outside-root and directory rejection, duplicate/tampered plan rejection including resolved aliases, confirmation/hash-change gates, partial-failure rollback, platform symlink rejection when available, dead-process stale-lock recovery and safe schema defaults. The current 190-node source additionally passes 1138 full tests, Ruff, compileall, 196 non-artifact JSON parses and 132/132 workflow SHA parity; every clean package is audited independently after source changes, with exact archive identity kept outside the package",
+    "boundary": "filesystem mechanics and recovery contracts do not prove that a user's retention choice is editorially correct; users must review the plan and hashes before enabling a mutating action"
+  },
+  "nfe_resume_dual_clock_advanced": {
+    "status": "implemented locally as one append-only Advanced EXP sampler setup plus one final append-only run-contract compiler; deterministic CPU interruption, tamper, true cross-process split-run and one fixed low-load real H3 cancellation/fresh-process resume proof pass; the batch remains unpublished",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3NFEResumeSamplerT8Advanced",
+    "position": 187,
+    "contract_node": "MiniMaxH3NFERunContractT8Advanced",
+    "contract_node_position": 190,
+    "supported_contract": "T8 dual_clock_euler plus native_flow only. After every completed joint AV Euler step, the opt-in writer atomically replaces one no-pickle safetensors file containing post-step packed x, the original processed noise and latent, optional packed denoise mask, and the complete sigma schedule",
+    "resume_contract": "resume validates tensor content/shape/dtype digests, full sigma schedule, AV packed layout, video/audio shifts, raw-versus-legacy audio velocity protocol, seed, runtime model/guider/patch keys, patch value types, object-patch types and a digest of the complete weight-patch key set, plus an explicit exact-model contract ID and canonical non-empty run-contract JSON; the separate compiler binds the exact final prompt, canonical media map, conditioning report and every supported positive-conditioning tensor by deterministic content SHA before the sampler restores state and exposes only the remaining sigmas",
+    "crash_boundary": "a model exception on the third of four CPU Euler calls left the second completed boundary intact; a new Python process loaded that file and produced a bit-exact final tensor relative to the uninterrupted four-step control",
+    "safety": "mode defaults to disabled and performs no file I/O; checkpoint_each_step requires explicit confirm_checkpoint_write; paths stay under output/MiniMaxH3/nfe_checkpoints, reject absolute/traversal/symlink targets, use an OS-released non-blocking lock and atomic replacement, and reject non-finite or tampered tensors",
+    "compatibility": "the sampler remained at position 187; Creator Quarantine and Prompt Semantic Audit remain at 188/189. The run-contract compiler is appended at position 190 without changing any previous ID, schema, default or stable sampling.py. Only the separately named NFE example was corrected; old workflows do not gain shifted widgets",
+    "workflow": "examples/workflows/04-long-video/2026-08-23_H3_Dual_Clock_NFE_Checkpoint_Resume_Advanced_EXP.json",
+    "registry_package": "the NFE-only historical package contained 292 entries and 188 runtime nodes. The current clean temporary-index package is recorded by release_packaging_audit_1_45 and retains this node immediately before the append-only Creator quarantine executor",
+    "validation": "31 focused compiler/NFE/probe/registration tests pass. The confirmed real probe fully SHA-256-hashed all six declared weight files, rechecked 13,835MiB free VRAM and isolated port 8197, completed a 256x256x22 four-NFE control, interrupted the same graph exactly after step 2, closed the first process, resumed two remaining steps in a second process, and produced exact native video/audio latents plus exact decoded RGB/PCM and strict H264/AAC decode. Final whole-device usage returned to 2,278MiB versus 2,275MiB baseline. Ruff passes the changed scope; no pressure or repeated-memory matrix was run",
+    "real_probe_evidence": "artifacts/nfe-resume-real-runtime-v1/20260823-220903-7aecbd23/validation_report.json",
+    "unsupported": "ancestral/SDE RNG-state recovery, DPM++ or other multistep history, native/third-party sampler history, resume inside an interrupted model forward, automatic cryptographic hashing of arbitrary weights outside the controlled six-file probe contract, arbitrary wrappers/modalities/resolutions, cross-GPU determinism, lower-VRAM claims and universal 16GiB safety"
+  },
+  "raven_streaming_external_integration_advanced": {
+    "status": "implemented locally as three append-only Advanced nodes; pure profile, guarded external-loader delegation and strict T2VA request auditing pass deterministic CPU/schema tests, while the external runtime and very large weights are not installed and no real generation is claimed",
+    "date": "2026-08-23",
+    "nodes": [
+      "MiniMaxH3RavenStreamingProfileT8Advanced",
+      "MiniMaxH3RavenGuardedLoaderT8Advanced",
+      "MiniMaxH3RavenRequestAuditT8Advanced"
+    ],
+    "external_runtime": "YanzuoLu/ComfyUI-MiniMax-H3-RAVEN-Streaming 0.1.0 at bcfa38138ddf1a5041af9880760815874138d4e1, installed separately under MIT; this repository delegates to its loader and keeps its RAVENStreamingSampler as the actual execution/preview node instead of copying its causal runtime",
+    "profile_contract": "published_preview_4nfe emits exact steps 4, video/audio shifts 12/3, sink/window 2/2 and cpu_pinned KV storage to both the audit and external sampler; manual values remain explicit experimental deviations",
+    "loader_contract": "before delegating, checks exactly one plugin installation, version/features, full non-pruned non-quantized BF16 base, mandatory LoRA path, CUDA/BF16 and a conservative reviewed envelope of approximately 24 GiB VRAM plus 192 GiB total/160 GiB available host RAM; the default blocks before any model load when the envelope is not met",
+    "request_contract": "calls the external plugin's own conditioning, latent and model contracts, then verifies the 266-module rank-128 alpha-128 strength-1.0 attachment and refuses foreign object patches; only empty batch-1 T2VA AV latent is reviewed, with no keyframes, references, masks, CFG, negative conditioning or stock sampler path",
+    "compatibility": "the previous 184 node IDs, schemas, defaults, stable sampling and saved workflows remain unchanged; the three nodes are appended at positions 184-186 and are never present in an old workflow",
+    "license_boundary": "the RAVEN research repository at 5a71a3cb0588ce2a9696ac23af6c78ac3f9929f3 is CC BY-NC 4.0 and no source is copied; the separately installed ComfyUI adapter is MIT and model weights remain external",
+    "registry_package": "the historical RAVEN-only checkpoint package contained 289 entries, 130 frontend workflows, six Quick Start subgraphs, the web extension and all 187 runtime nodes; the current package facts are recorded by release_packaging_audit_1_45 and the NFE feature entry",
+    "package_exclusions": "tests, tools, docs, artifacts, agents, .github, roadmap.md, SKILL.md, LOCAL_EXPERIMENT_DATA.md, archives, model weights and generated media are absent; no root node.zip remains and the real Git index stayed empty",
+    "isolated_package_import": "the extracted package registered 187 unique nodes in exact source order, preserved the first 184 IDs byte-for-byte by position and ended with Profile, Guarded Loader and Request Audit",
+    "validation_boundary": "1098 CPU tests, full Ruff, compileall, 194 non-artifact JSON parses, 187-node registration, 130-workflow structure/sync and git diff checks pass. The pinned external 0.1.0 API plus current Comfy feature probe also pass without loading weights. The actual RTX 4060 Ti 15.996GiB / 127.834GiB host with about 90.5GiB available returns the expected pre-load GPU/RAM ABSTAIN codes. Upstream evidence used an H200 constrained to a 24.1-GiB free-memory window and recorded more than 129 GiB host RSS, so this integration does not claim physical-24GB, 16GB, texture-quality or OOM safety"
+  },
+  "long_video_aac_process_isolation": {
+    "status": "implemented locally in the existing candidate-save and accepted-compose runtime without changing node IDs, schemas, defaults or stable sampling; focused real media and failure-cleanup tests pass, while the full repository suite was intentionally not repeated under the user's active low-load constraint",
+    "date": "2026-08-23",
+    "failure_evidence": "a prior full-suite process was terminated by native Windows floating-point exception 0xc0000093 at PyAV AAC encode after many earlier media writes; the exact tiny candidate succeeds in isolation, which identifies repeated in-process native encoder state rather than invalid H3 geometry or a Python exception",
+    "runtime_contract": "PyAV continues to encode H264 video frame by frame in the host process; normalized stereo float32 audio is staged as bounded interleaved raw data and AAC encoding plus MP4 mux runs in a cancellable no-shell FFmpeg child process. A child native failure returns an actionable error instead of terminating ComfyUI",
+    "sample_contract": "one bounded 1024-sample AAC pad is added so decoder frame quantization cannot undershoot the absolute manifest boundary; accepted composition still trims each decoded segment to its exact logical sample interval, and produced padding stays below one AAC frame",
+    "atomicity": "the final MP4 is fsynced and atomically replaced only after child success; video, audio, mux and log temporaries are removed on success, Python error, child failure or Comfy interruption",
+    "verification": "the complete 28-test Long Video Delivery module passes including the formerly crashing legacy-manifest case, exact 5-frame fractional audio boundaries, two-segment composition, decoded final audio length, simulated child failure cleanup and raw channel interleave. An additional 35-test media-plus-registration scope passes; Ruff and py_compile pass",
+    "boundary": "FFmpeg is now an explicit Long Video delivery runtime dependency. This closes the observed main-process AAC crash path, not every possible native codec, filesystem, FFmpeg-build, power-loss or full-suite stability claim"
+  },
+  "release_packaging_audit_1_45": {
+    "status": "the current 191-node local v1.45.0 Registry candidate includes the documented human-review assessability boundary and passes source, packaging, exclusion, byte-parity and isolated-import gates; it remains uncommitted and unpublished",
+    "date": "2026-08-24",
+    "git_authority_correction": "Prompt Rewriter 8B, LanPaint AV, external BlockSwap and six Quick Start subgraphs already entered origin/main through ancestor commit 620d87d; they are not part of the unpublished local batch",
+    "registry_package": "the fresh current clean alternate-index package contains 301 entries including all seven dated ASCII Quick Start subgraphs, 133 workflows, the web extension, the 191-node runtime, RAVEN guards, dual-clock Euler NFE checkpoint/resume, the exact Conditioning run-contract compiler, Creator artifact quarantine, Prompt Semantic Contract Audit and the independent ClipProj 4B T2VA asset-contract workflow; excluded local tooling also records the guarded 8B ClipProj native-latent headroom proof, while exact archive filename, byte size and SHA-256 remain outside package metadata to avoid a self-referential package hash",
+    "isolated_import": "the extracted current package imported through comfy_entrypoint with 191 registered and 191 unique node mappings; all first 190 IDs retain their previous positions and MiniMaxH3NFERunContractT8Advanced is the sole final mapping",
+    "exclusions": "tests, tools, docs, artifacts, agents, .github, roadmap.md, SKILL.md, LOCAL_EXPERIMENT_DATA.md, model weights, generated media and archives are absent from the package",
+    "external_metadata": "meta.json and THIRD_PARTY_NOTICES.md now identify ComfyUI-ClipProj 0.1.13 at c01ba8fb8f41b4f2094dbd0b185cdc238fb6134c under MIT and ComfyUI-sol-attn 0.6.2 at 930a4d6e432ff8b8ed5e30ff2f72519b92d69bdf under Apache-2.0 as separately installed optional dependencies",
+    "compatibility": "the six previously released Quick Start files retain their exact byte-level SHA-256 values; the Creator AV Review file is a seventh append-only blueprint with a bilingual title and no old graph mutation. Packaging used a separate temporary Git index and scratch repository, so the real Git index remained empty",
+    "validation": "the prior changed scope passes 75 focused frontend/compiler/NFE/native-latent/probe/registration tests and Ruff; the 2026-08-24 review change additionally passes 10 focused builder/analyzer tests, generated-page JavaScript syntax validation, legacy count/decision replay for all three submitted exports and changed-scope Ruff. The real fixed-contract H3 NFE restart proof passes exact native AV latent plus decoded RGB/PCM parity, and one guarded 8B ClipProj two-segment native-latent run passed its exact 39-frame/51200-decoded-AAC-sample contract with 605MiB minimum sampled free VRAM. Per the user's low-load instruction, the full suite and pressure matrices were not repeated. The current package independently passed official Registry validate/pack, zero duplicate/unsafe/excluded entries, 301/301 worktree-source byte parity and isolated 191/191 import with prior-190 positional parity. Exact archive identity remains only in excluded local verification evidence so package bytes never depend on their own hash",
+    "boundary": "the 191-node package is a local candidate only and has not been committed, pushed or published. Package readiness, one fixed NFE restart pass and one fixed short 8B headroom pass are not human quality approval, speed benefit, arbitrary-wrapper determinism, repeated-run stability, long-chain stability or universal 16GiB safety"
+  },
+  "native_latent_timeline_concat_advanced": {
+    "status": "implemented locally as one append-only native-grid concat node; CPU contracts, the original repeated 32B single-decode/seam probe and one guarded 8B ClipProj headroom probe passed mechanically, while release, continuation-conditioned quality and human review remain pending",
+    "date": "2026-08-22",
+    "node": "MiniMaxH3NativeLatentTimelineConcatT8Advanced",
+    "contract": "concatenates complete batch-1 H3 nested AV latents on the native 5n+2 video-latent grid, removes the repeated two-step/five-frame prefix from every later segment, derives each audio trim from the cumulative 24fps-to-40Hz clock, and preserves nested masks only when every segment supplies them",
+    "compatibility": "the previous 172 node IDs, schemas, defaults, stable sampling and saved workflows remain unchanged; the new node is appended at position 172",
+    "memory_boundary": "the combined result defaults to CPU and the node performs no sampling or VAE decode, but ComfyUI may still cache connected source latents. The original 32B route failed the 512MiB gate twice; one reviewed 8B ClipProj route passed the 0.25-second sampled gate by only 93MiB. Neither result establishes general 16GiB safety",
+    "workflow": "examples/workflows/04-long-video/2026-08-22_H3_Native_Latent_Timeline_Concat_Advanced_EXP.json",
+    "real_h3_probe": {
+      "controls": "two related-prompt but independently seeded T2VA segments; 256x256; 22 frames each; Turbo 8 NFE; shifts 12/3; one native-latent concat followed by one AV VAE decode",
+      "exact_contract": "22+22 became 39 video frames; source lossless audio was 29600 samples each (37 latent steps) and combined audio was 52000 samples (65 steps); the second segment dropped exactly 9 latent steps/7200 samples",
+      "repeatability": "one identical-seed repeat reproduced source A, source B and combined H264/AAC MP4 files byte-for-byte",
+      "strict_decode": "source A, source B and combined files each passed video-only, audio-only and combined strict FFmpeg decode three of three times",
+      "seam_signal": "single-decode boundary video MAD 0.04269 versus 0.11164 for separately decoded RGB composition; single-sample audio jump 0.00104 versus 0.02231, but adjacent 100ms level still changed 8.32dB versus 8.85dB",
+      "resource_signal": "two sequential runs completed in 72.41/70.58 seconds; whole-device peaks 16038.39/16235.32MiB left only 341.11/144.18MiB free, below the 512MiB safety gate",
+      "boundary": "the segments were not continuation-conditioned, so the scene/audio state still changes; one local seam-smoothing signal is not proof of seamless long video, quality superiority, lower VRAM or general 16GiB safety"
+    },
+    "clipproj_8b_headroom_probe": {
+      "controls": "the same two prompts, seeds 2608229101/2608229102, 256x256, 22+22->39 frames, Turbo 8 NFE per segment, shifts 12/3, CPU native-latent concat and one final AV decode; only the native 32B text path changed to the reviewed 8B ClipProj path",
+      "asset_identity": "qwen3vl_8b_fp8_scaled.safetensors SHA-256 4BA424CF62E51392E4D1A39933E803706F4E823C1065F36AAF149C6453F66BCD and mmh3-8b-ClipProj-v3.1.safetensors SHA-256 DF0661849D0FD51DB66B0C9AA76F2C1C3EABD81B9A4745EDD2A4617AB24C87F7 were fully checked before a second port/GPU gate",
+      "runtime": "one isolated localhost:8197 process completed in 86.735 seconds; 288 whole-device samples at 0.25-second intervals observed a 15505MiB peak and 605MiB minimum free, passing the 512MiB sampled gate by 93MiB; after shutdown usage was below the 2203MiB baseline",
+      "media": "the output is exact 39-frame 256x256 H264 plus 32kHz stereo AAC and passes strict video/audio/container decode. Its 51200 decoded AAC samples exactly match the prior 32B combined MP4; the prior 52000-sample figure is the lossless tensor/FLAC contract and was not separately saved in this probe. Media SHA-256 DE9E61E44137A4C8A5FEE88DB62A8E25B1B29B4CEC8EFABB806439001D39842D",
+      "artifact": "artifacts/native-latent-clipproj-8b-real-runtime-v1/20260823-150501-92cbf70d/validation_report.json",
+      "boundary": "this closes only one fixed 8B route's mechanical and sampled-headroom screen. It does not prove seamless continuation, 8B/32B quality equivalence, repeated stability, arbitrary modalities, longer chains or general 16GiB safety"
+    },
+    "validation_boundary": "deterministic tensor/clock tests cover 22+22 and 124x3 arithmetic, exact audio trimming, mask parity and invalid geometry; the repeated 32B probe closes geometry, lossless PCM, deterministic output and seam evidence, while one separate guarded 8B route closes a fixed-case sampled 512MiB screen. Exact checkpoint-content hashing and fixed-contract NFE resume are provided by separate append-only nodes. Continuation-conditioned multi-segment quality, human review, repeated behavior and general 16GiB safety remain open"
+  },
+  "native_latent_resume_manifest_advanced": {
+    "status": "implemented locally as one append-only opt-in exact-content audit node; focused and full CPU, workflow, source and isolated-package gates pass, while externally persisted crash-reload proof remains pending",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3NativeLatentResumeManifestT8Advanced",
+    "contract": "creates a chunked SHA-256 baseline over complete H3 video/audio latent samples, optional nested AV noise masks and supported non-volatile metadata; when a previous manifest is supplied, the default error policy fails closed on content, checkpoint ID, shape, dtype or mask-presence mismatch",
+    "compatibility": "all previous 180 IDs, schemas and defaults stay in their exact order; the new node is registered separately at position 180 (the 181st node) instead of being inserted beside the earlier concat node",
+    "memory_boundary": "hash_chunk_megabytes bounds each temporary CPU copy and does not affect the digest; GPU inputs may still be copied to CPU chunk by chunk, ComfyUI may cache source latents, and no unload or VRAM-safety behavior is claimed",
+    "workflow": "examples/workflows/04-long-video/2026-08-23_H3_Native_Latent_Resume_Manifest_Advanced_EXP.json",
+    "validation_boundary": "MATCH proves exact identity only after the latent and earlier manifest have already been saved and reloaded. The node writes no files, does not persist or resume diffusion-internal NFE state, and does not prove continuation quality, audio continuity, crash recovery of external storage or 16GiB safety"
+  },
+  "native_latent_checkpoint_save_load_advanced": {
+    "status": "implemented locally as two append-only Advanced nodes; focused and full CPU, tamper, path, write-fault, cross-process, workflow-sync and isolated Registry-package gates pass; the batch remains unpublished",
+    "date": "2026-08-23",
+    "nodes": [
+      "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+      "MiniMaxH3NativeLatentCheckpointLoadT8Advanced"
+    ],
+    "contract": "saves and loads complete batch-1 H3 nested video/audio latents, optional nested AV masks and safely supported metadata in a no-pickle safetensors format; Save is confirm-false by default, uses a unique filename, file fsync, verify-before-placement and atomic replacement under the bounded ComfyUI output checkpoint store",
+    "verification": "Load always checks the embedded exact-content manifest and can additionally require an independently retained manifest plus the whole-file SHA-256; valid-safetensors payload tampering, traversal, reserved names, symlink traversal, partial masks, wrong hashes/manifests and injected write failure fail closed",
+    "compatibility": "the previous 181 node IDs, schemas and defaults remain in their exact order; Save and Load are appended at positions 181 and 182 and the stable sampling implementation is unchanged",
+    "workflow": "examples/workflows/04-long-video/2026-08-23_H3_Native_Latent_Checkpoint_Save_Load_Advanced_EXP.json",
+    "boundary": "this persists a complete formed H3 AV latent across a process boundary; it does not save an interrupted diffusion iteration, Transformer/sampler derivative state, CUDA allocator state or the ComfyUI queue, and it does not prove continuation quality, lower VRAM or universal 16GiB safety"
+  },
+  "native_latent_continuation_concat_advanced": {
+    "status": "implemented locally as one append-only Advanced node; structural 5/22/39-frame continuation, frontend sync, full CPU regression and isolated Registry-package gates pass, while human multi-segment review remains pending",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3NativeLatentContinuationConcatT8Advanced",
+    "contract": "appends one sampled Long Video continuation to a complete H3 AV latent timeline and removes the exact context span proven by the matching Planner and Conditioning reports; unlike the ordinary concat node, it removes the full 5/22/39-frame Long Video context on both the 24fps video and cumulative 40Hz audio clocks",
+    "proof_contract": "requires directly connected Long Video Planner and Conditioning report JSON with matching schema, chain ID, segment index, render geometry, active motion context, native motion-keyframe count and timeline start/end accounting; the safe audio default additionally requires video_and_audio context and timeline_audio_ref",
+    "compatibility": "all previous 183 node IDs, schemas and defaults remain in their exact order; this node is appended at position 183, the stable sampler is unchanged, and the ordinary five-frame concat workflow remains available without changed behavior",
+    "workflow": "examples/workflows/04-long-video/2026-08-23_H3_Native_Latent_Continuation_Concat_Advanced_EXP.json",
+    "boundary": "the reports prove the local structural contract, not that an arbitrary sampler actually consumed the conditioning. The combined latent should be decoded once and any reported hidden final tail trimmed afterward. This is not interrupted-NFE resume, perceptual continuity proof, automatic cache eviction, lower-VRAM proof or universal 16GiB safety"
+  },
+  "external_clipproj_sol_compatibility_audits": {
+    "status": "implemented locally as two append-only pass-through audit nodes; installed-source/header probes, ClipProj 4B T2VA, ClipProj 8B T2VA/I2VA/FL2VA/Ref2VA low-load runtimes and one production-threshold Sol T2VA A/B passed mechanically. The old human exports remain shared-failure or source-material-insufficient evidence. The final 1088x544 close-face I2VA review established assessable 4B/8B and 4B/native-32B ties with no blocking failure. The native run used the identical prompt, image, seed, 124 frames, eight NFE and 12/3 shifts and cleared the sampled 512MiB headroom gate. These fixed simple-material ties grant no universal quality, noninferiority, equivalence or default-route promotion",
+    "date": "2026-08-22",
+    "nodes": [
+      "MiniMaxH3ClipProjCompatibilityAuditT8Advanced",
+      "MiniMaxH3SolAttnCompatibilityAuditT8Advanced"
+    ],
+    "clipproj_contract": "requires one separately installed ComfyUI-ClipProj 0.1.13+; checks ProjectedCLIP identity, Qwen3-VL declaration, projection header dimensions, load mode and visual-reference boundary without loading a model or matrix",
+    "sol_contract": "requires one separately installed ComfyUI-sol-attn 0.6.2+; checks CUDA/BF16 architecture, complete outer H3 Sol block ownership, global fallback, fused/FFN markers and unreviewed DiT/model wrappers without importing or executing the kernel",
+    "installed_static_probe": {
+      "clipproj_revision": "c01ba8fb8f41b4f2094dbd0b185cdc238fb6134c",
+      "clipproj_version": "0.1.13",
+      "encoder_4b": "qwen3vl_4b_fp8_scaled.safetensors; Comfy-Org/Krea-2 revision e5ea8b4dd7f38f348b138eb0fe29f92c0e367e96; 5,242,467,968 bytes; SHA-256 54BD5144DF0BBC25DD6CCADFCB826B521445A1B06AE5A42570BDD2974CA87094; header contains the Qwen3-VL vision tower and a 2560-dimensional merger output",
+      "projection_4b": "mmh3-4b-ClipProj-v3.1.safetensors; NicoLab28 revision 2ebdbcdc27a29a9607efdb221a9afcb9a0cdd808; 26,256,128 bytes; SHA-256 0184E5C8D666A131962506D21949C2D8A8C6F33445B7B5E347E9A7E0A5BAA819; W [2560,5120]",
+      "encoder_4b_rejection": "the two existing qwen_3_4b.safetensors files are 8,044,982,048-byte text-only Qwen3 checkpoints with no visual/vision/merger keys; matching hidden width is insufficient and they are explicitly rejected for ClipProj",
+      "clipproj_4b_gate": "asset, workflow and one guarded real runtime contract PASS. After an earlier correct insufficient-headroom abstention, a later preflight observed localhost:8188 stopped, private port 8197 free and 13649MiB free VRAM against the 12000MiB gate; full encoder/projection SHA checks then matched before the tool started exactly one isolated process",
+      "encoder": "qwen3vl_8b_fp8_scaled.safetensors; upstream header detection boogu/Qwen3-VL 8B; 1254 tensors including F8_E4M3 weights",
+      "projection_revision": "2ebdbcdc27a29a9607efdb221a9afcb9a0cdd808",
+      "projection": "mmh3-8b-ClipProj-v3.1.safetensors; 41,990,896 bytes; SHA-256 DF0661849D0FD51DB66B0C9AA76F2C1C3EABD81B9A4745EDD2A4617AB24C87F7; W [4096,5120]",
+      "clipproj_audit": "PASS with the real plugin tree and projection header; no encoder weights were loaded",
+      "sol_revision": "930a4d6e432ff8b8ed5e30ff2f72519b92d69bdf",
+      "sol_version": "0.6.2",
+      "sol_audit": "PASS for real RTX 4060 Ti SM89/BF16 hardware plus a synthetic complete 50-block patch owner"
+    },
+    "low_load_real_runtime_probe": {
+      "geometry": "256x256x22, 4 NFE, video/audio shifts 12/3; T2VA seed 2608228001, I2VA seed 2608228201 and FL2VA seed 2608228301",
+      "clipproj_4b": "official Qwen3-VL 4B and the 2560-to-5120 v3.1 projection passed full SHA-256 checks. The original isolated seed-123456789 run completed in 43.812 seconds with 15015MiB peak/1095MiB minimum free and media SHA 839442EB88BC05C5433A579BC55C0E34803AEC45DCF7979B20EB3CA80B035E5A. A second isolated run used the exact existing 8B/native-32B T2VA prompt, seed 2608228001, 256x256x22, four NFE and 12/3 shifts; it completed in 55.750 seconds with 15019MiB peak/1091MiB minimum free, returned to the 2199MiB baseline and produced strict-decode H264/AAC media SHA 45E819736A025F23BE45854FF268375480D3CDD8A9EF7283CF4E68DCBF229F06",
+      "clipproj_8b": "complete Load CLIP -> ClipProj Apply -> fail-closed audit -> H3 Conditioning -> joint AV generation passed strict video/audio/container decode; cold whole-device peak 13926.7MiB and process-private peak 60.44GiB",
+      "clipproj_8b_i2va": "a separate complete I2VA path set has_reference_images=true, sent one real first frame through both the VAE keyframe and Qwen3-VL vision path, retained a Chinese/proper-name/short-dialogue prompt, and generated exact 256x256x22 H264 plus 32kHz stereo AAC; video/audio/container each decoded three of three times in 36.125 seconds; resized-input versus generated frame zero measured SSIM 0.833372 and PSNR 26.7323dB as an anchor-presence signal; whole-device peak 15207.4MiB left about 1172.6MiB headroom and process-private peak was 63.43GiB",
+      "native_32b_i2va_control": "the same prompt, seed 2608228201, first frame, model, LoRA and four-NFE schedule completed in 33.718 seconds with 15591.9MiB peak and strict decode three of three; 8B-to-32B full-video SSIM was about 0.9293, source-anchor SSIM 0.8334/0.8394 and PCM correlation about 0.8984; both outputs showed an unwanted pseudo-Chinese subtitle-like overlay and the utterance was not human-listened or ASR-accepted",
+      "clipproj_8b_fl2va": "a separate complete FL2VA path kept has_reference_images=true, connected distinct first/last images to both the VAE and projected Qwen3-VL visual path, and generated exact 256x256x22 H264 plus 32kHz stereo AAC; video/audio/container each decoded three of three times in 23.953 seconds; first/last anchor SSIM was about 0.8354/0.5095 as a path-presence signal; whole-device peak 15358.0MiB left about 1022.0MiB headroom and process-private peak was about 63.87GiB",
+      "native_32b_fl2va_control": "the same prompt, seed 2608228301, first/last frames, model, LoRA and four-NFE schedule completed in 31.078 seconds with 15670.6MiB peak and strict decode three of three; 8B-to-32B full-video SSIM was about 0.7090, first/last anchor SSIM was 0.8354/0.5095 versus 0.8462/0.5302, while PCM correlation was only about 0.5608 with materially different RMS, so audio listening remains mandatory",
+      "clipproj_8b_ref2va": "a Stock20 same-seed Ref2VA comparison used one fixed reference, the pruned INT8 reference model, 256x256x22, shifts 12/3 and seed 2608228401 without a Turbo LoRA; 8B and native 32B each passed video/audio/container decode three of three times; runtimes were 22.907/27.812 seconds and peaks were 16318.2/16018.2MiB; three-frame SFace means were 0.319/0.302, neither path consistently cleared the usual 0.36 suggestion line, and the 8B route left only about 61.8MiB headroom",
+      "native_32b_control": "same short controls passed strict decode; cold whole-device peak 15127.7MiB and process-private peak 69.10GiB",
+      "clipproj_boundary": "the T2VA 8B route used about 1201MiB less whole-device peak in its one cold short probe but was about 2.7 seconds slower; I2VA and FL2VA prove their short visual execution contracts only. The one Ref2VA pair proves same-seed execution but failed the 512MiB safety gate and did not show peak-VRAM savings. These probes do not establish 32B-equivalent visual quality, spoken-text accuracy, multilingual generality, long FL2VA interpolation, multi-reference behavior, speed or a general memory-safe tier",
+      "sol_dense_control": "dense_percent=0.2 produced an output byte-identical to the native 32B control and logged only dense fallback because every one of four calls stayed in the dense prefix",
+      "sol_active": "after the forced 547-token smoke probe, a same-seed 1152x640x22 production-threshold run kept min_tokens=4096 and logged Sol active at 5139 tokens on 46 of 50 blocks with strict mode and no fallback; Sol and dense each passed video/audio/container decode three of three times",
+      "sol_0p7mp_control": "Sol/dense telemetry durations were 49.281/41.828 seconds and whole-device peaks were 16004.9/16008.7MiB; sampler-stage peaks were 15936.7/14588.2MiB; video SSIM was about 0.558, PCM zero-lag cosine about 0.719 and Sol/dense RMS ratio about 1.290",
+      "sol_boundary": "Sol ran before dense, so timing and stage memory are order/cache-confounded; neither route cleared 512MiB headroom, the single pair showed no observed acceleration or total-peak saving, and human visual/audio ranking, other modalities, repeat behavior and general 16GiB safety remain open"
+    },
+    "blind_review_package": "the current final-key exports now pass strict review/key ID and SHA-bound analysis. The ClipProj 8B/Sol package produced four ties: its first three notes report broken faces and, where present, broken pseudo-subtitles/picture quality on both sides; the Sol/dense pair tied without a failure note. The 4B-versus-8B/32B package produced two ties, but the reviewer clarified that this material was too unclear to judge. These are inconclusive or source-material-insufficient outcomes, not equivalence and not candidate failure",
+    "human_review_2026_08_24": {
+      "reviewer_count": 1,
+      "external_bridge": "four ties; ClipProj I2VA/FL2VA/Ref2VA notes identify severe defects shared by both randomized sides, while the Sol/dense pair has no written failure note",
+      "clipproj_three_way": "two ties; reviewer clarification classifies the attached third review package as source-material insufficient because the picture itself was unclear",
+      "decision": "ClipProj must not replace native 32B by default; 4B/8B/32B quality equivalence is not established; Sol quality/performance promotion remains denied",
+      "artifact": "artifacts/blind-review-human-adjudication-20260824/report.json"
+    },
+    "review_assessability_contract": "future blind pages require a per-pair choice among assessable, source_material_insufficient, playback_problem and unsure. Only assessable pairs contribute A/B/tie or blocking-failure counts; other choices emit explicit ABSTAIN decisions and cannot satisfy the promotion gate. Legacy v1 exports remain count/decision compatible through a separately reported assumed-assessable default, and existing keyed evidence pages are never silently overwritten by an exact rebuild",
+    "clear_replacement_review": "the reviewer marked the 256x256x22 metronome replacement unsure because it was only about one second and had no clear human face; its default tie fields are not counted. The final corrected contract uses SHA-locked 10A.jpg, one close-face Mandarin I2VA prompt, seed 2608245001, 1088x544x124, eight NFE and shifts 12/3. The 4B/8B/Creator routes each cleared the 512MiB sampled gate and the formal 4B/8B plus Creator review produced two assessable ties. A later native-32B run started only after the unchanged 14500MiB evidence-derived gate passed and left 643MiB minimum free; its one original H.264 packet error was retained, and both 4B/native review copies were identically single-thread re-encoded with unchanged decoded audio before building the new one-pair page",
+    "objective_replacement_analysis": "all four long human-face replacement arms strictly decoded with zero near-black, near-white or near-frozen transitions. Creator control/candidate full-video SSIM is about 0.98785 and audio cosine about 0.99998; one-decode has lower numeric join-frame discontinuity, while both arms fall about 62dB from dialogue tail to near-silence across adjacent 250ms windows at the join. ClipProj 4B/8B video SSIM is about 0.92467, but audio cosine is only about 0.11389 and 8B RMS is about 60.2% of 4B. These metrics establish assessable playback and route difference only; they do not establish a perceptual winner, spoken-text accuracy or audio noninferiority",
+    "final_combined_review": "the low-resolution 512x256 review remains historical only. The replacement final page uses the same SHA-locked portrait, prompt, Mandarin dialogue, seed, 124 frames, eight NFE and 12/3 shifts at 1088x544 (591872 pixels). 4B, 8B and Creator runs all pass exact media contracts with 1097/1136/1125MiB observed minimum free VRAM. The private two-pair key SHA is 504E2FC076FB9934CFF6D960B4E5DBBAB0E4470FDEDAADA21D92E3B45419017A and the public page does not expose A/B method mapping",
+    "final_0p6mp_human_review": {
+      "status": "complete for the fixed 1088x544 portrait contract; both assessable pairs are ties with no blocking failure",
+      "review_export_sha256": "FF62C1015403F2323CD08760A0586EA8CF1E5F9C344E7DA5322F6FD06BAFD561",
+      "analysis_sha256": "C83B9EA41136804BD5B60FA144E0D25DFF6F4C6A425ACCE6EB36B4DFB29A0B95",
+      "creator_result": "native latent concat then one VAE decode ties separate VAE decode then media composition in overall, motion, audio, prompt adherence, stability, first-frame and identity review",
+      "clipproj_result": "ClipProj 4B ties ClipProj 8B in every reviewed dimension",
+      "decision": "the fixed-material human gate is closed, but Creator auto-accept and ClipProj default replacement remain denied because one portrait does not establish cross-material equivalence"
+    },
+    "native_32b_0p6mp_review": {
+      "status": "mechanical runtime, controlled blind package and one fixed-material human review complete",
+      "runtime": "one isolated native-32B I2VA run completed in 326.797 seconds at 1088x544x124 and eight NFE; execution succeeded and sampled minimum free VRAM was 643MiB, passing the 512MiB gate by 131MiB",
+      "transport_recovery": "the original MP4 preserved one H.264 packet error while still decoding all 124 frames; it was not treated as a model failure. Native and 4B were both re-encoded with identical libx264 medium/CRF18/threads=1/yuv420p settings and copied AAC. Both normalized files strictly decode, preserve their original decoded-audio hashes and retain source-to-normalized full-video SSIM above the reviewed 0.98 floor",
+      "normalization_report_sha256": "15010B52D2868173D51CE68836DF9103531887346F49C075012378834A4CB024",
+      "private_key_sha256": "94E11C3262F2B1974E834EB0029B219118FE40048037D87C406C0287DCAB5413",
+      "review_page": "artifacts/human-face-0p6mp-4b-vs-native-20260824/review/blind_review.html",
+      "review_export_sha256": "5206CE16C6BFB90A22A0B455CCCA592747EC9CBD7A1391E05F5C7403DD184873",
+      "analysis_sha256": "A7C6C47843A257ACD0158986470F6CB4C24278763A387E5BDBFB7EB70E1B8359",
+      "human_result": "A revealed as native 32B and B as ClipProj 4B. The pair was assessable; overall, motion, audio, prompt adherence, stability, first-frame and identity were all ties with no blocking failure. The reviewer noted that they were not identical but felt similar on this simple task",
+      "decision": "the fixed simple-material human gate is closed, but candidate quality noninferiority and universal 4B/32B equivalence remain unestablished. Native 32B stays the default; this one run does not establish repeated stability, cross-material behavior or general 16GiB safety"
+    },
+    "same_input_objective_analysis": "a reusable report-only tool verifies all three generation graphs field-for-field, strictly decodes each AV file three times and reports all pairwise video/audio differences without ranking quality. The real contract SHA is F836B902500CAB16925810A3471A16A6F9008908EE1A01D6341E30415213A62B and all mechanical checks pass. Single observed prompt-to-terminal times were 36.172/37.797/35.125 seconds for 4B/8B/native-32B; peaks were 15019.0/13926.7/15127.7MiB. Pairwise mean SSIM was 0.731/0.730/0.653 and zero-lag audio cosine was 0.316/0.759/0.299 for 4B-vs-8B, 4B-vs-32B and 8B-vs-32B. These values prove substantial route differences, not superiority, equivalence or noninferiority; report SHA is 33A36467CA261B55FCEBF749DFE9FB6AE8BB7F8AF745C8A888022E5C41E029D7",
+    "compatibility": "the previous 170 node IDs remain unchanged; these pass-through audits are appended at positions 170 and 171 and never modify the connected CLIP or MODEL",
+    "workflows": [
+      "examples/workflows/12-system-memory/2026-08-22_H3_ClipProj_Compatibility_Audit_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-23_H3_ClipProj_4B_T2VA_Bridge_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_ClipProj_8B_T2VA_Bridge_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_ClipProj_8B_I2VA_Bridge_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_ClipProj_8B_FL2VA_Bridge_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_ClipProj_8B_Ref2VA_Bridge_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_Sol_Attn_Compatibility_Audit_Advanced_EXP.json",
+      "examples/workflows/12-system-memory/2026-08-22_H3_Sol_Attn_T2VA_Conservative_Advanced_EXP.json"
+    ],
+    "validation_boundary": "installed revisions, full real 4B/8B encoder and projection identities, the deterministic 4B workflow derivative, fixed short T2VA and 5.167-second close-face I2VA 4B/8B/native-32B runs, SM89/BF16 hardware, deterministic ownership tests, short ClipProj 8B T2VA/I2VA/FL2VA executions, same-seed native-32B controls for earlier I2VA/FL2VA/Ref2VA, one 5139-token 0.737MP Sol/dense T2VA pair and anonymous review packages passed mechanically. The assessable 4B/8B and 4B/native-32B fixed-portrait reviews are complete and tied, but one reviewer and one simple portrait do not establish human 4B/32B visual/listening noninferiority, spoken-text accuracy, cross-material equivalence, other 4B modalities, repeated-memory behavior or a general 16GiB gate"
+  },
+  "creator_workspace_advanced_v2": {
+    "status": "implemented locally as nine append-only compiler/review/runtime/retention-plan nodes plus one native Creator AV Review Quick Start subgraph; real-data workspace and synchronized AV review, isolated receipt/resume/cache, a bound Long Video background adapter, one low-load live H3 active-sampler cancel/release probe, a two-segment terminal-reattach/auto-accept/composition control chain, a non-destructive retention-plan compiler and hash-bound standalone Creator AV blind-review packages passed mechanically. The old and short replacement exports are abstentions for insufficient/unsure material. The final SHA-locked 1088x544 close-face 124+124-to-243-frame comparison passes exact joint-AV clocks, media checks and the 512MiB gate and received an assessable all-dimension human tie with no blocking failure. This closes only the fixed-material seam/audio review; broad Creator usability and real-H3 resumed-media quality remain open",
+    "date": "2026-08-23",
+    "nodes": [
+      "MiniMaxH3CreatorShotOverrideT8Advanced",
+      "MiniMaxH3CreatorWorkspaceT8Advanced",
+      "MiniMaxH3CreatorWorkspaceShotSelectT8Advanced",
+      "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
+      "MiniMaxH3CreatorRunReceiptT8Advanced",
+      "MiniMaxH3CreatorResumePlanT8Advanced",
+      "MiniMaxH3CreatorBackgroundStartT8Advanced",
+      "MiniMaxH3CreatorBackgroundRunSelectT8Advanced",
+      "MiniMaxH3CreatorRetentionPlanT8Advanced"
+    ],
+    "implementation": "non-destructive overlays extend the existing Studio Timeline instead of adding another Conditioning or sampler; each overlay records prompt/seed variants, explicit media roles, retention and hold metadata; a run-window compiler emits reproducible sidecar JSON and a shot selector exposes the existing prompt/length/seed contract. A separate immutable run ledger records explicit completed/accepted/rejected/cancelled/failed outcomes and a resume planner deterministically returns render/review/retry/complete. The optional background bridge binds the workspace hash to the existing Long Video queue/cancel/retry controller and maps accepted_count/retry_count to shot/seed selection instead of creating another runtime. A final retention-plan node compiles each accepted/rejected manifest into reviewable keep/proposed-delete lists without resolving or touching any filesystem path",
+    "comparison": "CPU side-by-side IMAGE batches add visible A/B headers, never rescale source pixels, center-pad geometry, trim only to the shorter frame count and force ABSTAIN when equal geometry is required but absent",
+    "execution_boundary": "the ordinary workspace, receipt and retention-plan nodes never load models, queue hidden prompts, resolve artifact paths, delete candidate media or write files. The separate background bridge is explicitly stateful only when auto_accept_and_continue is selected, delegates every queue/cancel/retry action to the existing Long Video controller, and requires its Candidate Save plus Auto Accept terminal. Cache observations in manual receipts are never inferred. Even after path review confirmation the retention node only reports READY_FOR_EXTERNAL_EXECUTOR; no destructive executor is included",
+    "compatibility": "the original four Creator nodes remain at positions 166-169; receipt/resume remain at 174-175; background start/select remain at 176-177; Provider remains at 178; retention plan is appended at position 179. No existing node ID, schema order, default, sampling behavior or saved workflow shifts",
+    "workflows": [
+      "examples/workflows/11-studio-production/2026-08-22_H3_Creator_Workspace_Run_Window_Advanced.json",
+      "examples/workflows/11-studio-production/2026-08-22_H3_Creator_Synchronized_AB_Advanced.json",
+      "examples/workflows/11-studio-production/2026-08-22_H3_Creator_Synchronized_AV_AB_Advanced.json",
+      "examples/workflows/11-studio-production/2026-08-23_H3_Creator_Run_Receipt_Resume_Advanced.json",
+      "examples/workflows/11-studio-production/2026-08-23_H3_Creator_Long_Video_Background_Bridge_Advanced_EXP.json"
+    ],
+    "real_creator_session": {
+      "material": "the real 39-frame native-latent single-decode output versus its 39-frame separately decoded baseline",
+      "timeline": "three shots with exact frame counts 22/22/39, run window 0-2 and deterministic timeline/workspace hashes",
+      "override": "shot B emitted three seeds 2608229102/2608229119/2608229136, explicit video/audio context roles and a five-frame hold-first map; variant 2 selected seed 2608229136",
+      "comparison": "both source batches were [39,256,256,3]; output was [39,288,520,3], source pixels were preserved exactly and winner remained ABSTAIN because no human decision was supplied",
+      "runtime": "all eight ComfyUI nodes executed in 1.688 seconds; peak whole-device VRAM equalled baseline at 1156.5MiB; the labelled MP4 passed strict video decode three of three times",
+      "boundary": "this proves one explicit real-data compiler, selector and synchronized visual-review path; a separate live H3 probe now covers active-sampler cancellation/release. User usability, H3-internal cache reuse and any authorized filesystem cleanup remain unvalidated"
+    },
+  "real_av_review": {
+      "material": "the same two 39-frame 256x256 native-latent single-decode and separate-decode H3 candidates, each loaded with its own audio",
+      "visual": "the deliberately silent labelled comparison was 520x288, 24fps and 39 frames; it passed strict single-thread video decode three of three times and retained winner=ABSTAIN",
+      "audio": "both candidates emitted independent PreviewAudio assets; the aligned reference-relative audit returned PASS with waveform correlation 0.9842, spectral-drift p90 0.0735 and absolute level-delta p90 0.2308dB",
+      "artifact_sha256": "0479AC59B8A8B5A69FD018F8A04C7E035F9B8932614473ACDD07ECADE7784D17",
+    "boundary": "PASS means no configured persistent drift fired; the comparison video is intentionally silent. The current final-key reviewer export tied and was subsequently classified as source-material insufficient because the picture itself was unclear, so no human perceptual equivalence or automatic acceptance is claimed"
+  },
+  "long_human_face_review": {
+    "contract": "SHA-locked 10A.jpg, I2VA, 1088x544x124, eight NFE, shifts 12/3, seed 2608245001 and one close Mandarin utterance; one exact joint AV latent is reused twice and native concat produces 243 frames, 405 audio-latent steps and 324000 lossless samples",
+    "runtime": "the isolated 0.6MP run completed in 421.359 seconds, peaked at 14985MiB and left 1125MiB minimum sampled free; a Windows multithread x264 packaging exit was recovered from the unchanged generated PNG/FLAC with threads=1 and both one-decode and separate-decode arms strictly decode as 1088x544x243 H264 plus 32kHz stereo AAC",
+    "objective": "full-video SSIM about 0.98794 and zero-lag audio cosine about 0.99999; these objective similarities did not select a winner",
+    "human_review": "one reviewer marked the pair assessable and tied overall, motion, audio, prompt adherence, stability, first-frame and identity with no blocking failure",
+    "boundary": "the fixed simple-material human seam/audio gate is closed, but one tie does not establish broad Creator usability, cross-material equivalence or automatic acceptance; no broad 16GiB claim is enabled"
+  },
+    "quick_start_subgraph": {
+      "path": "subgraphs/2026-08-23_H3_Quick_Creator_AV_Review.json",
+      "contract": "exposes only the two aligned input videos, labels, seeds, human winner/notes, strict-geometry switch and silent-output prefix; outputs the untouched A/B audio separately, labelled comparison frames, a deliberately silent comparison video, the human visual review record and the reference-relative audio-drift report",
+      "safety": "winner defaults to ABSTAIN, CreateVideo has no connected audio, both PreviewAudio paths remain present, no sampler or model is loaded, and no automatic winner or acceptance decision exists",
+      "compatibility": "the generator remains deterministic; all six previously released Quick Start JSON files retain their exact pre-change SHA-256 bytes, and the seventh dated ASCII file is append-only"
+    },
+    "real_runtime_receipt": {
+      "graph": "an isolated CPU-only ComfyUI API graph used a two-shot 73/124-frame timeline, recorded completed then accepted for shot 0 variant 0 attempt 1, and deterministically planned shot 1 variant 0 attempt 1",
+      "cache_probe": "an exact API requeue reported nodes 1-5 cached; changing only base_seed invalidated the entire dependent graph and reported no cached nodes",
+      "boundary": "this proves deterministic ledger transitions, resume selection and ordinary ComfyUI node-cache identity only. It does not prove cache reuse inside H3 generation, automatic history binding or cancellation of a live sampler; cache_observation remains explicit metadata"
+    },
+    "background_bridge": {
+      "contract": "one Creator shot equals one accepted Long Video segment; workspace_hash and run_count are persisted as a 4KiB-bounded JSON-safe binding, accepted_count selects the shot, and retry_count selects a deterministic seed variant",
+      "runtime": "reuses the existing Long Video targeted queue deletion/running interrupt/history monitor/retry/process lease and accepted manifest; the new Start node exposes the same frontend status/pause/resume/cancel controls",
+      "safety": "review_only is the default and blocks downstream generation; cross-workspace chain reuse, impossible manifest progress and unsupported background state fail closed; full prompts are not stored in binding metadata",
+      "isolated_api": "CPU-only ComfyUI loaded both schemas; review_only completed without creating a background state directory. A second auto-mode graph intentionally omitted the required Auto Accept terminal: history reported prompt success, while the background monitor correctly marked the job failed, retained the exact prompt_id/workspace binding and queued no continuation",
+      "live_promptserver_cancel": "a temporary CPU interruptible node made the bound Creator prompt genuinely reach runtime_location=running. POST cancel targeted the identical prompt_id, returned deleted_from_queue=false and interrupt_signalled=true; history emitted execution_interrupted, the job stayed cancelled with accepted_count=0/retry_count=0, and both running/pending queues ended empty",
+      "live_h3_cancel_release": "an isolated localhost:8197 run used the real 8B ClipProj text path, INT8 H3 model, Turbo4 LoRA, native dual clock and 256x256x22 T2VA graph. The bound sampler reached progress 1/4 before targeted cancel; history ended execution_interrupted, accepted_count/retry_count stayed zero, both queues emptied and unload_all_models was recorded without release error. Whole-device observed usage rose from 2999MiB to 10794MiB and returned to 3089MiB, 90MiB above baseline, after the bounded release observation",
+      "terminal_reattach_autoaccept": "a lightweight localhost:8197 control-plane probe retained the production 124..362-frame contract and used native empty MiniMax H3 AV latent plus 64x64 deterministic media. It reattached a fresh job after the prior terminal state, saved/accepted 124- and 119-frame candidates, queued exactly one continuation, preserved parent context identity, completed a 243-frame/10.125-second H.264 plus stereo-AAC composition, recorded unload_all_models without error and returned whole-device memory to baseline. The probe also found and fixed a failed-job process-lease leak; failed state is durably written before its lease and prompt snapshot are released",
+      "boundary": "manager, binding, selection, schema/frontend, real CPU PromptServer cancel, one low-load live H3 active-sampler cancel/release path and one lightweight two-segment terminal-reattach/Candidate Save/Auto Accept/composition path passed. These are not stress or universal 16GiB results. Real-H3 cancelled-then-reattached output quality, diffusion-state continuation, any authorized cleanup executor and human usability remain unvalidated; manual restart after cancellation may intentionally reuse the first variant"
+    },
+    "retention_plan": {
+      "contract": "validates the workspace and hash-bound immutable ledger, deduplicates artifact manifests by canonical hash, and applies each shot's keep_all, keep_winner_and_metadata, keep_accepted_only or metadata_only policy",
+      "safety": "completed-but-unreviewed candidates always remain in keep; keep wins over proposed deletion; multiple accepted runs per shot, overlapping keep/delete path hints, or a proposed-delete manifest without an explicit path field returns ABSTAIN",
+      "statuses": "AWAITING_ACCEPTANCE, REVIEW_REQUIRED, READY_FOR_EXTERNAL_EXECUTOR, COMPLETE_KEEP_ONLY or ABSTAIN",
+      "boundary": "confirm_artifact_paths_reviewed defaults false. Turning it on only allows READY_FOR_EXTERNAL_EXECUTOR; files_mutated=false, files_deleted=false and destructive_executor_included=false are invariant. A future separately authorized executor would still need to revalidate allowed roots, hashes and current ledger state"
+    },
+  "validation_boundary": "unit/schema/frontend tests plus one real-data three-shot API session cover overlays, run windows, variant seeds, hold-map sidecars, explicit selection, pixel preservation, NOTE guidance and saved review media. A second real execution closes independent A/B audio preview and drift-report wiring. An isolated CPU API execution closes deterministic receipt/resume mechanics and ordinary ComfyUI graph-cache invalidation. The adapter binds Creator progress to the existing Long Video manager without a second queue implementation; one low-load live H3 probe closes exact active-sampler interruption and observed post-cancel release, while a lightweight legal-window probe closes terminal reattachment, two accepted segments and final AV composition. The corrected 1088x544, 10.125-second close-face Creator pair closes exact 243-frame/324000-sample mechanics, the sampled memory gate and one fixed-material human tie. Deterministic tests close retention candidate classification and fail-closed conflicts without performing filesystem operations. Cross-material Creator usability, real-H3 resumed-media quality and any separately authorized cleanup executor remain pending"
+  },
+  "prompt_budget_and_role_compiler_advanced": {
+    "status": "implemented locally as one append-only local-only Advanced node; release pending; real Qwen3-VL 8B tokenizer plus exact 7000/7001 and three-subject mapping validation passed",
+    "date": "2026-08-22",
+    "node": "MiniMaxH3PromptBudgetCompilerT8Advanced",
+    "budget_contract": "reports Unicode codepoints, UTF-8 bytes and a labelled planning token estimate; when the actual CLIP can expose token IDs it reports per-encoder and maximum exact compiled-text counts; it preserves the complete source prompt including leading/trailing whitespace and never truncates text",
+    "media_contract": "validates connected picture/video/audio counts, reports occurrence order and assignment coverage, compiles explicit subject-to-media role bindings and abstains on out-of-range ordinals or one audio reference assigned to multiple subjects unless explicitly allowed; connected-but-unassigned and prompt-only media remain review warnings because scene/ambience references can be intentional",
+    "provider_scope": "this compiler remains local-only; the separately appended Prompt Provider Router owns explicit OpenAI-compatible/Ollama requests and does not change this node",
+    "workflow": "examples/workflows/14-prompt-relay/2026-08-22_H3_Prompt_Budget_Role_Compiler_Advanced.json",
+    "compatibility": "the previous 165 node IDs, schema order, defaults, stable sampling and saved workflows remain unchanged; the new node is appended at position 165",
+    "validation_boundary": "deterministic unit/schema tests cover exact 7000 PASS/7001 ABSTAIN without mutation, whitespace preservation, three-subject Picture/Video/Audio coverage, explicit shared-audio behavior, coverage warnings, exact connected-tokenizer counting and mapping failures; one real Qwen3-VL 8B/Boogu CPU tokenizer run counted a mixed Chinese/English prompt with explicit role bindings. The default 7000 ceiling matches the current official MiniMax H3 CLI submission contract. Current validated ComfyUI source has no 7000-character tokenizer guard, so this official submission rule is not presented as a local open-weight tokenizer hard limit; exact text counts here exclude visual/timestamp tokens added later by H3 Conditioning. A user override above 7000 is reported as outside official submission compatibility and never raises the current official CLI limit",
+    "real_qwen_tokenizer_probe": {
+      "encoder": "qwen3vl_8b_fp8_scaled.safetensors",
+      "clip_type": "boogu",
+      "device": "cpu",
+      "prompt_character_count": 296,
+      "planning_estimate": 153,
+      "exact_token_count": 140,
+      "exact_token_count_per_encoder": {
+        "qwen3vl_8b": 140
+      },
+      "decision": "PASS",
+      "findings": [],
+      "warnings": [],
+      "prompt_truncated": false,
+      "execution_seconds": 0.93,
+      "loaded_weight_megabytes_reported_by_comfyui": 10097.97,
+      "whole_device_vram_delta": 0,
+      "artifact": "artifacts/prompt-budget-real-tokenizer-v1/history.json"
+    }
+  },
+  "prompt_provider_router_advanced": {
+    "status": "implemented locally as one append-only Advanced node; local passthrough, mocked envelopes and a real loopback HTTP roundtrip passed. CPU-only Ollama negative probes fail closed and one later 8B response passed the strict structural/dialogue contract, while semantic fidelity remains unvalidated",
+    "date": "2026-08-23",
+    "node": "MiniMaxH3PromptProviderRouterT8Advanced",
+    "providers": [
+      "local_passthrough returns the original prompt exactly and is the default",
+      "openai_compatible covers OpenAI, LM Studio and llama.cpp chat-completions servers",
+      "ollama_chat uses the native Ollama chat envelope and defaults keep_alive to 0 so Ollama is asked to unload after the response"
+    ],
+    "privacy_contract": "every network request requires confirm_provider_request=true; non-loopback endpoints additionally require allow_remote_endpoint=true, HTTPS and an API key read only from a named uppercase environment variable. The secret value is never serialized. Source <d> literals are replaced with deterministic opaque tokens before any provider serialization, so raw dialogue text is not uploaded",
+    "media_contract": "T2VA uploads no image; I2VA/L2VA/FL2VA require exactly the matching first/last IMAGE inputs, downscale each to the configured edge and send bounded JPEG data. Raw audio is never sent",
+    "output_contract": "uses the pinned H3 Prompt Rewriter system contract, validates the three required fields and order, rejects missing or unsupported Picture ordinals, and preserves source Video/Audio tags. Each protected dialogue token must occur exactly once inside integrated_multimodal_description before its exact local literal is restored; missing, changed, duplicated or misplaced tokens fail closed",
+    "contract_repair": "an append-only contract_repair_attempts control defaults to zero and permits at most two text-only repairs after deterministic validation failure. Repairs resend neither reference images nor restored source dialogue, are revalidated from scratch, and never relax strict failure; Ollama keep_alive=0 may reload the model per repair",
+    "network_contract": "loopback HTTP bypasses system proxies; non-loopback clear-text HTTP, embedded credentials and redirects fail closed; response bytes and timeout are bounded and Comfy interruption is checked before, between response chunks and after the request",
+    "gguf_boundary": "GGUF is supported only when a separately managed LM Studio, llama.cpp or Ollama server exposes it. This plugin neither loads GGUF directly nor promises to unload a model through the non-standardized OpenAI-compatible protocol",
+    "workflow": "examples/workflows/14-prompt-relay/2026-08-23_H3_Prompt_Provider_Router_Advanced_EXP.json",
+    "compatibility": "the previous 178 node IDs, schemas, defaults, stable sampling and saved workflows remain unchanged; the router is appended at position 178",
+    "validation_boundary": "deterministic unit/schema/workflow tests cover routing envelopes, confirmation order, loopback/remote policy, environment-only keys, image packing, bounded response reads, redirect refusal, Ollama unload request, output rejection, thinking-only response refusal and bounded text-only repair. Real CPU-only Ollama probes confirmed fail-closed handling and keep_alive=0 unload; one later 8B response passed the strict three-field/dialogue contract but changed a requested turning action into standing still, so semantic quality remains open. A same-input 1.5B probe generated 1024 tokens under a thinking-enabled template but exposed no final message.content; the router rejected it with an actionable diagnostic instead of treating private reasoning as the H3 prompt. Real slow loopback sockets verify a normalized header timeout and streamed-body interruption between single underlying reads; a stall before headers/first byte can still wait until timeout",
+    "real_ollama_probe": {
+      "version": "0.32.15",
+      "model": "deepseek-r1:1.5b",
+      "model_blob_sha256": "AABD4DEBF0C8F08881923F2C25FC0FDEED24435271C2B3E92C4AF36704040DBC",
+      "execution": "isolated loopback port 11435, CPU-only library, total_vram=0 B, one T2VA request, temperature=0, max_new_tokens=768",
+      "elapsed_seconds": 25.295219599996926,
+      "request_sha256": "6f8a04e40adb32178442fc944a16cf4cb686ba78ee18107b462d42b39d27d394",
+      "response_text_sha256": "570dec73d58633789bc79df7934566f90ae78e2f33d115a429929b9558870769",
+      "decision": "REJECTED_AS_DESIGNED",
+      "findings": [
+        "rewriter output did not contain all three required fields",
+        "rewriter changed or removed an exact <d> dialogue block"
+      ],
+      "unload_observation": "ollama ps was empty immediately after keep_alive=0; the isolated listener was then stopped",
+      "artifact": "artifacts/prompt-provider-ollama-v1/real_ollama_cpu_probe.json"
+    },
+    "real_ollama_probe_8b": {
+      "version": "0.32.15",
+      "model": "deepseek-r1:8b",
+      "model_blob_sha256": "6340DC3229B0D08EA9CC49B75D4098702983E17B4C096D57AFBBF2FFC813F2BE",
+      "execution": "isolated loopback port 11435, CPU-only library, total_vram=0 B, one T2VA request, temperature=0, max_new_tokens=1536",
+      "elapsed_seconds": 92.3922515000013,
+      "request_sha256": "d920de7b126d65c616107665c906d3c73e55fc25e28fa6ab0e86cf9251dde058",
+      "response_text_sha256": "a23fc430dd3171cabafd325ead551277640c83400f45bb7ce2b57be1b8fc6c4c",
+      "decision": "REJECTED_AS_DESIGNED",
+      "findings": [
+        "rewriter changed or removed an exact <d> dialogue block"
+      ],
+      "unload_observation": "ollama ps was empty immediately after keep_alive=0; the isolated listener was then stopped",
+      "artifact": "artifacts/prompt-provider-ollama-v1/real_ollama_cpu_probe_8b.json"
+    },
+    "real_socket_probe": {
+      "timeout": "a loopback server withholding response headers is normalized to ValueError at the configured timeout",
+      "stream_cancel": "a loopback server flushed 16 bytes then stalled; read1 returned after one socket read and the third interruption checkpoint cancelled before the remaining body",
+      "boundary": "no user-space implementation can check ComfyUI cancellation while a blocking socket is waiting for its first response byte; this interval remains bounded by timeout_seconds",
+      "artifact": "artifacts/prompt-provider-ollama-v1/real_socket_timeout_cancel.json"
+    },
+    "real_dialogue_guard_probe_8b": {
+      "version": "0.32.15",
+      "model": "deepseek-r1:8b",
+      "execution": "one CPU-only T2VA request with one protected dialogue token and no raw dialogue text serialized",
+      "elapsed_seconds": 99.91518820000056,
+      "request_sha256": "3c5088168a03659b3a99f8de61c252b729b5b6b21abf7f45f2b95e5b8add4b8d",
+      "response_text_sha256": "adba1adbe5c31d5a84004a20a5e7539ce6f702b1f4c9a40c75f34ffd35b343f2",
+      "protected_dialogue_tokens": 1,
+      "restored_dialogue_tokens": 0,
+      "exact_dialogue_text_uploaded": false,
+      "decision": "REJECTED_AS_DESIGNED",
+      "artifact": "artifacts/prompt-provider-ollama-v1/real_ollama_dialogue_guard_probe_8b.json"
+    },
+    "real_dialogue_guard_positive_probe_8b": {
+      "version": "0.32.15",
+      "model": "deepseek-r1:8b",
+      "execution": "one isolated CPU-only T2VA request with literal Chinese source dialogue, one protected token, temperature 0, max_new_tokens 1024 and optional repair budget 1",
+      "elapsed_seconds": 81.9643178999977,
+      "provider_request_count": 1,
+      "contract_repair_attempts_used": 0,
+      "protected_dialogue_tokens": 1,
+      "restored_dialogue_tokens": 1,
+      "exact_dialogue_text_uploaded": false,
+      "source_dialogue_exactly_restored": true,
+      "decision": "PASSED_STRICT_CONTRACT_ONLY",
+      "semantic_boundary": "the candidate changed the requested turning action into standing still, so human instruction fidelity and provider quality remain unpassed",
+      "unload_observation": "ollama ps was empty after keep_alive=0; isolated port 11435 was stopped and existing 8188/11434 processes were preserved",
+      "artifact": "artifacts/prompt-provider-ollama-v1/real_ollama_dialogue_guard_positive_probe_8b.json"
+    }
+  },
+  "audio_integrity_and_speaker_routing_advanced": {
+    "status": "implemented locally as three report-only Advanced nodes; structural tests and one human-labelled real three-track perceptual-drift calibration passed; release and broader listening validation pending",
+    "date": "2026-08-22",
+    "nodes": [
+      "MiniMaxH3AudioIntegrityAuditT8Advanced",
+      "MiniMaxH3SpeakerRoutingAuditT8Advanced",
+      "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"
+    ],
+    "audio_integrity": "CPU-only deterministic measurements cover exact samples/duration, non-finite values, opening adjacent-sample discontinuity, persistent DC-offset boundaries using 100ms context on each side, clipping ratio, tail/head normalized similarity and optional exact video-frame boundary delta",
+    "speaker_routing": "compiles first-use dialogue speakers to explicit <Audio N> ordinals and audits missing or duplicate reference fingerprints, unstructured vocalizations in spoken text, unused profiles and same-gender descriptor collisions without modifying the dialogue plan",
+    "perceptual_drift": "compares time-aligned same-content reference/candidate audio on CPU using 500ms windows, 100ms hop, an active-reference floor, gain-normalized 24-band log-power envelope drift, level delta and a three-window persistence gate; it passes the candidate through unchanged and cannot diagnose perceived distance, reverb, identity or cause",
+    "multilingual_metric_contract": "transcript scoring now uses Unicode NFKC plus casefold without silently dropping scripts: CJK ideographs, kana and hangul use character-error units, while accented Latin, Cyrillic, Arabic and other scripts use Unicode word units. Mixed CJK and Latin text uses a true Unicode-alphanumeric CER denominator. This validates the metric implementation only, not H3 generation quality in any language",
+    "voice_clone_abx_contract": "CPU-only builder creates immutable hash-bound A/B/X identity-review packages from audio-only files, normalizes no content itself, requires matching codec/sample-rate/channel/container contracts, hides case and speaker IDs behind opaque case numbers, preserves unanswered responses, and keeps the private target/impostor mapping outside the review page. The analyzer accepts multiple unique reviewer exports, audits at least ten target speakers, three impostors and three known seeds per target, reports Wilson confidence, abstain/invalid rates and per-speaker outcomes, and never converts a panel pass into a high-fidelity-clone claim",
+    "voice_clone_identity_formal_plan": "a separate immutable plan expands ten licensed LibriSpeech test-clean targets by ten reviewed English utterances and three fixed seeds into 300 clone prompts. Its 90-case ABX preregistration assigns three same-corpus-label impostors and three known seeds per target, using the source F/M metadata only as a coarse blocking variable against trivial cross-label cues. The plan and design are byte-idempotent and reuse the bounded private-port executor. After complete unique collection, a separate default-preflight, bounded serial materializer atomically creates 32kHz mono FLAC without loudness normalization, resumes from SHA-bound state, requires content-distinct A/B/X sets and only then emits a blind-builder manifest with target A/B positions balanced per target and globally. Legacy manifests keep independent random positions",
+    "voice_clone_abx_legacy_pilot": "the existing ten-speaker/ten-trial legacy package was found to leak a trivial 16kHz-mono reference versus 32kHz-stereo generated-audio cue and was rejected by the new fairness contract. Originals remain untouched; separate 32kHz-mono FLAC copies now form a ten-case opaque browser review package. It remains a pilot only because every target has one impostor, one utterance, unknown seed provenance and no human export",
+    "historical_14_case_asr": "a fixed local multilingual Faster-Whisper small CPU-int8 pass now transcribes all 14 previously generated real-H3 speech files instead of the earlier three-case pilot. The two English described cases have WER 0 and the single Chinese described case has CER 1/14. Across eleven English clone cases the median WER is 0 but the mean is 0.7841: six are at or below the 0.15 threshold, one has WER 0.25 and four have severe extra/non-target speech at WER 1.625-2.5. The validator now reports language-by-mode, condition and sorted outlier breakdowns so this failure structure cannot be hidden by a median. The strict gate remains false because the corpus is unbalanced, has only one Chinese case and lacks three-seed repeated cells",
+    "decision_policy": "first release only returns PASS or ABSTAIN and reports evidence; it never repairs audio, reassigns a speaker, or claims to diagnose model-level leakage",
+    "compatibility": "the previous 173 node IDs, schema order, defaults, stable sampling and saved workflows remain unchanged; the original two audit nodes remain at positions 163 and 164 and the perceptual-drift audit is appended at position 173",
+    "workflows": [
+      "examples/workflows/05-speech-dialogue/2026-08-22_H3_Audio_Integrity_Audit_Advanced.json",
+      "examples/workflows/05-speech-dialogue/2026-08-22_H3_Speaker_Routing_Audit_Advanced.json",
+      "examples/workflows/05-speech-dialogue/2026-08-22_H3_Audio_Perceptual_Drift_Audit_Advanced.json"
+    ],
+    "real_perceptual_drift_probe": {
+      "material": "three 5.152-second 32kHz stereo Motion Recovery WAVs previously reviewed by the user",
+      "reference": "pass1_original",
+      "pass1_original": "PASS; zero drift against itself",
+      "pass2_recovered_exp": "ABSTAIN over 1.4-3.6 seconds; spectral-drift p90 0.4385, absolute level-delta p90 7.66dB, waveform correlation 0.5006; user had labelled the middle as suddenly distant then returning",
+      "blend_exp": "PASS; spectral-drift p90 0.1318, absolute level-delta p90 1.83dB, waveform correlation 0.9861; user had labelled this 80-percent-pass1 example normal",
+      "boundary": "one labelled three-track case is calibration evidence only and does not establish general false-positive/false-negative performance"
+    },
+    "validation_boundary": "synthetic deterministic unit coverage plus one low-load real three-track calibration is implemented. Structural Audio Integrity now avoids the former short-window speech false positive, while the separate aligned-reference drift audit detects the known midstream candidate. Unicode CER/WER unit handling is mechanically covered for Chinese, Japanese, Korean, accented Latin, Cyrillic and Arabic, and all 14 historical real-H3 speech files now have fixed CPU-int8 ASR with mode/condition/outlier summaries. The ABX tooling, normalized legacy pilot, formal 10-target/10-utterance/3-seed plus three-impostor design and the bounded/resumable fair-media materializer are mechanically validated, but the formal identity collection remains zero of 300 and the multilingual collection remains zero of 120. No real formal A/B/X media or three-reviewer panel exists yet. Real opening-pop, tail-wrap, multilingual/multi-speaker listening, music/effects robustness, wider false-positive calibration and model-level causality remain pending"
+  },
   "lightx2v_sla_attention_advanced": {
     "status": "implemented and validated for the v1.44.0 release as three append-only Advanced EXP nodes",
     "date": "2026-08-22",
@@ -90,8 +545,8 @@
   "frontend_workflow_naming": {
     "format": "YYYY-MM-DD_<workflow_name>.json",
     "date_semantics": "first publication date derived from Git history; not the latest edit date",
-    "project_workflows": 108,
-    "installed_user_workflows": 108
+    "project_workflows": 133,
+    "installed_user_workflows": 133
   },
   "frontend_workflow_library": {
     "root_index": "examples/workflows/README.md",
@@ -395,14 +850,42 @@
     "MiniMaxH3PromptRewriterUnloadT8Advanced",
     "MiniMaxH3LightX2VSLAT8Advanced",
     "MiniMaxH3LightX2VSLAAuditT8Advanced",
-    "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced"
+    "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced",
+    "MiniMaxH3AudioIntegrityAuditT8Advanced",
+    "MiniMaxH3SpeakerRoutingAuditT8Advanced",
+    "MiniMaxH3PromptBudgetCompilerT8Advanced",
+    "MiniMaxH3CreatorShotOverrideT8Advanced",
+    "MiniMaxH3CreatorWorkspaceT8Advanced",
+    "MiniMaxH3CreatorWorkspaceShotSelectT8Advanced",
+    "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
+    "MiniMaxH3ClipProjCompatibilityAuditT8Advanced",
+    "MiniMaxH3SolAttnCompatibilityAuditT8Advanced",
+    "MiniMaxH3NativeLatentTimelineConcatT8Advanced",
+    "MiniMaxH3AudioPerceptualDriftAuditT8Advanced",
+    "MiniMaxH3CreatorRunReceiptT8Advanced",
+    "MiniMaxH3CreatorResumePlanT8Advanced",
+    "MiniMaxH3CreatorBackgroundStartT8Advanced",
+    "MiniMaxH3CreatorBackgroundRunSelectT8Advanced",
+    "MiniMaxH3PromptProviderRouterT8Advanced",
+    "MiniMaxH3CreatorRetentionPlanT8Advanced",
+    "MiniMaxH3NativeLatentResumeManifestT8Advanced",
+    "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+    "MiniMaxH3NativeLatentCheckpointLoadT8Advanced",
+    "MiniMaxH3NativeLatentContinuationConcatT8Advanced",
+    "MiniMaxH3RavenStreamingProfileT8Advanced",
+    "MiniMaxH3RavenGuardedLoaderT8Advanced",
+    "MiniMaxH3RavenRequestAuditT8Advanced",
+    "MiniMaxH3NFEResumeSamplerT8Advanced",
+    "MiniMaxH3CreatorArtifactQuarantineT8Advanced",
+    "MiniMaxH3PromptSemanticContractAuditT8Advanced",
+    "MiniMaxH3NFERunContractT8Advanced"
   ],
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",
     "items": {
       "external_face_model_storage": "face detector aliases under ComfyUI/models may resolve through a directory symlink or junction to another volume; absolute/traversal inputs still fail closed and reports identify external storage",
       "sage_sm120_guard": "environment audit warns for compute capability 12.x at high H3 token count and the Strict Sage composer refuses 50,000 or more packed rows instead of silently risking corrupted output",
-      "quick_start_subgraphs": "six ComfyUI native blueprints cover T2VA, I2VA/FL2VA, Ref2VA, Audio Drive, Long Video and Repair without changing the source nodes",
+      "quick_start_subgraphs": "six released ComfyUI native blueprints cover T2VA, I2VA/FL2VA, Ref2VA, Audio Drive, Long Video and Repair; the local v1.45 batch appends a seventh Creator AV Review blueprint while preserving the exact bytes of all six existing files",
       "prompt_rewriter_8b": "local-only LightX2V adapter on Qwen3-VL-8B with CPU offload, finally-path cleanup and default unload-after-generate; one 16GB real generation succeeded but was slow and truncated at a 256-token probe cap",
       "lanpaint_av_repair": "H3 nested AV latent preparation plus source-safe image/audio compositing around the separately installed LanPaint sampler; image mask and audio intervals remain independent",
       "external_blockswap_bridge": "duck-typed parameter bridge for the separately installed MiniMax H3 streaming runtime; it never accepts or modifies ComfyUI official MODEL objects"
@@ -1144,6 +1627,8 @@
     "nodes": ["MiniMaxH3EnvironmentAuditT8Advanced"],
     "behavior": [
       "read-only source-contract, known-fix ancestry, wrapper ownership, DynamicVRAM, loaded-model residency and host-resource audit",
+      "detects the current ComfyUI FLOW_AV audio_scale protocol, reports native ModelSamplingAV shift12/audio_shift3 scale 4.0, and verifies that both T8 custom dual-clock samplers expose their required neutral audio_scale 1.0 without loading H3 or running CUDA",
+      "when sage_attention is selected, preserves the exact sageattention package/core import stage, the six symbols used by current KJNodes, reported smXX architectures and active-GPU architecture match instead of collapsing them into one generic error",
       "reports cumulative process RSS/private/pagefile/page-fault/I/O counters, pinned-memory mode and optional NVML temperature/power/clocks; the run validator computes before/after deltas and classifies fits, fits_with_thrashing, unsafe or unknown",
       "report_only by default; never patches, unloads, downloads or changes global settings",
       "pass means no known blocker, not a peak-memory or quality guarantee"
@@ -1151,10 +1636,12 @@
     "validated": [
       "current ComfyUI cbbc9dab1 capability probe",
       "known/supported/unknown separation and fail-closed enforcement tests",
+      "current ComfyUI 187eda8 reports FLOW_AV, native audio_scale 4.0, stable and multirate T8 audio_scale 1.0, compatible=true, and known FLOW_AV commit bdcb886a as an ancestor",
       "regular H3 decode above the internal 256-pixel tile boundary is classified high-risk when tile-global decoder coordinates are absent",
-      "86-node append-only registration contract"
+      "86-node append-only registration contract",
+      "current embedded Python exposes every KJ-required sageattention.core symbol and reports sm89 for the active RTX 4060 Ti; deterministic tests cover core-import failure, missing symbols, architecture mismatch and a matching contract"
     ],
-    "status": "implemented Advanced read-only snapshot plus run-validator thrashing telemetry; cumulative snapshot counters do not prove one workload's cost, and peak prediction remains out of scope"
+    "status": "implemented Advanced read-only snapshot plus run-validator thrashing telemetry, KJ Sage import/architecture diagnostics and FLOW_AV/T8 audio_scale contract diagnostics; it does not load H3, run an attention kernel, silently fall back or prove output correctness, and peak prediction remains out of scope"
   },
   "experimental_activation_chunk_advanced": {
     "category": "T8/MiniMax H3/Models/Experimental",
@@ -2008,6 +2495,7 @@
       "repeat_memory": "three cold and three warm runs completed, but minimum 16GiB headroom stayed below 512MiB and keep_loaded showed a material residency-baseline staircase",
       "decision": "mechanically usable EXP prototype with guarded failure cleanup and durable long-form state; 16GiB memory_safe and high-fidelity-clone labels remain denied"
     },
+    "multilingual_validation_harness": "tools/validate_speech_multilingual.py now has a strict v2 experiment-design gate before ASR: explicit language/mode/utterance/integer seed, described voice_profile_id or clone speaker_id, text consistency within each utterance, described plus clone coverage, default 30 unique audio files and 10 utterances per language, three distinct seeds within each identical utterance/mode/voice condition, SHA-256 file identity, 90-percent case pass rate and mean/p50/p90 error reporting. --validate-only audits the manifest without loading ASR. Passing this audit is necessary but never counts as H3 multilingual quality evidence",
     "unvalidated_or_denied": [
       "30-case-per-language Chinese and multilingual H3 CER/WER; current Chinese evidence is one case",
       "human blind ABX with at least three listeners and multiple generated sentences per speaker",
@@ -2017,7 +2505,6 @@
       "token/frame realtime streaming; only completed-chunk preview is implemented",
       "ADR phoneme/lip synchronization; only exact output sample duration is implemented",
       "cross-process/network-share persistent-library stress and privacy lifecycle",
-      "three-cold plus three-warm testing on another GPU and cross-GPU profiles",
       "a 16GiB memory_safe or never-OOM tier"
     ],
     "status": "guarded failure cleanup, durable long-form accepted state, exact-sample ADR, explicit voice persistence, validation harnesses and creator workflows implemented; quality-sensitive capabilities remain Experimental or denied as stated"

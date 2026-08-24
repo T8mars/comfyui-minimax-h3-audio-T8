@@ -1,0 +1,89 @@
+{
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadAudio",
+      "title": "Reference: accepted pass-1 or known-good synchronized audio",
+      "pos": [0, 0],
+      "size": [410, 124],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [{"name": "audio", "type": "COMBO", "widget": {"name": "audio"}, "link": null}],
+      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadAudio"},
+      "widgets_values": ["replace_with_accepted_reference_audio.wav"]
+    },
+    {
+      "id": 2,
+      "type": "LoadAudio",
+      "title": "Candidate: same intended content and exact timeline",
+      "pos": [0, 170],
+      "size": [410, 124],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [{"name": "audio", "type": "COMBO", "widget": {"name": "audio"}, "link": null}],
+      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [2]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadAudio"},
+      "widgets_values": ["replace_with_candidate_audio.wav"]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced",
+      "title": "Reference-relative review cue; candidate audio is never changed",
+      "pos": [470, 0],
+      "size": [620, 500],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "reference_audio", "type": "AUDIO", "link": 1},
+        {"name": "candidate_audio", "type": "AUDIO", "link": 2},
+        {"name": "analysis_window_ms", "type": "FLOAT", "widget": {"name": "analysis_window_ms"}, "link": null},
+        {"name": "hop_ms", "type": "FLOAT", "widget": {"name": "hop_ms"}, "link": null},
+        {"name": "active_rms_floor_dbfs", "type": "FLOAT", "widget": {"name": "active_rms_floor_dbfs"}, "link": null},
+        {"name": "spectral_drift_threshold", "type": "FLOAT", "widget": {"name": "spectral_drift_threshold"}, "link": null},
+        {"name": "level_delta_threshold_db", "type": "FLOAT", "widget": {"name": "level_delta_threshold_db"}, "link": null},
+        {"name": "persistent_window_count", "type": "INT", "widget": {"name": "persistent_window_count"}, "link": null},
+        {"name": "max_duration_delta_ms", "type": "FLOAT", "widget": {"name": "max_duration_delta_ms"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "candidate_audio", "type": "AUDIO", "links": null},
+        {"name": "pass_audit", "type": "BOOLEAN", "links": null},
+        {"name": "decision", "type": "STRING", "links": null},
+        {"name": "maximum_spectral_drift", "type": "FLOAT", "links": null},
+        {"name": "maximum_level_delta_db", "type": "FLOAT", "links": null},
+        {"name": "suspected_start_seconds", "type": "FLOAT", "links": null},
+        {"name": "suspected_end_seconds", "type": "FLOAT", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"},
+      "widgets_values": [500.0, 100.0, -50.0, 0.30, 4.0, 3, 21.0]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "使用说明：必须是同内容、同时间线的A/B",
+      "pos": [0, 340],
+      "size": [410, 480],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 音色远近漂移审计\n\n- `reference_audio`接已确认正常的一采原音或其他基准；`candidate_audio`接同内容、同起点、同采样率的二采/混音候选。\n- 默认500ms窗、100ms步进；只分析参考音轨高于-50dBFS的有效窗口，连续3窗才触发，减少短静音和单点误报。\n- 检查24段增益归一化频谱包络与响度差。`ABSTAIN`只表示持续声学漂移需要试听，不能证明远场、混响、换声或模型原因。\n- 不同台词、表演、音效设计或时间错位也可能触发；不要拿无关音频互相比。\n- 节点原样传回candidate AUDIO，不重采样、不修音、不替换最终音轨。"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 0, "AUDIO"],
+    [2, 2, 0, 3, 1, "AUDIO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.9, "offset": [80, 100]}},
+  "version": 0.4
+}

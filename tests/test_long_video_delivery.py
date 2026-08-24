@@ -117,10 +117,44 @@ def test_candidate_accept_context_and_streaming_compose(monkeypatch, tmp_path):
     assert report["frame_count"] == 10
     assert report["audio_samples"] == round(10 / 24 * 32000)
     assert report["absolute_sample_accounting"] is True
+    assert report["audio_encoder_process"] == "isolated_ffmpeg_subprocess"
     assert report["seams"][0]["jump_after"] <= report["seams"][0]["jump_before"]
 
     with av.open(output_path) as container:
         assert sum(1 for _ in container.decode(video=0)) == 10
+    with av.open(output_path) as container:
+        assert container.streams.audio
+        decoded_audio_samples = sum(frame.samples for frame in container.decode(audio=0))
+        assert decoded_audio_samples >= round(10 / 24 * 32000)
+
+
+def test_candidate_ffmpeg_failure_is_atomic_and_cleans_temporaries(monkeypatch, tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    monkeypatch.setattr(delivery.folder_paths, "get_output_directory", lambda: str(tmp_path))
+    monkeypatch.setattr(delivery.shutil, "which", lambda _name: "ffmpeg")
+
+    def fail_child(_args, _log_path):
+        raise RuntimeError("simulated isolated AAC encoder failure")
+
+    monkeypatch.setattr(delivery, "_run_isolated_ffmpeg", fail_child)
+    with pytest.raises(RuntimeError, match="simulated isolated AAC encoder failure"):
+        _candidate("ffmpeg-failure-chain", 0, 0, "failed-take")
+
+    candidate_dir = tmp_path / "minimax_h3_t8_long_video" / "ffmpeg-failure-chain" / "candidates"
+    assert not list(candidate_dir.glob("*.mp4"))
+    assert not list(candidate_dir.glob(".*.tmp"))
+
+
+def test_planar_audio_raw_is_interleaved_little_endian(tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    path = tmp_path / "audio.f32"
+    delivery._write_planar_audio_raw(
+        path,
+        np.asarray([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+    )
+    assert np.fromfile(path, dtype="<f4").tolist() == [1.0, 3.0, 2.0, 4.0]
 
 
 def test_review_only_is_non_mutating_and_accept_is_idempotent(monkeypatch, tmp_path):

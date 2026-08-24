@@ -1,7 +1,10 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
-const NODE_ID = "MiniMaxH3LongVideoBackgroundStartT8";
+const NODE_IDS = new Set([
+    "MiniMaxH3LongVideoBackgroundStartT8",
+    "MiniMaxH3CreatorBackgroundStartT8Advanced",
+]);
 const BASE = "/minimax_h3_t8/long_video/background";
 
 function chainId(node) {
@@ -67,7 +70,7 @@ function addControl(node, label, action) {
 app.registerExtension({
     name: "minimax-h3-audio-t8.long-video-background",
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== NODE_ID) {
+        if (!NODE_IDS.has(nodeData.name)) {
             return;
         }
         const onNodeCreated = nodeType.prototype.onNodeCreated;

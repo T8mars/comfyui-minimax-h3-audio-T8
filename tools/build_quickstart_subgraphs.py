@@ -243,7 +243,7 @@ def build_subgraph(spec: dict) -> dict:
         "properties": {
             "proxyWidgets": proxy_widgets,
             "cnr_id": "minimax-h3-audio-t8",
-            "ver": "1.43.0",
+            "ver": spec.get("version", "1.43.0"),
             "ue_properties": {
                 "widget_ue_connectable": {},
                 "input_ue_unconnectable": {},
@@ -292,6 +292,7 @@ def _basic_inputs(extra: list[dict] | None = None) -> list[dict]:
 SPECS = [
     {
         "id": "quick_t2va",
+        "filename": "2026-08-22_H3_Quick_T2VA.json",
         "name": "MiniMax H3 Quick T2VA / 快速文生音视频",
         "source": "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json",
         "description": "Stable T2VA quick-start that reuses the original conditioning, dual-clock sampler and AV decoder without changing their schemas.",
@@ -304,6 +305,7 @@ SPECS = [
     },
     {
         "id": "quick_i2va_fl2va",
+        "filename": "2026-08-22_H3_Quick_I2VA_FL2VA.json",
         "name": "MiniMax H3 Quick I2VA-FL2VA / 快速首尾帧",
         "source": "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json",
         "description": "One compatible quick-start for first-frame and first-last-frame generation; connect first_frame and optionally last_frame.",
@@ -322,6 +324,7 @@ SPECS = [
     },
     {
         "id": "quick_ref2va",
+        "filename": "2026-08-22_H3_Quick_Ref2VA.json",
         "name": "MiniMax H3 Quick Ref2VA / 快速参考生音视频",
         "source": "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json",
         "description": "Reference-image quick-start with the stable H3 conditioning and joint AV path. Use a task-compatible model/LoRA combination.",
@@ -340,6 +343,7 @@ SPECS = [
     },
     {
         "id": "quick_audio_drive",
+        "filename": "2026-08-22_H3_Quick_Audio_Drive.json",
         "name": "MiniMax H3 Quick Audio Drive / 快速原音轨驱动",
         "source": "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json",
         "description": "Audio-drive quick-start that locks the aligned source latent and uses mux_audio for the final soundtrack.",
@@ -357,6 +361,7 @@ SPECS = [
     },
     {
         "id": "quick_long_video",
+        "filename": "2026-08-22_H3_Quick_Long_Video.json",
         "name": "MiniMax H3 Quick Long Video / 快速长视频",
         "source": "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json",
         "description": "Review-first long-video quick-start. It keeps candidate acceptance false by default and preserves the existing resumable manifest contract.",
@@ -378,6 +383,7 @@ SPECS = [
     },
     {
         "id": "quick_repair",
+        "filename": "2026-08-22_H3_Quick_Face_Repair.json",
         "name": "MiniMax H3 Quick Repair / 快速单人五官修复",
         "source": "examples/workflows/06-face-refine/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json",
         "description": "Human-reviewed MANUAL512 relative-to-clip single-person repair candidate; it preserves the original soundtrack and is not a deblur/upscale tool.",
@@ -400,6 +406,134 @@ SPECS = [
             {"node": 23, "output": "baseline_report_json", "name": "report", "label": "修复报告"},
         ],
     },
+    {
+        "id": "quick_creator_av_review",
+        "filename": "2026-08-23_H3_Quick_Creator_AV_Review.json",
+        "name": "MiniMax H3 Quick Creator AV Review / 快速音画审片",
+        "version": "1.45.0",
+        "source": (
+            "examples/workflows/11-studio-production/"
+            "2026-08-22_H3_Creator_Synchronized_AV_AB_Advanced.json"
+        ),
+        "description": (
+            "Human-reviewed synchronized A/B workspace for two aligned videos: it preserves "
+            "source pixels, keeps A/B audio separate, saves a silent comparison video and "
+            "reports reference-relative audio drift without choosing a winner automatically."
+        ),
+        "inputs": [
+            {
+                "node": 1,
+                "input": "file",
+                "name": "baseline_video",
+                "label": "A基准视频",
+                "widget": True,
+            },
+            {
+                "node": 3,
+                "input": "file",
+                "name": "candidate_video",
+                "label": "B候选视频",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "label_a",
+                "name": "label_a",
+                "label": "A标签",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "label_b",
+                "name": "label_b",
+                "label": "B标签",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "seed_a",
+                "name": "seed_a",
+                "label": "A种子",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "seed_b",
+                "name": "seed_b",
+                "label": "B种子",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "winner",
+                "name": "winner_after_review",
+                "label": "人工结论",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "reviewer_notes",
+                "name": "reviewer_notes",
+                "label": "审片备注",
+                "widget": True,
+            },
+            {
+                "node": 5,
+                "input": "require_equal_geometry",
+                "name": "require_equal_geometry",
+                "label": "要求相同画布",
+                "widget": True,
+            },
+            {
+                "node": 7,
+                "input": "filename_prefix",
+                "name": "output_prefix",
+                "label": "无声对比输出前缀",
+                "widget": True,
+            },
+        ],
+        "outputs": [
+            {
+                "node": 5,
+                "output": "comparison_frames",
+                "name": "comparison_frames",
+                "label": "并排对比画面",
+            },
+            {"node": 2, "output": "audio", "name": "audio_a", "label": "A独立音轨"},
+            {"node": 4, "output": "audio", "name": "audio_b", "label": "B独立音轨"},
+            {
+                "node": 7,
+                "output": "video",
+                "name": "silent_comparison_video",
+                "label": "无声对比视频",
+            },
+            {"node": 5, "output": "winner", "name": "winner", "label": "人工结论"},
+            {
+                "node": 5,
+                "output": "selected_seed",
+                "name": "selected_seed",
+                "label": "选中种子",
+            },
+            {
+                "node": 5,
+                "output": "review_json",
+                "name": "visual_review_json",
+                "label": "画面审片报告",
+            },
+            {
+                "node": 10,
+                "output": "decision",
+                "name": "audio_drift_decision",
+                "label": "声音漂移结论",
+            },
+            {
+                "node": 10,
+                "output": "report_json",
+                "name": "audio_drift_report",
+                "label": "声音漂移报告",
+            },
+        ],
+    },
 ]
 
 
@@ -410,7 +544,7 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     for spec in SPECS:
         payload = build_subgraph(spec)
-        target = args.output / f"{spec['name'].replace('/', '-')}.json"
+        target = args.output / spec["filename"]
         target.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",

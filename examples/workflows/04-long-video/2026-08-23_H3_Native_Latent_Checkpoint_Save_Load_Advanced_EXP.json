@@ -1,0 +1,161 @@
+{
+  "last_node_id": 8,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+      "title": "Save one complete native H3 video+audio latent checkpoint",
+      "pos": [720, 80],
+      "size": [700, 430],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {"name": "av_latent", "type": "LATENT", "link": null},
+        {"name": "filename_prefix", "type": "STRING", "widget": {"name": "filename_prefix"}, "link": null},
+        {"name": "checkpoint_id", "type": "STRING", "widget": {"name": "checkpoint_id"}, "link": null},
+        {"name": "confirm_save", "type": "BOOLEAN", "widget": {"name": "confirm_save"}, "link": null},
+        {"name": "verify_after_write", "type": "BOOLEAN", "widget": {"name": "verify_after_write"}, "link": null},
+        {"name": "hash_chunk_megabytes", "type": "INT", "widget": {"name": "hash_chunk_megabytes"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "av_latent", "type": "LATENT", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "checkpoint_path", "type": "STRING", "links": [1]},
+        {"name": "file_sha256", "type": "STRING", "links": [3]},
+        {"name": "manifest_json", "type": "STRING", "links": [2]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced"
+      },
+      "widgets_values": ["h3_native_latent", "timeline_checkpoint", false, true, 8]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3NativeLatentCheckpointLoadT8Advanced",
+      "title": "Reload and verify the exact persisted native H3 AV latent",
+      "pos": [1510, 80],
+      "size": [720, 500],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "checkpoint_path", "type": "STRING", "widget": {"name": "checkpoint_path"}, "link": 1},
+        {"name": "expected_manifest_json", "type": "STRING", "widget": {"name": "expected_manifest_json"}, "link": 2},
+        {"name": "expected_file_sha256", "type": "STRING", "widget": {"name": "expected_file_sha256"}, "link": 3},
+        {"name": "hash_chunk_megabytes", "type": "INT", "widget": {"name": "hash_chunk_megabytes"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "av_latent", "type": "LATENT", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "resume_verified", "type": "BOOLEAN", "links": null},
+        {"name": "checkpoint_id", "type": "STRING", "links": null},
+        {"name": "content_sha256", "type": "STRING", "links": null},
+        {"name": "file_sha256", "type": "STRING", "links": null},
+        {"name": "manifest_json", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3NativeLatentCheckpointLoadT8Advanced"
+      },
+      "widgets_values": ["", "", "", 8]
+    },
+    {
+      "id": 3,
+      "type": "MarkdownNote",
+      "title": "① 连接位置：必须是完整H3联合AV latent",
+      "pos": [0, 0],
+      "size": [650, 330],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 保存什么\n\n把采样完成、原生latent时间格拼接完成，或外部重新加载后已核对的**完整MiniMax H3联合AV latent**接入Save。文件同时保存video latent、audio latent、可选嵌套noise mask和受支持元数据；不会只保存画面而丢失音频。当前只支持batch=1及完整`17n+5`帧对应的H3时格。"]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "② 安全默认：不确认就绝不写盘",
+      "pos": [0, 370],
+      "size": [650, 360],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 首次使用\n\n`confirm_save=false`是默认值：只计算内容清单并返回`NOT_SAVED`，不会创建目录或文件。确认后改为true；建议保持`verify_after_write=true`。实际文件固定写到`output/MiniMaxH3/latent_checkpoints`，文件名自动附加随机唯一后缀，永不覆盖已有检查点。`filename_prefix`只能是该目录下的相对路径。"]
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "title": "③ 同一工作流直接核对",
+      "pos": [720, 560],
+      "size": [700, 350],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 本图的三条连线\n\nSave返回的相对路径、完整文件SHA-256和独立内容manifest已接到Load。把Load的`av_latent`接到下一段Conditioning/Sampler/Decode链后，Load会先验证整个safetensors文件，再验证内部video/audio/mask/metadata内容。只有`MATCH_EXTERNAL + resume_verified=true`才表示这次保存和加载内容完全一致。"]
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "④ ComfyUI重启后的正确恢复方式",
+      "pos": [1510, 620],
+      "size": [720, 390],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 跨进程恢复\n\n保存完成后记录Save输出的三个值：`checkpoint_path`、`file_sha256`、`manifest_json`。重启ComfyUI后断开本图三条连线，把它们分别粘贴到Load对应控件，再把Load输出latent接到后续链。只填路径时仍会用文件内嵌清单做自校验；同时填外部manifest和file SHA更强，可发现payload与内嵌清单一起被替换。"]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "⑤ 文件格式、内存和卸载边界",
+      "pos": [2320, 80],
+      "size": [680, 430],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 无pickle、原子落盘\n\n格式为`.h3latent.safetensors`，不使用pickle。Save先写同目录临时文件、执行文件`fsync`、回读核验，再原子替换到唯一最终名；异常时清理临时文件。Load固定在CPU创建独立tensor并保留原dtype。保存会把完整latent复制到主机内存，哈希分块只限制哈希临时块；节点不会自动卸载其他ComfyUI模型，也不宣称降低VRAM。"]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "⑥ 科学边界：不是扩散中途断点",
+      "pos": [2320, 560],
+      "size": [680, 420],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 能恢复与不能恢复\n\n本节点保存的是一个已经形成的完整H3联合AV latent检查点，可跨ComfyUI进程精确重载；**不会恢复某个NFE中间步**，也不会保存Transformer、sampler内部导数、CUDA allocator或ComfyUI队列。文件一致不等于下一段画面、人物、对白和声音自然连续，也不等于16GB安全。真正长视频仍需正确的续段Conditioning与人工审片。"]
+    }
+  ],
+  "links": [
+    [1, 1, 2, 2, 0, "STRING"],
+    [2, 1, 4, 2, 1, "STRING"],
+    [3, 1, 3, 2, 2, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.72, "offset": [80, 80]}},
+  "version": 0.4
+}

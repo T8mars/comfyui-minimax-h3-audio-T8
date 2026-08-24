@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
+import types
 
 import pytest
 
+import h3_audio_t8_pkg.environment_audit as environment_audit_module
 from h3_audio_t8_pkg.environment_audit import (
     ENVIRONMENT_AUDIT_SCHEMA,
     audit_h3_environment,
     blocking_summary,
     collect_environment_snapshot,
+    collect_h3_audio_scale_snapshot,
+    collect_sageattention_snapshot,
 )
 from h3_audio_t8_pkg.nodes_environment_audit_advanced import (
     MiniMaxH3EnvironmentAuditT8Advanced,
@@ -18,6 +22,7 @@ from h3_audio_t8_pkg.nodes_environment_audit_advanced import (
 def _capabilities(**overrides):
     values = {
         "native_model_sampling_av": {"state": "supported"},
+        "t8_custom_sampling_audio_scale": {"state": "supported"},
         "diffusion_model_wrapper": {"state": "supported"},
         "dit_double_block_replace": {"state": "supported"},
         "video_vae_internal_temporal_chunking": {"state": "supported"},
@@ -91,6 +96,40 @@ def test_environment_audit_passes_a_known_small_contract_without_claiming_safety
     assert report["memory_safe_claim"] is False
     assert report["quality_safe_claim"] is False
     assert report["estimated_packed_rows"]["target_video_rows"] > 0
+
+
+def test_current_core_and_t8_custom_samplers_satisfy_audio_scale_contract():
+    result = collect_h3_audio_scale_snapshot()
+    assert result["core_protocol"] == "flow_av"
+    assert result["core_requires_model_sampling_audio_scale"] is True
+    assert result["native_model_sampling_av_available"] is True
+    assert result["native_audio_scale_12_over_3"] == pytest.approx(4.0)
+    assert result["stable_custom_audio_scale"] == pytest.approx(1.0)
+    assert result["multirate_custom_audio_scale"] == pytest.approx(1.0)
+    assert result["custom_sampling_compatible"] is True
+    assert result["errors"] == []
+
+
+def test_environment_audit_blocks_an_incompatible_audio_scale_contract():
+    report = _audit(
+        _snapshot(
+            capabilities=_capabilities(t8_custom_sampling_audio_scale="unsupported")
+        )
+    )
+    assert report["status"] == "blocked"
+    assert "h3_custom_sampling_audio_scale_incompatible" in {
+        item["code"] for item in report["issues"]["hard"]
+    }
+
+
+def test_environment_audit_keeps_uninspectable_audio_scale_contract_unknown():
+    report = _audit(
+        _snapshot(capabilities=_capabilities(t8_custom_sampling_audio_scale="unknown"))
+    )
+    assert report["status"] == "unknown"
+    assert "h3_custom_sampling_audio_scale_unknown" in {
+        item["code"] for item in report["issues"]["unknown"]
+    }
 
 
 def test_environment_audit_keeps_unknown_separate_from_supported():
@@ -190,6 +229,125 @@ def test_environment_audit_blocks_sm120_sage_at_high_h3_token_count():
     assert "sage_sm120_high_token_output_corruption_risk" in {
         item["code"] for item in report["issues"]["high_risk"]
     }
+
+
+def test_sageattention_probe_preserves_kjnodes_symbol_and_architecture_evidence(monkeypatch):
+    core = types.SimpleNamespace(
+        __file__="/opt/sageattention/core.py",
+        per_thread_int8_triton=lambda: None,
+        per_warp_int8_cuda=lambda: None,
+        per_block_int8_triton=lambda: None,
+        per_channel_fp8=lambda: None,
+        get_cuda_arch_versions=lambda: ["sm89"],
+        attn_false=lambda: None,
+    )
+    package = types.SimpleNamespace(__file__="/opt/sageattention/__init__.py")
+    metadata = types.SimpleNamespace(version=lambda _name: "2.2.0")
+    real_import = environment_audit_module.importlib.import_module
+
+    def fake_import(name):
+        if name == "importlib.metadata":
+            return metadata
+        if name == "sageattention":
+            return package
+        if name == "sageattention.core":
+            return core
+        return real_import(name)
+
+    monkeypatch.setattr(environment_audit_module.importlib, "import_module", fake_import)
+    result = collect_sageattention_snapshot()
+
+    assert result["kj_contract_ready"] is True
+    assert result["package_version"] == "2.2.0"
+    assert result["architectures"] == ["sm89"]
+    assert result["missing_symbols"] == []
+    assert all(result["required_symbols"].values())
+
+
+def test_environment_audit_blocks_sageattention_core_import_failure():
+    snapshot = _snapshot()
+    snapshot["sageattention_runtime"] = {
+        "inspected": True,
+        "package_imported": True,
+        "core_imported": False,
+        "package_version": "unknown",
+        "missing_symbols": [],
+        "architectures": [],
+        "errors": [
+            {
+                "stage": "core_import",
+                "type": "ImportError",
+                "message": "undefined symbol",
+            }
+        ],
+    }
+    report = _audit(snapshot, attention_backend="sage_attention")
+
+    assert report["status"] == "blocked"
+    assert report["no_known_blocker"] is False
+    assert "sageattention_core_import_failed" in {
+        item["code"] for item in report["issues"]["hard"]
+    }
+
+
+def test_environment_audit_blocks_kj_sage_missing_symbol_and_arch_mismatch():
+    missing_snapshot = _snapshot()
+    missing_snapshot["runtime"]["gpu"].update(
+        {"name": "RTX 4060 Ti", "compute_capability": [8, 9]}
+    )
+    missing_snapshot["sageattention_runtime"] = {
+        "inspected": True,
+        "package_imported": True,
+        "core_imported": True,
+        "package_version": "2.1.1",
+        "missing_symbols": ["get_cuda_arch_versions"],
+        "architectures": [],
+        "errors": [],
+    }
+    missing = _audit(missing_snapshot, attention_backend="sage_attention")
+    assert "sageattention_kj_contract_symbols_missing" in {
+        item["code"] for item in missing["issues"]["hard"]
+    }
+
+    mismatch_snapshot = _snapshot()
+    mismatch_snapshot["runtime"]["gpu"].update(
+        {"name": "RTX 4060 Ti", "compute_capability": [8, 9]}
+    )
+    mismatch_snapshot["sageattention_runtime"] = {
+        "inspected": True,
+        "package_imported": True,
+        "core_imported": True,
+        "package_version": "2.2.0",
+        "missing_symbols": [],
+        "architectures": ["sm90"],
+        "errors": [],
+    }
+    mismatch = _audit(mismatch_snapshot, attention_backend="sage_attention")
+    assert "sageattention_cuda_architecture_mismatch" in {
+        item["code"] for item in mismatch["issues"]["hard"]
+    }
+
+
+def test_environment_audit_accepts_matching_kj_sage_contract_without_claiming_quality():
+    snapshot = _snapshot()
+    snapshot["runtime"]["gpu"].update(
+        {"name": "RTX 4060 Ti", "compute_capability": [8, 9]}
+    )
+    snapshot["sageattention_runtime"] = {
+        "inspected": True,
+        "package_imported": True,
+        "core_imported": True,
+        "package_version": "2.2.0",
+        "missing_symbols": [],
+        "architectures": ["sm89"],
+        "errors": [],
+        "kj_contract_ready": True,
+    }
+    report = _audit(snapshot, attention_backend="sage_attention")
+
+    assert report["status"] == "pass"
+    assert report["no_known_blocker"] is True
+    assert report["quality_safe_claim"] is False
 
 
 def test_environment_audit_flags_host_resource_thrashing_without_predicting_peak():

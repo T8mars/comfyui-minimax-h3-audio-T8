@@ -5,6 +5,9 @@
 ## 当前工作流
 
 - `2026-08-22_H3_Prompt_Rewriter_8B_Advanced_EXP.json`：独立的 LightX2V MiniMax H3 8B 提示词重写器，输出完整提示词、画面、环境声、非叙事音乐和卸载报告；默认生成后卸载，不把8B模型长期缓存到工作流中。
+- `2026-08-22_H3_Prompt_Budget_Role_Compiler_Advanced.json`：纯本地提示词预算与人物/媒体绑定预检；超预算或映射越界时ABSTAIN，连首尾空白也不静默删除。默认7000字符匹配当前官方MiniMax H3 CLI提交上限；7000/7001字符与三人物多媒体合同均已测试。CLIP未连接时token值明确标记为规划估算；本机Qwen3-VL 8B/Boogu实测已成功返回140个精确文本token（规划估算153）。当前ComfyUI tokenizer没有7000字符硬拦截，因此官方CLI提交规则不等同于本地open-weight tokenizer硬上限；用户调高阈值只改变本地审计并会产生不兼容警告，不能提高当前官方CLI上限。该计数不包含Conditioning随后加入的视觉/时间戳token。
+- `2026-08-23_H3_Prompt_Provider_Router_Advanced_EXP.json`：默认本地原文直通；显式支持OpenAI兼容服务（OpenAI、LM Studio、llama.cpp）与Ollama。联网、远程地址、API密钥、图片上传和Ollama卸载边界均写在NOTE中，输出仍需人工审核后再接Conditioning。
+- `2026-08-23_H3_Prompt_Semantic_Contract_Audit_Advanced_EXP.json`：用一份原始提示词同时驱动Provider与独立语义合同审计；required/forbidden词组、精确对白和媒体标签任一不满足即拒绝。默认即使机械通过也只输出原文，人工复核并显式接受后才把候选提示词送往下游。工作流内含三块NOTE与“旋转不得变成静止”的示例合同。
 
 - `2026-08-20_H3_Prompt_Relay_Plan_Preview_Advanced_EXP.json`：不加载 UNET、CLIP、VAE，也不采样；三条 Event 构建 Plan 后，先计算目标AV/参考素材的 packed 行数和Relay显式chunk bias估算，再在历史记录和节点 UI 中显示逐段帧号、秒数、提示词及 READY 状态。适合先检查时间线和显式bias规模，再打开正式生成工作流。
 - `2026-08-20_H3_Prompt_Relay_T2VA_Stock20_Advanced_EXP.json`：T2VA、原生音频、Stock20、BasicGuider（CFG=false）、论文 `paper_v1` 默认公式；三条局部动作已改为可复制的链式 Event，画布内有三份 NOTE。
@@ -35,6 +38,13 @@
 11. 使用 Studio 桥接模板时，不要把完整编译提示词再手工复制到另一份 Plan。Packet 是唯一全局事实源；同一Event链可直接连接Packet桥接。连线存在时事件链优先，`events_json`只作兼容回退。时长会按24fps取整并向上对齐到`17n+5`，实际结果以报告为准。
 
 ## 当前边界
+
+- Prompt Provider Router不直接加载GGUF。LM Studio/llama.cpp/Ollama负责模型加载；只有Ollama原生接口提供本节点可请求的`keep_alive=0`卸载语义，通用OpenAI兼容协议没有标准卸载调用。2026-08-23已用独立CPU-only Ollama 0.32.15分别测试`deepseek-r1:1.5b`与`deepseek-r1:8b`：前者达到768-token上限、漏两个字段并损坏中文`<d>`；后者三字段完整但删除整段对白，默认strict均正确拒绝，请求后`ollama ps`均为空。真实慢socket另验证流式块间取消与响应头卡住的有界超时；首字节前仍只能等配置的timeout。以上是负向安全证据，尚未把任一provider宣称为质量等价或推荐默认。
+- 为避免把用户原始对白交给不可信或能力不足的provider，网络路径会把每个`<d>...</d>`替换成带哈希的唯一ASCII令牌；只有令牌在`integrated_multimodal_description`中精确出现一次才恢复原文。缺失、改写、复制或移到音景/音乐字段都会拒绝，不会猜测性补写。一次同模型真实复验确认`exact_dialogue_text_uploaded=false`，但8B仍删除了令牌，所以恢复数为0并继续拒绝；这是隐私和安全改进，不是质量通过。
+- `contract_repair_attempts`在旧控件末尾追加，默认0，因此旧工作流仍只发一次请求。设为1或2时，仅在合同失败后把受保护的源提示、失败原因和候选文本交回同一provider；不会再次上传参考图，不会提前恢复原对白，也不会放宽最终校验。Ollama配合`keep_alive=0`时每次修复可能重新加载模型。
+- 同一CPU-only 8B随后有一条81.964秒正向结果：三字段、唯一令牌和正确中文对白均通过strict，且无需修复；但它把源提示的“旋转”改成“站立”，所以只关闭结构合同门，不代表提示词语义更好，也不推荐作为默认模型。
+- 同输入的1.5B低资源复验生成满1024 token但没有返回标准`message.content`；服务端启用了thinking模板。Router不会把私有思考内容当成H3提示词，而是明确提示增加`max_new_tokens`或让模型输出最终答案。`keep_alive=0`仍完成卸载。该结果只是跨模型负向兼容证据，不是跨provider或语义质量对照。
+- 独立Prompt Semantic Contract Audit已经能机械拒绝上述“旋转→站立”回归：英文采用词边界，中文/日文/韩文采用NFKC规范化后的子串匹配；空合同保持ABSTAIN，合同JSON错误、重复ID、未知字段、对白变化或源媒体标签丢失均fail closed。该节点只验证用户亲自声明的词组锚点，不是通用语义相似度模型，也不能替代人眼审核。
 
 - 8B 重写器使用 Qwen3-VL-8B-Instruct 基座和 `MiniMax-H3-Prompt-Rewriter-LoRA-8B`，不复用现有 H3 32B CLIP；当前上游只覆盖 T2VA/I2VA/L2VA/FL2VA，不覆盖 Ref2VA。16GB 本机真实加载和生成成功，但 256 token 短测试约482秒且字段发生截断，因此结论是“可运行但不轻量”，不是实时可用保证。默认 `allow_hub_download=false`，模型须预先放入本地目录。
 

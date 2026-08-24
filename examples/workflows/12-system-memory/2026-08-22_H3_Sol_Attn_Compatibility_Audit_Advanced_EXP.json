@@ -1,0 +1,81 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1, "type": "UNETLoader", "title": "Load the normal MiniMax H3 diffusion model",
+      "pos": [0, 0], "size": [410, 120], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [
+        {"name": "unet_name", "type": "COMBO", "widget": {"name": "unet_name"}, "link": null},
+        {"name": "weight_dtype", "type": "COMBO", "widget": {"name": "weight_dtype"}, "link": null}
+      ],
+      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "UNETLoader"},
+      "widgets_values": ["minimax_h3_fl2va_int8_convrot.safetensors", "default"]
+    },
+    {
+      "id": 2, "type": "MiniMaxH3ScheduledSolAttentionPatch", "title": "External Sol-Attn scheduled H3 patch (install separately)",
+      "pos": [500, 0], "size": [600, 530], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1},
+        {"name": "enabled", "type": "BOOLEAN", "widget": {"name": "enabled"}, "link": null},
+        {"name": "tau_start", "type": "FLOAT", "widget": {"name": "tau_start"}, "link": null},
+        {"name": "tau_end", "type": "FLOAT", "widget": {"name": "tau_end"}, "link": null},
+        {"name": "curve", "type": "COMBO", "widget": {"name": "curve"}, "link": null},
+        {"name": "min_tokens", "type": "INT", "widget": {"name": "min_tokens"}, "link": null},
+        {"name": "strict", "type": "BOOLEAN", "widget": {"name": "strict"}, "link": null},
+        {"name": "dense_percent", "type": "FLOAT", "widget": {"name": "dense_percent"}, "link": null},
+        {"name": "thresh_type", "type": "COMBO", "widget": {"name": "thresh_type"}, "link": null},
+        {"name": "int8_qk", "type": "BOOLEAN", "widget": {"name": "int8_qk"}, "link": null},
+        {"name": "int8_pv", "type": "BOOLEAN", "widget": {"name": "int8_pv"}, "link": null},
+        {"name": "sink_conditioning", "type": "COMBO", "widget": {"name": "sink_conditioning"}, "link": null},
+        {"name": "dense_blocks", "type": "STRING", "widget": {"name": "dense_blocks"}, "link": null}
+      ],
+      "outputs": [{"name": "model", "type": "MODEL", "links": [2]}, {"name": "tau_graph", "type": "IMAGE", "links": [3]}],
+      "properties": {"cnr_id": "comfyui-sol-attn", "Node name for S&R": "MiniMaxH3ScheduledSolAttentionPatch"},
+      "widgets_values": [true, 1.3, 0.8, "linear", 4096, true, 0.0, "diag", false, false, "exact_kv", ""]
+    },
+    {
+      "id": 3, "type": "MiniMaxH3SolAttnCompatibilityAuditT8Advanced", "title": "Audit the final patch owner before guider/sampler",
+      "pos": [1180, 0], "size": [600, 320], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 2},
+        {"name": "intended_route", "type": "COMBO", "widget": {"name": "intended_route"}, "link": null},
+        {"name": "expected_dense_blocks", "type": "STRING", "widget": {"name": "expected_dense_blocks"}, "link": null},
+        {"name": "allow_unreviewed_composition", "type": "BOOLEAN", "widget": {"name": "allow_unreviewed_composition"}, "link": null},
+        {"name": "enforcement", "type": "COMBO", "widget": {"name": "enforcement"}, "link": null}
+      ],
+      "outputs": [
+        {"name": "model", "type": "MODEL", "links": null},
+        {"name": "compatible", "type": "BOOLEAN", "links": null},
+        {"name": "decision", "type": "STRING", "links": null},
+        {"name": "plugin_version", "type": "STRING", "links": null},
+        {"name": "h3_sol_block_count", "type": "INT", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3SolAttnCompatibilityAuditT8Advanced"},
+      "widgets_values": ["h3_scheduled", "", false, "report_only"]
+    },
+    {
+      "id": 4, "type": "PreviewImage", "title": "Tau schedule preview from the external node",
+      "pos": [1180, 390], "size": [600, 320], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 3}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"}, "widgets_values": []
+    },
+    {
+      "id": 5, "type": "MarkdownNote", "title": "① 安装和补丁顺序",
+      "pos": [0, 650], "size": [850, 380], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 外部插件边界\n\n单独安装`Saganaki22/ComfyUI-sol-attn >= 0.6.2`。推荐顺序：UNET/LoRA → 可选全局Sage → 可选KJ H3 Sage fallback → **一个**H3 Sol节点 → 可选Fused Modulation → 可选Chunk FFN → cache → sampler。Scheduled和Memory Efficient Sol二选一。审计放在所有模型补丁之后。"]
+    },
+    {
+      "id": 6, "type": "MarkdownNote", "title": "② 科学验证设置",
+      "pos": [930, 790], "size": [850, 380], "flags": {}, "order": 5, "mode": 0,
+      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": ["## 先证明运行，再谈收益\n\n首次验证`strict=true`以禁止静默kernel回退；通过后日常使用可改回false。`expected_dense_blocks`必须与外部节点的`dense_blocks`完全相同。默认保留conditioning KV精确，INT8 QK/PV默认关闭。若叠加EAV、Prompt Relay、BlockCache、Motion Recovery或其他DiT/model wrapper，默认ABSTAIN，必须另做同输入组合审计。该工作流不证明画质、速度、显存、声音或通用16GB安全。"]
+    }
+  ],
+  "links": [[1, 1, 0, 2, 0, "MODEL"], [2, 2, 0, 3, 0, "MODEL"], [3, 2, 1, 4, 0, "IMAGE"]],
+  "groups": [], "config": {}, "extra": {"ds": {"scale": 0.75, "offset": [80, 80]}}, "version": 0.4
+}

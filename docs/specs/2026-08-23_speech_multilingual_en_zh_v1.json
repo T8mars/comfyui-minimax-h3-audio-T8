@@ -1,0 +1,50 @@
+{
+  "schema": "minimax_h3_t8_multilingual_speech_formal_spec_v1",
+  "plan_id": "en_zh_10x2x3_v1",
+  "seeds": [2608232101, 2608232102, 2608232103],
+  "render_seconds": 8.0,
+  "steps": 20,
+  "sampler_name": "res_multistep",
+  "scheduler": "simple",
+  "shift_video": 12.0,
+  "shift_audio": 3.0,
+  "text_set_scope": "reviewed_lexically_varied_not_phonetically_balanced",
+  "languages": [
+    {
+      "language_code": "en",
+      "studio_language": "English",
+      "described_voice_profile_id": "en_neutral_warm_v1",
+      "described_voice_description": "a natural adult speaker with a warm mid voice, clear neutral English diction, close studio presence, restrained emotion, and realistic micro-pauses",
+      "utterances": [
+        {"utterance_id": "u01", "text": "The morning train is waiting beside the river."},
+        {"utterance_id": "u02", "text": "Please close the window before the rain begins."},
+        {"utterance_id": "u03", "text": "A small silver bell rang twice in the quiet hall."},
+        {"utterance_id": "u04", "text": "We found the blue notebook under the wooden chair."},
+        {"utterance_id": "u05", "text": "She carried warm tea across the narrow garden path."},
+        {"utterance_id": "u06", "text": "The old clock stopped just after midnight."},
+        {"utterance_id": "u07", "text": "Fresh bread cooled slowly beside the open door."},
+        {"utterance_id": "u08", "text": "Turn left at the bridge and follow the yellow lights."},
+        {"utterance_id": "u09", "text": "My brother promised to return before sunset."},
+        {"utterance_id": "u10", "text": "Soft wind moved through the pine trees all night."}
+      ]
+    },
+    {
+      "language_code": "zh",
+      "studio_language": "Chinese",
+      "described_voice_profile_id": "zh_neutral_warm_v1",
+      "described_voice_description": "一位自然的成年普通话说话者，中音温和，吐字清楚，近距离录音棚质感，情绪克制，停顿真实",
+      "utterances": [
+        {"utterance_id": "u01", "text": "清晨的列车正停在河边等候。"},
+        {"utterance_id": "u02", "text": "下雨之前请把窗户轻轻关上。"},
+        {"utterance_id": "u03", "text": "安静的大厅里银色小铃响了两次。"},
+        {"utterance_id": "u04", "text": "我们在木椅下面找到了蓝色笔记本。"},
+        {"utterance_id": "u05", "text": "她端着热茶走过狭窄的花园小路。"},
+        {"utterance_id": "u06", "text": "那只旧时钟刚过午夜就停了。"},
+        {"utterance_id": "u07", "text": "新鲜面包在敞开的门边慢慢放凉。"},
+        {"utterance_id": "u08", "text": "到桥边向左转然后跟着黄色灯光走。"},
+        {"utterance_id": "u09", "text": "我哥哥答应在日落之前回来。"},
+        {"utterance_id": "u10", "text": "轻柔的风整夜穿过松树林。"}
+      ]
+    }
+  ]
+}

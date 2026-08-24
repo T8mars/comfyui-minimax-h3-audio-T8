@@ -113,6 +113,7 @@ def test_background_state_does_not_persist_prompt_and_advances_one_segment(monke
     )
     assert advanced["state"] == "running"
     assert advanced["active_prompt_id"] == "queued-1"
+    assert advanced["last_accepted_prompt_id"] == "prompt-0"
     assert advanced["current_segment_index"] == 1
     assert runtime.releases == ["clear_execution_cache"]
     assert [item[0] for item in runtime.queued] == ["queued-1"]
@@ -178,6 +179,23 @@ def test_background_error_retries_once_then_stops_without_changing_settings(
     assert "must never be persisted" not in failed["last_error"]
     assert "current_inputs" not in failed["last_error"]
     assert len(runtime.queued) == 1
+    assert runtime.releases == ["clear_execution_cache", "clear_execution_cache"]
+    assert failed["release_reason"] == "retry_exhausted"
+
+    runtime.current_id = "prompt-after-failure"
+    runtime.locations[runtime.current_id] = "running"
+    reattached = manager.attach_prompt(
+        "background-chain",
+        {"1": {"class_type": "Test", "inputs": {"text": "same workflow"}}},
+        "99",
+        1,
+        0.0,
+        "clear_execution_cache",
+    )
+    assert reattached["state"] == "running"
+    assert reattached["job_id"] != state["job_id"]
+    assert reattached["previous_job_id"] == state["job_id"]
+    assert reattached["active_prompt_id"] == "prompt-after-failure"
 
 
 def test_pause_after_current_resume_and_targeted_cancel(monkeypatch, tmp_path):
@@ -205,7 +223,44 @@ def test_pause_after_current_resume_and_targeted_cancel(monkeypatch, tmp_path):
     assert cancelled["state"] == "cancelled"
     assert cancelled["cancel_requested"] is True
     assert runtime.cancelled == ["queued-1"]
+    assert cancelled["last_cancelled_prompt_id"] == "queued-1"
     assert cancelled["last_control_result"]["deleted_from_queue"] is True
+    assert runtime.releases == [
+        "clear_execution_cache",
+        "clear_execution_cache",
+        "clear_execution_cache",
+    ]
+    assert cancelled["release_reason"] == "cancel_prompt"
+
+
+def test_cancel_remains_cancelled_when_release_request_fails(monkeypatch, tmp_path):
+    manager, runtime, _state = _manager(monkeypatch, tmp_path)
+    runtime.release_error = RuntimeError("release flag rejected")
+
+    cancelled = manager.cancel("background-chain")
+
+    assert cancelled["state"] == "cancelled"
+    assert cancelled["last_cancelled_prompt_id"] == "prompt-0"
+    assert cancelled["last_control_result"]["interrupt_signalled"] is True
+    assert cancelled["release_reason"] == "cancel_prompt"
+    assert cancelled["last_release_error"] == "release flag rejected"
+
+
+def test_success_without_terminal_fails_and_requests_release(monkeypatch, tmp_path):
+    manager, runtime, state = _manager(monkeypatch, tmp_path)
+
+    manager._handle_prompt_history(
+        "background-chain",
+        state["job_id"],
+        "prompt-0",
+        {"status": {"status_str": "success", "completed": True, "messages": []}},
+    )
+
+    failed = load_background_job_state("background-chain")
+    assert failed["state"] == "failed"
+    assert "without the background terminal node" in failed["last_error"]
+    assert runtime.releases == ["clear_execution_cache"]
+    assert failed["release_reason"] == "missing_terminal_node"
 
 
 def test_release_failure_after_acceptance_stops_without_queueing(monkeypatch, tmp_path):
@@ -239,6 +294,45 @@ def test_duplicate_active_chain_is_rejected(monkeypatch, tmp_path):
             0.0,
             "clear_execution_cache",
         )
+
+
+def test_background_binding_metadata_is_persisted_and_cannot_cross_workspace(
+    monkeypatch, tmp_path
+):
+    manager, runtime, _state = _manager(monkeypatch, tmp_path)
+    binding = {
+        "kind": "t8.creator_workspace.long_video_background.v1",
+        "workspace_hash": "a" * 64,
+        "run_count": 2,
+    }
+    manager.close()
+    manager = BackgroundJobManager(runtime, start_monitors=False)
+    bound = manager.attach_prompt(
+        "creator-bound-chain",
+        {"1": {"class_type": "Fake", "inputs": {"text": "safe"}}},
+        "controller",
+        1,
+        0.0,
+        "keep_loaded",
+        prompt_id="creator-prompt",
+        client_id="client",
+        binding_metadata=binding,
+    )
+    assert bound["binding_metadata"] == binding
+    assert load_background_job_state("creator-bound-chain")["binding_metadata"] == binding
+    with pytest.raises(BackgroundJobError, match="different binding metadata"):
+        manager.attach_prompt(
+            "creator-bound-chain",
+            {"1": {"class_type": "Fake", "inputs": {"text": "safe"}}},
+            "controller",
+            1,
+            0.0,
+            "keep_loaded",
+            prompt_id="creator-prompt",
+            client_id="client",
+            binding_metadata={**binding, "workspace_hash": "b" * 64},
+        )
+    manager.close()
 
 
 def test_restart_status_reconciles_stale_prompt_and_reattaches_from_manifest(
