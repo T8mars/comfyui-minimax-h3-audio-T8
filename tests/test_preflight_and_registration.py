@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 191
+    assert len(ids) == 200
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -122,6 +122,17 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[188] == "MiniMaxH3CreatorArtifactQuarantineT8Advanced"
     assert ids[189] == "MiniMaxH3PromptSemanticContractAuditT8Advanced"
     assert ids[190] == "MiniMaxH3NFERunContractT8Advanced"
+    assert ids[191:200] == [
+        "MiniMaxH3SkinFinishT8",
+        "MiniMaxH3SkinFinishAdvancedT8",
+        "MiniMaxH3SkinFinishPreviewAuditT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonT8Advanced",
+        "MiniMaxH3SkinFinishVideoFinalizeT8Advanced",
+        "MiniMaxH3SkinFinishVideoStreamT8Advanced",
+        "MiniMaxH3SkinFinishTextureGuardT8Advanced",
+        "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
+    ]
 
     speech_ids = {
         "MiniMaxH3VoiceProfileT8",

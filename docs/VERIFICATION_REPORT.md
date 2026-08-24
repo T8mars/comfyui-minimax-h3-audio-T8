@@ -4290,3 +4290,116 @@ were not identical but felt similar on this simple task. The strict analysis rep
 This closes the one-reviewer gate for this fixed simple portrait only. It does not establish general
 4B/32B equivalence, candidate quality noninferiority, complex prompt adherence, other modalities,
 repeated behavior or universal 16GiB safety. Native 32B therefore remains the default.
+
+## Skin Finish P1 representative two-pass stream (2026-08-24)
+
+The actual `MiniMaxH3SkinFinishVideoStreamT8Advanced` route was run once on the same strictly fixed
+1088x544x124, 24fps close-portrait source used by the P0 evidence. The run used the pinned MIT YuNet
+SHA-256 `8F2383E4...2552FA4`, color-neutral `subtle`, amount/shine 0.35, texture keep 0.90 and a
+four-frame CPU chunk. It loaded no H3 model and requested no GPU processing.
+
+The first attempt exposed a real file-output defect: default multithread PyAV/libx264 produced a
+938,484-byte candidate whose container and PyAV frame count appeared valid, but single-thread FFmpeg
+`-xerror -err_detect explode` reported H.264 reference/slice corruption. The source itself strictly
+decoded. The rejected candidate is retained in the ignored evidence directory with SHA-256
+`70F7201D3650CDBCAACAD20923F33B921A2F3C4AFA859D3669BCEB2D9D837A10`.
+
+Both Skin Finish file-output nodes now force one libx264 thread and run that strict FFmpeg validation
+before atomic publication. The single corrected rerun completed the node in 12.000370 seconds: 124
+face records and 124 used-mask frames, zero scene cuts, peak four-frame processing chunk, no complete
+IMAGE batch, equal source digests across the two passes, exact pixels outside the pre-encode mask and
+exact source/candidate decoded PCM SHA-256. Source, candidate and review media strictly decode as
+1088x544x124, 24fps H.264 with copied 32kHz stereo AAC. Process RSS was 809.473MiB before and
+1106.566MiB after; observed process peak working set was 1280.430MiB. No repeat or stress matrix was
+run.
+
+The accepted mechanical candidate SHA-256 is
+`510AF06A38EFFAB620A3D21EA2747979A4D8D2166C8A49BBAAB7DB1DDE103E55`; the labelled source/candidate
+review SHA-256 is `66E98AD4139FE99345A6A8D4FD3BAAD0B6F41DC6AD277B847839595D6CFF2C4E`.
+The complete local report is
+`artifacts/skin-finish-p1-stream-representative-single-thread-20260824/validation_report.json`.
+This closes only the file-stream and media-contract mechanical gate. Human preference, semantic skin
+parsing, true multi-person/cross-shot quality, long-video continuity, HDR, arbitrary codecs and
+universal 16GiB safety remain unproven.
+
+## Skin Finish P2 source-relative Texture Guard (2026-08-24)
+
+One append-only `MiniMaxH3SkinFinishTextureGuardT8Advanced` node was exercised on the same fixed
+1088x544x124, 24fps close-portrait source and P0 face-plan candidate. The node loaded no H3 model and
+ran only bounded CPU chunks. With defaults (shadow/highlight 0.10/0.94, transition 0.06, minimum
+texture ratio 0.78 and maximum newly clipped fraction 0.0005), all 124 frames passed. The minimum and
+mean source-relative high-pass RMS ratios were 0.98122728 and 0.98463432; the maximum newly clipped
+fraction was zero. Pixels outside the effective mask and all auxiliary channels remained exact,
+selection stayed on source, and AUDIO remained the same Python object.
+
+The first 3264-pixel-wide three-way review encode was rejected: generic `threads=1` still produced an
+H.264 stream that failed single-thread FFmpeg `-xerror -err_detect explode`. The corrected review was
+scaled to 1920x320, pinned x264 worker/lookahead/sliced threading, strictly decoded all 124 frames and
+retained the source decoded-PCM SHA-256. A 3264x1632 full-resolution contact sheet remains available
+for still inspection. The accepted review SHA-256 is
+`CBF08DF0AD874B47163067645A848D95CA4930F89E8FE5688587D8FD52F3DFDC`; the contact-sheet SHA-256 is
+`8D9593B672CD1F89AA2C7A197B8F44196077D909DD2290D2B30671C67AA04D2F`. Complete evidence is in
+`artifacts/skin-finish-p2-texture-guard-representative-1920w-single-thread-20260824`.
+
+This is a mechanical anti-overprocessing gate, not proof that the candidate is aesthetically better.
+High-pass RMS can count noise and therefore cannot establish natural texture, pores or sharpness.
+Semantic skin parsing, true multi-person/cross-shot review, long-video continuity, HDR and human
+preference remain open.
+
+## Skin Finish pinned ParseNet semantic-mask representative (2026-08-24)
+
+The append-only `MiniMaxH3SkinFinishSemanticMaskT8Advanced` node was exercised once with the real
+85,331,193-byte FaceXLib v0.2.2 ParseNet checkpoint whose SHA-256 is
+`3D558D8D0E42C20224F13CF5A29C79EBA2D59913419F945545D8CF7B72920DE2`. The run decoded only source
+frames 0, 62 and 123 from the fixed 1088x544x124 portrait used by the earlier Skin Finish evidence,
+created a source-bound three-frame Face Refine Plan and parsed one expanded upright face crop per
+frame. It loaded no H3 model, performed no network request and did not use CUDA.
+
+All three frames returned `READY`. Full-frame semantic-skin fractions were 0.03961160, 0.04021309
+and 0.03950178; every mask was finite, within 0..1 and non-empty. The real runtime was 8.431955
+seconds using two CPU threads. The report confirms safe `weights_only=True` loading, no persistent
+model cache and model release after execution. A source-versus-audit contact sheet visually shows
+green skin regions and red protected features for all three sampled frames. Its SHA-256 is
+`8A83181F7291AEDAD81EF814A3684FBA4B597D953606A3293E19E4F89CAF53B8`; complete local evidence is in
+`artifacts/skin-finish-semantic-parser-representative-3frame-20260824`.
+
+The label-order ambiguity was explicitly resolved against the pinned model: its observed nose,
+eye, brow, lip, hair, neck and cloth regions match the ParseNet/CelebAMask-HQ order, not the
+differently ordered BiSeNet list shown in some FaceXLib examples. This prevents a mechanically valid
+model from silently protecting or selecting the wrong classes.
+
+This is a three-frame parser and safety-contract gate only. It does not prove full-video temporal
+continuity, five-point aligned profile/rotation behavior, multi-person identity assignment,
+cross-shot stability, aesthetic improvement, natural pores, deblur or general memory safety. Human
+review and the true multi-person/cross-shot integration remain open.
+
+## Skin Finish multi-person five-point ParseNet representative (2026-08-24)
+
+The append-only `MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced` route was exercised once on
+six frames selected from a clear two-person 1920x1408/24fps source and resized without aspect-ratio
+change to 960x704 (0.67584MP). The batch was split into two explicit shot-local ranges. To keep this
+validation low load, the source-bound track plan used deterministic left/right person regions; no
+SAM3.1 model was loaded. This is deliberately reported as a person-mask harness, not a fresh live
+SAM3.1 segmentation or automatic scene-cut result.
+
+The real pinned YuNet 2023mar detector SHA-256 was
+`8F2383E4DD3CFBB4553EA8718107FC0423210DC964F9F4280604804ED2552FA4`. It detected two unique usable
+faces on every frame, released its detector, and the node then loaded the real 85,331,193-byte
+ParseNet checkpoint SHA-256
+`3D558D8D0E42C20224F13CF5A29C79EBA2D59913419F945545D8CF7B72920DE2` on CPU. All 12 track-face
+matches completed five-point LMEDS alignment, ParseNet inference, inverse projection and intersection
+with their own person region. Normalized five-point RMS stayed between 0.05275351 and 0.07942597
+against the predeclared 0.08 limit. Full-frame skin fractions were 0.02482392, 0.02366684,
+0.02282937, 0.02306759, 0.02521011 and 0.02621331.
+
+The run used two CPU threads, no CUDA and no network. Source IMAGE values remained tensor-exact,
+masks were finite and within 0..1, YuNet was released before ParseNet load and ParseNet was released
+after execution. Runtime was 24.643326 seconds. The green-skin/red-protected-feature contact sheet
+SHA-256 is `81AD0D72EF663E55362E5C904C47119878F347374B17896DEA7E1CC056AEB869`; evidence is in
+`artifacts/skin-finish-multiface-semantic-representative-6frame-20260824`.
+
+This closes only the low-load real YuNet/ParseNet/five-point/per-person-intersection mechanical gate.
+It does not prove live SAM3.1 mask quality, automatic cuts, full-video temporal continuity, profiles
+beyond this clip, occlusion/crossing robustness, identity truth, different-skin-tone fairness,
+aesthetic improvement, HDR or general memory safety. Human review and one real live-SAM/cut case
+remain open.

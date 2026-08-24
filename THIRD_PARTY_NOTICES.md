@@ -133,6 +133,56 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+## ComfyUI_CineStyle interaction reference and Skin Finish provenance
+
+The T8 Skin Finish node interaction and product boundary were designed after reviewing
+[`chflame163/ComfyUI_CineStyle@e7d5fac`](https://github.com/chflame163/ComfyUI_CineStyle/tree/e7d5facafd95c97190fcf54171960f25c21b3043),
+whose top-level repository is licensed under MIT. The T8 implementation does not import that
+repository, copy or vendor its Beauty implementation, download its models, or depend on its Python
+requirements.
+
+In particular, CineStyle's `py/vfx_beauty.py` describes itself as a Torch port of the
+`crok_beauty` Matchbox shader and points through a public shader lineage that includes
+`Ls_Dollface`. The per-item provenance and license of that shader lineage were not sufficiently
+clear for direct reuse. T8 therefore uses an independently written, generic masked low-frequency
+tone/highlight correction with explicit source fallback, rather than the referenced 19-pass shader
+code or constants. No CineStyle Beauty, BiSeNet, ParseNet or Matchbox source/weights are redistributed.
+
+The optional `face_refine_plan` route only derives a conservative inner-face proxy mask from this
+repository's existing plan geometry. It is explicitly not a semantic skin parser. Users who supply
+external masks or separately installed model outputs remain responsible for the licenses and usage
+terms of those inputs.
+
+## Optional FaceXLib ParseNet semantic-mask runtime
+
+The opt-in `MiniMaxH3SkinFinishSemanticMaskT8Advanced` and
+`MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced` nodes import the user's separately installed
+[FaceXLib](https://github.com/xinntao/facexlib) ParseNet implementation. FaceXLib source code is
+published under the MIT License. T8 does not copy or vendor that source and does not make FaceXLib a
+mandatory dependency.
+
+The node accepts only the separately installed FaceXLib v0.2.2 release checkpoint
+`parsing_parsenet.pth`, placed at `ComfyUI/models/facedetection/parsing_parsenet.pth`. It requires an
+exact size of 85,331,193 bytes and SHA-256
+`3d558d8d0e42c20224f13cf5a29c79eba2d59913419f945545d8cf7b72920de2`, performs no runtime download,
+and requires PyTorch `weights_only=True` loading. The checkpoint release page does not explicitly
+state a checkpoint-specific license, and training-data terms may impose additional restrictions.
+Users must review those terms before installation or use. T8 does not redistribute the checkpoint
+or claim that the FaceXLib source-code license automatically licenses the checkpoint or its training
+data.
+
+The 19-class indices are interpreted using the ParseNet/CelebAMask-HQ mapping documented by the
+[CelebAMask-HQ face parsing project](https://github.com/switchablenorms/CelebAMask-HQ/blob/master/face_parsing/README.md).
+This differs from the BiSeNet label ordering shown in some FaceXLib examples; the two lists must not
+be interchanged.
+
+The multi-person node includes the standard five FFHQ alignment coordinates published in FaceXLib's
+MIT-licensed [`face_restoration_helper.py` at v0.2.2](https://github.com/xinntao/facexlib/blob/v0.2.2/facexlib/utils/face_restoration_helper.py).
+Those five numeric points are used only as the 512x512 alignment target for OpenCV's independently
+called similarity transform. T8 does not vendor FaceXLib's restoration helper, detector, warping or
+restoration implementation. YuNet eye and mouth pairs are normalized by image x-coordinate before
+alignment, and missing or unstable landmarks fail closed rather than being propagated.
+
 ## OpenCV Zoo YuNet and SFace models
 
 The optional local multi-person identity-suggestion route uses OpenCV Zoo's YuNet face detector and SFace

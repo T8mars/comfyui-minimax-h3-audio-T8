@@ -1,0 +1,967 @@
+{
+  "id": "86d3b35e-d1c9-4e3c-96e0-d7e4eb385113",
+  "revision": 0,
+  "last_node_id": 14,
+  "last_link_id": 11,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "title": "1. Source frame or decoded IMAGE batch / 原片或解码帧批次",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        430
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_source_frame.png",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "title": "2. Reviewed skin mask with alpha / 已审核皮肤遮罩",
+      "pos": [
+        0,
+        500
+      ],
+      "size": [
+        390,
+        430
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_skin_mask_rgba.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadAudio",
+      "title": "Optional original soundtrack / 可选原始音频",
+      "pos": [
+        0,
+        980
+      ],
+      "size": [
+        390,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_source_audio.wav"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3SkinFinishAdvancedT8",
+      "title": "3. Existing Skin Finish candidate / 现有肤质候选",
+      "pos": [
+        520,
+        120
+      ],
+      "size": [
+        470,
+        650
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "mask_source",
+          "type": "COMBO",
+          "widget": {
+            "name": "mask_source"
+          },
+          "link": null
+        },
+        {
+          "name": "preset",
+          "type": "COMBO",
+          "widget": {
+            "name": "preset"
+          },
+          "link": null
+        },
+        {
+          "name": "amount",
+          "type": "FLOAT",
+          "widget": {
+            "name": "amount"
+          },
+          "link": null
+        },
+        {
+          "name": "texture_keep",
+          "type": "FLOAT",
+          "widget": {
+            "name": "texture_keep"
+          },
+          "link": null
+        },
+        {
+          "name": "shine_control",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shine_control"
+          },
+          "link": null
+        },
+        {
+          "name": "tone_adjust",
+          "type": "FLOAT",
+          "widget": {
+            "name": "tone_adjust"
+          },
+          "link": null
+        },
+        {
+          "name": "execution_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "execution_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "accept_candidate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_candidate"
+          },
+          "link": null
+        },
+        {
+          "name": "protect_features",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "protect_features"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_mask_area",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_mask_area"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_mask_area",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_mask_area"
+          },
+          "link": null
+        },
+        {
+          "name": "mask_feather_px",
+          "type": "INT",
+          "widget": {
+            "name": "mask_feather_px"
+          },
+          "link": null
+        },
+        {
+          "name": "temporal_mask_radius",
+          "type": "INT",
+          "widget": {
+            "name": "temporal_mask_radius"
+          },
+          "link": null
+        },
+        {
+          "name": "proxy_long_side",
+          "type": "INT",
+          "widget": {
+            "name": "proxy_long_side"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_frames",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "skin_mask",
+          "type": "MASK",
+          "link": 2
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            5,
+            8
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "rejected_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "difference",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "skin_finish_state",
+          "type": "H3_T8_SKIN_FINISH_STATE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishAdvancedT8"
+      },
+      "widgets_values": [
+        "external_exact",
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        false,
+        true,
+        0.002,
+        0.45,
+        3,
+        0,
+        640,
+        4
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SkinFinishTextureGuardT8Advanced",
+      "title": "4. P2 mechanical texture/exposure guard / P2纹理与曝光硬门",
+      "pos": [
+        1100,
+        100
+      ],
+      "size": [
+        520,
+        650
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "link": 6
+        },
+        {
+          "name": "shadow_protection",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shadow_protection"
+          },
+          "link": null
+        },
+        {
+          "name": "highlight_protection",
+          "type": "FLOAT",
+          "widget": {
+            "name": "highlight_protection"
+          },
+          "link": null
+        },
+        {
+          "name": "transition_width",
+          "type": "FLOAT",
+          "widget": {
+            "name": "transition_width"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_texture_ratio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_texture_ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_reference_texture",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_reference_texture"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_new_clipped_fraction",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_new_clipped_fraction"
+          },
+          "link": null
+        },
+        {
+          "name": "clipping_epsilon",
+          "type": "FLOAT",
+          "widget": {
+            "name": "clipping_epsilon"
+          },
+          "link": null
+        },
+        {
+          "name": "texture_radius",
+          "type": "INT",
+          "widget": {
+            "name": "texture_radius"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_frames",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "accept_candidate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_candidate"
+          },
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "guarded_candidate",
+          "type": "IMAGE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "effective_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "rejected_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "difference",
+          "type": "IMAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishTextureGuardT8Advanced"
+      },
+      "widgets_values": [
+        0.1,
+        0.94,
+        0.06,
+        0.78,
+        0.003,
+        0.0005,
+        0.00392156862745098,
+        1,
+        4,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "title": "Raw Skin Finish candidate / 原始候选",
+      "pos": [
+        1750,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "title": "Guarded candidate / 护栏后候选",
+      "pos": [
+        1750,
+        190
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "title": "Selected remains source by default / 默认仍选择原片",
+      "pos": [
+        1750,
+        380
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "title": "Guarded absolute difference / 护栏后差异",
+      "pos": [
+        1750,
+        570
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "MarkdownNote",
+      "title": "START HERE / 使用顺序",
+      "pos": [
+        0,
+        1220
+      ],
+      "size": [
+        850,
+        330
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## P2机械护栏，不是自动美颜\n\n1. 先由现有Skin Finish Advanced产生`candidate/source/used_skin_mask`。\n2. 再接Texture Guard；它只减少风险，不证明画面更美。\n3. 默认`accept_candidate=false`，所以selected仍是原片。\n4. 看候选和report后再手动接受。旧Skin Finish节点与旧工作流均未修改。"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MarkdownNote",
+      "title": "EXPOSURE PROTECTION / 曝光保护",
+      "pos": [
+        900,
+        1220
+      ],
+      "size": [
+        850,
+        330
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 默认保护源片极端亮暗\n\n- `shadow_protection=0.10`：源片亮度低于该值的区域保留。\n- `highlight_protection=0.94`：接近饱和高光保留。\n- `transition_width=0.06`：用平滑过渡避免硬边。\n- 这是SDR显示值门禁，不等于线性光、HDR或广色域处理。Log/HDR素材先不要使用。"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MarkdownNote",
+      "title": "TEXTURE + CLIPPING / 纹理与裁切",
+      "pos": [
+        1800,
+        1220
+      ],
+      "size": [
+        850,
+        350
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 两个逐帧硬失败条件\n\n- `minimum_texture_ratio=0.78`比较候选与源片遮罩内高通RMS；低于下限则整帧回退。它只能拦截过度磨皮，不能证明毛孔真实，也可能把噪声算作高频。\n- `maximum_new_clipped_fraction=0.0005`限制候选新增的黑/白裁切像素；超过就整帧回退。\n- 失败帧不会保留一半处理结果。"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MarkdownNote",
+      "title": "AUDIO + MEMORY / 音频与内存",
+      "pos": [
+        2700,
+        1220
+      ],
+      "size": [
+        850,
+        320
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 音频完全旁路\n\n- AUDIO以同一对象透传；视觉护栏不会重采样、EQ或重新编码音频。\n- 默认CPU `chunk_frames=4`，但输入IMAGE批次本身仍由上游持有，不能宣传为零内存。\n- 长文件优先用现有Two Pass Video Stream；本工作流用于已经解码并审核的候选。"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "title": "KNOWN LIMITS / 不能解决",
+      "pos": [
+        3600,
+        1220
+      ],
+      "size": [
+        850,
+        330
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 明确边界\n\n- 不识别皮肤语义、不保护头发/眼唇语义、不做人脸身份判断。\n- 不去模糊、不锐化、不补毛孔、不修五官、不处理口型。\n- 纹理RMS和裁切率只是硬拦截器，不能作为自动选片分数。\n- 多人、遮挡、切镜与不同肤色仍需后续semantic parser和人工验收。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      1,
+      4,
+      16,
+      "MASK"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      18,
+      "AUDIO"
+    ],
+    [
+      4,
+      4,
+      1,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      4,
+      0,
+      5,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      4,
+      4,
+      5,
+      2,
+      "MASK"
+    ],
+    [
+      7,
+      4,
+      3,
+      5,
+      13,
+      "AUDIO"
+    ],
+    [
+      8,
+      4,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      5,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      5,
+      2,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      5,
+      6,
+      9,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Skin Finish P2: source-relative texture and exposure guard",
+      "bounding": [
+        -40,
+        -70,
+        2200,
+        900
+      ],
+      "color": "#5e6f47",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.62,
+      "offset": [
+        100,
+        80
+      ]
+    },
+    "workflow_title": "2026-08-24 H3 Skin Finish Texture Guard Advanced EXP",
+    "t8_skin_finish": {
+      "scope": "P2 mechanical source-relative guard",
+      "default_selection": "source",
+      "automatic_quality_claim": false,
+      "audio": "same-object passthrough"
+    }
+  },
+  "version": 0.4
+}

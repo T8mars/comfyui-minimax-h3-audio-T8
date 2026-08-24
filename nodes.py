@@ -19,6 +19,13 @@ from .nodes_qwen_prefix_cache_advanced import (
 from .nodes_raven_streaming_advanced import RAVEN_STREAMING_ADVANCED_NODE_CLASSES
 from .nodes_nfe_resume_advanced import NFE_RESUME_ADVANCED_NODE_CLASSES
 from .nodes_nfe_run_contract_advanced import NFE_RUN_CONTRACT_ADVANCED_NODE_CLASSES
+from .nodes_skin_finish import SKIN_FINISH_NODE_CLASSES
+from .nodes_skin_finish_p1 import SKIN_FINISH_P1_NODE_CLASSES
+from .nodes_skin_finish_p2 import SKIN_FINISH_P2_NODE_CLASSES
+from .nodes_skin_finish_parser import SKIN_FINISH_PARSER_NODE_CLASSES
+from .nodes_skin_finish_multiface_parser import (
+    SKIN_FINISH_MULTIFACE_PARSER_NODE_CLASSES,
+)
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
 )
@@ -553,6 +560,11 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
                 *PROMPT_SEMANTIC_AUDIT_ADVANCED_NODE_CLASSES,
                 *NFE_RUN_CONTRACT_ADVANCED_NODE_CLASSES,
+                *SKIN_FINISH_NODE_CLASSES,
+                *SKIN_FINISH_P1_NODE_CLASSES,
+                *SKIN_FINISH_P2_NODE_CLASSES,
+                *SKIN_FINISH_PARSER_NODE_CLASSES,
+                *SKIN_FINISH_MULTIFACE_PARSER_NODE_CLASSES,
             ]
 
 

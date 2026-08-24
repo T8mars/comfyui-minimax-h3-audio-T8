@@ -1494,3 +1494,80 @@ no `alpha` tensor means scale `1.0`, matching `W_eff = W + B @ A`.
 - [Official ComfyUI MiniMax-H3 guide](https://docs.comfy.org/tutorials/video/minimax/minimax-h3)
 - [ComfyUI LoRA key mapping](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy/lora.py)
 - [ComfyUI bypass loader](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy_extras/nodes_lora_debug.py)
+
+## Skin Finish file-output safety
+
+The opt-in Skin Finish P1 file nodes are source-selected by default. When a candidate is explicitly
+accepted, both routes copy approved source-audio packet payloads, encode only the SDR video stream
+with single-thread libx264, and run single-thread FFmpeg `-xerror -err_detect explode` validation
+before atomic publication. A missing FFmpeg executable or any decoder diagnostic fails closed and
+leaves the source untouched.
+
+`MiniMaxH3SkinFinishVideoStreamT8Advanced` accepts an untrimmed file-backed `VIDEO` directly. Its
+first pass retains only pinned-YuNet face metadata and small source digests; the second pass processes
+at most the configured bounded frame chunk and immediately encodes it. It does not materialize a
+complete ComfyUI `IMAGE` batch. This reduces memory owned by this post-process only and is not a
+claim about the H3 generation peak, arbitrary video lengths, codecs, HDR or universal 16GiB safety.
+
+### Skin Finish Texture Guard (Advanced EXP)
+
+Place the append-only Texture Guard after an existing Skin Finish source/candidate/mask triplet.
+It protects source deep shadows and near-clipped highlights with a smooth exposure gate, then rejects
+each complete frame to source if the candidate adds too many clipped pixels or falls below a
+source-relative high-pass RMS floor. The default remains source-selected and AUDIO is passed through
+as the same object. High-pass energy can include noise, so this node is a mechanical anti-overprocessing
+guard rather than an automatic beauty, pore, sharpness, identity or natural-skin score. It currently
+assumes ordinary 0..1 SDR display values and makes no HDR, Log, wide-gamut or linear-light claim.
+
+### Skin Finish Semantic Mask (Advanced EXP)
+
+`MiniMaxH3SkinFinishSemanticMaskT8Advanced` is an append-only, optional CPU parser that consumes the
+exact source `IMAGE` batch and a source-bound Face Refine Plan. It outputs a semantic skin `MASK`, a
+sampled audit preview and a JSON report; it does not modify frames or audio. Connect its mask to
+`MiniMaxH3SkinFinishAdvancedT8` with `mask_source=external_exact`, then optionally place Texture Guard
+after the candidate. Both acceptance switches remain false in the example workflow.
+
+The only accepted checkpoint is
+`ComfyUI/models/facedetection/parsing_parsenet.pth`, exactly 85,331,193 bytes with SHA-256
+`3d558d8d0e42c20224f13cf5a29c79eba2d59913419f945545d8cf7b72920de2`. Runtime download and arbitrary
+model paths are absent; PyTorch must support `torch.load(..., weights_only=True)`. Missing FaceXLib,
+missing or mismatched weights, stale source geometry/pixels, malformed plans and inference failures
+produce an empty mask and `ABSTAIN`/`REJECT`, never a full-screen fallback. The model runs on CPU,
+has no persistent cache, and is released in `finally` without unloading any ComfyUI/H3 model.
+
+The pinned checkpoint uses the ParseNet/CelebAMask-HQ order: class 1 is skin, 2 nose, 4/5 eyes,
+6/7 brows, 10-12 mouth/lips, 13 hair, 17 neck and 18 cloth. The default selects only skin; nose,
+glasses, eyes, brows, mouth/lips, hair, hats, earrings, necklaces and cloth are protected, while neck
+and ears are not selected. Do not substitute the differently ordered FaceXLib BiSeNet example list.
+
+The current Face Refine Plan retains an upright face box but not five-point landmarks, so ParseNet
+uses an expanded square crop rather than affine alignment. This route describes one selected face
+track only. It does not solve SAM3.1 multi-person identity assignment, profile/occlusion safety,
+deblur, face reconstruction, natural pores or aesthetic quality. The dated workflow is
+`examples/workflows/17-skin-finish/2026-08-24_H3_Skin_Finish_Semantic_Mask_Advanced_EXP.json`.
+
+### Skin Finish Multi-Person Semantic Mask (Advanced EXP)
+
+`MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced` is a separate append-only route for a
+source-bound `H3_T8_SAM31_MULTIFACE_TRACK_PLAN`. It does not rerun SAM3.1. For each frame and
+shot-local person mask, it chooses one unique pinned-YuNet detection, sorts the viewpoint-dependent
+eye and mouth pairs by image x-coordinate, and estimates an OpenCV LMEDS similarity transform from
+the five landmarks to the standard FFHQ 512 template. The aligned crop is parsed by the same pinned
+CPU ParseNet; skin and protected-feature masks are inverse-warped and intersected with that exact
+person track. A single YuNet detection cannot be reused by another track.
+
+An optional `H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT` may add Character labels to the report across
+shot resets. Those labels are manual/SFace suggestions, not identity proof, and do not alter masks,
+skin parameters or acceptance. Missing landmarks are never propagated from another frame. Invalid
+source/plan/assignment hashes, non-ready plans, ambiguous faces, excessive alignment residual,
+abnormal skin area, parser failures or insufficient ready-frame coverage return an empty mask and
+`ABSTAIN`. The default workflow keeps Skin Finish, Texture Guard and Video Finalize acceptance off.
+
+SAM3.1 is expected to offload after producing the plan. The node then finishes and releases YuNet
+before loading ParseNet, runs ParseNet on CPU without a persistent cache, and releases it in
+`finally`; it does not call global `unload_all_models()`. The dated workflow is
+`examples/workflows/17-skin-finish/2026-08-24_H3_Skin_Finish_MultiPerson_Semantic_Mask_Advanced_EXP.json`.
+One 960x704 six-frame/two-person low-load run completed 12/12 real YuNet five-point and pinned
+ParseNet masks, but used deterministic source-bound left/right person regions rather than loading
+SAM3.1 again. It therefore proves the parser/alignment/intersection mechanics, not live SAM quality,
+automatic scene-cut detection, full-video continuity, identity truth or aesthetic improvement.

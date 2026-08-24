@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.45.0** · 节点 191 个 · GPL-3.0-or-later
+当前版本：**1.46.0** · 节点 200 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -30,6 +30,7 @@
 - 预检、显存/缓存报告、模型兼容检查和异常路径清理
 - LightX2V Turbo-SLA LoRA、85% 动态块稀疏 Sage2、逐次运行审计，以及可选的KJ Sage单入口组合器（实验）
 - RAVEN Streaming外部运行时桥接：统一发布参数、在巨大权重载入前检查硬件/内存，并严格审计仅T2VA的因果分块请求（实验）
+- Skin Finish 非生成式肤质收尾：P0在可靠遮罩内生成低频肤色/油光候选；固定ParseNet节点只选择皮肤并保护眼眉鼻唇头发，新多人语义节点复用SAM3.1逐镜轨迹、以YuNet五点对齐逐脸解析并与各自人物MASK相交，可选身份分配只作报告标签；缺模型、hash、对齐或覆盖证据时输出空MASK。P1另提供可续跑状态和不经过`GetVideoComponents`的两遍文件流式节点；P2 Texture Guard保护源片深阴影/近饱和高光，并对新增裁切和高频纹理下限逐帧fail closed。显式接受后以单线程H.264重编码画面、严格解码后才原子发布，并逐包复制和校验原音频（实验）
 
 稳定节点与 `Advanced`/`Experimental` 节点分开。高级节点采用追加式设计：未连接时不改变旧工作流、旧节点 ID、输入顺序和默认采样数学。
 
@@ -51,7 +52,7 @@ comfy node install minimax-h3-audio-t8
 ComfyUI/custom_nodes/minimax-h3-audio-T8
 ```
 
-本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。Long Video 的候选保存和最终拼接要求 `ffmpeg` 可从 `PATH` 调用；常规 ComfyUI 整合包通常已经包含，缺失时节点会在写入前给出明确错误。只有使用 8B 提示词重写器时才安装 `requirements-prompt-rewriter.txt`；依赖被限制在 Transformers 4.x、PEFT 0.18–0.20 和 Pillow 10.x，避免无关升级影响其他节点。LightX2V SLA 实验节点还需要与当前 Torch/CUDA 匹配的 `spas-sage-attn`；只有使用SLA + KJ Sage组合工作流时才需要另外安装 `ComfyUI-KJNodes`。
+本插件不自动下载 H3 权重，也没有强制的额外 pip 依赖。请先准备与任务匹配的模型、CLIP、VAE 和 LoRA，并重启 ComfyUI。Long Video 的候选保存和最终拼接要求 `ffmpeg` 可从 `PATH` 调用；常规 ComfyUI 整合包通常已经包含，缺失时节点会在写入前给出明确错误。只有使用 8B 提示词重写器时才安装 `requirements-prompt-rewriter.txt`；依赖被限制在 Transformers 4.x、PEFT 0.18–0.20 和 Pillow 10.x，避免无关升级影响其他节点。LightX2V SLA 实验节点还需要与当前 Torch/CUDA 匹配的 `spas-sage-attn`；只有使用SLA + KJ Sage组合工作流时才需要另外安装 `ComfyUI-KJNodes`。可选的Skin Finish语义遮罩节点还需要FaceXLib代码和固定的`models/facedetection/parsing_parsenet.pth`；多人路线另复用本项目现有的本地YuNet与原生SAM3.1轨迹。ParseNet节点会核对85,331,193字节及完整SHA-256，不会联网下载或接受任意模型路径。
 
 ## 第一次使用
 
@@ -93,6 +94,12 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | ClipProj 8B完整Ref2VA桥 | `12-system-memory/2026-08-22_H3_ClipProj_8B_Ref2VA_Bridge_Advanced_EXP.json` | 8B ClipProj、Ref2VA pruned INT8与一张参考图 | 本机Stock20短链及原生32B同seed机械对照均通过严格解码；身份代理未稳定过线且8B只余约62MiB，故不宣称质量等价、省显存或16GB安全 |
 | Sol-Attn保守T2VA桥 | `12-system-memory/2026-08-22_H3_Sol_Attn_T2VA_Conservative_Advanced_EXP.json` | 外部Sol-Attn 0.6.2+ | 4步默认dense百分比为0，首三/末块dense、exact conditioning KV、首次strict；本机0.737MP实跑记录5139 tokens并进入kernel，但单次顺序A/B未显示速度或显存优势；一名审阅者给出全平且没有失败备注，仍不足以提升为推荐路线 |
 | RAVEN Streaming受保护T2VA | `16-raven-streaming/2026-08-23_H3_RAVEN_Streaming_T2VA_Guarded_Advanced_EXP.json` | 单独安装外部RAVEN插件0.1.0、完整BF16 H3和 mandatory RAVEN LoRA | 真正采样/预览仍由外部节点执行；T8统一4步、12/3、2/2、cpu_pinned参数并检查T2VA合同。当前16GB/128GB机器低于已审阅资源范围，默认会在加载前拒绝，不宣称可运行 |
+| Skin Finish肤质收尾 | `17-skin-finish/2026-08-24_H3_Skin_Finish_External_Mask_Advanced_EXP.json` | 可靠外部MASK，或同一来源帧的Face Refine Plan | Basic/Advanced/Preview-Audit均默认保留source；仅做SDR非生成式低频肤色和油光候选，不修复五官、模糊、身份或口型。缺mask、面积异常、来源不一致和音频不一致均fail closed |
+| 多人Skin Finish与原音频封装 | `17-skin-finish/2026-08-24_H3_Skin_Finish_MultiPerson_Video_Finalize_Advanced_EXP.json` | 原生SAM3.1 track plan、CPU YuNet、未裁切8-bit SDR文件VIDEO | 复用一次追踪结果，不重复加载SAM；镜头内bbox EMA和绝对帧state支持重叠续块。最终候选默认不保存，人工接受后仅重编码视频，兼容音频包payload逐包复制并SHA复核；HDR/10-bit、旋转、裁切和未知codec拒绝 |
+| 两遍文件流式Skin Finish | `17-skin-finish/2026-08-24_H3_Skin_Finish_Two_Pass_Video_Stream_Advanced_EXP.json` | Long Video/Studio最终未裁切8-bit SDR文件VIDEO、固定YuNet | 不连接完整IMAGE：第一遍只保存脸框/切镜/来源摘要，第二遍按默认4帧chunk处理并以单线程H.264立即编码，发布前执行FFmpeg严格解码。1088×544×124单次机械验证通过；默认false时不分析、不写文件，共享中性色、无身份识别/语义parser，不等于去模糊或修脸 |
+| Skin Finish纹理/曝光机械护栏 | `17-skin-finish/2026-08-24_H3_Skin_Finish_Texture_Guard_Advanced_EXP.json` | 已生成并审核来源绑定的source/candidate/used mask | 默认保护源片深阴影和近饱和高光；新增裁切或源片相对高通RMS下限失败时整帧回退。0.592MP×124单次默认门机械通过且音频PCM一致；它不是自然肤质评分、语义parser、去模糊或毛孔生成器 |
+| Skin Finish固定ParseNet语义遮罩 | `17-skin-finish/2026-08-24_H3_Skin_Finish_Semantic_Mask_Advanced_EXP.json` | FaceXLib代码、固定v0.2.2 ParseNet权重和同一来源帧的Face Refine Plan | 仅CPU逐帧解析并在结束后卸载；默认选择skin，排除鼻、眼、眉、嘴唇、头发和配饰。真实3帧固定权重机械检查通过；现有plan无五点关键点且只代表单轨人脸，尚未通过多人/跨镜和人工肤质验收 |
+| 多人五点ParseNet语义遮罩 | `17-skin-finish/2026-08-24_H3_Skin_Finish_MultiPerson_Semantic_Mask_Advanced_EXP.json` | 同一来源IMAGE、hash-valid SAM3.1逐镜track plan、本地YuNet、固定ParseNet；identity assignment可选 | 每个可靠脸只匹配一个人物轨迹，五点对齐到FFHQ 512后解析并反投影，与各自人物MASK相交；覆盖不足整批返回空MASK。0.67584MP六帧双人真实YuNet/ParseNet机械检查12/12 READY；该低负载检查使用来源绑定的人物区域夹具，不冒充一次新的SAM实跑或人工肤质通过 |
 | 原生latent时间线拼接 | `04-long-video/2026-08-22_H3_Native_Latent_Timeline_Concat_Advanced_EXP.json` | 输入完整H3嵌套AV latent，batch=1且画布一致 | 真实22+22→39帧单次解码、52000采样无损音频和重复hash已通过；旧32B路线两次未过512MiB余量门，另一个固定8B ClipProj短链以605MiB最低余量通过一次0.25秒采样门。独立段仍会换景，不能外推为无缝或通用16GB安全 |
 | 原生latent Long Video续接拼接 | `04-long-video/2026-08-23_H3_Native_Latent_Continuation_Concat_Advanced_EXP.json` | 上一段/累计时间线latent、本段采样完成latent，以及同一Planner与Conditioning的直连报告 | 精确移除5/22/39帧上下文；124+124在22帧context下得到226帧，默认要求音画上下文。最终隐藏尾帧须一次解码后再裁；不等于NFE断点恢复、无缝质量或省显存证明 |
 | 原生latent恢复清单 | `04-long-video/2026-08-23_H3_Native_Latent_Resume_Manifest_Advanced_EXP.json` | 输入已保存/重载的完整H3嵌套AV latent；恢复核对时同时粘贴旧`manifest_json` | SHA-256分块大小不影响摘要；默认`error`阻断内容、shape、dtype、mask或checkpoint ID不一致。节点不保存latent、不恢复NFE内部状态，也不作续段质量/显存保证 |
@@ -125,6 +132,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力（实验） |
 | `15-sla-attention` | LightX2V Turbo-SLA 动态块稀疏 attention（实验） |
 | `16-raven-streaming` | RAVEN因果分块流式T2VA与资源/合同保护（实验） |
+| `17-skin-finish` | 解码后肤质收尾、遮罩门禁和人工审计（实验） |
 
 每个目录都有自己的 `README.md`，说明适用场景、参数建议和已知限制。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 

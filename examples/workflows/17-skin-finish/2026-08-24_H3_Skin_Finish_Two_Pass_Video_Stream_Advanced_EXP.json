@@ -1,0 +1,409 @@
+{
+  "id": "f0c3c398-5f4a-4a02-8e31-cd3916bcb558",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "1. Final untrimmed 8-bit SDR VIDEO / 最终未裁切8位SDR视频",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        430,
+        140
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "file",
+          "type": "COMBO",
+          "widget": {
+            "name": "file"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_final_untrimmed_24fps_video.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SkinFinishVideoStreamT8Advanced",
+      "title": "2. Two-pass bounded file stream / 两遍低内存肤质收尾",
+      "pos": [
+        560,
+        0
+      ],
+      "size": [
+        610,
+        800
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_video",
+          "type": "VIDEO",
+          "link": 1
+        },
+        {
+          "name": "preset",
+          "type": "COMBO",
+          "widget": {
+            "name": "preset"
+          },
+          "link": null
+        },
+        {
+          "name": "amount",
+          "type": "FLOAT",
+          "widget": {
+            "name": "amount"
+          },
+          "link": null
+        },
+        {
+          "name": "texture_keep",
+          "type": "FLOAT",
+          "widget": {
+            "name": "texture_keep"
+          },
+          "link": null
+        },
+        {
+          "name": "shine_control",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shine_control"
+          },
+          "link": null
+        },
+        {
+          "name": "detection_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "detection_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_face_height_px",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_face_height_px"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_detail",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_detail"
+          },
+          "link": null
+        },
+        {
+          "name": "bbox_ema_alpha",
+          "type": "FLOAT",
+          "widget": {
+            "name": "bbox_ema_alpha"
+          },
+          "link": null
+        },
+        {
+          "name": "scene_cut_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "scene_cut_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_faces",
+          "type": "INT",
+          "widget": {
+            "name": "maximum_faces"
+          },
+          "link": null
+        },
+        {
+          "name": "mask_feather_px",
+          "type": "INT",
+          "widget": {
+            "name": "mask_feather_px"
+          },
+          "link": null
+        },
+        {
+          "name": "proxy_long_side",
+          "type": "INT",
+          "widget": {
+            "name": "proxy_long_side"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_frames",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "crf",
+          "type": "FLOAT",
+          "widget": {
+            "name": "crf"
+          },
+          "link": null
+        },
+        {
+          "name": "accept_candidate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_candidate"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishVideoStreamT8Advanced"
+      },
+      "widgets_values": [
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.45,
+        24.0,
+        0.01,
+        0.55,
+        0.28,
+        4,
+        3,
+        640,
+        4,
+        "MiniMaxH3/SkinFinish/stream_skin_finish",
+        18.0,
+        false
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MarkdownNote",
+      "title": "START / 用途与接入位置",
+      "pos": [
+        0,
+        930
+      ],
+      "size": [
+        1000,
+        370
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 文件级长视频 Skin Finish\n\n把Long Video `Compose Accepted`、Studio `Reel Delivery`或其他最终文件VIDEO接到本节点。推荐顺序：生成/放大/二采 → AV Decode → Face Refine/Motion Recovery → 最终文件合成 → 本节点 → 字幕/调色/Tape-FX。不要先经过`GetVideoComponents`，否则会失去本路线避免完整IMAGE常驻的意义。"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "TWO PASSES / 两遍执行合同",
+      "pos": [
+        1080,
+        930
+      ],
+      "size": [
+        1050,
+        390
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 不持有整段IMAGE\n\n第一遍逐帧解码，只保留固定YuNet脸框、权重、切镜和16×16来源摘要；释放Detector后，第二遍最多按`chunk_frames`帧处理并立即编码H.264。两遍摘要不一致、文件中途变化、帧数或尺寸漂移都会拒绝发布。它仍需解码两次，因此目标是降低峰值内存，不是加速。"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "title": "MASK + PEOPLE / 多人与遮罩边界",
+      "pos": [
+        2210,
+        930
+      ],
+      "size": [
+        1050,
+        390
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 保守脸内代理\n\n固定使用本机已校验SHA的OpenCV Zoo YuNet 2023mar，CPU执行、无下载。每帧最多4张脸，切镜重置，bbox EMA 0.55；只处理脸框内部并近似排除眼/鼻/嘴，所有人共享中性色参数。它不加载SAM、不做身份识别，也不是像素级皮肤/头发解析；遮挡、侧脸、小脸和模糊脸会降权或不处理。"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "PARAMETERS / 建议参数",
+      "pos": [
+        3340,
+        930
+      ],
+      "size": [
+        1000,
+        360
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 推荐起点\n\n`subtle / amount 0.35 / texture_keep 0.90 / shine 0.35`；threshold 0.45；最小脸高24px；detail 0.010；cut 0.28；feather 3；proxy 640；CPU chunk 4；CRF 18。小远景脸不是本节点目标：它不会锐化、去模糊、修五官、补身份或生成毛孔。"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "AUDIO + ACCEPT / 原音频与人工门",
+      "pos": [
+        4420,
+        930
+      ],
+      "size": [
+        1050,
+        390
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 默认完全不执行\n\n`accept_candidate=false`时直接返回源VIDEO，不分析、不写文件。需要生成审片候选时才打开；画面逐帧重编码，但AAC/MP3/ALAC/AC3/EAC3原压缩音频packet payload逐包复制并做SHA-256复核。裁切、旋转、HDR/10-bit、未知codec、包漂移或无可靠人脸会fail closed，源文件永不覆盖。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Skin Finish P1: true two-pass file stream without full IMAGE input",
+      "bounding": [
+        -50,
+        -80,
+        1270,
+        960
+      ],
+      "color": "#315a78",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        120,
+        80
+      ]
+    },
+    "workflow_title": "2026-08-24 H3 Skin Finish Two Pass Video Stream Advanced EXP",
+    "t8_skin_finish": {
+      "scope": "file-backed two-pass bounded CPU Skin Finish",
+      "full_image_input": false,
+      "default_selection": "source",
+      "semantic_skin_parser": false,
+      "hdr_supported": false
+    }
+  },
+  "version": 0.4
+}

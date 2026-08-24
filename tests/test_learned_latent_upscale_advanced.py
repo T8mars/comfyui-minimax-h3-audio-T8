@@ -535,7 +535,7 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 191
+    assert len(ids) == 200
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",
@@ -632,6 +632,17 @@ def test_new_nodes_append_without_changing_existing_order():
     assert ids[188] == "MiniMaxH3CreatorArtifactQuarantineT8Advanced"
     assert ids[189] == "MiniMaxH3PromptSemanticContractAuditT8Advanced"
     assert ids[190] == "MiniMaxH3NFERunContractT8Advanced"
+    assert ids[191:200] == [
+        "MiniMaxH3SkinFinishT8",
+        "MiniMaxH3SkinFinishAdvancedT8",
+        "MiniMaxH3SkinFinishPreviewAuditT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonT8Advanced",
+        "MiniMaxH3SkinFinishVideoFinalizeT8Advanced",
+        "MiniMaxH3SkinFinishVideoStreamT8Advanced",
+        "MiniMaxH3SkinFinishTextureGuardT8Advanced",
+        "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
+    ]
     assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
 
 

@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 133
+    assert len(paths) == 139
     assert [path.name for path in categories] == [
         "01-basic-generation",
         "02-audio-control",
@@ -34,11 +34,185 @@ def test_all_frontend_workflows_have_publication_date_prefix():
         "14-prompt-relay",
         "15-sla-attention",
         "16-raven-streaming",
+        "17-skin-finish",
     ]
     assert (root / "README.md").is_file()
     assert all((category / "README.md").is_file() for category in categories)
     assert list(root.glob("*.json")) == []
     assert [path.name for path in paths if not publication_name.fullmatch(path.name)] == []
+
+
+def test_skin_finish_workflow_is_importable_documented_and_source_safe():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "17-skin-finish"
+        / "2026-08-24_H3_Skin_Finish_External_Mask_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = [node["type"] for node in workflow["nodes"]]
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert types.count("MiniMaxH3SkinFinishT8") == 1
+    assert types.count("MiniMaxH3SkinFinishAdvancedT8") == 1
+    assert types.count("MiniMaxH3SkinFinishPreviewAuditT8Advanced") == 1
+    assert types.count("MarkdownNote") == 5
+    assert types.count("PreviewImage") == 7
+    advanced = next(node for node in workflow["nodes"] if node["type"] == "MiniMaxH3SkinFinishAdvancedT8")
+    preview = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishPreviewAuditT8Advanced"
+    )
+    assert advanced["widgets_values"][:9] == [
+        "external_exact",
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        False,
+        True,
+    ]
+    assert preview["widgets_values"] == ["", 0, 0.5, False]
+    notes = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    for required in ("ABSTAIN", "AUDIO", "124", "Face Refine Plan", "accept_candidate"):
+        assert required in notes
+
+
+def test_skin_finish_semantic_workflow_is_importable_pinned_and_source_safe():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "17-skin-finish"
+        / "2026-08-24_H3_Skin_Finish_Semantic_Mask_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = [node["type"] for node in workflow["nodes"]]
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert types.count("MiniMaxH3FaceRefinePlanT8Advanced") == 1
+    assert types.count("MiniMaxH3SkinFinishSemanticMaskT8Advanced") == 1
+    assert types.count("MiniMaxH3SkinFinishAdvancedT8") == 1
+    assert types.count("MiniMaxH3SkinFinishTextureGuardT8Advanced") == 1
+    assert types.count("MarkdownNote") == 5
+    assert types.count("PreviewImage") == 6
+    parser = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishSemanticMaskT8Advanced"
+    )
+    advanced = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishAdvancedT8"
+    )
+    guard = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishTextureGuardT8Advanced"
+    )
+    assert parser["widgets_values"] == [
+        "facexlib_parsenet_v0.2.2_pinned",
+        False,
+        1.45,
+        0.35,
+        0.55,
+        3,
+        0.0005,
+        0.25,
+        6,
+    ]
+    assert advanced["widgets_values"][:9] == [
+        "external_exact",
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        False,
+        True,
+    ]
+    assert guard["widgets_values"][-1] is False
+    notes = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    for required in (
+        "parsing_parsenet.pth",
+        "3d558d8d",
+        "weights_only=True",
+        "ABSTAIN",
+        "五点关键点",
+        "AUDIO",
+    ):
+        assert required in notes
+
+
+def test_skin_finish_texture_guard_workflow_is_importable_and_source_safe():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "17-skin-finish"
+        / "2026-08-24_H3_Skin_Finish_Texture_Guard_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = [node["type"] for node in workflow["nodes"]]
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert types.count("MiniMaxH3SkinFinishAdvancedT8") == 1
+    assert types.count("MiniMaxH3SkinFinishTextureGuardT8Advanced") == 1
+    assert types.count("MarkdownNote") == 5
+    assert types.count("PreviewImage") == 4
+    guard = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishTextureGuardT8Advanced"
+    )
+    assert guard["widgets_values"] == [
+        0.10,
+        0.94,
+        0.06,
+        0.78,
+        0.003,
+        0.0005,
+        1.0 / 255.0,
+        1,
+        4,
+        False,
+    ]
+    notes = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    for required in (
+        "minimum_texture_ratio",
+        "maximum_new_clipped_fraction",
+        "HDR",
+        "AUDIO",
+        "semantic parser",
+    ):
+        assert required in notes
 
 
 def test_prompt_relay_long_video_workflow_has_absolute_window_and_safe_model_order():

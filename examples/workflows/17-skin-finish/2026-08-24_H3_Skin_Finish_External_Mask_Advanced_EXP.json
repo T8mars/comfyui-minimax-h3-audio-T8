@@ -1,0 +1,1255 @@
+{
+  "id": "4df0c414-90a8-4a8f-ac3e-b29c9fe83e8f",
+  "revision": 0,
+  "last_node_id": 18,
+  "last_link_id": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "title": "1. Source frame or replace with decoded IMAGE batch / 来源画面或视频帧批次",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        430
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            3
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_source_frame.png",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "title": "2. Skin mask with alpha / 带Alpha的肤质遮罩",
+      "pos": [
+        0,
+        500
+      ],
+      "size": [
+        390,
+        430
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            2,
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_skin_mask_rgba.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadAudio",
+      "title": "Optional original soundtrack / 可选原始音频",
+      "pos": [
+        0,
+        980
+      ],
+      "size": [
+        390,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            5,
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_source_audio.wav"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3SkinFinishT8",
+      "title": "Basic: conservative source-safe candidate / 基础肤质候选",
+      "pos": [
+        520,
+        0
+      ],
+      "size": [
+        430,
+        440
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "preset",
+          "type": "COMBO",
+          "widget": {
+            "name": "preset"
+          },
+          "link": null
+        },
+        {
+          "name": "amount",
+          "type": "FLOAT",
+          "widget": {
+            "name": "amount"
+          },
+          "link": null
+        },
+        {
+          "name": "texture_keep",
+          "type": "FLOAT",
+          "widget": {
+            "name": "texture_keep"
+          },
+          "link": null
+        },
+        {
+          "name": "shine_control",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shine_control"
+          },
+          "link": null
+        },
+        {
+          "name": "tone_adjust",
+          "type": "FLOAT",
+          "widget": {
+            "name": "tone_adjust"
+          },
+          "link": null
+        },
+        {
+          "name": "execution_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "execution_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_frames",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "skin_mask",
+          "type": "MASK",
+          "link": 2
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishT8"
+      },
+      "widgets_values": [
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        4
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SkinFinishAdvancedT8",
+      "title": "Advanced: masks, gates, exact passthrough / 高级遮罩与硬门禁",
+      "pos": [
+        520,
+        520
+      ],
+      "size": [
+        470,
+        650
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "mask_source",
+          "type": "COMBO",
+          "widget": {
+            "name": "mask_source"
+          },
+          "link": null
+        },
+        {
+          "name": "preset",
+          "type": "COMBO",
+          "widget": {
+            "name": "preset"
+          },
+          "link": null
+        },
+        {
+          "name": "amount",
+          "type": "FLOAT",
+          "widget": {
+            "name": "amount"
+          },
+          "link": null
+        },
+        {
+          "name": "texture_keep",
+          "type": "FLOAT",
+          "widget": {
+            "name": "texture_keep"
+          },
+          "link": null
+        },
+        {
+          "name": "shine_control",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shine_control"
+          },
+          "link": null
+        },
+        {
+          "name": "tone_adjust",
+          "type": "FLOAT",
+          "widget": {
+            "name": "tone_adjust"
+          },
+          "link": null
+        },
+        {
+          "name": "execution_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "execution_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "accept_candidate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_candidate"
+          },
+          "link": null
+        },
+        {
+          "name": "protect_features",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "protect_features"
+          },
+          "link": null
+        },
+        {
+          "name": "minimum_mask_area",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_mask_area"
+          },
+          "link": null
+        },
+        {
+          "name": "maximum_mask_area",
+          "type": "FLOAT",
+          "widget": {
+            "name": "maximum_mask_area"
+          },
+          "link": null
+        },
+        {
+          "name": "mask_feather_px",
+          "type": "INT",
+          "widget": {
+            "name": "mask_feather_px"
+          },
+          "link": null
+        },
+        {
+          "name": "temporal_mask_radius",
+          "type": "INT",
+          "widget": {
+            "name": "temporal_mask_radius"
+          },
+          "link": null
+        },
+        {
+          "name": "proxy_long_side",
+          "type": "INT",
+          "widget": {
+            "name": "proxy_long_side"
+          },
+          "link": null
+        },
+        {
+          "name": "chunk_frames",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "skin_mask",
+          "type": "MASK",
+          "link": 4
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "rejected_mask",
+          "type": "MASK",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "difference",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "skin_finish_state",
+          "type": "H3_T8_SKIN_FINISH_STATE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishAdvancedT8"
+      },
+      "widgets_values": [
+        "external_exact",
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        false,
+        true,
+        0.002,
+        0.45,
+        3,
+        0,
+        640,
+        4
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3SkinFinishPreviewAuditT8Advanced",
+      "title": "Preview/Audit: left source, right candidate / 预览审计：左原图右候选",
+      "pos": [
+        1120,
+        420
+      ],
+      "size": [
+        500,
+        520
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "used_mask",
+          "type": "MASK",
+          "link": 9
+        },
+        {
+          "name": "rejected_mask",
+          "type": "MASK",
+          "link": 10
+        },
+        {
+          "name": "skin_finish_state",
+          "type": "H3_T8_SKIN_FINISH_STATE",
+          "link": 11
+        },
+        {
+          "name": "gate_report_json",
+          "type": "STRING",
+          "widget": {
+            "name": "gate_report_json"
+          },
+          "link": 12
+        },
+        {
+          "name": "frame_index",
+          "type": "INT",
+          "widget": {
+            "name": "frame_index"
+          },
+          "link": null
+        },
+        {
+          "name": "comparison_position",
+          "type": "FLOAT",
+          "widget": {
+            "name": "comparison_position"
+          },
+          "link": null
+        },
+        {
+          "name": "accept_candidate",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "accept_candidate"
+          },
+          "link": null
+        },
+        {
+          "name": "audio_source",
+          "type": "AUDIO",
+          "link": 13
+        },
+        {
+          "name": "audio_passthrough",
+          "type": "AUDIO",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "split_comparison",
+          "type": "IMAGE",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "source_crop",
+          "type": "IMAGE",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "candidate_crop",
+          "type": "IMAGE",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "mask_preview",
+          "type": "IMAGE",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "difference_preview",
+          "type": "IMAGE",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "plus_minus_2_loop",
+          "type": "IMAGE",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "review_report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishPreviewAuditT8Advanced"
+      },
+      "widgets_values": [
+        "",
+        0,
+        0.5,
+        false
+      ]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "title": "Basic candidate (not auto-accepted)",
+      "pos": [
+        1740,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "title": "Split comparison: source left / candidate right",
+      "pos": [
+        2170,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "title": "Full-resolution source crop",
+      "pos": [
+        1740,
+        260
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "PreviewImage",
+      "title": "Full-resolution candidate crop",
+      "pos": [
+        2170,
+        260
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "PreviewImage",
+      "title": "Mask audit: green used / red rejected",
+      "pos": [
+        1740,
+        520
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "PreviewImage",
+      "title": "Amplified absolute difference",
+      "pos": [
+        2170,
+        520
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "PreviewImage",
+      "title": "±2-frame split loop for flicker review",
+      "pos": [
+        1740,
+        780
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "title": "START HERE / 从这里开始",
+      "pos": [
+        0,
+        1210
+      ],
+      "size": [
+        920,
+        330
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Skin Finish P0：非生成式肤质收尾\n\n1. `frames`可接H3解码后的完整IMAGE批次；本示例LoadImage只是最小可导入入口。\n2. 默认只产生候选，`accept_candidate=false`时`selected`仍是原片。\n3. 先看分屏、全分辨率裁切、遮罩和±2帧循环，再决定是否接受。\n4. 它处理低频肤色不均和油光，不负责修脸、锐化模糊、补身份、补毛孔或修口型。"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MarkdownNote",
+      "title": "MASK CONTRACT / 遮罩合同",
+      "pos": [
+        960,
+        1210
+      ],
+      "size": [
+        920,
+        350
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 没有可靠遮罩就ABSTAIN\n\n- 当前P0支持`external_exact`和Advanced节点的`face_refine_plan`。\n- 本示例第二个LoadImage应使用带Alpha的RGBA皮肤遮罩；普通不带Alpha的JPG会得到空MASK并安全回退原片。\n- 使用Face Refine Plan时，把`mask_source`改为`face_refine_plan`并连接同一来源帧生成的plan。该路线只是保守脸区代理，不是语义皮肤解析。\n- 绿=实际使用，红=被面积门禁拒绝。遮罩外RGB以及Alpha/额外通道必须精确不变。"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "PARAMETERS / 参数建议",
+      "pos": [
+        1920,
+        1210
+      ],
+      "size": [
+        920,
+        350
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 安全起点\n\n- `preset=subtle`、`amount=0.35`、`texture_keep=0.90`、`shine_control=0.35`。\n- 油光明显可先换`oil_control`，不要先把amount拉满。\n- `mask_feather_px=3`只在原遮罩内部软化，不会向外扩张。\n- `chunk_frames=4`、`proxy_long_side=640`是CPU有界默认值；它降低工作内存，不代表输入IMAGE批次本身是流式解码。\n- 124帧先检查首/中/尾以及±2帧循环，防止肤色呼吸和边缘闪烁。"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "AUDIO + ACCEPT / 音频与接受",
+      "pos": [
+        2880,
+        1210
+      ],
+      "size": [
+        920,
+        330
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 音频不参与处理\n\n- Advanced节点只原对象透传AUDIO；Preview/Audit同时比较输入与透传PCM合同。\n- 两侧音频缺一或PCM不一致时，即使打开`accept_candidate`也不会选择候选。\n- 要最终采用候选，请在Preview/Audit确认画面后手动打开其`accept_candidate=true`并重新排队。\n- Advanced节点自己的accept开关也默认为false，避免误把候选当原片。"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "KNOWN LIMITS / 已知边界",
+      "pos": [
+        3840,
+        1210
+      ],
+      "size": [
+        820,
+        310
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 目前不承诺\n\n- 不自动下载或捆绑人脸解析权重；缺少可靠mask就保持原片。\n- 不做多人语义归属、跨镜头人物对应、HDR/Log/广色域或生成式皮肤重建。\n- 对超暗、遮挡、极端色偏、强运动模糊和压缩破损必须人工复核。\n- 本节点是候选生成与审计工具，不是自动美颜开关。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      1,
+      4,
+      8,
+      "MASK"
+    ],
+    [
+      3,
+      1,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      2,
+      1,
+      5,
+      16,
+      "MASK"
+    ],
+    [
+      5,
+      3,
+      0,
+      5,
+      18,
+      "AUDIO"
+    ],
+    [
+      6,
+      4,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      5,
+      1,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      5,
+      0,
+      6,
+      1,
+      "IMAGE"
+    ],
+    [
+      9,
+      5,
+      4,
+      6,
+      2,
+      "MASK"
+    ],
+    [
+      10,
+      5,
+      5,
+      6,
+      3,
+      "MASK"
+    ],
+    [
+      11,
+      5,
+      7,
+      6,
+      4,
+      "H3_T8_SKIN_FINISH_STATE"
+    ],
+    [
+      12,
+      5,
+      8,
+      6,
+      5,
+      "STRING"
+    ],
+    [
+      13,
+      3,
+      0,
+      6,
+      9,
+      "AUDIO"
+    ],
+    [
+      14,
+      5,
+      3,
+      6,
+      10,
+      "AUDIO"
+    ],
+    [
+      15,
+      6,
+      1,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      6,
+      2,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      6,
+      3,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      18,
+      6,
+      4,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      6,
+      5,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      6,
+      6,
+      13,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Skin Finish P0: source-safe candidate and human audit",
+      "bounding": [
+        -40,
+        -70,
+        2250,
+        1260
+      ],
+      "color": "#3f6f5f",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        120,
+        100
+      ]
+    },
+    "workflow_title": "2026-08-24 H3 Skin Finish External Mask Advanced EXP",
+    "t8_skin_finish": {
+      "scope": "P0 non-generative SDR candidate",
+      "default_selection": "source",
+      "audio": "exact passthrough only",
+      "representative_validation": "1088x544x124; one run only"
+    }
+  },
+  "version": 0.4
+}
