@@ -1,5 +1,6 @@
 __pycache__/
 .pytest_cache/
+.worktrees/
 *.py[cod]
 artifacts/releases/
 artifacts/legacy-project-mirror/
