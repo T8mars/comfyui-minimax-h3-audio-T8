@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "file",
-          "type": "COMBO",
-          "widget": {
-            "name": "file"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VIDEO",
@@ -117,16 +108,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "ckpt_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "ckpt_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -172,14 +154,6 @@
       "order": 3,
       "mode": 0,
       "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": null
-        },
         {
           "name": "clip",
           "type": "CLIP",
@@ -233,70 +207,6 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "link": 5
-        },
-        {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_people",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_people"
-          },
-          "link": null
-        },
-        {
-          "name": "detection_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "detection_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "detect_interval",
-          "type": "INT",
-          "widget": {
-            "name": "detect_interval"
-          },
-          "link": null
-        },
-        {
-          "name": "scene_cut_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scene_cut_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "analysis_max_side",
-          "type": "COMBO",
-          "widget": {
-            "name": "analysis_max_side"
-          },
-          "link": null
-        },
-        {
-          "name": "preview_stride",
-          "type": "INT",
-          "widget": {
-            "name": "preview_stride"
-          },
-          "link": null
-        },
-        {
-          "name": "release_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "release_policy"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -370,142 +280,6 @@
           "name": "track_plan",
           "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
           "link": 8
-        },
-        {
-          "name": "absolute_start_frame",
-          "type": "INT",
-          "widget": {
-            "name": "absolute_start_frame"
-          },
-          "link": null
-        },
-        {
-          "name": "preset",
-          "type": "COMBO",
-          "widget": {
-            "name": "preset"
-          },
-          "link": null
-        },
-        {
-          "name": "amount",
-          "type": "FLOAT",
-          "widget": {
-            "name": "amount"
-          },
-          "link": null
-        },
-        {
-          "name": "texture_keep",
-          "type": "FLOAT",
-          "widget": {
-            "name": "texture_keep"
-          },
-          "link": null
-        },
-        {
-          "name": "shine_control",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shine_control"
-          },
-          "link": null
-        },
-        {
-          "name": "detection_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "detection_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_face_height_px",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_face_height_px"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_detail",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_detail"
-          },
-          "link": null
-        },
-        {
-          "name": "bbox_ema_alpha",
-          "type": "FLOAT",
-          "widget": {
-            "name": "bbox_ema_alpha"
-          },
-          "link": null
-        },
-        {
-          "name": "max_missing_frames",
-          "type": "INT",
-          "widget": {
-            "name": "max_missing_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "protect_features",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "protect_features"
-          },
-          "link": null
-        },
-        {
-          "name": "include_neck",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "include_neck"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_overlap_frames",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_overlap_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "mask_feather_px",
-          "type": "INT",
-          "widget": {
-            "name": "mask_feather_px"
-          },
-          "link": null
-        },
-        {
-          "name": "proxy_long_side",
-          "type": "INT",
-          "widget": {
-            "name": "proxy_long_side"
-          },
-          "link": null
-        },
-        {
-          "name": "chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "chunk_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
         },
         {
           "name": "previous_state",
@@ -629,30 +403,6 @@
           "name": "processed_frames",
           "type": "IMAGE",
           "link": 14
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "FLOAT",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -964,7 +714,7 @@
       3,
       1,
       4,
-      1,
+      0,
       "CLIP"
     ],
     [
@@ -1020,7 +770,7 @@
       2,
       1,
       6,
-      20,
+      3,
       "AUDIO"
     ],
     [

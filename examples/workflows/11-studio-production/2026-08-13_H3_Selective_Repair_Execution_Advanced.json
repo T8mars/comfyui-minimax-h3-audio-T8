@@ -24,22 +24,6 @@
           "name": "repair_plan",
           "type": "H3_T8_REPAIR_PLAN",
           "link": null
-        },
-        {
-          "name": "chain_id",
-          "type": "STRING",
-          "widget": {
-            "name": "chain_id"
-          },
-          "link": null
-        },
-        {
-          "name": "repair_index",
-          "type": "INT",
-          "widget": {
-            "name": "repair_index"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -177,22 +161,6 @@
           "name": "staged_repair",
           "type": "H3_T8_REPAIR_STAGED",
           "link": 2
-        },
-        {
-          "name": "accept_repair",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_repair"
-          },
-          "link": null
-        },
-        {
-          "name": "replace_existing",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "replace_existing"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -240,65 +208,9 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "chain_id",
-          "type": "STRING",
-          "widget": {
-            "name": "chain_id"
-          },
-          "link": null
-        },
-        {
           "name": "repair_manifest_path",
           "type": "STRING",
           "link": 3
-        },
-        {
-          "name": "compose_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "compose_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "require_final_segment",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "require_final_segment"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_seam_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_seam_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "bridge_ms",
-          "type": "FLOAT",
-          "widget": {
-            "name": "bridge_ms"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "INT",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -350,7 +262,7 @@
       3,
       0,
       4,
-      1,
+      0,
       "STRING"
     ]
   ],

@@ -8,125 +8,280 @@
       "id": 1,
       "type": "UNETLoader",
       "title": "1. Full H3 Ref2VA INT8 model",
-      "pos": [0, 0],
-      "size": [380, 90],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        380,
+        90
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {"name": "unet_name", "type": "COMBO", "widget": {"name": "unet_name"}, "link": null},
-        {"name": "weight_dtype", "type": "COMBO", "widget": {"name": "weight_dtype"}, "link": null}
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
       ],
-      "outputs": [{"name": "MODEL", "type": "MODEL", "links": [1]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "UNETLoader"},
-      "widgets_values": ["minimax_h3_ref2va_int8_convrot.safetensors", "default"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ]
     },
     {
       "id": 2,
       "type": "CLIPLoader",
       "title": "2. H3 Qwen3-VL text encoder",
-      "pos": [0, 130],
-      "size": [380, 110],
+      "pos": [
+        0,
+        130
+      ],
+      "size": [
+        380,
+        110
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {"name": "clip_name", "type": "COMBO", "widget": {"name": "clip_name"}, "link": null},
-        {"name": "type", "type": "COMBO", "widget": {"name": "type"}, "link": null},
-        {"name": "device", "type": "COMBO", "widget": {"name": "device"}, "link": null}
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
       ],
-      "outputs": [{"name": "CLIP", "type": "CLIP", "links": [2]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "CLIPLoader"},
-      "widgets_values": ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "minimax", "default"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
     },
     {
       "id": 3,
       "type": "VAELoader",
       "title": "3. H3 video VAE",
-      "pos": [0, 280],
-      "size": [380, 65],
+      "pos": [
+        0,
+        280
+      ],
+      "size": [
+        380,
+        65
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [{"name": "vae_name", "type": "COMBO", "widget": {"name": "vae_name"}, "link": null}],
-      "outputs": [{"name": "VAE", "type": "VAE", "links": [3, 16]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "VAELoader"},
-      "widgets_values": ["minimax_h3_video_vae_fp16.safetensors"]
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
     },
     {
       "id": 4,
       "type": "VAELoader",
       "title": "4. H3 audio VAE",
-      "pos": [0, 390],
-      "size": [380, 65],
+      "pos": [
+        0,
+        390
+      ],
+      "size": [
+        380,
+        65
+      ],
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [{"name": "vae_name", "type": "COMBO", "widget": {"name": "vae_name"}, "link": null}],
-      "outputs": [{"name": "VAE", "type": "VAE", "links": [4, 17]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "VAELoader"},
-      "widgets_values": ["minimax_h3_audio_vae_fp32.safetensors"]
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
     },
     {
       "id": 5,
       "type": "LoadImage",
       "title": "5. Replace with the Ref2VA reference image",
-      "pos": [0, 510],
-      "size": [380, 350],
+      "pos": [
+        0,
+        510
+      ],
+      "size": [
+        380,
+        350
+      ],
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {"name": "image", "type": "COMBO", "widget": {"name": "image"}, "link": null},
-        {"name": "upload", "type": "IMAGEUPLOAD", "widget": {"name": "upload"}, "link": null}
-      ],
+      "inputs": [],
       "outputs": [
-        {"name": "IMAGE", "type": "IMAGE", "links": [5]},
-        {"name": "MASK", "type": "MASK", "links": null}
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
-      "widgets_values": ["replace_with_reference_image.png", "image"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_reference_image.png",
+        "image"
+      ]
     },
     {
       "id": 6,
       "type": "MiniMaxH3AudioConditioningT8",
       "title": "6. Existing Ref2VA Conditioning (unchanged)",
-      "pos": [460, 0],
-      "size": [620, 760],
+      "pos": [
+        460,
+        0
+      ],
+      "size": [
+        620,
+        760
+      ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [
-        {"name": "clip", "type": "CLIP", "link": 2},
-        {"name": "video_vae", "type": "VAE", "link": 3},
-        {"name": "audio_vae", "type": "VAE", "link": 4},
-        {"name": "prompt", "type": "STRING", "widget": {"name": "prompt"}, "link": null},
-        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
-        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
-        {"name": "length", "type": "INT", "widget": {"name": "length"}, "link": null},
-        {"name": "task_type", "type": "COMBO", "widget": {"name": "task_type"}, "link": null},
-        {"name": "audio_mode", "type": "COMBO", "widget": {"name": "audio_mode"}, "link": null},
-        {"name": "audio_denoise_strength", "type": "FLOAT", "widget": {"name": "audio_denoise_strength"}, "link": null},
-        {"name": "add_source_as_reference", "type": "BOOLEAN", "widget": {"name": "add_source_as_reference"}, "link": null},
-        {"name": "prompt_primary_audio_ordinal", "type": "INT", "widget": {"name": "prompt_primary_audio_ordinal"}, "link": null},
-        {"name": "strict_prompt_tags", "type": "BOOLEAN", "widget": {"name": "strict_prompt_tags"}, "link": null},
-        {"name": "ref_image_size", "type": "COMBO", "widget": {"name": "ref_image_size"}, "link": null},
-        {"name": "reference_video_policy", "type": "COMBO", "widget": {"name": "reference_video_policy"}, "link": null},
-        {"name": "drive_audio", "type": "AUDIO", "link": null, "shape": 7},
-        {"name": "final_audio", "type": "AUDIO", "link": null, "shape": 7},
-        {"name": "first_frame", "type": "IMAGE", "link": null, "shape": 7},
-        {"name": "last_frame", "type": "IMAGE", "link": null, "shape": 7},
-        {"label": "ref_image_0", "name": "ref_images.ref_image_0", "type": "IMAGE", "link": 5}
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "type": "IMAGE",
+          "link": 5
+        }
       ],
       "outputs": [
-        {"name": "positive", "type": "CONDITIONING", "links": [6]},
-        {"name": "av_latent", "type": "LATENT", "links": [8, 14]},
-        {"name": "mux_audio", "type": "AUDIO", "links": []},
-        {"name": "conditioned_prompt", "type": "STRING", "links": []},
-        {"name": "media_map_json", "type": "STRING", "links": []},
-        {"name": "report", "type": "STRING", "links": []}
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            8,
+            14
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
       ],
-      "properties": {"Node name for S&R": "MiniMaxH3AudioConditioningT8"},
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
       "widgets_values": [
         "Use <Picture 1> as the visual reference. A natural cinematic portrait in soft window light, realistic skin pores, individual hair strands, detailed lace and fabric weave, subtle human motion, stable identity and composition. Natural room ambience, no music.",
         736,
@@ -146,139 +301,354 @@
       "id": 7,
       "type": "MiniMaxH3VisualReferenceStrengthEXPT8",
       "title": "EXP: 0.999 -> 0.995 -> 0.990; <=0.950 may damage identity/endpoints",
-      "pos": [1140, 110],
-      "size": [560, 150],
+      "pos": [
+        1140,
+        110
+      ],
+      "size": [
+        560,
+        150
+      ],
       "flags": {},
       "order": 6,
       "mode": 0,
       "inputs": [
-        {"name": "positive", "type": "CONDITIONING", "link": 6},
-        {"name": "reference_strength", "type": "FLOAT", "widget": {"name": "reference_strength"}, "link": null}
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 6
+        }
       ],
       "outputs": [
-        {"name": "positive", "type": "CONDITIONING", "links": [7]},
-        {"name": "report", "type": "STRING", "links": []}
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
       ],
-      "properties": {"Node name for S&R": "MiniMaxH3VisualReferenceStrengthEXPT8"},
-      "widgets_values": [0.99]
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VisualReferenceStrengthEXPT8"
+      },
+      "widgets_values": [
+        0.99
+      ]
     },
     {
       "id": 8,
       "type": "MiniMaxH3DualClockSamplerT8",
       "title": "Existing sampler settings (not changed by the EXP node)",
-      "pos": [1140, 340],
-      "size": [560, 220],
+      "pos": [
+        1140,
+        340
+      ],
+      "size": [
+        560,
+        220
+      ],
       "flags": {},
       "order": 7,
       "mode": 0,
       "inputs": [
-        {"name": "model", "type": "MODEL", "link": 1},
-        {"name": "av_latent", "type": "LATENT", "link": 8},
-        {"name": "steps", "type": "INT", "widget": {"name": "steps"}, "link": null},
-        {"name": "shift_video", "type": "FLOAT", "widget": {"name": "shift_video"}, "link": null},
-        {"name": "shift_audio", "type": "FLOAT", "widget": {"name": "shift_audio"}, "link": null},
-        {"name": "sampler_name", "type": "COMBO", "widget": {"name": "sampler_name"}, "link": null},
-        {"name": "scheduler", "type": "COMBO", "widget": {"name": "scheduler"}, "link": null}
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 8
+        }
       ],
       "outputs": [
-        {"name": "model", "type": "MODEL", "links": [9]},
-        {"name": "sampler", "type": "SAMPLER", "links": [12]},
-        {"name": "sigmas", "type": "SIGMAS", "links": [13]}
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            13
+          ]
+        }
       ],
-      "properties": {"Node name for S&R": "MiniMaxH3DualClockSamplerT8"},
-      "widgets_values": [20, 12.0, 3.0, "dual_clock_euler", "native_flow"]
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        20,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
     },
     {
       "id": 9,
       "type": "RandomNoise",
       "title": "Fixed seed for controlled A/B",
-      "pos": [1140, 620],
-      "size": [330, 90],
+      "pos": [
+        1140,
+        620
+      ],
+      "size": [
+        330,
+        90
+      ],
       "flags": {},
       "order": 8,
       "mode": 0,
-      "inputs": [{"name": "noise_seed", "type": "INT", "widget": {"name": "noise_seed"}, "link": null}],
-      "outputs": [{"name": "NOISE", "type": "NOISE", "links": [10]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "RandomNoise"},
-      "widgets_values": [2608102201, "fixed"]
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608102201,
+        "fixed"
+      ]
     },
     {
       "id": 10,
       "type": "BasicGuider",
-      "pos": [1760, 110],
-      "size": [300, 90],
+      "pos": [
+        1760,
+        110
+      ],
+      "size": [
+        300,
+        90
+      ],
       "flags": {},
       "order": 9,
       "mode": 0,
       "inputs": [
-        {"name": "model", "type": "MODEL", "link": 9},
-        {"name": "conditioning", "type": "CONDITIONING", "link": 7}
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 7
+        }
       ],
-      "outputs": [{"name": "GUIDER", "type": "GUIDER", "links": [11]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "BasicGuider"},
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
       "widgets_values": []
     },
     {
       "id": 11,
       "type": "SamplerCustomAdvanced",
-      "pos": [1760, 270],
-      "size": [340, 190],
+      "pos": [
+        1760,
+        270
+      ],
+      "size": [
+        340,
+        190
+      ],
       "flags": {},
       "order": 10,
       "mode": 0,
       "inputs": [
-        {"name": "noise", "type": "NOISE", "link": 10},
-        {"name": "guider", "type": "GUIDER", "link": 11},
-        {"name": "sampler", "type": "SAMPLER", "link": 12},
-        {"name": "sigmas", "type": "SIGMAS", "link": 13},
-        {"name": "latent_image", "type": "LATENT", "link": 14}
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 10
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 11
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 13
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 14
+        }
       ],
       "outputs": [
-        {"name": "output", "type": "LATENT", "links": [15]},
-        {"name": "denoised_output", "type": "LATENT", "links": []}
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SamplerCustomAdvanced"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
       "widgets_values": []
     },
     {
       "id": 12,
       "type": "MiniMaxH3AVDecodeT8",
-      "pos": [2170, 180],
-      "size": [340, 150],
+      "pos": [
+        2170,
+        180
+      ],
+      "size": [
+        340,
+        150
+      ],
       "flags": {},
       "order": 11,
       "mode": 0,
       "inputs": [
-        {"name": "av_latent", "type": "LATENT", "link": 15},
-        {"name": "video_vae", "type": "VAE", "link": 16},
-        {"name": "audio_vae", "type": "VAE", "link": 17}
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 17
+        }
       ],
       "outputs": [
-        {"name": "frames", "type": "IMAGE", "links": [18]},
-        {"name": "generated_audio", "type": "AUDIO", "links": [19]},
-        {"name": "video_latent", "type": "LATENT", "links": []},
-        {"name": "audio_latent", "type": "LATENT", "links": []}
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
       ],
-      "properties": {"Node name for S&R": "MiniMaxH3AVDecodeT8"},
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
       "widgets_values": []
     },
     {
       "id": 13,
       "type": "VHS_VideoCombine",
       "title": "Save synchronized EXP comparison",
-      "pos": [2590, 80],
-      "size": [470, 520],
+      "pos": [
+        2590,
+        80
+      ],
+      "size": [
+        470,
+        520
+      ],
       "flags": {},
       "order": 12,
       "mode": 0,
       "inputs": [
-        {"name": "images", "type": "IMAGE", "link": 18},
-        {"name": "audio", "type": "AUDIO", "link": 19, "shape": 7},
-        {"name": "meta_batch", "type": "VHS_BatchManager", "link": null, "shape": 7},
-        {"name": "vae", "type": "VAE", "link": null, "shape": 7}
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
       ],
-      "outputs": [{"name": "Filenames", "type": "VHS_FILENAMES", "links": null}],
-      "properties": {"Node name for S&R": "VHS_VideoCombine"},
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
       "widgets_values": {
         "frame_rate": 24,
         "loop_count": 0,
@@ -294,32 +664,210 @@
     }
   ],
   "links": [
-    [1, 1, 0, 8, 0, "MODEL"],
-    [2, 2, 0, 6, 0, "CLIP"],
-    [3, 3, 0, 6, 1, "VAE"],
-    [4, 4, 0, 6, 2, "VAE"],
-    [5, 5, 0, 6, 19, "IMAGE"],
-    [6, 6, 0, 7, 0, "CONDITIONING"],
-    [7, 7, 0, 10, 1, "CONDITIONING"],
-    [8, 6, 1, 8, 1, "LATENT"],
-    [9, 8, 0, 10, 0, "MODEL"],
-    [10, 9, 0, 11, 0, "NOISE"],
-    [11, 10, 0, 11, 1, "GUIDER"],
-    [12, 8, 1, 11, 2, "SAMPLER"],
-    [13, 8, 2, 11, 3, "SIGMAS"],
-    [14, 6, 1, 11, 4, "LATENT"],
-    [15, 11, 0, 12, 0, "LATENT"],
-    [16, 3, 0, 12, 1, "VAE"],
-    [17, 4, 0, 12, 2, "VAE"],
-    [18, 12, 0, 13, 0, "IMAGE"],
-    [19, 12, 1, 13, 1, "AUDIO"]
+    [
+      1,
+      1,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      3,
+      0,
+      6,
+      1,
+      "VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      7,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      7,
+      7,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      6,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      9,
+      8,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      9,
+      0,
+      11,
+      0,
+      "NOISE"
+    ],
+    [
+      11,
+      10,
+      0,
+      11,
+      1,
+      "GUIDER"
+    ],
+    [
+      12,
+      8,
+      1,
+      11,
+      2,
+      "SAMPLER"
+    ],
+    [
+      13,
+      8,
+      2,
+      11,
+      3,
+      "SIGMAS"
+    ],
+    [
+      14,
+      6,
+      1,
+      11,
+      4,
+      "LATENT"
+    ],
+    [
+      15,
+      11,
+      0,
+      12,
+      0,
+      "LATENT"
+    ],
+    [
+      16,
+      3,
+      0,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      17,
+      4,
+      0,
+      12,
+      2,
+      "VAE"
+    ],
+    [
+      18,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      12,
+      1,
+      13,
+      1,
+      "AUDIO"
+    ]
   ],
   "groups": [
-    {"id": 1, "title": "H3 Ref2VA model + reference", "bounding": [-40, -60, 1160, 960], "color": "#3f789e", "font_size": 26, "flags": {}},
-    {"id": 2, "title": "EXP global visual strength: start 0.999, then 0.995 / 0.990", "bounding": [1100, -60, 1040, 840], "color": "#9e633f", "font_size": 26, "flags": {}},
-    {"id": 3, "title": "Decode + synchronized MP4", "bounding": [2140, -60, 970, 760], "color": "#3f9e64", "font_size": 26, "flags": {}}
+    {
+      "id": 1,
+      "title": "H3 Ref2VA model + reference",
+      "bounding": [
+        -40,
+        -60,
+        1160,
+        960
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "EXP global visual strength: start 0.999, then 0.995 / 0.990",
+      "bounding": [
+        1100,
+        -60,
+        1040,
+        840
+      ],
+      "color": "#9e633f",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Decode + synchronized MP4",
+      "bounding": [
+        2140,
+        -60,
+        970,
+        760
+      ],
+      "color": "#3f9e64",
+      "font_size": 26,
+      "flags": {}
+    }
   ],
   "config": {},
-  "extra": {"ds": {"scale": 0.7, "offset": [75, 165]}, "ue_links": []},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [
+        75,
+        165
+      ]
+    },
+    "ue_links": []
+  },
   "version": 0.4
 }

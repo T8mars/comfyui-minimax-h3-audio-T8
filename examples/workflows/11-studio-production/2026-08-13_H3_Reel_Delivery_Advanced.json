@@ -21,46 +21,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "project_id",
-          "type": "STRING",
-          "widget": {
-            "name": "project_id"
-          },
-          "link": null
-        },
-        {
-          "name": "reel_json",
-          "type": "STRING",
-          "widget": {
-            "name": "reel_json"
-          },
-          "link": null
-        },
-        {
-          "name": "sample_rate",
-          "type": "INT",
-          "widget": {
-            "name": "sample_rate"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_transition_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_transition_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_transition_buffer_mib",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_transition_buffer_mib"
-          },
-          "link": null
-        },
-        {
           "name": "timeline",
           "type": "H3_T8_STUDIO_TIMELINE",
           "link": null
@@ -122,38 +82,6 @@
           "name": "reel_plan",
           "type": "H3_T8_REEL_DELIVERY_PLAN",
           "link": 1
-        },
-        {
-          "name": "confirm_compose",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "confirm_compose"
-          },
-          "link": null
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "INT",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
-        },
-        {
-          "name": "peak_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "peak_policy"
-          },
-          "link": null
         }
       ],
       "outputs": [

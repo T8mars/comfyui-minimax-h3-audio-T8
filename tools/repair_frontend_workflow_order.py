@@ -9,6 +9,11 @@ import shutil
 from typing import Any
 import urllib.request
 
+try:
+    from .frontend_workflow_compat import normalize_native_widget_inputs
+except ImportError:  # Direct script execution puts tools/ on sys.path.
+    from frontend_workflow_compat import normalize_native_widget_inputs
+
 
 PRIMITIVE_TYPES = {"STRING", "INT", "FLOAT", "BOOLEAN", "COMBO"}
 SEED_WIDGETS = {"seed", "noise_seed"}
@@ -177,14 +182,17 @@ def node_needs_repair(node: dict[str, Any], info: dict[str, Any]) -> bool:
     entries, unknown = canonical_entries(info, saved_names)
     if unknown:
         return False
+    if any(
+        "widget" in item and item.get("link") is None
+        for item in saved_inputs
+    ):
+        return True
     expected_names = [
         name for name, _spec, _optional in entries if name in saved_names
     ]
     if saved_names != expected_names:
         return True
-    canonical_slot = {
-        name: slot for slot, (name, _spec, _optional) in enumerate(entries)
-    }
+    canonical_slot = {name: slot for slot, name in enumerate(expected_names)}
     if any(
         isinstance(item.get("link"), int)
         and canonical_slot.get(str(item.get("name", ""))) != saved_slot
@@ -275,6 +283,10 @@ def repair_workflow(
         key = (link[3], link[0])
         if key in link_slots:
             link[4], link[5] = link_slots[key]
+    normalized = normalize_native_widget_inputs(workflow)
+    for item in normalized["normalized"]:
+        if item not in repaired:
+            repaired.append(item)
     return {"repaired": repaired, "skipped": skipped}
 
 

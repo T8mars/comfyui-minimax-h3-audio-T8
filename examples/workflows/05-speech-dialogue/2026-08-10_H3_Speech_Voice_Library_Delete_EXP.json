@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "library_name",
-          "type": "STRING",
-          "widget": {
-            "name": "library_name"
-          },
-          "link": null
-        },
-        {
-          "name": "confirm_delete",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "confirm_delete"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "report_json",

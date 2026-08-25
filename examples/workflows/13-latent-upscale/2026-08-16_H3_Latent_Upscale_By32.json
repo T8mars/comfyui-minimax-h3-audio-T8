@@ -19,32 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
-          "name": "batch_size",
-          "type": "INT",
-          "widget": {
-            "name": "batch_size"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "LATENT",
@@ -84,38 +59,6 @@
           "name": "latent",
           "type": "LATENT",
           "link": 1
-        },
-        {
-          "name": "upscale_method",
-          "type": "COMBO",
-          "widget": {
-            "name": "upscale_method"
-          },
-          "link": null
-        },
-        {
-          "name": "scale_by",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scale_by"
-          },
-          "link": null
-        },
-        {
-          "name": "pixels_per_latent",
-          "type": "COMBO",
-          "widget": {
-            "name": "pixels_per_latent"
-          },
-          "link": null
-        },
-        {
-          "name": "alignment_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "alignment_policy"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -137,7 +80,9 @@
         {
           "name": "report_json",
           "type": "STRING",
-          "links": null
+          "links": [
+            2
+          ]
         }
       ],
       "properties": {

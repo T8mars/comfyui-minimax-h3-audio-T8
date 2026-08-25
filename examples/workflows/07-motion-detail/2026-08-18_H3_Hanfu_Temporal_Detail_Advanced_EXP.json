@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -237,89 +228,9 @@
           "link": 11
         },
         {
-          "name": "crf",
-          "type": "*",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "['image/gif', 'image/webp', 'video/h264-mp4.json', 'video/h265-mp4.json', 'video/nvenc_h264-mp4.json', 'video/nvenc_h265-mp4.json', 'video/webm.json', 'video/16bit-png', 'video/8bit-png', 'video/av1-webm', 'video/ffmpeg-gif', 'video/ffv1-mkv', 'video/h264-mp4', 'video/h265-mp4', 'video/nvenc_av1-mp4', 'video/nvenc_h264-mp4', 'video/nvenc_hevc-mp4', 'video/ProRes', 'video/webm']",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
-        },
-        {
-          "name": "frame_rate",
-          "type": "FLOAT",
-          "widget": {
-            "name": "frame_rate"
-          },
-          "link": null
-        },
-        {
           "name": "images",
           "type": "IMAGE",
           "link": 12
-        },
-        {
-          "name": "loop_count",
-          "type": "INT",
-          "widget": {
-            "name": "loop_count"
-          },
-          "link": null
-        },
-        {
-          "name": "pingpong",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "pingpong"
-          },
-          "link": null
-        },
-        {
-          "name": "pix_fmt",
-          "type": "*",
-          "widget": {
-            "name": "pix_fmt"
-          },
-          "link": null
-        },
-        {
-          "name": "save_metadata",
-          "type": "*",
-          "widget": {
-            "name": "save_metadata"
-          },
-          "link": null
-        },
-        {
-          "name": "save_output",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "save_output"
-          },
-          "link": null
-        },
-        {
-          "name": "trim_to_audio",
-          "type": "*",
-          "widget": {
-            "name": "trim_to_audio"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -361,16 +272,7 @@
       "flags": {},
       "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -404,32 +306,7 @@
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "COMBO",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "COMBO",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -464,24 +341,7 @@
       "flags": {},
       "order": 7,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -520,22 +380,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 13
-        },
-        {
-          "name": "lora_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "lora_name"
-          },
-          "link": null
-        },
-        {
-          "name": "strength_model",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength_model"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -571,16 +415,7 @@
       "flags": {},
       "order": 9,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "['0 (1).png', '00035_00.jpg', '006ap5nFgy1hpkgkht15mj30p00xc4qp.jpg', '006cMLAggy1hshibwxcooj31o0280x6p.jpg', '0176476336e622000e85100067b155.jpg', '01ac2haugfao7qminqppih3630.jpg', '020c8fe7-ef7a-4f4f-8505-944fe8c82456.png', '02_Dark清晰人物参考图.png', '02_清晰身份参考图_首段.png', '03_Blonde清晰人物参考图.png', '03_清晰身份参考图_中段.png', '098B94AFF11EC4A112E1849BA918971E.png', '0ACE25781E5DC4558AAC6A79D74D2BCF-gigapixel-low resolution v2-2x.jpg', '0B4A30623DDD439BC56C7DC126F866F9.jpg', '0E4CD6B297FCD10E345D9300101F3B34.png', '0ed5d06a-75d7-4f82-9cbe-c30a68f824ae.png', '1 (1).jpg', '1 (1).png', '1 (2).jpg', '1 (3).jpg', '1 (3).webp', '1 (4).jpg', '1.jpg', '10.jpg', '102.jpg', '105661104854c5e8bd9aa0f9efd8b1962b16df678adab651219888fd08273c27.jpg', '10A.jpg', '10Db.jpg', '10b.jpg', '11..webp', '120.jpg', '121.jpg', '123321.png', '1235F108193B13F1F571AD8A8E7D0075FF0-gigapixel-low resolution v2-2x.jpg', '123B099E0ECA574BF796239F63AEFAF47E5-gigapixel-low resolution v2-2x.jpg', '1241111.jpg', '125.jpg', '1253b776f4ad410c947e3414780b07f6.webp', '126.jpg', '135EAEC2C3ED8561272BA4CC0C479C0A.jpg', '141.jpg', '1515151.png', '153.jpg', '155.jpg', '16.jpg', '16F91DCA8AB1AFB0EEEDC1D1502597DF.jpg', '17.jpg', '18.jpg', '190.jpg', '191.jpg', '1b9c020f0a7f6aa1d76aed81e614128beb9fe6442b1da0fb6fae55183f685c0e.png', '2 (1).png', '2.png', '20250830-BI2-1-1024-1024-167718.png', '23B1293688BA86521241DACC28D59635.jpg', '23ad81957915c488c5d29a952d13b024501d2a35fb12e11921c234ab759ca968.png', '28.jpg', '296E407E5014F260C1D838802F4B3C7E.png', '2F835A00E7273FB363FE18D14ABF476E.png', '2fba41c3-c2f4-41a6-aedc-a6e940170f8d.jpg', '3 (3).jpg', '303777.jpeg', '31.jpg', '316.jpg', '31B3C3CF3FE562E8309F9730E0004F67.jpg', '31B3C3CF3FE562E8309F9730E0004F67.png', '338.jpg', '349.jpg', '350.jpg', '373DCD22AF79D076319A92F1106F8993.png', '38.jpg', '38BB88F56E653FE33B4210DABE766DFF.jpg', '3CA266EB4537DA7ACE3CCBA399BD52F6.jpg', '3DBBD3B5833415F1C632D1DBE20E1113.png', '3F8832C7B922159B53BE89A596BA6710.jpg', '40401765EAC369E7782F70CDA3F31343.jpg', '419.jpg', '454.jpg', '45a99ff469a49ce7d7c4cfde79f6b2a4fc1109247868bc50094285885e3a2455.png', '474C97D5D4C50669F54D8A12B688D911.jpg', '489ea6ec-fc46-4a65-a810-297fde1f4783.png', '4a5e891fb55be614951ff046e2452d9154cbb117ca6966dacc052db817567a25.jpg', '50C013D856DCB31A18711CD74527CA03.png', '512-1.jpg', '515.jpg', '5252.jpg', '52525.jpg', '546.jpg', '54ACACF33EABFEF42BF1FC0112643129.jpg', '5506C009BE5AF24DE136E52DFF5BB5C8.jpg', '555.jpg', '556.png', '5E6C1FEB82CD69F68018B602E9D19850.jpg', '5eOE6riZjFr7R62eSvVIogebcdbf62758581c6df1ad19a20c27f8d.jpg', '61.jpg', '611.jpg', '61455eeb-ff6b-4fe2-8ec5-50a9198cef09.jpg', '616.jpg', '626.jpg', '638.jpg', '640 (1).jpg', '640 (1).png', '640 (2).jpg', '640 (2).png', '640.jpg', '640.png', '645.jpg', '6cab17f7-66a2-4e9e-a81a-c3aa5285da15.jpg', '7458571E4C1585BB2788EEB33F86FF4E.png', '784.jpg', '7840561f0bf1df0949920f737716bdc036487765fa147aa80bbd61ac672f0914.png', '792.jpg', '7c865e58-5712-4570-b84c-406c7800a534.png', '803.jpg', '804.jpg', '808.jpg', '81695AC20389A1581B9819B3268380E0.jpg', '839c228c7826155d285486c628870f1f501f1fb33ce43b97bb961f23d5d62533.png', '8471fd1f-b10d-42e2-8d71-2c6a2cd29f50.png', '85e946abc49b9ada980925417be66768cb156e5b029330db0215c1381e54faaf.png', '86E21D2027E17F489DFD4A8944C00BC9.png', '89FC4A369818A7DF342025419AF0A353.jpg', '8D45ADBC381D36E9ECF6BA45AC3BD770.png', '8F5B7A53846120C0179341850EC67100.jpg', '93c59686-a8fa-47a3-8738-c4f5117a1f94.png', '960a820eb04bee8c0a447f21ff5d2419279b4db2b5d9b7e736921543abdd0f57.png', '963f48d26a0d2bb3e459b4467d45097c6239bf756b0d1cda5408400f06fe0b25.png', '97D99014AAFD1168D1E1032369BEAAA4.jpg', '992d34a2-6422-4dac-8cd4-6beb1f9b5aa6.png', '9B9298A6D244EB203335D2A62C1C19C8.png', '9C11339C30A00B0C99415D5C46AA86CF.png', '9D65D2588CF4C21BBF7C31F382C68E54.jpg', '9E7F5C042BAA5C726D3DA07E8B694188.jpg', '9aef5d603dbcf69fac2a27aa18644406f44d22d1e381f6cb1cf9066478ec69ed.png', 'AC65D0D3A80D53E1B31DF866D1A5602A.png', 'AD2CFA34DEA6117416A82A7B8E085920.jpg', 'AniCrafter_20250715_084336.jpg', 'AniCrafter_20250717_191202.jpg', 'AniCrafter_20250718_215632.jpg', 'AniCrafter_20250718_220051.jpg', 'AniCrafter_20250718_220826.jpg', 'AniCrafter_20250718_221808.jpg', 'AniCrafter_20250718_223119.jpg', 'AniCrafter_20250718_223425.jpg', 'AniCrafter_20250718_225338.jpg', 'AniCrafter_20250721_120634.jpg', 'AniCrafter_20250721_121639.jpg', 'AniCrafter_20250721_121943.jpg', 'AniCrafter_20250721_122151.jpg', 'AniCrafter_20250721_132607.jpg', 'AniCrafter_20250721_133121.jpg', 'AniCrafter_20250721_134922.jpg', 'AniCrafter_20250721_181959.jpg', 'AniCrafter_20250721_184954.jpg', 'AniCrafter_20250722_003955.jpg', 'AniCrafter_20250722_004228.jpg', 'AniCrafter_20250722_010304.jpg', 'AniCrafter_20250722_010731.jpg', 'AniCrafter_20250722_012745.jpg', 'AniCrafter_20250722_013446.jpg', 'AniCrafter_20250722_013644.jpg', 'AniCrafter_20250722_013957.jpg', 'AniCrafter_20250722_014409.jpg', 'AniCrafter_20250722_015743.jpg', 'AniCrafter_20250722_185701.jpg', 'AnimateDiff_00001.gif', 'AnimateDiff_00001.png', 'AnimateDiff_00002.png', 'AnimateDiff_00003.png', 'AnimateDiff_00004.png', 'AnimateDiff_00005.png', 'AnimateDiff_00006.gif', 'AnimateDiff_00006.png', 'AnimateDiff_00007.png', 'AnimateDiff_00008.png', 'AnimateDiff_00009.png', 'AnimateDiff_00010.png', 'AnimateDiff_00011.png', 'AnimateDiff_00011.webp', 'AnimateDiff_00012.png', 'AnimateDiff_00012.webp', 'AnimateDiff_00013.png', 'AnimateDiff_00013.webp', 'AnimateDiff_00014.png', 'AnimateDiff_00014.webp', 'AnimateDiff_00015.png', 'AnimateDiff_00016.png', 'AnimateDiff_00017.gif', 'AnimateDiff_00017.png', 'AnimateDiff_00018.png', 'AnimateDiff_00019.png', 'AnimateDiff_00019.webp', 'AnimateDiff_00020.png', 'AnimateDiff_00021.png', 'AnimateDiff_00022.png', 'AnimateDiff_00023.png', 'AnimateDiff_00024.png', 'AnimateDiff_00025.png', 'AnimateDiff_00026.png', 'AnimateDiff_00027.png', 'AnimateDiff_00028.png', 'AnimateDiff_00029.png', 'AnimateDiff_00030.png', 'AnimateDiff_00031.png', 'AnimateDiff_00032.png', 'AnimateDiff_00033.png', 'AnimateDiff_00034.png', 'AnimateDiff_00035.png', 'AnimateDiff_00036.png', 'AnimateDiff_00037.png', 'AnimateDiff_00038.png', 'AnimateDiff_00039.png', 'AnimateDiff_00040.png', 'AnimateDiff_00041.png', 'AnimateDiff_00042.png', 'AnimateDiff_00043.png', 'AnimateDiff_00044.png', 'AnimateDiff_00045.png', 'AnimateDiff_00046.gif', 'AnimateDiff_00046.png', 'AnimateDiff_00047.png', 'AnimateDiff_00048.png', 'AnimateDiff_00049.png', 'AnimateDiff_00050.png', 'AnimateDiff_00051.png', 'AnimateDiff_00052.png', 'AnimateDiff_00053.png', 'AnimateDiff_00054.png', 'AnimateDiff_00055.png', 'AnimateDiff_00056.png', 'AnimateDiff_00057.png', 'AnimateDiff_00058.png', 'AnimateDiff_00059.png', 'AnimateDiff_00060.png', 'AnimateDiff_00061.png', 'AnimateDiff_00062.png', 'AnimateDiff_00063.png', 'AnimateDiff_00064.png', 'AnimateDiff_00065.png', 'AnimateDiff_00066.png', 'AnimateDiff_00067.png', 'AnimateDiff_00068.png', 'AnimateDiff_00069.png', 'AnimateDiff_00070.png', 'AnimateDiff_00071.png', 'AnimateDiff_00072.png', 'AnimateDiff_00073.png', 'AnimateDiff_00074.png', 'AnimateDiff_00075.png', 'AnimateDiff_00076.png', 'AnimateDiff_00077.png', 'AnimateDiff_00078.png', 'AnimateDiff_00079.png', 'AnimateDiff_00080.png', 'AnimateDiff_00081.png', 'AnimateDiff_00082.png', 'AnimateDiff_00083.png', 'AnimateDiff_00084.png', 'AnimateDiff_00085.png', 'AnimateDiff_00086.png', 'AnimateDiff_00087.png', 'AnimateDiff_00088.png', 'AnimateDiff_00089.png', 'AnimateDiff_00090.png', 'AnimateDiff_00091.png', 'AnimateDiff_00092.png', 'AnimateDiff_00093.png', 'AnimateDiff_00094.png', 'AnimateDiff_00095.png', 'AnimateDiff_00096.png', 'AnimateDiff_00097.png', 'AnimateDiff_00098.png', 'AnimateDiff_00099.png', 'B652D79B1848FA2ED208AC43F7F20386.jpg', 'BAD040C7EB89443E30A7F1BE512FCC55.jpg', 'BB34C3BF37394461B8EFC360EE61E174.jpg', 'BC36B1978923099D38495460C5DC03C4.png', 'BED4E503ECFCF3E871F8F941E41AD876.png', 'C745D49A10F40534C127A84A67AA0ADB.png', 'CC32A1962928568A1364F0FB99DDADA6.jpg', 'ComfyUI_00001_aijhk_1784083878.png', 'ComfyUI_00001_ambrx_1783572999.png', 'ComfyUI_00001_bvjng_1759908745.png', 'ComfyUI_00001_bzhzl_1773121254.png', 'ComfyUI_00001_csrga_1783573989.png', 'ComfyUI_00001_hmpsq_1765635001.png', 'ComfyUI_00001_iegoo_1780410473.jpg', 'ComfyUI_00001_jzcoh_1780487385.png', 'ComfyUI_00001_klien_1780763527 (1).png', 'ComfyUI_00001_lapxl_1759498354 (1).png', 'ComfyUI_00001_lhqtr_1760524182.png', 'ComfyUI_00001_lojqs_1780410512.jpg', 'ComfyUI_00001_nsbje_1765635022.png', 'ComfyUI_00001_nvgxc_1783585890.png', 'ComfyUI_00001_opmdc_1778928986.png', 'ComfyUI_00001_pvjpm_1784499857.png', 'ComfyUI_00001_qbgfm_1760858933.png', 'ComfyUI_00001_qurmv_1777346032.png', 'ComfyUI_00001_qxbyc_1768052723.png', 'ComfyUI_00001_tnpyb_1761142719.png', 'ComfyUI_00001_xuobe_1783574128.png', 'ComfyUI_00001_xyddu_1777561324.webp', 'ComfyUI_00001_ygxrk_1768049208.png', 'ComfyUI_00001_zmqcp_1781626902.png', 'ComfyUI_00002_pdurs_1760864244.png', 'ComfyUI_00002_pjoxu_1780997336.png', 'ComfyUI_00003_cxkpm_1768052724.png', 'ComfyUI_00003_pmccn_1761498009.png', 'ComfyUI_00003_ppavp_1766802584.png', 'ComfyUI_00003_puvyn_1771605353.png', 'ComfyUI_00003_xhymy_1765705518.png', 'ComfyUI_00004_cfmmv_1760859057.png', 'ComfyUI_00004_zkfyb_1779710199.png', 'ComfyUI_00005_bpbib_1768052725.png', 'ComfyUI_00005_hgqsm_1784287287.png', 'ComfyUI_00005_lhxjq_1763298249.png', 'ComfyUI_00005_mhgzg_1769963725.png', 'ComfyUI_00006_fzoxh_1766802602.png', 'ComfyUI_00006_xubra_1741109441_aldpo_1741109444.png', 'ComfyUI_00007_fpqbl_1752146755.png', 'ComfyUI_00008_ifpke_1765900645.jpg', 'ComfyUI_00008_vdtpi_1740565080_pojpi_1740565085.png', 'ComfyUI_00009_abjrn_1770377523.png', 'ComfyUI_00009_gpzfr_1766291640.png', 'ComfyUI_00009_hexgm_1765102405.png', 'ComfyUI_00010_avnlr_1780295425.png', 'ComfyUI_00013_loyue_1760859660.png', 'ComfyUI_00015_.png', 'ComfyUI_00015_pfsid_1752150314.png', 'ComfyUI_00022_.png', 'ComfyUI_00044_.png', 'ComfyUI_00045_.png', 'ComfyUI_00054_.png', 'ComfyUI_00057_.png', 'ComfyUI_00059_.png', 'ComfyUI_00078_dopdu_1752149859.png', 'ComfyUI_00117_.png', 'ComfyUI_001271_-gigapixel-low resolution v2-4x-faceai v1.png', 'ComfyUI_0012733_.png', 'ComfyUI_00147_.png', 'ComfyUI_00270_dnnrb_1746788880.png', 'ComfyUI_00275_.png', 'ComfyUI_00276_.png', 'ComfyUI_00299_yoyqk_1759333635.png', 'ComfyUI_00380_.png', 'ComfyUI_00508_.png', 'ComfyUI_00532_.png', 'ComfyUI_00856_.png', 'ComfyUI_temp_fomza_00001_dkjcf_1774110394.jpg', 'ComfyUI_temp_gzlso_00002_.png', 'ComfyUI_temp_kehmg_00001_.png', 'ComfyUI_temp_krfnq_00005_.png', 'ComfyUI_temp_mrbqp_00002_olzqp_1741229650_bopjp_1741229679 (1).png', 'ComfyUI_temp_pecyg_00001_tgsjf_1741244340_gsklc_1741244341.png', 'ComfyUI_temp_rqspe_00001_.png', 'ComfyUI_temp_syuso_00001_.png', 'ComfyUI_temp_trxra_00001_.png', 'ComfyUI_temp_vadxn_00002_.png', 'ComfyUI_temp_vzreu_00001_dpgrt_1740573936_zeusf_1740573937.png', 'ComfyUI_temp_yscxy_00001_hoffd_1733663414.png', 'D5BEF482FFC8E71EA07BEC371F92C68B.jpg', 'D883A29099E389D2840A45ECFD04D34E.png', 'DA211CF612FF507580227B9D3C2A3EEB.png', 'DB6B28FCC6B5E0A4063D0076190CC139.png', 'E40F7B71F54F11B6E83889F1AC5A5BB7.png', 'E7566F90F5C332B8AF9AD3B1A0B941A6.jpg', 'EAA8590D6E0911E7F36AFCD103E8D264.jpg', 'EabnOYKJY9sU3MTcP4klscMnFxBJH9oIlonty6y2Xoz3cN6frEosv_Cqs6GI8sKO.jpg', 'F44F5A32EE7EDCEE3D034DCF09FE50EF-gigapixel-low resolution v2-2x-faceai v1.jpg', 'F4A03274340542E92F5FED61CDBF2347.png', 'F77AD6E17CAB144446DCD08134A08E97.jpg', 'FF3CC453394F9854C47119D34961BA2B.png', 'GwI44LjXIAA6ONi.jpg', 'HgHDwX3mjOsLx6ZY6ORVJeOopJXyiuUPtCuwOT1pdyUAaGLFK2UZX6tD3t_NHVhu.jpg', 'Krea2_turbo_00002_dpjso_1782963505.png', 'SkyReelHyVidComfyNative_00037.png', 'WanVideo2_1_00003_vqzma_1742051388_gsrip_1742051390.gif', 'WanVideo2_1_00004_rgoxk_1741916482_klxqa_1741916483 (1).gif', 'WanVideo2_1_00004_rgoxk_1741916482_klxqa_1741916483.gif', 'a2.jpg', 'b16a5d75-dd31-45f7-9e2d-ebbe7766f769.png', 'b80f8a176a9d1d1c6ca744232f7ea9a8470022047.jpg@1192w.webp', 'bacae8a8-acdb-4d68-80c0-9adac1c2a40f.png', 'bd3db00b17ead4b84597ce545dec69cf75e7aed8.jpg', 'c5f8f3e3e75e37761bcedc3a9600ced7fd08ea4fe4588daf2c806ba4f33e02fd.png', 'cdf0854314efd009abdaae3483a228c9af91ce920159f920ed7cac946d03d623.png', 'chillout.jpg', 'chimpanzee.webp', 'e316dcb3061bd5c8536b7844c4ab1d2537.jpeg', 'ee5aedea15e7493b14b2d3ce8b743c1677e303a6d3b4ca6ebdc956891735bcf5.png', 'example.png', 'example_image.jpg', 'face_refine_identity_frame60.png', 'face_refine_upstream_good_identity_frame0.png', 'face_refine_upstream_good_identity_frame45.png', 'fd0312b263be1abb35fc470eb0600ac8.png', 'g1.jpg', 'gao512.jpg', 'groceries.jpg', 'https---gen-krea-ai-images-4b35f06d-6629-5e6b-9ebf-b13e4336b192-png-1024.webp', 'icon.png', 'image.png', 'image2_original.png', 'image_00000.png', 'image_00001.png', 'image_00005.png', 'jimeng-2025-07-04-3342-两个人亲密的肩并肩，半身照.png', 'jimeng-2025-07-04-3740-两个人亲密的肩并肩，半身照.png', 'jimeng-2025-11-23-9587-生成美丽的Go YounJung（随机场景，随机服装，随机动作）.png', 'mQXGuugfMjaER8b8xy151w6864dc74635b793e6368993fe30552d8.jpg', 'majicmix2.jpg', 'mecha_dragon_lightning.png', 'ocr.png', 'oldman_upscaled_1.webp', 'op_1780806577260_0u2kf9.png', 'person.png', 'red_superboy_on_city_roof.png', 'ref_img_align.png', 'sam31_multiface_3person_608x448_frame0.png', 'sam31_multiface_3person_source_frame0.png', 'sam31_multiface_3refs_contact.png', 'sam31_multiface_group_contact.png', 'sam31_multiface_group_frame60.png', 'sam31_multiface_ref_alice.png', 'sam31_multiface_ref_bob.png', 'sam31_multiface_ref_guanyu.png', 'sam31_multiface_ref_woman.png', 'sam31_multiface_ref_yellow.png', 'src=http___cbu01.alicdn.com_img_ibank_O1CN017YnxMQ2Jx6PqLwcxU_!!2519349487-0-cib.jpg&refer=http___cbu01.alicdn.webp', 't8_dynamic_guidance_1v1_736x416.png', 't8_multiface_2women_blonde_reference.png', 't8_multiface_2women_blonde_reference_imagegen_v2.png', 't8_multiface_2women_dark_reference.png', 't8_multiface_2women_dark_reference_imagegen_v2.png', 'u=1283896621,1313553807&fm=253&fmt=auto&app=120&f=JPEG.webp', 'u=1499891578,649140042&fm=253&app=138&f=JPEG.jpg', 'u=1950146537,71290238&fm=3074&app=3074&f=JPEG.jpg', 'u=2482110101,3533824287&fm=253&app=138&f=JPEG.jpg', 'u=3243092070,56601017&fm=253&app=120&f=JPEG.jpg', 'u=3256714106,676291604&fm=253&app=120&f=JPEG.jpg', 'u=325979210,4118743990&fm=253&fmt=auto&app=138&f=JPEG.webp', 'u=3369626123,1067595800&fm=253&fmt=auto&app=138&f=JPEG.webp', 'u=994655153,1707769523&fm=253&app=120&f=JPEG.jpg', 'uhrRIHrhnT_small.jpg', 'up_1781149507859_t3p0.png', 'vrgdg_placeholder_i2i.png', 'yao.jpg', '制作 AI 应用封面 (1).png', '原图.jpg', '微信图片_2025-07-22_001401_037.jpg', '微信图片_2025-11-23_114429_310.jpg', '微信图片_20250308113526.png', '微信图片_20250312004525.jpg', '方.jpg', '未标题-1.jpg', '生成 3D 卡通机器人图.png', '生成 AI 应用封面 (21).png', '生成特定比例侧视图 (1).png', '生成特定比例侧视图.png', '生成蓝白色系色卡.png', '盘发.png']",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -633,102 +468,6 @@
           "name": "audio_vae",
           "type": "VAE",
           "link": 14
-        },
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
-          "name": "length",
-          "type": "INT",
-          "widget": {
-            "name": "length"
-          },
-          "link": null
-        },
-        {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_primary_audio_ordinal",
-          "type": "INT",
-          "widget": {
-            "name": "prompt_primary_audio_ordinal"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
-        },
-        {
-          "name": "ref_image_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "ref_image_size"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_video_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_video_policy"
-          },
-          "link": null
         },
         {
           "name": "drive_audio",
@@ -836,46 +575,6 @@
           "name": "av_latent",
           "type": "LATENT",
           "link": 18
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -928,16 +627,7 @@
       "flags": {},
       "order": 12,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "noise_seed",
-          "type": "INT",
-          "widget": {
-            "name": "noise_seed"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "NOISE",
@@ -976,70 +666,6 @@
           "name": "frames",
           "type": "IMAGE",
           "link": 20
-        },
-        {
-          "name": "upscale_factor",
-          "type": "FLOAT",
-          "widget": {
-            "name": "upscale_factor"
-          },
-          "link": null
-        },
-        {
-          "name": "strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength"
-          },
-          "link": null
-        },
-        {
-          "name": "blur_radius",
-          "type": "INT",
-          "widget": {
-            "name": "blur_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "blur_sigma",
-          "type": "FLOAT",
-          "widget": {
-            "name": "blur_sigma"
-          },
-          "link": null
-        },
-        {
-          "name": "motion_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "motion_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "temporal_guard",
-          "type": "FLOAT",
-          "widget": {
-            "name": "temporal_guard"
-          },
-          "link": null
-        },
-        {
-          "name": "frame_chunk_size",
-          "type": "INT",
-          "widget": {
-            "name": "frame_chunk_size"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_output_megapixels",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_output_megapixels"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1190,7 +816,7 @@
       14,
       0,
       5,
-      5,
+      1,
       "IMAGE"
     ],
     [
@@ -1222,7 +848,7 @@
       10,
       0,
       11,
-      17,
+      5,
       "IMAGE"
     ],
     [

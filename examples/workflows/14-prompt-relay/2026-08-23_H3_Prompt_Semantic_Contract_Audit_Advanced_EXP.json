@@ -8,16 +8,27 @@
       "id": 1,
       "type": "PrimitiveStringMultiline",
       "title": "Original prompt / 原始提示词（唯一来源）",
-      "pos": [0, 0],
-      "size": [500, 260],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        500,
+        260
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {"name": "value", "type": "STRING", "widget": {"name": "value"}, "link": null}
-      ],
+      "inputs": [],
       "outputs": [
-        {"name": "value", "type": "STRING", "links": [1, 2]}
+        {
+          "name": "value",
+          "type": "STRING",
+          "links": [
+            1,
+            2
+          ]
+        }
       ],
       "properties": {
         "cnr_id": "comfy-core",
@@ -31,41 +42,67 @@
       "id": 2,
       "type": "MiniMaxH3PromptProviderRouterT8Advanced",
       "title": "Provider candidate; local passthrough is the safe default",
-      "pos": [560, 0],
-      "size": [760, 850],
+      "pos": [
+        560,
+        0
+      ],
+      "size": [
+        760,
+        850
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {"name": "prompt", "type": "STRING", "link": 1, "widget": {"name": "prompt"}},
-        {"name": "provider_mode", "type": "COMBO", "widget": {"name": "provider_mode"}, "link": null},
-        {"name": "task", "type": "COMBO", "widget": {"name": "task"}, "link": null},
-        {"name": "resolution", "type": "COMBO", "widget": {"name": "resolution"}, "link": null},
-        {"name": "duration", "type": "INT", "widget": {"name": "duration"}, "link": null},
-        {"name": "endpoint", "type": "STRING", "widget": {"name": "endpoint"}, "link": null},
-        {"name": "provider_model", "type": "STRING", "widget": {"name": "provider_model"}, "link": null},
-        {"name": "api_key_env", "type": "STRING", "widget": {"name": "api_key_env"}, "link": null},
-        {"name": "confirm_provider_request", "type": "BOOLEAN", "widget": {"name": "confirm_provider_request"}, "link": null},
-        {"name": "allow_remote_endpoint", "type": "BOOLEAN", "widget": {"name": "allow_remote_endpoint"}, "link": null},
-        {"name": "max_new_tokens", "type": "INT", "widget": {"name": "max_new_tokens"}, "link": null},
-        {"name": "temperature", "type": "FLOAT", "widget": {"name": "temperature"}, "link": null},
-        {"name": "top_p", "type": "FLOAT", "widget": {"name": "top_p"}, "link": null},
-        {"name": "maximum_image_edge", "type": "INT", "widget": {"name": "maximum_image_edge"}, "link": null},
-        {"name": "jpeg_quality", "type": "INT", "widget": {"name": "jpeg_quality"}, "link": null},
-        {"name": "timeout_seconds", "type": "FLOAT", "widget": {"name": "timeout_seconds"}, "link": null},
-        {"name": "maximum_response_bytes", "type": "INT", "widget": {"name": "maximum_response_bytes"}, "link": null},
-        {"name": "strict_output_contract", "type": "BOOLEAN", "widget": {"name": "strict_output_contract"}, "link": null},
-        {"name": "ollama_keep_alive", "type": "STRING", "widget": {"name": "ollama_keep_alive"}, "link": null},
-        {"name": "contract_repair_attempts", "type": "INT", "widget": {"name": "contract_repair_attempts"}, "link": null},
-        {"name": "first_frame", "type": "IMAGE", "link": null, "shape": 7},
-        {"name": "last_frame", "type": "IMAGE", "link": null, "shape": 7}
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "link": 1,
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
       ],
       "outputs": [
-        {"name": "enhanced_prompt", "type": "STRING", "links": [3]},
-        {"name": "integrated_multimodal_description", "type": "STRING", "links": null},
-        {"name": "overall_soundscape", "type": "STRING", "links": null},
-        {"name": "non_diegetic_music", "type": "STRING", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "enhanced_prompt",
+          "type": "STRING",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "integrated_multimodal_description",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "overall_soundscape",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "non_diegetic_music",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
@@ -98,26 +135,61 @@
       "id": 3,
       "type": "MiniMaxH3PromptSemanticContractAuditT8Advanced",
       "title": "Fail-closed semantic anchors; safe_prompt stays original by default",
-      "pos": [1380, 0],
-      "size": [780, 650],
+      "pos": [
+        1380,
+        0
+      ],
+      "size": [
+        780,
+        650
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [
-        {"name": "original_prompt", "type": "STRING", "link": 2, "widget": {"name": "original_prompt"}},
-        {"name": "candidate_prompt", "type": "STRING", "link": 3, "widget": {"name": "candidate_prompt"}},
-        {"name": "semantic_contract_json", "type": "STRING", "widget": {"name": "semantic_contract_json"}, "link": null},
-        {"name": "accept_candidate_after_review", "type": "BOOLEAN", "widget": {"name": "accept_candidate_after_review"}, "link": null},
-        {"name": "preserve_exact_dialogue", "type": "BOOLEAN", "widget": {"name": "preserve_exact_dialogue"}, "link": null},
-        {"name": "preserve_source_media_tags", "type": "BOOLEAN", "widget": {"name": "preserve_source_media_tags"}, "link": null},
-        {"name": "allow_new_media_tags", "type": "BOOLEAN", "widget": {"name": "allow_new_media_tags"}, "link": null}
+        {
+          "name": "original_prompt",
+          "type": "STRING",
+          "link": 2,
+          "widget": {
+            "name": "original_prompt"
+          }
+        },
+        {
+          "name": "candidate_prompt",
+          "type": "STRING",
+          "link": 3,
+          "widget": {
+            "name": "candidate_prompt"
+          }
+        }
       ],
       "outputs": [
-        {"name": "safe_prompt", "type": "STRING", "links": null},
-        {"name": "candidate_prompt", "type": "STRING", "links": null},
-        {"name": "mechanical_pass", "type": "BOOLEAN", "links": null},
-        {"name": "decision", "type": "STRING", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "safe_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "candidate_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "mechanical_pass",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
@@ -137,14 +209,22 @@
       "id": 4,
       "type": "MarkdownNote",
       "title": "1. 接线与默认行为",
-      "pos": [0, 330],
-      "size": [500, 370],
+      "pos": [
+        0,
+        330
+      ],
+      "size": [
+        500,
+        370
+      ],
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
       "widgets_values": [
         "## 接线与默认行为\n\n- 顶部原始提示词同时连接 Provider 和语义审计，避免手工复制后不一致。\n- Provider 默认 `local_passthrough`，不会联网。改成外部服务前，仍需按 Provider 节点要求显式确认。\n- 下游 H3 Conditioning 应连接审计节点的 `safe_prompt`，不要直接连接 Provider 的候选输出。\n- `accept_candidate_after_review=false` 时，即使机械检查通过，`safe_prompt` 也保持原文。"
       ]
@@ -153,14 +233,22 @@
       "id": 5,
       "type": "MarkdownNote",
       "title": "2. 语义合同写法",
-      "pos": [540, 910],
-      "size": [760, 450],
+      "pos": [
+        540,
+        910
+      ],
+      "size": [
+        760,
+        450
+      ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
       "widgets_values": [
         "## 语义合同写法\n\n- `required_groups`：每组 `any_of` 至少命中一个，例如 turns / rotates / 旋转。\n- `forbidden_groups`：命中任意一个即拒绝，例如 stands still / motionless / 静止不动。\n- `scope` 可选 `full`、`integrated`、`soundscape`、`music`。Provider输出已是标准三字段时，优先使用具体字段；需要兼容本地原文直通时可用 `full`。\n- 英文按词边界匹配，`turn` 不会误命中 `return`；中日韩短语按规范化后的子串匹配。\n- 空合同不会自动通过，而是 `ABSTAIN_NO_SEMANTIC_ANCHORS`。"
       ]
@@ -169,28 +257,63 @@
       "id": 6,
       "type": "MarkdownNote",
       "title": "3. 结果解释与科学边界",
-      "pos": [1380, 720],
-      "size": [780, 470],
+      "pos": [
+        1380,
+        720
+      ],
+      "size": [
+        780,
+        470
+      ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
       "widgets_values": [
         "## 结果解释\n\n- `REJECT`：缺少必需动作、出现禁用动作、对白变化、媒体标签丢失或合同无效。\n- `REVIEW_REQUIRED`：机械合同通过，但尚未人工确认，输出仍是原文。\n- `ACCEPTED`：机械通过且用户显式打开接受开关，才输出候选提示词。\n- `mechanical_pass` 只证明你写入JSON的词组合同，不证明整句语义等价、画质提升、Provider质量或最终视频质量。\n- 默认严格保持 `<d>...</d>` 对白数量与字面内容，并要求保留原提示词里的媒体标签。新增媒体标签默认允许，也可关闭。"
       ]
     }
   ],
   "links": [
-    [1, 1, 0, 2, 0, "STRING"],
-    [2, 1, 0, 3, 0, "STRING"],
-    [3, 2, 0, 3, 1, "STRING"]
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      0,
+      "STRING"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      1,
+      "STRING"
+    ]
   ],
   "groups": [],
   "config": {},
   "extra": {
-    "ds": {"scale": 0.75, "offset": [120, 120]},
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
     "workflow_title": "MiniMax H3 Prompt Semantic Contract Audit Advanced"
   },
   "version": 0.4

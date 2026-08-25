@@ -6,81 +6,207 @@
       "id": 1,
       "type": "MiniMaxH3LongVideoPlannerT8",
       "title": "Continuation Planner — segment 1, 22-frame context",
-      "pos": [650, 40],
-      "size": [440, 330],
+      "pos": [
+        650,
+        40
+      ],
+      "size": [
+        440,
+        330
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {"name": "chain_id", "type": "STRING", "widget": {"name": "chain_id"}, "link": null},
-        {"name": "segment_index", "type": "INT", "widget": {"name": "segment_index"}, "link": null},
-        {"name": "new_duration_seconds", "type": "FLOAT", "widget": {"name": "new_duration_seconds"}, "link": null},
-        {"name": "context_frames", "type": "COMBO", "widget": {"name": "context_frames"}, "link": null},
-        {"name": "minimum_render_frames", "type": "INT", "widget": {"name": "minimum_render_frames"}, "link": null},
-        {"name": "timeline_start_seconds", "type": "FLOAT", "widget": {"name": "timeline_start_seconds"}, "link": null},
-        {"name": "is_final_segment", "type": "BOOLEAN", "widget": {"name": "is_final_segment"}, "link": null}
-      ],
+      "inputs": [],
       "outputs": [
-        {"name": "chain_id", "type": "STRING", "links": null},
-        {"name": "segment_index", "type": "INT", "links": [1]},
-        {"name": "length", "type": "INT", "links": [3]},
-        {"name": "context_frames", "type": "INT", "links": [2]},
-        {"name": "trim_start_seconds", "type": "FLOAT", "links": null},
-        {"name": "final_duration_seconds", "type": "FLOAT", "links": null},
-        {"name": "timeline_start_seconds", "type": "FLOAT", "links": null},
-        {"name": "timeline_end_seconds", "type": "FLOAT", "links": null},
-        {"name": "save_context", "type": "BOOLEAN", "links": null},
-        {"name": "report_json", "type": "STRING", "links": [4]}
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "trim_start_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "final_duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "timeline_start_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "timeline_end_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "save_context",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            4
+          ]
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3LongVideoPlannerT8"
       },
-      "widgets_values": ["native_latent_chain", 1, 4.25, 22, 124, 5.166666667, false]
+      "widgets_values": [
+        "native_latent_chain",
+        1,
+        4.25,
+        22,
+        124,
+        5.166666667,
+        false
+      ]
     },
     {
       "id": 2,
       "type": "MiniMaxH3LongVideoConditioningT8",
       "title": "Use the exact Conditioning that produced this continuation",
-      "pos": [1160, 40],
-      "size": [620, 690],
+      "pos": [
+        1160,
+        40
+      ],
+      "size": [
+        620,
+        690
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {"name": "model", "type": "MODEL", "link": null},
-        {"name": "clip", "type": "CLIP", "link": null},
-        {"name": "video_vae", "type": "VAE", "link": null},
-        {"name": "audio_vae", "type": "VAE", "link": null},
-        {"name": "context", "type": "H3_T8_CONTEXT", "link": null},
-        {"name": "segment_index", "type": "INT", "link": 1},
-        {"name": "context_frames", "type": "INT", "link": 2},
-        {"name": "context_audio", "type": "COMBO", "widget": {"name": "context_audio"}, "link": null},
-        {"name": "prompt", "type": "STRING", "widget": {"name": "prompt"}, "link": null},
-        {"name": "width", "type": "INT", "widget": {"name": "width"}, "link": null},
-        {"name": "height", "type": "INT", "widget": {"name": "height"}, "link": null},
-        {"name": "length", "type": "INT", "link": 3},
-        {"name": "task_type", "type": "COMBO", "widget": {"name": "task_type"}, "link": null},
-        {"name": "audio_mode", "type": "COMBO", "widget": {"name": "audio_mode"}, "link": null},
-        {"name": "audio_denoise_strength", "type": "FLOAT", "widget": {"name": "audio_denoise_strength"}, "link": null},
-        {"name": "add_source_as_reference", "type": "BOOLEAN", "widget": {"name": "add_source_as_reference"}, "link": null},
-        {"name": "prompt_primary_audio_ordinal", "type": "INT", "widget": {"name": "prompt_primary_audio_ordinal"}, "link": null},
-        {"name": "strict_prompt_tags", "type": "BOOLEAN", "widget": {"name": "strict_prompt_tags"}, "link": null},
-        {"name": "ref_image_size", "type": "COMBO", "widget": {"name": "ref_image_size"}, "link": null},
-        {"name": "reference_video_policy", "type": "COMBO", "widget": {"name": "reference_video_policy"}, "link": null},
-        {"name": "drive_audio", "type": "AUDIO", "link": null},
-        {"name": "final_audio", "type": "AUDIO", "link": null},
-        {"name": "first_frame", "type": "IMAGE", "link": null},
-        {"name": "last_frame", "type": "IMAGE", "link": null}
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "link": null
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 1
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": 2
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 3
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null
+        }
       ],
       "outputs": [
-        {"name": "model", "type": "MODEL", "links": null},
-        {"name": "positive", "type": "CONDITIONING", "links": null},
-        {"name": "av_latent", "type": "LATENT", "links": null},
-        {"name": "mux_audio", "type": "AUDIO", "links": null},
-        {"name": "conditioned_prompt", "type": "STRING", "links": null},
-        {"name": "media_map_json", "type": "STRING", "links": null},
-        {"name": "report_json", "type": "STRING", "links": [5]}
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            5
+          ]
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
@@ -105,99 +231,229 @@
       "id": 3,
       "type": "MiniMaxH3NativeLatentContinuationConcatT8Advanced",
       "title": "Append sampled continuation; remove proven 5/22/39-frame context",
-      "pos": [1860, 100],
-      "size": [700, 470],
+      "pos": [
+        1860,
+        100
+      ],
+      "size": [
+        700,
+        470
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [
-        {"name": "timeline_latent", "type": "LATENT", "link": null},
-        {"name": "continuation_segment", "type": "LATENT", "link": null},
-        {"name": "planner_report_json", "type": "STRING", "link": 4},
-        {"name": "conditioning_report_json", "type": "STRING", "link": 5},
-        {"name": "output_device", "type": "COMBO", "widget": {"name": "output_device"}, "link": null},
-        {"name": "audio_context_policy", "type": "COMBO", "widget": {"name": "audio_context_policy"}, "link": null}
+        {
+          "name": "timeline_latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "continuation_segment",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "planner_report_json",
+          "type": "STRING",
+          "link": 4
+        },
+        {
+          "name": "conditioning_report_json",
+          "type": "STRING",
+          "link": 5
+        }
       ],
       "outputs": [
-        {"name": "av_latent", "type": "LATENT", "links": null},
-        {"name": "physical_frame_count", "type": "INT", "links": null},
-        {"name": "visible_frame_count", "type": "INT", "links": null},
-        {"name": "trim_tail_frames_after_decode", "type": "INT", "links": null},
-        {"name": "audio_latent_steps", "type": "INT", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "physical_frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "visible_frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "trim_tail_frames_after_decode",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "audio_latent_steps",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3NativeLatentContinuationConcatT8Advanced"
       },
-      "widgets_values": ["cpu", "require_video_and_audio"]
+      "widgets_values": [
+        "cpu",
+        "require_video_and_audio"
+      ]
     },
     {
       "id": 4,
       "type": "MarkdownNote",
       "title": "① Four connections are mandatory",
-      "pos": [0, 0],
-      "size": [570, 360],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        570,
+        360
+      ],
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 正确接线\n\n`timeline_latent`接第一段或上一次本节点输出；`continuation_segment`接**同一Long Video Conditioning经过完整采样后的denoised_output**。Planner与Conditioning的`report_json`必须像本模板一样直接连接，不能手抄。节点会核对chain、segment、画布、render帧数、motion keyframe数和时间线位置，防止把不匹配的段静默拼进去。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 正确接线\n\n`timeline_latent`接第一段或上一次本节点输出；`continuation_segment`接**同一Long Video Conditioning经过完整采样后的denoised_output**。Planner与Conditioning的`report_json`必须像本模板一样直接连接，不能手抄。节点会核对chain、segment、画布、render帧数、motion keyframe数和时间线位置，防止把不匹配的段静默拼进去。"
+      ]
     },
     {
       "id": 5,
       "type": "MarkdownNote",
       "title": "② Full Long Video context, not always five frames",
-      "pos": [0, 410],
-      "size": [570, 390],
+      "pos": [
+        0,
+        410
+      ],
+      "size": [
+        570,
+        390
+      ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 时格计算\n\n普通独立段拼接只去5帧前缀；Long Video续段已经把上一段的5/22/39帧作为motion context重新注入，因此必须去掉完整上下文。示例：124帧时间线 + 124帧续段，22帧context后得到226帧，视频latent T=67、音频latent T=377；再接39帧context的124帧续段得到311帧。音频裁剪按累计24fps→40Hz相位计算，不固定写死8、9、37或65步。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 时格计算\n\n普通独立段拼接只去5帧前缀；Long Video续段已经把上一段的5/22/39帧作为motion context重新注入，因此必须去掉完整上下文。示例：124帧时间线 + 124帧续段，22帧context后得到226帧，视频latent T=67、音频latent T=377；再接39帧context的124帧续段得到311帧。音频裁剪按累计24fps→40Hz相位计算，不固定写死8、9、37或65步。"
+      ]
     },
     {
       "id": 6,
       "type": "MarkdownNote",
       "title": "③ Audio-safe default and final-tail rule",
-      "pos": [1860, 640],
-      "size": [700, 390],
+      "pos": [
+        1860,
+        640
+      ],
+      "size": [
+        700,
+        390
+      ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 音频与最终裁剪\n\n默认`require_video_and_audio`要求Context Load提供上一段画面和音频尾部；`allow_video_only`只在你明确接受音频连续性未被证明时使用。所有段先在latent域合并，只做一次AV VAE Decode。最终段若Planner报告`hidden_tail_frames>0`，必须在**一次解码完成后**按`trim_tail_frames_after_decode`裁掉隐藏尾帧；不要提前裁latent破坏原生时间格。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 音频与最终裁剪\n\n默认`require_video_and_audio`要求Context Load提供上一段画面和音频尾部；`allow_video_only`只在你明确接受音频连续性未被证明时使用。所有段先在latent域合并，只做一次AV VAE Decode。最终段若Planner报告`hidden_tail_frames>0`，必须在**一次解码完成后**按`trim_tail_frames_after_decode`裁掉隐藏尾帧；不要提前裁latent破坏原生时间格。"
+      ]
     },
     {
       "id": 7,
       "type": "MarkdownNote",
       "title": "④ Scientific boundary",
-      "pos": [650, 790],
-      "size": [1080, 280],
+      "pos": [
+        650,
+        790
+      ],
+      "size": [
+        1080,
+        280
+      ],
       "flags": {},
       "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 能证明什么\n\n该节点只证明Planner/Conditioning报告对应的5/22/39帧结构及双时钟裁剪精确；报告JSON是本项目节点的接线证据，不是第三方采样器实际消费Conditioning的密码学证明。它不恢复运行中的NFE、Transformer、采样器、队列或CUDA状态，也不自动驱逐ComfyUI缓存。连续性、听感、画质、显存收益和16GB安全仍需独立验收。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 能证明什么\n\n该节点只证明Planner/Conditioning报告对应的5/22/39帧结构及双时钟裁剪精确；报告JSON是本项目节点的接线证据，不是第三方采样器实际消费Conditioning的密码学证明。它不恢复运行中的NFE、Transformer、采样器、队列或CUDA状态，也不自动驱逐ComfyUI缓存。连续性、听感、画质、显存收益和16GB安全仍需独立验收。"
+      ]
     }
   ],
   "links": [
-    [1, 1, 1, 2, 5, "INT"],
-    [2, 1, 3, 2, 6, "INT"],
-    [3, 1, 2, 2, 11, "INT"],
-    [4, 1, 9, 3, 2, "STRING"],
-    [5, 2, 6, 3, 3, "STRING"]
+    [
+      1,
+      1,
+      1,
+      2,
+      5,
+      "INT"
+    ],
+    [
+      2,
+      1,
+      3,
+      2,
+      6,
+      "INT"
+    ],
+    [
+      3,
+      1,
+      2,
+      2,
+      7,
+      "INT"
+    ],
+    [
+      4,
+      1,
+      9,
+      3,
+      2,
+      "STRING"
+    ],
+    [
+      5,
+      2,
+      6,
+      3,
+      3,
+      "STRING"
+    ]
   ],
   "groups": [],
   "config": {},
-  "extra": {"ds": {"scale": 0.75, "offset": [80, 80]}},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        80,
+        80
+      ]
+    }
+  },
   "version": 0.4
 }

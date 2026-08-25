@@ -34,62 +34,6 @@
           "name": "audio_vae",
           "type": "VAE",
           "link": null
-        },
-        {
-          "name": "mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "mode"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_current_headroom_mib",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_current_headroom_mib"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_estimated_output_mib",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_estimated_output_mib"
-          },
-          "link": null
-        },
-        {
-          "name": "enforcement",
-          "type": "COMBO",
-          "widget": {
-            "name": "enforcement"
-          },
-          "link": null
-        },
-        {
-          "name": "video_tile_size",
-          "type": "INT",
-          "widget": {
-            "name": "video_tile_size"
-          },
-          "link": null
-        },
-        {
-          "name": "video_tile_overlap",
-          "type": "INT",
-          "widget": {
-            "name": "video_tile_overlap"
-          },
-          "link": null
-        },
-        {
-          "name": "video_tile_temporal",
-          "type": "INT",
-          "widget": {
-            "name": "video_tile_temporal"
-          },
-          "link": null
         }
       ],
       "outputs": [

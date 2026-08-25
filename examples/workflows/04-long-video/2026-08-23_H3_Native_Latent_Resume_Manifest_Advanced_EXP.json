@@ -6,90 +6,165 @@
       "id": 1,
       "type": "MiniMaxH3NativeLatentResumeManifestT8Advanced",
       "title": "Create a baseline or verify one reloaded native H3 AV latent",
-      "pos": [700, 60],
-      "size": [680, 430],
+      "pos": [
+        700,
+        60
+      ],
+      "size": [
+        680,
+        430
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [
-        {"name": "av_latent", "type": "LATENT", "link": null},
-        {"name": "checkpoint_id", "type": "STRING", "widget": {"name": "checkpoint_id"}, "link": null},
-        {"name": "expected_manifest_json", "type": "STRING", "widget": {"name": "expected_manifest_json"}, "link": null},
-        {"name": "mismatch_policy", "type": "COMBO", "widget": {"name": "mismatch_policy"}, "link": null},
-        {"name": "hash_chunk_megabytes", "type": "INT", "widget": {"name": "hash_chunk_megabytes"}, "link": null}
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": null
+        }
       ],
       "outputs": [
-        {"name": "status", "type": "STRING", "links": null},
-        {"name": "resume_verified", "type": "BOOLEAN", "links": null},
-        {"name": "content_sha256", "type": "STRING", "links": null},
-        {"name": "manifest_json", "type": "STRING", "links": null}
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "resume_verified",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "content_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3NativeLatentResumeManifestT8Advanced"
       },
-      "widgets_values": ["timeline_checkpoint", "", "error", 8]
+      "widgets_values": [
+        "timeline_checkpoint",
+        "",
+        "error",
+        8
+      ]
     },
     {
       "id": 2,
       "type": "MarkdownNote",
       "title": "① 首次运行：创建基线",
-      "pos": [0, 0],
-      "size": [620, 300],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        620,
+        300
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 首次记录\n\n连接**采样完成或重新加载后的完整H3联合AV latent**。为每个镜头/阶段设置唯一`checkpoint_id`，保持`expected_manifest_json`为空。节点返回`BASELINE_CREATED`和精确SHA-256；请把latent与`manifest_json`作为同一检查点成对保存。节点自身不会保存文件。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 首次记录\n\n连接**采样完成或重新加载后的完整H3联合AV latent**。为每个镜头/阶段设置唯一`checkpoint_id`，保持`expected_manifest_json`为空。节点返回`BASELINE_CREATED`和精确SHA-256；请把latent与`manifest_json`作为同一检查点成对保存。节点自身不会保存文件。"
+      ]
     },
     {
       "id": 3,
       "type": "MarkdownNote",
       "title": "② 恢复运行：默认严格核对",
-      "pos": [0, 340],
-      "size": [620, 350],
+      "pos": [
+        0,
+        340
+      ],
+      "size": [
+        620,
+        350
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 崩溃后核对\n\n重新加载latent后，把先前保存的完整`manifest_json`粘贴到`expected_manifest_json`。默认`mismatch_policy=error`：任一AV样本、嵌套mask、受支持元数据、shape、dtype或`checkpoint_id`不同都会阻断。只有`status=MATCH`且`resume_verified=true`才能说明检查点内容逐字节一致。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 崩溃后核对\n\n重新加载latent后，把先前保存的完整`manifest_json`粘贴到`expected_manifest_json`。默认`mismatch_policy=error`：任一AV样本、嵌套mask、受支持元数据、shape、dtype或`checkpoint_id`不同都会阻断。只有`status=MATCH`且`resume_verified=true`才能说明检查点内容逐字节一致。"
+      ]
     },
     {
       "id": 4,
       "type": "MarkdownNote",
       "title": "③ 分块内存与哈希范围",
-      "pos": [700, 540],
-      "size": [680, 340],
+      "pos": [
+        700,
+        540
+      ],
+      "size": [
+        680,
+        340
+      ],
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 内存策略\n\n默认每次最多复制约8MiB到CPU做哈希；`hash_chunk_megabytes`只影响速度和临时内存，不能改变结果。内容范围包含video/audio latent、可选嵌套noise mask及受支持的非易失元数据。节点不运行采样、不解码VAE、不写文件，也不会自动卸载ComfyUI缓存。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 内存策略\n\n默认每次最多复制约8MiB到CPU做哈希；`hash_chunk_megabytes`只影响速度和临时内存，不能改变结果。内容范围包含video/audio latent、可选嵌套noise mask及受支持的非易失元数据。节点不运行采样、不解码VAE、不写文件，也不会自动卸载ComfyUI缓存。"
+      ]
     },
     {
       "id": 5,
       "type": "MarkdownNote",
       "title": "④ MATCH不等于生成续跑完成",
-      "pos": [1420, 60],
-      "size": [650, 420],
+      "pos": [
+        1420,
+        60
+      ],
+      "size": [
+        650,
+        420
+      ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 科学边界\n\n`MATCH`只证明保存/重载后的latent内容完全相同；它不保存扩散器内部迭代状态，不能从某个NFE中间步继续，也不证明下一段画面/对白自然衔接、降低显存或16GB安全。真正可恢复流程仍需外部授权的latent保存/加载节点或Long Video manifest，把latent文件与这里的JSON一起持久化。`report_only`仅供诊断，不应接到自动续跑。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 科学边界\n\n`MATCH`只证明保存/重载后的latent内容完全相同；它不保存扩散器内部迭代状态，不能从某个NFE中间步继续，也不证明下一段画面/对白自然衔接、降低显存或16GB安全。真正可恢复流程仍需外部授权的latent保存/加载节点或Long Video manifest，把latent文件与这里的JSON一起持久化。`report_only`仅供诊断，不应接到自动续跑。"
+      ]
     }
   ],
   "links": [],
   "groups": [],
   "config": {},
-  "extra": {"ds": {"scale": 0.85, "offset": [80, 80]}},
+  "extra": {
+    "ds": {
+      "scale": 0.85,
+      "offset": [
+        80,
+        80
+      ]
+    }
+  },
   "version": 0.4
 }

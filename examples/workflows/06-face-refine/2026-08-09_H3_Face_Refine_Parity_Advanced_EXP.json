@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "file",
-          "type": "COMBO",
-          "widget": {
-            "name": "file"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VIDEO",
@@ -117,16 +108,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -170,150 +152,6 @@
           "name": "frames",
           "type": "IMAGE",
           "link": 2
-        },
-        {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_model",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_model"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_device",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_device"
-          },
-          "link": null
-        },
-        {
-          "name": "confidence",
-          "type": "FLOAT",
-          "widget": {
-            "name": "confidence"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_x",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_x"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_y",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_y"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_width",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_width"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_height",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_height"
-          },
-          "link": null
-        },
-        {
-          "name": "scene_cut_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scene_cut_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "max_track_jump",
-          "type": "FLOAT",
-          "widget": {
-            "name": "max_track_jump"
-          },
-          "link": null
-        },
-        {
-          "name": "max_gap_frames",
-          "type": "INT",
-          "widget": {
-            "name": "max_gap_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "center_smooth_window",
-          "type": "INT",
-          "widget": {
-            "name": "center_smooth_window"
-          },
-          "link": null
-        },
-        {
-          "name": "size_smooth_window",
-          "type": "INT",
-          "widget": {
-            "name": "size_smooth_window"
-          },
-          "link": null
-        },
-        {
-          "name": "crop_factor",
-          "type": "FLOAT",
-          "widget": {
-            "name": "crop_factor"
-          },
-          "link": null
-        },
-        {
-          "name": "canvas_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "canvas_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "require_h3_grid",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "require_h3_grid"
-          },
-          "link": null
-        },
-        {
-          "name": "analysis_chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "analysis_chunk_frames"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -416,16 +254,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -460,16 +289,7 @@
       "flags": {},
       "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -503,32 +323,7 @@
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "['stable_diffusion', 'stable_cascade', 'sd3', 'stable_audio', 'mochi', 'ltxv', 'pixart', 'cosmos', 'lumina2', 'wan', 'hidream', 'chroma', 'ace', 'omnigen2', 'qwen_image', 'hunyuan_image', 'flux2', 'ovis', 'longcat_image', 'cogvideox', 'lens', 'pixeldit', 'ideogram4', 'boogu', 'krea2', 'joyimage', 'mage', 'minimax']",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "['default', 'cpu']",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -563,24 +358,7 @@
       "flags": {},
       "order": 7,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -619,22 +397,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 4
-        },
-        {
-          "name": "lora_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "lora_name"
-          },
-          "link": null
-        },
-        {
-          "name": "strength_model",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength_model"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -675,22 +437,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 5
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -744,14 +490,6 @@
           "link": 11
         },
         {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
           "name": "width",
           "type": "INT",
           "link": 6,
@@ -774,70 +512,6 @@
           "widget": {
             "name": "length"
           }
-        },
-        {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_primary_audio_ordinal",
-          "type": "INT",
-          "widget": {
-            "name": "prompt_primary_audio_ordinal"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
-        },
-        {
-          "name": "ref_image_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "ref_image_size"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_video_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_video_policy"
-          },
-          "link": null
         },
         {
           "name": "drive_audio",
@@ -971,22 +645,6 @@
           "name": "face_plan",
           "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
           "link": 18
-        },
-        {
-          "name": "audio_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "allow_multi_shot_exp",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "allow_multi_shot_exp"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1046,78 +704,6 @@
           "name": "face_plan",
           "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
           "link": 20
-        },
-        {
-          "name": "strength_small_face",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength_small_face"
-          },
-          "link": null
-        },
-        {
-          "name": "strength_large_face",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength_large_face"
-          },
-          "link": null
-        },
-        {
-          "name": "scale_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "scale_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "face_px_small",
-          "type": "FLOAT",
-          "widget": {
-            "name": "face_px_small"
-          },
-          "link": null
-        },
-        {
-          "name": "face_px_large",
-          "type": "FLOAT",
-          "widget": {
-            "name": "face_px_large"
-          },
-          "link": null
-        },
-        {
-          "name": "gamma",
-          "type": "FLOAT",
-          "widget": {
-            "name": "gamma"
-          },
-          "link": null
-        },
-        {
-          "name": "smooth_frames",
-          "type": "INT",
-          "widget": {
-            "name": "smooth_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "video_mask_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "video_mask_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "require_locked_audio",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "require_locked_audio"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1167,16 +753,7 @@
       "flags": {},
       "order": 13,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "noise_seed",
-          "type": "INT",
-          "widget": {
-            "name": "noise_seed"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "NOISE",
@@ -1252,16 +829,7 @@
       "flags": {},
       "order": 15,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "SAMPLER",
@@ -1299,30 +867,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 23
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "denoise",
-          "type": "FLOAT",
-          "widget": {
-            "name": "denoise"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1498,70 +1042,6 @@
           "name": "face_plan",
           "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
           "link": 34
-        },
-        {
-          "name": "paste_region",
-          "type": "COMBO",
-          "widget": {
-            "name": "paste_region"
-          },
-          "link": null
-        },
-        {
-          "name": "mask_dilation",
-          "type": "INT",
-          "widget": {
-            "name": "mask_dilation"
-          },
-          "link": null
-        },
-        {
-          "name": "feather_source_px",
-          "type": "FLOAT",
-          "widget": {
-            "name": "feather_source_px"
-          },
-          "link": null
-        },
-        {
-          "name": "colour_match",
-          "type": "FLOAT",
-          "widget": {
-            "name": "colour_match"
-          },
-          "link": null
-        },
-        {
-          "name": "blend",
-          "type": "FLOAT",
-          "widget": {
-            "name": "blend"
-          },
-          "link": null
-        },
-        {
-          "name": "undetected_frames",
-          "type": "COMBO",
-          "widget": {
-            "name": "undetected_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "max_face_mean_abs_delta",
-          "type": "FLOAT",
-          "widget": {
-            "name": "max_face_mean_abs_delta"
-          },
-          "link": null
-        },
-        {
-          "name": "processing_device",
-          "type": "COMBO",
-          "widget": {
-            "name": "processing_device"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1625,16 +1105,7 @@
       "flags": {},
       "order": 23,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -1698,22 +1169,6 @@
           "name": "stitch_report_json",
           "type": "STRING",
           "link": 40
-        },
-        {
-          "name": "profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "profile"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_crop_face_height_px",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_crop_face_height_px"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1761,25 +1216,9 @@
           "link": 41
         },
         {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
           "name": "audio",
           "type": "AUDIO",
           "link": 36
-        },
-        {
-          "name": "bit_depth",
-          "type": "INT",
-          "widget": {
-            "name": "bit_depth"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1820,30 +1259,6 @@
           "name": "video",
           "type": "VIDEO",
           "link": 37
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "COMBO",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
-        },
-        {
-          "name": "codec",
-          "type": "COMFY_DYNAMICCOMBO_V3",
-          "widget": {
-            "name": "codec"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1924,7 +1339,7 @@
       4,
       5,
       11,
-      4,
+      3,
       "INT"
     ],
     [
@@ -1932,7 +1347,7 @@
       4,
       6,
       11,
-      5,
+      4,
       "INT"
     ],
     [
@@ -1940,7 +1355,7 @@
       4,
       7,
       11,
-      6,
+      5,
       "INT"
     ],
     [
@@ -1972,7 +1387,7 @@
       2,
       1,
       11,
-      15,
+      6,
       "AUDIO"
     ],
     [
@@ -1980,7 +1395,7 @@
       3,
       0,
       11,
-      19,
+      10,
       "IMAGE"
     ],
     [
@@ -2164,7 +1579,7 @@
       2,
       1,
       21,
-      2,
+      1,
       "AUDIO"
     ],
     [
@@ -2212,7 +1627,7 @@
       24,
       0,
       11,
-      20,
+      11,
       "IMAGE"
     ],
     [

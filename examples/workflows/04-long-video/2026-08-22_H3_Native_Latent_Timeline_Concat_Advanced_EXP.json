@@ -3,42 +3,152 @@
   "last_link_id": 0,
   "nodes": [
     {
-      "id": 1, "type": "MiniMaxH3NativeLatentTimelineConcatT8Advanced", "title": "Connect two or more independently sampled complete H3 AV latents",
-      "pos": [680, 60], "size": [650, 330], "flags": {}, "order": 0, "mode": 0,
+      "id": 1,
+      "type": "MiniMaxH3NativeLatentTimelineConcatT8Advanced",
+      "title": "Connect two or more independently sampled complete H3 AV latents",
+      "pos": [
+        680,
+        60
+      ],
+      "size": [
+        650,
+        330
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
       "inputs": [
-        {"name": "first_segment", "type": "LATENT", "link": null},
-        {"name": "second_segment", "type": "LATENT", "link": null},
-        {"name": "output_device", "type": "COMBO", "widget": {"name": "output_device"}, "link": null},
-        {"name": "require_identical_metadata", "type": "BOOLEAN", "widget": {"name": "require_identical_metadata"}, "link": null}
+        {
+          "name": "first_segment",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "second_segment",
+          "type": "LATENT",
+          "link": null
+        }
       ],
       "outputs": [
-        {"name": "av_latent", "type": "LATENT", "links": null},
-        {"name": "total_frame_count", "type": "INT", "links": null},
-        {"name": "segment_count", "type": "INT", "links": null},
-        {"name": "audio_latent_steps", "type": "INT", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "total_frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "segment_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "audio_latent_steps",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3NativeLatentTimelineConcatT8Advanced"},
-      "widgets_values": ["cpu", false]
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3NativeLatentTimelineConcatT8Advanced"
+      },
+      "widgets_values": [
+        "cpu",
+        false
+      ]
     },
     {
-      "id": 2, "type": "MarkdownNote", "title": "① 输入必须是完整联合AV latent",
-      "pos": [0, 0], "size": [600, 360], "flags": {}, "order": 1, "mode": 0,
-      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 接法\n\n把每段**采样完成后的denoised_output**连接到`first_segment`、`second_segment`和可增长的`segment_N`。所有段必须是batch 1、相同画布、相同dtype、视频latent T满足`5n+2`、音频latent T精确等于`round(frames/24*40)`。这不是把空Conditioning latent直接拼起来。"]
+      "id": 2,
+      "type": "MarkdownNote",
+      "title": "① 输入必须是完整联合AV latent",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        600,
+        360
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 接法\n\n把每段**采样完成后的denoised_output**连接到`first_segment`、`second_segment`和可增长的`segment_N`。所有段必须是batch 1、相同画布、相同dtype、视频latent T满足`5n+2`、音频latent T精确等于`round(frames/24*40)`。这不是把空Conditioning latent直接拼起来。"
+      ]
     },
     {
-      "id": 3, "type": "MarkdownNote", "title": "② 视频与音频不是固定同裁",
-      "pos": [0, 440], "size": [600, 380], "flags": {}, "order": 2, "mode": 0,
-      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 原生时格公式\n\n每个后续视频段去掉恰好5帧对应的前2个video latent step；音频不能固定去8或9步，而要按累计总帧数计算：`next_audio_T=round((prev_frames+segment_frames-5)/24*40)`，再由差值得到本段裁剪量。两个22帧段输出39帧/65音频步；三个124帧段输出362帧/603音频步。"]
+      "id": 3,
+      "type": "MarkdownNote",
+      "title": "② 视频与音频不是固定同裁",
+      "pos": [
+        0,
+        440
+      ],
+      "size": [
+        600,
+        380
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 原生时格公式\n\n每个后续视频段去掉恰好5帧对应的前2个video latent step；音频不能固定去8或9步，而要按累计总帧数计算：`next_audio_T=round((prev_frames+segment_frames-5)/24*40)`，再由差值得到本段裁剪量。两个22帧段输出39帧/65音频步；三个124帧段输出362帧/603音频步。"
+      ]
     },
     {
-      "id": 4, "type": "MarkdownNote", "title": "③ 当前不是接缝质量保证",
-      "pos": [680, 500], "size": [650, 380], "flags": {}, "order": 3, "mode": 0,
-      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 实验边界与实测\n\n本机一组256×256、22+22帧、Turbo8真实测试精确输出39帧/52000无损采样；单次解码比两段分别解码的边界MAD和单采样音频跳变更低，但前后100ms仍有8.32dB电平差。默认`output_device=cpu`只避免把新的合并结果分配到GPU；ComfyUI仍可能缓存输入latent。两次测试整卡最低余量仅341.11/144.18MiB，未过512MiB门槛。独立段必须另有正确续段条件；本节点不保证无缝、画质更好、降低VRAM或16GB安全。"]
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "③ 当前不是接缝质量保证",
+      "pos": [
+        680,
+        500
+      ],
+      "size": [
+        650,
+        380
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 实验边界与实测\n\n本机一组256×256、22+22帧、Turbo8真实测试精确输出39帧/52000无损采样；单次解码比两段分别解码的边界MAD和单采样音频跳变更低，但前后100ms仍有8.32dB电平差。默认`output_device=cpu`只避免把新的合并结果分配到GPU；ComfyUI仍可能缓存输入latent。两次测试整卡最低余量仅341.11/144.18MiB，未过512MiB门槛。独立段必须另有正确续段条件；本节点不保证无缝、画质更好、降低VRAM或16GB安全。"
+      ]
     }
   ],
-  "links": [], "groups": [], "config": {}, "extra": {"ds": {"scale": 0.9, "offset": [90, 90]}}, "version": 0.4
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9,
+      "offset": [
+        90,
+        90
+      ]
+    }
+  },
+  "version": 0.4
 }

@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -62,16 +53,7 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -104,16 +86,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -146,16 +119,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -188,16 +152,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "value",
-          "type": "STRING",
-          "widget": {
-            "name": "value"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "STRING",
@@ -240,54 +195,6 @@
           "name": "expected_text",
           "type": "STRING",
           "link": 2
-        },
-        {
-          "name": "asr_model_directory",
-          "type": "STRING",
-          "widget": {
-            "name": "asr_model_directory"
-          },
-          "link": null
-        },
-        {
-          "name": "language",
-          "type": "COMBO",
-          "widget": {
-            "name": "language"
-          },
-          "link": null
-        },
-        {
-          "name": "beam_size",
-          "type": "INT",
-          "widget": {
-            "name": "beam_size"
-          },
-          "link": null
-        },
-        {
-          "name": "cpu_threads",
-          "type": "INT",
-          "widget": {
-            "name": "cpu_threads"
-          },
-          "link": null
-        },
-        {
-          "name": "unload_after_analyze",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "unload_after_analyze"
-          },
-          "link": null
-        },
-        {
-          "name": "tail_activity_threshold_dbfs",
-          "type": "FLOAT",
-          "widget": {
-            "name": "tail_activity_threshold_dbfs"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -374,110 +281,6 @@
           "link": 4
         },
         {
-          "name": "target_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "target_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "speech_start_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "speech_start_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "output_sample_rate",
-          "type": "COMBO",
-          "widget": {
-            "name": "output_sample_rate"
-          },
-          "link": null
-        },
-        {
-          "name": "music_fit_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "music_fit_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "ambience_fit_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "ambience_fit_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "sfx_fit_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "sfx_fit_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "loop_crossfade_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "loop_crossfade_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "speech_gain_db",
-          "type": "FLOAT",
-          "widget": {
-            "name": "speech_gain_db"
-          },
-          "link": null
-        },
-        {
-          "name": "music_gain_db",
-          "type": "FLOAT",
-          "widget": {
-            "name": "music_gain_db"
-          },
-          "link": null
-        },
-        {
-          "name": "ambience_gain_db",
-          "type": "FLOAT",
-          "widget": {
-            "name": "ambience_gain_db"
-          },
-          "link": null
-        },
-        {
-          "name": "sfx_gain_db",
-          "type": "FLOAT",
-          "widget": {
-            "name": "sfx_gain_db"
-          },
-          "link": null
-        },
-        {
-          "name": "duck_background",
-          "type": "FLOAT",
-          "widget": {
-            "name": "duck_background"
-          },
-          "link": null
-        },
-        {
-          "name": "peak_limit_dbfs",
-          "type": "FLOAT",
-          "widget": {
-            "name": "peak_limit_dbfs"
-          },
-          "link": null
-        },
-        {
           "name": "music_audio",
           "type": "AUDIO",
           "link": 5
@@ -557,14 +360,6 @@
           "name": "audio",
           "type": "AUDIO",
           "link": 8
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -621,7 +416,7 @@
       2,
       0,
       7,
-      15,
+      2,
       "AUDIO"
     ],
     [
@@ -629,7 +424,7 @@
       3,
       0,
       7,
-      16,
+      3,
       "AUDIO"
     ],
     [
@@ -637,7 +432,7 @@
       4,
       0,
       7,
-      17,
+      4,
       "AUDIO"
     ],
     [

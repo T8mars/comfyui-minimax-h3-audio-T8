@@ -323,14 +323,9 @@ def test_repair_restores_widget_names_values_and_link_slots():
     result = repair_workflow(workflow, object_info)
     assert result == {"repaired": ["2:Target"], "skipped": []}
     target = workflow["nodes"][1]
-    assert [item["name"] for item in target["inputs"]] == [
-        "text",
-        "width",
-        "mode",
-        "image",
-    ]
+    assert [item["name"] for item in target["inputs"]] == ["width", "image"]
     assert target["widgets_values"] == ["prompt", 1344, "native"]
-    assert workflow["links"][0][4:] == [1, "INT"]
+    assert workflow["links"][0][4:] == [0, "INT"]
     frozen = deepcopy(workflow)
     assert repair_workflow(workflow, object_info) == {"repaired": [], "skipped": []}
     assert workflow == frozen
@@ -359,7 +354,7 @@ def test_api_converter_uses_schema_order_not_prompt_dictionary_order():
     }
     workflow = convert(prompt, object_info, "schema order")
     node = workflow["nodes"][0]
-    assert [item["name"] for item in node["inputs"]] == ["text", "width", "mode"]
+    assert node["inputs"] == []
     assert node["widgets_values"] == ["hello", 640, "native"]
 
 
@@ -393,13 +388,9 @@ def test_api_converter_keeps_full_slots_before_a_later_optional_link():
     }
     workflow = convert(prompt, object_info, "full optional slots")
     target = next(node for node in workflow["nodes"] if node["type"] == "Target")
-    assert [item["name"] for item in target["inputs"]] == [
-        "text",
-        "early_mask",
-        "late_image",
-    ]
-    assert target["inputs"][2]["link"] == 1
-    assert workflow["links"] == [[1, 1, 0, 2, 2, "IMAGE"]]
+    assert [item["name"] for item in target["inputs"]] == ["early_mask", "late_image"]
+    assert target["inputs"][1]["link"] == 1
+    assert workflow["links"] == [[1, 1, 0, 2, 1, "IMAGE"]]
 
 
 def test_autogrow_repair_does_not_cross_match_overlapping_prefixes():
@@ -484,4 +475,46 @@ def test_all_t8_frontend_workflows_match_current_schema_order():
             target_input = target["inputs"][link[4]]
             if target_input.get("link") != link[0]:
                 failures.append(f"{path.name}:link{link[0]}:wrong target slot")
+    assert failures == []
+
+
+def test_frontend_workflows_do_not_serialize_unlinked_widgets_as_inputs():
+    """Match native ComfyUI saves so strict third-party importers see no missing sockets."""
+    root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
+    failures = []
+    for path in sorted(root.rglob("*.json")):
+        workflow = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes"), list):
+            continue
+        for node in workflow["nodes"]:
+            for item in node.get("inputs", []):
+                if "widget" in item and item.get("link") is None:
+                    failures.append(
+                        f"{path.relative_to(root)}:{node['id']}:{node['type']}:{item.get('name')}"
+                    )
+    assert failures == []
+
+
+def test_frontend_workflow_links_are_reciprocal_and_target_current_slots():
+    root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
+    failures = []
+    for path in sorted(root.rglob("*.json")):
+        workflow = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes"), list):
+            continue
+        nodes = {node["id"]: node for node in workflow["nodes"]}
+        for link in workflow.get("links", []):
+            link_id, source_id, source_slot, target_id, target_slot, _link_type = link
+            source = nodes[source_id]
+            target = nodes[target_id]
+            if source_slot >= len(source.get("outputs", [])):
+                failures.append(f"{path.relative_to(root)}:link{link_id}:source slot")
+                continue
+            if link_id not in (source["outputs"][source_slot].get("links") or []):
+                failures.append(f"{path.relative_to(root)}:link{link_id}:source backlink")
+            if target_slot >= len(target.get("inputs", [])):
+                failures.append(f"{path.relative_to(root)}:link{link_id}:target slot")
+                continue
+            if target["inputs"][target_slot].get("link") != link_id:
+                failures.append(f"{path.relative_to(root)}:link{link_id}:target backlink")
     assert failures == []

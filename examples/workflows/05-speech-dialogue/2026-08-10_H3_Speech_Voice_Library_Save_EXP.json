@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -62,78 +53,6 @@
       "order": 1,
       "mode": 0,
       "inputs": [
-        {
-          "name": "voice_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "voice_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "speaker_id",
-          "type": "STRING",
-          "widget": {
-            "name": "speaker_id"
-          },
-          "link": null
-        },
-        {
-          "name": "voice_description",
-          "type": "STRING",
-          "widget": {
-            "name": "voice_description"
-          },
-          "link": null
-        },
-        {
-          "name": "language",
-          "type": "COMBO",
-          "widget": {
-            "name": "language"
-          },
-          "link": null
-        },
-        {
-          "name": "rights_confirmed",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rights_confirmed"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_start_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "reference_start_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "reference_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "highpass_60hz",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "highpass_60hz"
-          },
-          "link": null
-        },
-        {
-          "name": "peak_limit_minus_3_dbfs",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "peak_limit_minus_3_dbfs"
-          },
-          "link": null
-        },
         {
           "name": "reference_audio",
           "type": "AUDIO",
@@ -195,22 +114,6 @@
           "name": "voice_profile",
           "type": "H3_T8_VOICE_PROFILE",
           "link": 2
-        },
-        {
-          "name": "library_name",
-          "type": "STRING",
-          "widget": {
-            "name": "library_name"
-          },
-          "link": null
-        },
-        {
-          "name": "replace_existing",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "replace_existing"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -241,7 +144,7 @@
       1,
       0,
       2,
-      9,
+      0,
       "AUDIO"
     ],
     [

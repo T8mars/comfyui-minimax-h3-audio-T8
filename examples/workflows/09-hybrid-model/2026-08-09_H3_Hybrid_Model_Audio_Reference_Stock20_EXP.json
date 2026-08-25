@@ -21,38 +21,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "quality_base",
-          "type": "COMBO",
-          "widget": {
-            "name": "quality_base"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_overlay",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_overlay"
-          },
-          "link": null
-        },
-        {
-          "name": "profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "profile"
-          },
-          "link": null
-        },
-        {
-          "name": "verification",
-          "type": "COMBO",
-          "widget": {
-            "name": "verification"
-          },
-          "link": null
-        },
-        {
           "name": "positive",
           "type": "CONDITIONING",
           "link": 1,
@@ -158,30 +126,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "quality_base",
-          "type": "COMBO",
-          "widget": {
-            "name": "quality_base"
-          },
-          "link": null
-        },
-        {
-          "name": "mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "mode"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "COMBO",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        },
-        {
           "name": "hybrid_artifact",
           "type": "H3_T8_HYBRID_ARTIFACT",
           "link": 3
@@ -226,32 +170,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "['stable_diffusion', 'stable_cascade', 'sd3', 'stable_audio', 'mochi', 'ltxv', 'pixart', 'cosmos', 'lumina2', 'wan', 'hidream', 'chroma', 'ace', 'omnigen2', 'qwen_image', 'hunyuan_image', 'flux2', 'ovis', 'longcat_image', 'cogvideox', 'lens', 'pixeldit', 'ideogram4', 'boogu', 'krea2', 'joyimage', 'mage', 'minimax']",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "['default', 'cpu']",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -286,16 +205,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -329,16 +239,7 @@
       "flags": {},
       "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -372,16 +273,7 @@
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -429,102 +321,6 @@
           "name": "audio_vae",
           "type": "VAE",
           "link": 6
-        },
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
-          "name": "length",
-          "type": "INT",
-          "widget": {
-            "name": "length"
-          },
-          "link": null
-        },
-        {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_primary_audio_ordinal",
-          "type": "INT",
-          "widget": {
-            "name": "prompt_primary_audio_ordinal"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
-        },
-        {
-          "name": "ref_image_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "ref_image_size"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_video_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_video_policy"
-          },
-          "link": null
         },
         {
           "name": "drive_audio",
@@ -639,46 +435,6 @@
           "name": "av_latent",
           "type": "LATENT",
           "link": 9
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -731,16 +487,7 @@
       "flags": {},
       "order": 9,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "noise_seed",
-          "type": "INT",
-          "widget": {
-            "name": "noise_seed"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "NOISE",
@@ -944,86 +691,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "frame_rate",
-          "type": "FLOAT",
-          "widget": {
-            "name": "frame_rate"
-          },
-          "link": null
-        },
-        {
-          "name": "loop_count",
-          "type": "INT",
-          "widget": {
-            "name": "loop_count"
-          },
-          "link": null
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "['image/gif', 'image/webp', 'video/16bit-png', 'video/8bit-png', 'video/av1-webm', 'video/ffmpeg-gif', 'video/ffv1-mkv', 'video/h264-mp4', 'video/h265-mp4', 'video/nvenc_av1-mp4', 'video/nvenc_h264-mp4', 'video/nvenc_hevc-mp4', 'video/ProRes', 'video/webm']",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
-        },
-        {
-          "name": "pix_fmt",
-          "type": "*",
-          "widget": {
-            "name": "pix_fmt"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "*",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
-        },
-        {
-          "name": "save_metadata",
-          "type": "*",
-          "widget": {
-            "name": "save_metadata"
-          },
-          "link": null
-        },
-        {
-          "name": "trim_to_audio",
-          "type": "*",
-          "widget": {
-            "name": "trim_to_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "pingpong",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "pingpong"
-          },
-          "link": null
-        },
-        {
-          "name": "save_output",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "save_output"
-          },
-          "link": null
-        },
-        {
           "name": "images",
           "type": "IMAGE",
           "link": 20
@@ -1065,7 +732,7 @@
       8,
       0,
       1,
-      4,
+      0,
       "CONDITIONING"
     ],
     [
@@ -1081,7 +748,7 @@
       2,
       0,
       3,
-      3,
+      0,
       "H3_T8_HYBRID_ARTIFACT"
     ],
     [
@@ -1113,7 +780,7 @@
       7,
       0,
       8,
-      19,
+      7,
       "AUDIO"
     ],
     [
@@ -1217,7 +884,7 @@
       13,
       0,
       14,
-      10,
+      0,
       "IMAGE"
     ],
     [
@@ -1225,7 +892,7 @@
       13,
       1,
       14,
-      11,
+      1,
       "AUDIO"
     ]
   ],

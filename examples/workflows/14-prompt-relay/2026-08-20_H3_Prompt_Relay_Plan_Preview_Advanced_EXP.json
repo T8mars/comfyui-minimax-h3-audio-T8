@@ -21,38 +21,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "start",
-          "type": "FLOAT",
-          "widget": {
-            "name": "start"
-          },
-          "link": null
-        },
-        {
-          "name": "end",
-          "type": "FLOAT",
-          "widget": {
-            "name": "end"
-          },
-          "link": null
-        },
-        {
-          "name": "enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enabled"
-          },
-          "link": null
-        },
-        {
           "name": "previous_events",
           "type": "H3_T8_PROMPT_RELAY_EVENTS",
           "link": null,
@@ -105,38 +73,6 @@
       "order": 1,
       "mode": 0,
       "inputs": [
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "start",
-          "type": "FLOAT",
-          "widget": {
-            "name": "start"
-          },
-          "link": null
-        },
-        {
-          "name": "end",
-          "type": "FLOAT",
-          "widget": {
-            "name": "end"
-          },
-          "link": null
-        },
-        {
-          "name": "enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enabled"
-          },
-          "link": null
-        },
         {
           "name": "previous_events",
           "type": "H3_T8_PROMPT_RELAY_EVENTS",
@@ -191,38 +127,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "start",
-          "type": "FLOAT",
-          "widget": {
-            "name": "start"
-          },
-          "link": null
-        },
-        {
-          "name": "end",
-          "type": "FLOAT",
-          "widget": {
-            "name": "end"
-          },
-          "link": null
-        },
-        {
-          "name": "enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enabled"
-          },
-          "link": null
-        },
-        {
           "name": "previous_events",
           "type": "H3_T8_PROMPT_RELAY_EVENTS",
           "link": 2,
@@ -275,78 +179,6 @@
       "order": 3,
       "mode": 0,
       "inputs": [
-        {
-          "name": "global_prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "global_prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "local_prompts",
-          "type": "STRING",
-          "widget": {
-            "name": "local_prompts"
-          },
-          "link": null
-        },
-        {
-          "name": "length",
-          "type": "INT",
-          "widget": {
-            "name": "length"
-          },
-          "link": null
-        },
-        {
-          "name": "timing_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "timing_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "time_ranges",
-          "type": "STRING",
-          "widget": {
-            "name": "time_ranges"
-          },
-          "link": null
-        },
-        {
-          "name": "math_profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "math_profile"
-          },
-          "link": null
-        },
-        {
-          "name": "epsilon",
-          "type": "FLOAT",
-          "widget": {
-            "name": "epsilon"
-          },
-          "link": null
-        },
-        {
-          "name": "allow_gaps",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "allow_gaps"
-          },
-          "link": null
-        },
-        {
-          "name": "allow_overlaps",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "allow_overlaps"
-          },
-          "link": null
-        },
         {
           "name": "prompt_relay_events",
           "type": "H3_T8_PROMPT_RELAY_EVENTS",
@@ -419,34 +251,57 @@
           "name": "prompt_relay_plan",
           "type": "H3_T8_PROMPT_RELAY_PLAN",
           "link": 4
-        },
-        { "name": "width", "type": "INT", "widget": { "name": "width" }, "link": null },
-        { "name": "height", "type": "INT", "widget": { "name": "height" }, "link": null },
-        { "name": "query_chunk_rows", "type": "INT", "widget": { "name": "query_chunk_rows" }, "link": null },
-        { "name": "precision", "type": "COMBO", "widget": { "name": "precision" }, "link": null },
-        { "name": "keyframe_stills", "type": "INT", "widget": { "name": "keyframe_stills" }, "link": null },
-        { "name": "reference_images_match", "type": "INT", "widget": { "name": "reference_images_match" }, "link": null },
-        { "name": "reference_video_count", "type": "INT", "widget": { "name": "reference_video_count" }, "link": null },
-        { "name": "reference_video_frames_each", "type": "INT", "widget": { "name": "reference_video_frames_each" }, "link": null },
-        { "name": "reference_video_has_audio", "type": "BOOLEAN", "widget": { "name": "reference_video_has_audio" }, "link": null },
-        { "name": "reference_video_audio_seconds_each", "type": "FLOAT", "widget": { "name": "reference_video_audio_seconds_each" }, "link": null },
-        { "name": "standalone_reference_audio_count", "type": "INT", "widget": { "name": "standalone_reference_audio_count" }, "link": null },
-        { "name": "standalone_reference_audio_seconds_each", "type": "FLOAT", "widget": { "name": "standalone_reference_audio_seconds_each" }, "link": null },
-        { "name": "additional_text_rows", "type": "INT", "widget": { "name": "additional_text_rows" }, "link": null },
-        { "name": "manual_extra_packed_rows", "type": "INT", "widget": { "name": "manual_extra_packed_rows" }, "link": null }
+        }
       ],
       "outputs": [
-        { "name": "prompt_relay_plan", "type": "H3_T8_PROMPT_RELAY_PLAN", "links": [5] },
-        { "name": "estimated_seq_len", "type": "INT", "links": null },
-        { "name": "peak_explicit_bias_mib", "type": "FLOAT", "links": null },
-        { "name": "summary_text", "type": "STRING", "links": null },
-        { "name": "report_json", "type": "STRING", "links": null }
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "estimated_seq_len",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "peak_explicit_bias_mib",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "summary_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3PromptRelayResourceEstimateT8Advanced"
       },
-      "widgets_values": [736, 416, 256, "bf16_fp16", 0, 0, 0, 124, false, 5.0, 0, 5.0, 256, 0]
+      "widgets_values": [
+        736,
+        416,
+        256,
+        "bf16_fp16",
+        0,
+        0,
+        0,
+        124,
+        false,
+        5.0,
+        0,
+        5.0,
+        256,
+        0
+      ]
     },
     {
       "id": 5,
@@ -588,7 +443,7 @@
       1,
       0,
       2,
-      4,
+      0,
       "H3_T8_PROMPT_RELAY_EVENTS"
     ],
     [
@@ -596,7 +451,7 @@
       2,
       0,
       3,
-      4,
+      0,
       "H3_T8_PROMPT_RELAY_EVENTS"
     ],
     [
@@ -604,7 +459,7 @@
       3,
       0,
       4,
-      9,
+      0,
       "H3_T8_PROMPT_RELAY_EVENTS"
     ],
     [

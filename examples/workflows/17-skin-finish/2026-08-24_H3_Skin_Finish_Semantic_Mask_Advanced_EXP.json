@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -82,142 +65,6 @@
           "name": "frames",
           "type": "IMAGE",
           "link": 1
-        },
-        {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_model",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_model"
-          },
-          "link": null
-        },
-        {
-          "name": "detector_device",
-          "type": "COMBO",
-          "widget": {
-            "name": "detector_device"
-          },
-          "link": null
-        },
-        {
-          "name": "confidence",
-          "type": "FLOAT",
-          "widget": {
-            "name": "confidence"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_x",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_x"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_y",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_y"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_width",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_width"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_roi_height",
-          "type": "FLOAT",
-          "widget": {
-            "name": "manual_roi_height"
-          },
-          "link": null
-        },
-        {
-          "name": "scene_cut_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scene_cut_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "max_track_jump",
-          "type": "FLOAT",
-          "widget": {
-            "name": "max_track_jump"
-          },
-          "link": null
-        },
-        {
-          "name": "max_gap_frames",
-          "type": "INT",
-          "widget": {
-            "name": "max_gap_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "smoothing_radius",
-          "type": "INT",
-          "widget": {
-            "name": "smoothing_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "crop_context_scale",
-          "type": "FLOAT",
-          "widget": {
-            "name": "crop_context_scale"
-          },
-          "link": null
-        },
-        {
-          "name": "canvas_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "canvas_size"
-          },
-          "link": null
-        },
-        {
-          "name": "require_h3_grid",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "require_h3_grid"
-          },
-          "link": null
-        },
-        {
-          "name": "analysis_chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "analysis_chunk_frames"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -310,78 +157,6 @@
           "name": "face_plan",
           "type": "H3_T8_FACE_REFINE_PLAN",
           "link": 3
-        },
-        {
-          "name": "parser_model",
-          "type": "COMBO",
-          "widget": {
-            "name": "parser_model"
-          },
-          "link": null
-        },
-        {
-          "name": "include_neck",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "include_neck"
-          },
-          "link": null
-        },
-        {
-          "name": "crop_expansion",
-          "type": "FLOAT",
-          "widget": {
-            "name": "crop_expansion"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_face_weight",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_face_weight"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_class_probability",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_class_probability"
-          },
-          "link": null
-        },
-        {
-          "name": "feature_protection_px",
-          "type": "INT",
-          "widget": {
-            "name": "feature_protection_px"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_skin_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_skin_area"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_skin_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_skin_area"
-          },
-          "link": null
-        },
-        {
-          "name": "preview_count",
-          "type": "INT",
-          "widget": {
-            "name": "preview_count"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -441,126 +216,6 @@
           "name": "frames",
           "type": "IMAGE",
           "link": 4
-        },
-        {
-          "name": "mask_source",
-          "type": "COMBO",
-          "widget": {
-            "name": "mask_source"
-          },
-          "link": null
-        },
-        {
-          "name": "preset",
-          "type": "COMBO",
-          "widget": {
-            "name": "preset"
-          },
-          "link": null
-        },
-        {
-          "name": "amount",
-          "type": "FLOAT",
-          "widget": {
-            "name": "amount"
-          },
-          "link": null
-        },
-        {
-          "name": "texture_keep",
-          "type": "FLOAT",
-          "widget": {
-            "name": "texture_keep"
-          },
-          "link": null
-        },
-        {
-          "name": "shine_control",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shine_control"
-          },
-          "link": null
-        },
-        {
-          "name": "tone_adjust",
-          "type": "FLOAT",
-          "widget": {
-            "name": "tone_adjust"
-          },
-          "link": null
-        },
-        {
-          "name": "execution_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "execution_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
-        },
-        {
-          "name": "protect_features",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "protect_features"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_mask_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_mask_area"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_mask_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_mask_area"
-          },
-          "link": null
-        },
-        {
-          "name": "mask_feather_px",
-          "type": "INT",
-          "widget": {
-            "name": "mask_feather_px"
-          },
-          "link": null
-        },
-        {
-          "name": "temporal_mask_radius",
-          "type": "INT",
-          "widget": {
-            "name": "temporal_mask_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "proxy_long_side",
-          "type": "INT",
-          "widget": {
-            "name": "proxy_long_side"
-          },
-          "link": null
-        },
-        {
-          "name": "chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "chunk_frames"
-          },
-          "link": null
         },
         {
           "name": "skin_mask",
@@ -686,86 +341,6 @@
           "name": "used_skin_mask",
           "type": "MASK",
           "link": 9
-        },
-        {
-          "name": "shadow_protection",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shadow_protection"
-          },
-          "link": null
-        },
-        {
-          "name": "highlight_protection",
-          "type": "FLOAT",
-          "widget": {
-            "name": "highlight_protection"
-          },
-          "link": null
-        },
-        {
-          "name": "transition_width",
-          "type": "FLOAT",
-          "widget": {
-            "name": "transition_width"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_texture_ratio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_texture_ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_reference_texture",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_reference_texture"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_new_clipped_fraction",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_new_clipped_fraction"
-          },
-          "link": null
-        },
-        {
-          "name": "clipping_epsilon",
-          "type": "FLOAT",
-          "widget": {
-            "name": "clipping_epsilon"
-          },
-          "link": null
-        },
-        {
-          "name": "texture_radius",
-          "type": "INT",
-          "widget": {
-            "name": "texture_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "chunk_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
         },
         {
           "name": "audio",
@@ -1063,16 +638,7 @@
       "flags": {},
       "order": 11,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "AUDIO",
@@ -1254,7 +820,7 @@
       3,
       0,
       4,
-      16,
+      1,
       "MASK"
     ],
     [
@@ -1262,7 +828,7 @@
       12,
       0,
       4,
-      18,
+      3,
       "AUDIO"
     ],
     [
@@ -1294,7 +860,7 @@
       4,
       3,
       5,
-      13,
+      3,
       "AUDIO"
     ],
     [

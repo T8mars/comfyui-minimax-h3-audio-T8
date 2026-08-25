@@ -8,46 +8,41 @@
       "id": 1,
       "type": "MiniMaxH3HybridPairInspectorT8Advanced",
       "title": "1. Verify the exact Hybrid pair and content-addressed plan",
-      "pos": [0, 0],
-      "size": [430, 260],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        430,
+        260
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "quality_base",
-          "type": "COMBO",
-          "widget": {"name": "quality_base"},
-          "link": null
-        },
-        {
-          "name": "reference_overlay",
-          "type": "COMBO",
-          "widget": {"name": "reference_overlay"},
-          "link": null
-        },
-        {
-          "name": "profile",
-          "type": "COMBO",
-          "widget": {"name": "profile"},
-          "link": null
-        },
-        {
-          "name": "verification",
-          "type": "COMBO",
-          "widget": {"name": "verification"},
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "hybrid_plan",
           "type": "H3_T8_HYBRID_PLAN",
-          "links": [1]
+          "links": [
+            1
+          ]
         },
-        {"name": "compatible", "type": "BOOLEAN", "links": null},
-        {"name": "report", "type": "STRING", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "compatible",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
@@ -64,8 +59,14 @@
       "id": 2,
       "type": "MiniMaxH3HybridArtifactMaintenanceT8Advanced",
       "title": "2. Safe default: inspect only (no file mutation)",
-      "pos": [500, 0],
-      "size": [470, 270],
+      "pos": [
+        500,
+        0
+      ],
+      "size": [
+        470,
+        270
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -74,49 +75,48 @@
           "name": "hybrid_plan",
           "type": "H3_T8_HYBRID_PLAN",
           "link": 1
-        },
-        {
-          "name": "action",
-          "type": "COMBO",
-          "widget": {"name": "action"},
-          "link": null
-        },
-        {
-          "name": "confirm_action",
-          "type": "BOOLEAN",
-          "widget": {"name": "confirm_action"},
-          "link": null
-        },
-        {
-          "name": "operation_epoch",
-          "type": "INT",
-          "widget": {"name": "operation_epoch"},
-          "link": null
-        },
-        {
-          "name": "stale_after_minutes",
-          "type": "FLOAT",
-          "widget": {"name": "stale_after_minutes"},
-          "link": null
         }
       ],
       "outputs": [
-        {"name": "mutation_performed", "type": "BOOLEAN", "links": null},
-        {"name": "artifact_path", "type": "STRING", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "mutation_performed",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
         "Node name for S&R": "MiniMaxH3HybridArtifactMaintenanceT8Advanced"
       },
-      "widgets_values": ["inspect_only", false, 0, 60.0]
+      "widgets_values": [
+        "inspect_only",
+        false,
+        0,
+        60.0
+      ]
     },
     {
       "id": 3,
       "type": "MarkdownNote",
       "title": "Safety contract / 安全说明",
-      "pos": [0, 340],
-      "size": [970, 350],
+      "pos": [
+        0,
+        340
+      ],
+      "size": [
+        970,
+        350
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -129,12 +129,25 @@
     }
   ],
   "links": [
-    [1, 1, 0, 2, 0, "H3_T8_HYBRID_PLAN"]
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "H3_T8_HYBRID_PLAN"
+    ]
   ],
   "groups": [],
   "config": {},
   "extra": {
-    "ds": {"scale": 1.0, "offset": [40, 40]},
+    "ds": {
+      "scale": 1.0,
+      "offset": [
+        40,
+        40
+      ]
+    },
     "frontendVersion": "1.25.11"
   },
   "version": 0.4

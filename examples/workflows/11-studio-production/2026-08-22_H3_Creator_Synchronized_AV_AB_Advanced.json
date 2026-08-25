@@ -6,311 +6,737 @@
       "id": 1,
       "type": "LoadVideo",
       "title": "A：已确认基准视频（替换文件）",
-      "pos": [0, 0],
-      "size": [390, 124],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {"name": "file", "type": "COMBO", "widget": {"name": "file"}, "link": null}
-      ],
+      "inputs": [],
       "outputs": [
-        {"name": "VIDEO", "type": "VIDEO", "links": [1]}
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadVideo"},
-      "widgets_values": ["replace_with_accepted_candidate_a.mp4"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_accepted_candidate_a.mp4"
+      ]
     },
     {
       "id": 2,
       "type": "GetVideoComponents",
       "title": "A：拆出原帧、音频与fps",
-      "pos": [440, 0],
-      "size": [390, 110],
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {"name": "video", "type": "VIDEO", "link": 1}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
       ],
       "outputs": [
-        {"name": "images", "type": "IMAGE", "links": [3]},
-        {"name": "audio", "type": "AUDIO", "links": [8, 10]},
-        {"name": "fps", "type": "FLOAT", "links": [6]},
-        {"name": "bit_depth", "type": "INT", "links": null}
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            8,
+            10
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "GetVideoComponents"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
       "widgets_values": []
     },
     {
       "id": 3,
       "type": "LoadVideo",
       "title": "B：待审核候选视频（替换文件）",
-      "pos": [0, 240],
-      "size": [390, 124],
+      "pos": [
+        0,
+        240
+      ],
+      "size": [
+        390,
+        124
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {"name": "file", "type": "COMBO", "widget": {"name": "file"}, "link": null}
-      ],
+      "inputs": [],
       "outputs": [
-        {"name": "VIDEO", "type": "VIDEO", "links": [2]}
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            2
+          ]
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadVideo"},
-      "widgets_values": ["replace_with_candidate_b.mp4"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_candidate_b.mp4"
+      ]
     },
     {
       "id": 4,
       "type": "GetVideoComponents",
       "title": "B：拆出原帧与待审音频",
-      "pos": [440, 240],
-      "size": [390, 110],
+      "pos": [
+        440,
+        240
+      ],
+      "size": [
+        390,
+        110
+      ],
       "flags": {},
       "order": 3,
       "mode": 0,
       "inputs": [
-        {"name": "video", "type": "VIDEO", "link": 2}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 2
+        }
       ],
       "outputs": [
-        {"name": "images", "type": "IMAGE", "links": [4]},
-        {"name": "audio", "type": "AUDIO", "links": [9, 11]},
-        {"name": "fps", "type": "FLOAT", "links": null},
-        {"name": "bit_depth", "type": "INT", "links": null}
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            9,
+            11
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "GetVideoComponents"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
       "widgets_values": []
     },
     {
       "id": 5,
       "type": "MiniMaxH3CreatorSynchronizedCompareT8Advanced",
       "title": "画面：不缩放的同步并排A/B",
-      "pos": [900, 0],
-      "size": [590, 400],
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        590,
+        400
+      ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [
-        {"name": "frames_a", "type": "IMAGE", "link": 3},
-        {"name": "frames_b", "type": "IMAGE", "link": 4},
-        {"name": "label_a", "type": "STRING", "widget": {"name": "label_a"}, "link": null},
-        {"name": "label_b", "type": "STRING", "widget": {"name": "label_b"}, "link": null},
-        {"name": "seed_a", "type": "INT", "widget": {"name": "seed_a"}, "link": null},
-        {"name": "seed_b", "type": "INT", "widget": {"name": "seed_b"}, "link": null},
-        {"name": "winner", "type": "COMBO", "widget": {"name": "winner"}, "link": null},
-        {"name": "reviewer_notes", "type": "STRING", "widget": {"name": "reviewer_notes"}, "link": null},
-        {"name": "require_equal_geometry", "type": "BOOLEAN", "widget": {"name": "require_equal_geometry"}, "link": null}
+        {
+          "name": "frames_a",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "frames_b",
+          "type": "IMAGE",
+          "link": 4
+        }
       ],
       "outputs": [
-        {"name": "comparison_frames", "type": "IMAGE", "links": [5]},
-        {"name": "winner", "type": "STRING", "links": null},
-        {"name": "selected_seed", "type": "INT", "links": null},
-        {"name": "review_json", "type": "STRING", "links": null}
+        {
+          "name": "comparison_frames",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "winner",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "selected_seed",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "review_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3CreatorSynchronizedCompareT8Advanced"},
-      "widgets_values": ["accepted_baseline_A", "candidate_B", 2608222001, 2608222018, "ABSTAIN", "先完整观看并分别试听A/B，再记录A、B或TIE。", true]
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3CreatorSynchronizedCompareT8Advanced"
+      },
+      "widgets_values": [
+        "accepted_baseline_A",
+        "candidate_B",
+        2608222001,
+        2608222018,
+        "ABSTAIN",
+        "先完整观看并分别试听A/B，再记录A、B或TIE。",
+        true
+      ]
     },
     {
       "id": 6,
       "type": "CreateVideo",
       "title": "创建无声并排视频（声音另听）",
-      "pos": [1560, 0],
-      "size": [390, 220],
+      "pos": [
+        1560,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [
-        {"name": "images", "type": "IMAGE", "link": 5},
-        {"name": "fps", "type": "FLOAT", "widget": {"name": "fps"}, "link": 6},
-        {"name": "audio", "type": "AUDIO", "link": null, "shape": 7},
-        {"name": "bit_depth", "type": "INT", "widget": {"name": "bit_depth"}, "link": null}
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": 6
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
       ],
       "outputs": [
-        {"name": "VIDEO", "type": "VIDEO", "links": [7]}
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            7
+          ]
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "CreateVideo"},
-      "widgets_values": [24.0, 8]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
     },
     {
       "id": 7,
       "type": "SaveVideo",
       "title": "保存带标签的无声画面对比",
-      "pos": [2020, 0],
-      "size": [390, 238],
+      "pos": [
+        2020,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
       "flags": {},
       "order": 6,
       "mode": 0,
       "inputs": [
-        {"name": "video", "type": "VIDEO", "link": 7},
-        {"name": "filename_prefix", "type": "STRING", "widget": {"name": "filename_prefix"}, "link": null},
-        {"name": "format", "type": "COMBO", "widget": {"name": "format"}, "link": null},
-        {"name": "codec", "type": "COMFY_DYNAMICCOMBO_V3", "link": null}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 7
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        }
       ],
       "outputs": [
-        {"name": "video", "type": "VIDEO", "links": null}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SaveVideo"},
-      "widgets_values": ["MiniMaxH3/creator_synchronized_av_ab_silent", "mp4"]
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/creator_synchronized_av_ab_silent",
+        "mp4"
+      ]
     },
     {
       "id": 8,
       "type": "PreviewAudio",
       "title": "试听A：已确认基准音频",
-      "pos": [900, 470],
-      "size": [390, 90],
+      "pos": [
+        900,
+        470
+      ],
+      "size": [
+        390,
+        90
+      ],
       "flags": {},
       "order": 7,
       "mode": 0,
       "inputs": [
-        {"name": "audio", "type": "AUDIO", "link": 8}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 8
+        }
       ],
       "outputs": [
-        {"name": "audio", "type": "AUDIO", "links": null}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewAudio"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAudio"
+      },
       "widgets_values": []
     },
     {
       "id": 9,
       "type": "PreviewAudio",
       "title": "试听B：待审核候选音频",
-      "pos": [900, 590],
-      "size": [390, 90],
+      "pos": [
+        900,
+        590
+      ],
+      "size": [
+        390,
+        90
+      ],
       "flags": {},
       "order": 8,
       "mode": 0,
       "inputs": [
-        {"name": "audio", "type": "AUDIO", "link": 9}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 9
+        }
       ],
       "outputs": [
-        {"name": "audio", "type": "AUDIO", "links": null}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewAudio"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAudio"
+      },
       "widgets_values": []
     },
     {
       "id": 10,
       "type": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced",
       "title": "声音：同步同内容的参考相对漂移提示",
-      "pos": [1360, 470],
-      "size": [650, 500],
+      "pos": [
+        1360,
+        470
+      ],
+      "size": [
+        650,
+        500
+      ],
       "flags": {},
       "order": 9,
       "mode": 0,
       "inputs": [
-        {"name": "reference_audio", "type": "AUDIO", "link": 10},
-        {"name": "candidate_audio", "type": "AUDIO", "link": 11},
-        {"name": "analysis_window_ms", "type": "FLOAT", "widget": {"name": "analysis_window_ms"}, "link": null},
-        {"name": "hop_ms", "type": "FLOAT", "widget": {"name": "hop_ms"}, "link": null},
-        {"name": "active_rms_floor_dbfs", "type": "FLOAT", "widget": {"name": "active_rms_floor_dbfs"}, "link": null},
-        {"name": "spectral_drift_threshold", "type": "FLOAT", "widget": {"name": "spectral_drift_threshold"}, "link": null},
-        {"name": "level_delta_threshold_db", "type": "FLOAT", "widget": {"name": "level_delta_threshold_db"}, "link": null},
-        {"name": "persistent_window_count", "type": "INT", "widget": {"name": "persistent_window_count"}, "link": null},
-        {"name": "max_duration_delta_ms", "type": "FLOAT", "widget": {"name": "max_duration_delta_ms"}, "link": null}
+        {
+          "name": "reference_audio",
+          "type": "AUDIO",
+          "link": 10
+        },
+        {
+          "name": "candidate_audio",
+          "type": "AUDIO",
+          "link": 11
+        }
       ],
       "outputs": [
-        {"name": "candidate_audio", "type": "AUDIO", "links": null},
-        {"name": "pass_audit", "type": "BOOLEAN", "links": null},
-        {"name": "decision", "type": "STRING", "links": null},
-        {"name": "maximum_spectral_drift", "type": "FLOAT", "links": null},
-        {"name": "maximum_level_delta_db", "type": "FLOAT", "links": null},
-        {"name": "suspected_start_seconds", "type": "FLOAT", "links": null},
-        {"name": "suspected_end_seconds", "type": "FLOAT", "links": null},
-        {"name": "report_json", "type": "STRING", "links": [12]}
+        {
+          "name": "candidate_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "pass_audit",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "maximum_spectral_drift",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "maximum_level_delta_db",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "suspected_start_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "suspected_end_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            12
+          ]
+        }
       ],
-      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"},
-      "widgets_values": [500.0, 100.0, -50.0, 0.30, 4.0, 3, 21.0]
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioPerceptualDriftAuditT8Advanced"
+      },
+      "widgets_values": [
+        500.0,
+        100.0,
+        -50.0,
+        0.3,
+        4.0,
+        3,
+        21.0
+      ]
     },
     {
       "id": 11,
       "type": "PreviewAny",
       "title": "查看声音漂移时间段和证据",
-      "pos": [2070, 500],
-      "size": [390, 110],
+      "pos": [
+        2070,
+        500
+      ],
+      "size": [
+        390,
+        110
+      ],
       "flags": {},
       "order": 10,
       "mode": 0,
       "inputs": [
-        {"name": "source", "type": "*", "link": 12}
+        {
+          "name": "source",
+          "type": "*",
+          "link": 12
+        }
       ],
       "outputs": [
-        {"name": "STRING", "type": "STRING", "links": null}
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewAny"},
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
       "widgets_values": []
     },
     {
       "id": 12,
       "type": "MarkdownNote",
       "title": "① 输入必须对齐",
-      "pos": [0, 440],
-      "size": [800, 310],
+      "pos": [
+        0,
+        440
+      ],
+      "size": [
+        800,
+        310
+      ],
       "flags": {},
       "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## A是基准，B是候选\n\n- 两条视频必须表达同一内容、从同一时间点开始，并尽量具有相同帧率、帧数、画布和音频采样率。\n- 不要把不同台词、不同音乐、不同剪辑起点的素材送入感知漂移审计；这种比较本身没有科学意义。\n- `LoadVideo`不会强行把两条候选缩放成相同尺寸。若几何不同，画面对比节点会居中补黑边，并在默认严格模式下强制ABSTAIN。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## A是基准，B是候选\n\n- 两条视频必须表达同一内容、从同一时间点开始，并尽量具有相同帧率、帧数、画布和音频采样率。\n- 不要把不同台词、不同音乐、不同剪辑起点的素材送入感知漂移审计；这种比较本身没有科学意义。\n- `LoadVideo`不会强行把两条候选缩放成相同尺寸。若几何不同，画面对比节点会居中补黑边，并在默认严格模式下强制ABSTAIN。"
+      ]
     },
     {
       "id": 13,
       "type": "MarkdownNote",
       "title": "② 画面对比使用方法",
-      "pos": [0, 790],
-      "size": [800, 330],
+      "pos": [
+        0,
+        790
+      ],
+      "size": [
+        800,
+        330
+      ],
       "flags": {},
       "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 并排视频故意不带声音\n\n- 左侧始终为A，右侧始终为B，顶部写入标签。节点只裁到共同帧数，不插帧、不缩放、不改变源像素比例。\n- 保存的并排视频故意不接任何音轨，防止误把A或B的声音当成双方共同结果。\n- 完整观看后再把`winner`从`ABSTAIN`改成A、B或TIE。它只是人工记录字段，不是自动画质评分。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 并排视频故意不带声音\n\n- 左侧始终为A，右侧始终为B，顶部写入标签。节点只裁到共同帧数，不插帧、不缩放、不改变源像素比例。\n- 保存的并排视频故意不接任何音轨，防止误把A或B的声音当成双方共同结果。\n- 完整观看后再把`winner`从`ABSTAIN`改成A、B或TIE。它只是人工记录字段，不是自动画质评分。"
+      ]
     },
     {
       "id": 14,
       "type": "MarkdownNote",
       "title": "③ 声音必须分别完整试听",
-      "pos": [1360, 1020],
-      "size": [650, 350],
+      "pos": [
+        1360,
+        1020
+      ],
+      "size": [
+        650,
+        350
+      ],
       "flags": {},
       "order": 13,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 审计只提供复核线索\n\n- 分别完整播放`试听A`和`试听B`，重点听音色远近、混响、响度、对白完整性、音乐与音效。\n- 感知漂移节点默认用500ms窗、100ms步进，连续3窗异常才返回ABSTAIN；它不重采样、不修音，也不替代人耳。\n- PASS不是听感认证；ABSTAIN也不能证明远场、换声、混响或模型原因。最终结论必须由人完整试听。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 审计只提供复核线索\n\n- 分别完整播放`试听A`和`试听B`，重点听音色远近、混响、响度、对白完整性、音乐与音效。\n- 感知漂移节点默认用500ms窗、100ms步进，连续3窗异常才返回ABSTAIN；它不重采样、不修音，也不替代人耳。\n- PASS不是听感认证；ABSTAIN也不能证明远场、换声、混响或模型原因。最终结论必须由人完整试听。"
+      ]
     },
     {
       "id": 15,
       "type": "MarkdownNote",
       "title": "④ 已验证边界",
-      "pos": [2070, 660],
-      "size": [390, 520],
+      "pos": [
+        2070,
+        660
+      ],
+      "size": [
+        390,
+        520
+      ],
       "flags": {},
       "order": 14,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 当前只承诺机械审片路径\n\n- 39帧真实H3候选已验证画面不拉伸、源像素保持和严格解码。\n- 5.152秒真实同内容A/B中，节点能标出用户已确认的中段声音漂移；这只是单组标定。\n- 本工作流不生成视频、不自动选择胜者、不删除候选，也不保证检测所有音频问题。\n- 如素材没有音轨，两个PreviewAudio和漂移审计会按ComfyUI合同报错；请改用纯画面A/B工作流。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 当前只承诺机械审片路径\n\n- 39帧真实H3候选已验证画面不拉伸、源像素保持和严格解码。\n- 5.152秒真实同内容A/B中，节点能标出用户已确认的中段声音漂移；这只是单组标定。\n- 本工作流不生成视频、不自动选择胜者、不删除候选，也不保证检测所有音频问题。\n- 如素材没有音轨，两个PreviewAudio和漂移审计会按ComfyUI合同报错；请改用纯画面A/B工作流。"
+      ]
     }
   ],
   "links": [
-    [1, 1, 0, 2, 0, "VIDEO"],
-    [2, 3, 0, 4, 0, "VIDEO"],
-    [3, 2, 0, 5, 0, "IMAGE"],
-    [4, 4, 0, 5, 1, "IMAGE"],
-    [5, 5, 0, 6, 0, "IMAGE"],
-    [6, 2, 2, 6, 1, "FLOAT"],
-    [7, 6, 0, 7, 0, "VIDEO"],
-    [8, 2, 1, 8, 0, "AUDIO"],
-    [9, 4, 1, 9, 0, "AUDIO"],
-    [10, 2, 1, 10, 0, "AUDIO"],
-    [11, 4, 1, 10, 1, "AUDIO"],
-    [12, 10, 7, 11, 0, "STRING"]
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "VIDEO"
+    ],
+    [
+      3,
+      2,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      1,
+      "IMAGE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      2,
+      2,
+      6,
+      1,
+      "FLOAT"
+    ],
+    [
+      7,
+      6,
+      0,
+      7,
+      0,
+      "VIDEO"
+    ],
+    [
+      8,
+      2,
+      1,
+      8,
+      0,
+      "AUDIO"
+    ],
+    [
+      9,
+      4,
+      1,
+      9,
+      0,
+      "AUDIO"
+    ],
+    [
+      10,
+      2,
+      1,
+      10,
+      0,
+      "AUDIO"
+    ],
+    [
+      11,
+      4,
+      1,
+      10,
+      1,
+      "AUDIO"
+    ],
+    [
+      12,
+      10,
+      7,
+      11,
+      0,
+      "STRING"
+    ]
   ],
   "groups": [],
   "config": {},
-  "extra": {"ds": {"scale": 0.72, "offset": [90, 70]}},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        90,
+        70
+      ]
+    }
+  },
   "version": 0.4
 }

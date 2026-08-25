@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "cast_json",
-          "type": "STRING",
-          "widget": {
-            "name": "cast_json"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_identity",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_identity"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "cast",
@@ -76,40 +59,7 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "events_json",
-          "type": "STRING",
-          "widget": {
-            "name": "events_json"
-          },
-          "link": null
-        },
-        {
-          "name": "total_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "total_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "no_unrequested_speech",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "no_unrequested_speech"
-          },
-          "link": null
-        },
-        {
-          "name": "allow_dialogue_overlap",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "allow_dialogue_overlap"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "sound_canvas",
@@ -157,78 +107,6 @@
       "order": 2,
       "mode": 0,
       "inputs": [
-        {
-          "name": "project_id",
-          "type": "STRING",
-          "widget": {
-            "name": "project_id"
-          },
-          "link": null
-        },
-        {
-          "name": "shots_json",
-          "type": "STRING",
-          "widget": {
-            "name": "shots_json"
-          },
-          "link": null
-        },
-        {
-          "name": "default_backend",
-          "type": "COMBO",
-          "widget": {
-            "name": "default_backend"
-          },
-          "link": null
-        },
-        {
-          "name": "default_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "default_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "default_aspect_ratio",
-          "type": "STRING",
-          "widget": {
-            "name": "default_aspect_ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "base_seed",
-          "type": "INT",
-          "widget": {
-            "name": "base_seed"
-          },
-          "link": null
-        },
-        {
-          "name": "seed_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "seed_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "split_long_shots",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "split_long_shots"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_exact_dialogue",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_exact_dialogue"
-          },
-          "link": null
-        },
         {
           "name": "cast",
           "type": "H3_T8_UNIFIED_CAST",
@@ -291,14 +169,6 @@
           "name": "timeline",
           "type": "H3_T8_STUDIO_TIMELINE",
           "link": 3
-        },
-        {
-          "name": "shot_index",
-          "type": "INT",
-          "widget": {
-            "name": "shot_index"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -366,78 +236,6 @@
           "name": "timeline",
           "type": "H3_T8_STUDIO_TIMELINE",
           "link": 4
-        },
-        {
-          "name": "selection_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "selection_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "manual_indices",
-          "type": "STRING",
-          "widget": {
-            "name": "manual_indices"
-          },
-          "link": null
-        },
-        {
-          "name": "quality_report_json",
-          "type": "STRING",
-          "widget": {
-            "name": "quality_report_json"
-          },
-          "link": null
-        },
-        {
-          "name": "thresholds_json",
-          "type": "STRING",
-          "widget": {
-            "name": "thresholds_json"
-          },
-          "link": null
-        },
-        {
-          "name": "repair_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "repair_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_addendum",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt_addendum"
-          },
-          "link": null
-        },
-        {
-          "name": "seed_stride",
-          "type": "INT",
-          "widget": {
-            "name": "seed_stride"
-          },
-          "link": null
-        },
-        {
-          "name": "context_before_frames",
-          "type": "INT",
-          "widget": {
-            "name": "context_before_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "context_after_frames",
-          "type": "INT",
-          "widget": {
-            "name": "context_after_frames"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -490,14 +288,6 @@
           "name": "repair_plan",
           "type": "H3_T8_REPAIR_PLAN",
           "link": 5
-        },
-        {
-          "name": "repair_index",
-          "type": "INT",
-          "widget": {
-            "name": "repair_index"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -562,62 +352,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "backend",
-          "type": "COMBO",
-          "widget": {
-            "name": "backend"
-          },
-          "link": null
-        },
-        {
-          "name": "duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "aspect_ratio",
-          "type": "STRING",
-          "widget": {
-            "name": "aspect_ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_exact_dialogue",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_exact_dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "dialogue",
-          "type": "STRING",
-          "widget": {
-            "name": "dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "negative_prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "negative_prompt"
-          },
-          "link": null
-        },
-        {
           "name": "cast",
           "type": "H3_T8_UNIFIED_CAST",
           "link": 6,
@@ -628,22 +362,6 @@
           "type": "H3_T8_SOUND_CANVAS",
           "link": 7,
           "shape": 7
-        },
-        {
-          "name": "cast_ids",
-          "type": "STRING",
-          "widget": {
-            "name": "cast_ids"
-          },
-          "link": null
-        },
-        {
-          "name": "creative_brief_json",
-          "type": "STRING",
-          "widget": {
-            "name": "creative_brief_json"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -696,7 +414,7 @@
       1,
       0,
       3,
-      9,
+      0,
       "H3_T8_UNIFIED_CAST"
     ],
     [
@@ -704,7 +422,7 @@
       2,
       0,
       3,
-      10,
+      1,
       "H3_T8_SOUND_CANVAS"
     ],
     [
@@ -736,7 +454,7 @@
       1,
       0,
       7,
-      7,
+      0,
       "H3_T8_UNIFIED_CAST"
     ],
     [
@@ -744,7 +462,7 @@
       2,
       0,
       7,
-      8,
+      1,
       "H3_T8_SOUND_CANVAS"
     ]
   ],

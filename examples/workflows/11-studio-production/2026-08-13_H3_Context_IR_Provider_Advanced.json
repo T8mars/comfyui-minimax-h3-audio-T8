@@ -21,118 +21,6 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "provider_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "provider_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "local_context_ir_json",
-          "type": "STRING",
-          "widget": {
-            "name": "local_context_ir_json"
-          },
-          "link": null
-        },
-        {
-          "name": "creative_brief",
-          "type": "STRING",
-          "widget": {
-            "name": "creative_brief"
-          },
-          "link": null
-        },
-        {
-          "name": "endpoint",
-          "type": "STRING",
-          "widget": {
-            "name": "endpoint"
-          },
-          "link": null
-        },
-        {
-          "name": "provider_model",
-          "type": "STRING",
-          "widget": {
-            "name": "provider_model"
-          },
-          "link": null
-        },
-        {
-          "name": "api_key_env",
-          "type": "STRING",
-          "widget": {
-            "name": "api_key_env"
-          },
-          "link": null
-        },
-        {
-          "name": "confirm_external_upload",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "confirm_external_upload"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_visual_frames",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_visual_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_image_edge",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_image_edge"
-          },
-          "link": null
-        },
-        {
-          "name": "jpeg_quality",
-          "type": "INT",
-          "widget": {
-            "name": "jpeg_quality"
-          },
-          "link": null
-        },
-        {
-          "name": "timeout_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "timeout_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_response_bytes",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_response_bytes"
-          },
-          "link": null
-        },
-        {
-          "name": "exact_dialogue",
-          "type": "STRING",
-          "widget": {
-            "name": "exact_dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_transcript",
-          "type": "STRING",
-          "widget": {
-            "name": "audio_transcript"
-          },
-          "link": null
-        },
-        {
           "name": "reference_images",
           "type": "IMAGE",
           "link": null,
@@ -201,62 +89,6 @@
           "link": 1
         },
         {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "backend",
-          "type": "COMBO",
-          "widget": {
-            "name": "backend"
-          },
-          "link": null
-        },
-        {
-          "name": "duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "aspect_ratio",
-          "type": "STRING",
-          "widget": {
-            "name": "aspect_ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_exact_dialogue",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_exact_dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "dialogue",
-          "type": "STRING",
-          "widget": {
-            "name": "dialogue"
-          },
-          "link": null
-        },
-        {
-          "name": "negative_prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "negative_prompt"
-          },
-          "link": null
-        },
-        {
           "name": "cast",
           "type": "H3_T8_UNIFIED_CAST",
           "link": null,
@@ -267,14 +99,6 @@
           "type": "H3_T8_SOUND_CANVAS",
           "link": null,
           "shape": 7
-        },
-        {
-          "name": "cast_ids",
-          "type": "STRING",
-          "widget": {
-            "name": "cast_ids"
-          },
-          "link": null
         }
       ],
       "outputs": [

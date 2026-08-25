@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "COMBO",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -74,22 +57,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 1
-        },
-        {
-          "name": "lora_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "lora_name"
-          },
-          "link": null
-        },
-        {
-          "name": "strength_model",
-          "type": "FLOAT",
-          "widget": {
-            "name": "strength_model"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -123,32 +90,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "COMBO",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "COMBO",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -182,16 +124,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -224,16 +157,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -266,64 +190,7 @@
       "flags": {},
       "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "chain_id",
-          "type": "STRING",
-          "widget": {
-            "name": "chain_id"
-          },
-          "link": null
-        },
-        {
-          "name": "segment_index",
-          "type": "INT",
-          "widget": {
-            "name": "segment_index"
-          },
-          "link": null
-        },
-        {
-          "name": "new_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "new_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "context_frames",
-          "type": "COMBO",
-          "widget": {
-            "name": "context_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_render_frames",
-          "type": "INT",
-          "widget": {
-            "name": "minimum_render_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "timeline_start_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "timeline_start_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "is_final_segment",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "is_final_segment"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "chain_id",
@@ -525,105 +392,9 @@
           "link": 10
         },
         {
-          "name": "context_audio",
-          "type": "COMBO",
-          "widget": {
-            "name": "context_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
           "name": "length",
           "type": "INT",
           "link": 11
-        },
-        {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_primary_audio_ordinal",
-          "type": "INT",
-          "widget": {
-            "name": "prompt_primary_audio_ordinal"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
-        },
-        {
-          "name": "ref_image_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "ref_image_size"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_video_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_video_policy"
-          },
-          "link": null
         },
         {
           "name": "drive_audio",
@@ -735,46 +506,6 @@
           "name": "av_latent",
           "type": "LATENT",
           "link": 13
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1017,30 +748,6 @@
           "link": 37
         },
         {
-          "name": "candidate_id",
-          "type": "STRING",
-          "widget": {
-            "name": "candidate_id"
-          },
-          "link": null
-        },
-        {
-          "name": "model_id",
-          "type": "STRING",
-          "widget": {
-            "name": "model_id"
-          },
-          "link": null
-        },
-        {
-          "name": "sampling_summary",
-          "type": "STRING",
-          "widget": {
-            "name": "sampling_summary"
-          },
-          "link": null
-        },
-        {
           "name": "prompt",
           "type": "STRING",
           "link": 41
@@ -1049,22 +756,6 @@
           "name": "seed",
           "type": "INT",
           "link": 40
-        },
-        {
-          "name": "bit_depth",
-          "type": "COMBO",
-          "widget": {
-            "name": "bit_depth"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "INT",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1198,14 +889,6 @@
           }
         },
         {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
           "name": "audio",
           "type": "AUDIO",
           "link": 31,
@@ -1262,30 +945,6 @@
           "name": "candidate_json_path",
           "type": "STRING",
           "link": 38
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
-        },
-        {
-          "name": "replace_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "replace_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_chain_identity",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_chain_identity"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1334,16 +993,7 @@
       "flags": {},
       "order": 9,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "value",
-          "type": "INT",
-          "widget": {
-            "name": "value"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "INT",
@@ -1450,7 +1100,7 @@
       6,
       2,
       8,
-      11,
+      7,
       "INT"
     ],
     [
@@ -1610,7 +1260,7 @@
       14,
       1,
       15,
-      4,
+      3,
       "AUDIO"
     ],
     [
@@ -1674,7 +1324,7 @@
       18,
       0,
       13,
-      13,
+      10,
       "INT"
     ],
     [
@@ -1682,7 +1332,7 @@
       8,
       4,
       13,
-      12,
+      9,
       "STRING"
     ]
   ],

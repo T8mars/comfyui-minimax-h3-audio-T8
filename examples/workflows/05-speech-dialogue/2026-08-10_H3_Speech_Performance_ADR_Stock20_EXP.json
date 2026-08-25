@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "['CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'Comfy-hunyuan_video_image_to_video_720p_bf16.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'LongCat_TI2V_comfy_bf16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'Phantom-Wan-1_3B_fp16.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'acestep_v1.5_turbo.safetensors', 'acestep_v1.5_xl_sft_bf16.safetensors', 'acestep_v1.5_xl_turbo_bf16.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'boogu_image_base_fp8_scaled.safetensors', 'boogu_image_edit_fp8_scaled.safetensors', 'boogu_image_turbo_fp8_scaled.safetensors', 'comfy-hunyuan_video_v2_replace_image_to_video_720p_bf16.safetensors', 'comfy-wan2.1_i2v_480p_14B_bf16 .safetensors', 'comfy-wan2.1_i2v_720p_14B_bf16.safetensors', 'comfy-wan2.1_t2v_1.3B_bf16.safetensors', 'comfy-wan2.1_t2v_14B_bf16.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'hunyuan_video_accvid-t2v-5-steps_fp8_e4m3fn.safetensors', 'hunyuan_video_custom_720p_fp8_scaled.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'svdq-fp4_r128-z-image-turbo.safetensors', 'svdq-int4_r128-z-image-turbo.safetensors', 'svdq-int4_r256-z-image-turbo.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors', 'z_image_turbo_bf16.safetensors']",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -70,32 +53,7 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "['stable_diffusion', 'stable_cascade', 'sd3', 'stable_audio', 'mochi', 'ltxv', 'pixart', 'cosmos', 'lumina2', 'wan', 'hidream', 'chroma', 'ace', 'omnigen2', 'qwen_image', 'hunyuan_image', 'flux2', 'ovis', 'longcat_image', 'cogvideox', 'lens', 'pixeldit', 'ideogram4', 'boogu', 'krea2', 'joyimage', 'mage', 'minimax']",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "['default', 'cpu']",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -130,16 +88,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -172,16 +121,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -214,80 +154,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "voice_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "voice_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "speaker_id",
-          "type": "STRING",
-          "widget": {
-            "name": "speaker_id"
-          },
-          "link": null
-        },
-        {
-          "name": "voice_description",
-          "type": "STRING",
-          "widget": {
-            "name": "voice_description"
-          },
-          "link": null
-        },
-        {
-          "name": "language",
-          "type": "COMBO",
-          "widget": {
-            "name": "language"
-          },
-          "link": null
-        },
-        {
-          "name": "rights_confirmed",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "rights_confirmed"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_start_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "reference_start_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "reference_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "highpass_60hz",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "highpass_60hz"
-          },
-          "link": null
-        },
-        {
-          "name": "peak_limit_minus_3_dbfs",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "peak_limit_minus_3_dbfs"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "voice_profile",
@@ -344,78 +211,6 @@
           "name": "voice_profile",
           "type": "H3_T8_VOICE_PROFILE",
           "link": 1
-        },
-        {
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": null
-        },
-        {
-          "name": "language",
-          "type": "COMBO",
-          "widget": {
-            "name": "language"
-          },
-          "link": null
-        },
-        {
-          "name": "acting_direction",
-          "type": "STRING",
-          "widget": {
-            "name": "acting_direction"
-          },
-          "link": null
-        },
-        {
-          "name": "emotion",
-          "type": "STRING",
-          "widget": {
-            "name": "emotion"
-          },
-          "link": null
-        },
-        {
-          "name": "emotion_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "emotion_intensity"
-          },
-          "link": null
-        },
-        {
-          "name": "space",
-          "type": "COMBO",
-          "widget": {
-            "name": "space"
-          },
-          "link": null
-        },
-        {
-          "name": "chunking",
-          "type": "COMBO",
-          "widget": {
-            "name": "chunking"
-          },
-          "link": null
-        },
-        {
-          "name": "target_units",
-          "type": "INT",
-          "widget": {
-            "name": "target_units"
-          },
-          "link": null
-        },
-        {
-          "name": "max_units",
-          "type": "INT",
-          "widget": {
-            "name": "max_units"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -468,62 +263,6 @@
           "name": "speech_plan",
           "type": "H3_T8_SPEECH_PLAN",
           "link": 2
-        },
-        {
-          "name": "segment_index",
-          "type": "INT",
-          "widget": {
-            "name": "segment_index"
-          },
-          "link": null
-        },
-        {
-          "name": "emotion",
-          "type": "STRING",
-          "widget": {
-            "name": "emotion"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_intensity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "prompt_intensity"
-          },
-          "link": null
-        },
-        {
-          "name": "pace",
-          "type": "COMBO",
-          "widget": {
-            "name": "pace"
-          },
-          "link": null
-        },
-        {
-          "name": "pitch",
-          "type": "COMBO",
-          "widget": {
-            "name": "pitch"
-          },
-          "link": null
-        },
-        {
-          "name": "energy",
-          "type": "COMBO",
-          "widget": {
-            "name": "energy"
-          },
-          "link": null
-        },
-        {
-          "name": "nonverbal_direction",
-          "type": "STRING",
-          "widget": {
-            "name": "nonverbal_direction"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -599,174 +338,6 @@
           "name": "speech_plan",
           "type": "H3_T8_SPEECH_PLAN",
           "link": 8
-        },
-        {
-          "name": "segment_index",
-          "type": "INT",
-          "widget": {
-            "name": "segment_index"
-          },
-          "link": null
-        },
-        {
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "name": "render_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "render_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "resolution",
-          "type": "COMBO",
-          "widget": {
-            "name": "resolution"
-          },
-          "link": null
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "trim_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "trim_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "verify_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "verify_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "asr_model_directory",
-          "type": "STRING",
-          "widget": {
-            "name": "asr_model_directory"
-          },
-          "link": null
-        },
-        {
-          "name": "asr_language",
-          "type": "COMBO",
-          "widget": {
-            "name": "asr_language"
-          },
-          "link": null
-        },
-        {
-          "name": "min_similarity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "min_similarity"
-          },
-          "link": null
-        },
-        {
-          "name": "unload_asr_after_verify",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "unload_asr_after_verify"
-          },
-          "link": null
-        },
-        {
-          "name": "speaker_check_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "speaker_check_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "speaker_model_directory",
-          "type": "STRING",
-          "widget": {
-            "name": "speaker_model_directory"
-          },
-          "link": null
-        },
-        {
-          "name": "min_speaker_similarity",
-          "type": "FLOAT",
-          "widget": {
-            "name": "min_speaker_similarity"
-          },
-          "link": null
-        },
-        {
-          "name": "unload_speaker_after_verify",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "unload_speaker_after_verify"
-          },
-          "link": null
-        },
-        {
-          "name": "peak_limit_dbfs",
-          "type": "FLOAT",
-          "widget": {
-            "name": "peak_limit_dbfs"
-          },
-          "link": null
-        },
-        {
-          "name": "release_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "release_policy"
-          },
-          "link": null
         },
         {
           "name": "speech_guard",
@@ -868,46 +439,6 @@
           "name": "audio",
           "type": "AUDIO",
           "link": 9
-        },
-        {
-          "name": "target_duration_seconds",
-          "type": "FLOAT",
-          "widget": {
-            "name": "target_duration_seconds"
-          },
-          "link": null
-        },
-        {
-          "name": "fit_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "fit_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_rate",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_rate"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_rate",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_rate"
-          },
-          "link": null
-        },
-        {
-          "name": "pitch_semitones",
-          "type": "FLOAT",
-          "widget": {
-            "name": "pitch_semitones"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -956,14 +487,6 @@
           "name": "audio",
           "type": "AUDIO",
           "link": 10
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
         }
       ],
       "outputs": [

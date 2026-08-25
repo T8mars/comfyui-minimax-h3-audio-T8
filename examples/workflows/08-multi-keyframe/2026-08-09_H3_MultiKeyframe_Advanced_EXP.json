@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "COMBO",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -69,32 +52,7 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "clip_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "clip_name"
-          },
-          "link": null
-        },
-        {
-          "name": "type",
-          "type": "COMBO",
-          "widget": {
-            "name": "type"
-          },
-          "link": null
-        },
-        {
-          "name": "device",
-          "type": "COMBO",
-          "widget": {
-            "name": "device"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "CLIP",
@@ -128,16 +86,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -170,16 +119,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VAE",
@@ -212,24 +152,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -268,24 +191,7 @@
       "flags": {},
       "order": 5,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -324,24 +230,7 @@
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -380,24 +269,7 @@
       "flags": {},
       "order": 7,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "COMBO",
-          "widget": {
-            "name": "image"
-          },
-          "link": null
-        },
-        {
-          "name": "upload",
-          "type": "IMAGEUPLOAD",
-          "widget": {
-            "name": "upload"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "IMAGE",
@@ -441,46 +313,6 @@
           "name": "image",
           "type": "IMAGE",
           "link": 6
-        },
-        {
-          "name": "position_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "position_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "position",
-          "type": "FLOAT",
-          "widget": {
-            "name": "position"
-          },
-          "link": null
-        },
-        {
-          "name": "visual_noise_aug",
-          "type": "FLOAT",
-          "widget": {
-            "name": "visual_noise_aug"
-          },
-          "link": null
-        },
-        {
-          "name": "resize_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "resize_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enabled"
-          },
-          "link": null
         },
         {
           "name": "previous_plan",
@@ -528,46 +360,6 @@
           "name": "image",
           "type": "IMAGE",
           "link": 8
-        },
-        {
-          "name": "position_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "position_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "position",
-          "type": "FLOAT",
-          "widget": {
-            "name": "position"
-          },
-          "link": null
-        },
-        {
-          "name": "visual_noise_aug",
-          "type": "FLOAT",
-          "widget": {
-            "name": "visual_noise_aug"
-          },
-          "link": null
-        },
-        {
-          "name": "resize_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "resize_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "enabled",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enabled"
-          },
-          "link": null
         },
         {
           "name": "previous_plan",
@@ -630,126 +422,6 @@
           "name": "audio_vae",
           "type": "VAE",
           "link": 4
-        },
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "widget": {
-            "name": "prompt"
-          },
-          "link": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
-          "name": "length",
-          "type": "INT",
-          "widget": {
-            "name": "length"
-          },
-          "link": null
-        },
-        {
-          "name": "task_type",
-          "type": "COMBO",
-          "widget": {
-            "name": "task_type"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_denoise_strength",
-          "type": "FLOAT",
-          "widget": {
-            "name": "audio_denoise_strength"
-          },
-          "link": null
-        },
-        {
-          "name": "add_source_as_reference",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "add_source_as_reference"
-          },
-          "link": null
-        },
-        {
-          "name": "prompt_primary_audio_ordinal",
-          "type": "INT",
-          "widget": {
-            "name": "prompt_primary_audio_ordinal"
-          },
-          "link": null
-        },
-        {
-          "name": "strict_prompt_tags",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "strict_prompt_tags"
-          },
-          "link": null
-        },
-        {
-          "name": "ref_image_size",
-          "type": "COMBO",
-          "widget": {
-            "name": "ref_image_size"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_video_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "reference_video_policy"
-          },
-          "link": null
-        },
-        {
-          "name": "first_frame_noise_aug",
-          "type": "FLOAT",
-          "widget": {
-            "name": "first_frame_noise_aug"
-          },
-          "link": null
-        },
-        {
-          "name": "last_frame_noise_aug",
-          "type": "FLOAT",
-          "widget": {
-            "name": "last_frame_noise_aug"
-          },
-          "link": null
-        },
-        {
-          "name": "reference_visual_noise_aug",
-          "type": "FLOAT",
-          "widget": {
-            "name": "reference_visual_noise_aug"
-          },
-          "link": null
         },
         {
           "name": "drive_audio",
@@ -877,46 +549,6 @@
           "name": "av_latent",
           "type": "LATENT",
           "link": 13
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1008,16 +640,7 @@
       "flags": {},
       "order": 13,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "noise_seed",
-          "type": "INT",
-          "widget": {
-            "name": "noise_seed"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "NOISE",
@@ -1259,7 +882,7 @@
       5,
       0,
       11,
-      21,
+      6,
       "IMAGE"
     ],
     [
@@ -1275,7 +898,7 @@
       9,
       0,
       10,
-      6,
+      1,
       "H3_T8_KEYFRAME_PLAN"
     ],
     [
@@ -1291,7 +914,7 @@
       8,
       0,
       11,
-      22,
+      7,
       "IMAGE"
     ],
     [
@@ -1299,7 +922,7 @@
       10,
       0,
       11,
-      23,
+      8,
       "H3_T8_KEYFRAME_PLAN"
     ],
     [

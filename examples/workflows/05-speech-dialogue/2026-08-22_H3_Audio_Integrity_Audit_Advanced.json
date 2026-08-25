@@ -6,67 +6,155 @@
       "id": 1,
       "type": "LoadAudio",
       "title": "Load the final H3 audio or muxed master to audit",
-      "pos": [0, 0],
-      "size": [390, 124],
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [{"name": "audio", "type": "COMBO", "widget": {"name": "audio"}, "link": null}],
-      "outputs": [{"name": "AUDIO", "type": "AUDIO", "links": [1]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadAudio"},
-      "widgets_values": ["replace_with_h3_output_audio.wav"]
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_h3_output_audio.wav"
+      ]
     },
     {
       "id": 2,
       "type": "MiniMaxH3AudioIntegrityAuditT8Advanced",
       "title": "Report-only: PASS or ABSTAIN; audio is never changed",
-      "pos": [450, 0],
-      "size": [560, 430],
+      "pos": [
+        450,
+        0
+      ],
+      "size": [
+        560,
+        430
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {"name": "audio", "type": "AUDIO", "link": 1},
-        {"name": "video_frame_count", "type": "INT", "widget": {"name": "video_frame_count"}, "link": null},
-        {"name": "fps", "type": "FLOAT", "widget": {"name": "fps"}, "link": null},
-        {"name": "opening_window_ms", "type": "FLOAT", "widget": {"name": "opening_window_ms"}, "link": null},
-        {"name": "comparison_window_ms", "type": "FLOAT", "widget": {"name": "comparison_window_ms"}, "link": null},
-        {"name": "pop_jump_threshold", "type": "FLOAT", "widget": {"name": "pop_jump_threshold"}, "link": null},
-        {"name": "dc_jump_threshold", "type": "FLOAT", "widget": {"name": "dc_jump_threshold"}, "link": null},
-        {"name": "wrap_correlation_threshold", "type": "FLOAT", "widget": {"name": "wrap_correlation_threshold"}, "link": null},
-        {"name": "clipping_ratio_threshold", "type": "FLOAT", "widget": {"name": "clipping_ratio_threshold"}, "link": null},
-        {"name": "max_av_delta_ms", "type": "FLOAT", "widget": {"name": "max_av_delta_ms"}, "link": null}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 1
+        }
       ],
       "outputs": [
-        {"name": "audio", "type": "AUDIO", "links": null},
-        {"name": "pass_audit", "type": "BOOLEAN", "links": null},
-        {"name": "decision", "type": "STRING", "links": null},
-        {"name": "exact_samples", "type": "INT", "links": null},
-        {"name": "duration_seconds", "type": "FLOAT", "links": null},
-        {"name": "av_delta_ms", "type": "FLOAT", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "pass_audit",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "exact_samples",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "av_delta_ms",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
       ],
-      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3AudioIntegrityAuditT8Advanced"},
-      "widgets_values": [124, 24.0, 40.0, 250.0, 0.15, 0.02, 0.985, 0.001, 21.0]
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioIntegrityAuditT8Advanced"
+      },
+      "widgets_values": [
+        124,
+        24.0,
+        40.0,
+        250.0,
+        0.15,
+        0.02,
+        0.985,
+        0.001,
+        21.0
+      ]
     },
     {
       "id": 3,
       "type": "MarkdownNote",
       "title": "使用说明：这是审计器，不是自动修音",
-      "pos": [0, 180],
-      "size": [390, 420],
+      "pos": [
+        0,
+        180
+      ],
+      "size": [
+        390,
+        420
+      ],
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 音频完整性审计\n\n- 把最终H3音频或最终混音接入；`video_frame_count=0`只检查音频，填实际帧数时还会检查A/V边界。\n- 检查开头相邻采样突变、10ms块均值DC跳变、削波、尾首相似度、精确采样数和时长。\n- `ABSTAIN`表示需要试听/排查，不代表已经证明模型存在故障。循环音乐可能触发尾首相似提示。\n- 节点逐位传回原AUDIO，不截断、不重采样、不修复。"]
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 音频完整性审计\n\n- 把最终H3音频或最终混音接入；`video_frame_count=0`只检查音频，填实际帧数时还会检查A/V边界。\n- 检查开头相邻采样突变、10ms块均值DC跳变、削波、尾首相似度、精确采样数和时长。\n- `ABSTAIN`表示需要试听/排查，不代表已经证明模型存在故障。循环音乐可能触发尾首相似提示。\n- 节点逐位传回原AUDIO，不截断、不重采样、不修复。"
+      ]
     }
   ],
-  "links": [[1, 1, 0, 2, 0, "AUDIO"]],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "AUDIO"
+    ]
+  ],
   "groups": [],
   "config": {},
-  "extra": {"ds": {"scale": 0.9, "offset": [80, 100]}},
+  "extra": {
+    "ds": {
+      "scale": 0.9,
+      "offset": [
+        80,
+        100
+      ]
+    }
+  },
   "version": 0.4
 }

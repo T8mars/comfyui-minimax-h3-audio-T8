@@ -3,67 +3,230 @@
   "last_link_id": 2,
   "nodes": [
     {
-      "id": 1, "type": "CLIPLoader", "title": "Load the installed Qwen3-VL 8B encoder with the stock pageable loader",
-      "pos": [0, 0], "size": [430, 190], "flags": {}, "order": 0, "mode": 0,
-      "inputs": [
-        {"name": "clip_name", "type": "COMBO", "widget": {"name": "clip_name"}, "link": null},
-        {"name": "type", "type": "COMBO", "widget": {"name": "type"}, "link": null},
-        {"name": "device", "type": "COMBO", "widget": {"name": "device"}, "link": null}
+      "id": 1,
+      "type": "CLIPLoader",
+      "title": "Load the installed Qwen3-VL 8B encoder with the stock pageable loader",
+      "pos": [
+        0,
+        0
       ],
-      "outputs": [{"name": "CLIP", "type": "CLIP", "links": [1]}],
-      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "CLIPLoader"},
-      "widgets_values": ["qwen3vl_8b_fp8_scaled.safetensors", "boogu", "default"]
+      "size": [
+        430,
+        190
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_8b_fp8_scaled.safetensors",
+        "boogu",
+        "default"
+      ]
     },
     {
-      "id": 2, "type": "ClipProjApply", "title": "External ComfyUI-ClipProj 0.1.13+ (install separately)",
-      "pos": [510, 0], "size": [430, 150], "flags": {}, "order": 1, "mode": 0,
-      "inputs": [
-        {"name": "clip", "type": "CLIP", "link": 1},
-        {"name": "projection", "type": "COMBO", "widget": {"name": "projection"}, "link": null}
+      "id": 2,
+      "type": "ClipProjApply",
+      "title": "External ComfyUI-ClipProj 0.1.13+ (install separately)",
+      "pos": [
+        510,
+        0
       ],
-      "outputs": [{"name": "clip", "type": "CLIP", "links": [2]}],
-      "properties": {"cnr_id": "comfyui-clipproj", "Node name for S&R": "ClipProjApply"},
-      "widgets_values": ["mmh3-8b-ClipProj-v3.1.safetensors"]
-    },
-    {
-      "id": 3, "type": "MiniMaxH3ClipProjCompatibilityAuditT8Advanced", "title": "Pass-through contract audit before H3 Conditioning",
-      "pos": [1020, 0], "size": [600, 430], "flags": {}, "order": 2, "mode": 0,
+      "size": [
+        430,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
       "inputs": [
-        {"name": "clip", "type": "CLIP", "link": 2},
-        {"name": "encoder_family", "type": "COMBO", "widget": {"name": "encoder_family"}, "link": null},
-        {"name": "encoder_architecture", "type": "COMBO", "widget": {"name": "encoder_architecture"}, "link": null},
-        {"name": "encoder_quantization", "type": "COMBO", "widget": {"name": "encoder_quantization"}, "link": null},
-        {"name": "load_mode", "type": "COMBO", "widget": {"name": "load_mode"}, "link": null},
-        {"name": "projection_path", "type": "STRING", "widget": {"name": "projection_path"}, "link": null},
-        {"name": "has_reference_images", "type": "BOOLEAN", "widget": {"name": "has_reference_images"}, "link": null},
-        {"name": "has_reference_videos", "type": "BOOLEAN", "widget": {"name": "has_reference_videos"}, "link": null},
-        {"name": "enforcement", "type": "COMBO", "widget": {"name": "enforcement"}, "link": null}
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        }
       ],
       "outputs": [
-        {"name": "clip", "type": "CLIP", "links": null},
-        {"name": "compatible", "type": "BOOLEAN", "links": null},
-        {"name": "decision", "type": "STRING", "links": null},
-        {"name": "plugin_version", "type": "STRING", "links": null},
-        {"name": "projection_input_dim", "type": "INT", "links": null},
-        {"name": "projection_output_dim", "type": "INT", "links": null},
-        {"name": "report_json", "type": "STRING", "links": null}
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
       ],
-      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3ClipProjCompatibilityAuditT8Advanced"},
-      "widgets_values": ["8B", "qwen3_vl", "fp8", "stock_pageable", "mmh3-8b-ClipProj-v3.1.safetensors", false, false, "block_hard_conflicts"]
+      "properties": {
+        "cnr_id": "comfyui-clipproj",
+        "Node name for S&R": "ClipProjApply"
+      },
+      "widgets_values": [
+        "mmh3-8b-ClipProj-v3.1.safetensors"
+      ]
     },
     {
-      "id": 4, "type": "MarkdownNote", "title": "① 这是外部桥，不复制ClipProj",
-      "pos": [0, 520], "size": [760, 330], "flags": {}, "order": 3, "mode": 0,
-      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 安装与连接\n\n本机审核配置是`qwen3vl_8b_fp8_scaled.safetensors` + `mmh3-8b-ClipProj-v3.1.safetensors`。单独安装`nicolab28/ComfyUI-ClipProj >= 0.1.13`，编码器放到`models/text_encoders`，矩阵放到`models/clip_projections`。单卡先用官方Load CLIP再接ClipProj Apply；本审计节点接在Apply后、H3 Conditioning前，只原样透传CLIP。"]
+      "id": 3,
+      "type": "MiniMaxH3ClipProjCompatibilityAuditT8Advanced",
+      "title": "Pass-through contract audit before H3 Conditioning",
+      "pos": [
+        1020,
+        0
+      ],
+      "size": [
+        600,
+        430
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": null
+        },
+        {
+          "name": "compatible",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "plugin_version",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "projection_input_dim",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "projection_output_dim",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ClipProjCompatibilityAuditT8Advanced"
+      },
+      "widgets_values": [
+        "8B",
+        "qwen3_vl",
+        "fp8",
+        "stock_pageable",
+        "mmh3-8b-ClipProj-v3.1.safetensors",
+        false,
+        false,
+        "block_hard_conflicts"
+      ]
     },
     {
-      "id": 5, "type": "MarkdownNote", "title": "② 必须匹配维度与模态",
-      "pos": [820, 520], "size": [800, 330], "flags": {}, "order": 4, "mode": 0,
-      "inputs": [], "outputs": [], "properties": {"Node name for S&R": "MarkdownNote"},
-      "widgets_values": ["## 不能把小编码器当无损替换\n\n4B矩阵输入应为2560、8B应为4096，输出必须5120；text-only Qwen3即使维度相同也会被拒绝。I2VA/FL2VA把`has_reference_images`打开，Ref2VA把`has_reference_videos`打开。审计PASS只证明合同匹配，不证明等同32B，也不证明中文、专名、对白和参考遵循度。"]
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "① 这是外部桥，不复制ClipProj",
+      "pos": [
+        0,
+        520
+      ],
+      "size": [
+        760,
+        330
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 安装与连接\n\n本机审核配置是`qwen3vl_8b_fp8_scaled.safetensors` + `mmh3-8b-ClipProj-v3.1.safetensors`。单独安装`nicolab28/ComfyUI-ClipProj >= 0.1.13`，编码器放到`models/text_encoders`，矩阵放到`models/clip_projections`。单卡先用官方Load CLIP再接ClipProj Apply；本审计节点接在Apply后、H3 Conditioning前，只原样透传CLIP。"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "title": "② 必须匹配维度与模态",
+      "pos": [
+        820,
+        520
+      ],
+      "size": [
+        800,
+        330
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 不能把小编码器当无损替换\n\n4B矩阵输入应为2560、8B应为4096，输出必须5120；text-only Qwen3即使维度相同也会被拒绝。I2VA/FL2VA把`has_reference_images`打开，Ref2VA把`has_reference_videos`打开。审计PASS只证明合同匹配，不证明等同32B，也不证明中文、专名、对白和参考遵循度。"
+      ]
     }
   ],
-  "links": [[1, 1, 0, 2, 0, "CLIP"], [2, 2, 0, 3, 0, "CLIP"]],
-  "groups": [], "config": {}, "extra": {"ds": {"scale": 0.8, "offset": [80, 80]}}, "version": 0.4
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "CLIP"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        80,
+        80
+      ]
+    }
+  },
+  "version": 0.4
 }

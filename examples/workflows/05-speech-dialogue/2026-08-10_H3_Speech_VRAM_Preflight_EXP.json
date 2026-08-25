@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "unet_name",
-          "type": "['CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'Comfy-hunyuan_video_image_to_video_720p_bf16.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'LongCat_TI2V_comfy_bf16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'Phantom-Wan-1_3B_fp16.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'acestep_v1.5_turbo.safetensors', 'acestep_v1.5_xl_sft_bf16.safetensors', 'acestep_v1.5_xl_turbo_bf16.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'boogu_image_base_fp8_scaled.safetensors', 'boogu_image_edit_fp8_scaled.safetensors', 'boogu_image_turbo_fp8_scaled.safetensors', 'comfy-hunyuan_video_v2_replace_image_to_video_720p_bf16.safetensors', 'comfy-wan2.1_i2v_480p_14B_bf16 .safetensors', 'comfy-wan2.1_i2v_720p_14B_bf16.safetensors', 'comfy-wan2.1_t2v_1.3B_bf16.safetensors', 'comfy-wan2.1_t2v_14B_bf16.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'hunyuan_video_accvid-t2v-5-steps_fp8_e4m3fn.safetensors', 'hunyuan_video_custom_720p_fp8_scaled.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'svdq-fp4_r128-z-image-turbo.safetensors', 'svdq-int4_r128-z-image-turbo.safetensors', 'svdq-int4_r256-z-image-turbo.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors', 'z_image_turbo_bf16.safetensors']",
-          "widget": {
-            "name": "unet_name"
-          },
-          "link": null
-        },
-        {
-          "name": "weight_dtype",
-          "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
-          "widget": {
-            "name": "weight_dtype"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -75,22 +58,6 @@
           "name": "model",
           "type": "MODEL",
           "link": 1
-        },
-        {
-          "name": "minimum_headroom_mib",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_headroom_mib"
-          },
-          "link": null
-        },
-        {
-          "name": "block_when_currently_below_gate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "block_when_currently_below_gate"
-          },
-          "link": null
         }
       ],
       "outputs": [

@@ -19,24 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "backend",
-          "type": "COMBO",
-          "widget": {
-            "name": "backend"
-          },
-          "link": null
-        },
-        {
-          "name": "force_backend",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "force_backend"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "attention_config",
@@ -71,14 +54,6 @@
       "order": 1,
       "mode": 0,
       "inputs": [
-        {
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
         {
           "name": "attn_backend",
           "type": "MINIMAX_H3_ATTN",
@@ -118,48 +93,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "model_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "model_name"
-          },
-          "link": null
-        },
-        {
-          "name": "use_final_norm",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "use_final_norm"
-          },
-          "link": null
-        },
-        {
-          "name": "group_size",
-          "type": "INT",
-          "widget": {
-            "name": "group_size"
-          },
-          "link": null
-        },
-        {
-          "name": "pin_memory",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "pin_memory"
-          },
-          "link": null
-        },
-        {
-          "name": "disk_workers",
-          "type": "INT",
-          "widget": {
-            "name": "disk_workers"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "text_encoder",
@@ -196,24 +130,7 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "vae_name"
-          },
-          "link": null
-        },
-        {
-          "name": "audio_vae_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "audio_vae_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "av_encoder",
@@ -248,48 +165,7 @@
       "flags": {},
       "order": 4,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": null
-        },
-        {
-          "name": "mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "mode"
-          },
-          "link": null
-        },
-        {
-          "name": "total_duration",
-          "type": "FLOAT",
-          "widget": {
-            "name": "total_duration"
-          },
-          "link": null
-        },
-        {
-          "name": "ratio",
-          "type": "COMBO",
-          "widget": {
-            "name": "ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "negative_text",
-          "type": "STRING",
-          "widget": {
-            "name": "negative_text"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "prompt",
@@ -338,22 +214,6 @@
           "link": 2
         },
         {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": null
-        },
-        {
           "name": "av_encoder",
           "type": "MINIMAX_H3_AV_ENCODER",
           "link": 3,
@@ -376,14 +236,6 @@
           "type": "MINIMAX_H3_PROMPT",
           "link": 4,
           "shape": 7
-        },
-        {
-          "name": "ref_max",
-          "type": "INT",
-          "widget": {
-            "name": "ref_max"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -434,104 +286,7 @@
       "flags": {},
       "order": 6,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "profile",
-          "type": "COMBO",
-          "widget": {
-            "name": "profile"
-          },
-          "link": null
-        },
-        {
-          "name": "block_to_swap",
-          "type": "INT",
-          "widget": {
-            "name": "block_to_swap"
-          },
-          "link": null
-        },
-        {
-          "name": "hot_blocks",
-          "type": "INT",
-          "widget": {
-            "name": "hot_blocks"
-          },
-          "link": null
-        },
-        {
-          "name": "prefetch",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "prefetch"
-          },
-          "link": null
-        },
-        {
-          "name": "prefetch_count",
-          "type": "INT",
-          "widget": {
-            "name": "prefetch_count"
-          },
-          "link": null
-        },
-        {
-          "name": "pin_memory",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "pin_memory"
-          },
-          "link": null
-        },
-        {
-          "name": "disk_workers",
-          "type": "INT",
-          "widget": {
-            "name": "disk_workers"
-          },
-          "link": null
-        },
-        {
-          "name": "auto_vram",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "auto_vram"
-          },
-          "link": null
-        },
-        {
-          "name": "vram_reserve_mb",
-          "type": "FLOAT",
-          "widget": {
-            "name": "vram_reserve_mb"
-          },
-          "link": null
-        },
-        {
-          "name": "offload_dit",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "offload_dit"
-          },
-          "link": null
-        },
-        {
-          "name": "dtype",
-          "type": "COMBO",
-          "widget": {
-            "name": "dtype"
-          },
-          "link": null
-        },
-        {
-          "name": "require_external_runtime",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "require_external_runtime"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "block_swap_args",
@@ -592,86 +347,6 @@
           "name": "positive",
           "type": "MINIMAX_H3_COND",
           "link": 6
-        },
-        {
-          "name": "seed",
-          "type": "INT",
-          "widget": {
-            "name": "seed"
-          },
-          "link": null
-        },
-        {
-          "name": "steps",
-          "type": "INT",
-          "widget": {
-            "name": "steps"
-          },
-          "link": null
-        },
-        {
-          "name": "cfg",
-          "type": "FLOAT",
-          "widget": {
-            "name": "cfg"
-          },
-          "link": null
-        },
-        {
-          "name": "sampler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "sampler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "scheduler_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "scheduler_name"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_video",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_video"
-          },
-          "link": null
-        },
-        {
-          "name": "shift_audio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shift_audio"
-          },
-          "link": null
-        },
-        {
-          "name": "denoise",
-          "type": "FLOAT",
-          "widget": {
-            "name": "denoise"
-          },
-          "link": null
-        },
-        {
-          "name": "use_adaln_cache",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "use_adaln_cache"
-          },
-          "link": null
-        },
-        {
-          "name": "adaln_prebake_batch",
-          "type": "INT",
-          "widget": {
-            "name": "adaln_prebake_batch"
-          },
-          "link": null
         },
         {
           "name": "negative",
@@ -803,26 +478,10 @@
           "link": 12
         },
         {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
           "name": "audio",
           "type": "AUDIO",
           "link": 13,
           "shape": 7
-        },
-        {
-          "name": "bit_depth",
-          "type": "INT",
-          "widget": {
-            "name": "bit_depth"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -863,22 +522,6 @@
           "name": "video",
           "type": "VIDEO",
           "link": 14
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "format",
-          "type": "COMBO",
-          "widget": {
-            "name": "format"
-          },
-          "link": null
         },
         {
           "name": "codec",
@@ -1057,7 +700,7 @@
       1,
       0,
       2,
-      1,
+      0,
       "MINIMAX_H3_ATTN"
     ],
     [
@@ -1073,7 +716,7 @@
       4,
       0,
       6,
-      3,
+      1,
       "MINIMAX_H3_AV_ENCODER"
     ],
     [
@@ -1081,7 +724,7 @@
       5,
       0,
       6,
-      6,
+      4,
       "MINIMAX_H3_PROMPT"
     ],
     [
@@ -1105,7 +748,7 @@
       6,
       1,
       8,
-      12,
+      2,
       "MINIMAX_H3_COND"
     ],
     [
@@ -1113,7 +756,7 @@
       6,
       2,
       8,
-      13,
+      3,
       "MINIMAX_H3_LATENT"
     ],
     [
@@ -1121,7 +764,7 @@
       7,
       0,
       8,
-      15,
+      5,
       "MINIMAX_H3_SWAP"
     ],
     [
@@ -1153,7 +796,7 @@
       9,
       1,
       10,
-      2,
+      1,
       "AUDIO"
     ],
     [

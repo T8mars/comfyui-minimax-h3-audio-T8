@@ -19,32 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "job_id",
-          "type": "STRING",
-          "widget": {
-            "name": "job_id"
-          },
-          "link": null
-        },
-        {
-          "name": "action",
-          "type": "COMBO",
-          "widget": {
-            "name": "action"
-          },
-          "link": null
-        },
-        {
-          "name": "confirm_reset",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "confirm_reset"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "report_json",

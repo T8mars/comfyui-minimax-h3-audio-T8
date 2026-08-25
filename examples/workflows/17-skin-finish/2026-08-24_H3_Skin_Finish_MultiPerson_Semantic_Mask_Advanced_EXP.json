@@ -19,16 +19,7 @@
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "file",
-          "type": "COMBO",
-          "widget": {
-            "name": "file"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "VIDEO",
@@ -118,16 +109,7 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        {
-          "name": "ckpt_name",
-          "type": "COMBO",
-          "widget": {
-            "name": "ckpt_name"
-          },
-          "link": null
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "name": "MODEL",
@@ -173,14 +155,6 @@
       "order": 3,
       "mode": 0,
       "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "widget": {
-            "name": "text"
-          },
-          "link": null
-        },
         {
           "name": "clip",
           "type": "CLIP",
@@ -234,70 +208,6 @@
           "name": "conditioning",
           "type": "CONDITIONING",
           "link": 5
-        },
-        {
-          "name": "fps",
-          "type": "FLOAT",
-          "widget": {
-            "name": "fps"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_people",
-          "type": "INT",
-          "widget": {
-            "name": "maximum_people"
-          },
-          "link": null
-        },
-        {
-          "name": "detection_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "detection_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "detect_interval",
-          "type": "INT",
-          "widget": {
-            "name": "detect_interval"
-          },
-          "link": null
-        },
-        {
-          "name": "scene_cut_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "scene_cut_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "analysis_max_side",
-          "type": "COMBO",
-          "widget": {
-            "name": "analysis_max_side"
-          },
-          "link": null
-        },
-        {
-          "name": "preview_stride",
-          "type": "INT",
-          "widget": {
-            "name": "preview_stride"
-          },
-          "link": null
-        },
-        {
-          "name": "release_policy",
-          "type": "COMBO",
-          "widget": {
-            "name": "release_policy"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -373,118 +283,6 @@
           "link": 8
         },
         {
-          "name": "parser_model",
-          "type": "COMBO",
-          "widget": {
-            "name": "parser_model"
-          },
-          "link": null
-        },
-        {
-          "name": "detection_threshold",
-          "type": "FLOAT",
-          "widget": {
-            "name": "detection_threshold"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_face_height_px",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_face_height_px"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_detail",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_detail"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_person_overlap",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_person_overlap"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_track_quality",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_track_quality"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_class_probability",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_class_probability"
-          },
-          "link": null
-        },
-        {
-          "name": "feature_protection_px",
-          "type": "INT",
-          "widget": {
-            "name": "feature_protection_px"
-          },
-          "link": null
-        },
-        {
-          "name": "include_neck",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "include_neck"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_skin_area_per_face",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_skin_area_per_face"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_skin_area_per_frame",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_skin_area_per_frame"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_alignment_rms",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_alignment_rms"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_ready_frame_fraction",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_ready_frame_fraction"
-          },
-          "link": null
-        },
-        {
-          "name": "preview_count",
-          "type": "INT",
-          "widget": {
-            "name": "preview_count"
-          },
-          "link": null
-        },
-        {
           "name": "identity_assignment",
           "type": "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT",
           "link": null
@@ -552,126 +350,6 @@
           "name": "frames",
           "type": "IMAGE",
           "link": 10
-        },
-        {
-          "name": "mask_source",
-          "type": "COMBO",
-          "widget": {
-            "name": "mask_source"
-          },
-          "link": null
-        },
-        {
-          "name": "preset",
-          "type": "COMBO",
-          "widget": {
-            "name": "preset"
-          },
-          "link": null
-        },
-        {
-          "name": "amount",
-          "type": "FLOAT",
-          "widget": {
-            "name": "amount"
-          },
-          "link": null
-        },
-        {
-          "name": "texture_keep",
-          "type": "FLOAT",
-          "widget": {
-            "name": "texture_keep"
-          },
-          "link": null
-        },
-        {
-          "name": "shine_control",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shine_control"
-          },
-          "link": null
-        },
-        {
-          "name": "tone_adjust",
-          "type": "FLOAT",
-          "widget": {
-            "name": "tone_adjust"
-          },
-          "link": null
-        },
-        {
-          "name": "execution_mode",
-          "type": "COMBO",
-          "widget": {
-            "name": "execution_mode"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
-        },
-        {
-          "name": "protect_features",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "protect_features"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_mask_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_mask_area"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_mask_area",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_mask_area"
-          },
-          "link": null
-        },
-        {
-          "name": "mask_feather_px",
-          "type": "INT",
-          "widget": {
-            "name": "mask_feather_px"
-          },
-          "link": null
-        },
-        {
-          "name": "temporal_mask_radius",
-          "type": "INT",
-          "widget": {
-            "name": "temporal_mask_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "proxy_long_side",
-          "type": "INT",
-          "widget": {
-            "name": "proxy_long_side"
-          },
-          "link": null
-        },
-        {
-          "name": "chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "chunk_frames"
-          },
-          "link": null
         },
         {
           "name": "skin_mask",
@@ -799,86 +477,6 @@
           "link": 15
         },
         {
-          "name": "shadow_protection",
-          "type": "FLOAT",
-          "widget": {
-            "name": "shadow_protection"
-          },
-          "link": null
-        },
-        {
-          "name": "highlight_protection",
-          "type": "FLOAT",
-          "widget": {
-            "name": "highlight_protection"
-          },
-          "link": null
-        },
-        {
-          "name": "transition_width",
-          "type": "FLOAT",
-          "widget": {
-            "name": "transition_width"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_texture_ratio",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_texture_ratio"
-          },
-          "link": null
-        },
-        {
-          "name": "minimum_reference_texture",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_reference_texture"
-          },
-          "link": null
-        },
-        {
-          "name": "maximum_new_clipped_fraction",
-          "type": "FLOAT",
-          "widget": {
-            "name": "maximum_new_clipped_fraction"
-          },
-          "link": null
-        },
-        {
-          "name": "clipping_epsilon",
-          "type": "FLOAT",
-          "widget": {
-            "name": "clipping_epsilon"
-          },
-          "link": null
-        },
-        {
-          "name": "texture_radius",
-          "type": "INT",
-          "widget": {
-            "name": "texture_radius"
-          },
-          "link": null
-        },
-        {
-          "name": "chunk_frames",
-          "type": "INT",
-          "widget": {
-            "name": "chunk_frames"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
-        },
-        {
           "name": "audio",
           "type": "AUDIO",
           "link": 16
@@ -975,30 +573,6 @@
           "name": "processed_frames",
           "type": "IMAGE",
           "link": 23
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        },
-        {
-          "name": "crf",
-          "type": "FLOAT",
-          "widget": {
-            "name": "crf"
-          },
-          "link": null
-        },
-        {
-          "name": "accept_candidate",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "accept_candidate"
-          },
-          "link": null
         }
       ],
       "outputs": [
@@ -1415,7 +989,7 @@
       3,
       1,
       4,
-      1,
+      0,
       "CLIP"
     ],
     [
@@ -1487,7 +1061,7 @@
       6,
       0,
       7,
-      16,
+      1,
       "MASK"
     ],
     [
@@ -1495,7 +1069,7 @@
       2,
       1,
       7,
-      18,
+      3,
       "AUDIO"
     ],
     [
@@ -1527,7 +1101,7 @@
       7,
       3,
       8,
-      13,
+      3,
       "AUDIO"
     ],
     [
