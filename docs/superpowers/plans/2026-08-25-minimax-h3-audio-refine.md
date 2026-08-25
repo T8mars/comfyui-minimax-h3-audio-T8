@@ -408,3 +408,9 @@ The output must prove: 4 refinement forwards, finite joint latent, exact video l
 - [ ] **Step 4: Commit the smoke runner only after its dry-run tests pass**
 
 Do not commit generated media or machine-specific paths. Quality A/B, user blind listening, Quality Gate, workflows, README, and Frozen Cache remain separate phases after this mechanical smoke.
+
+### Task 9: Post-smoke Quality Gate and user workflow
+
+The single mechanical run completed both 4-step passes and strict media decode, but proved that ComfyUI's zero video mask alone does not guarantee byte-identical returned video latent. Add one append-only Quality Gate at position214 using TDD. It defaults to the original, rejects non-finite/shape/rate/channel/duration failures, treats signal metrics as review cues, and after explicit human acceptance splices only candidate audio latent into the exact original video latent.
+
+Add a dated frontend workflow under`examples/workflows/18-audio-refine`, six or more canvas NOTE nodes, a per-directory README, root README/index entries, and an identical ComfyUI user workflow copy. Preserve old positions0..210 and every pre-existing workflow byte. Run one fixed0.6–0.7MP quality pair only after mechanical and resource gates pass; no matrix, concurrency, stress or cross-GPU run. Final completion remains blocked only on the user's blind listening judgment; Frozen Cache stays deferred.

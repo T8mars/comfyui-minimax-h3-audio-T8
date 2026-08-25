@@ -377,6 +377,10 @@ def test_two_pass_audio_audit_accepts_exact_locked_audio_and_relocks_output():
     assert report["audio_relocked_exact"] is True
     assert report["audio_max_abs"] == 0.0
     assert report["audio_rmse"] == 0.0
+    assert report["audio_finite"] is True
+    assert report["video_finite"] is True
+    assert report["video_exact_equal"] is False
+    assert report["video_max_abs"] == pytest.approx(1.0, abs=1e-6)
 
 
 def test_two_pass_audio_audit_accepts_roundoff_then_replaces_with_exact_input_audio():
@@ -396,6 +400,9 @@ def test_two_pass_audio_audit_accepts_roundoff_then_replaces_with_exact_input_au
     assert report["audio_exact_equal"] is False
     assert report["audio_within_tolerance"] is True
     assert report["audio_relocked_exact"] is True
+    assert report["audio_finite"] is True
+    assert report["video_exact_equal"] is True
+    assert report["video_max_abs"] == 0.0
 
 
 def test_two_pass_audio_audit_fails_closed_when_locked_audio_changes():
@@ -535,7 +542,7 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 214
+    assert len(ids) == 215
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",

@@ -21,6 +21,7 @@ from h3_audio_t8_pkg.audio_refine_advanced import (
     audit_audio_refine,
     canonical_json,
     classify_audio_refine_latent,
+    gate_audio_refine_candidate,
     plan_audio_refine,
     setup_audio_refine,
 )
@@ -29,6 +30,7 @@ from h3_audio_t8_pkg.nodes_audio_refine_advanced import (
     MiniMaxH3AudioRefineAuditT8Advanced,
     MiniMaxH3AudioRefineDualClockSetupT8Advanced,
     MiniMaxH3AudioRefinePlanT8Advanced,
+    MiniMaxH3AudioRefineQualityGateT8Advanced,
 )
 
 
@@ -52,6 +54,14 @@ def _positive(*, offset: float = 0.0):
             {"pooled_output": torch.arange(4, dtype=torch.float32).reshape(1, 4)},
         ]
     ]
+
+
+def _audio(*, sample_rate: int = 32000, scale: float = 1.0):
+    samples = torch.arange(32000, dtype=torch.float32) / float(sample_rate)
+    waveform = (0.1 * scale * torch.sin(2.0 * torch.pi * 440.0 * samples)).reshape(
+        1, 1, -1
+    )
+    return {"waveform": waveform.repeat(1, 2, 1), "sample_rate": sample_rate}
 
 
 class MiniMaxH3DiffusionModel:
@@ -652,6 +662,100 @@ def test_real_sampler_custom_advanced_empty_sigmas_skips_prepare_sampling(
     assert all(torch.equal(left, right) for left, right in zip(actual, expected))
 
 
+def test_quality_gate_defaults_to_original_until_human_accepts_candidate():
+    original = _latent()
+    candidate = _latent(audio_offset=0.25)
+    original_audio = _audio()
+    candidate_audio = _audio()
+
+    selected, selected_audio, accepted, decision, report_json = (
+        gate_audio_refine_candidate(
+            original_av_latent=original,
+            candidate_av_latent=candidate,
+            original_audio=original_audio,
+            candidate_audio=candidate_audio,
+            accept_candidate=False,
+            video_frame_count=24,
+            fps=24.0,
+        )
+    )
+
+    assert selected is original
+    assert selected_audio is original_audio
+    assert accepted is False
+    assert decision == "ABSTAIN_HUMAN_REVIEW_REQUIRED"
+    report = json.loads(report_json)
+    assert report["candidate_mechanically_eligible"] is True
+    assert report["output_video_exact_original"] is True
+    assert report["quality_claim"] == "none; human listening remains authoritative"
+
+
+def test_quality_gate_accepts_only_candidate_audio_and_relocks_original_video():
+    original = _latent()
+    candidate = _latent(audio_offset=0.25)
+    candidate_video, candidate_audio_latent = candidate["samples"].unbind()
+    candidate["samples"] = comfy.nested_tensor.NestedTensor(
+        (candidate_video + 7.0, candidate_audio_latent)
+    )
+    original_audio = _audio()
+    candidate_audio = _audio()
+
+    selected, selected_audio, accepted, decision, report_json = (
+        gate_audio_refine_candidate(
+            original_av_latent=original,
+            candidate_av_latent=candidate,
+            original_audio=original_audio,
+            candidate_audio=candidate_audio,
+            accept_candidate=True,
+            video_frame_count=24,
+            fps=24.0,
+        )
+    )
+
+    selected_video, selected_audio_latent = selected["samples"].unbind()
+    original_video, _ = original["samples"].unbind()
+    _, expected_audio_latent = candidate["samples"].unbind()
+    assert torch.equal(selected_video, original_video)
+    assert torch.equal(selected_audio_latent, expected_audio_latent)
+    assert selected_audio is candidate_audio
+    assert accepted is True
+    assert decision == "ACCEPT_CANDIDATE"
+    report = json.loads(report_json)
+    assert report["candidate_video_changed_during_sampling"] is True
+    assert report["selected_video_relocked_exact"] is True
+
+
+def test_quality_gate_cannot_override_nonfinite_or_rate_mismatched_candidate():
+    original = _latent()
+    candidate = _latent(audio_offset=0.25)
+    candidate_video, candidate_audio_latent = candidate["samples"].unbind()
+    candidate_audio_latent[0, 0, 0, 0] = float("nan")
+    candidate["samples"] = comfy.nested_tensor.NestedTensor(
+        (candidate_video, candidate_audio_latent)
+    )
+    original_audio = _audio()
+
+    selected, selected_audio, accepted, decision, report_json = (
+        gate_audio_refine_candidate(
+            original_av_latent=original,
+            candidate_av_latent=candidate,
+            original_audio=original_audio,
+            candidate_audio=_audio(sample_rate=44100),
+            accept_candidate=True,
+            video_frame_count=24,
+            fps=24.0,
+        )
+    )
+
+    assert selected is original
+    assert selected_audio is original_audio
+    assert accepted is False
+    assert decision == "REJECT_CANDIDATE"
+    codes = set(json.loads(report_json)["hard_reason_codes"])
+    assert "REJECT_CANDIDATE_LATENT_INVALID" in codes
+    assert "REJECT_CANDIDATE_SAMPLE_RATE_MISMATCH" in codes
+
+
 def test_audio_refine_node_schemas_are_append_only_experimental_contracts():
     schemas = [node.define_schema() for node in AUDIO_REFINE_ADVANCED_NODE_CLASSES]
 
@@ -659,6 +763,7 @@ def test_audio_refine_node_schemas_are_append_only_experimental_contracts():
         "MiniMaxH3AudioRefineAuditT8Advanced",
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
+        "MiniMaxH3AudioRefineQualityGateT8Advanced",
     ]
     assert all(schema.is_experimental is True for schema in schemas)
     assert all(schema.category == "T8/MiniMax H3/Audio/Experimental" for schema in schemas)
@@ -706,11 +811,26 @@ def test_audio_refine_node_schemas_are_append_only_experimental_contracts():
         "latent",
         "report_json",
     ]
+    assert [item.id for item in schemas[3].inputs][:5] == [
+        "original_av_latent",
+        "candidate_av_latent",
+        "original_audio",
+        "candidate_audio",
+        "accept_candidate",
+    ]
+    assert [item.id for item in schemas[3].outputs] == [
+        "selected_av_latent",
+        "selected_audio",
+        "candidate_selected",
+        "decision",
+        "report_json",
+    ]
 
 
 def test_audio_refine_schema_defaults_lock_the_reviewed_route():
     audit_schema = MiniMaxH3AudioRefineAuditT8Advanced.define_schema()
     plan_schema = MiniMaxH3AudioRefinePlanT8Advanced.define_schema()
+    quality_gate_schema = MiniMaxH3AudioRefineQualityGateT8Advanced.define_schema()
 
     protected_audio = audit_schema.inputs[6]
     minimum_vram = audit_schema.inputs[7]
@@ -729,6 +849,7 @@ def test_audio_refine_schema_defaults_lock_the_reviewed_route():
     assert plan_schema.inputs[2].default == 0.5
     assert plan_schema.inputs[3].default == 0
     assert plan_schema.inputs[4].options == ["connected_model_explicit"]
+    assert quality_gate_schema.inputs[4].default is False
 
 
 def test_runtime_sensitive_nodes_disable_comfy_result_cache():
@@ -767,7 +888,7 @@ def test_audio_refine_registration_appends_after_the_released_211_node_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == 214
+    assert len(ids) == 215
     assert ids == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
@@ -778,4 +899,5 @@ def test_audio_refine_registration_appends_after_the_released_211_node_prefix():
         "MiniMaxH3AudioRefineAuditT8Advanced",
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
+        "MiniMaxH3AudioRefineQualityGateT8Advanced",
     ]

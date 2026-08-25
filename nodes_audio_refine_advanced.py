@@ -6,6 +6,7 @@ from .audio_refine_advanced import (
     AUDIO_REFINE_AUDIT_TYPE,
     AUDIO_REFINE_PLAN_TYPE,
     audit_audio_refine,
+    gate_audio_refine_candidate,
     plan_audio_refine,
     setup_audio_refine,
 )
@@ -205,8 +206,92 @@ class MiniMaxH3AudioRefineDualClockSetupT8Advanced(io.ComfyNode):
         return float("nan")
 
 
+class MiniMaxH3AudioRefineQualityGateT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineQualityGateT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Quality Gate / "
+                "音频精修人工质量门 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Defaults to the original result. It audits decoded candidate audio, "
+                "rejects invalid shape/rate/duration/non-finite data, and only after explicit "
+                "human acceptance splices the candidate AUDIO latent into the exact original "
+                "VIDEO latent. Signal heuristics are review cues, not quality claims."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                io.Latent.Input("original_av_latent"),
+                io.Latent.Input("candidate_av_latent"),
+                io.Audio.Input("original_audio"),
+                io.Audio.Input("candidate_audio"),
+                io.Boolean.Input(
+                    "accept_candidate",
+                    default=False,
+                    tooltip=(
+                        "Keep false until you have listened to the saved original/candidate pair."
+                    ),
+                ),
+                io.Int.Input("video_frame_count", default=0, min=0, max=1000000),
+                io.Float.Input("fps", default=24.0, min=0.001, max=1000.0, step=0.001),
+                io.Float.Input(
+                    "maximum_duration_delta_ms",
+                    default=50.0,
+                    min=0.0,
+                    max=10000.0,
+                    step=0.1,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "spectral_drift_threshold",
+                    default=0.30,
+                    min=0.01,
+                    max=4.0,
+                    step=0.01,
+                    advanced=True,
+                ),
+                io.Float.Input(
+                    "level_delta_threshold_db",
+                    default=4.0,
+                    min=0.1,
+                    max=40.0,
+                    step=0.1,
+                    advanced=True,
+                ),
+                io.Int.Input(
+                    "persistent_window_count",
+                    default=3,
+                    min=1,
+                    max=100,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Latent.Output("selected_av_latent"),
+                io.Audio.Output("selected_audio"),
+                io.Boolean.Output("candidate_selected"),
+                io.String.Output("decision"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        values = gate_audio_refine_candidate(**kwargs)
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
 AUDIO_REFINE_ADVANCED_NODE_CLASSES = [
     MiniMaxH3AudioRefineAuditT8Advanced,
     MiniMaxH3AudioRefinePlanT8Advanced,
     MiniMaxH3AudioRefineDualClockSetupT8Advanced,
+    MiniMaxH3AudioRefineQualityGateT8Advanced,
 ]

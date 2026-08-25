@@ -5,6 +5,30 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-26 — MiniMax H3 Audio Refine bounded quality pair
+
+Four append-only experimental nodes now cover preflight Audit, deterministic partial-tail Plan,
+dual-clock Setup and a source-first Quality Gate. The old runtime node prefix at positions 0 through
+210 is retained. The initial route is deliberately narrow: the connected model only, CFG 1,
+`native_flow`, `dual_clock_euler`, video/audio shifts 12/3, deterministic noise, video mask zero and
+audio mask one. Protected final/locked/remix audio and unknown transformer patch stacks fail closed.
+
+One bounded quality pair used 1056x608, 124 frames at 24fps, a clear Chinese dialogue prompt, four
+Turbo first-pass steps and four refine steps at `audio_denoise=0.50`. It completed in 414.14 seconds;
+whole-device telemetry observed a 14,468MiB GPU peak and 1,642MiB minimum free VRAM. Original and
+raw-refine H.264/AAC files both strictly decoded at 32kHz stereo. The raw candidate's decoded video
+hash differed from the source, proving that a zero video mask alone is not an exact preservation
+contract in the current ComfyUI path. The Quality Gate therefore defaults to the original result;
+its fallback decoded video and audio hashes were exact matches to the original. After explicit
+acceptance it reconstructs the output from the exact original video latent and candidate audio
+latent, subject to finite/shape/rate/channel/duration checks.
+
+Evidence is kept locally under
+`artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e`. A separate randomized A/B
+page contains no reveal mapping and is ready for human listening. Until that review is returned,
+there is no claim of better sound, transcript/voice preservation, lip-sync preservation, general
+16GB safety or superiority over a conventional eight-step baseline. Frozen Cache remains deferred.
+
 ## 2026-08-24 — Creator and external-bridge human-review adjudication
 
 Three current `final` reviewer exports were checked against their exact private review IDs and

@@ -7,12 +7,29 @@ import struct
 import torch
 
 from tools import build_clipproj_4b_workflow as clipproj_4b
+import h3_audio_t8_pkg.external_compatibility_advanced as compatibility
 
 from h3_audio_t8_pkg.external_compatibility_advanced import (
     _read_plugin_version,
     audit_clipproj_compatibility,
     audit_sol_attn_compatibility,
 )
+
+
+def test_custom_nodes_root_survives_nested_git_worktree(monkeypatch, tmp_path):
+    custom_nodes = tmp_path / "ComfyUI" / "custom_nodes"
+    module_file = (
+        custom_nodes
+        / "minimax-h3-audio-T8"
+        / ".worktrees"
+        / "audio-refine"
+        / "external_compatibility_advanced.py"
+    )
+    module_file.parent.mkdir(parents=True)
+    module_file.touch()
+    monkeypatch.setattr(compatibility, "__file__", str(module_file))
+
+    assert compatibility._custom_nodes_root() == custom_nodes
 
 
 def _plugin_root(tmp_path: Path, kind: str, version: str) -> Path:

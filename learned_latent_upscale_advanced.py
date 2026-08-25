@@ -852,8 +852,31 @@ def audit_two_pass_h3_audio(
             "Second-pass audio shape changed unexpectedly: "
             f"input={tuple(input_audio.shape)}, output={tuple(output_audio.shape)}"
         )
-    if not torch.isfinite(input_audio).all() or not torch.isfinite(output_audio).all():
+    audio_finite = bool(
+        torch.isfinite(input_audio).all() and torch.isfinite(output_audio).all()
+    )
+    video_finite = bool(
+        torch.isfinite(input_video).all() and torch.isfinite(output_video).all()
+    )
+    if not audio_finite:
         raise ValueError("Second-pass audio audit found NaN or Inf")
+    if not video_finite:
+        raise ValueError("Second-pass video audit found NaN or Inf")
+
+    video_exact_equal = bool(torch.equal(input_video, output_video))
+    video_max_abs = 0.0
+    if not video_exact_equal:
+        input_flat = input_video.reshape(-1)
+        output_flat = output_video.reshape(-1)
+        for start in range(0, int(input_flat.numel()), 262_144):
+            delta_chunk = (
+                output_flat[start : start + 262_144].to(dtype=torch.float32)
+                - input_flat[start : start + 262_144].to(dtype=torch.float32)
+            )
+            video_max_abs = max(
+                video_max_abs,
+                float(torch.amax(torch.abs(delta_chunk)).item()),
+            )
 
     input_mask = second_pass_input.get("noise_mask")
     if input_mask is None:
@@ -901,6 +924,10 @@ def audit_two_pass_h3_audio(
             "locked_audio_replaced_exact" if locked_mode and within_tolerance else "measured"
         ),
         "audio_shape": list(input_audio.shape),
+        "audio_finite": audio_finite,
+        "video_finite": video_finite,
+        "video_exact_equal": video_exact_equal,
+        "video_max_abs": video_max_abs,
         "expected_audio_strength": expected_audio_strength,
         "audio_mask_min": audio_mask_min,
         "audio_mask_max": audio_mask_max,

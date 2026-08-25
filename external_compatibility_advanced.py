@@ -31,7 +31,11 @@ def _version_tuple(value: str | None) -> tuple[int, ...]:
 
 
 def _custom_nodes_root() -> Path:
-    return Path(__file__).resolve().parent.parent
+    module_dir = Path(__file__).resolve().parent
+    for candidate in (module_dir, *module_dir.parents):
+        if candidate.name.lower() == "custom_nodes":
+            return candidate
+    return module_dir.parent
 
 
 def _read_plugin_version(path: Path) -> str | None:

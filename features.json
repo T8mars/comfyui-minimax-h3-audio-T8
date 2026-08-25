@@ -979,23 +979,27 @@
     "MiniMaxH3SkinFinishDichromaticT8Advanced",
     "MiniMaxH3AudioRefineAuditT8Advanced",
     "MiniMaxH3AudioRefinePlanT8Advanced",
-    "MiniMaxH3AudioRefineDualClockSetupT8Advanced"
+    "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
+    "MiniMaxH3AudioRefineQualityGateT8Advanced"
   ],
   "audio_refine_advanced": {
-    "status": "implemented locally as three append-only Advanced EXP planning and setup nodes; 47 focused Audio Refine tests, 126 related regression tests, Ruff, py_compile, 144 workflow JSON parses, exact old workflow bytes and the released 211-node prefix pass; real H3 smoke and human listening remain pending",
+    "status": "implemented locally as four append-only Advanced EXP nodes plus one dated frontend workflow; the focused Audio Refine, workflow, smoke-runner and blind-review tests pass, one 1056x608x124 Turbo4+Refine4 quality pair completed with strict AV decode, and final human blind listening remains pending",
     "date": "2026-08-26",
     "category": "T8/MiniMax H3/Audio/Experimental",
     "nodes": [
       "MiniMaxH3AudioRefineAuditT8Advanced",
       "MiniMaxH3AudioRefinePlanT8Advanced",
-      "MiniMaxH3AudioRefineDualClockSetupT8Advanced"
+      "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
+      "MiniMaxH3AudioRefineQualityGateT8Advanced"
     ],
-    "positions": [211, 212, 213],
-    "contract": "audits and content-binds the connected H3 MODEL, positive Conditioning and complete nested AV latent, plans a deterministic partial-tail schedule, then exposes standard MODEL/NOISE/GUIDER/SAMPLER/SIGMAS/LATENT outputs for ComfyUI SamplerCustomAdvanced",
+    "positions": [211, 212, 213, 214],
+    "contract": "audits and content-binds the connected H3 MODEL, positive Conditioning and complete nested AV latent, plans a deterministic partial-tail schedule, exposes standard MODEL/NOISE/GUIDER/SAMPLER/SIGMAS/LATENT outputs for ComfyUI SamplerCustomAdvanced, then defaults to the original result until a human explicitly accepts a mechanically eligible candidate",
     "fixed_initial_scope": "exact uncached route only; CFG 1; native_flow; dual_clock_euler; video/audio shifts 12/3; video noise mask 0 and audio noise mask 1; explicit seed; connected model only",
     "failure_contract": "REJECT outranks ABSTAIN, and any protected final audio, lock/remix route, unsupported mask, unknown patch stack, changed binding, unknown resource state or less than 512MiB whole-device free VRAM / 16GiB host commit headroom returns a zero-step bypass rather than starting refinement",
-    "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; the nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
-    "compatibility": "all 211 previously released node IDs retain their exact order and all existing workflows remain unchanged"
+    "representative_validation": "one bounded 1056x608x124, 24fps Chinese-dialogue run executed Turbo4 plus Refine4 in 414.14 seconds with 14,468MiB observed GPU peak and 1,642MiB minimum free VRAM. Original and raw candidate H.264/AAC files strictly decoded at 32kHz stereo. The raw candidate video changed despite the zero video mask, so the Quality Gate is required; its default fallback reproduced the original decoded video and audio hashes exactly. Evidence is artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e",
+    "human_review": "one randomized A/B package is ready under the ignored representative evidence directory; no perceptual superiority, transcript preservation, voice preservation or lip-sync claim is made before the reviewer export is returned",
+    "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; signal metrics are review cues rather than a quality oracle. The nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
+    "compatibility": "all 211 previously released node IDs retain their exact order, the four new IDs occupy positions 211 through 214, and every pre-existing workflow remains unchanged"
   },
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",

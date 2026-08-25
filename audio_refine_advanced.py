@@ -13,7 +13,11 @@ import comfy.sample
 import comfy.samplers
 import torch
 
-from .core import nested_av_parts, split_noise_masks
+from .audio_integrity_advanced import (
+    analyze_audio_integrity,
+    analyze_audio_perceptual_drift,
+)
+from .core import nested_av_parts, split_noise_masks, validate_audio
 from .nfe_run_contract_advanced import compile_nfe_run_contract
 from .sampling import setup_dual_clock_sampling
 from .vram_policy import runtime_snapshot
@@ -953,4 +957,164 @@ def setup_audio_refine(
         sigmas=sigmas,
         latent=refined_latent,
         report_json=canonical_json(report, indent=2),
+    )
+
+
+def _chunked_max_abs_delta(left: torch.Tensor, right: torch.Tensor) -> float:
+    if tuple(left.shape) != tuple(right.shape):
+        raise ValueError("tensor shapes differ")
+    left_flat = left.reshape(-1)
+    right_flat = right.reshape(-1)
+    maximum = 0.0
+    for start in range(0, int(left_flat.numel()), 262_144):
+        delta = (
+            right_flat[start : start + 262_144].to(dtype=torch.float32)
+            - left_flat[start : start + 262_144].to(dtype=torch.float32)
+        )
+        maximum = max(maximum, float(torch.amax(torch.abs(delta)).item()))
+    return maximum
+
+
+def gate_audio_refine_candidate(
+    *,
+    original_av_latent: dict,
+    candidate_av_latent: dict,
+    original_audio: Mapping,
+    candidate_audio: Mapping,
+    accept_candidate: bool = False,
+    video_frame_count: int = 0,
+    fps: float = 24.0,
+    maximum_duration_delta_ms: float = 50.0,
+    spectral_drift_threshold: float = 0.30,
+    level_delta_threshold_db: float = 4.0,
+    persistent_window_count: int = 3,
+) -> tuple[dict, Mapping, bool, str, str]:
+    """Fail closed, then splice only the reviewed candidate audio into original video."""
+
+    original_video, original_audio_latent = nested_av_parts(original_av_latent)
+    if not bool(torch.isfinite(original_video).all().item()) or not bool(
+        torch.isfinite(original_audio_latent).all().item()
+    ):
+        raise ValueError("original AV latent contains NaN or Infinity")
+    original_waveform, original_rate = validate_audio(original_audio, "original_audio")
+    if not bool(torch.isfinite(original_waveform).all().item()):
+        raise ValueError("original decoded audio contains NaN or Infinity")
+
+    hard_reason_codes: list[str] = []
+    review_reason_codes: list[str] = []
+    candidate_video = candidate_audio_latent = None
+    candidate_video_changed = None
+    candidate_video_max_abs = None
+    try:
+        candidate_video, candidate_audio_latent = nested_av_parts(candidate_av_latent)
+        if tuple(candidate_video.shape) != tuple(original_video.shape) or tuple(
+            candidate_audio_latent.shape
+        ) != tuple(original_audio_latent.shape):
+            hard_reason_codes.append("REJECT_CANDIDATE_LATENT_SHAPE_MISMATCH")
+        if not bool(torch.isfinite(candidate_video).all().item()) or not bool(
+            torch.isfinite(candidate_audio_latent).all().item()
+        ):
+            hard_reason_codes.append("REJECT_CANDIDATE_LATENT_INVALID")
+        if tuple(candidate_video.shape) == tuple(original_video.shape):
+            candidate_video_changed = not bool(
+                torch.equal(original_video, candidate_video)
+            )
+            candidate_video_max_abs = _chunked_max_abs_delta(
+                original_video, candidate_video
+            )
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        hard_reason_codes.append("REJECT_CANDIDATE_LATENT_INVALID")
+
+    integrity_report = None
+    drift_report = None
+    try:
+        candidate_waveform, candidate_rate = validate_audio(
+            candidate_audio, "candidate_audio"
+        )
+        if not bool(torch.isfinite(candidate_waveform).all().item()):
+            hard_reason_codes.append("REJECT_CANDIDATE_AUDIO_NONFINITE")
+        if int(candidate_rate) != int(original_rate):
+            hard_reason_codes.append("REJECT_CANDIDATE_SAMPLE_RATE_MISMATCH")
+        if tuple(candidate_waveform.shape[:-1]) != tuple(original_waveform.shape[:-1]):
+            hard_reason_codes.append("REJECT_CANDIDATE_CHANNEL_SHAPE_MISMATCH")
+        duration_delta_ms = (
+            int(candidate_waveform.shape[-1]) * 1000.0 / int(candidate_rate)
+            - int(original_waveform.shape[-1]) * 1000.0 / int(original_rate)
+        )
+        if abs(duration_delta_ms) > float(maximum_duration_delta_ms):
+            hard_reason_codes.append("REJECT_CANDIDATE_DURATION_MISMATCH")
+
+        integrity_values = analyze_audio_integrity(
+            candidate_audio,
+            video_frame_count=int(video_frame_count),
+            fps=float(fps),
+            max_av_delta_ms=float(maximum_duration_delta_ms),
+        )
+        integrity_report = json.loads(integrity_values[-1])
+        review_reason_codes.extend(
+            f"INTEGRITY_{item.get('code', 'UNKNOWN').upper()}"
+            for item in integrity_report.get("findings", [])
+        )
+
+        drift_values = analyze_audio_perceptual_drift(
+            original_audio,
+            candidate_audio,
+            spectral_drift_threshold=float(spectral_drift_threshold),
+            level_delta_threshold_db=float(level_delta_threshold_db),
+            persistent_window_count=int(persistent_window_count),
+            max_duration_delta_ms=float(maximum_duration_delta_ms),
+        )
+        drift_report = json.loads(drift_values[-1])
+        for item in drift_report.get("findings", []):
+            code = str(item.get("code", "unknown"))
+            if code in {"sample_rate_mismatch", "duration_mismatch", "nonfinite_samples"}:
+                hard_reason_codes.append(f"REJECT_DRIFT_{code.upper()}")
+            else:
+                review_reason_codes.append(f"DRIFT_{code.upper()}")
+    except (KeyError, TypeError, ValueError, RuntimeError, json.JSONDecodeError):
+        hard_reason_codes.append("REJECT_CANDIDATE_AUDIO_INVALID")
+
+    hard_reason_codes = list(dict.fromkeys(hard_reason_codes))
+    review_reason_codes = list(dict.fromkeys(review_reason_codes))
+    eligible = not hard_reason_codes
+    selected = False
+    selected_latent = original_av_latent
+    selected_audio = original_audio
+    if eligible and bool(accept_candidate):
+        assert candidate_audio_latent is not None
+        selected_latent = original_av_latent.copy()
+        selected_latent["samples"] = comfy.nested_tensor.NestedTensor(
+            (original_video, candidate_audio_latent)
+        )
+        selected_audio = candidate_audio
+        selected = True
+        decision = "ACCEPT_CANDIDATE"
+    elif not eligible:
+        decision = "REJECT_CANDIDATE"
+    else:
+        decision = "ABSTAIN_HUMAN_REVIEW_REQUIRED"
+
+    report = {
+        "schema": "t8.minimax_h3.audio_refine.quality_gate.v1",
+        "decision": decision,
+        "accept_candidate_requested": bool(accept_candidate),
+        "candidate_mechanically_eligible": eligible,
+        "candidate_selected": selected,
+        "hard_reason_codes": hard_reason_codes,
+        "review_reason_codes": review_reason_codes,
+        "candidate_video_changed_during_sampling": candidate_video_changed,
+        "candidate_video_max_abs": candidate_video_max_abs,
+        "output_video_exact_original": True,
+        "selected_video_relocked_exact": bool(selected),
+        "integrity_audit": integrity_report,
+        "perceptual_drift_audit": drift_report,
+        "fallback": "original AV latent and original decoded audio",
+        "quality_claim": "none; human listening remains authoritative",
+    }
+    return (
+        selected_latent,
+        selected_audio,
+        selected,
+        decision,
+        canonical_json(report, indent=2),
     )

@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.47.0** · 节点 211 个 · GPL-3.0-or-later
+当前版本：**1.48.0** · 节点 215 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -17,6 +17,7 @@
 - Motion Recovery动作过载分析、自动ABSTAIN懒旁路、局部时间超采样二采、原时钟恢复和分窗断点续跑（实验）
 - 语音、对白、演绎、ADR 和生产辅助节点（实验功能会明确标注）
 - 音频完整性、参考相对音色漂移与多人对白路由预检：报告首尾边界、DC、削波、持续频谱/响度漂移、参考音频绑定和歧义，遇到风险返回 `ABSTAIN`，不自动修改素材
+- Audio Refine 低步数音频精修：对首遍联合AV latent增加精确无缓存的双时钟音频尾段采样；人工质量门默认保留原结果，接受候选时强制组合原视频latent与候选音频latent，避免精修意外改画面（实验）
 - 提示词预算与角色媒体编译：统计字符/token、检查 `<Picture>/<Video>/<Audio>` 数量、顺序与人物绑定覆盖，原提示词连首尾空白也不静默删除
 - 提示词服务路由：默认本地原文直通，可显式连接 OpenAI/LM Studio/llama.cpp 或 Ollama；密钥仅从环境变量读取，Ollama默认请求后卸载（实验）
 - 提示词语义合同审计：用用户声明的必需/禁用动作词组、精确对白和媒体标签检查重写候选；默认继续输出原文，机械通过并经人工显式接受后才切换候选（实验）
@@ -77,6 +78,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | 音频完整性审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Integrity_Audit_Advanced.json` | 无；纯CPU信号分析 | 输出PASS/ABSTAIN和证据，不修音；循环音乐可能触发尾首相似提示 |
 | 音色远近漂移审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Perceptual_Drift_Audit_Advanced.json` | 同内容、同时间线的基准和候选音频 | 真实试听异常的纯二采在1.4～3.6秒触发ABSTAIN，正常一采与本例80%混音PASS；它是声学复核提示，不诊断远场/混响/换声 |
 | 多人对白路由预检 | `05-speech-dialogue/2026-08-22_H3_Speaker_Routing_Audit_Advanced.json` | 每个角色独立参考音频 | 编译`<Audio N>`映射并检查重复波形、未结构化笑声/喘息和描述歧义 |
+| Audio Refine低步数音频精修 | `18-audio-refine/2026-08-26_H3_Audio_Refine_Turbo4_Plus_Refine4_Advanced_EXP.json` | 原始与候选共用同一MODEL、conditioning和完整AV latent | 1056×608×124的Turbo4+Refine4单次实跑和严格解码通过；Quality Gate默认false并精确回退原始AV，人工接受后才组合原视频latent与候选音频latent。听感优劣仍须匿名审听 |
 | 提示词预算与角色编译 | `14-prompt-relay/2026-08-22_H3_Prompt_Budget_Role_Compiler_Advanced.json` | CLIP为可选输入 | 默认7000匹配当前官方H3 CLI提交上限；7000/7001与三人物映射已测。真实Qwen3-VL 8B/Boogu编译文本为140个token、规划估算153。当前ComfyUI无7000字符硬拦截，故不把API/CLI规则冒充本地tokenizer硬上限；视觉/时间戳token在Conditioning阶段另行加入 |
 | 提示词服务路由 | `14-prompt-relay/2026-08-23_H3_Prompt_Provider_Router_Advanced_EXP.json` | 本地服务无需密钥；远程服务的密钥通过环境变量提供 | 默认不联网；原始`<d>`对白先替换为不可猜测令牌，provider只有逐字返回唯一令牌且位置正确才会恢复，真实对白不上传；可选0～2次合同修复且不重传参考图，默认0保持旧请求数；CPU-only 8B已有一条严格合同通过，但把“旋转”改成“站立”，仍未通过语义质量门 |
 | 提示词语义合同审计 | `14-prompt-relay/2026-08-23_H3_Prompt_Semantic_Contract_Audit_Advanced_EXP.json` | 无；纯本地字符串审计 | 已知“旋转→站立”真实Provider回归会被拒绝并保留原文；空锚点ABSTAIN，非法合同、对白变化和源媒体标签丢失fail closed。词组PASS不等于通用语义等价，仍需人工复核 |
@@ -133,6 +135,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | `15-sla-attention` | LightX2V Turbo-SLA 动态块稀疏 attention（实验） |
 | `16-raven-streaming` | RAVEN因果分块流式T2VA与资源/合同保护（实验） |
 | `17-skin-finish` | 解码后肤质收尾、遮罩门禁和人工审计（实验） |
+| `18-audio-refine` | 低步数生成音频的双时钟尾段精修、原始回退与人工质量门（实验） |
 
 每个目录都有自己的 `README.md`，说明适用场景、参数建议和已知限制。完整索引见 [`examples/workflows/README.md`](examples/workflows/README.md)。
 

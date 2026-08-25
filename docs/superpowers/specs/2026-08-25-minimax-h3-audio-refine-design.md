@@ -1,6 +1,6 @@
-# MiniMax H3 Audio Refine 三节点设计规范
+# MiniMax H3 Audio Refine 设计规范
 
-状态：设计评审稿；本文件批准前不进入生产代码实现。
+状态：设计已实施；精确无缓存路线和实施后Quality Gate已完成机械门，听感结论待用户盲听。
 
 日期：2026-08-25（2026-08-26 恢复并完成设计）
 
@@ -487,5 +487,22 @@ Frozen Cache 必须经过独立 Windows 内存门、hook 生命周期、真实 b
 3. 证明位置 `0..210` 和旧工作流不变。
 4. 完成机械回归。
 5. 执行唯一低负载真实 smoke。
+
+## 17. 2026-08-26 实施后修订：Quality Gate 与视频精确回填
+
+前三个装配节点已按原设计追加在位置211～213。一次受限真实H3任务随后完整执行首遍4步与精修4步，原始/候选均严格解码为256×256、22帧、32kHz双声道；该实测同时否定了本文早期“视频mask为0即可令采样输出视频latent逐位不变”的假设。零mask限制噪声注入和采样混合，但返回的候选视频latent仍可能被联合AV模型路径改变。
+
+因此第一版完成态追加第4个节点，位置214：
+
+`MiniMax H3 Audio Refine Quality Gate (T8 Advanced EXP)`
+
+其输入为原始/候选AV latent以及各自解码AUDIO，默认`accept_candidate=false`。硬检查覆盖AV latent形状与finite、解码音频finite、采样率、声道/批次形状和时长；完整性与参考相对声学漂移只作为人工复核提示，不能作为自动质量oracle。
+
+- 未人工接受：完整返回原始AV latent和原始AUDIO。
+- 硬合同失败：即使`accept_candidate=true`也拒绝候选并回退原始结果。
+- 硬合同通过且人工接受：输出逐值原始video latent与候选audio latent组成的新NestedTensor；候选采样生成的video latent不会进入交付。
+- 报告明确记录候选视频是否在采样期间变化、最大绝对差、硬拒绝代码、复核提示和最终选择；不声明听感改善。
+
+正式可导入工作流位于`examples/workflows/18-audio-refine/`，默认1056×608×124、Turbo4+Refine4、`audio_denoise=0.50`，同时保存原始与候选供盲听，并保留质量门默认false。Frozen Cache仍不在本版本范围。
 
 批准本设计不等于批准 Frozen Cache、默认工作流推广、音质宣传或自动覆盖原始音频。
