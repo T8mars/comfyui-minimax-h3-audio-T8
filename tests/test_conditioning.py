@@ -5,9 +5,11 @@ import json
 import pytest
 import torch
 
+import h3_audio_t8_pkg.conditioning as conditioning_module
 from h3_audio_t8_pkg.conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
     HYBRID_LAYOUT_LEGACY_SENTINEL,
+    HYBRID_LAYOUT_NATIVE_CONCAT,
     assert_hybrid_layout_contract,
     build_conditioning,
 )
@@ -92,6 +94,106 @@ def test_exact_keyframe_and_audio_reference_use_guarded_hybrid_payload():
     tokenize_kwargs = args["clip"].tokenize_calls[0][1]
     assert [item["type"] for item in tokenize_kwargs["minimax_ref_items"]] == ["image", "audio"]
     assert json.loads(media_map)["pictures"]["1"].startswith("first_frame")
+
+
+def test_hybrid_contract_accepts_semantically_compatible_external_wrapper(monkeypatch):
+    original = conditioning_module.MiniMaxH3BaseModel.extra_conds
+
+    def compatible_wrapper(self, **kwargs):
+        out = original(self, **kwargs)
+        keyframes = kwargs.get("minimax_keyframes")
+        refs = kwargs.get("minimax_refs")
+        if keyframes and refs:
+            payload = out["minimax_payload"].cond
+            payload["cond_video_latents"] = [
+                *[kf["latent"] for kf in keyframes],
+                *[ref["latent"] for ref in refs if "latent" in ref],
+            ]
+        return out
+
+    compatible_wrapper._minimax_kfref_patched = True
+    monkeypatch.setattr(
+        conditioning_module.MiniMaxH3BaseModel,
+        "extra_conds",
+        compatible_wrapper,
+    )
+
+    assert assert_hybrid_layout_contract() == HYBRID_LAYOUT_NATIVE_CONCAT
+
+
+def test_hybrid_contract_preserves_legacy_overwrite_route(monkeypatch):
+    original = conditioning_module.MiniMaxH3BaseModel.extra_conds
+
+    def legacy_wrapper(self, **kwargs):
+        out = original(self, **kwargs)
+        refs = kwargs.get("minimax_refs")
+        if refs is not None:
+            payload = out["minimax_payload"].cond
+            payload["cond_video_latents"] = [
+                ref["latent"] for ref in refs if "latent" in ref
+            ]
+        return out
+
+    monkeypatch.setattr(
+        conditioning_module.MiniMaxH3BaseModel,
+        "extra_conds",
+        legacy_wrapper,
+    )
+
+    assert assert_hybrid_layout_contract() == HYBRID_LAYOUT_LEGACY_SENTINEL
+
+
+def test_hybrid_contract_rejects_incompatible_external_layout_patch(monkeypatch):
+    original = conditioning_module.PackedLayout.__init__
+
+    def incompatible_wrapper(self, *args, **kwargs):
+        return original(self, *args, frame_count=None, **kwargs)
+
+    monkeypatch.setattr(
+        conditioning_module.PackedLayout,
+        "__init__",
+        incompatible_wrapper,
+    )
+
+    with pytest.raises(RuntimeError, match="external custom-node layout patch"):
+        assert_hybrid_layout_contract()
+
+
+def test_hybrid_contract_bypasses_verified_obsolete_painter_layout_patch(monkeypatch):
+    original = conditioning_module.PackedLayout.__init__
+
+    def obsolete_painter_wrapper(
+        self,
+        text_len,
+        latent_t,
+        latent_h,
+        latent_w,
+        audio_t,
+        keyframes=None,
+        refs=None,
+        frame_count=None,
+    ):
+        return original(
+            self,
+            text_len,
+            latent_t,
+            latent_h,
+            latent_w,
+            audio_t,
+            keyframes=keyframes,
+            refs=refs,
+            frame_count=frame_count,
+        )
+
+    obsolete_painter_wrapper._minimax_kfref_layout_patched = True
+    monkeypatch.setattr(
+        conditioning_module.PackedLayout,
+        "__init__",
+        obsolete_painter_wrapper,
+    )
+
+    assert assert_hybrid_layout_contract() == HYBRID_LAYOUT_NATIVE_CONCAT
+    assert conditioning_module.PackedLayout.__init__ is original
 
 
 def test_reference_only_keeps_blank_target_audio():

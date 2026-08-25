@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import inspect
 import math
 
@@ -71,6 +70,70 @@ def build_packed_layout(
     )
 
 
+def _native_hybrid_layout_is_valid(layout, keyframe) -> bool:
+    try:
+        kinds = [kind for _start, _stop, kind in layout.segments]
+        if kinds != ["text", "cond", "ref_img", "audio", "video"]:
+            return False
+        cond_start = next(
+            start for start, _stop, kind in layout.segments if kind == "cond"
+        )
+        audio_start = next(
+            start for start, _stop, kind in layout.segments if kind == "audio"
+        )
+        target_origin_t = float(layout.position_ids[audio_start, 0])
+        expected_t = (
+            target_origin_t
+            + (5.0 / 3.0) * keyframe["resolved_frame_index"]
+        )
+        return math.isclose(float(layout.position_ids[cond_start, 0]), expected_t)
+    except (AttributeError, IndexError, KeyError, StopIteration, TypeError, ValueError):
+        return False
+
+
+def _build_packed_layout_with_init(init, keyframe, image_ref):
+    layout = object.__new__(PackedLayout)
+    kwargs = {"keyframes": [keyframe], "refs": [image_ref]}
+    if "frame_count" in inspect.signature(init).parameters:
+        kwargs["frame_count"] = 5
+    init(layout, 1, 2, 2, 2, 1, **kwargs)
+    return layout
+
+
+def _bypass_verified_obsolete_layout_patch(keyframe, image_ref) -> bool:
+    """Remove an obsolete Painter-style wrapper only after probing its original.
+
+    Older ComfyUI builds needed this marked process-global patch. Newer builds include
+    the corrected ordering natively, so the old wrapper either passes a removed
+    ``frame_count`` argument or offsets the timeline twice. Keep working old wrappers;
+    bypass only a failing marked wrapper whose enclosed original passes the native
+    Hybrid layout contract on its own.
+    """
+    active_init = PackedLayout.__init__
+    if not getattr(active_init, "_minimax_kfref_layout_patched", False):
+        return False
+
+    compatible_originals = []
+    for cell in active_init.__closure__ or ():
+        try:
+            candidate = cell.cell_contents
+        except ValueError:
+            continue
+        if not callable(candidate) or candidate is active_init:
+            continue
+        try:
+            layout = _build_packed_layout_with_init(candidate, keyframe, image_ref)
+        except Exception:
+            continue
+        if _native_hybrid_layout_is_valid(layout, keyframe):
+            compatible_originals.append(candidate)
+
+    if len(compatible_originals) != 1:
+        return False
+    PackedLayout.__init__ = compatible_originals[0]
+    return True
+
+
 def assert_hybrid_layout_contract() -> str:
     """Return the verified legacy or native keyframe-plus-reference route.
 
@@ -78,29 +141,122 @@ def assert_hybrid_layout_contract() -> str:
     the sentinel route. Current native-guide ComfyUI concatenates both payloads and
     must not receive sentinels, which would duplicate visual condition latents.
     """
-    extra_conds_source = inspect.getsource(MiniMaxH3BaseModel.extra_conds)
-    extra_conds_sha256 = hashlib.sha256(extra_conds_source.encode("utf-8")).hexdigest()
-    parameters = inspect.signature(PackedLayout.__init__).parameters
-    packed_source = inspect.getsource(PackedLayout.__init__)
-    packed_sha256 = hashlib.sha256(packed_source.encode("utf-8")).hexdigest()
+    keyframe_latent = torch.zeros((1, 24, 1, 2, 2))
+    reference_latent = torch.ones((1, 24, 1, 2, 2))
+    keyframe = {
+        "resolved_frame_index": 2,
+        "latent": keyframe_latent,
+    }
+    image_ref = {
+        "kind": "image",
+        "latent_h": 2,
+        "latent_w": 2,
+        "latent": reference_latent,
+    }
 
-    if extra_conds_sha256 in NATIVE_GUIDE_EXTRA_CONDS_SHA256S:
-        if "frame_count" in parameters or packed_sha256 != NATIVE_GUIDE_PACKED_LAYOUT_SHA256:
-            raise RuntimeError(
-                "This ComfyUI build mixes unknown MiniMax H3 native-guide contracts; "
-                "the T8 Hybrid path was disabled."
+    # Source hashes are useful for diagnostics, but process-global patches from
+    # other custom nodes can wrap these methods without changing their behavior.
+    # Probe the actual payload contract instead of rejecting every unknown wrapper.
+    probe_model = object.__new__(MiniMaxH3BaseModel)
+    probe_model.concat_keys = ()
+    probe_model.latent_shapes = None
+    try:
+        probe_output = MiniMaxH3BaseModel.extra_conds(
+            probe_model,
+            minimax_keyframes=[keyframe],
+            minimax_refs=[image_ref],
+            seed=0,
+        )
+        payload = probe_output["minimax_payload"].cond
+        video_latents = payload.get("cond_video_latents", [])
+    except Exception as exc:
+        raise RuntimeError(
+            "The active MiniMax H3 conditioning implementation rejected the Hybrid "
+            "compatibility probe. An external custom-node patch may target a different "
+            "ComfyUI version."
+        ) from exc
+
+    native_concat = (
+        len(video_latents) == 2
+        and video_latents[0] is keyframe_latent
+        and video_latents[1] is reference_latent
+    )
+    legacy_overwrite = (
+        len(video_latents) == 1 and video_latents[0] is reference_latent
+    )
+    if not native_concat and not legacy_overwrite:
+        raise RuntimeError(
+            "The active MiniMax H3 conditioning implementation returned an unknown "
+            "keyframe/reference order; the T8 Hybrid path was disabled to prevent "
+            "corrupt conditioning."
+        )
+
+    if native_concat:
+        layout = None
+        try:
+            layout = build_packed_layout(
+                1,
+                2,
+                2,
+                2,
+                1,
+                keyframes=[keyframe],
+                refs=[image_ref],
+                frame_count=5,
             )
-        keyframe = {
-            "resolved_frame_index": 2,
-            "latent": torch.zeros((1, 24, 1, 2, 2)),
-        }
-        image_ref = {
-            "kind": "image",
-            "latent_h": 2,
-            "latent_w": 2,
-            "latent": torch.zeros((1, 24, 1, 2, 2)),
-        }
-        layout = build_packed_layout(
+        except Exception:
+            pass
+        if layout is None or not _native_hybrid_layout_is_valid(layout, keyframe):
+            if _bypass_verified_obsolete_layout_patch(keyframe, image_ref):
+                layout = build_packed_layout(
+                    1,
+                    2,
+                    2,
+                    2,
+                    1,
+                    keyframes=[keyframe],
+                    refs=[image_ref],
+                    frame_count=5,
+                )
+        if layout is None or not _native_hybrid_layout_is_valid(layout, keyframe):
+            raise RuntimeError(
+                "The active MiniMax H3 PackedLayout implementation is incompatible "
+                "with this ComfyUI build. An external custom-node layout patch may need "
+                "to be updated or disabled before using T8 Hybrid."
+            )
+        return HYBRID_LAYOUT_NATIVE_CONCAT
+
+    sentinel_ref = {
+        "kind": HYBRID_KEYFRAME_SENTINEL,
+        "latent": keyframe_latent,
+    }
+    try:
+        sentinel_output = MiniMaxH3BaseModel.extra_conds(
+            probe_model,
+            minimax_keyframes=[keyframe],
+            minimax_refs=[sentinel_ref, image_ref],
+            seed=0,
+        )
+        sentinel_latents = sentinel_output["minimax_payload"].cond.get(
+            "cond_video_latents", []
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "The legacy MiniMax H3 conditioning implementation rejected the guarded "
+            "Hybrid compatibility payload."
+        ) from exc
+    if not (
+        len(sentinel_latents) == 2
+        and sentinel_latents[0] is keyframe_latent
+        and sentinel_latents[1] is reference_latent
+    ):
+        raise RuntimeError(
+            "The legacy MiniMax H3 conditioning implementation cannot reconstruct the "
+            "keyframe/reference order; the T8 Hybrid path was disabled."
+        )
+
+    try:
+        baseline = build_packed_layout(
             1,
             2,
             2,
@@ -108,49 +264,31 @@ def assert_hybrid_layout_contract() -> str:
             1,
             keyframes=[keyframe],
             refs=[image_ref],
+            frame_count=5,
         )
-        kinds = [kind for _start, _stop, kind in layout.segments]
-        if kinds != ["text", "cond", "ref_img", "audio", "video"]:
-            raise RuntimeError(
-                "The native MiniMax H3 Guide layout changed keyframe/reference ordering; "
-                "the T8 Hybrid path was disabled."
-            )
-        cond_start = next(start for start, _stop, kind in layout.segments if kind == "cond")
-        expected_t = 1.0 + 1.0 + (5.0 / 3.0) * 2
-        if not math.isclose(float(layout.position_ids[cond_start, 0]), expected_t):
-            raise RuntimeError(
-                "The native MiniMax H3 Guide timeline origin changed; the T8 Hybrid path "
-                "was disabled."
-            )
-        return HYBRID_LAYOUT_NATIVE_CONCAT
-
-    required_legacy_contract = (
-        'payload["cond_video_latents"] = [r["latent"] for r in refs if "latent" in r]'
-    )
-    if required_legacy_contract not in extra_conds_source or "frame_count" not in parameters:
+        hybrid = build_packed_layout(
+            1,
+            2,
+            2,
+            2,
+            1,
+            keyframes=[keyframe],
+            refs=[sentinel_ref, image_ref],
+            frame_count=5,
+        )
+    except Exception as exc:
         raise RuntimeError(
-            "This ComfyUI build changed MiniMax H3 ref/keyframe latent assembly; "
-            "the T8 Hybrid path is disabled until its ordering can be revalidated."
-        )
-
-    keyframe = {
-        "resolved_frame_index": 0,
-        "latent": torch.zeros((1, 24, 1, 2, 2)),
-    }
-    baseline = build_packed_layout(
-        1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5
+            "The active MiniMax H3 PackedLayout implementation rejected the guarded "
+            "legacy Hybrid compatibility probe."
+        ) from exc
+    layouts_match = (
+        baseline.segments == hybrid.segments
+        and baseline.seq_len == hybrid.seq_len
+        and torch.equal(baseline.position_ids, hybrid.position_ids)
+        and torch.equal(baseline.img_pos, hybrid.img_pos)
+        and torch.equal(baseline.audio_pos, hybrid.audio_pos)
     )
-    hybrid = build_packed_layout(
-        1,
-        2,
-        2,
-        2,
-        1,
-        keyframes=[keyframe],
-        refs=[{"kind": HYBRID_KEYFRAME_SENTINEL, "latent": torch.zeros(1)}],
-        frame_count=5,
-    )
-    if baseline.segments != hybrid.segments or baseline.seq_len != hybrid.seq_len:
+    if not layouts_match:
         raise RuntimeError(
             "This ComfyUI build changed MiniMax H3 PackedLayout reference handling; "
             "the T8 exact-keyframe + reference compatibility path is disabled to prevent corrupt conditioning."
