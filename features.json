@@ -976,8 +976,27 @@
     "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
     "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
     "MiniMaxH3SkinFinishSurfaceT8Advanced",
-    "MiniMaxH3SkinFinishDichromaticT8Advanced"
+    "MiniMaxH3SkinFinishDichromaticT8Advanced",
+    "MiniMaxH3AudioRefineAuditT8Advanced",
+    "MiniMaxH3AudioRefinePlanT8Advanced",
+    "MiniMaxH3AudioRefineDualClockSetupT8Advanced"
   ],
+  "audio_refine_advanced": {
+    "status": "implemented locally as three append-only Advanced EXP planning and setup nodes; 47 focused Audio Refine tests, 126 related regression tests, Ruff, py_compile, 144 workflow JSON parses, exact old workflow bytes and the released 211-node prefix pass; real H3 smoke and human listening remain pending",
+    "date": "2026-08-26",
+    "category": "T8/MiniMax H3/Audio/Experimental",
+    "nodes": [
+      "MiniMaxH3AudioRefineAuditT8Advanced",
+      "MiniMaxH3AudioRefinePlanT8Advanced",
+      "MiniMaxH3AudioRefineDualClockSetupT8Advanced"
+    ],
+    "positions": [211, 212, 213],
+    "contract": "audits and content-binds the connected H3 MODEL, positive Conditioning and complete nested AV latent, plans a deterministic partial-tail schedule, then exposes standard MODEL/NOISE/GUIDER/SAMPLER/SIGMAS/LATENT outputs for ComfyUI SamplerCustomAdvanced",
+    "fixed_initial_scope": "exact uncached route only; CFG 1; native_flow; dual_clock_euler; video/audio shifts 12/3; video noise mask 0 and audio noise mask 1; explicit seed; connected model only",
+    "failure_contract": "REJECT outranks ABSTAIN, and any protected final audio, lock/remix route, unsupported mask, unknown patch stack, changed binding, unknown resource state or less than 512MiB whole-device free VRAM / 16GiB host commit headroom returns a zero-step bypass rather than starting refinement",
+    "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; the nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
+    "compatibility": "all 211 previously released node IDs retain their exact order and all existing workflows remain unchanged"
+  },
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",
     "items": {

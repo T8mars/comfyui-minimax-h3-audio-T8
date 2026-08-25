@@ -47,6 +47,7 @@ from .nodes_skin_finish_surface import SKIN_FINISH_SURFACE_NODE_CLASSES
 from .nodes_skin_finish_dichromatic import (
     SKIN_FINISH_DICHROMATIC_NODE_CLASSES,
 )
+from .nodes_audio_refine_advanced import AUDIO_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
 )
@@ -595,6 +596,7 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SKIN_FINISH_SPECULAR_FREQUENCY_NODE_CLASSES,
                 *SKIN_FINISH_SURFACE_NODE_CLASSES,
                 *SKIN_FINISH_DICHROMATIC_NODE_CLASSES,
+                *AUDIO_REFINE_ADVANCED_NODE_CLASSES,
             ]
 
 

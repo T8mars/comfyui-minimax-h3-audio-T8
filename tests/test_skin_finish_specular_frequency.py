@@ -136,8 +136,8 @@ def test_specular_node_is_append_only_and_safe_by_default():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert len(ids) == 211
-    assert ids[-4] == "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced"
-    assert ids[-3] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
-    assert ids[-2] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
-    assert ids[-1] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
+    assert len(ids) == 214
+    assert ids[207] == "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced"
+    assert ids[208] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
+    assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
+    assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
