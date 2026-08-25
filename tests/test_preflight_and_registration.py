@@ -17,7 +17,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 200
+    assert len(ids) == 211
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -122,7 +122,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[188] == "MiniMaxH3CreatorArtifactQuarantineT8Advanced"
     assert ids[189] == "MiniMaxH3PromptSemanticContractAuditT8Advanced"
     assert ids[190] == "MiniMaxH3NFERunContractT8Advanced"
-    assert ids[191:200] == [
+    assert ids[191:208] == [
         "MiniMaxH3SkinFinishT8",
         "MiniMaxH3SkinFinishAdvancedT8",
         "MiniMaxH3SkinFinishPreviewAuditT8Advanced",
@@ -132,7 +132,18 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SkinFinishTextureGuardT8Advanced",
         "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
         "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishPersonProfileT8Advanced",
+        "MiniMaxH3SkinFinishPerPersonT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishSafetyAuditT8Advanced",
+        "MiniMaxH3SkinFinishFrequencySplitT8Advanced",
+        "MiniMaxH3SkinFinishTimelineKeyframeT8Advanced",
+        "MiniMaxH3SkinFinishTimelineT8Advanced",
+        "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
     ]
+    assert ids[208] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
+    assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
+    assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
 
     speech_ids = {
         "MiniMaxH3VoiceProfileT8",
@@ -819,17 +830,18 @@ def test_multikeyframe_advanced_frontend_workflow_is_consistent_and_opt_in():
     ]
     assert [node["widgets_values"][1] for node in plans] == [33.0, 67.0]
     assert [node["widgets_values"][2] for node in plans] == [0.999, 0.999]
-    assert plans[1]["inputs"][6]["name"] == "previous_plan"
-    assert plans[1]["inputs"][6]["link"] is not None
+    second_plan_inputs = {item["name"]: item for item in plans[1]["inputs"]}
+    assert second_plan_inputs["previous_plan"]["link"] is not None
 
     conditioning = next(
         node for node in workflow["nodes"]
         if node["type"] == "MiniMaxH3MultiKeyframeConditioningT8Advanced"
     )
-    assert conditioning["inputs"][21]["name"] == "first_frame"
-    assert conditioning["inputs"][22]["name"] == "last_frame"
-    assert conditioning["inputs"][23]["name"] == "keyframe_plan"
-    assert all(conditioning["inputs"][index]["link"] is not None for index in (21, 22, 23))
+    conditioning_inputs = {item["name"]: item for item in conditioning["inputs"]}
+    assert all(
+        conditioning_inputs[name]["link"] is not None
+        for name in ("first_frame", "last_frame", "keyframe_plan")
+    )
 
     for link_id, source, output_slot, target, input_slot, _ in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
@@ -1048,19 +1060,18 @@ def test_long_video_accepted_frontend_workflow_is_review_first_and_consistent():
         node for node in nodes.values()
         if node["type"] == "MiniMaxH3LongVideoCandidateSaveT8"
     )
-    assert candidate["inputs"][7]["name"] == "parent_candidate_id"
-    assert candidate["inputs"][7]["link"] is not None
-    assert candidate["inputs"][8]["name"] == "parent_manifest_revision"
-    assert candidate["inputs"][8]["link"] is not None
+    candidate_inputs = {item["name"]: item for item in candidate["inputs"]}
+    assert candidate_inputs["parent_candidate_id"]["link"] is not None
+    assert candidate_inputs["parent_manifest_revision"]["link"] is not None
     seed_node = next(node for node in nodes.values() if node["type"] == "PrimitiveInt")
     noise = next(node for node in nodes.values() if node["type"] == "RandomNoise")
     assert noise["inputs"][0]["link"] in seed_node["outputs"][0]["links"]
-    assert candidate["inputs"][13]["link"] in seed_node["outputs"][0]["links"]
+    assert candidate_inputs["seed"]["link"] in seed_node["outputs"][0]["links"]
     conditioning = next(
         node for node in nodes.values()
         if node["type"] == "MiniMaxH3LongVideoConditioningT8"
     )
-    assert candidate["inputs"][12]["link"] in conditioning["outputs"][4]["links"]
+    assert candidate_inputs["prompt"]["link"] in conditioning["outputs"][4]["links"]
     for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])
@@ -1097,18 +1108,28 @@ def test_long_video_auto_resume_frontend_workflow_has_one_timeline_source():
         node for node in nodes.values()
         if node["type"] == "MiniMaxH3LongVideoCandidateSaveT8"
     )
-    assert conditioning["inputs"][8]["link"] in orchestrator["outputs"][10]["links"]
-    assert noise["inputs"][0]["link"] in orchestrator["outputs"][11]["links"]
-    assert candidate["inputs"][13]["link"] in orchestrator["outputs"][11]["links"]
+    conditioning_inputs = {item["name"]: item for item in conditioning["inputs"]}
+    noise_inputs = {item["name"]: item for item in noise["inputs"]}
+    candidate_inputs = {item["name"]: item for item in candidate["inputs"]}
+    assert conditioning_inputs["prompt"]["link"] in orchestrator["outputs"][10]["links"]
+    assert noise_inputs["noise_seed"]["link"] in orchestrator["outputs"][11]["links"]
+    assert candidate_inputs["seed"]["link"] in orchestrator["outputs"][11]["links"]
     sampler = next(
         node for node in nodes.values()
         if node["type"] == "MiniMaxH3DualClockSamplerT8"
     )
-    for input_slot, output_slot in zip(range(2, 7), range(16, 21), strict=True):
-        assert sampler["inputs"][input_slot]["link"] in (
+    sampler_inputs = {item["name"]: item for item in sampler["inputs"]}
+    for input_name, output_slot in zip(
+        ("steps", "shift_video", "shift_audio", "sampler_name", "scheduler"),
+        range(16, 21),
+        strict=True,
+    ):
+        assert sampler_inputs[input_name]["link"] in (
             orchestrator["outputs"][output_slot]["links"]
         )
-    assert candidate["inputs"][11]["link"] in orchestrator["outputs"][21]["links"]
+    assert candidate_inputs["sampling_summary"]["link"] in (
+        orchestrator["outputs"][21]["links"]
+    )
     review = next(
         node for node in nodes.values()
         if node["type"] == "MiniMaxH3LongVideoAcceptCandidateT8"
@@ -1199,11 +1220,11 @@ def test_scene_plus_identity_background_workflow_wires_two_images_and_exp_policy
         "scene_plus_identity",
         1,
     ]
-    assert links[inputs["first_frame"]["link"]][1:5] == [
-        full_scene["id"], 0, conditioning["id"], 22,
+    assert links[inputs["first_frame"]["link"]][1:4] == [
+        full_scene["id"], 0, conditioning["id"],
     ]
-    assert links[inputs["persistent_identity_image"]["link"]][1:5] == [
-        identity_crop["id"], 0, conditioning["id"], 25,
+    assert links[inputs["persistent_identity_image"]["link"]][1:4] == [
+        identity_crop["id"], 0, conditioning["id"],
     ]
 
     start = next(
@@ -1378,11 +1399,11 @@ def test_frontend_audio_input_workflows_cover_three_source_modes_and_output_rout
         assert sampler["widgets_values"] == [
             4, 12.0, 3.0, "dual_clock_euler", "native_flow",
         ]
-        assert links[conditioning_inputs["drive_audio"]["link"]][1:5] == [
-            audio_window["id"], 0, conditioning["id"], 15,
+        assert links[conditioning_inputs["drive_audio"]["link"]][1:4] == [
+            audio_window["id"], 0, conditioning["id"],
         ]
-        assert links[conditioning_inputs["length"]["link"]][1:5] == [
-            audio_window["id"], 1, conditioning["id"], 6,
+        assert links[conditioning_inputs["length"]["link"]][1:4] == [
+            audio_window["id"], 1, conditioning["id"],
         ]
         final_audio_link = links[
             next(value for value in output_trim["inputs"] if value["name"] == "audio")["link"]

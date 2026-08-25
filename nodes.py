@@ -26,6 +26,27 @@ from .nodes_skin_finish_parser import SKIN_FINISH_PARSER_NODE_CLASSES
 from .nodes_skin_finish_multiface_parser import (
     SKIN_FINISH_MULTIFACE_PARSER_NODE_CLASSES,
 )
+from .nodes_skin_finish_person_profiles import (
+    SKIN_FINISH_PERSON_PROFILE_NODE_CLASSES,
+)
+from .nodes_skin_finish_profile_crop import (
+    SKIN_FINISH_PROFILE_CROP_NODE_CLASSES,
+)
+from .nodes_skin_finish_safety_audit import (
+    SKIN_FINISH_SAFETY_AUDIT_NODE_CLASSES,
+)
+from .nodes_skin_finish_frequency import SKIN_FINISH_FREQUENCY_NODE_CLASSES
+from .nodes_skin_finish_timeline import SKIN_FINISH_TIMELINE_NODE_CLASSES
+from .nodes_skin_finish_stream_quality import (
+    SKIN_FINISH_QUALITY_STREAM_NODE_CLASSES,
+)
+from .nodes_skin_finish_specular_frequency import (
+    SKIN_FINISH_SPECULAR_FREQUENCY_NODE_CLASSES,
+)
+from .nodes_skin_finish_surface import SKIN_FINISH_SURFACE_NODE_CLASSES
+from .nodes_skin_finish_dichromatic import (
+    SKIN_FINISH_DICHROMATIC_NODE_CLASSES,
+)
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
 )
@@ -565,6 +586,15 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SKIN_FINISH_P2_NODE_CLASSES,
                 *SKIN_FINISH_PARSER_NODE_CLASSES,
                 *SKIN_FINISH_MULTIFACE_PARSER_NODE_CLASSES,
+                *SKIN_FINISH_PERSON_PROFILE_NODE_CLASSES,
+                *SKIN_FINISH_PROFILE_CROP_NODE_CLASSES,
+                *SKIN_FINISH_SAFETY_AUDIT_NODE_CLASSES,
+                *SKIN_FINISH_FREQUENCY_NODE_CLASSES,
+                *SKIN_FINISH_TIMELINE_NODE_CLASSES,
+                *SKIN_FINISH_QUALITY_STREAM_NODE_CLASSES,
+                *SKIN_FINISH_SPECULAR_FREQUENCY_NODE_CLASSES,
+                *SKIN_FINISH_SURFACE_NODE_CLASSES,
+                *SKIN_FINISH_DICHROMATIC_NODE_CLASSES,
             ]
 
 

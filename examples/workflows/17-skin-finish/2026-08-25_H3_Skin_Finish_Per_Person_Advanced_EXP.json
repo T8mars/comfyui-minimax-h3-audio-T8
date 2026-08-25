@@ -1,0 +1,2081 @@
+{
+  "id": "999536e5-5ff4-47cb-ab17-e638951c72f6",
+  "revision": 0,
+  "last_node_id": 35,
+  "last_link_id": 45,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "1. Final 24fps SDR source / 最终24fps SDR来源",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        400,
+        130
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1,
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_clear_two_or_three_person_24fps_source.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "2. Decode exact source frames/audio / 解码同一来源画面音频",
+      "pos": [
+        460,
+        0
+      ],
+      "size": [
+        410,
+        120
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3,
+            11,
+            14,
+            18
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            24,
+            42
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "CheckpointLoaderSimple",
+      "title": "Native ComfyUI SAM3.1 multiplex / 原生SAM3.1多人模型",
+      "pos": [
+        0,
+        230
+      ],
+      "size": [
+        400,
+        130
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "sam3.1_multiplex_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CLIPTextEncode",
+      "title": "SAM3.1 person prompt / SAM人物提示",
+      "pos": [
+        460,
+        210
+      ],
+      "size": [
+        410,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "person"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SAM31MultiPersonTrackT8Advanced",
+      "title": "3. Per-shot tracks; offload SAM / 逐镜追踪后卸载SAM",
+      "pos": [
+        930,
+        0
+      ],
+      "size": [
+        460,
+        530
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 4
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "track_plan",
+          "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
+          "links": [
+            12,
+            15,
+            19,
+            41
+          ]
+        },
+        {
+          "name": "colored_preview",
+          "type": "IMAGE",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "shot_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "shot_local_track_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SAM31MultiPersonTrackT8Advanced"
+      },
+      "widgets_values": [
+        24.0,
+        3,
+        0.35,
+        3,
+        0.28,
+        640,
+        8,
+        "offload_sam31_after_track"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "title": "Clear single-person reference for Character_A / A清晰单人参考",
+      "pos": [
+        0,
+        500
+      ],
+      "size": [
+        400,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_clear_single_person_Character_A_reference.png"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "title": "Clear single-person reference for Character_B / B清晰单人参考",
+      "pos": [
+        0,
+        730
+      ],
+      "size": [
+        400,
+        130
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_clear_single_person_Character_B_reference.png"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3FaceCharacterProfileT8Advanced",
+      "title": "4A. In-memory Character_A match profile / A角色匹配资料",
+      "pos": [
+        460,
+        500
+      ],
+      "size": [
+        410,
+        210
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "reference_images",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "character_profile",
+          "type": "H3_T8_MULTIFACE_CHARACTER_PROFILE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "reference_preview",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceCharacterProfileT8Advanced"
+      },
+      "widgets_values": [
+        "Character_A",
+        "require_single_face"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3FaceCharacterProfileT8Advanced",
+      "title": "4B. In-memory Character_B match profile / B角色匹配资料",
+      "pos": [
+        460,
+        760
+      ],
+      "size": [
+        410,
+        210
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "reference_images",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "character_profile",
+          "type": "H3_T8_MULTIFACE_CHARACTER_PROFILE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "reference_preview",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceCharacterProfileT8Advanced"
+      },
+      "widgets_values": [
+        "Character_B",
+        "require_single_face"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3FaceCastMergeT8Advanced",
+      "title": "Merge Character_A / 合并A角色",
+      "pos": [
+        930,
+        610
+      ],
+      "size": [
+        410,
+        110
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "profile",
+          "type": "H3_T8_MULTIFACE_CHARACTER_PROFILE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face_cast",
+          "type": "H3_T8_MULTIFACE_CAST",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "reference_contact_sheet",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceCastMergeT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3FaceCastMergeT8Advanced",
+      "title": "Merge Character_B into reviewed cast / 合并B角色",
+      "pos": [
+        1420,
+        600
+      ],
+      "size": [
+        430,
+        135
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "profile",
+          "type": "H3_T8_MULTIFACE_CHARACTER_PROFILE",
+          "link": 9
+        },
+        {
+          "name": "previous_cast",
+          "type": "H3_T8_MULTIFACE_CAST",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face_cast",
+          "type": "H3_T8_MULTIFACE_CAST",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "reference_contact_sheet",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceCastMergeT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3FaceTrackAssignT8Advanced",
+      "title": "5. Review and bind every shot-local track / 审核每个镜头的人物绑定",
+      "pos": [
+        1420,
+        0
+      ],
+      "size": [
+        520,
+        510
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "track_plan",
+          "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
+          "link": 12
+        },
+        {
+          "name": "face_cast",
+          "type": "H3_T8_MULTIFACE_CAST",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "identity_assignment",
+          "type": "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT",
+          "links": [
+            16,
+            23
+          ]
+        },
+        {
+          "name": "assignment_preview",
+          "type": "IMAGE",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "track_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceTrackAssignT8Advanced"
+      },
+      "widgets_values": [
+        "sface_cpu_suggest",
+        "{\"0:0\":\"Character_A\",\"0:1\":\"Character_B\"}",
+        0.4,
+        0.05,
+        3,
+        true,
+        8
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced",
+      "title": "6. Strict first, profile fallback / 严格优先、侧脸回退语义MASK",
+      "pos": [
+        2020,
+        0
+      ],
+      "size": [
+        570,
+        810
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 14
+        },
+        {
+          "name": "track_plan",
+          "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
+          "link": 15
+        },
+        {
+          "name": "minimum_ready_frame_fraction",
+          "type": "FLOAT",
+          "widget": {
+            "name": "minimum_ready_frame_fraction"
+          },
+          "link": 16
+        },
+        {
+          "name": "identity_assignment",
+          "type": "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "semantic_skin_mask",
+          "type": "MASK",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "mask_preview",
+          "type": "IMAGE",
+          "links": [
+            32
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced"
+      },
+      "widgets_values": [
+        "facexlib_parsenet_v0.2.2_pinned",
+        0.45,
+        32.0,
+        0.01,
+        0.2,
+        0.1,
+        0.55,
+        3,
+        false,
+        5e-05,
+        0.35,
+        0.08,
+        1.45,
+        0.5,
+        6
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3SkinFinishPersonProfileT8Advanced",
+      "title": "7A. Character_A: subtle, conservative / A人物保守参数",
+      "pos": [
+        2020,
+        900
+      ],
+      "size": [
+        520,
+        390
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "profiles",
+          "type": "H3_T8_SKIN_FINISH_PERSON_PROFILES",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishPersonProfileT8Advanced"
+      },
+      "widgets_values": [
+        "character_id",
+        "Character_A",
+        "subtle",
+        0.3,
+        0.92,
+        0.3,
+        0.0
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3SkinFinishPersonProfileT8Advanced",
+      "title": "7B. Character_B: stronger oil control / B人物稍强控油",
+      "pos": [
+        2600,
+        900
+      ],
+      "size": [
+        520,
+        420
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "previous_profiles",
+          "type": "H3_T8_SKIN_FINISH_PERSON_PROFILES",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "profiles",
+          "type": "H3_T8_SKIN_FINISH_PERSON_PROFILES",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishPersonProfileT8Advanced"
+      },
+      "widgets_values": [
+        "character_id",
+        "Character_B",
+        "oil_control",
+        0.4,
+        0.9,
+        0.45,
+        0.0
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3SkinFinishPerPersonT8Advanced",
+      "title": "8. Per-person/per-shot source-safe candidate / 逐人物逐镜头候选",
+      "pos": [
+        2700,
+        0
+      ],
+      "size": [
+        600,
+        850
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 18
+        },
+        {
+          "name": "track_plan",
+          "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
+          "link": 19
+        },
+        {
+          "name": "semantic_skin_mask",
+          "type": "MASK",
+          "link": 20
+        },
+        {
+          "name": "semantic_report_json",
+          "type": "STRING",
+          "widget": {
+            "name": "semantic_report_json"
+          },
+          "link": 21
+        },
+        {
+          "name": "profiles",
+          "type": "H3_T8_SKIN_FINISH_PERSON_PROFILES",
+          "link": 22
+        },
+        {
+          "name": "identity_assignment",
+          "type": "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT",
+          "link": 23
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            26,
+            34
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": [
+            25,
+            38
+          ]
+        },
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "rejected_skin_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "ownership_preview",
+          "type": "IMAGE",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "skin_finish_state",
+          "type": "H3_T8_SKIN_FINISH_STATE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishPerPersonT8Advanced"
+      },
+      "widgets_values": [
+        "",
+        "source_unmatched",
+        "subtle",
+        0.35,
+        0.9,
+        0.35,
+        0.0,
+        "candidate_only",
+        false,
+        2,
+        640,
+        6
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3SkinFinishTextureGuardT8Advanced",
+      "title": "9. Texture Guard remains source-relative / 纹理护栏仍相对原片",
+      "pos": [
+        3390,
+        0
+      ],
+      "size": [
+        520,
+        650
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 25
+        },
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "link": 27
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "guarded_candidate",
+          "type": "IMAGE",
+          "links": [
+            35,
+            39
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            43
+          ]
+        },
+        {
+          "name": "effective_mask",
+          "type": "MASK",
+          "links": [
+            36,
+            40
+          ]
+        },
+        {
+          "name": "rejected_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "difference",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishTextureGuardT8Advanced"
+      },
+      "widgets_values": [
+        0.1,
+        0.94,
+        0.06,
+        0.78,
+        0.003,
+        0.0005,
+        0.00392156862745098,
+        1,
+        2,
+        false
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3SkinFinishVideoFinalizeT8Advanced",
+      "title": "11. Explicit final accept; copy source audio packets / 最终人工接受",
+      "pos": [
+        4620,
+        0
+      ],
+      "size": [
+        520,
+        330
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_video",
+          "type": "VIDEO",
+          "link": 29
+        },
+        {
+          "name": "processed_frames",
+          "type": "IMAGE",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishVideoFinalizeT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SkinFinish/per_person_reviewed",
+        18.0,
+        false
+      ]
+    },
+    {
+      "id": 19,
+      "type": "PreviewImage",
+      "title": "SAM tracks are shot-local / SAM轨迹仅镜头内",
+      "pos": [
+        930,
+        1000
+      ],
+      "size": [
+        430,
+        110
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "PreviewImage",
+      "title": "Reviewed identity assignment / 已审核人物绑定",
+      "pos": [
+        1420,
+        1000
+      ],
+      "size": [
+        430,
+        110
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 21,
+      "type": "PreviewImage",
+      "title": "ParseNet: green skin, red features / 绿皮肤红五官",
+      "pos": [
+        2020,
+        1380
+      ],
+      "size": [
+        520,
+        110
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 22,
+      "type": "PreviewImage",
+      "title": "Ownership colors; red stays source / 参数归属颜色；红区回原片",
+      "pos": [
+        2700,
+        1380
+      ],
+      "size": [
+        560,
+        110
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "PreviewImage",
+      "title": "Per-person candidate / 逐人物候选",
+      "pos": [
+        3390,
+        760
+      ],
+      "size": [
+        500,
+        110
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 24,
+      "type": "PreviewImage",
+      "title": "Texture-guarded candidate / 纹理护栏候选",
+      "pos": [
+        3980,
+        430
+      ],
+      "size": [
+        500,
+        110
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "MaskToImage",
+      "title": "Final processed skin mask / 最终处理皮肤MASK",
+      "pos": [
+        3390,
+        930
+      ],
+      "size": [
+        300,
+        100
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MaskToImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 26,
+      "type": "PreviewImage",
+      "title": "Processed mask only / 仅实际处理区域",
+      "pos": [
+        3740,
+        930
+      ],
+      "size": [
+        330,
+        110
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 27,
+      "type": "MarkdownNote",
+      "title": "START HERE / 使用顺序",
+      "pos": [
+        0,
+        1600
+      ],
+      "size": [
+        1000,
+        390
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 逐人物 Skin Finish 完整链\n\n只在最终解码、Face Refine/Motion Recovery之后使用：`SAM3.1逐镜追踪 -> 清晰单人参考建立Character -> 审核轨迹绑定 -> 严格五点/侧脸裁切ParseNet -> 逐人物参数 -> Texture Guard -> 人工接受后封装`。SAM文本建议用单数`person`，让multiplex检测返回多个独立实例；不要写`two people`这类可能被当成一个整体的数量短语。0.35是本次清晰双人素材的召回起点，误检时再提高。字幕、整体调色和Tape-FX放在后面。"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "MarkdownNote",
+      "title": "IDENTITY IS REVIEWED ROUTING / 身份必须人工审核",
+      "pos": [
+        1080,
+        1600
+      ],
+      "size": [
+        1120,
+        430
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 参考图如何传入\n\n每个Character使用一张或多张清晰、单人、五官可见的授权参考图。SFace只给匹配建议，不证明身份；每次切镜SAM track会重新编号。先查看彩色轨迹和assignment预览，必要时修改`manual_assignments_json`，例如`{\"0:0\":\"Character_A\",\"1:1\":\"Character_A\"}`。`strict_identity=true`会拒绝未绑定轨迹。"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "MarkdownNote",
+      "title": "PROFILE PRECEDENCE / 参数优先级",
+      "pos": [
+        2280,
+        1600
+      ],
+      "size": [
+        1140,
+        450
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Character与shot:track可以同时用\n\n默认Profile节点使用`character_id`，同一人物可跨已审核镜头复用参数。如某一镜头光线特殊，再追加`selector_type=shot_track`、`selector=1:0`的节点；优先级固定为`shot:track > character_id > default`。链式Profile最多8个，重复或未知selector会失败回原片。`tone_adjust`只是中间调曝光式调整，不是自动肤色匹配，默认保持0。"
+      ]
+    },
+    {
+      "id": 30,
+      "type": "MarkdownNote",
+      "title": "CROSSING + UNMATCHED SAFETY / 交叉与未匹配安全",
+      "pos": [
+        3500,
+        1600
+      ],
+      "size": [
+        1150,
+        450
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 不靠猜测决定重叠像素属于谁\n\n`default_policy=source_unmatched`是推荐默认：没有显式Profile的人物保持原片。两个人物SAM MASK在皮肤像素发生重叠时，该重叠区也保持原片并在ownership预览标红，避免不同人物参数串色。彩色区域表示实际分配到某套参数，红色表示未匹配、歧义或交叉回退；报告给出逐track路线和像素计数。"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "MarkdownNote",
+      "title": "PARAMETERS / 建议参数",
+      "pos": [
+        4700,
+        1600
+      ],
+      "size": [
+        1100,
+        420
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 先克制，再逐人微调\n\n真人建议从`subtle, amount 0.25~0.40, texture_keep 0.88~0.95, shine 0.25~0.45, tone 0`开始；明显油光才用`oil_control`。语义节点始终先尝试`maximum_alignment_rms=0.08`的严格五点对齐，仅失败姿态才使用`profile_crop_expansion=1.45`原侧脸裁切；它不会把侧脸变正脸。不要用低texture_keep追求锐化，它不会生成毛孔或修复模糊/崩脸。每次只改一个人物并看完整视频，特别检查说话嘴唇、眼睛、手遮脸、侧脸、肤色跳变和镜头切换。"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "MarkdownNote",
+      "title": "MEMORY + AUDIO + ACCEPT / 内存、音频与接受",
+      "pos": [
+        5880,
+        1600
+      ],
+      "size": [
+        1120,
+        430
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 默认不会覆盖原片\n\nSAM完成后选择性卸载；YuNet释放后才加载CPU ParseNet，Profile执行不重跑模型并默认2帧chunk。多人物ParseNet仍可能较慢，长片请先分成已接受片段。视觉节点原对象旁路AUDIO；最终Video Finalize仅在兼容时逐包复制来源音频payload。Per-Person、Texture Guard和Finalize接受开关默认全为false，必须先审所有预览再只打开最终需要的门。"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "MiniMaxH3SkinFinishSafetyAuditT8Advanced",
+      "title": "10. Final hard-failure audit / 最终硬失败审计",
+      "pos": [
+        3980,
+        0
+      ],
+      "size": [
+        570,
+        700
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 38
+        },
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "link": 39
+        },
+        {
+          "name": "used_skin_mask",
+          "type": "MASK",
+          "link": 40
+        },
+        {
+          "name": "track_plan",
+          "type": "H3_T8_SAM31_MULTIFACE_TRACK_PLAN",
+          "link": 41
+        },
+        {
+          "name": "audio_source",
+          "type": "AUDIO",
+          "link": 42
+        },
+        {
+          "name": "audio_passthrough",
+          "type": "AUDIO",
+          "link": 43
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "gated_candidate",
+          "type": "IMAGE",
+          "links": [
+            44
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "hard_gate_pass",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "failed_frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "failure_preview",
+          "type": "IMAGE",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishSafetyAuditT8Advanced"
+      },
+      "widgets_values": [
+        "unique_track_owner",
+        "hard_gate",
+        0.08,
+        0.3,
+        0.04,
+        0.001,
+        64,
+        0.2,
+        false
+      ]
+    },
+    {
+      "id": 34,
+      "type": "PreviewImage",
+      "title": "Hard-gate preview: red fail, green pass / 红失败绿通过",
+      "pos": [
+        4620,
+        430
+      ],
+      "size": [
+        460,
+        110
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 35,
+      "type": "MarkdownNote",
+      "title": "FINAL SAFETY AUDIT / 最终安全审计",
+      "pos": [
+        7080,
+        1600
+      ],
+      "size": [
+        1180,
+        460
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 只会自动拒绝，不会自动判美\n\n多人示例固定使用`audit_scope=unique_track_owner`和`temporal_policy=hard_gate`：检查实际处理像素是否越出SAM人物轨迹、是否落在两人重叠歧义区、蒙版外/五官保护区是否被改动、逐人物处理强度是否突然跳变，以及AUDIO PCM是否一致。红色预览表示硬失败，绿色只代表机械门通过，不代表更好看。`gated_candidate`失败时自动回原片；最终仍只需在Video Finalize中人工打开接受开关。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      3,
+      1,
+      4,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      2,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      3,
+      0,
+      5,
+      1,
+      "MODEL"
+    ],
+    [
+      5,
+      4,
+      0,
+      5,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      6,
+      6,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      8,
+      0,
+      10,
+      0,
+      "H3_T8_MULTIFACE_CHARACTER_PROFILE"
+    ],
+    [
+      9,
+      9,
+      0,
+      11,
+      0,
+      "H3_T8_MULTIFACE_CHARACTER_PROFILE"
+    ],
+    [
+      10,
+      10,
+      0,
+      11,
+      1,
+      "H3_T8_MULTIFACE_CAST"
+    ],
+    [
+      11,
+      2,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      5,
+      0,
+      12,
+      1,
+      "H3_T8_SAM31_MULTIFACE_TRACK_PLAN"
+    ],
+    [
+      13,
+      11,
+      0,
+      12,
+      2,
+      "H3_T8_MULTIFACE_CAST"
+    ],
+    [
+      14,
+      2,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      5,
+      0,
+      13,
+      1,
+      "H3_T8_SAM31_MULTIFACE_TRACK_PLAN"
+    ],
+    [
+      16,
+      12,
+      0,
+      13,
+      2,
+      "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT"
+    ],
+    [
+      17,
+      14,
+      0,
+      15,
+      0,
+      "H3_T8_SKIN_FINISH_PERSON_PROFILES"
+    ],
+    [
+      18,
+      2,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      5,
+      0,
+      16,
+      1,
+      "H3_T8_SAM31_MULTIFACE_TRACK_PLAN"
+    ],
+    [
+      20,
+      13,
+      0,
+      16,
+      2,
+      "MASK"
+    ],
+    [
+      21,
+      13,
+      2,
+      16,
+      3,
+      "STRING"
+    ],
+    [
+      22,
+      15,
+      0,
+      16,
+      4,
+      "H3_T8_SKIN_FINISH_PERSON_PROFILES"
+    ],
+    [
+      23,
+      12,
+      0,
+      16,
+      5,
+      "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT"
+    ],
+    [
+      24,
+      2,
+      1,
+      16,
+      6,
+      "AUDIO"
+    ],
+    [
+      25,
+      16,
+      1,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      26,
+      16,
+      0,
+      17,
+      1,
+      "IMAGE"
+    ],
+    [
+      27,
+      16,
+      4,
+      17,
+      2,
+      "MASK"
+    ],
+    [
+      28,
+      16,
+      3,
+      17,
+      3,
+      "AUDIO"
+    ],
+    [
+      29,
+      1,
+      0,
+      18,
+      0,
+      "VIDEO"
+    ],
+    [
+      30,
+      5,
+      1,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      31,
+      12,
+      1,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      32,
+      13,
+      1,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      33,
+      16,
+      6,
+      22,
+      0,
+      "IMAGE"
+    ],
+    [
+      34,
+      16,
+      0,
+      23,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      17,
+      0,
+      24,
+      0,
+      "IMAGE"
+    ],
+    [
+      36,
+      17,
+      4,
+      25,
+      0,
+      "MASK"
+    ],
+    [
+      37,
+      25,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      38,
+      16,
+      1,
+      33,
+      0,
+      "IMAGE"
+    ],
+    [
+      39,
+      17,
+      0,
+      33,
+      1,
+      "IMAGE"
+    ],
+    [
+      40,
+      17,
+      4,
+      33,
+      2,
+      "MASK"
+    ],
+    [
+      41,
+      5,
+      0,
+      33,
+      3,
+      "H3_T8_SAM31_MULTIFACE_TRACK_PLAN"
+    ],
+    [
+      42,
+      2,
+      1,
+      33,
+      4,
+      "AUDIO"
+    ],
+    [
+      43,
+      17,
+      3,
+      33,
+      5,
+      "AUDIO"
+    ],
+    [
+      44,
+      33,
+      1,
+      18,
+      1,
+      "IMAGE"
+    ],
+    [
+      45,
+      33,
+      6,
+      34,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Skin Finish: reviewed identities -> per-person/per-shot parameters",
+      "bounding": [
+        -50,
+        -80,
+        4580,
+        1580
+      ],
+      "color": "#536d4d",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.38,
+      "offset": [
+        100,
+        80
+      ]
+    },
+    "workflow_title": "2026-08-25 H3 Skin Finish Per Person Advanced EXP",
+    "t8_skin_finish": {
+      "scope": "reviewed per-character and exact shot-local Skin Finish parameters",
+      "default_selection": "source",
+      "profile_precedence": "shot_track_over_character_id_over_optional_default",
+      "overlap_policy": "source_on_any_multi_track_overlap",
+      "runtime_download": false,
+      "automatic_accept": false
+    }
+  },
+  "version": 0.4
+}

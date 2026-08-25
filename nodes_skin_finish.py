@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import base64
+import json
+from io import BytesIO
+
 from comfy_api.latest import io
+from PIL import Image
+import torch
 
 from .skin_finish import PRESET_CONFIG, build_skin_finish_review, run_skin_finish
 
@@ -8,6 +14,72 @@ from .skin_finish import PRESET_CONFIG, build_skin_finish_review, run_skin_finis
 CATEGORY = "T8/MiniMax H3/Post FX/Experimental"
 SkinFinishStateIO = io.Custom("H3_T8_SKIN_FINISH_STATE")
 FaceRefinePlanIO = io.Custom("H3_T8_FACE_REFINE_PLAN")
+SKIN_FINISH_PREVIEW_UI_SCHEMA = "h3_t8_skin_finish_preview_ui/v1"
+_PREVIEW_UI_MAX_SIDE = 512
+
+
+def _encode_preview_frame(frames, frame_index: int) -> tuple[str, int, int]:
+    frame = frames[int(frame_index), ..., :3].detach().to(device="cpu")
+    frame_u8 = (
+        frame.float().clamp(0.0, 1.0).mul(255.0).round().to(dtype=torch.uint8).contiguous()
+    )
+    image = Image.fromarray(frame_u8.numpy())
+    width, height = image.size
+    longest = max(width, height)
+    if longest > _PREVIEW_UI_MAX_SIDE:
+        scale = _PREVIEW_UI_MAX_SIDE / float(longest)
+        width = max(1, int(round(width * scale)))
+        height = max(1, int(round(height * scale)))
+        resampling = getattr(Image, "Resampling", Image)
+        image = image.resize((width, height), resampling.LANCZOS)
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=90, subsampling=0)
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/jpeg;base64,{encoded}", width, height
+
+
+def _build_preview_ui_payload(source_frames, candidate_frames, review_json: str) -> str:
+    review = json.loads(review_json)
+    frame_count = int(source_frames.shape[0])
+    frame_index = max(0, min(frame_count - 1, int(review["frame_index"])))
+    payload = {
+        "schema": SKIN_FINISH_PREVIEW_UI_SCHEMA,
+        "status": "READY",
+        "proxy_only": True,
+        "full_resolution_outputs_available": True,
+        "frame_index": frame_index,
+        "frame_count": frame_count,
+        "comparison_position": float(review["comparison_position"]),
+        "comparison_left": "source",
+        "comparison_right": "candidate",
+        "audio_status": str(review["audio_status"]),
+        "review_status": str(review["status"]),
+        "candidate_allowed_by_gate": bool(review["candidate_allowed_by_gate"]),
+        "accepted_candidate": bool(review["accepted_candidate"]),
+        "automatic_accept": False,
+    }
+    try:
+        source_url, proxy_width, proxy_height = _encode_preview_frame(
+            source_frames, frame_index
+        )
+        candidate_url, candidate_width, candidate_height = _encode_preview_frame(
+            candidate_frames, frame_index
+        )
+        if (candidate_width, candidate_height) != (proxy_width, proxy_height):
+            raise ValueError("source and candidate preview dimensions differ")
+        payload.update(
+            {
+                "source_data_url": source_url,
+                "candidate_data_url": candidate_url,
+                "proxy_width": proxy_width,
+                "proxy_height": proxy_height,
+            }
+        )
+    except (IndexError, KeyError, OSError, OverflowError, RuntimeError, TypeError, ValueError):
+        # The review tensors and full-resolution outputs remain authoritative. A browser
+        # proxy failure must not turn a valid review execution into a graph failure.
+        payload["status"] = "UI_PROXY_UNAVAILABLE"
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 class MiniMaxH3SkinFinishT8(io.ComfyNode):
@@ -19,7 +91,9 @@ class MiniMaxH3SkinFinishT8(io.ComfyNode):
             description=(
                 "Creates a conservative non-generative skin-finishing candidate only inside "
                 "an explicit MASK. Missing or unreliable masks ABSTAIN to the exact source. "
-                "It cannot reconstruct identity, missing facial structure, blur or lip sync."
+                "Before allocating full candidate/audit outputs it checks a shape-derived host "
+                "RAM and Windows commit floor. It cannot reconstruct identity, missing facial "
+                "structure, blur or lip sync."
             ),
             category=CATEGORY,
             inputs=[
@@ -103,8 +177,9 @@ class MiniMaxH3SkinFinishAdvancedT8(io.ComfyNode):
             description=(
                 "Append-only advanced P0 route with explicit mask provenance, area gates, "
                 "CPU-bounded chunks, exact outside-mask pixels, exact alpha/aux preservation, "
-                "and source-by-default selection. face_refine_plan builds a conservative inner-"
-                "face proxy mask; it is not a semantic face parser."
+                "shape-derived host/commit preflight and source-by-default selection. "
+                "face_refine_plan builds a conservative inner-face proxy mask; it is not a "
+                "semantic face parser."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -237,7 +312,16 @@ class MiniMaxH3SkinFinishPreviewAuditT8Advanced(io.ComfyNode):
     @classmethod
     def execute(cls, **kwargs):
         values = build_skin_finish_review(**kwargs)
-        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+        preview_payload = _build_preview_ui_payload(
+            kwargs["source_frames"], kwargs["candidate_frames"], values[-1]
+        )
+        return io.NodeOutput(
+            *values,
+            ui={
+                "text": (values[-1],),
+                "t8_skin_finish_preview": (preview_payload,),
+            },
+        )
 
 
 SKIN_FINISH_NODE_CLASSES = [

@@ -1,9 +1,9 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.46.3",
+  "version": "1.47.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
-  "validated_on": "2026-08-24",
+  "validated_on": "2026-08-25",
   "validated_comfyui_commit": "187eda8ef5e588c6a5765cad53e482765edae052",
   "validated_onekey_runtime_commit": "0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a",
   "validated_previous_comfyui_commit": "7fe8a6138504f90ff7be82f3babf416da32876b1",
@@ -11,7 +11,7 @@
   "validated_legacy_comfyui_commit": "563b98eefbe643a4cd510ee7f0b43e79880d5a3f",
   "python": "3.10+",
   "external_runtime_dependencies": [
-    "FFmpeg available on PATH for crash-isolated AAC encoding and atomic MP4 mux in Long Video candidate save/final composition"
+    "FFmpeg available on PATH for crash-isolated AAC encoding and atomic MP4 mux in Long Video candidate save/final composition, plus strict pre-publication decode for opt-in Skin Finish file outputs"
   ],
   "optional_runtime_dependencies": [
     "spas-sage-attn 0.1.0 with a Torch/CUDA-compatible wheel for the opt-in LightX2V SLA Advanced EXP node; stable, dense-control and disabled workflows do not import its CUDA kernel",
@@ -27,7 +27,7 @@
     "transformers with a local WavLMForXVector model for experimental speaker-similarity reporting",
     "OpenCV with FaceDetectorYN plus the pinned local YuNet 2023mar ONNX file for the default real-person Face Refine detector; no runtime download",
     "OpenCV with FaceRecognizerSF plus the pinned Apache-2.0 OpenCV Zoo SFace 2021dec ONNX file for experimental multi-person identity suggestions; no runtime download",
-    "FaceXLib 0.3.0 code plus the exact local FaceXLib v0.2.2 ParseNet checkpoint (85,331,193 bytes, SHA-256 3d558d8d0e42c20224f13cf5a29c79eba2d59913419f945545d8cf7b72920de2) for the opt-in single- and multi-person Skin Finish Semantic Mask Advanced EXP nodes; no runtime download and no checkpoint redistribution",
+    "FaceXLib 0.3.0 code plus the exact local FaceXLib v0.2.2 ParseNet checkpoint (85,331,193 bytes, SHA-256 3d558d8d0e42c20224f13cf5a29c79eba2d59913419f945545d8cf7b72920de2) for the opt-in single-/multi-person Skin Finish Semantic Mask and bounded Quality Stream Advanced EXP nodes; no runtime download and no checkpoint redistribution",
     "the current ComfyUI native SAM3.1 multiplex checkpoint for experimental two- or three-person shot-local tracking; model weights are not bundled",
     "onnxruntime plus the pinned local deepghs anime-face v1.4 nano ONNX file for the optional anime-only EXP detector; no runtime download",
     "ultralytics with a user-supplied locally licensed compatible face detector for the optional legacy Face Refine route; manual ROI remains dependency-free"

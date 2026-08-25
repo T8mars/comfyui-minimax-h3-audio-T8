@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import torch
 
+import h3_audio_t8_pkg.nodes_skin_finish_profile_crop as profile_crop_nodes
 from h3_audio_t8_pkg.multiface_refine_advanced import (
     _hash_json,
     _json_safe,
@@ -14,6 +15,9 @@ from h3_audio_t8_pkg.multiface_refine_advanced import (
 )
 from h3_audio_t8_pkg.nodes_skin_finish_multiface_parser import (
     MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced,
+)
+from h3_audio_t8_pkg.nodes_skin_finish_profile_crop import (
+    MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced,
 )
 from h3_audio_t8_pkg.skin_finish_multiface_parser import (
     FFHQ_FIVE_POINT_TEMPLATE_512,
@@ -140,6 +144,21 @@ def _two_face_detections(frames: torch.Tensor, *_args, **_kwargs):
     }
 
 
+def _right_profile_landmark_rejection(frames: torch.Tensor, *_args, **_kwargs):
+    right = _exact_detection(90.0)
+    right["landmarks_xy"][1] = list(right["landmarks_xy"][0])
+    detections = [
+        [_exact_detection(0.0), right]
+        for _ in range(int(frames.shape[0]))
+    ]
+    return detections, {
+        "backend": "deterministic_profile_test_yunet",
+        "frame_count": len(detections),
+        "detector_object_released": True,
+        "five_point_landmarks": True,
+    }
+
+
 class _FakeParser:
     def __call__(self, _value: torch.Tensor) -> torch.Tensor:
         logits = torch.full((1, 19, 512, 512), -6.0, dtype=torch.float32)
@@ -216,6 +235,7 @@ def test_two_people_two_shots_use_real_semantic_masks_and_optional_labels(monkey
     parsed = json.loads(report)
     assert parsed["schema"] == SKIN_FINISH_MULTIFACE_SEMANTIC_SCHEMA
     assert parsed["status"] == "READY"
+    assert parsed["mask_proxy_sha256"]
     assert parsed["selection"]["ready_frame_fraction"] == 1.0
     assert parsed["identity_assignment"]["track_to_character"] == {
         "0:0": "Character_A",
@@ -314,6 +334,72 @@ def test_one_face_detection_cannot_be_reused_by_two_tracks(monkeypatch):
     assert torch.count_nonzero(mask) > 0
 
 
+def test_profile_crop_fallback_is_opt_in_and_preserves_strict_behavior(monkeypatch):
+    _patch_runtime(monkeypatch, _right_profile_landmark_rejection)
+    frames = _frames(frame_count=1)
+    plan = _track_plan(frames)
+
+    strict_mask, _, strict_report = run_multiface_semantic_skin_mask(
+        frames,
+        plan,
+        minimum_face_height_px=8.0,
+        minimum_detail=0.0,
+        maximum_skin_area_per_frame=1.0,
+        minimum_ready_frame_fraction=1.0,
+    )
+    strict = json.loads(strict_report)
+    assert strict["alignment"]["policy"] == "five_point_strict"
+    assert strict["selection"]["profile_crop_ready_counts"] == {}
+    assert strict["frames"][0]["tracks"][0]["status"] == "READY"
+    assert strict["frames"][0]["tracks"][1]["status"] == (
+        "ABSTAIN_ALIGNMENT_OR_PARSE_FAILED"
+    )
+    assert torch.count_nonzero(strict_mask[:, :, :96]) > 0
+    assert torch.count_nonzero(strict_mask[:, :, 96:]) == 0
+
+    profile_mask, _, profile_report = run_multiface_semantic_skin_mask(
+        frames,
+        plan,
+        alignment_policy="five_point_then_profile_crop",
+        profile_crop_expansion=1.45,
+        minimum_face_height_px=8.0,
+        minimum_detail=0.0,
+        maximum_skin_area_per_frame=1.0,
+        minimum_ready_frame_fraction=1.0,
+    )
+    profile = json.loads(profile_report)
+    right = profile["frames"][0]["tracks"][1]
+    assert profile["status"] == "READY"
+    assert profile["alignment"]["policy"] == "five_point_then_profile_crop"
+    assert profile["selection"]["profile_crop_ready_counts"] == {"0:1": 1}
+    assert right["status"] == "READY"
+    assert right["alignment"] == "profile_bbox_crop_fallback"
+    assert "YuNet eye distance is too small" in right["alignment_fallback_reason"]
+    assert right["profile_crop_expansion"] == pytest.approx(1.45)
+    assert torch.count_nonzero(profile_mask[:, :, :96]) > 0
+    assert torch.count_nonzero(profile_mask[:, :, 96:]) > 0
+
+
+def test_unknown_profile_alignment_policy_is_rejected_before_model_load(monkeypatch):
+    frames = _frames(frame_count=1)
+    plan = _track_plan(frames)
+    import h3_audio_t8_pkg.skin_finish_multiface_parser as module
+
+    monkeypatch.setattr(
+        module,
+        "_load_pinned_parsenet",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("parser must not load for an invalid alignment policy")
+        ),
+    )
+    with pytest.raises(ValueError, match="Unknown alignment_policy"):
+        run_multiface_semantic_skin_mask(
+            frames,
+            plan,
+            alignment_policy="unsafe_guess",
+        )
+
+
 def test_low_ready_coverage_zeroes_partial_mask_but_reports_observation(monkeypatch):
     def first_frame_only(frames: torch.Tensor, *_args, **_kwargs):
         return [[_exact_detection(), _exact_detection(90.0)], []], {
@@ -350,6 +436,43 @@ def test_node_schema_is_append_only_review_input_with_safe_defaults():
     assert inputs["parser_model"].default == "facexlib_parsenet_v0.2.2_pinned"
     assert inputs["include_neck"].default is False
     assert inputs["minimum_ready_frame_fraction"].default == 0.50
+
+
+def test_profile_crop_node_is_separate_experimental_with_strict_defaults():
+    schema = (
+        MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced.define_schema()
+    )
+    inputs = {item.id: item for item in schema.inputs}
+    assert schema.is_experimental is True
+    assert inputs["identity_assignment"].optional is True
+    assert inputs["maximum_alignment_rms"].default == 0.08
+    assert inputs["profile_crop_expansion"].default == 1.45
+    assert inputs["include_neck"].default is False
+
+
+def test_profile_crop_node_locks_strict_first_policy(monkeypatch):
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return (
+            torch.zeros((1, 8, 8)),
+            torch.zeros((1, 8, 8, 3)),
+            "{}",
+        )
+
+    monkeypatch.setattr(
+        profile_crop_nodes,
+        "run_multiface_semantic_skin_mask",
+        fake_run,
+    )
+    MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced.execute(
+        frames=torch.zeros((1, 8, 8, 3)),
+        track_plan={"status": "READY"},
+        profile_crop_expansion=1.45,
+    )
+    assert captured["alignment_policy"] == "five_point_then_profile_crop"
+    assert captured["profile_crop_expansion"] == 1.45
 
 
 def test_multiface_semantic_workflow_is_importable_documented_and_source_safe():

@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 139
+    assert len(paths) == 144
     assert [path.name for path in categories] == [
         "01-basic-generation",
         "02-audio-control",
@@ -211,6 +211,66 @@ def test_skin_finish_texture_guard_workflow_is_importable_and_source_safe():
         "HDR",
         "AUDIO",
         "semantic parser",
+    ):
+        assert required in notes
+
+
+def test_skin_finish_frequency_split_workflow_is_importable_and_source_safe():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "17-skin-finish"
+        / "2026-08-25_H3_Skin_Finish_Frequency_Split_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    types = [node["type"] for node in workflow["nodes"]]
+    assert workflow["version"] == 0.4
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert types.count("MiniMaxH3SkinFinishAdvancedT8") == 1
+    assert types.count("MiniMaxH3SkinFinishFrequencySplitT8Advanced") == 1
+    assert types.count("MiniMaxH3SkinFinishTextureGuardT8Advanced") == 1
+    assert types.count("MarkdownNote") == 6
+    assert types.count("PreviewImage") == 5
+    split = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishFrequencySplitT8Advanced"
+    )
+    guard = next(
+        node
+        for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SkinFinishTextureGuardT8Advanced"
+    )
+    assert split["widgets_values"] == [
+        1.0,
+        1.0,
+        1.0,
+        32,
+        0.0001,
+        0.50,
+        0.0005,
+        1.0 / 255.0,
+        4,
+        False,
+    ]
+    assert guard["widgets_values"][-1] is False
+    notes = "\n".join(
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    for required in (
+        "候选低频 + 来源高频",
+        "separation_radius_percent",
+        "来源模糊时仍然模糊",
+        "Texture Guard",
+        "AUDIO",
+        "HDR",
+        "accept",
     ):
         assert required in notes
 

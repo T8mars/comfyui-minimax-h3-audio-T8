@@ -16,6 +16,9 @@ import torch.nn.functional as torch_functional
 SKIN_FINISH_STATE_SCHEMA = "h3_t8_skin_finish_state/v1"
 SKIN_FINISH_REPORT_SCHEMA = "h3_t8_skin_finish_report/v1"
 SKIN_FINISH_REVIEW_SCHEMA = "h3_t8_skin_finish_review/v1"
+SKIN_FINISH_IMAGE_RAM_PREFLIGHT_SCHEMA = "h3_t8_skin_finish_image_ram_preflight/v1"
+SKIN_FINISH_IMAGE_RAM_SAFETY_FACTOR = 1.50
+SKIN_FINISH_IMAGE_RAM_FIXED_HEADROOM_MIB = 512.0
 FACE_REFINE_PLAN_SCHEMA = "h3_t8_face_refine_plan/v1"
 
 PRESET_CONFIG = {
@@ -374,6 +377,117 @@ def _proxy_size(height: int, width: int, maximum_side: int) -> tuple[int, int]:
     return max(16, int(round(height * scale))), max(16, int(round(width * scale)))
 
 
+def _estimate_skin_finish_image_ram(
+    frames: torch.Tensor,
+    *,
+    chunk_frames: int,
+    proxy_long_side: int,
+    mask_source: str,
+) -> dict[str, Any]:
+    frame_count, height, width, channels = _validate_frames(frames)
+    pixels = frame_count * height * width
+    chunk_count = min(frame_count, max(1, int(chunk_frames)))
+    chunk_pixels = chunk_count * height * width
+    proxy_height, proxy_width = _proxy_size(height, width, int(proxy_long_side))
+    proxy_pixels = chunk_count * proxy_height * proxy_width
+
+    candidate_bytes = int(frames.numel()) * int(frames.element_size())
+    mask_outputs_bytes = pixels * 2 * 4
+    difference_bytes = pixels * 3 * 2
+    mask_preparation_bytes = pixels * (4 + 1)
+    if mask_source == "face_refine_plan":
+        mask_preparation_bytes += pixels * 4
+    # _process_chunk keeps a bounded float32 source, correction, result, blend and
+    # mask/binary working set. The proxy path retains roughly thirty float channels.
+    fullres_chunk_bytes = chunk_pixels * (((2 * channels + 12) * 4) + 1)
+    proxy_chunk_bytes = proxy_pixels * 30 * 4
+    raw_bytes = (
+        candidate_bytes
+        + mask_outputs_bytes
+        + difference_bytes
+        + mask_preparation_bytes
+        + fullres_chunk_bytes
+        + proxy_chunk_bytes
+    )
+    raw_mib = raw_bytes / 2**20
+    required_mib = math.ceil(
+        raw_mib * SKIN_FINISH_IMAGE_RAM_SAFETY_FACTOR
+        + SKIN_FINISH_IMAGE_RAM_FIXED_HEADROOM_MIB
+    )
+    return {
+        "frame_count": frame_count,
+        "height": height,
+        "width": width,
+        "channels": channels,
+        "chunk_frames": chunk_count,
+        "proxy_height": proxy_height,
+        "proxy_width": proxy_width,
+        "components_mib": {
+            "candidate": round(candidate_bytes / 2**20, 3),
+            "mask_outputs": round(mask_outputs_bytes / 2**20, 3),
+            "difference_fp16": round(difference_bytes / 2**20, 3),
+            "mask_preparation": round(mask_preparation_bytes / 2**20, 3),
+            "fullres_chunk_scratch": round(fullres_chunk_bytes / 2**20, 3),
+            "proxy_chunk_scratch": round(proxy_chunk_bytes / 2**20, 3),
+        },
+        "raw_incremental_estimate_mib": round(raw_mib, 3),
+        "safety_factor": SKIN_FINISH_IMAGE_RAM_SAFETY_FACTOR,
+        "fixed_headroom_mib": SKIN_FINISH_IMAGE_RAM_FIXED_HEADROOM_MIB,
+        "required_available_mib": float(required_mib),
+        "estimate_scope": (
+            "incremental CPU outputs and bounded working tensors after the input IMAGE "
+            "already exists; allocator, ComfyUI graph and other-node memory remain outside "
+            "the raw component sum and are covered only by the safety factor/headroom"
+        ),
+    }
+
+
+def _skin_finish_image_ram_preflight(
+    frames: torch.Tensor,
+    *,
+    chunk_frames: int,
+    proxy_long_side: int,
+    mask_source: str,
+    snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    estimate = _estimate_skin_finish_image_ram(
+        frames,
+        chunk_frames=chunk_frames,
+        proxy_long_side=proxy_long_side,
+        mask_source=mask_source,
+    )
+    observed = dict(snapshot) if snapshot is not None else _memory_snapshot()
+    required = float(estimate["required_available_mib"])
+    measurements = {
+        key: float(observed[key])
+        for key in ("host_available_mib", "commit_available_mib")
+        if isinstance(observed.get(key), (int, float))
+    }
+    blocked_by = sorted(
+        key for key, available in measurements.items() if available < required
+    )
+    if blocked_by:
+        status = "ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_CANDIDATE_ALLOCATED"
+        allowed = False
+    elif measurements:
+        status = "PASS_ESTIMATED_INCREMENTAL_RAM_FLOOR"
+        allowed = True
+    else:
+        status = "ALLOW_MEASUREMENT_UNAVAILABLE_BOUNDED_CPU_ROUTE"
+        allowed = True
+    return {
+        "schema": SKIN_FINISH_IMAGE_RAM_PREFLIGHT_SCHEMA,
+        "status": status,
+        "allowed": allowed,
+        "measurement_available": bool(measurements),
+        "measurements_mib": measurements,
+        "blocked_by": blocked_by,
+        "estimate": estimate,
+        "user_lowerable": False,
+        "gpu_memory_claim": False,
+    }
+
+
 def _local_average(value: torch.Tensor, radius: int) -> torch.Tensor:
     radius = max(1, int(radius))
     kernel = radius * 2 + 1
@@ -503,10 +617,40 @@ def run_skin_finish(
         raise ValueError("mask area limits must satisfy 0 <= minimum < maximum <= 1")
 
     memory_before = _memory_snapshot()
+    candidate_path_requested = execution_mode != "bypass" and not (
+        mask_source == "external_exact" and mask is None
+    )
+    if candidate_path_requested:
+        resource_preflight = _skin_finish_image_ram_preflight(
+            frames,
+            chunk_frames=int(chunk_frames),
+            proxy_long_side=int(proxy_long_side),
+            mask_source=mask_source,
+            snapshot=memory_before,
+        )
+    else:
+        resource_preflight = {
+            "schema": SKIN_FINISH_IMAGE_RAM_PREFLIGHT_SCHEMA,
+            "status": "SKIPPED_NO_CANDIDATE_PATH",
+            "allowed": True,
+            "measurement_available": False,
+            "measurements_mib": {},
+            "blocked_by": [],
+            "estimate": None,
+            "user_lowerable": False,
+            "gpu_memory_claim": False,
+        }
+    preflight_blocked = not bool(resource_preflight["allowed"])
     audio_report = _audio_contract(audio)
     source_report: dict[str, Any]
     raw_mask = None
-    if mask_source == "external_exact":
+    if preflight_blocked:
+        source_report = {
+            "status": str(resource_preflight["status"]),
+            "source": mask_source,
+            "semantic_claim": "not_evaluated_due_to_system_ram_preflight",
+        }
+    elif mask_source == "external_exact":
         raw_mask = mask
         source_report = {
             "status": "READY" if mask is not None else "ABSTAIN_EXTERNAL_MASK_MISSING",
@@ -519,9 +663,11 @@ def run_skin_finish(
         )
         source_report["source"] = "face_refine_plan"
 
-    zero_mask = torch.zeros((frame_count, height, width), dtype=torch.float32)
-    used_mask = zero_mask
-    rejected_mask = zero_mask
+    zero_mask_view = torch.zeros((1, 1, 1), dtype=torch.float32).expand(
+        frame_count, height, width
+    )
+    used_mask = zero_mask_view
+    rejected_mask = zero_mask_view
     mask_report = {
         "accepted_frame_count": 0,
         "rejected_frame_count": frame_count,
@@ -531,6 +677,9 @@ def run_skin_finish(
     if execution_mode == "bypass":
         status = "BYPASS_EXACT"
         findings.append("execution_mode_bypass")
+    elif preflight_blocked:
+        status = str(resource_preflight["status"])
+        findings.append("system_ram_preflight_failed_before_candidate_allocation")
     elif raw_mask is None or not str(source_report.get("status", "")).startswith("READY"):
         status = str(source_report.get("status", "ABSTAIN_NO_RELIABLE_SKIN_MASK"))
         findings.append("no_reliable_skin_mask")
@@ -584,37 +733,44 @@ def run_skin_finish(
 
     if not bool(torch.isfinite(candidate).all()):
         raise ValueError("Skin Finish candidate contains NaN or Inf")
-    # Difference remains a complete IMAGE batch for downstream inspection, but fp16 is
-    # sufficient for a visual audit and halves its retained RAM. Mechanical metrics and
-    # exactness gates are calculated in bounded float32 chunks.
-    difference = torch.empty(
-        (frame_count, height, width, 3), dtype=torch.float16, device="cpu"
-    )
     difference_sum = 0.0
     difference_count = 0
     difference_max = 0.0
     outside_exact = True
     alpha_preserved = True
-    audit_chunk = max(1, int(chunk_frames))
-    for start in range(0, frame_count, audit_chunk):
-        end = min(frame_count, start + audit_chunk)
-        source_chunk = frames[start:end].detach().to(device="cpu")
-        candidate_chunk = candidate[start:end].detach().to(device="cpu")
-        delta = (candidate_chunk[..., :3].float() - source_chunk[..., :3].float()).abs()
-        difference[start:end] = delta.to(dtype=torch.float16)
-        difference_sum += float(delta.double().sum())
-        difference_count += int(delta.numel())
-        difference_max = max(difference_max, float(delta.max()))
-        outside_chunk = used_mask[start:end] <= 0
-        if not torch.equal(
-            candidate_chunk[..., :3][outside_chunk],
-            source_chunk[..., :3][outside_chunk],
-        ):
-            outside_exact = False
-        if channels > 3 and not torch.equal(
-            candidate_chunk[..., 3:], source_chunk[..., 3:]
-        ):
-            alpha_preserved = False
+    if status != "CANDIDATE_READY":
+        difference = torch.zeros((1, 1, 1, 3), dtype=torch.float16).expand(
+            frame_count, height, width, 3
+        )
+    else:
+        # Difference remains a complete IMAGE batch for downstream inspection, but fp16 is
+        # sufficient for a visual audit and halves its retained RAM. Mechanical metrics and
+        # exactness gates are calculated in bounded float32 chunks.
+        difference = torch.empty(
+            (frame_count, height, width, 3), dtype=torch.float16, device="cpu"
+        )
+        audit_chunk = max(1, int(chunk_frames))
+        for start in range(0, frame_count, audit_chunk):
+            end = min(frame_count, start + audit_chunk)
+            source_chunk = frames[start:end].detach().to(device="cpu")
+            candidate_chunk = candidate[start:end].detach().to(device="cpu")
+            delta = (
+                candidate_chunk[..., :3].float() - source_chunk[..., :3].float()
+            ).abs()
+            difference[start:end] = delta.to(dtype=torch.float16)
+            difference_sum += float(delta.double().sum())
+            difference_count += int(delta.numel())
+            difference_max = max(difference_max, float(delta.max()))
+            outside_chunk = used_mask[start:end] <= 0
+            if not torch.equal(
+                candidate_chunk[..., :3][outside_chunk],
+                source_chunk[..., :3][outside_chunk],
+            ):
+                outside_exact = False
+            if channels > 3 and not torch.equal(
+                candidate_chunk[..., 3:], source_chunk[..., 3:]
+            ):
+                alpha_preserved = False
     if not outside_exact:
         raise RuntimeError("Skin Finish changed pixels outside the used mask")
     if not alpha_preserved:
@@ -685,6 +841,7 @@ def run_skin_finish(
             "retained_dtype": str(difference.dtype),
         },
         "audio": audio_report,
+        "resource_preflight": resource_preflight,
         "memory_before": memory_before,
         "memory_after": memory_after,
         "elapsed_seconds": round(time.perf_counter() - started, 6),

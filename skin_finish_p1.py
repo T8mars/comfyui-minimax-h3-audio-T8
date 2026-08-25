@@ -46,6 +46,135 @@ SKIN_FINISH_SEQUENCE_REPORT_SCHEMA = "h3_t8_skin_finish_sequence_report/v1"
 SKIN_FINISH_VIDEO_REPORT_SCHEMA = "h3_t8_skin_finish_video_finalize_report/v1"
 SKIN_FINISH_VIDEO_STREAM_REPORT_SCHEMA = "h3_t8_skin_finish_video_stream_report/v1"
 SKIN_FINISH_VIDEO_STRICT_DECODE_POLICY = "ffmpeg_single_thread_xerror_v1"
+SKIN_FINISH_SDR_VIDEO_CONTRACT = "sdr_8bit_rec709_compatible_v1"
+
+_SDR_PRIMARIES_CODES = frozenset({0, 1, 2, 4, 5, 6, 7})
+_SDR_TRANSFER_CODES = frozenset({0, 1, 2, 4, 5, 6, 7, 13})
+_SDR_COLORSPACE_CODES = frozenset({0, 1, 2, 4, 5, 6, 7})
+_SDR_PRIMARIES_NAMES = frozenset(
+    {"none", "unknown", "unspecified", "bt709", "itu709", "bt470m", "bt470bg", "smpte170m", "smpte240m"}
+)
+_SDR_TRANSFER_NAMES = frozenset(
+    {"none", "unknown", "unspecified", "bt709", "itu709", "gamma22", "gamma28", "smpte170m", "smpte240m", "iec61966-2-1", "srgb"}
+)
+_SDR_COLORSPACE_NAMES = frozenset(
+    {"none", "unknown", "unspecified", "rgb", "bt709", "itu709", "fcc", "bt470bg", "smpte170m", "smpte240m"}
+)
+
+
+def _color_field(value: Any) -> tuple[int | None, str]:
+    if value is None:
+        return None, "unspecified"
+    try:
+        return int(value), str(getattr(value, "name", value)).strip().lower()
+    except (TypeError, ValueError):
+        token = str(getattr(value, "name", value)).strip().lower()
+        return None, token.replace("_", "-") or "unspecified"
+
+
+def _validate_sdr_color_field(
+    value: Any,
+    *,
+    label: str,
+    allowed_codes: frozenset[int],
+    allowed_names: frozenset[str],
+) -> dict[str, Any]:
+    code, name = _color_field(value)
+    accepted = code in allowed_codes if code is not None else name in allowed_names
+    if not accepted:
+        rendered = f"code {code}" if code is not None else repr(name)
+        raise ValueError(
+            f"Skin Finish supports only ordinary SDR/Rec.709-compatible VIDEO; "
+            f"{label} {rendered} is outside that contract"
+        )
+    return {"code": code, "name": name}
+
+
+def _validate_sdr_video_stream(
+    video_stream,
+    *,
+    reported_bit_depth: int,
+) -> dict[str, Any]:
+    codec_context = getattr(video_stream, "codec_context", None)
+    if codec_context is None:
+        raise ValueError("source VIDEO has no readable codec context")
+    video_format = getattr(codec_context, "format", None)
+    format_name = str(
+        getattr(video_format, "name", None)
+        or getattr(codec_context, "pix_fmt", None)
+        or "unknown"
+    ).lower()
+    component_bits = []
+    for component in getattr(video_format, "components", ()) or ():
+        try:
+            bits = int(getattr(component, "bits", 0) or 0)
+        except (TypeError, ValueError):
+            bits = 0
+        if bits > 0:
+            component_bits.append(bits)
+    try:
+        raw_bits = int(getattr(codec_context, "bits_per_raw_sample", 0) or 0)
+    except (TypeError, ValueError):
+        raw_bits = 0
+    detected_bit_depth = max(
+        [int(reported_bit_depth), raw_bits, *component_bits],
+        default=int(reported_bit_depth),
+    )
+    high_depth_name = any(
+        marker in format_name
+        for marker in ("p010", "p016", "v210", "10le", "10be", "12le", "12be", "14le", "14be", "16le", "16be")
+    )
+    if detected_bit_depth > 8 or high_depth_name:
+        raise ValueError(
+            "Skin Finish file output supports only 8-bit SDR VIDEO; "
+            f"detected pixel format {format_name!r} at {detected_bit_depth}-bit"
+        )
+    primaries = _validate_sdr_color_field(
+        getattr(codec_context, "color_primaries", None),
+        label="color primaries",
+        allowed_codes=_SDR_PRIMARIES_CODES,
+        allowed_names=_SDR_PRIMARIES_NAMES,
+    )
+    transfer = _validate_sdr_color_field(
+        getattr(codec_context, "color_trc", None),
+        label="transfer characteristic",
+        allowed_codes=_SDR_TRANSFER_CODES,
+        allowed_names=_SDR_TRANSFER_NAMES,
+    )
+    colorspace = _validate_sdr_color_field(
+        getattr(codec_context, "colorspace", None),
+        label="matrix colorspace",
+        allowed_codes=_SDR_COLORSPACE_CODES,
+        allowed_names=_SDR_COLORSPACE_NAMES,
+    )
+    return {
+        "contract": SKIN_FINISH_SDR_VIDEO_CONTRACT,
+        "reported_bit_depth": int(reported_bit_depth),
+        "detected_bit_depth": detected_bit_depth,
+        "pixel_format": format_name,
+        "component_bits": component_bits,
+        "color_primaries": primaries,
+        "transfer_characteristic": transfer,
+        "matrix_colorspace": colorspace,
+        "explicit_hdr_or_wide_gamut": False,
+    }
+
+
+def _copy_sdr_color_metadata(source_context, target_context) -> dict[str, int]:
+    copied = {}
+    for attribute in ("color_primaries", "color_trc", "colorspace", "color_range"):
+        value = getattr(source_context, attribute, None)
+        if value is None:
+            continue
+        try:
+            numeric = int(value)
+            setattr(target_context, attribute, numeric)
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise RuntimeError(
+                f"failed to preserve approved SDR {attribute} metadata"
+            ) from exc
+        copied[attribute] = numeric
+    return copied
 
 
 def _hash_json(value: dict[str, Any]) -> str:
@@ -863,6 +992,8 @@ def stream_skin_finish_video(
     filename_prefix: str = "MiniMaxH3/SkinFinish/stream_skin_finish",
     crf: float = 18.0,
     accept_candidate: bool = False,
+    _chunk_processor=None,
+    _stream_report_label: str = "proxy_inner_face",
 ):
     from comfy_api.latest import InputImpl
 
@@ -889,6 +1020,8 @@ def stream_skin_finish_video(
         raise ValueError("scene_cut_threshold must stay within 0..1")
     if not 1 <= int(maximum_faces) <= 12:
         raise ValueError("maximum_faces must stay within 1..12")
+    if _chunk_processor is not None and not callable(_chunk_processor):
+        raise ValueError("_chunk_processor must be callable when provided")
     chunk_size = max(1, min(32, int(chunk_frames)))
     source_path = _file_video_source_path(source_video)
     source_stat = source_path.stat()
@@ -896,7 +1029,8 @@ def stream_skin_finish_video(
     width, height = map(int, source_video.get_dimensions())
     if frame_count < 1 or width < 2 or height < 2:
         raise ValueError("source VIDEO has invalid frame count or geometry")
-    if int(source_video.get_bit_depth()) > 8:
+    reported_bit_depth = int(source_video.get_bit_depth())
+    if reported_bit_depth > 8:
         raise ValueError("two-pass Skin Finish is SDR 8-bit only")
 
     import av
@@ -909,9 +1043,10 @@ def stream_skin_finish_video(
             raise ValueError("ComfyUI VIDEO geometry differs from its encoded stream")
         if getattr(video_stream, "rotation", 0):
             raise ValueError("rotated VIDEO is not supported by the exact-geometry stream")
-        transfer = str(getattr(video_stream.codec_context, "color_trc", "")).lower()
-        if "smpte2084" in transfer or "arib-std-b67" in transfer:
-            raise ValueError("HDR transfer functions remain outside the SDR stream contract")
+        source_video_contract = _validate_sdr_video_stream(
+            video_stream,
+            reported_bit_depth=reported_bit_depth,
+        )
         audio_streams = list(source_container.streams.audio)
         for stream in audio_streams:
             if stream.codec_context is None:
@@ -972,6 +1107,7 @@ def stream_skin_finish_video(
     encoded_video_frames = 0
     used_mask_frame_count = 0
     peak_chunk_frames = 0
+    chunk_processor_calls = 0
     outside_mask_exact = True
     source_audio = None
     output_audio = None
@@ -997,6 +1133,10 @@ def stream_skin_finish_video(
                 out_video.width = width
                 out_video.height = height
                 out_video.pix_fmt = "yuv420p"
+                output_color_metadata = _copy_sdr_color_metadata(
+                    video_stream.codec_context,
+                    out_video.codec_context,
+                )
                 out_video.codec_context.max_b_frames = 0
                 out_video.codec_context.thread_count = 1
                 out_video.options = {
@@ -1017,54 +1157,91 @@ def stream_skin_finish_video(
                     nonlocal used_mask_frame_count
                     nonlocal peak_chunk_frames
                     nonlocal outside_mask_exact
+                    nonlocal chunk_processor_calls
                     if not pending_frames:
                         return
                     source_chunk = torch.stack(pending_frames, dim=0)
                     peak_chunk_frames = max(peak_chunk_frames, int(source_chunk.shape[0]))
-                    raw_mask = torch.zeros(
-                        (int(source_chunk.shape[0]), height, width), dtype=torch.float32
-                    )
-                    person_plane = torch.ones((height, width), dtype=torch.float32)
-                    for local_index in range(int(source_chunk.shape[0])):
-                        absolute_index = encoded_video_frames + local_index
-                        for face in analysis["records"][absolute_index]:
-                            face_mask = _inner_face_skin_mask(
-                                height,
-                                width,
-                                face["box"],
-                                person_plane,
-                                weight=float(face["weight"]),
-                                protect_features=True,
-                                include_neck=False,
-                            )
-                            raw_mask[local_index] = torch.maximum(
-                                raw_mask[local_index], face_mask
-                            )
-                    used_mask, _, mask_report = _prepare_mask(
-                        raw_mask,
-                        frame_count=int(source_chunk.shape[0]),
-                        height=height,
-                        width=width,
-                        minimum_area=0.00005,
-                        maximum_area=0.35,
-                        feather_px=int(mask_feather_px),
-                        temporal_radius=0,
-                        chunk_frames=chunk_size,
-                    )
-                    used_mask_frame_count += int(mask_report["accepted_frame_count"])
-                    if int(mask_report["accepted_frame_count"]) > 0:
-                        candidate = _process_chunk(
+                    if _chunk_processor is not None:
+                        chunk_processor_calls += 1
+                        candidate, used_mask = _chunk_processor(
                             source_chunk,
-                            used_mask,
-                            preset=preset,
-                            amount=float(amount),
-                            texture_keep=float(texture_keep),
-                            shine_control=float(shine_control),
-                            tone_adjust=0.0,
-                            proxy_long_side=int(proxy_long_side),
+                            analysis["records"][
+                                encoded_video_frames : encoded_video_frames
+                                + int(source_chunk.shape[0])
+                            ],
+                            encoded_video_frames,
+                        )
+                        if tuple(candidate.shape) != tuple(source_chunk.shape):
+                            raise RuntimeError(
+                                "custom stream chunk processor changed IMAGE geometry"
+                            )
+                        if tuple(used_mask.shape) != (
+                            int(source_chunk.shape[0]),
+                            height,
+                            width,
+                        ):
+                            raise RuntimeError(
+                                "custom stream chunk processor returned an invalid MASK shape"
+                            )
+                        if not bool(torch.isfinite(candidate).all()) or not bool(
+                            torch.isfinite(used_mask).all()
+                        ):
+                            raise RuntimeError(
+                                "custom stream chunk processor returned NaN or Inf"
+                            )
+                        if bool((used_mask < 0).any()) or bool((used_mask > 1).any()):
+                            raise RuntimeError(
+                                "custom stream chunk processor MASK must stay within 0..1"
+                            )
+                        used_mask_frame_count += int(
+                            (used_mask > 0).flatten(1).any(dim=1).sum()
                         )
                     else:
-                        candidate = source_chunk
+                        raw_mask = torch.zeros(
+                            (int(source_chunk.shape[0]), height, width), dtype=torch.float32
+                        )
+                        person_plane = torch.ones((height, width), dtype=torch.float32)
+                        for local_index in range(int(source_chunk.shape[0])):
+                            absolute_index = encoded_video_frames + local_index
+                            for face in analysis["records"][absolute_index]:
+                                face_mask = _inner_face_skin_mask(
+                                    height,
+                                    width,
+                                    face["box"],
+                                    person_plane,
+                                    weight=float(face["weight"]),
+                                    protect_features=True,
+                                    include_neck=False,
+                                )
+                                raw_mask[local_index] = torch.maximum(
+                                    raw_mask[local_index], face_mask
+                                )
+                        used_mask, _, mask_report = _prepare_mask(
+                            raw_mask,
+                            frame_count=int(source_chunk.shape[0]),
+                            height=height,
+                            width=width,
+                            minimum_area=0.00005,
+                            maximum_area=0.35,
+                            feather_px=int(mask_feather_px),
+                            temporal_radius=0,
+                            chunk_frames=chunk_size,
+                        )
+                        used_mask_frame_count += int(mask_report["accepted_frame_count"])
+                        if int(mask_report["accepted_frame_count"]) > 0:
+                            candidate = _process_chunk(
+                                source_chunk,
+                                used_mask,
+                                preset=preset,
+                                amount=float(amount),
+                                texture_keep=float(texture_keep),
+                                shine_control=float(shine_control),
+                                tone_adjust=0.0,
+                                proxy_long_side=int(proxy_long_side),
+                            )
+                        else:
+                            candidate = source_chunk
                     outside = used_mask <= 0
                     if not torch.equal(
                         candidate[..., :3][outside], source_chunk[..., :3][outside]
@@ -1194,6 +1371,8 @@ def stream_skin_finish_video(
             "outside_mask_bit_exact_before_encode": outside_mask_exact,
             "source_proxy_equal_between_passes": True,
             "rgb_temporal_averaging": False,
+            "chunk_processor": str(_stream_report_label),
+            "chunk_processor_calls": chunk_processor_calls,
         },
         "product_boundary": (
             "Pinned YuNet inner-face proxy with shared color-neutral parameters. It is not "
@@ -1209,6 +1388,8 @@ def stream_skin_finish_video(
             "strict_decoded_frame_count_verified": verified_frames,
             "strict_decode_policy": SKIN_FINISH_VIDEO_STRICT_DECODE_POLICY,
             "sdr_8bit_only": True,
+            "source_contract": source_video_contract,
+            "output_color_metadata": output_color_metadata,
         },
         "audio": {
             "method": "source_packet_payload_copy",
@@ -1257,7 +1438,8 @@ def finalize_skin_finish_video(
         if float(start_time) != 0.0 or float(duration) != 0.0:
             raise ValueError("trimmed VIDEO packet-copy is not supported; finalize the untrimmed source")
     frame_count, height, width, _ = _validate_frames(processed_frames, name="processed_frames")
-    if int(source_video.get_bit_depth()) > 8:
+    reported_bit_depth = int(source_video.get_bit_depth())
+    if reported_bit_depth > 8:
         raise ValueError("P1 VIDEO finalization is SDR 8-bit only; HDR/10-bit remains a separate P2 path")
     if tuple(map(int, source_video.get_dimensions())) != (width, height):
         raise ValueError("processed_frames dimensions must match the unrotated source VIDEO")
@@ -1283,6 +1465,10 @@ def finalize_skin_finish_video(
                 raise ValueError("source VIDEO contains no video stream")
             if getattr(video_stream, "rotation", 0):
                 raise ValueError("rotated VIDEO is not supported by the exact-geometry P1 finalizer")
+            source_video_contract = _validate_sdr_video_stream(
+                video_stream,
+                reported_bit_depth=reported_bit_depth,
+            )
             audio_streams = list(source_container.streams.audio)
             for stream in audio_streams:
                 if stream.codec_context is None:
@@ -1309,6 +1495,10 @@ def finalize_skin_finish_video(
                 out_video.width = width
                 out_video.height = height
                 out_video.pix_fmt = "yuv420p"
+                output_color_metadata = _copy_sdr_color_metadata(
+                    video_stream.codec_context,
+                    out_video.codec_context,
+                )
                 out_video.codec_context.max_b_frames = 0
                 out_video.codec_context.thread_count = 1
                 out_video.options = {
@@ -1396,6 +1586,8 @@ def finalize_skin_finish_video(
             "crf": float(crf),
             "reencoded": True,
             "sdr_8bit_only": True,
+            "source_contract": source_video_contract,
+            "output_color_metadata": output_color_metadata,
             "strict_decoded_frame_count_verified": verified_frames,
             "strict_decode_policy": SKIN_FINISH_VIDEO_STRICT_DECODE_POLICY,
         },

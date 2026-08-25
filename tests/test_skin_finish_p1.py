@@ -3,6 +3,7 @@ from __future__ import annotations
 from fractions import Fraction
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -15,13 +16,80 @@ from h3_audio_t8_pkg.nodes_skin_finish_p1 import (
     MiniMaxH3SkinFinishVideoStreamT8Advanced,
 )
 from h3_audio_t8_pkg.skin_finish_p1 import (
+    SKIN_FINISH_SDR_VIDEO_CONTRACT,
     SKIN_FINISH_SEQUENCE_REPORT_SCHEMA,
     SKIN_FINISH_VIDEO_REPORT_SCHEMA,
     SKIN_FINISH_VIDEO_STREAM_REPORT_SCHEMA,
+    _validate_sdr_video_stream,
     finalize_skin_finish_video,
     run_multiface_skin_finish,
     stream_skin_finish_video,
 )
+
+
+def _fake_video_stream(
+    *,
+    pixel_format: str = "yuv420p",
+    component_bits: int = 8,
+    primaries=2,
+    transfer=2,
+    colorspace=2,
+):
+    video_format = SimpleNamespace(
+        name=pixel_format,
+        components=[SimpleNamespace(bits=component_bits) for _ in range(3)],
+    )
+    codec_context = SimpleNamespace(
+        format=video_format,
+        pix_fmt=pixel_format,
+        bits_per_raw_sample=0,
+        color_primaries=primaries,
+        color_trc=transfer,
+        colorspace=colorspace,
+    )
+    return SimpleNamespace(codec_context=codec_context)
+
+
+def test_sdr_video_contract_accepts_unmarked_8bit_and_reports_evidence():
+    report = _validate_sdr_video_stream(
+        _fake_video_stream(),
+        reported_bit_depth=8,
+    )
+
+    assert report["contract"] == SKIN_FINISH_SDR_VIDEO_CONTRACT
+    assert report["pixel_format"] == "yuv420p"
+    assert report["detected_bit_depth"] == 8
+    assert report["component_bits"] == [8, 8, 8]
+    assert report["color_primaries"]["code"] == 2
+    assert report["transfer_characteristic"]["code"] == 2
+    assert report["matrix_colorspace"]["code"] == 2
+    assert report["explicit_hdr_or_wide_gamut"] is False
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "reported_bit_depth", "message"),
+    [
+        ({}, 10, "8-bit SDR"),
+        ({"component_bits": 10}, 8, "8-bit SDR"),
+        ({"pixel_format": "p010le"}, 8, "8-bit SDR"),
+        ({"primaries": 9}, 8, "color primaries"),
+        ({"primaries": "bt2020"}, 8, "color primaries"),
+        ({"transfer": 16}, 8, "transfer characteristic"),
+        ({"transfer": 18}, 8, "transfer characteristic"),
+        ({"transfer": "smpte2084"}, 8, "transfer characteristic"),
+        ({"colorspace": 14}, 8, "matrix colorspace"),
+    ],
+)
+def test_sdr_video_contract_rejects_high_depth_hdr_and_wide_gamut(
+    kwargs,
+    reported_bit_depth,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        _validate_sdr_video_stream(
+            _fake_video_stream(**kwargs),
+            reported_bit_depth=reported_bit_depth,
+        )
 
 
 def _frames(frame_count: int = 8) -> torch.Tensor:
@@ -234,6 +302,16 @@ def test_video_finalize_is_source_by_default_and_packet_copies_audio(monkeypatch
     assert parsed["audio"]["source"] == parsed["audio"]["output"]
     assert parsed["video"]["encoder_threads"] == 1
     assert parsed["video"]["strict_decode_policy"] == "ffmpeg_single_thread_xerror_v1"
+    assert parsed["video"]["source_contract"]["contract"] == (
+        SKIN_FINISH_SDR_VIDEO_CONTRACT
+    )
+    assert parsed["video"]["source_contract"]["detected_bit_depth"] == 8
+    assert parsed["video"]["output_color_metadata"] == {
+        "color_primaries": 2,
+        "color_range": 0,
+        "color_trc": 2,
+        "colorspace": 2,
+    }
     assert parsed["source_overwritten"] is False
     assert len(strictly_validated) == 1
 
@@ -347,6 +425,16 @@ def test_video_stream_two_pass_is_chunk_bounded_and_packet_copies_audio(
     assert parsed["audio"]["source"] == parsed["audio"]["output"]
     assert parsed["video"]["encoder_threads"] == 1
     assert parsed["video"]["strict_decode_policy"] == "ffmpeg_single_thread_xerror_v1"
+    assert parsed["video"]["source_contract"]["contract"] == (
+        SKIN_FINISH_SDR_VIDEO_CONTRACT
+    )
+    assert parsed["video"]["source_contract"]["detected_bit_depth"] == 8
+    assert parsed["video"]["output_color_metadata"] == {
+        "color_primaries": 2,
+        "color_range": 0,
+        "color_trc": 2,
+        "colorspace": 2,
+    }
     assert parsed["source_overwritten"] is False
     assert len(strictly_validated) == 1
 

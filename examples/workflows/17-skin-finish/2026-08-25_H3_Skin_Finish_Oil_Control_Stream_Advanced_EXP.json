@@ -1,0 +1,318 @@
+{
+  "id": "d3eb092d-714f-4cad-96ec-ce39fd472674",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "1. Final untrimmed 8-bit SDR VIDEO / 最终未裁切8位SDR视频",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        440,
+        140
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_final_untrimmed_24fps_video.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
+      "title": "2. Dedicated oil control, bounded RAM / 专用去油低内存处理",
+      "pos": [
+        560,
+        0
+      ],
+      "size": [
+        650,
+        980
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced"
+      },
+      "widgets_values": [
+        "oil_control",
+        0.35,
+        0.9,
+        0.35,
+        0.45,
+        32.0,
+        0.01,
+        0.55,
+        0.28,
+        4,
+        1.45,
+        0.55,
+        4,
+        0,
+        640,
+        1.0,
+        1.0,
+        1.0,
+        32,
+        0.1,
+        0.94,
+        0.78,
+        0.04,
+        2,
+        "MiniMaxH3/SkinFinish/oil_control_stream",
+        16.0,
+        false
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MarkdownNote",
+      "title": "START / 只接最终文件",
+      "pos": [
+        0,
+        1100
+      ],
+      "size": [
+        920,
+        360
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 最终交付文件专用\n\n把Long Video `Compose Accepted`或Studio `Reel Delivery`的最终、未裁切文件VIDEO直接接入。不要先经过`GetVideoComponents`，也不要对带上下文重叠的各分段分别处理。推荐顺序：AV Decode/Face Refine/Motion Recovery完成并合成最终文件后，再运行本节点。"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "BOUNDED PIPELINE / 两遍有界处理",
+      "pos": [
+        980,
+        1100
+      ],
+      "size": [
+        980,
+        410
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 不物化完整IMAGE或完整语义MASK\n\n第一遍逐帧仅保留YuNet小型脸框/切镜元数据和来源摘要；第二遍按`chunk_frames`加载固定CPU ParseNet，依次运行语义皮肤MASK、Skin Finish、Frequency Split、Texture Guard和跨chunk Safety Audit，并立即单线程H.264编码。仅额外保留上一帧用于检查chunk边界。"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "title": "OIL CONTROL / 已验证去油起点",
+      "pos": [
+        2020,
+        1100
+      ],
+      "size": [
+        980,
+        420
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 专用油光控制参数\n\n本工作流固定`oil_control / amount 0.35 / texture_keep 0.90 / shine 0.35 / chunk 2 / CRF 16`。该组合已在v1.0八步LoRA生成的960×544×124中文说话油感近景上完成一次机械验证：124/124帧处理、零Frequency/Texture/Safety拒绝、音频packet和PCM精确。这不是自动美颜结论；来源没有明显油光时应保持原片或选择平局/无法判断。"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "SOURCE BY DEFAULT / 默认不执行",
+      "pos": [
+        3060,
+        1100
+      ],
+      "size": [
+        940,
+        500
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## `accept_candidate=false`完全不分析也不写文件\n\n只有显式改为true才生成供人工审片的候选；这不是自动接受开关。true会在加载ParseNet前检查系统可用内存：测得到且低于2048MiB时直接返回原VIDEO、`ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_FILE_WRITTEN`，不加载模型、不写文件；2048MiB来自32秒实测约1163MiB进程增量并保留约885MiB余量，不是任意机器安全保证。无可靠脸同样返回原VIDEO。任何异常都会删除partial文件，旧Two Pass Stream节点及旧工作流行为不变。"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "title": "AUDIO + FORMAT / 音频和媒体边界",
+      "pos": [
+        4060,
+        1100
+      ],
+      "size": [
+        960,
+        390
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 兼容音频逐包复制\n\nAAC/MP3/ALAC/AC3/EAC3只复制原压缩packet payload并逐包复核SHA-256，不做解码、降噪或重编码。当前仅接受未旋转、未裁切的8-bit SDR MP4路径；HDR、10-bit、未知codec、几何/文件变化或严格解码失败都会fail closed。"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "REVIEW / 去油不等于磨皮",
+      "pos": [
+        5080,
+        1100
+      ],
+      "size": [
+        980,
+        420
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 必须观看完整候选后人工决定\n\n`oil_control`主要压低可靠皮肤区域内相对周围的局部高光，并保留来源已有高频。它不能把模糊脸变清楚，不能重建身份、五官、口型或缺失毛孔。重点检查额头、鼻梁、双颊的高光是否更自然，同时检查蜡像感、眼唇变化、闪烁、halo和多人误涂。`accept_candidate=true`只负责生成待审文件，不代表自动接受。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Bounded final-file Skin Finish dedicated oil-control route",
+      "bounding": [
+        -40,
+        -70,
+        1300,
+        1110
+      ],
+      "color": "#596f56",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.58,
+      "offset": [
+        100,
+        80
+      ]
+    },
+    "workflow_title": "2026-08-25 H3 Skin Finish Oil Control Stream Advanced EXP",
+    "t8_skin_finish": {
+      "scope": "bounded final-file dedicated oil-control candidate",
+      "default_selection": "source",
+      "automatic_quality_claim": false,
+      "full_image_batch_materialized": false,
+      "full_semantic_mask_batch_materialized": false,
+      "audio": "verified source packet payload copy",
+      "preset": "oil_control",
+      "validated_parameters": {
+        "amount": 0.35,
+        "texture_keep": 0.9,
+        "shine_control": 0.35,
+        "chunk_frames": 2,
+        "crf": 16.0
+      },
+      "representative_review_id": "d4eb04003a44"
+    }
+  },
+  "version": 0.4
+}

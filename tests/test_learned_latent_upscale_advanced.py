@@ -535,7 +535,7 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 200
+    assert len(ids) == 211
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",
@@ -632,7 +632,7 @@ def test_new_nodes_append_without_changing_existing_order():
     assert ids[188] == "MiniMaxH3CreatorArtifactQuarantineT8Advanced"
     assert ids[189] == "MiniMaxH3PromptSemanticContractAuditT8Advanced"
     assert ids[190] == "MiniMaxH3NFERunContractT8Advanced"
-    assert ids[191:200] == [
+    assert ids[191:208] == [
         "MiniMaxH3SkinFinishT8",
         "MiniMaxH3SkinFinishAdvancedT8",
         "MiniMaxH3SkinFinishPreviewAuditT8Advanced",
@@ -642,7 +642,18 @@ def test_new_nodes_append_without_changing_existing_order():
         "MiniMaxH3SkinFinishTextureGuardT8Advanced",
         "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
         "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishPersonProfileT8Advanced",
+        "MiniMaxH3SkinFinishPerPersonT8Advanced",
+        "MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced",
+        "MiniMaxH3SkinFinishSafetyAuditT8Advanced",
+        "MiniMaxH3SkinFinishFrequencySplitT8Advanced",
+        "MiniMaxH3SkinFinishTimelineKeyframeT8Advanced",
+        "MiniMaxH3SkinFinishTimelineT8Advanced",
+        "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
     ]
+    assert ids[208] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
+    assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
+    assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
     assert ids[94] == "MiniMaxH3LatentUpscaleBy32T8"
 
 
@@ -717,10 +728,10 @@ def test_frontend_two_pass_i2va_workflow_uses_clean_endpoint_and_rebuilt_conditi
     assert high_conditioning["widgets_values"][-1] is True
 
     width_link = next(
-        link for link in workflow["links"] if link[1:5] == [13, 1, 14, 4]
+        link for link in workflow["links"] if link[1:5] == [13, 1, 14, 3]
     )
     height_link = next(
-        link for link in workflow["links"] if link[1:5] == [13, 2, 14, 5]
+        link for link in workflow["links"] if link[1:5] == [13, 2, 14, 4]
     )
     assert width_link[5] == "INT"
     assert height_link[5] == "INT"

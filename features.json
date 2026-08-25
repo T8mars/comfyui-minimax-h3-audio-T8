@@ -10,11 +10,12 @@
     "failure_contract": "invalid source/track/identity hashes, non-ready plans, missing or reused detections, unstable five-point transforms, parser/model failures, abnormal skin area or insufficient ready-frame coverage return an empty MASK and ABSTAIN instead of propagating landmarks or painting the whole frame",
     "workflow": "examples/workflows/17-skin-finish/2026-08-24_H3_Skin_Finish_MultiPerson_Semantic_Mask_Advanced_EXP.json",
     "representative_validation": "a clear 1920x1408 two-person source was sampled at six mid-clip frames and resized aspect-safely to 960x704 (0.67584MP). A source-bound deterministic left/right shot-local person-region harness avoided loading SAM3.1; real pinned YuNet and ParseNet completed 12/12 unique face matches, FFHQ-512 alignments and inverse-projected per-person masks in 24.643326 seconds on two CPU threads with no CUDA/network, source tensor unchanged, YuNet released before ParseNet load and ParseNet released after execute. Evidence is artifacts/skin-finish-multiface-semantic-representative-6frame-20260824",
-    "validation": "82 focused Skin Finish/parser/workflow/registration tests, relevant Ruff and py_compile, 206 non-artifact JSON parses, ComfyUI CPU whitelist quick-load, git diff check and 139/139 source-to-user workflow SHA parity pass; stable sampling.py is unchanged",
-    "boundary": "the implementation reduces proxy-mask and cross-person leakage risk but does not prove identity, deblur, pore reconstruction, automatic beauty, live SAM3.1 segmentation, real cross-shot continuity or universal multi-person safety; full-video and human review remain separate gates"
+    "live_sam31_validation": "on 2026-08-25 one 832x736x124 three-person/two-segment source ran through the actual native SAM3.1, pinned YuNet, pinned CPU ParseNet, Advanced subtle Skin Finish, Texture Guard and Video Finalize chain in 1088.953 seconds. Strict candidate video/audio decode passed; all 163 AAC packet payloads and decoded PCM matched the source exactly; GPU peak was 5,569MiB with 10,541MiB minimum free on the 16GB RTX 4060 Ti. A separate 832x736x22 obvious hard-cut probe at the unchanged 0.28 threshold reported two shots, objects-per-shot 1/2, reset keys 0:0 then 1:0/1:1, selective SAM offload and no global unload. Evidence is artifacts/skin-finish-live-sam31-real-run-20260824/20260824-234707-f4c8aceb and artifacts/skin-finish-sam31-cut-probe-20260825/20260825-001451-79b280df",
+    "validation": "the 2026-08-25 changed validation tools and focused Skin Finish/parser/workflow scope pass 53 tests plus Ruff and py_compile. The release's earlier 82 focused tests, 206 non-artifact JSON parses, ComfyUI CPU whitelist quick-load and 139/139 workflow SHA parity remain recorded separately; stable sampling.py is unchanged",
+    "boundary": "the implementation now has one live native SAM full-chain mechanical pass and one real shot-reset probe, reducing proxy-mask and cross-person leakage risk. It still does not prove identity, deblur, pore reconstruction, automatic beauty, different-skin-tone fairness, crossing people, long-video continuity or universal multi-person safety; full-video human aesthetic review remains a separate gate"
   },
   "skin_finish_semantic_parser": {
-    "status": "implemented locally as one append-only Advanced EXP mask node with fixed-source and fail-closed unit coverage; one three-frame pinned-checkpoint CPU representative mechanical run passes, while full-video continuity and human quality review remain pending",
+    "status": "released on main in v1.46.0 as one append-only Advanced EXP mask node with fixed-source and fail-closed coverage; the three-frame pinned-checkpoint CPU representative passes, while the upright single-face route still lacks a dedicated full-video human review",
     "date": "2026-08-24",
     "node": "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
     "position": 198,
@@ -27,7 +28,7 @@
     "boundary": "the existing face plan does not retain five-point landmarks, so ParseNet uses an expanded upright face-box crop rather than affine alignment. It does not establish identity, multi-person assignment, beauty, natural pores, deblur or skin-quality superiority; profile/rotated/occluded/tiny faces and representative human review remain separate gates"
   },
   "skin_finish_p2_texture_guard": {
-    "status": "implemented locally as one append-only Advanced EXP mechanical guard; focused tests and one fixed 0.592MP x 124-frame CPU mechanical run pass, while human preference and wider material coverage remain pending",
+    "status": "released on main in v1.46.0 as one append-only Advanced EXP mechanical guard; focused tests, one fixed 0.592MP x 124-frame CPU run and one live native-SAM multi-person full-chain run pass mechanically, while human preference and wider material coverage remain pending",
     "date": "2026-08-24",
     "nodes": [
       "MiniMaxH3SkinFinishTextureGuardT8Advanced"
@@ -39,7 +40,7 @@
     "boundary": "non-generative SDR mechanical guard only; high-pass energy is not a beauty, naturalness, pore, sharpness, identity or semantic-skin oracle; semantic parsing and real multi-person human review remain separate unfinished work"
   },
   "skin_finish_p0": {
-    "status": "implemented locally as three append-only P0 nodes with a dated importable workflow and one fixed representative CPU validation; human visual approval remains pending and the batch is not pushed",
+    "status": "released on main in v1.46.0 as three append-only P0 nodes with a dated importable workflow; fixed CPU and live native-SAM multi-person full-chain validations pass mechanically, while human visual approval remains pending",
     "date": "2026-08-24",
     "nodes": [
       "MiniMaxH3SkinFinishT8",
@@ -50,15 +51,16 @@
     "contract": "non-generative SDR low-frequency tone/highlight finishing inside an explicit external mask or a source-bound conservative Face Refine Plan proxy; missing, mismatched or abnormal masks ABSTAIN to the exact source",
     "selection": "source remains selected by default; review_only cannot select a candidate even if accept is requested, and Preview/Audit requires explicit acceptance plus matching source/passthrough PCM contracts",
     "preservation": "outside-mask RGB is bit-exact, alpha and auxiliary channels are exact, AUDIO is the same Python object, processing uses preallocated CPU candidate storage plus four-frame chunks, and no model/global Comfy cache is unloaded",
+    "resource_preflight": "before mask preparation or full candidate/two-mask/fp16-difference allocation, Basic and Advanced derive an incremental CPU RAM floor from actual IMAGE geometry, channels/dtype, configured chunk/proxy geometry and mask source, then apply a fixed 1.5 safety factor plus 512MiB headroom. Windows checks both available physical RAM and commit; any measurable shortfall returns exact source with ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_CANDIDATE_ALLOCATED. The threshold is not user-lowerable and the rejected audit outputs are broadcast zero views rather than full batches",
     "license_boundary": "interaction reviewed at chflame163/ComfyUI_CineStyle e7d5fac; no 19-pass shader port, constants, parser weights or dependencies are copied. The independent implementation uses generic masked low-frequency correction because the Matchbox/crok/Ls_Dollface item-level provenance was not clear enough for direct reuse",
     "workflow": "examples/workflows/17-skin-finish/2026-08-24_H3_Skin_Finish_External_Mask_Advanced_EXP.json",
     "representative_validation": "one 1088x544x124 24fps close-face source used local MIT YuNet on CPU and accepted 124/124 conservative masks. Skin Finish completed in 6.618279 seconds, mean absolute RGB change was 0.0000434933, decoded source/review PCM SHA-256 matched, CUDA free memory stayed 15223MiB before/after, and Windows peak working set was 5466.645MiB. The side-by-side video is 2176x544x124 with copied AAC",
     "local_evidence": "artifacts/skin-finish-p0-representative-20260824/validation_report.json",
-    "validation": "79 focused skin/workflow/registration/append-only tests pass after the representative run; full stress, repeated-run and cross-GPU matrices were intentionally not run",
-    "boundary": "the fixed run proves mechanics and fail-closed gates only. It does not establish human preference, stronger skin quality, multi-person/cross-shot safety, semantic skin parsing, VIDEO stream-copy finalization, long-video continuity, HDR, universal 16GB safety, facial repair, deblur or identity reconstruction"
+    "validation": "the final combined low-load Skin Finish, parser, file-route, timeline, human-review, registration and frontend-workflow scope passes 160 tests with four existing Triton deprecation warnings. Relevant Ruff, py_compile and git diff checks pass; all 210 non-artifact JSON files parse and all 143 project workflow JSON files match their user-menu mirrors by relative path and SHA-256. Shape-derived estimation, pass/block/measurement-unavailable states and pre-allocation source ABSTAIN are covered without a model, video, pressure, repeat or cross-GPU run",
+    "boundary": "the fixed run proves mechanics and fail-closed gates only. The RAM estimate begins after the input IMAGE already exists, cannot reserve memory against concurrent processes, excludes other graph nodes and makes no GPU claim. It does not establish human preference, stronger skin quality, multi-person/cross-shot safety, semantic skin parsing, VIDEO stream-copy finalization, long-video continuity, HDR, universal 16GB safety, facial repair, deblur or identity reconstruction"
   },
   "skin_finish_p1": {
-    "status": "implemented locally as three append-only Advanced nodes; deterministic multi-person state, full-IMAGE finalization and the self-contained two-pass file stream have focused mechanical coverage, and the actual pinned-YuNet stream has one 0.592MP x 124-frame representative mechanical PASS; human visual review remains pending and the batch is not pushed",
+    "status": "released on main in v1.46.0 as three append-only Advanced nodes; deterministic multi-person state, full-IMAGE finalization, the self-contained two-pass file stream and one live native-SAM multi-person full-chain case have mechanical coverage, while human visual review and true long-video continuity remain pending",
     "date": "2026-08-24",
     "nodes": [
       "MiniMaxH3SkinFinishMultiPersonT8Advanced",
@@ -963,7 +965,18 @@
     "MiniMaxH3SkinFinishVideoStreamT8Advanced",
     "MiniMaxH3SkinFinishTextureGuardT8Advanced",
     "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
-    "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced"
+    "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
+    "MiniMaxH3SkinFinishPersonProfileT8Advanced",
+    "MiniMaxH3SkinFinishPerPersonT8Advanced",
+    "MiniMaxH3SkinFinishMultiPersonProfileSemanticMaskT8Advanced",
+    "MiniMaxH3SkinFinishSafetyAuditT8Advanced",
+    "MiniMaxH3SkinFinishFrequencySplitT8Advanced",
+    "MiniMaxH3SkinFinishTimelineKeyframeT8Advanced",
+    "MiniMaxH3SkinFinishTimelineT8Advanced",
+    "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
+    "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
+    "MiniMaxH3SkinFinishSurfaceT8Advanced",
+    "MiniMaxH3SkinFinishDichromaticT8Advanced"
   ],
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",

@@ -1498,16 +1498,175 @@ no `alpha` tensor means scale `1.0`, matching `W_eff = W + B @ A`.
 ## Skin Finish file-output safety
 
 The opt-in Skin Finish P1 file nodes are source-selected by default. When a candidate is explicitly
-accepted, both routes copy approved source-audio packet payloads, encode only the SDR video stream
+accepted, all three routes copy approved source-audio packet payloads, encode only the SDR video stream
 with single-thread libx264, and run single-thread FFmpeg `-xerror -err_detect explode` validation
 before atomic publication. A missing FFmpeg executable or any decoder diagnostic fails closed and
 leaves the source untouched.
+
+All three file-output routes share `sdr_8bit_rec709_compatible_v1`. The check does not rely only on
+ComfyUI's reported bit depth: it reads PyAV pixel-component bit counts, pixel-format names and FFmpeg's
+integer color-primary, transfer and matrix enums. It accepts unmarked or conventional BT.709/legacy
+SDR-compatible 8-bit sources and rejects higher-bit-depth formats, PQ, HLG, linear/Log transfer,
+BT.2020/P3 primaries and BT.2020/ICTCP-style matrices before encoding. Approved source primaries,
+transfer, matrix and range metadata are copied to the H.264 output and recorded in the report. This is
+an explicit rejection/preservation contract; it is not HDR tone mapping or wide-gamut support.
 
 `MiniMaxH3SkinFinishVideoStreamT8Advanced` accepts an untrimmed file-backed `VIDEO` directly. Its
 first pass retains only pinned-YuNet face metadata and small source digests; the second pass processes
 at most the configured bounded frame chunk and immediately encodes it. It does not materialize a
 complete ComfyUI `IMAGE` batch. This reduces memory owned by this post-process only and is not a
 claim about the H3 generation peak, arbitrary video lengths, codecs, HDR or universal 16GiB safety.
+
+`MiniMaxH3SkinFinishQualityVideoStreamT8Advanced` preserves that released node's schema and default
+behavior, but installs a private bounded chunk processor only inside the new append-only node. Pass 1
+still retains YuNet metadata only. Pass 2 lazily loads the pinned CPU ParseNet, builds semantic skin
+masks, applies the non-generative Skin Finish, source-detail Frequency Split and Texture Guard, then
+runs Safety Audit with exactly one prior source/candidate/mask frame at each chunk boundary. The model
+is released in `finally`; no full IMAGE candidate or semantic-mask batch is retained. With
+`accept_candidate=false` it performs no analysis, does not load ParseNet and writes no file. A
+960x544x5, two-CPU-thread real probe used three chunks with a two-frame peak, found semantic skin on
+5/5 frames, had zero frequency/texture/audit rejection, strictly decoded H.264, preserved audio packet
+payloads and decoded PCM exactly, and observed about 1.88GiB peak process working set versus about
+10.37GiB in the earlier complete 124-frame IMAGE-chain diagnostic.
+
+One unique 736x416x768, 24fps, 32-second H3 final file was then processed exactly once with two CPU
+threads and two-frame chunks. The run completed all 384 chunks in 1579.530986 seconds with about
+1.974GiB observed peak process working set. ParseNet was semantic-ready on 690 frames; 78 frames were
+kept as exact source because no reliable semantic candidate survived the source-bound gates. Frequency
+Split and Texture Guard each rejected 26 affected frames to source, while Safety Audit rejected zero
+frames or chunks. The largest cross-chunk treatment jump was 0.00052124. The 768-frame H.264 candidate
+strictly decoded, source/candidate audio packet payloads and decoded PCM were exact, and ParseNet was
+released without persistent cache. The report is
+`artifacts/skin-finish-quality-stream-long-32s-20260825/validation_report.json`, SHA-256
+`31B3033E507CBDCC87933EC75CD61037EC1047306B46F70804D931F4A8B2D2F8`. This closes one 32-second
+bounded resource and media-preservation gate, not visual preference, arbitrary duration, repeated-run
+or universal memory certification. Anonymous human review ID `9f33c46592ab` resolved to
+`ABSTAIN_SOURCE_INSUFFICIENT`; the source did not visibly expose enough oily-skin defect for an
+aesthetic decision.
+
+A separate dated Oil Control Stream workflow uses the same node without changing its schema or
+defaults. It pins `oil_control`, amount 0.35, texture retention 0.90, shine control 0.35, two-frame
+chunks and CRF 16 for footage that visibly contains forehead, nose-bridge or cheek shine. On the
+requested v1.0 eight-step LoRA speaking close-up, one 960x544x124 run processed all 124 frames with no
+source fallback or Frequency Split, Texture Guard or Safety Audit rejection. It strictly decoded,
+preserved source audio packet payloads and decoded PCM exactly, and reached about 1.998GiB peak process
+working set. Review ID `d4eb04003a44` resolved to `ABSTAIN_UNSURE`: eight criteria were ties, two were
+abstentions, neither side had a hard failure, and the reviewer wrote that they seemed about the same.
+This closes the pending review without establishing a visible benefit. The workflow remains a targeted
+starting point, not permission to force visible treatment onto footage with no oily-skin defect.
+
+`MiniMaxH3SkinFinishSpecularFrequencyT8Advanced` is an append-only experimental alternative to the
+ordinary Frequency Split, not a replacement. It runs the unchanged split first and then restores only
+the darker highlight treatment that split lost where bright semantic skin, positive local source
+detail and the input candidate agree. The RGB correction is a convex interpolation between the
+frequency result and the input Skin Finish candidate, so it cannot invent a stronger subtraction than
+that candidate. A suppression value of zero returns the ordinary split candidate exactly; source mask
+exterior, alpha or auxiliary channels and AUDIO remain unchanged, and source stays selected by default.
+
+A single six-frame CPU calibration used the same balanced raw Skin Finish parameters for the ordinary,
+0.35 and 0.65 specular routes. All routes passed Texture Guard and Safety Audit. Final mean luma change
+over the brightest skin decile was -0.00006744, -0.00014774 and -0.00020280 respectively, while the
+source-relative texture proxy was 0.99780405, 0.98907673 and 0.98415595. The labelled contact sheet
+still looked subtle, so no full-video run, default workflow or efficacy claim was added. A subsequent
+candidate-bounded 3% run used maximum raw oil-control parameters: ordinary, 0.65 and 1.0 retained only
+24.5%, 29.7% and 32.5% of raw average treatment while preserving texture proxies of 0.99784, 0.99344
+and 0.99124. All six frames passed both guards, but the visual difference remained weak.
+
+For diagnosis only, the pinned CineStyle `e7d5fac` file was separately downloaded and dynamically
+executed on the same six frames and exact T8 semantic mask; none of its code was copied or vendored.
+Its defaults were more visible: raw mean change was 0.01130743 with texture proxy 0.66553, and the T8-
+guarded result retained 0.00675145 with texture 0.88940. However, the brightest skin decile became
+brighter by 0.00382215 and the raw upstream output was not bit-exact outside the supplied mask. This
+shows a stronger smoothing/brightening trade-off, not a scientifically better oil-control answer.
+The T8 node remains display-referred SDR candidate-intent restoration, not physical reflectance
+separation, deblur or pore reconstruction.
+
+`MiniMaxH3SkinFinishSurfaceT8Advanced` is the subsequent clean-room append-only candidate. It uses an
+independent scalar-luma guided-filter base and bounded RGB surface correction on each frame; it does
+not copy CineStyle's Matchbox passes, constants, weights or dependencies. The first version treated
+only compact positive detail and was measurably safe but still visually weak. Wide oily highlights can
+live in the guided base and therefore have little positive high-frequency residual. The corrected node
+adds a bounded photographic luminance shoulder over that guided base. This is display-referred tone
+finishing, not the skin-reflectance, illumination and geometry model required for physical facial-
+specular separation.
+
+Defaults remain conservative: amount 0.65, surface smoothing 0.70, texture keep 0.85, compact-highlight
+compression 0.65, broad-highlight compression 0.45 from luma 0.68 to 0.94, blemish balance 0.35, a 2%
+short-side radius capped at 32 pixels, two-frame CPU chunks and `accept_candidate=false`. Mask
+exterior, alpha or auxiliary channels and AUDIO remain exact source contracts; mask, texture, change
+and clipping failures reject that frame to source.
+
+The corrected low-load calibration compared only current Quality Stream and one Surface candidate on
+the same pinned six frames. Both passed Texture Guard and Safety Audit with exact mask exterior. Final
+masked mean change increased from 0.00013440 to 0.00840873 while the texture proxy remained 0.99715394;
+the brightest-skin-decile luma change increased from -0.00002611 to -0.01996538. A subsequent unique
+960x544x124 file-stream validation completed 62 two-frame chunks with 124/124 semantic faces, two
+Surface and two Texture Guard source fallbacks, zero Safety Audit failures and maximum temporal effect
+jump 0.00381594. Strict video decode passed; all source audio packet payloads and decoded PCM were
+exact. The CPU-two-thread run took 944.394768 seconds and peaked at about 1996.301MiB process working
+set without loading H3 or SAM. Candidate SHA-256 is
+`0DD7F64AA7B1E16C893C27B20165A79B25A45294EA5029EF468AF8C8EAF7D0E7`. Anonymous review
+`b3aad4e0d57b` is complete and hash-bound. The source won overall, skin naturalness, shine/highlight,
+tone evenness and halo/edges; the other five criteria were ties, the candidate won none and neither
+side had a hard failure. The Surface candidate therefore remains disconnected from workflows and has
+no perceptible-benefit claim. This result rejects promotion of this parameter set; it does not prove
+that all possible guided-surface methods are ineffective.
+
+Surface v2 addresses the rejected dimensions without merely increasing the same shoulder. Broad
+highlight energy is now the positive difference from a larger, mask-weighted local skin-illumination
+estimate; uniformly bright skin therefore receives no broad correction. A two-pixel inside-only gate
+fades treatment to zero at hard semantic-mask boundaries, and probability-valued ParseNet masks use
+their positive support for geometry while retaining their original confidence for blending. The same
+box average is evaluated as mathematically equivalent horizontal and vertical passes, reducing the
+six-frame Surface stage from about 57.18 seconds to 4.35 seconds on two CPU threads.
+
+The sole v5 static candidate (`0.90 / 0.25 / 0.96 / 0.90 / 0.90 / 0.10 / 2.5%`) passed all six frames.
+After Texture Guard its masked mean change was 0.00387333, brightest-skin-decile luma change was
+-0.00787700, texture proxy was 0.99280846 and the two-pixel-boundary/interior change ratio was
+0.67757654. One 960x544x124 stream then completed 62 two-frame chunks with 124/124 semantic faces,
+zero Surface or Texture Guard fallback, zero Safety Audit failure, maximum internal temporal jump
+0.00173517, exact 163-packet audio payload and exact decoded PCM. Runtime was 741.01245 seconds and
+peak working set was about 1997.340MiB without H3 or SAM. A mapping-blind public A/B audit reported
+maximum ROI temporal jump 0.00052624 and p99 difference edge 0.01638918. Anonymous review
+`8e89bff3bc95` completed with all ten criteria tied, no candidate or source wins and no hard failures.
+This removes the clear subjective regression seen in v1 but does not establish a perceptible benefit.
+The node therefore remains experimental and disconnected, with no default or workflow promotion.
+Further work should use a materially different surface model rather than stronger tuning of the same
+display-referred shoulder.
+
+Accepted Quality Stream runs now perform a host-memory preflight before constructing the processor or
+loading ParseNet. Where host available memory is measurable, less than 2,048MiB returns the exact
+source VIDEO with `ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_FILE_WRITTEN`; no parser is loaded and no file is
+written. The floor is evidence-derived from the reviewed run's approximately 1,163.129MiB process
+working-set increase and leaves about 884.871MiB additional availability. It is deliberately fixed and
+not user-lowerable. `accept_candidate=false` skips even the measurement. Platforms where physical
+availability cannot be measured proceed only with the bounded route and emit an explicit report
+warning, preserving portability without pretending the RAM gate was checked.
+
+### Skin Finish full-IMAGE RAM preflight
+
+The Basic and Advanced P0 IMAGE routes must retain a complete candidate, two complete float32 mask
+outputs and a complete float16 RGB difference image for their public output contract. Before any of
+those outputs, face-plan masks or processing chunks are allocated, the node now derives an
+incremental CPU-memory estimate from the actual frame count, height, width, channel count, input
+dtype, configured chunk size, proxy geometry and mask source. The estimate sums the retained outputs,
+mask preparation, bounded full-resolution scratch and proxy scratch, multiplies that component total
+by 1.5 and adds a fixed 512MiB headroom. Neither factor is exposed as a user-lowerable widget.
+
+On Windows the gate compares this same required floor against both available physical RAM and
+available commit. If either measurable value is below the estimate, execution returns the exact
+source with `ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_CANDIDATE_ALLOCATED` before mask preparation or
+candidate processing. The zero mask and difference audit outputs are broadcast zero views in this
+rejected path, so the fail-closed response does not recreate the very full-batch allocation that was
+blocked. If the platform exposes neither measurement, the report says
+`ALLOW_MEASUREMENT_UNAVAILABLE_BOUNDED_CPU_ROUTE`; this preserves the existing bounded CPU route but
+does not claim that the RAM floor passed.
+
+This is an incremental post-process estimate after the input IMAGE already exists. It is not a total
+ComfyUI graph estimator, does not reserve memory atomically against other processes, makes no GPU
+memory claim and cannot establish universal 16GiB or arbitrary-workflow safety. File-backed long
+video should continue to use the bounded Quality Stream route rather than materializing a complete
+IMAGE batch.
 
 ### Skin Finish Texture Guard (Advanced EXP)
 
@@ -1571,3 +1730,45 @@ One 960x704 six-frame/two-person low-load run completed 12/12 real YuNet five-po
 ParseNet masks, but used deterministic source-bound left/right person regions rather than loading
 SAM3.1 again. It therefore proves the parser/alignment/intersection mechanics, not live SAM quality,
 automatic scene-cut detection, full-video continuity, identity truth or aesthetic improvement.
+
+### Skin Finish Per-Person routing diagnostics (Advanced EXP)
+
+`MiniMaxH3SkinFinishPerPersonT8Advanced` keeps the existing precedence of exact `shot:track`, reviewed
+Character, optional default profile and exact source. Its report now includes, for every resolved
+route, a display-referred SDR Rec.709 luma proxy, mean and maximum RGB treatment magnitude, and the
+fractions of treated pixels touching low or high clipping. These values are observational review aids;
+they never select a candidate or claim skin-tone fairness, beauty, identity or naturalness.
+
+Deterministic CPU fixtures cover two tracks moving through and past each other, exact-source fallback
+where their masks overlap, and a two-shot case where track numbers and screen sides swap but the
+hash-bound reviewed Character mapping remains stable. A separate dark/light fixture confirms that both
+routes receive independent diagnostics, remain finite, avoid new clipping in that fixture and preserve
+every pixel outside the owned semantic masks. This closes routing arithmetic and report coverage only.
+Real occlusion/re-identification, cross-shot identity truth, different-skin-tone fairness and full-video
+human preference still require representative review.
+
+### Skin Finish Dichromatic Specular (Advanced EXP)
+
+`MiniMaxH3SkinFinishDichromaticT8Advanced` is an isolated, append-only research candidate and is not
+connected to any workflow. In linear sRGB it applies a neutral-illuminant dichromatic approximation:
+the pixel must have a positive achromatic specular estimate, locally diluted chroma and a consistent
+direction relative to a masked diffuse-colour estimate before any correction is allowed. Uniform
+same-chromaticity bright skin is intentionally unchanged, and near-neutral diffuse colours receive
+low confidence because the separation is ill-conditioned. The node is frame-independent, fades only
+inside the semantic-mask edge, keeps the exterior and auxiliary channels exact, passes AUDIO as the
+same object, enforces bounded-change/texture/clipping gates and selects source by default.
+
+One fixed six-frame calibration passed 6/6. One 960x544x124 bounded file stream then used 62 two-frame
+CPU chunks, accepted 124/124 semantic faces, returned six frames to source through the stage and
+Texture Guard contracts, reported zero Safety Audit failures, strictly decoded all frames and kept
+all 163 AAC packet payloads plus decoded PCM exact. Runtime was 732.857519 seconds on two CPU threads,
+with about 1964.262MiB peak working set and no H3/SAM load. The mapping-blind public A/B temporal audit
+for review `b2e13261f44e` reported maximum face-ROI effect jump 0.00057450 and maximum p99 difference
+edge 0.01626730, with exact PCM and no gross temporal-delta warning. The valid anonymous review then
+revealed B as source: source won seven criteria, three tied, candidate won zero, and neither side hard-
+failed. After the mapping had been revealed, the reviewer watched again and corrected the qualitative
+description to “基本一样”. That correction is post-reveal and therefore does not overwrite the blind
+JSON or count as another blind vote. The conservative conclusion is simply that perceptible benefit
+was not established. This parameterized route stays disconnected, with no recommended workflow/default
+or quality claim. It also does not provide physical BRDF recovery, deblur, pore generation or identity
+repair.

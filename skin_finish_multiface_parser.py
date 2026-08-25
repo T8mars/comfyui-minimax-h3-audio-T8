@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 import torch
+from torch.nn import functional as torch_functional
 
 from .face_refine_advanced import (
     YUNET_2023MAR_RELATIVE,
@@ -20,7 +21,12 @@ from .multiface_refine_advanced import (
     _source_contract,
     _validate_hashed_dict,
 )
-from .skin_finish import _interrupt_and_progress, _memory_snapshot, _progress_bar
+from .skin_finish import (
+    _interrupt_and_progress,
+    _memory_snapshot,
+    _progress_bar,
+    _tensor_proxy_sha256,
+)
 from .skin_finish_p1 import (
     _detection_person_overlap,
     _quality_weight,
@@ -38,11 +44,16 @@ from .skin_finish_parser import (
     _parser_logits,
     _preview_indices,
     _semantic_local_masks,
+    _square_crop_box,
 )
 
 
 SKIN_FINISH_MULTIFACE_SEMANTIC_SCHEMA = (
     "h3_t8_skin_finish_multiface_semantic_mask/v1"
+)
+ALIGNMENT_POLICIES = (
+    "five_point_strict",
+    "five_point_then_profile_crop",
 )
 
 # Standard 512x512 FFHQ five-point template used by FaceXLib's restoration helper.
@@ -233,6 +244,53 @@ def _frame_rgb_numpy(frame: torch.Tensor) -> np.ndarray:
     )
 
 
+def _profile_crop_face(
+    frame: torch.Tensor,
+    detection: dict,
+    *,
+    expansion: float,
+) -> tuple[torch.Tensor, tuple[int, int, int, int]]:
+    height, width = int(frame.shape[0]), int(frame.shape[1])
+    crop_box = _square_crop_box(
+        detection.get("box"),
+        width,
+        height,
+        float(expansion),
+    )
+    if crop_box is None:
+        raise ValueError("Profile fallback could not build a finite square face crop")
+    x1, y1, x2, y2 = crop_box
+    crop = (
+        frame[y1:y2, x1:x2, :3]
+        .detach()
+        .to(device="cpu", dtype=torch.float32)
+        .unsqueeze(0)
+    )
+    if crop.shape[1] < 8 or crop.shape[2] < 8:
+        raise ValueError("Profile fallback face crop is too small")
+    return crop, crop_box
+
+
+def _project_profile_crop_mask(
+    mask: torch.Tensor,
+    crop_box: tuple[int, int, int, int],
+    *,
+    width: int,
+    height: int,
+    nearest: bool,
+) -> torch.Tensor:
+    x1, y1, x2, y2 = crop_box
+    resized = torch_functional.interpolate(
+        mask.detach().to(device="cpu", dtype=torch.float32)[None, None],
+        size=(y2 - y1, x2 - x1),
+        mode="nearest" if nearest else "bilinear",
+        align_corners=None if nearest else False,
+    )[0, 0]
+    projected = torch.zeros((height, width), dtype=torch.float32)
+    projected[y1:y2, x1:x2] = resized
+    return projected.clamp_(0.0, 1.0)
+
+
 def run_multiface_semantic_skin_mask(
     frames: torch.Tensor,
     track_plan: dict | None,
@@ -250,6 +308,8 @@ def run_multiface_semantic_skin_mask(
     minimum_skin_area_per_face: float = 0.00005,
     maximum_skin_area_per_frame: float = 0.35,
     maximum_alignment_rms: float = 0.08,
+    alignment_policy: str = "five_point_strict",
+    profile_crop_expansion: float = 1.45,
     minimum_ready_frame_fraction: float = 0.50,
     preview_count: int = 6,
 ):
@@ -271,6 +331,10 @@ def run_multiface_semantic_skin_mask(
         raise ValueError("skin area limits must satisfy 0 <= minimum < maximum <= 1")
     if not 0.0 < float(maximum_alignment_rms) <= 0.25:
         raise ValueError("maximum_alignment_rms must stay within 0..0.25")
+    if alignment_policy not in ALIGNMENT_POLICIES:
+        raise ValueError(f"Unknown alignment_policy: {alignment_policy}")
+    if not 1.0 <= float(profile_crop_expansion) <= 3.0:
+        raise ValueError("profile_crop_expansion must stay within 1.0..3.0")
     if not 0.0 <= float(minimum_ready_frame_fraction) <= 1.0:
         raise ValueError("minimum_ready_frame_fraction must stay within 0..1")
 
@@ -283,6 +347,7 @@ def run_multiface_semantic_skin_mask(
     feature_previews: dict[int, torch.Tensor] = {}
     frame_reports: list[dict[str, Any]] = []
     track_ready_counts: dict[str, int] = {}
+    profile_crop_ready_counts: dict[str, int] = {}
     started = time.perf_counter()
     memory_before = _memory_snapshot()
     detector_report: dict[str, Any] = {}
@@ -384,12 +449,30 @@ def run_multiface_semantic_skin_mask(
                 record["source_face_box_xyxy"] = [
                     round(float(value), 5) for value in candidate["box"]
                 ]
+                alignment_name = "yunet_five_point_to_ffhq_512_similarity"
+                alignment_rms: float | None = None
+                alignment_fallback_reason: str | None = None
+                profile_crop_box: tuple[int, int, int, int] | None = None
                 try:
-                    aligned, inverse, alignment_rms = _align_face(
-                        frame_rgb,
-                        candidate,
-                        maximum_alignment_rms=float(maximum_alignment_rms),
-                    )
+                    try:
+                        aligned, inverse, alignment_rms = _align_face(
+                            frame_rgb,
+                            candidate,
+                            maximum_alignment_rms=float(maximum_alignment_rms),
+                        )
+                    except _MultiParserUnavailable:
+                        raise
+                    except ValueError as error:
+                        if alignment_policy != "five_point_then_profile_crop":
+                            raise
+                        alignment_fallback_reason = f"{type(error).__name__}: {error}"
+                        aligned, profile_crop_box = _profile_crop_face(
+                            frames[frame_index],
+                            candidate,
+                            expansion=float(profile_crop_expansion),
+                        )
+                        inverse = None
+                        alignment_name = "profile_bbox_crop_fallback"
                     logits = _parser_logits(model, aligned)
                     local_skin, local_feature, semantic_stats = _semantic_local_masks(
                         logits,
@@ -397,20 +480,36 @@ def run_multiface_semantic_skin_mask(
                         minimum_class_probability=float(minimum_class_probability),
                         feature_protection_px=int(feature_protection_px),
                     )
-                    full_skin = _warp_aligned_mask(
-                        local_skin[0],
-                        inverse,
-                        width=width,
-                        height=height,
-                        nearest=False,
-                    )
-                    full_feature = _warp_aligned_mask(
-                        local_feature[0],
-                        inverse,
-                        width=width,
-                        height=height,
-                        nearest=True,
-                    )
+                    if profile_crop_box is None:
+                        full_skin = _warp_aligned_mask(
+                            local_skin[0],
+                            inverse,
+                            width=width,
+                            height=height,
+                            nearest=False,
+                        )
+                        full_feature = _warp_aligned_mask(
+                            local_feature[0],
+                            inverse,
+                            width=width,
+                            height=height,
+                            nearest=True,
+                        )
+                    else:
+                        full_skin = _project_profile_crop_mask(
+                            local_skin[0],
+                            profile_crop_box,
+                            width=width,
+                            height=height,
+                            nearest=False,
+                        )
+                        full_feature = _project_profile_crop_mask(
+                            local_feature[0],
+                            profile_crop_box,
+                            width=width,
+                            height=height,
+                            nearest=True,
+                        )
                 except _MultiParserUnavailable:
                     raise
                 except Exception as error:
@@ -438,15 +537,24 @@ def run_multiface_semantic_skin_mask(
                 frame_feature = torch.maximum(frame_feature, full_feature)
                 accepted_tracks += 1
                 track_ready_counts[track_key] = track_ready_counts.get(track_key, 0) + 1
-                record.update(
-                    {
-                        "status": "READY",
-                        "alignment": "yunet_five_point_to_ffhq_512_similarity",
-                        "alignment_normalized_rms": round(alignment_rms, 8),
-                        "skin_area_fraction": round(skin_area, 8),
-                        "semantic_stats": semantic_stats,
-                    }
-                )
+                ready_record: dict[str, Any] = {
+                    "status": "READY",
+                    "alignment": alignment_name,
+                    "skin_area_fraction": round(skin_area, 8),
+                    "semantic_stats": semantic_stats,
+                }
+                if alignment_rms is not None:
+                    ready_record["alignment_normalized_rms"] = round(alignment_rms, 8)
+                if profile_crop_box is not None:
+                    profile_crop_ready_counts[track_key] = (
+                        profile_crop_ready_counts.get(track_key, 0) + 1
+                    )
+                    ready_record["alignment_fallback_reason"] = alignment_fallback_reason
+                    ready_record["profile_crop_box_xyxy"] = list(profile_crop_box)
+                    ready_record["profile_crop_expansion"] = float(
+                        profile_crop_expansion
+                    )
+                record.update(ready_record)
                 per_track.append(record)
 
             frame_area = float((combined_mask[frame_index] > 0.05).sum()) / float(
@@ -519,6 +627,11 @@ def run_multiface_semantic_skin_mask(
         "detail": detail,
         "source": source,
         "track_plan_sha256": str((plan or {}).get("sha256", "")),
+        # Bind the report to the actual mask tensor used by downstream per-person
+        # routing.  The source and track plan already use the project's bounded
+        # proxy-digest contract; keeping the mask on the same contract avoids an
+        # unbounded second copy of a long full-resolution float mask.
+        "mask_proxy_sha256": _tensor_proxy_sha256(combined_mask),
         "identity_assignment": {
             "connected": identity_assignment is not None,
             "labels_are_suggestions_not_identity_proof": True,
@@ -540,10 +653,13 @@ def run_multiface_semantic_skin_mask(
         },
         "alignment": {
             "method": "OpenCV estimateAffinePartial2D LMEDS",
+            "policy": str(alignment_policy),
             "source": "YuNet five landmarks",
             "target": "FaceXLib standard FFHQ five-point 512 template",
             "eye_and_mouth_points_sorted_by_image_x": True,
             "maximum_normalized_rms": float(maximum_alignment_rms),
+            "profile_crop_expansion": float(profile_crop_expansion),
+            "profile_crop_fallback_is_not_frontalization": True,
             "gap_landmarks_propagated": False,
         },
         "class_mapping": {
@@ -561,6 +677,7 @@ def run_multiface_semantic_skin_mask(
                 len(observed_ready_frame_indices) / max(1, frame_count), 8
             ),
             "track_ready_counts": track_ready_counts,
+            "profile_crop_ready_counts": profile_crop_ready_counts,
             "per_frame_identity_scope": "shot_local_sam31_track",
             "cross_shot_character_labels": bool(identity_labels),
             "masks_intersected_with_their_person_track": True,
@@ -578,6 +695,8 @@ def run_multiface_semantic_skin_mask(
             "include_neck": bool(include_neck),
             "minimum_skin_area_per_face": float(minimum_skin_area_per_face),
             "maximum_skin_area_per_frame": float(maximum_skin_area_per_frame),
+            "alignment_policy": str(alignment_policy),
+            "profile_crop_expansion": float(profile_crop_expansion),
             "minimum_ready_frame_fraction": float(minimum_ready_frame_fraction),
         },
         "frames": frame_reports,
@@ -585,10 +704,11 @@ def run_multiface_semantic_skin_mask(
         "memory_after": _memory_snapshot(),
         "elapsed_seconds": round(time.perf_counter() - started, 6),
         "product_boundary": (
-            "Five-point alignment and per-track intersection reduce geometric and cross-person "
-            "mask errors; they do not prove identity, skin quality, deblur, face reconstruction, "
-            "cross-shot continuity or universal multi-person safety. Empty or partial evidence "
-            "fails closed and requires human review."
+            "Five-point alignment, optional profile crop fallback and per-track intersection "
+            "reduce geometric and cross-person mask errors; the crop fallback does not "
+            "frontalize a profile or prove its landmarks. They do not prove identity, skin "
+            "quality, deblur, face reconstruction, cross-shot continuity or universal "
+            "multi-person safety. Empty or partial evidence fails closed and requires human review."
         ),
     }
     return combined_mask, preview, _report_json(report)
