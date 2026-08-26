@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.48.1"
+version = "1.48.2"
 description = "MiniMax H3 joint AV, RAVEN streaming guards, LightX2V SLA, motion recovery, FETA, latent upscale, Hybrid, multi-keyframe, long-video, and Ref2VA nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
