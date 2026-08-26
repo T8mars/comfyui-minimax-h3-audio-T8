@@ -32,10 +32,11 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
             node_id="MiniMaxH3LightX2VSLAT8Advanced",
             display_name="MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)",
             description=(
-                "Loads the authenticated 4-step FL2VA Turbo-SLA LoRA and owns the "
+                "Loads a structurally valid H3 FL2VA Turbo-SLA LoRA and owns the "
                 "LightX2V 85%-sparse Sage2 attention path for all 50 main H3 blocks. "
-                "Use it after the T8 Dual-Clock node at 4 steps, video shift 6, audio "
-                "shift 3. External SageAttention/Sol-Attn/LoRA nodes must be bypassed."
+                "The upstream checkpoint defaults to 4 steps, video shift 6 and audio "
+                "shift 3; other native_flow NFE values are accepted as experimental. "
+                "External SageAttention/Sol-Attn/LoRA nodes must be bypassed."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -50,8 +51,9 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
                 io.Sigmas.Input(
                     "sigmas",
                     tooltip=(
-                        "Connect the same 4-step native_flow SIGMAS from Dual-Clock "
-                        "(video shift 6.0, audio shift 3.0)."
+                        "Connect the same native_flow SIGMAS from Dual-Clock. The included "
+                        "upstream SLA checkpoint is officially 4-step/6V/3A; 8 steps and "
+                        "other NFE values run under an explicit experimental schedule report."
                     ),
                 ),
                 io.Combo.Input(
@@ -59,8 +61,9 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
                     options=lora_options,
                     default=SLA_LORA_FILENAME,
                     tooltip=(
-                        "Pinned LightX2V MiniMax H3 FL2V Turbo-SLA ComfyUI BF16 LoRA. "
-                        "The file size, SHA-256, metadata and all 208 patches are verified."
+                        "Default LightX2V MiniMax H3 FL2V Turbo-SLA ComfyUI BF16 LoRA. "
+                        "Other H3 SLA safetensors are accepted when A/B pairs are complete "
+                        "and every patch maps to the loaded H3 base; file SHA is not pinned."
                     ),
                 ),
                 io.Combo.Input(
@@ -137,7 +140,7 @@ class MiniMaxH3LightX2VSLAAuditT8Advanced(io.ComfyNode):
             node_id="MiniMaxH3LightX2VSLAAuditT8Advanced",
             display_name="MiniMax H3 LightX2V SLA Runtime Audit (Advanced EXP)",
             description=(
-                "Place after the sampler. It fails unless all four H3 forwards and all "
+                "Place after the sampler. It fails unless every scheduled H3 forward and all "
                 "50 main blocks per forward used the selected dense-control or sparse path "
                 "without a hidden kernel fallback."
             ),
@@ -180,15 +183,17 @@ class MiniMaxH3LightX2VSLAKJSageComposerT8Advanced(io.ComfyNode):
                     "model",
                     tooltip=(
                         "Connect Dual-Clock MODEL to KJNodes MiniMax H3 Mem Eff Sage "
-                        "Attention Patch, then connect that MODEL here. Do not insert "
-                        "ModelAttentionBackend, Sol-Attn or another attention node."
+                        "Attention Patch, then connect that MODEL here. A recognized built-in "
+                        "ModelAttentionBackend is redundant and will be replaced by the SLA "
+                        "owner; Sol-Attn and foreign attention overrides are still refused."
                     ),
                 ),
                 io.Sigmas.Input(
                     "sigmas",
                     tooltip=(
-                        "Connect the same 4-step native_flow SIGMAS from Dual-Clock "
-                        "(video shift 6.0, audio shift 3.0)."
+                        "Connect the same native_flow SIGMAS from Dual-Clock. The official "
+                        "checkpoint defaults to 4-step/6V/3A; 8-step is allowed and audited "
+                        "as an experimental user-selected NFE schedule."
                     ),
                 ),
                 io.Combo.Input(
@@ -196,7 +201,9 @@ class MiniMaxH3LightX2VSLAKJSageComposerT8Advanced(io.ComfyNode):
                     options=lora_options,
                     default=SLA_LORA_FILENAME,
                     tooltip=(
-                        "Pinned LightX2V MiniMax H3 FL2V Turbo-SLA ComfyUI BF16 LoRA."
+                        "Defaults to the LightX2V H3 FL2V Turbo-SLA LoRA. Compatible "
+                        "repacked or alternate H3 SLA LoRAs use structural/full-mapping "
+                        "validation instead of one fixed file hash."
                     ),
                 ),
                 io.Combo.Input(

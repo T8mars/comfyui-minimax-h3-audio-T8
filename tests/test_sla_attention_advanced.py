@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import torch
+from safetensors.torch import save_file
 
 import h3_audio_t8_pkg.sla_attention_advanced as sla
 from h3_audio_t8_pkg.nodes_sla_attention_advanced import (
@@ -54,13 +55,141 @@ def test_lightx2v_router_matches_direct_reference_and_floor_topk():
     assert torch.equal(sparse_map.sum(dim=-1), torch.ones_like(scores[..., 0]))
 
 
-def test_sigma_contract_requires_exact_4step_shift6_native_flow():
+def test_sigma_contract_accepts_official_4step_and_experimental_8step_native_flow():
     report = _validate_sigmas(native_flow_sigmas(4, 6.0))
     assert report["nfe"] == 4
-    with pytest.raises(ValueError, match="4 NFE"):
-        _validate_sigmas(native_flow_sigmas(8, 6.0))
+    assert report["schedule_status"] == "official_4step_contract"
+
+    report = _validate_sigmas(native_flow_sigmas(8, 6.0))
+    assert report["nfe"] == 8
+    assert report["schedule_status"] == "experimental_user_selected_nfe"
+
     with pytest.raises(ValueError, match="video shift 6.0"):
         _validate_sigmas(native_flow_sigmas(4, 12.0))
+
+
+def test_core_contract_accepts_unknown_source_hash_when_semantics_match(monkeypatch):
+    monkeypatch.setattr(sla, "_source_sha256", lambda _function: "new-core-source")
+    report = sla._core_semantic_contract()
+    assert report["status"] == "semantic_contract_validated"
+    assert set(report["source_hashes"].values()) == {"new-core-source"}
+    assert report["packed_layout"]["target_tail"] == ["audio", "video"]
+
+
+def test_core_contract_bypasses_verified_obsolete_painter_layout_patch(monkeypatch):
+    native_init = sla.PackedLayout.__init__
+
+    def obsolete_painter_init(
+        self,
+        text_len,
+        latent_t,
+        latent_h,
+        latent_w,
+        audio_t,
+        keyframes=None,
+        refs=None,
+        frame_count=None,
+    ):
+        return native_init(
+            self,
+            text_len,
+            latent_t,
+            latent_h,
+            latent_w,
+            audio_t,
+            keyframes=keyframes,
+            refs=refs,
+            frame_count=frame_count,
+        )
+
+    obsolete_painter_init._minimax_kfref_layout_patched = True
+    monkeypatch.setattr(sla.PackedLayout, "__init__", obsolete_painter_init)
+
+    report = sla._core_semantic_contract()
+
+    assert report["status"] == "semantic_contract_validated"
+    assert report["packed_layout_compatibility"] == "native_concat"
+    assert sla.PackedLayout.__init__ is native_init
+
+
+def test_lora_contract_uses_structure_not_one_pinned_file_hash(tmp_path):
+    path = tmp_path / "community_h3_8step_sla_repacked.safetensors"
+    save_file(
+        {
+            "diffusion_model.blocks.0.attn.qkv_proj.lora_A.weight": torch.zeros(4, 8),
+            "diffusion_model.blocks.0.attn.qkv_proj.lora_B.weight": torch.zeros(8, 4),
+        },
+        str(path),
+        metadata={"base_model": "MiniMax-H3", "sampler_steps": "8"},
+    )
+    report = sla._validate_lora_header(path)
+    assert report["patch_count"] == 1
+    assert report["file_sha256_enforced"] is False
+    assert report["identity_policy"] == "structural_pairs_and_full_model_mapping"
+
+
+def test_builtin_pytorch_attention_override_is_replaceable_by_sla_owner():
+    pytorch_attention = sla.attention_module.get_attention_function("pytorch")
+    report = sla._existing_attention_contract(
+        {"optimized_attention_override": pytorch_attention}
+    )
+    assert report["status"] == "recognized_builtin_override_replaced"
+    assert report["backend"] == "pytorch"
+
+
+def test_full_core_assertion_accepts_semantic_core_and_builtin_backend(monkeypatch):
+    class FakeProjection:
+        weight = torch.zeros(1, dtype=torch.bfloat16)
+        quant_format = None
+
+    class FakeAttention:
+        qkv_proj = FakeProjection()
+
+    class FakeBlock:
+        attn = FakeAttention()
+
+    diffusion_type = type("MiniMaxH3Model", (), {})
+    diffusion = diffusion_type()
+    diffusion.blocks = [FakeBlock()]
+
+    class FakeBase:
+        diffusion_model = diffusion
+
+    class FakeModel:
+        model = FakeBase()
+        model_options = {
+            "transformer_options": {
+                "minimax_h3_sigma_shift_video": 6.0,
+                "minimax_h3_sigma_shift_audio": 3.0,
+                "optimized_attention_override": (
+                    sla.attention_module.get_attention_function("pytorch")
+                ),
+            }
+        }
+        wrappers = {}
+        patches = {}
+        injections = {}
+        object_patches = {}
+
+        @staticmethod
+        def clone():
+            return None
+
+        @staticmethod
+        def add_wrapper_with_key(*_args):
+            return None
+
+        @staticmethod
+        def model_size():
+            return 2
+
+    monkeypatch.setattr(sla, "_source_sha256", lambda _function: "unlisted-core")
+    report = sla._assert_core_contract(
+        FakeModel(), base_policy="auto_detect_exp"
+    )
+    assert report["semantic_core"]["status"] == "semantic_contract_validated"
+    assert report["preexisting_attention"]["backend"] == "pytorch"
+    assert report["dual_clock"]["official_4step_shift_match"] is True
 
 
 def test_model_dtype_contract_does_not_mistake_quantized_compute_dtype_for_bf16():
@@ -320,6 +449,42 @@ def test_runtime_audit_requires_four_forwards_and_fifty_blocks(mode, sparse):
     assert returned is latent
     assert report["model_forward_count"] == 4
     assert report["status"].endswith("verified")
+
+
+def test_runtime_audit_uses_actual_eight_nfe_contract():
+    runtime = SLARuntime(
+        {
+            "mode": "apply_lightx2v_sla",
+            "sigma_contract": {"nfe": 8},
+            "sparsity_ratio_requested": sla.SLA_SPARSITY_RATIO,
+        }
+    )
+    for _forward in range(8):
+        index = runtime.begin_forward(
+            {
+                "task": "FL2VA",
+                "seq_len": 1024,
+                "pixel_frames": 124,
+                "latent_t": 31,
+                "latent_h": 8,
+                "latent_w": 8,
+            }
+        )
+        for _block in range(SLA_EXPECTED_BLOCKS):
+            runtime.record_attention(
+                index,
+                sparse=True,
+                workspace_bytes=4096,
+                key_blocks=16,
+                retained_key_blocks=2,
+            )
+    _latent, report_json = finalize_sla_runtime(
+        {"samples": torch.zeros(1)}, runtime
+    )
+    report = json.loads(report_json)
+    assert report["model_forward_count"] == 8
+    assert report["expected_nfe"] == 8
+    assert report["status"] == "lightx2v_dynamic_sparse_verified"
 
 
 def test_runtime_audit_refuses_missing_block():

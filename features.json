@@ -713,14 +713,14 @@
     "validation_boundary": "synthetic deterministic unit coverage plus one low-load real three-track calibration is implemented. Structural Audio Integrity now avoids the former short-window speech false positive, while the separate aligned-reference drift audit detects the known midstream candidate. Unicode CER/WER unit handling is mechanically covered for Chinese, Japanese, Korean, accented Latin, Cyrillic and Arabic, and all 14 historical real-H3 speech files now have fixed CPU-int8 ASR with mode/condition/outlier summaries. The ABX tooling, normalized legacy pilot, formal 10-target/10-utterance/3-seed plus three-impostor design and the bounded/resumable fair-media materializer are mechanically validated, but the formal identity collection remains zero of 300 and the multilingual collection remains zero of 120. No real formal A/B/X media or three-reviewer panel exists yet. Real opening-pop, tail-wrap, multilingual/multi-speaker listening, music/effects robustness, wider false-positive calibration and model-level causality remain pending"
   },
   "lightx2v_sla_attention_advanced": {
-    "status": "implemented and validated for the v1.44.0 release as three append-only Advanced EXP nodes",
-    "date": "2026-08-22",
+    "status": "implemented in v1.44.0; local 2026-08-26 compatibility repair replaces brittle source/file hashes with semantic and structural contracts and audits the actual native_flow NFE",
+    "date": "2026-08-26",
     "nodes": [
       "MiniMaxH3LightX2VSLAT8Advanced",
       "MiniMaxH3LightX2VSLAAuditT8Advanced",
       "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced"
     ],
-    "implementation": "the strict loader authenticates and applies all 208 LoRA patches, reproduces the released LightX2V H3 dynamic block-routing math, and owns the Sage2 block-sparse attention call for every main H3 block; the append-only KJ Sage composer authenticates the complete 50-block KJ whole-forward patch and conditionally dispatches exactly one backend per call; a separate one-shot audit rejects missing calls, KJ bypass, dense fallback, kernel failure and reused runtime tokens",
+    "implementation": "the loader requires complete safetensors LoRA A/B pairs and full mapping/application to the loaded native H3 base without enforcing one filename, byte size or file SHA; it validates the live ComfyUI H3 core by required call signatures, exact patchify ordering and an executable FL2VA PackedLayout probe while retaining source hashes only as diagnostics. It reproduces the released LightX2V H3 dynamic block-routing math and owns the Sage2 block-sparse attention call for every main H3 block. The KJ Sage composer still authenticates the complete 50-block KJ whole-forward patch and conditionally dispatches exactly one backend per call; a separate one-shot audit rejects missing calls, KJ bypass, dense fallback, kernel failure and reused runtime tokens using the actual sigma NFE",
     "scientific_boundary": "this is LightX2V dynamic_sparse_attn routing-math plus Sage2 block-kernel parity inside ComfyUI, not the whole LightX2V inference runtime and not every sparse+linear branch of the general SLA paper",
     "fixed_sources": {
       "lightx2v_revision": "f8aee98b5462cca8d7288888146ebd95592bf266",
@@ -731,9 +731,11 @@
       "lora_tensor_count": 624,
       "lora_patch_count": 208
     },
-    "strict_scope": "native H3 FL2VA only; exact first and last visual keyframes; batch 1; native_flow 4 NFE; video shift 6; audio shift 3; 56 heads x 128 dimensions; q-block 128, k-block 64; requested sparsity 85 percent",
+    "fixed_sources_status": "historical reference evidence only; these file identity values are no longer a runtime whitelist",
+    "runtime_compatibility_2026_08_26": "two user-observed compatible PackedLayout source hashes were rejected before execution and a repacked default SLA LoRA was rejected by exact file identity. The repaired route uses executable semantic probes, structural/full-mapping LoRA validation, recognizes a redundant ComfyUI built-in PyTorch or Comfy Kitchen attention override for replacement, and derives Runtime Audit forward counts from the connected native_flow sigmas. A real restarted-process run then exposed an obsolete marked ComfyUI-PainterNodes PackedLayout wrapper that forwarded the removed frame_count keyword; SLA now reuses the existing T8 Hybrid executable probe and unwraps it only when the enclosed native constructor independently passes the current ordering contract. The public workflows and all node widget orders remain unchanged",
+    "strict_scope": "native H3 FL2VA only; exact first and last visual keyframes; batch 1; native_flow 1-64 NFE with the upstream 4 NFE / video shift 6 / audio shift 3 contract still marked official and all other schedules marked experimental; 56 heads x 128 dimensions; q-block 128, k-block 64; requested sparsity 85 percent",
     "base_policy": "the LoRA metadata names the official BF16 FL2VA base; official_bf16_only enforces it, while auto_detect_exp permits but explicitly reports a quantized INT8 base as experimental",
-    "conflict_policy": "the original strict SLA node remains fail-closed on all external attention/object patches; only the dedicated composer accepts exactly 50 consistently bound and fingerprinted KJ MiniMax H3 Sage forwards, while Sol-Attn, FETA, Prompt Relay, BlockCache, STG, other overrides and partial/foreign patches remain rejected",
+    "conflict_policy": "the strict SLA node remains fail-closed on external attention/object patches; a recognized ComfyUI built-in PyTorch or Comfy Kitchen optimized-attention override may be replaced by the SLA owner and is reported. Only the dedicated composer accepts exactly 50 consistently bound and fingerprinted KJ MiniMax H3 Sage forwards, while Sol-Attn, FETA, Prompt Relay, BlockCache, STG, unknown overrides and partial/foreign patches remain rejected",
     "optional_dependency": "spas-sage-attn 0.1.0 compatible wheel; the first audited backend is pinned to RTX 40-series sm89 and never silently falls back to dense attention",
     "real_h3_verification": {
       "prompt_id": "0deca16d-7b84-4310-b6cf-b34ed1b798df",

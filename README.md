@@ -2,7 +2,7 @@
 
 面向 ComfyUI 的 MiniMax H3 视频与音频节点包。它保留原生 H3 的工作流接口，并在此基础上提供双时钟采样、音频控制、长视频、关键帧、脸部修复和显存诊断等能力。
 
-当前版本：**1.47.1** · 节点 211 个 · GPL-3.0-or-later
+当前版本：**1.47.2** · 节点 211 个 · GPL-3.0-or-later
 
 ## 能做什么
 
@@ -75,7 +75,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | 8B 提示词重写 | `14-prompt-relay/2026-08-22_H3_Prompt_Rewriter_8B_Advanced_EXP.json` | `requirements-prompt-rewriter.txt`、Qwen3-VL-8B 基座和 LightX2V LoRA | 16GB 本机可运行并能生成结构化结果，但 CPU 分片很慢；默认生成后卸载 |
 | LanPaint 局部 AV 修复 | `03-image-video-edit/2026-08-22_H3_LanPaint_AV_Local_Repair_Advanced_EXP.json` | 单独安装 `scraed/LanPaint` | 画面蒙版与音频秒区间分离，未声明区域回贴原始内容；尚未做高负载质量验证 |
 | 外部 BlockSwap | `12-system-memory/2026-08-22_H3_External_BlockSwap_Stock20_Advanced_EXP.json` | 单独安装 `xiaolibai-sys/ComfyUI-MiniMaxH3` | 只服务外部 `MINIMAX_H3_*` 类型，不接受官方 `MODEL`；16GB 未做压力认证 |
-| LightX2V Turbo-SLA | `15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json` | 固定 SLA LoRA、FL2VA、4 NFE/6V/3A 和匹配的 `spas-sage-attn` | 256×256×22 INT8 兼容机械验证通过；尚不宣称画质、速度、音频或通用16GB优势 |
+| LightX2V Turbo-SLA | `15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json` | H3 SLA LoRA、FL2VA、匹配的 `spas-sage-attn`；官方参考仍为4 NFE/6V/3A | 默认4步机械验证通过；节点现按结构和完整模型映射接受其他H3 SLA LoRA，并按实际NFE审计。8步可运行但属于实验兼容，不宣称上游质量背书 |
 | SLA + KJ Sage组合器 | `15-sla-attention/2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json` | 上述SLA条件，加单独安装的 `ComfyUI-KJNodes` | 解决KJ完整forward绕过SLA的问题；每次Attention只选一个后端，当前完成结构与回归验证 |
 | 音频完整性审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Integrity_Audit_Advanced.json` | 无；纯CPU信号分析 | 输出PASS/ABSTAIN和证据，不修音；循环音乐可能触发尾首相似提示 |
 | 音色远近漂移审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Perceptual_Drift_Audit_Advanced.json` | 同内容、同时间线的基准和候选音频 | 真实试听异常的纯二采在1.4～3.6秒触发ABSTAIN，正常一采与本例80%混音PASS；它是声学复核提示，不诊断远场/混响/换声 |
@@ -192,7 +192,7 @@ models/face_detection/checkpoints
 - `Enhance-A-Video + Strict Sage Advanced EXP`由一个组合节点同时拥有 FETA 路由和本机 SageAttention HND 后端，避免第三方整块 Attention patch 绕过 FETA。它不会静默回退到 PyTorch attention；本机一条 1152×640×124、Stock20 实测完成 1000 次 FETA 测量和 1000 次 Sage 调用，失败/回退为 0，并通过三轮严格音视频解码。该单条机械验证不代表画质更好、声音非劣、速度更快或通用 16GB 安全；使用时不要再叠加 KJ Sage、BlockCache、STG 或其他全局 attention patch。
 - `Enhance-A-Video + Prompt Relay Composer Advanced EXP`解决两个独立节点争用同一Attention入口的问题：它验证现有Relay绑定后，在一次路由中先执行局部事件Relay，再只对目标视频输出行应用FETA；关闭FETA时保留原Relay MODEL。当前仅开放Stock20 T2VA，一组736×416×124、20步基础机械对照及严格媒体检查已通过，但余量低于512MiB；不作为稳定提质、音频非劣或16GB安全路线宣传。
 - `Enhance-A-Video + BlockCache / STG / Long Video`是三个隔离追加组合器：BlockCache只接受已核对合同的CPU缓存并按full=50/hit=1审计实际执行块；STG把同一FETA规则用于主分支和弱分支，默认审计50/49块及额外联合AV前向；Long Video保留原上下文/layout拥有者，并为每个`segment_index/context_frames`创建独立Stock20审计。三者当前只通过低负载确定性合同、注册和工作流导入检查；按要求未做压力测试，不宣称提质、音频非劣、提速、省显存或通用16GB安全。
-- 基础 `MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)`仍必须直接接干净的Dual-Clock模型并独占attention。若要保留KJ MiniMax H3 Sage，请使用专门的 `SLA + KJ Sage Composer`：连接顺序为 `Dual-Clock → KJ Sage → Composer`，不要再插入ModelAttentionBackend或Sol-Attn。SLA生成路径运行block-sparse Sage2，KJ只负责非SLA调用或 `dense_lora_control`；同一次Attention不会重复跑两个kernel。当前结论仍不等于画质更好、速度更快、音频非劣或普遍16GB安全。
+- 基础 `MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)`仍必须直接接干净的Dual-Clock模型并独占attention。若要保留KJ MiniMax H3 Sage，请使用专门的 `SLA + KJ Sage Composer`：连接顺序为 `Dual-Clock → KJ Sage → Composer`。已有的ComfyUI内置PyTorch/Comfy Kitchen `ModelAttentionBackend`会被识别并由Composer替换，外部Sol-Attn等未知Attention仍拒绝。SLA生成路径运行block-sparse Sage2，KJ只负责非SLA调用或 `dense_lora_control`；同一次Attention不会重复跑两个kernel。LoRA不再按单个固定SHA白名单判断，而是要求完整A/B结构并在当前H3基座上全部映射；这不能证明任意文件真实经过SLA训练。官方参考默认4步/6V/3A，8步及其他native_flow NFE会按实际前向次数审计并标为实验。当前结论仍不等于画质更好、速度更快、音频非劣或普遍16GB安全。
 - Prompt Relay 与 Turbo8 组合时，连接顺序必须是 `UNET → Prompt Relay Conditioning → 修正 Alpha8 Bypass LoRA → DualClock Sampler`；把 LoRA 接在 Relay 前面会被主动拒绝。
 - Prompt Relay 需要保留输入原声时使用 `lock_source`，并把节点的 `mux_audio` 接到最终保存节点；`native/remix/reference_only`仍可能因 H3 联合 AV Transformer 而改变声音。
 - `drive_audio`是联合生成条件，不是确定性音素/口型约束。希望尽量保留原声时，使用

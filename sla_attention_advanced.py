@@ -58,6 +58,7 @@ SLA_HEADS = 56
 SLA_HEAD_DIM = 128
 SLA_EXPECTED_BLOCKS = 50
 SLA_EXPECTED_NFE = 4
+SLA_MAX_NFE = 64
 SLA_SHIFT_VIDEO = 6.0
 SLA_SHIFT_AUDIO = 3.0
 SLA_LIGHTX2V_REVISION = "f8aee98b5462cca8d7288888146ebd95592bf266"
@@ -108,11 +109,15 @@ def _file_sha256(path: str | Path) -> str:
     return value
 
 
-def _validate_sigmas(sigmas: torch.Tensor) -> dict:
+def _validate_sigmas(
+    sigmas: torch.Tensor,
+    shift_video: float = SLA_SHIFT_VIDEO,
+) -> dict:
     values = torch.as_tensor(sigmas).detach().float().cpu().flatten()
-    if values.numel() != SLA_EXPECTED_NFE + 1:
+    nfe = int(values.numel()) - 1
+    if not 1 <= nfe <= SLA_MAX_NFE:
         raise ValueError(
-            "H3 LightX2V SLA requires exactly 4 NFE / 5 sigma entries including zero"
+            f"H3 LightX2V SLA requires 1..{SLA_MAX_NFE} NFE plus the final zero sigma"
         )
     if not bool(torch.isfinite(values).all()):
         raise ValueError("H3 LightX2V SLA received NaN/Inf sigmas")
@@ -120,16 +125,27 @@ def _validate_sigmas(sigmas: torch.Tensor) -> dict:
         raise ValueError("H3 LightX2V SLA requires four positive sigmas then zero")
     if not bool((values[:-1] >= values[1:]).all()):
         raise ValueError("H3 LightX2V SLA requires a monotonic sigma schedule")
-    expected = native_flow_sigmas(SLA_EXPECTED_NFE, SLA_SHIFT_VIDEO).float()
+    shift_video = float(shift_video)
+    if not math.isfinite(shift_video) or shift_video <= 0.0:
+        raise ValueError("H3 LightX2V SLA requires a finite positive video shift")
+    expected = native_flow_sigmas(nfe, shift_video).float()
     if not bool(torch.allclose(values, expected, rtol=0.0, atol=1.0e-6)):
         raise ValueError(
-            "H3 LightX2V SLA requires T8 native_flow with 4 steps and video shift 6.0"
+            f"H3 LightX2V SLA requires T8 native_flow with {nfe} steps and "
+            f"video shift {shift_video}"
         )
     return {
-        "nfe": SLA_EXPECTED_NFE,
+        "nfe": nfe,
         "entries": int(values.numel()),
         "scheduler": "native_flow",
-        "shift_video": SLA_SHIFT_VIDEO,
+        "shift_video": shift_video,
+        "official_checkpoint_nfe": SLA_EXPECTED_NFE,
+        "schedule_status": (
+            "official_4step_contract"
+            if nfe == SLA_EXPECTED_NFE
+            and math.isclose(shift_video, SLA_SHIFT_VIDEO, abs_tol=1.0e-7)
+            else "experimental_user_selected_nfe"
+        ),
         "sigma_sha256": hashlib.sha256(values.numpy().tobytes()).hexdigest(),
     }
 
@@ -138,57 +154,188 @@ def _validate_lora_header(path: str | Path) -> dict:
     from safetensors import safe_open
 
     resolved = Path(path).resolve()
+    if resolved.suffix.lower() != ".safetensors":
+        raise RuntimeError("H3 SLA LoRA must be a safetensors file")
     stat = resolved.stat()
-    if int(stat.st_size) != SLA_LORA_BYTES:
-        raise RuntimeError(
-            "H3 SLA LoRA size does not match the pinned LightX2V ComfyUI artifact: "
-            f"observed={stat.st_size}, expected={SLA_LORA_BYTES}"
-        )
-    digest = _file_sha256(resolved)
-    if digest != SLA_LORA_SHA256:
-        raise RuntimeError(
-            "H3 SLA LoRA SHA-256 does not match the pinned LightX2V artifact: "
-            f"observed={digest}"
-        )
     with safe_open(str(resolved), framework="pt", device="cpu") as handle:
         keys = list(handle.keys())
         metadata = dict(handle.metadata() or {})
-    if len(keys) != SLA_LORA_TENSORS:
+    suffix_a = ".lora_A.weight"
+    suffix_b = ".lora_B.weight"
+    suffix_alpha = ".alpha"
+    prefixes_a = {key[: -len(suffix_a)] for key in keys if key.endswith(suffix_a)}
+    prefixes_b = {key[: -len(suffix_b)] for key in keys if key.endswith(suffix_b)}
+    prefixes_alpha = {
+        key[: -len(suffix_alpha)] for key in keys if key.endswith(suffix_alpha)
+    }
+    unsupported = [
+        key
+        for key in keys
+        if not key.endswith((suffix_a, suffix_b, suffix_alpha))
+    ]
+    if unsupported:
         raise RuntimeError(
-            f"H3 SLA LoRA expected {SLA_LORA_TENSORS} tensors, observed {len(keys)}"
+            "H3 SLA LoRA contains unsupported non-LoRA tensors: "
+            + ", ".join(unsupported[:8])
         )
-    suffix_counts = {
-        suffix: sum(key.endswith(suffix) for key in keys)
-        for suffix in (".alpha", ".lora_A.weight", ".lora_B.weight")
-    }
-    if suffix_counts != {
-        ".alpha": SLA_LORA_PATCHES,
-        ".lora_A.weight": SLA_LORA_PATCHES,
-        ".lora_B.weight": SLA_LORA_PATCHES,
-    }:
-        raise RuntimeError(f"H3 SLA LoRA tensor structure changed: {suffix_counts}")
-    expected_metadata = {
-        "base_model": "Comfy-Org/MiniMax-H3 minimax_h3_fl2va_bf16.safetensors",
-        "training_rank": "128",
-        "training_alpha": "128.0",
-        "training_scale": "1.0",
-        "target_format": "ComfyUI generic LoRA",
-    }
-    mismatches = {
-        key: {"observed": metadata.get(key), "expected": value}
-        for key, value in expected_metadata.items()
-        if metadata.get(key) != value
-    }
-    if mismatches:
-        raise RuntimeError(f"H3 SLA LoRA metadata changed: {mismatches}")
+    if not prefixes_a or prefixes_a != prefixes_b:
+        missing_a = sorted(prefixes_b - prefixes_a)
+        missing_b = sorted(prefixes_a - prefixes_b)
+        raise RuntimeError(
+            "H3 SLA LoRA requires complete A/B tensor pairs; "
+            f"missing_A={missing_a[:8]}, missing_B={missing_b[:8]}"
+        )
+    if not prefixes_alpha.issubset(prefixes_a):
+        raise RuntimeError("H3 SLA LoRA alpha tensors do not match its A/B pairs")
+    foreign_targets = sorted(
+        prefix for prefix in prefixes_a if not prefix.startswith("diffusion_model.")
+    )
+    if foreign_targets:
+        raise RuntimeError(
+            "H3 SLA LoRA contains non-H3 diffusion targets: "
+            + ", ".join(foreign_targets[:8])
+        )
+    base_model = str(metadata.get("base_model", "")).strip()
+    if base_model and "minimax" not in base_model.lower() and "h3" not in base_model.lower():
+        raise RuntimeError(
+            f"H3 SLA LoRA metadata names a foreign base model: {base_model!r}"
+        )
+    header_fingerprint = hashlib.sha256(
+        json.dumps(
+            {"keys": sorted(keys), "metadata": metadata},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     return {
         "filename": resolved.name,
         "bytes": int(stat.st_size),
-        "sha256": digest,
+        "sha256": None,
+        "file_sha256_enforced": False,
+        "identity_policy": "structural_pairs_and_full_model_mapping",
+        "header_fingerprint_sha256": header_fingerprint,
         "tensor_count": len(keys),
-        "patch_count": SLA_LORA_PATCHES,
+        "patch_count": len(prefixes_a),
+        "alpha_count": len(prefixes_alpha),
         "metadata": metadata,
-        "model_revision": SLA_MODEL_REVISION,
+        "reference_artifact": {
+            "filename": SLA_LORA_FILENAME,
+            "bytes": SLA_LORA_BYTES,
+            "sha256": SLA_LORA_SHA256,
+            "matches_filename": resolved.name == SLA_LORA_FILENAME,
+            "matches_size": int(stat.st_size) == SLA_LORA_BYTES,
+            "not_enforced": True,
+        },
+    }
+
+
+def _required_parameters(function, required: set[str], label: str) -> list[str]:
+    parameters = list(inspect.signature(function).parameters)
+    missing = sorted(required - set(parameters))
+    if missing:
+        raise RuntimeError(f"H3 SLA core semantic contract lost {label}: {missing}")
+    return parameters
+
+
+def _core_semantic_contract() -> dict:
+    # Some older Painter MiniMax nodes install a process-global PackedLayout
+    # wrapper that forwards the now-removed ``frame_count`` keyword.  Reuse the
+    # conditioning path's executable compatibility probe: it unwraps only that
+    # specifically marked patch, and only when the enclosed native constructor
+    # independently passes the current keyframe+reference ordering contract.
+    from .conditioning import assert_hybrid_layout_contract
+
+    packed_layout_compatibility = assert_hybrid_layout_contract()
+    source_hashes = {
+        "attention_forward": _source_sha256(Attention.forward),
+        "packed_layout": _source_sha256(PackedLayout.__init__),
+        "model_forward": _source_sha256(MiniMaxH3Model._forward),
+        "patchify_video": _source_sha256(patchify_video),
+    }
+    signatures = {
+        "attention_forward": _required_parameters(
+            Attention.forward,
+            {"self", "x", "rope_freqs", "transformer_options"},
+            "Attention.forward parameters",
+        ),
+        "packed_layout": _required_parameters(
+            PackedLayout.__init__,
+            {
+                "self",
+                "text_len",
+                "latent_t",
+                "latent_h",
+                "latent_w",
+                "audio_t",
+                "keyframes",
+                "refs",
+            },
+            "PackedLayout parameters",
+        ),
+        "model_forward": _required_parameters(
+            MiniMaxH3Model._forward,
+            {
+                "self",
+                "x",
+                "timestep",
+                "context",
+                "transformer_options",
+                "minimax_payload",
+            },
+            "MiniMaxH3Model._forward parameters",
+        ),
+    }
+
+    patch_probe = torch.arange(64, dtype=torch.float32).reshape(1, 2, 2, 4, 4)
+    patch_rows = patchify_video(patch_probe, (1, 2, 2))
+    expected_first = torch.tensor(
+        [0.0, 1.0, 4.0, 5.0, 32.0, 33.0, 36.0, 37.0]
+    )
+    if tuple(patch_rows.shape) != (8, 8) or not torch.equal(
+        patch_rows[0].cpu(), expected_first
+    ):
+        raise RuntimeError(
+            "H3 SLA core semantic contract changed native video patch ordering"
+        )
+
+    keyframe = torch.zeros(1, 24, 1, 4, 4)
+    layout = PackedLayout(
+        3,
+        2,
+        4,
+        4,
+        5,
+        keyframes=[
+            {"resolved_frame_index": 0, "latent": keyframe},
+            {"resolved_frame_index": 4, "latent": keyframe},
+        ],
+        refs=None,
+    )
+    kinds = [kind for _start, _end, kind in layout.segments]
+    if layout.signature != (3, 2, 4, 4, 5) or kinds[-2:] != ["audio", "video"]:
+        raise RuntimeError(
+            "H3 SLA core semantic contract changed FL2VA packed target ordering"
+        )
+    if any(kind.startswith("ref_") for kind in kinds):
+        raise RuntimeError("H3 SLA core semantic probe unexpectedly packed references")
+    if int(layout.segments[-2][1] - layout.segments[-2][0]) != 10:
+        raise RuntimeError("H3 SLA core semantic contract changed target audio rows")
+    if int(layout.segments[-1][1] - layout.segments[-1][0]) != 8:
+        raise RuntimeError("H3 SLA core semantic contract changed target video rows")
+    return {
+        "status": "semantic_contract_validated",
+        "source_hashes": source_hashes,
+        "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+        "packed_layout_compatibility": packed_layout_compatibility,
+        "signatures": signatures,
+        "patchify_video": {"shape": list(patch_rows.shape), "ordering": "validated"},
+        "packed_layout": {
+            "signature": list(layout.signature),
+            "segment_kinds": kinds,
+            "target_tail": kinds[-2:],
+            "seq_len": int(layout.seq_len),
+        },
     }
 
 
@@ -311,6 +458,30 @@ def _inspect_kj_sage_contract(model) -> dict:
     }
 
 
+def _existing_attention_contract(transformer_options: Mapping) -> dict:
+    installed = transformer_options.get("optimized_attention_override")
+    if installed is None:
+        return {"status": "none", "backend": None}
+    get_attention = getattr(attention_module, "get_attention_function", None)
+    if callable(get_attention):
+        for backend in ("pytorch", "comfy_kitchen_int8"):
+            try:
+                candidate = get_attention(backend)
+            except Exception:
+                candidate = None
+            if candidate is not None and installed is candidate:
+                return {
+                    "status": "recognized_builtin_override_replaced",
+                    "backend": backend,
+                    "module": str(getattr(installed, "__module__", "unknown")),
+                    "name": str(getattr(installed, "__name__", type(installed).__name__)),
+                }
+    raise RuntimeError(
+        "H3 SLA owns attention and cannot stack with an unrecognized attention "
+        "override such as SageAttention, Sol-Attn, FETA or Prompt Relay"
+    )
+
+
 def _assert_core_contract(
     model,
     *,
@@ -330,24 +501,7 @@ def _assert_core_contract(
         if type(getattr(base, "diffusion_model", None)).__name__ != "MiniMaxH3Model":
             raise ValueError("H3 SLA currently requires the native ComfyUI MiniMax H3 model")
 
-    hashes = {
-        "attention_forward": _source_sha256(Attention.forward),
-        "packed_layout": _source_sha256(PackedLayout.__init__),
-        "model_forward": _source_sha256(MiniMaxH3Model._forward),
-        "patchify_video": _source_sha256(patchify_video),
-    }
-    expected = {
-        "attention_forward": ATTENTION_FORWARD_SHA256S,
-        "packed_layout": PACKED_LAYOUT_SHA256S,
-        "model_forward": MODEL_FORWARD_SHA256S,
-        "patchify_video": PATCHIFY_VIDEO_SHA256S,
-    }
-    mismatches = [key for key, value in hashes.items() if value not in expected[key]]
-    if mismatches:
-        raise RuntimeError(
-            "H3 SLA has not validated this ComfyUI H3 core contract: "
-            + ", ".join(f"{key}={hashes[key]}" for key in mismatches)
-        )
+    semantic_core = _core_semantic_contract()
 
     options = getattr(model, "model_options", {})
     conflict_keys = (
@@ -361,11 +515,7 @@ def _assert_core_contract(
     if conflicts:
         raise RuntimeError("H3 SLA refuses guidance/model hooks: " + ", ".join(conflicts))
     transformer = options.get("transformer_options", {})
-    if "optimized_attention_override" in transformer:
-        raise RuntimeError(
-            "H3 SLA owns attention and cannot stack with SageAttention, Sol-Attn, "
-            "FETA, Prompt Relay, or another attention override"
-        )
+    existing_attention = _existing_attention_contract(transformer)
     replacements = transformer.get("patches_replace", {})
     if isinstance(replacements, Mapping) and any(bool(value) for value in replacements.values()):
         raise RuntimeError("H3 SLA cannot stack with BlockCache/STG/block replacements yet")
@@ -386,10 +536,8 @@ def _assert_core_contract(
         "video": float(transformer.get("minimax_h3_sigma_shift_video", float("nan"))),
         "audio": float(transformer.get("minimax_h3_sigma_shift_audio", float("nan"))),
     }
-    if not math.isclose(shifts["video"], SLA_SHIFT_VIDEO, abs_tol=1.0e-7):
-        raise RuntimeError("H3 SLA requires MiniMax H3 Dual-Clock video shift 6.0")
-    if not math.isclose(shifts["audio"], SLA_SHIFT_AUDIO, abs_tol=1.0e-7):
-        raise RuntimeError("H3 SLA requires MiniMax H3 Dual-Clock audio shift 3.0")
+    if any(not math.isfinite(value) or value <= 0.0 for value in shifts.values()):
+        raise RuntimeError("H3 SLA requires finite positive MiniMax H3 Dual-Clock shifts")
 
     if external_attention_policy == "compose_kj_sage":
         external_attention = _inspect_kj_sage_contract(model)
@@ -406,9 +554,17 @@ def _assert_core_contract(
             )
         external_attention = None
     return {
-        "core_hashes": hashes,
+        "semantic_core": semantic_core,
+        "core_hashes": semantic_core["source_hashes"],
         "base": _model_dtype_contract(model, base_policy),
-        "dual_clock": shifts,
+        "dual_clock": {
+            **shifts,
+            "official_4step_shift_match": (
+                math.isclose(shifts["video"], SLA_SHIFT_VIDEO, abs_tol=1.0e-7)
+                and math.isclose(shifts["audio"], SLA_SHIFT_AUDIO, abs_tol=1.0e-7)
+            ),
+        },
+        "preexisting_attention": existing_attention,
         "external_attention_policy": external_attention_policy,
         "external_attention": external_attention,
     }
@@ -422,10 +578,11 @@ def _apply_authenticated_lora(model, path: str | Path) -> tuple[object, dict]:
     state = comfy.lora_convert.convert_lora(state)
     key_map = comfy.lora.model_lora_keys_unet(model.model, {})
     loaded = comfy.lora.load_lora(state, key_map, log_missing=False)
-    if len(loaded) != SLA_LORA_PATCHES:
+    expected_patches = int(contract["patch_count"])
+    if len(loaded) != expected_patches:
         raise RuntimeError(
             "H3 SLA LoRA did not map completely to this H3 base: "
-            f"mapped={len(loaded)}, expected={SLA_LORA_PATCHES}"
+            f"mapped={len(loaded)}, expected={expected_patches}"
         )
     patched = model.clone()
     applied = set(patched.add_patches(loaded, 1.0))
@@ -1006,11 +1163,14 @@ def build_sla_model(
         runtime.config = dict(config)
         return model, runtime, _json(config)
 
-    config["sigma_contract"] = _validate_sigmas(sigmas)
     config["core_contract"] = _assert_core_contract(
         model,
         base_policy=base_policy,
         external_attention_policy=external_attention_policy,
+    )
+    config["sigma_contract"] = _validate_sigmas(
+        sigmas,
+        shift_video=config["core_contract"]["dual_clock"]["video"],
     )
     if mode == "apply_lightx2v_sla":
         config["kernel_contract"] = _kernel_contract()
@@ -1100,12 +1260,17 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
             raise RuntimeError("Disabled H3 SLA unexpectedly observed model execution")
         report["status"] = "disabled_identity_verified"
     else:
-        if report["model_forward_count"] != SLA_EXPECTED_NFE:
+        sigma_contract = report["config"].get("sigma_contract") or {}
+        expected_nfe = int(sigma_contract.get("nfe", SLA_EXPECTED_NFE))
+        if not 1 <= expected_nfe <= SLA_MAX_NFE:
+            raise RuntimeError(f"H3 SLA runtime has invalid expected NFE {expected_nfe}")
+        report["expected_nfe"] = expected_nfe
+        if report["model_forward_count"] != expected_nfe:
             raise RuntimeError(
-                f"H3 SLA expected {SLA_EXPECTED_NFE} model forwards, observed "
+                f"H3 SLA expected {expected_nfe} model forwards, observed "
                 f"{report['model_forward_count']}"
             )
-        expected = [SLA_EXPECTED_BLOCKS] * SLA_EXPECTED_NFE
+        expected = [SLA_EXPECTED_BLOCKS] * expected_nfe
         if report["main_attention_calls_per_forward"] != expected:
             raise RuntimeError(
                 "H3 SLA expected 50 main attention calls per forward, observed "
@@ -1122,9 +1287,9 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
                     "H3 SLA sparse calls do not cover all 50 blocks: "
                     f"{report['sparse_kernel_calls_per_forward']}"
                 )
-            if report["dense_control_calls_per_forward"] != [0] * SLA_EXPECTED_NFE:
+            if report["dense_control_calls_per_forward"] != [0] * expected_nfe:
                 raise RuntimeError("H3 SLA silently fell back to dense main-block attention")
-            if report["external_sage_calls_per_forward"] != [0] * SLA_EXPECTED_NFE:
+            if report["external_sage_calls_per_forward"] != [0] * expected_nfe:
                 raise RuntimeError(
                     "H3 SLA apply path was incorrectly bypassed by external KJ Sage"
                 )
@@ -1132,7 +1297,7 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
         else:
             if report["dense_control_calls_per_forward"] != expected:
                 raise RuntimeError("H3 SLA dense control did not cover all 50 blocks")
-            if report["sparse_kernel_calls_per_forward"] != [0] * SLA_EXPECTED_NFE:
+            if report["sparse_kernel_calls_per_forward"] != [0] * expected_nfe:
                 raise RuntimeError("H3 SLA dense control unexpectedly used sparse kernels")
             if external_policy == "compose_kj_sage":
                 if report["external_sage_calls_per_forward"] != expected:
@@ -1141,7 +1306,7 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
                     )
                 report["status"] = "dense_lora_kj_sage_control_verified"
             else:
-                if report["external_sage_calls_per_forward"] != [0] * SLA_EXPECTED_NFE:
+                if report["external_sage_calls_per_forward"] != [0] * expected_nfe:
                     raise RuntimeError("H3 SLA strict control observed external Sage calls")
                 report["status"] = "dense_lora_control_verified"
     report["quality_claim"] = (

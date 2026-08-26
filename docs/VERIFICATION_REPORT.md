@@ -1356,6 +1356,32 @@ Ruff, compileall, 110 JSON parses, `git diff --check`, and `comfy node validate`
 Both dated workflows are present in the project source and synchronized user menu (108/108 JSONs).
 No GPU generation, pressure test or quality/speed claim was added for the composer checkpoint.
 
+### 2026-08-26 SLA compatibility repair
+
+Two live ComfyUI installations rejected the default SLA workflow before model execution because
+their otherwise compatible `PackedLayout.__init__` source hashes were not in the original exact
+source whitelist. A repacked SLA filename was also rejected by the original fixed byte-size and
+file-SHA gate, and Runtime Audit required exactly four forwards even when the user deliberately
+connected an eight-step native-flow schedule.
+
+The local repair keeps the same three node IDs, input order, defaults and public four-step
+workflows. Core compatibility now requires the native H3 call signatures, an exact small
+`patchify_video` ordering probe and an executable first/last-frame `PackedLayout` probe with target
+audio/video tail ordering; source hashes remain in the report but are diagnostic only. SLA LoRAs
+now require complete safetensors A/B pairs, H3 diffusion targets and complete mapping/application
+to the loaded base; one filename, byte size and SHA are no longer a global runtime whitelist. The
+historical LightX2V SHA remains recorded only as the artifact used for the original real probe.
+
+The sigma contract accepts finite monotonic `native_flow` schedules from one through 64 NFE and
+Runtime Audit derives its expected forward count from the connected schedule. The upstream
+checkpoint's four-step, video-shift-6/audio-shift-3 route remains the only official reference;
+eight steps and other schedules are explicitly reported as experimental compatibility, not an
+upstream quality claim. A redundant built-in ComfyUI PyTorch or Comfy Kitchen attention override
+can be recognized and replaced by the SLA owner; foreign attention owners remain fail-closed.
+Focused tests cover unknown-but-semantic core hashes, non-pinned structural LoRA headers, built-in
+attention replacement and eight-forward audit. No new GPU generation or perceptual claim is made
+by this repair.
+
 ## 1.43.0 append-only creator and compatibility helpers (2026-08-22)
 
 Version 1.43.0 preserves the first 155 registered node IDs, their input order, defaults, and stable
@@ -5749,3 +5775,21 @@ The ablation proves that the old safety mask excluded part of the intended targe
 not establish visible oil control after that target is admitted. Increasing nose weight, running a
 parameter grid or escalating to a 3-5 second video is therefore not scientifically justified. The
 VRetouchEr route remains unregistered research and no existing node, workflow, README or default changed.
+
+## SLA runtime compatibility hotfix (2026-08-26)
+
+Two live ComfyUI H3 core revisions were previously rejected solely because their `PackedLayout`
+source hashes were not in a fixed whitelist. The SLA adapter now retains source hashes only as
+diagnostics and instead verifies required signatures, exact `patchify_video` ordering and an executable
+FL2VA packed-layout contract. SLA LoRA admission likewise uses complete A/B pair structure plus full
+mapping/application to the loaded H3 base, rather than one filename, byte size or whole-file SHA.
+Native-flow 8 NFE is accepted and audited as an experimental schedule; the published LightX2V 4 NFE,
+video shift 6 and audio shift 3 route remains the official reference.
+
+After a real ComfyUI restart, the first live retry passed the old hash gate and exposed a separate
+process-global compatibility fault from an installed old `ComfyUI-PainterNodes`: its marked
+`PackedLayout` wrapper forwarded the removed `frame_count` keyword to the current native constructor.
+A focused regression reproduced the exact `TypeError`. SLA now reuses the existing T8 Hybrid executable
+compatibility probe, which removes that wrapper only when its enclosed native constructor independently
+passes the current keyframe-plus-reference ordering contract. Unknown or unverifiable global wrappers
+remain fail-closed. This changes no node ID, widget order, workflow graph or sampling formula.
