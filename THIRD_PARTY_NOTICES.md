@@ -153,6 +153,24 @@ repository's existing plan geometry. It is explicitly not a semantic skin parser
 external masks or separately installed model outputs remain responsible for the licenses and usage
 terms of those inputs.
 
+## VRetouchEr CVPR 2024 research bridge
+
+The unregistered Skin Finish research bridge includes the minimal Python inference source from
+[`Davidcoach/VRetouchEr_CVPR_2024`](https://github.com/Davidcoach/VRetouchEr_CVPR_2024) at fixed
+revision `ae25b5475680ed01958c017b32b669b4e46d7f9b`. The upstream repository and bundled source are
+licensed under the MIT License; the complete upstream notice is retained at
+`vendor/vretoucher_upstream/LICENSE`.
+
+Copyright (c) 2025 Wen Xue
+
+The source is bundled with CRLF line endings normalized to LF and otherwise kept as the pinned
+minimal inference files. T8 does not include the official `gen_best.pth`, training data, sample
+media, compiled native operators or a separate SPyNet checkpoint. The two upstream operator Python
+files are retained as formula provenance, while the T8 bridge uses audited pure-PyTorch equivalents
+and does not compile their CUDA/C++ extensions. The bridge remains unregistered until a separately
+installed official checkpoint passes identity, structure, numerical, perceptual, temporal and
+memory validation.
+
 ## Optional FaceXLib ParseNet semantic-mask runtime
 
 The opt-in `MiniMaxH3SkinFinishSemanticMaskT8Advanced` and

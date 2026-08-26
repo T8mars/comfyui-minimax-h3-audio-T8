@@ -5,6 +5,91 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-25 — Skin Finish learned-proposal route stopped at the single-frame gate
+
+The post-reveal reviewer correction for the dichromatic candidate was recorded as “basically the
+same”, without rewriting the original blind form. A materially different local-model audit then
+found that the installed GFPGAN v1.4 checkpoint loads through ComfyUI's bundled Spandrel, while the
+installed CodeFormer checkpoint does not. GFPGAN is a generative face-restoration prior, so direct
+restored-RGB or whole-face paste was excluded: that would import generated colour, facial detail and
+identity risk rather than establish a skin-only finish.
+
+An unregistered clean-room prototype used only zero-mean bounded low-frequency luminance, bounded
+low-frequency chromaticity and local detail energy from the learned proposal. It retained the
+source's high-frequency phase, excluded parsed facial features, stayed inside the semantic skin
+mask and applied a direction-preserving 0.10 RGB delta cap both before and after affine return to the
+source frame. Nine deterministic tests pass. The return-path cap was necessary: an earlier probe
+showed that inverse-warped luma scale could raise an aligned 0.10 limit to 0.1324 in the full frame.
+
+The final fixed frame-66 v6 probe reports masked mean RGB change 0.00580815, peak 0.10000002,
+texture ratio 1.01476622, effective full-frame area 0.23996247 and maximum applied chroma-component
+shift 0.008. One GFPGAN inference took 0.428602 seconds; GFPGAN and ParseNet were released. The
+report is
+`artifacts/skin-finish-learned-surface-probe-20260825-v6/calibration_report.json`, SHA-256
+`2B0332A951A19C37848ACC7A9458A3BA4575AD1A6F8971D4F334C0A626E525D4`.
+
+The guarded candidate was still visually close to source. The visibly different raw GFPGAN output
+depended on the generated RGB/colour/face reconstruction that the safe route intentionally refused
+to paste. The predeclared visibility gate therefore stopped the experiment before six frames, full
+video, stress/repeat work, node registration or workflow integration. The 211-node registry and all
+existing workflows remain unchanged; this is negative research evidence, not a released feature.
+
+A second, materially different single-frame route then retained the proposal's non-centred broad
+low-frequency RGB skin-surface field instead of tuning the first decomposition. Source RGB remained
+the pixel carrier; proposal geometry, facial features and generated high-frequency detail were not
+pasted. ParseNet limited the field to semantic skin, a direction-preserving 0.10 cap applied after
+full-frame return, and a pinned local SFace model provided a separate same-frame safety gate. Nine
+focused prototype/calibration tests pass.
+
+On the same fixed frame 66, full-frame masked mean RGB change reached 0.01792077, above the
+predeclared 0.012 visibility floor. Peak change was 0.05065823, aligned texture ratio 0.99734342,
+new clipping zero and mask exterior bit-exact. The result nevertheless remained only subtly
+different on direct inspection, and SFace source/candidate cosine was 0.77901375 against the
+predeclared 0.90 gate. The route therefore records `ABSTAIN` without lowering the threshold or
+running six frames. Evidence is
+`artifacts/skin-finish-learned-rgb-surface-probe-20260825-v1/calibration_report.json`, SHA-256
+`7F26BC07C3306CC4BED20609B8E6617834E97F307B30FA9216ED3D2FD4EF590A`.
+
+A third representation split the proposal into a 12-pixel broad surface, a 2-to-12-pixel middle
+band and excluded generated fine detail. It used the official OpenCV SFace cosine threshold 0.363
+plus a fixed 0.20 project safety margin, and additionally required the guarded candidate to improve
+on the raw GFPGAN proposal by at least 0.02. The fixed frame passed those gates: full-frame masked
+mean RGB change 0.02354103, peak 0.10000002, source-fine cosine 0.98669648, texture ratio
+1.00310755 and full-frame SFace cosine 0.93614626 versus raw-proposal 0.84714699. The report is
+`artifacts/skin-finish-learned-mid-surface-probe-20260825-v1/calibration_report.json`, SHA-256
+`737D2AA8DD6B6003AF49D4B2A560EA8755225F6AC343FED298CE6EB7F3E3FC9C`.
+
+Mechanical passage did not establish usefulness: direct inspection of the full-resolution source
+and candidate still found the surface change effectively indistinguishable. The route therefore
+stopped before six frames rather than promoting a metric-only pass.
+
+A fourth, explicitly higher-risk experiment allowed generated RGB and texture only on ParseNet
+semantic skin while excluding eyebrows, eyes, nose, mouth, ears and hair. It required source and
+proposal edge agreement, expanded any mismatched-edge risk before blending, capped RGB change,
+and retained the same exact mask-exterior contract. Deterministic tests first exposed and then
+closed a bug where source-flat pixels could admit new proposal edges without protecting their
+neighbourhood.
+
+On the fixed frame, the tentative semantic-skin fusion had masked mean RGB change 0.02308811,
+peak 0.09696823, texture ratio 0.98752564, structural-gradient cosine 0.99513686, zero clipping and
+exact exterior. It nevertheless failed the predeclared 0.025 visibility floor, returned the exact
+source and did not continue. Consequently the saved candidate/source PNGs intentionally share a
+SHA-256; they are proof of fail-closed fallback, not evidence of an accepted reconstruction. The
+report is
+`artifacts/skin-finish-learned-skin-reconstruction-probe-20260825-v1/calibration_report.json`,
+SHA-256 `AA99162C49B5F0EE8B2BBDBACACD7EC49922B80E10544544DD0588C050B0CD87`.
+
+Across all four representations, the only strongly visible image was the raw whole-face GFPGAN
+proposal, which also changed identity-relevant eyes, iris appearance, facial detail and geometry.
+That is face restoration, not a scientifically established skin-only finish. No threshold was
+lowered, no parameter sweep or video run was used to force a pass, and the 211-node registry plus
+all existing workflows remain unchanged.
+
+The final low-load scope passed 79 learned-route calibration, registration and frontend-workflow
+tests. Ruff, targeted `py_compile`, `features.json` parsing and `git diff --check` also passed. Four
+existing Triton deprecation warnings were unchanged. No H3, SAM, CUDA, GFPGAN inference or video
+generation was run during this closing regression.
+
 ## 2026-08-24 — Creator and external-bridge human-review adjudication
 
 Three current `final` reviewer exports were checked against their exact private review IDs and
@@ -4403,3 +4488,1264 @@ It does not prove live SAM3.1 mask quality, automatic cuts, full-video temporal 
 beyond this clip, occlusion/crossing robustness, identity truth, different-skin-tone fairness,
 aesthetic improvement, HDR or general memory safety. Human review and one real live-SAM/cut case
 remain open.
+
+## Skin Finish live native-SAM multi-person full chain (2026-08-25)
+
+One 832x736 (0.612352MP), 124-frame, 24fps source was run through the actual ComfyUI graph rather
+than an offline person-mask harness: native SAM3.1 multi-person tracking, pinned YuNet, pinned CPU
+ParseNet with five-point FFHQ-512 alignment, `MiniMaxH3SkinFinishAdvancedT8` in `subtle` mode
+(amount/shine 0.35, texture keep 0.90), Texture Guard defaults and Video Finalize. The source moves
+from one visible subject to three, includes large expressions and hand/face occlusion, and contains a
+file boundary at frame 62. No H3 diffusion model was loaded.
+
+The single run completed in 1088.953 seconds. Candidate video and audio both passed single-thread
+FFmpeg `-xerror -err_detect explode`. Source and candidate contained the same 163 AAC packet
+payloads, 127,993 payload bytes and SHA-256
+`0E9105FF6391164BE2E6652D627133172E91778BFA25EE7AB4B06E7B5E65FEFF`; their decoded 32kHz
+stereo PCM SHA-256 was also identical. GPU usage peaked at 5,569MiB with 10,541MiB minimum free on
+the 16GB RTX 4060 Ti, and ended at 1,847MiB after selective SAM offload and server shutdown.
+
+Six semantic audit previews and source/candidate/mask samples at frames 0/30/61/62/92/123 show
+skin-only face regions with eyes, brows, nose openings, lips and hair protected; up to three people
+receive separate masks and no sampled frame shows full-screen leakage. Frame-indexed PyAV comparison,
+used because FFmpeg timestamp framesync can misalign this source, measured whole-frame RGB MAE
+0.00482195 on average with per-frame values from 0.00352821 to 0.00529877. This quantifies a bounded,
+subtle change after re-encoding; it is not an aesthetic score.
+
+The accepted candidate SHA-256 is
+`F0441A3EBE1B2650E53565634B6723934033813567C2456714EF4AA1B73CE6C0`. The labelled 1664x736x124
+source/candidate review SHA-256 is
+`1A1A5A5FECAEA1249D159D709A99438653BB293C3864C35C3F42B5763A58A68F`; the six-row contact sheet
+SHA-256 is `E2955C80AF7BAFE264D1D3D97FC96DFBFE7B2114764FFFDFF4E4A1064371DDDF`. Complete local evidence is
+in `artifacts/skin-finish-live-sam31-real-run-20260824/20260824-234707-f4c8aceb`.
+
+This closes one live SAM/YuNet/ParseNet/Skin Finish/Texture Guard/finalization mechanical chain and
+its exact-audio/strict-media/one-device resource contracts. The two source segments looked similar
+enough that the default 0.28 scene detector kept them in shot S0, so this run is deliberately not
+reported as an automatic-cut pass. Eighteen minutes of CPU ParseNet time also prevents describing the
+route as high-throughput. Human preference, speaking-mouth review, different-skin-tone fairness,
+crossing people, per-person settings, long-video continuity, HDR and universal 16GiB safety remain open.
+
+## Skin Finish native SAM3.1 obvious-cut reset probe (2026-08-25)
+
+To isolate the cut gate without repeating the 18-minute parser run, one 832x736x22, 24fps video joined
+11 frames of a single close portrait to 11 frames of a bright two-person conversation. Only LoadVideo,
+native SAM3.1 tracking and Preview outputs ran. At the unchanged `scene_cut_threshold=0.28`, the
+machine-readable node report returned two shots, `objects_per_shot=[1,2]`, and shot-local keys
+`0:0`, `1:0`, `1:1`. Preview frames immediately before and after the edit visibly carry S0 and S1.
+
+The source strictly decoded. The run completed in 56.797 seconds, peaked at 5,116MiB GPU usage with
+10,994MiB minimum free, selectively unloaded the SAM model and its clones, and explicitly reported
+`global_unload_called=false`. The validation-report SHA-256 is
+`9A671B61D6C78405BA727CE876F3CFC627CA3424F637D868500A6A7E2F0DA7A0`; evidence is in
+`artifacts/skin-finish-sam31-cut-probe-20260825/20260825-001451-79b280df`.
+
+This closes only native cut detection and shot-local track rebuilding on one obvious edit. It does
+not prove cross-shot character identity, ParseNet quality after every cut, aesthetic improvement,
+long-video behavior, pressure behavior or universal 16GiB safety.
+
+## Skin Finish explicit per-person profile routing (2026-08-25)
+
+Two append-only Advanced EXP nodes were added after the released 200-node registry. A profile node
+builds a hash-bound chain of at most eight explicit Character or exact `shot:track` settings. The
+executor consumes the unchanged source frames, the existing source-bound SAM3.1 track plan, the
+existing multi-person ParseNet semantic mask/report and an optional reviewed identity assignment.
+It reopens the already packed per-frame person masks and does not rerun SAM3.1, YuNet or ParseNet.
+
+Routing precedence is exact `shot:track`, then Character, then an optional default profile. The
+safe default is `source_unmatched`: semantic-skin pixels belonging to an unconfigured person remain
+source. Pixels covered by more than one person mask also remain source, preventing a profile from
+bleeding across an overlap. Modified profile, source, track-plan, identity, semantic-report or mask
+hashes fail closed to the exact source and `ABSTAIN`. Candidate acceptance remains false by default;
+alpha/auxiliary channels remain exact and the AUDIO output is the same Python object.
+
+Deterministic tests cover two differently configured Characters, exact-shot override precedence,
+unmatched-person and overlap source preservation, missing identity, modified profile and semantic
+mask rejection, existing Preview/Audit compatibility, append-only registration and full frontend
+workflow schema order. The dated workflow is
+`examples/workflows/17-skin-finish/2026-08-25_H3_Skin_Finish_Per_Person_Advanced_EXP.json`.
+The initial deterministic development gate used the complete 1,315-test CPU suite; changed Python
+scopes passed Ruff and py_compile, 207 non-artifact JSON files parsed, and all 140 source/user
+workflow JSON files matched by relative path and SHA-256. No H3, SAM3.1 or ParseNet model was loaded
+for that initial append-only routing gate.
+
+A subsequent bounded live run used one clear two-person 1920x1408/24fps source, resized without
+aspect distortion to 960x704 (0.67584MP) for 69 frames. An initial text prompt of `two people with
+visible faces` returned one grouped detection and correctly caused the executor to ABSTAIN rather
+than pretend both profiles ran. A SAM-only correction probe then established that the singular
+prompt `person`, threshold 0.35 and `maximum_people=2` produced two stable instance tracks, `0:0`
+and `0:1`, across the clip. Five inspected track previews showed separate left/right body masks.
+
+The corrected full graph ran native SAM3.1, pinned YuNet, pinned CPU ParseNet, two exact shot-track
+profiles, the per-person executor, Texture Guard and Video Finalize. Route `0:0` used `subtle` 0.25
+and owned 564,882 reliable skin pixels over 64 frames; route `0:1` used `oil_control` 0.55 and owned
+249,606 pixels over 32 frames. Alignment or parse failures remained source on their individual
+frames. The report recorded zero ambiguous overlap, zero unmatched unique-owner pixels,
+outside-mask bit equality, alpha/aux equality and finite outputs. Candidate acceptance remained
+false inside both visual nodes; only the explicit finalizer saved the reviewed candidate.
+
+The run completed in 599.922 seconds. Candidate and labelled review both passed strict single-thread
+video/audio decode. Source and candidate retained the same 91 AAC packet payloads, 46,740 payload
+bytes and SHA-256 `06970FB282F5CFC091D69AEEAA045F50BF86CE7BA42624C30120D8BA8622CF24`;
+decoded PCM SHA-256 was also identical at
+`11DF0DEC60421784DCB7DE221E40DE5FA7D1EFDE307F2A6C8BDB91B09516E378`. On the 16GB RTX 4060 Ti,
+GPU usage peaked at 6,188MiB with 9,922MiB minimum free, and the private server stopped without
+touching port 8188. The validation report SHA-256 is
+`16527D6641AA3B4448769C6E003CCFF5295D5FED7776C106C967F306AB0620D7`; evidence is in
+`artifacts/skin-finish-per-person-live-validation-v2-20260825/20260825-011242-f640feee`.
+After the live correction, the final complete CPU suite passed 1,316 tests with four existing Triton
+deprecation warnings. Changed Python scopes again passed Ruff and py_compile; 207 non-artifact JSON
+files parsed, and all 140 source/user workflow JSON files plus the category README matched by
+relative path and SHA-256.
+
+This closes one real two-person/two-profile full-video mechanical contract, not human aesthetic
+acceptance. It does not establish automatic skin-tone estimation, identity truth,
+different-skin-tone fairness, crossing-person stability, cross-shot Character routing, aesthetic
+superiority, deblur or face reconstruction. Those representative human-review gates remain open.
+
+## Skin Finish strict-first profile-crop fallback (2026-08-25)
+
+One additional Advanced EXP semantic-mask node was appended after the two per-person nodes, leaving
+the released strict multi-person node at position 199 and the local profile/executor at 200-201.
+The new node always attempts the unchanged five-point FFHQ-512 alignment with
+`maximum_alignment_rms=0.08` first. Only a `ValueError` rejection may use a 1.45x square crop in the
+original face pose. ParseNet then runs on that crop, the skin/feature masks are resized back, and the
+result is still intersected with the exact source-bound person region. This does not raise the
+residual threshold or frontalize a profile.
+
+A bounded CPU comparison selected frames 0, 32, 43, 48, 51 and 68 from the same clear two-person
+1920x1408 source and decoded them at 960x704. Deterministic source-bound left/right person regions
+isolated parser behavior without loading SAM3.1 or H3. The strict route accepted one face in every
+frame; the profile-crop route accepted both faces in all six frames and recorded exactly six
+fallback parses. Full-frame skin fractions stayed between 0.02290335 and 0.02702119. Masks were
+finite and within zero to one, source tensors remained exact, and the green-skin/red-protected
+contact sheet showed no sampled background spill or unprotected hair/glasses/major facial features.
+The two ParseNet passes completed in 94.530348 seconds with two CPU threads and no CUDA or network.
+Evidence is in `artifacts/skin-finish-profile-crop-fallback-6frame-20260825`.
+
+This closes a parser-coverage probe, not a full-video aesthetic gate. The person regions were
+deterministic fixtures rather than a new native-SAM run. Crossing people, different skin tones,
+cross-shot identity, temporal behavior, speaking mouths, long video and subjective improvement
+remain open. The dated per-person workflow now opts into the new strict-first node and exposes only
+`profile_crop_expansion=1.45`; every acceptance switch remains false by default.
+
+After integration, the complete CPU suite passed 1,320 tests with four existing Triton deprecation
+warnings. Changed Python scopes passed Ruff and py_compile; all 207 non-artifact JSON files parsed,
+the 203 node IDs were unique and append-only, and all 140 source/user workflow files plus the Skin
+Finish category README matched by relative path and SHA-256. No SAM3.1, H3, pressure, repetition or
+cross-GPU run was added to this final regression.
+
+## Skin Finish profile-crop full-video live route (2026-08-25)
+
+The strict-first profile-crop node was subsequently exercised in the actual 960x704x69 two-person
+graph rather than only the six-frame parser fixture. The run reused the singular `person` SAM3.1
+prompt, threshold 0.35, two exact shot-local tracks, pinned YuNet and pinned CPU ParseNet. Both
+profiles, the per-person executor, Texture Guard and Video Finalize then ran normally. No H3 model
+was loaded and port 8188 was not touched.
+
+The profile route accepted 138/138 track-frames. Its source-bound strict baseline accepted 96/138,
+so the strict-first crop recovered 42 otherwise rejected track-frames without loosening the
+five-point residual gate. Fallback counts were five on `0:0` and 37 on `0:1`. The final semantic
+report retained two distinct person masks, exact source binding and full ready-frame coverage. Both
+per-person and Texture Guard reports recorded finite outputs, exact alpha/auxiliary channels,
+bit-exact pixels outside their effective masks, no source overwrite and no automatic acceptance.
+
+The complete run took 616.062 seconds. Candidate and review videos passed strict decode. Source and
+candidate retained identical 91 AAC packet payloads, 46,740 payload bytes and decoded PCM. GPU usage
+peaked at 6,194MiB with 9,916MiB minimum free on the 16GB RTX 4060 Ti; the private server stopped
+after completion. Evidence is in
+`artifacts/skin-finish-per-person-profile-live-validation-20260825/20260825-020540-47378389`.
+The labelled review video is `review/source_vs_per_person_profile_skin_finish.mp4` and its SHA-256
+is `81FFC29B75DB1A39B1E97081A8331540882A297B17403CF4FEE07A8955D01F91`.
+
+This closes one full-video native-SAM profile-coverage and media-contract gate. It does not close
+speaking-mouth aesthetics, temporal flicker, crossing or differently lit/toned people, cross-shot
+identity, long-video continuity, HDR/10-bit behavior or human preference.
+
+## Skin Finish fail-closed Safety Audit Advanced EXP (2026-08-25)
+
+`MiniMaxH3SkinFinishSafetyAuditT8Advanced` was appended at registry position 203, after the existing
+profile-crop node at 202. Positions 0-202, their IDs, schema/default/widget order and all old
+workflow bytes remain unchanged. The node compares source, candidate and the exact used skin mask;
+with a source-bound track plan it can additionally require every edited skin pixel to belong to one
+tracked person and reject ambiguous overlap. It also checks bounded mean/peak change, a
+source-relative per-track treatment vector across adjacent frames, and exact source/passthrough PCM.
+Any hard-gate failure returns exact source through `gated_candidate`.
+
+Seven deterministic tests cover benign/source-safe behavior, outside-mask edits, report-only versus
+hard temporal policy, track-union leaks, ambiguous multi-person ownership, invalid track plans and
+PCM mismatch. The dated per-person workflow uses `unique_track_owner`, `hard_gate`, conservative
+limits and routes only `gated_candidate` to the existing finalizer. The audit's own acceptance switch
+stays false; the finalizer remains the workflow's only human acceptance switch. The combined changed
+Skin Finish/workflow/registration/frontend scope passed 110 tests. The final complete low-load CPU
+suite passed 1,327 tests with four existing Triton deprecation warnings; changed Python passed Ruff
+and compileall, 207 non-artifact JSON files parsed, 140/140 project/user workflow SHA-256 values
+matched, the category README matched and `git diff --check` passed.
+
+The audit is deliberately an automatic rejector only. Its treatment vector is not optical flow or a
+beauty score, and it cannot prove semantic mouth/eye correctness, identity, natural skin or aesthetic
+superiority. The 69-frame live candidate above predates this appended node; its existing reports
+already prove mask containment and exact audio, but no new ten-minute model run was performed merely
+to label the temporal audit live. That live temporal gate and the human visual gates remain open.
+
+The guarded per-person live validator now inserts the audit on the exact pre-encode source,
+candidate, effective float mask, hash-valid track plan and AUDIO objects. `gated_candidate`, not the
+raw guard candidate, feeds Video Finalize. The validator retains the audit report and requires
+`PASS_HARD_GATES`, zero failed frames, a valid source-bound plan, `unique_track_owner + hard_gate`,
+exact PCM and no automatic acceptance before the overall validation may pass. Tool/audit/profile
+tests covering this prompt contract pass 24 cases with four existing Triton warnings.
+
+No offline audit was fabricated for the previous live run: that artifact stores compressed source
+and candidate media plus rendered PNG previews, but not the original float candidate and exact float
+mask. H.264 round-trip differences occur outside the logical mask and would invalidate the audit's
+bit-exact containment contract. The next naturally generated candidate can close the live temporal
+gate without changing the scientific boundary of the earlier evidence.
+
+## Skin Finish anonymous synchronized human-review gate (2026-08-25)
+
+A no-model review builder now validates and strictly decodes a source/candidate pair, requires equal
+geometry, frame count and frame rate, then copies both bitstreams into a randomized A/B directory
+without re-encoding. Matching first-frame PNG posters make file-loaded pages immediately assessable.
+The self-contained HTML synchronizes playback, supports 0.25x/0.5x speed, frame stepping, linked zoom
+and click-selected focal points, and records assessability plus ten Skin Finish criteria. Hard failures
+are separately attributed to A and B before reveal. The exported JSON contains no private mapping.
+
+The paired analyzer binds submission, public manifest and private key by review ID and canonical
+hashes, validates the exact criterion set, votes and hard-failure vocabulary, reveals A/B to
+source/candidate and records candidate hard failure or an explicit abstention. It never auto-accepts
+a candidate from one human review. Seven focused tests cover the review contract, blind mapping,
+non-leaking page, canonical hashes, reveal, abstention, hard-fail rejection and tamper rejection; the
+combined review/live-validator/Safety-Audit scope passes 20 tests, Ruff and py_compile.
+
+The existing 960x704x69 two-person final-media pair was packaged at
+`artifacts/skin-finish-per-person-profile-live-validation-20260825/20260825-020540-47378389/
+human-review-v3/blind_review.html`, review ID `0dd24616cd87`, public manifest SHA-256
+`D4785F7E6BD1DDDC5318F8A64C6236694A5CE2D70D8E9E66A5B7727D4AED1FAB`. Both first-frame posters
+were inspected and show the expected two-person source composition. The page awaits a real exported
+submission. This clip can assess side-profile, two-person, texture/shine and temporal behavior, but
+does not contain adequate speaking-mouth evidence; that criterion must abstain and use another clip.
+
+## 2026-08-25 Skin Finish Preview browser interaction
+
+The existing `MiniMaxH3SkinFinishPreviewAuditT8Advanced` schema and all workflow widget values remain
+unchanged. Its UI payload now contains only the selected frame's source/candidate JPEG proxies, each
+bounded to a 512-pixel long side, plus non-sensitive review status. `web/skin_finish_preview.js`
+renders a source-left/candidate-right overlay and updates the divider locally while dragging. The
+explicit Apply button writes only the existing `comparison_position` widget; it does not queue a
+prompt, inspect or modify `accept_candidate`, or replace any full-resolution graph output.
+
+Eleven focused Skin Finish tests cover the unchanged review/PCM contract, data-URL decode, exact
+512-side bound and frontend safety invariants. Three focused registration/workflow tests confirm the
+204-node order and old workflow schema remain valid. Changed Python passes Ruff and `py_compile`, and
+the new JavaScript passes Node's module syntax check. No model, GPU, stress or full-suite rerun was
+needed for this browser-only addition. The proxy remains a navigation aid, not evidence of skin
+quality, mask accuracy, temporal stability or human acceptance.
+
+## 2026-08-25 Skin Finish live pre-encode Safety Audit closure
+
+The unchanged clear two-person source was run once more through the actual isolated 8197 graph:
+native SAM3.1, pinned YuNet, pinned CPU ParseNet, strict-first profile crop, two exact shot-track
+profiles, Per-Person Skin Finish, Texture Guard, the new Safety Audit on the original float
+candidate/mask, and Video Finalize. Port 8188 was not running and remained untouched. This is a new
+run, not an H.264 reconstruction of the earlier candidate.
+
+The run ID is `20260825-032941-cbeb0b91`; it completed in 388.5 seconds. Track coverage remained
+138/138 versus 96/138 for the bound strict baseline, with 42 required profile fallbacks (`0:0=5`,
+`0:1=37`). Safety Audit used `unique_track_owner + hard_gate` and returned `PASS_HARD_GATES` for all
+69 frames: 1,128,613 active skin pixels, zero failed frames, zero track-leak pixels, zero ambiguous
+owner pixels and a maximum source-relative temporal-effect jump of 0.00007348 against the fixed
+0.04 limit. The source-bound track-plan hash was valid. The audit retained
+`automatic_accept=false`, `candidate_selected=false` and `human_review_required=true`.
+
+Source and passthrough tensors matched exactly at 32kHz stereo. Final source/candidate files also
+retained the same 91 AAC packet payloads, 46,740 payload bytes and packet SHA-256
+`06970FB2...22CF24`; decoded PCM SHA-256 was `11DF0DEC...16E378` on both sides. The 960x704x69
+candidate and labelled review passed strict video and audio decode. Candidate SHA-256 is
+`3EACDCFE...651805`, review-video SHA-256 is `81FFC29B...D01F91`, and contact-sheet SHA-256 is
+`E3841E25...55008`. GPU monitoring sampled 705 points: peak usage 5,763MiB, minimum free 10,347MiB,
+and final use 2,031MiB versus a 1,975MiB start. The server stopped normally.
+
+The canonical report is
+`artifacts/skin-finish-per-person-profile-live-validation-20260825/20260825-032941-cbeb0b91/
+validation_report.json`, SHA-256 `71B8EF4D043D932B052F2982502576B4381D598BD015A9CF6861EE2022210D5A`.
+The same audited final media is packaged without re-encoding in
+`human-review-safety-audit-v1/blind_review.html`, review ID `75fc40a17a83`, public-manifest SHA-256
+`6B9458607BEF15EA120ACEEC71F10692C842CA29700F49E4CD101B656B901974`.
+
+This closes one real temporal/ownership/audio Safety Audit route. It does not establish aesthetic
+improvement, speaking-mouth safety, identity truth, different-skin-tone fairness, crossing-person
+behavior, cross-shot Character routing, long-video continuity, HDR or universal 16GiB safety. Those
+remain separate human/material gates.
+
+## 2026-08-25 Skin Finish frequency-separation candidate
+
+The existing P0 implementation was inspected before adding another node. Its colour-evening,
+smoothing and shine terms are all driven by the same proxy residual and directly modify frequencies
+before the later Texture Guard can measure them. The guard therefore was not mathematically
+equivalent to an independently controllable low/high-frequency path.
+
+`MiniMaxH3SkinFinishFrequencySplitT8Advanced` was appended at registry position 204 without changing
+positions 0-203, any existing schema/default/widget order, or any old workflow JSON. It applies an
+edge-safe two-pass box low pass to the exact source and an existing Skin Finish candidate, mixes only
+their low-frequency layers, then adds the high-frequency residual already present in the source. The
+default split radius is one percent of the shorter side with a 32-pixel CPU-cost cap. Processing is
+bounded to four-frame CPU chunks; source remains selected unless the user explicitly accepts the
+candidate. Invalid mask area or excessive newly clipped pixels rejects that frame to exact source.
+
+Deterministic tests independently reconstruct the formula and verify candidate-low/source-high
+composition, exact source/no-op behavior for equal inputs and disabled low-frequency transfer, exact
+chunk parity, exact mask-exterior and alpha/auxiliary preservation, same-object audio passthrough,
+explicit source selection, clipping/mask fail-closed behavior, finite/shape validation, append-only
+registration and the dated frontend workflow contract. The workflow fixes the order as Skin Finish
+Advanced, Frequency Split, then Texture Guard and includes six parameter/boundary NOTE nodes.
+
+This is display-referred SDR RGB frequency separation, not linear-light or HDR processing. It retains
+only detail already present in the source, so a blurred source stays blurred and source noise or
+compression texture may also be retained. It does not generate pores, deblur, repair identity,
+distinguish natural texture from noise or establish human preference. Texture Guard, Safety Audit and
+final-media human review remain independent downstream gates.
+
+The final low-load regression covered 127 Skin Finish, registration, frontend and workflow tests;
+all passed with only four existing Triton deprecation warnings. Relevant Ruff, py_compile and
+`git diff --check` passed, 208 non-artifact JSON files parsed, and all 141 project workflow JSON
+files matched their user-menu copies by relative path and SHA-256. The new workflow SHA-256 is
+`260CC41749D2D3B71AABCC1D05264F60BA39E200BBF574C13F737E6B1D4659D2`. No H3, SAM3.1,
+ParseNet, pressure, repeat-run or cross-GPU test was performed for this CPU-only addition.
+
+## 2026-08-25 Skin Finish Studio Timeline parameter keyframes
+
+Two append-only Advanced EXP nodes were added at registry positions 205 and 206. The first builds a
+canonical, hash-bound keyframe plan from the existing Studio Timeline. Each key uses a Studio shot
+index plus a frame local to that shot and targets either all reviewed tracks, a reviewed Character,
+or an exact SAM-local `shot:track`. The second node applies that plan to the already source-bound
+SAM3.1/ParseNet skin ownership contract. Existing node positions 0-204, their IDs, inputs, defaults,
+widget order and workflows remain unchanged.
+
+Time and identity deliberately remain separate domains. Studio shots define creative cut boundaries;
+SAM shots define person-track lifetimes. Runtime precedence is exact SAM track, reviewed Character,
+global key, then exact source. Continuous amount, texture retention, shine control and tone adjustment
+support hold, linear and smoothstep interpolation only between keys in the same Studio shot. The
+categorical preset is held until the destination key. Values before the first and after the last key
+hold the nearest key, and no value is ever interpolated across a Studio cut.
+
+Focused CPU tests independently verify plan hashing, canonical order, duplicate and tamper rejection,
+smoothstep and hold arithmetic, categorical preset behavior, no cross-shot interpolation, exact-track
+over Character over global routing, frame/fps/source mismatch rejection, mask-exterior equality,
+alpha/auxiliary preservation, unchanged AUDIO object and source-safe default selection. The dated
+frontend workflow uses two 22-frame Studio shots, four global keys, the existing native SAM/ParseNet
+route, Texture Guard, Safety Audit and seven explanatory NOTE nodes. This batch did not rerun H3,
+SAM3.1, ParseNet, pressure, repeat, cross-GPU or a long video. It proves only the deterministic CPU,
+registration and import contracts; speaking-mouth safety, cross-shot Character truth, crossing people,
+temporal pumping and aesthetic improvement still require representative human review.
+
+The final low-load scope passed 135 Skin Finish, registration, frontend and workflow tests with only
+four existing Triton deprecation warnings. Relevant Ruff, py_compile and `git diff --check` passed;
+209 non-artifact JSON files parsed; all 142 project workflows matched their user-menu copies by
+relative path and SHA-256. The new workflow SHA-256 is
+`CF5EB34D9705E7A9A0DFDDDB83691B8EA03676D7D0A01283CDC7CE861F5359AD`; the category README mirror is
+also exact at `AC7AACE3740A3356C2F22D4CE19843C102BB50DBF224DBAF53DF5DA53E9C9672`.
+
+## 2026-08-25 Skin Finish clear speaking-closeup mechanical gate
+
+One existing 1472x832x124, 24fps, 5.166667-second clip was selected because it contains a clear,
+front-facing person with visible mouth motion and the explicit Mandarin line
+`你在干嘛呢，我在这里呀，看看效果如何。` The validation source preserves the original aspect
+ratio by scaling to 960x542 and adding a one-pixel black pad above and below to reach 960x544; no
+width/height stretch was used. The source SHA-256 is
+`0330B4F36641777024509CA76135638860F52CC1899FB3A4068A5C48F8F4295F`.
+
+The single bounded run used two CPU threads and did not load H3, SAM3.1 or CUDA. It executed pinned
+YuNet, pinned CPU ParseNet, Skin Finish Advanced, Frequency Split, Texture Guard and Safety Audit in
+that order. ParseNet accepted 124/124 frames, Frequency Split passed 124/124, Texture Guard passed
+124/124, and Safety Audit returned `PASS_HARD_GATES` with zero failed frames. The maximum observed
+source-relative temporal-effect jump was 0.00007815 against the fixed 0.04 hard limit.
+
+A second YuNet pass found the source-bound face and five landmarks in all 124 frames. Descriptive
+eye/mouth ROI mean absolute change averaged 0.0001587672, with a 0.0030048341 peak. Across 123
+consecutive normalized mouth crops, source/candidate mouth-motion means were 0.0529460211 and
+0.0529053149; their mean absolute difference was 0.0000407061 and correlation was 0.99999987. These
+are only source-relative preservation proxies. They cannot establish the spoken phonemes, identity,
+lip sync or aesthetic quality.
+
+The audio object remained identical through the tensor chain. Source and candidate retained the
+same 162 AAC packet payloads, 82,509 payload bytes and packet SHA-256
+`51A7A557DB73118B61077A5F23CB03FEFC73365AD61FC907FEC9519FE82468CCE`; decoded 32kHz stereo PCM was
+also byte exact at SHA-256 `EE098D60DC07E7591BFF381377A50B06E024B593072A193544372FD2D245F216`.
+The candidate SHA-256 is `9AE714694EC3C1F2AB80D5C35FDDC143DC0958B0F625967D06FF7619B28374D8`.
+
+The run completed in 314.631913 seconds. Holding the full source, mask and several node outputs in a
+single tensor-validation process reached a 10,366MiB peak working set. The process exited normally
+and released its memory, but this result must not be presented as a low-RAM long-video route. The
+validation tool now drops unused full-frame intermediate outputs between stages; it was not rerun
+solely to improve a memory number because the user requested no unnecessary repeat or pressure test.
+
+The canonical report is
+`artifacts/skin-finish-speaking-validation-20260825/validation_report.json`, SHA-256
+`6374068FB4B1953051F4DF194BEDECB7F9DEA1BEFF7020087DFF1B63E22EAFA3`. The anonymous no-reencode
+review is `blind-review/blind_review.html`, review ID `fdfcfb217991`, public-manifest SHA-256
+`E55AB4DEDD02E3C644C393A289145DEBF3B9B23CB059F047285154A8E732DC05`. Ten quality criteria include
+eyes/lips, mouth/identity and temporal flicker. The submitted review resolved to
+`ABSTAIN_SOURCE_INSUFFICIENT`, not an aesthetic pass, failure or automatic acceptance.
+
+The added speaking-validator diagnostic test and the existing review, Safety Audit, Frequency Split
+and Timeline scopes total 34 passing low-load tests. Relevant Ruff and `py_compile` pass; only four
+existing Triton deprecation warnings remain.
+
+## 2026-08-25 Skin Finish bounded ParseNet Quality Stream probe
+
+One append-only node was added at registry position 207 without changing positions 0-206 or the
+released `MiniMaxH3SkinFinishVideoStreamT8Advanced` schema and default behavior. The new
+`MiniMaxH3SkinFinishQualityVideoStreamT8Advanced` supplies a private bounded chunk processor to that
+existing two-pass file core. Pass 1 retains only pinned-YuNet face metadata, scene cuts and source
+digests. Pass 2 lazily loads the pinned CPU ParseNet and runs semantic masking, non-generative Skin
+Finish, source-detail Frequency Split, Texture Guard and Safety Audit before incremental H.264
+encoding. Safety Audit prepends exactly one previously accepted source/candidate/mask frame at each
+chunk boundary. Neither the full IMAGE candidate nor a full semantic-mask batch is materialized.
+
+The explicit source default was checked separately: `accept_candidate=false` performs no analysis,
+does not load ParseNet and writes no file. An analysis pass with no reliable face preserves the
+underlying `ABSTAIN_NO_RELIABLE_FACE_NO_FILE_WRITTEN` result rather than inventing a candidate status.
+Frequency, texture or safety failures are counted and return the affected chunk/frame to exact source;
+temporary files are removed on exceptions. Approved source-audio packets remain packet-copy only and
+are compared before atomic publication.
+
+The single real probe used the first five frames of the pinned clear-speaking 960x544x124 source,
+encoded as a 960x544x5, 24fps, 0.208333-second H.264/AAC fixture. It used two CPU threads and did not
+load H3, SAM3.1 or CUDA. Three chunks ran with a two-frame peak. ParseNet produced five semantic face
+instances with zero rejection; Frequency Split, Texture Guard and Safety Audit rejected zero frames
+or chunks. The maximum cross-chunk source-relative treatment jump was 0.00000363. ParseNet matched
+the pinned SHA-256 and was released after execution with no persistent cache or network access.
+
+The candidate strictly decoded to exactly five 960x544 frames. Source and candidate compressed audio
+packet payloads matched in the node report, and decoded 32kHz stereo PCM was byte exact at SHA-256
+`992F6BA6374AADFF10BA06CEF4FD214704B9E104AEC9E8D782060E6EF8D27A27`. Runtime was 13.345065
+seconds. Process working set began at about 809.8MiB and observed a Windows peak of about 1,883.2MiB;
+the validation process then exited. This is materially below the earlier full 124-frame IMAGE-chain
+diagnostic's approximately 10,366MiB peak, but it is not evidence for arbitrary video duration,
+repeated-run stability or universal RAM/16GB safety.
+
+The canonical report is
+`artifacts/skin-finish-quality-stream-probe-20260825/validation_report.json`, SHA-256
+`8BF9C102A2089CD7077C8BB26C1A2EA86F4EF04A37F66F4525C766326A97FA04`. The candidate SHA-256 is
+`087CF1F0BAE07D42AED9F99785DC351C9A05D5FB31F44666B57E19DFEB6B6D84`. The dedicated dated
+workflow contains six explanatory NOTE nodes and is mirrored byte-exactly to the user workflow menu.
+This closes one bounded real execution mechanic only. Human preference, speaking-mouth review on the
+complete source, crossing people, different-skin-tone fairness, cross-shot identity, real long-video
+continuity, HDR/high-bit-depth media and repeated runs remain outside this result.
+
+The final low-load Skin Finish, registration, timeline and frontend-workflow scope passed 109 tests
+with four existing Triton deprecation warnings. Relevant Ruff, `py_compile` and `git diff --check`
+passed. All 210 non-artifact JSON files parsed; all 143 project workflows matched the user-menu mirror
+by relative path and SHA-256. The Quality Stream workflow SHA-256 is
+`07CCEE882651A6944A83AF89E2EED3AA40D46D0BB239F6F56B65928AC74D2260`, and the category README
+mirror is byte exact at SHA-256 `2863B3BEE971BC997CBAE5F9670EA174025DFBBB1F3FB880113725DD0CB118ED`.
+
+## 2026-08-25 Skin Finish Quality Stream unique 32-second gate
+
+The next gate used one existing, unique assembled H3 final file rather than a repeated short fixture:
+`H3_Unseen_32s_qipao_drum_dance_Interval1_r0008_cosine_bridge.mp4`, SHA-256
+`10CE6352F704700A3DBC24CBF19F503D1B6A6B244258FD6B14CCD98DF3D42BA0`. It is exactly 736x416,
+768 frames at 24fps and 32 seconds, with a single performer, close-to-far face scale changes, fast
+turns and fan occlusion. The source strictly decoded before processing.
+
+The validation ran exactly once with two Torch CPU threads, no H3 model, no SAM model, no CUDA path,
+no repeat and no pressure test. Quality Stream completed all 384 two-frame chunks in 1579.530986
+seconds. The process monitor sampled 37 times and observed a 1,973.777MiB peak working set without a
+frame-count-proportional increase. The node never materialized a full IMAGE candidate or semantic-mask
+batch, kept at most two current frames plus one prior boundary frame, and released ParseNet without a
+persistent cache.
+
+ParseNet produced 711 accepted face instances and 690 semantic-ready frames. Seventy-eight frames
+remained exact source. Frequency Split and Texture Guard each rejected 26 affected frames to source;
+Safety Audit rejected zero frames and zero chunks. The maximum cross-chunk source-relative treatment
+jump was 0.00052124 against the fixed 0.04 hard limit. These fallback counts are expected fail-closed
+behavior around unreliable or occluded faces, not hidden candidate acceptance.
+
+The published H.264 candidate strictly decoded to exactly 768 frames. Approved source/candidate AAC
+packet payloads matched, and decoded 32kHz stereo PCM was byte exact. The candidate SHA-256 is
+`89464A02079D91E6ABBCD5A5016CD36E9895BEA58C577708595D449FF08F9672`. The canonical report is
+`artifacts/skin-finish-quality-stream-long-32s-20260825/validation_report.json`, SHA-256
+`31B3033E507CBDCC87933EC75CD61037EC1047306B46F70804D931F4A8B2D2F8`.
+
+A synchronized no-reencode anonymous review was generated at `human-review/blind_review.html`, review
+ID `9f33c46592ab`, with embedded public-manifest SHA-256
+`C1A345E03AFB19525373C85F41663BCF95406F3EF6F526EE1DD75CF798DC51F8`. The submitted review resolved
+to `ABSTAIN_SOURCE_INSUFFICIENT`. The current result is therefore `PASS_MECHANICAL`: it closes this one
+32-second resource, continuity-proxy, strict-decode and audio-preservation gate, but does not establish
+better skin, arbitrary-duration safety, different-skin-tone fairness, crossing-person identity,
+HDR/high-bit-depth support, repeated-run stability or universal RAM/16GiB safety.
+
+After adding the pinned long-validator contract to the validation-tool tests, the combined low-load
+Skin Finish, registration and frontend-workflow scope passed 141 tests with four existing Triton
+deprecation warnings. Ruff, `py_compile`, JSON parsing and `git diff --check` passed. The project and
+user-menu Skin Finish category READMEs are byte exact at SHA-256
+`21EFCAB7CB432F7FBACF632F1D89B8651A9273FBBA36421D0719EED7881A59FB`.
+
+## 2026-08-25 Skin Finish Quality Stream host-RAM preflight
+
+The 32-second run began at 810.648MiB process working set and observed a 1,973.777MiB peak, an
+approximately 1,163.129MiB increase. The Quality Stream accepted path now checks available physical
+host memory before constructing its processor or loading ParseNet. On platforms where that value is
+available, the fixed, non-user-lowerable floor is 2,048MiB, leaving about 884.871MiB beyond the one
+reviewed process increase. Falling below the floor returns exact source with
+`ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_FILE_WRITTEN`; the processor and ParseNet are never constructed and
+no output or partial file is written.
+
+The source-selected default remains stronger: `accept_candidate=false` skips even the host-memory
+measurement and retains the original no-analysis/no-write behavior. If a platform cannot expose
+available physical memory, the node proceeds only through its existing bounded chunk route and marks
+the measurement unavailable in `resource_preflight`; it does not claim that the floor passed. This
+keeps non-Windows hosts usable without fabricating safety evidence. The 2,048MiB value is a reviewed
+pre-load guard, not proof of arbitrary-duration or universal RAM safety.
+
+Deterministic tests cover pass, insufficient and measurement-unavailable results, the false-default
+bypass, and a low-RAM accepted request returning source before parser load. No node input, default,
+widget order, output or registration position changed. The current dated workflow only adds an
+explanatory NOTE and remains mirrored to the user menu; its SHA-256 is
+`D12BA6FFDB41EE4CE29807E3CC85C918BE4E5D1EAFDBD13ABFF3DF40DE69ACDD`.
+
+## 2026-08-25 Skin Finish explicit SDR file contract
+
+The previous stream path compared stringified PyAV transfer metadata against `smpte2084` and
+`arib-std-b67`. Local PyAV inspection proved the live fields are FFmpeg integer enums (`2` for the
+unmarked source), so PQ code 16 or HLG code 18 would not have matched those strings. The normal Video
+Finalize path did not contain the same transfer check. Documentation therefore overstated the earlier
+runtime gate.
+
+All three file-output paths now call one shared `sdr_8bit_rec709_compatible_v1` validator before
+encoding. It combines ComfyUI's reported bit depth, actual PyAV pixel-component bit counts,
+`bits_per_raw_sample`, pixel-format names, and FFmpeg integer enums for color primaries, transfer and
+matrix. Unmarked and conventional BT.709/legacy SDR-compatible 8-bit sources remain accepted. Explicit
+10/12/16-bit formats, BT.2020/P3-style primaries, PQ, HLG, linear/Log transfer and BT.2020/ICTCP-style
+matrices fail before any H.264 publication. Accepted source primaries, transfer, matrix and range are
+copied to the output codec context and recorded in `video.source_contract` and
+`video.output_color_metadata`.
+
+One real PyAV-generated 8-bit SDR fixture still passes both Video Finalize and Two Pass Stream,
+including single-thread H.264 and packet-copy audio. Deterministic cases cover reported 10-bit,
+10-bit components, `p010le`, numeric and named BT.2020 primaries, numeric PQ/HLG, named SMPTE2084 and
+ICTCP. This proves the explicit input rejection and metadata-copy mechanics only. It does not provide
+linear-light Skin Finish, tone mapping, HDR/wide-gamut output, colorimetric round-trip measurement or
+arbitrary codec/container support.
+
+The final combined low-load Skin Finish, registration and frontend-workflow scope passed 153 tests
+with four existing Triton deprecation warnings. No model, long-video, pressure, repeat or GPU run was
+performed for this media-contract correction.
+
+## 2026-08-25 Skin Finish crossing, cross-shot and per-route diagnostics
+
+The Per-Person executor already resolved exact `shot:track` before reviewed Character and preserved
+multi-track overlap as exact source. Three new deterministic CPU cases now exercise the missing route
+shapes without loading SAM3.1, YuNet, ParseNet, H3 or CUDA. In a five-frame crossing plan, Character A
+and B move from opposite sides through one another: each treatment remains attached to its reviewed
+track/Character, while every ambiguous overlap pixel is rejected to bit-exact source. In a two-shot
+plan, the second shot swaps track numbers and screen sides; the hash-bound reviewed mapping still sends
+each Character to its original profile rather than following screen position. A dark/light two-person
+fixture keeps both routes isolated and preserves every pixel outside their masks.
+
+The executor report now adds per-route display-referred SDR Rec.709 luma proxies, mean/maximum RGB
+treatment magnitude and low/high clipping fractions. The report explicitly sets
+`automatic_fairness_decision=false`. These metrics expose disproportionate treatment for review; they
+are not a perceptual model and cannot establish fairness, beauty, naturalness or identity truth.
+
+The focused Per-Person file passes 14 tests. The final combined low-load Skin Finish, registration and
+frontend-workflow scope passes 156 tests with four existing Triton deprecation warnings. No node input,
+default, widget order, output tuple, registration position or workflow changed. No model, video,
+pressure, repeat or GPU run was performed for this deterministic routing correction.
+
+## 2026-08-25 Skin Finish persistent-cache policy audit
+
+The earlier roadmap proposed hash-bounded cache entries and a Clear node if Skin Finish retained
+models, complete frames or masks. Source inspection confirms the implemented architecture does not
+create such a persistent cache: ParseNet and YuNet are execution-local and released in `finally`, the
+Quality Stream processor retains only its bounded chunk plus one prior boundary frame, and no Skin
+Finish runtime module publishes a global Tensor, `torch.nn.Module`, LRU/cache wrapper or mutable
+container named as a cache. A Clear node would therefore expose an operation with no state to clear.
+
+A new structural test imports all ten Skin Finish runtime modules and fails if any module-level Tensor
+or model, callable with `cache_info`, or named mutable cache appears. Existing parser and Quality Stream
+tests continue to verify model release and `persistent_cache=false` reports. The final combined
+low-load scope passes 157 tests with four existing Triton warnings. If a future implementation adds a
+real cache, it must separately add content hashes, entry and byte limits, explicit Clear behavior and
+release/error-path tests before changing this policy.
+
+## 2026-08-25 Skin Finish full-IMAGE shape-derived RAM/commit preflight
+
+The P0 Basic/Advanced implementation now computes a pre-allocation incremental host-memory floor from
+the actual IMAGE geometry, channel count and dtype, public retained candidate/two-mask/fp16-difference
+outputs, configured full-resolution chunk, proxy scratch and mask-preparation path. The raw component
+sum is multiplied by 1.5 and receives 512MiB fixed headroom. On Windows the same requirement is checked
+against both available physical RAM and available commit before face-plan mask construction,
+`_prepare_mask`, candidate allocation or `_process_chunk`.
+
+Focused deterministic coverage proves the estimate changes with shape/chunk/mask path, pass/block/
+measurement-unavailable states are distinct, the threshold is not user-lowerable, and a blocked run
+never enters mask or candidate processing. The blocked result returns source for candidate/source/
+selected, reports `ABSTAIN_INSUFFICIENT_SYSTEM_RAM_NO_CANDIDATE_ALLOCATED`, and exposes zero audit
+outputs backed by one scalar mask value and one three-channel fp16 value rather than full rejected
+batches. `tests/test_skin_finish.py` passes 15 tests with four existing Triton deprecation warnings.
+
+No model, video, pressure, repeat or cross-GPU run was added for this change. The final combined
+low-load Skin Finish, parser, file-route, timeline, human-review, registration and frontend-workflow
+scope passes 160 tests with four existing Triton deprecation warnings; relevant Ruff, py_compile and
+`git diff --check` pass. All 210 non-artifact JSON files parse and all 143 project workflow JSON files
+match their user-menu mirrors by relative path and SHA-256. The category README mirror SHA-256 is
+`7C21E1EC0510FDA37DF690CD0D04FD12AC3AFB3645F0625519031B329375C92A`; the unchanged Quality Stream
+workflow remains `D12BA6FFDB41EE4CE29807E3CC85C918BE4E5D1EAFDBD13ABFF3DF40DE69ACDD`.
+The estimate starts after the input IMAGE exists, cannot reserve memory against concurrent processes,
+omits other ComfyUI nodes and makes no GPU or universal 16GiB claim.
+
+## 2026-08-25 Skin Finish v1.0 eight-step oily-source retest
+
+Three submitted blind-review JSON files were analyzed against their original public manifests and
+private keys. All three submissions were valid and untampered, reported no candidate hard failure,
+and resolved to `ABSTAIN_SOURCE_INSUFFICIENT`: the original sources did not visibly contain enough
+oily-skin defect to support an aesthetic conclusion. They are not evidence that Skin Finish failed or
+succeeded visually.
+
+A single replacement source was generated at 960x544, 124 frames and 24fps with
+`minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`, strength 1.0, exactly eight sampling
+steps and clear Chinese dialogue. Strict H.264/AAC decode passed. The generation used the full FL2VA
+INT8 model and reached a 15,647MiB GPU-use peak with only 463MiB minimum free, so this run does not
+establish universal 16GiB safety.
+
+The authoritative Skin Finish retry is
+`artifacts/skin-finish-oily-lora8-speaking-validation-20260825-v3-max30`. Its extreme close-up reached
+a measured maximum semantic skin fraction of 0.25653722, so the validator was explicitly run with a
+0.30 maximum skin-area bound. This was a validation-only override; no production default or existing
+workflow changed. All 124 frames were accepted by the semantic mask, Skin Finish, Frequency Split and
+Texture Guard stages. Safety Audit reported zero failed frames, maximum temporal effect jump
+0.00003195, 124/124 detected mouths and source/candidate mouth-motion correlation 0.99999986.
+All 163 AAC packet payloads (84,535 bytes) and decoded PCM are exact.
+
+The result is `PASS_MECHANICAL`, review ID `eebf56b498d3`. The anonymous page is
+`blind-review/blind_review.html` under that artifact directory. Later review found that this run still
+used the conservative `subtle` preset, so it was superseded without requiring a user resubmission.
+It remains mechanical evidence for mask placement and protected facial features, not evidence that
+the dedicated oil-control treatment is preferable.
+
+## 2026-08-25 Skin Finish dedicated oil-control bounded-stream retest
+
+Review of the preceding retry found that it correctly replaced the source with the requested v1.0
+eight-step LoRA material, but still processed that source with the conservative `subtle` preset. That
+run remains valid mechanical evidence but is not the authoritative test of the dedicated oil-control
+path.
+
+A new single run used the same pinned 960x544x124 source and the actual low-memory Quality Video
+Stream with `preset=oil_control`, `amount=0.35`, `texture_keep=0.90`, `shine_control=0.35`, two-frame
+chunks and explicit candidate publication. These are public node parameters rather than hidden
+threshold tuning. H3 and SAM were not loaded, CUDA processing was not requested, and no pressure,
+repeat or cross-GPU test was performed.
+
+The run completed in 739.504598 seconds. All 124 frames were semantic-ready; there were zero source
+fallbacks, zero Frequency Split rejections, zero Texture Guard rejections and zero Safety Audit
+failed frames. The maximum treatment jump was 0.00013592 over 62 chunks, each bounded to two frames.
+Strict candidate decode returned exactly 124 frames. Source audio packet payloads and decoded PCM were
+exact. The process peak working set was 1998.332MiB, compared with 811.062MiB at start.
+
+The authoritative report is
+`artifacts/skin-finish-oily-lora8-oil-control-stream-20260825/validation_report.json`; candidate SHA-256
+is `6669F8D70F6C1D0C35F76B3FD9B7236B869EE94FE93D058D705BB42915B3919C`. The anonymous synchronized
+review is in that artifact's `blind-review/blind_review.html`, review ID `d4eb04003a44`. The submitted
+review is bound to the exact public manifest and resolved to `ABSTAIN_UNSURE`: candidate 0, source 0,
+ties 8, abstentions 2, no hard failures on either side, with the note “似乎感觉差不多”. One unanswered
+skin-naturalness item was normalized to abstention only because the whole group was explicitly marked
+non-assessable; an assessable group still requires all ten votes. Analysis SHA-256 is
+`E180756CBA1FFE0A5330B4D66AF817B06E7BEE5FBA60708C596689063CAD83C4`. The final status is therefore
+`PASS_MECHANICAL_HUMAN_REVIEW_ABSTAIN_UNSURE`: bounded execution and preservation pass, but visible
+highlight-control benefit, freedom from waxiness and automatic candidate acceptance remain unproven.
+
+The validated parameters are also published as the new importable workflow
+`examples/workflows/17-skin-finish/2026-08-25_H3_Skin_Finish_Oil_Control_Stream_Advanced_EXP.json`.
+It is append-only and does not modify the earlier Quality Stream workflow, whose SHA-256 remains
+`D12BA6FFDB41EE4CE29807E3CC85C918BE4E5D1EAFDBD13ABFF3DF40DE69ACDD`. The Oil Control workflow and
+its ComfyUI user-menu mirror are byte-identical at SHA-256
+`BA61412A17BB986BB80C98E57B92C8F7D65F4D4145603FCF8BE93834C5DA3A2B`. Six canvas NOTE nodes explain
+source requirements, exact reviewed parameters, bounded processing, media constraints, human review
+and the distinction between highlight control and blur/face reconstruction. The focused stream,
+frontend-workflow and validation-tool scope passes 30 tests with four existing Triton warnings; Ruff,
+JSON parsing and `git diff --check` pass. The project workflow count is now 144.
+
+The ignored local review hub was updated rather than leaving four apparently equivalent pending
+pages. Review `d4eb04003a44` now appears first as completed `ABSTAIN_UNSURE`; the earlier
+`9f33c46592ab`, `fdfcfb217991` and `75fc40a17a83` pages are visibly archived as
+`ABSTAIN_SOURCE_INSUFFICIENT` and do not need resubmission. All four relative targets exist. The hub
+remains an ignored local navigator and contains no private A/B mapping.
+
+## 2026-08-25 Skin Finish specular-aware frequency calibration
+
+The ordinary Frequency Split deliberately restores all source high-frequency residuals. On the
+reviewed oil-control source this also restores source specular peaks, and the previous six-frame
+calibration showed that only about 25% to 30% of the raw average treatment survived the ordinary
+Frequency Split plus Texture Guard. The visible rows remained nearly indistinguishable even after
+increasing the raw oil-control parameters.
+
+An independent append-only `MiniMaxH3SkinFinishSpecularFrequencyT8Advanced` node now runs the
+unchanged ordinary split first, then subtracts only positive source-luma detail where a smooth bright
+skin gate, positive-detail threshold and darker-candidate intent all agree. The node is position 208;
+positions 0 through 207 are unchanged. Zero suppression is pixel-exact with the ordinary split.
+Mask exterior, alpha/auxiliary channels and AUDIO remain source-bound, rejected frames return source,
+and `accept_candidate` remains false by default.
+
+One low-load calibration reused the pinned 960x544x124 v1.0 eight-step speaking source but decoded and
+parsed only frames 16, 20, 60, 66, 86 and 119. All routes used the same balanced raw parameters
+(`amount=0.55`, `texture_keep=0.94`, `shine_control=0.60`); only the frequency route differed. The
+ordinary, specular 0.35 and specular 0.65 routes all passed Texture Guard and Safety Audit with exact
+mask exterior. Their final brightest-skin-decile mean luma deltas were -0.00006744, -0.00014774 and
+-0.00020280; texture proxies were 0.99780405, 0.98907673 and 0.98415595. Runtime was 29.312031 seconds
+with about 2197MiB peak process working set. ParseNet was loaded once; H3 and SAM were not loaded, and
+no full-video candidate, pressure, repeat or cross-GPU run was performed.
+
+The labelled contact sheet is
+`artifacts/skin-finish-oil-control-calibration-20260825-v3/face_contact_sheet_source_ordinary_specular.png`,
+SHA-256 `B621D72EBBACB3B3B08364A2DDA702F18CFEB5940CAEE56ADEC1F5FCD05D8038`.
+Although the measured highlight attenuation increased monotonically, the static visual difference
+remained subtle. The node is therefore retained as an Advanced EXP candidate without a default/example
+workflow or visible-benefit claim. Full-video temporal and human preference gates remain open.
+
+### Candidate-bounded follow-up and pinned CineStyle reference
+
+The first experimental formula could subtract more luma than the original Skin Finish candidate at
+maximum strength. It was replaced before release with a candidate-bounded formulation: the ordinary
+Frequency Split still runs unchanged, but the optional stage now interpolates only toward the original
+candidate where bright source skin, positive local detail and lost darker-candidate intent agree. Each
+RGB component is clamped between the frequency base and the input candidate. Zero strength remains
+pixel-exact with the old split; the old node, registration positions 0-207 and all workflows remain
+unchanged. New defaults are a 3% separation radius, suppression 0.65 and positive-detail threshold
+0.004.
+
+The bounded broad-scale audit reused frames 16, 20, 60, 66, 86 and 119 with maximum raw oil-control
+parameters. Ordinary, bounded 0.65 and bounded 1.0 all passed Texture Guard and Safety Audit with exact
+mask exterior. Their final masked mean absolute RGB changes were 0.00082178, 0.00099511 and 0.00108829,
+only 24.5%, 29.7% and 32.5% of the raw treatment. Texture proxies were 0.99783844, 0.99343944 and
+0.99124336. Runtime was 77.290285 seconds and peak process working set about 2193MiB; no H3, SAM,
+full-video candidate, pressure, repeat or cross-GPU run occurred. The contact sheet is
+`artifacts/skin-finish-oil-control-calibration-20260825-v6-candidate-bounded/face_contact_sheet_source_ordinary_specular.png`,
+SHA-256 `3EBEF25E51EEE55304F103EE8180D805A254F764B12A81E47B15927B7F27958F`.
+
+To determine whether the weak visibility came from the source or T8's conservative processing, the
+exact separately downloaded `ComfyUI_CineStyle@e7d5fac` `vfx_beauty.py` file (SHA-256
+`1F8D8EBD44FEA4C75A0C77D2798173A525B2CCBFDEAFE60F0C82F74B3CB7FDF6`) was dynamically imported for
+one audit-only CPU run. No upstream implementation was copied or vendored. It used the same six source
+frames and exact T8 semantic mask with documented upstream defaults. Raw upstream mean change was
+0.01130743 and texture proxy 0.66553038; its raw output was not exact outside the supplied mask. After
+T8 Texture Guard and Safety Audit, all six frames passed, mask exterior was exact, mean change was
+0.00675145 and texture proxy 0.88940048. The brightest-skin-decile mean luma delta was +0.00382215,
+whereas T8 maximum raw oil control was -0.00085636 with mean change 0.00335295 and texture 0.92599171.
+Thus the upstream default was more visible primarily by stronger smoothing/brightening, not by a
+demonstrably better oil-control effect. Its contact sheet is
+`artifacts/skin-finish-cinestyle-reference-20260825-v1/face_contact_sheet_source_cinestyle_t8.png`,
+SHA-256 `C73B22C594D6C4AA54EDEE256779A8487727871FD35948B48DCA91EEE42476F1`.
+
+This closes the submitted `d4eb04003a44` advice as `ABSTAIN_UNSURE`, not as a pass or failure. A full
+video was deliberately not run because neither bounded candidate produced a visible static advantage.
+Future work must use a new clean-room, mask-exact surface-treatment candidate and a truly diagnostic
+source; it must not increase smoothing merely to manufacture a visible difference.
+
+## 2026-08-25 Skin Finish clean-room Guided Surface candidate
+
+`MiniMaxH3SkinFinishSurfaceT8Advanced` was appended at position 209 without changing positions 0-208,
+old schemas, widget order, defaults or workflows. It independently implements the scalar-guidance
+local-linear equations from He, Sun and Tang, *Guided Image Filtering*, ECCV 2010, then applies bounded
+surface smoothing, positive-highlight compression and negative-blemish balancing only inside the
+reviewed semantic skin mask. It contains no copied CineStyle Matchbox passes, constants, weights or
+dependencies. The implementation is per-frame and uses no temporal RGB averaging.
+
+Deterministic coverage verifies zero amount is exact source, bright detail is reduced, dark detail is
+lifted, chunk-size parity, invalid parameters, fail-closed change gates, bit-exact mask exterior,
+bit-exact alpha or auxiliary channels, same-object AUDIO passthrough, safe schema defaults,
+append-only registration and no persistent runtime cache. Source remains selected because
+`accept_candidate` defaults false. The node also rejects abnormal mask area, excessive texture loss,
+mean or peak change and newly clipped pixels on a per-frame basis.
+
+One low-load calibration reused the pinned 960x544x124 v1.0 eight-step speaking source SHA-256
+`9467201FF32B491D9E45CFA823FE6FBC0AEB7C5A688D15F54FD70B69B16F1B2A`, frames 16, 20, 60, 66, 86 and
+119, and the exact same ParseNet semantic mask. It compared the current Quality Stream baseline,
+guided-natural (`0.65/0.70/0.85/0.65/0.35/2%`) and guided-oil
+(`0.85/0.75/0.82/0.85/0.35/3%`). All arms passed Texture Guard and Safety Audit with no rejected frame
+and exact mask exterior. Final masked mean absolute RGB changes were 0.00013440, 0.00041559 and
+0.00080689; texture proxies were 0.99920106, 0.99449688 and 0.99328971; brightest-skin-decile mean
+luma changes were -0.00002611, -0.00035419 and -0.00084691. The run used two CPU threads, loaded no
+H3 or SAM, generated no full-video candidate, took 103.533757 seconds and peaked at about 2184.309MiB
+process working set.
+
+The report is
+`artifacts/skin-finish-surface-calibration-20260825-v1/calibration_report.json`, SHA-256
+`620E472F15BC1E02FBE645A953CDE18B66F91E1EBBFF0E172D85267083E7CD9A`. The labelled contact sheet is
+`artifacts/skin-finish-surface-calibration-20260825-v1/face_contact_sheet_source_current_guided.png`,
+SHA-256 `AE69E696DC24B17FA0DB21A531F73DECF2B88A2D8B211999BBE31AF40A9B38D4`.
+
+The stronger route is mechanically safe and more active than the current route, but the static
+difference remains visually subtle. The planned human-perceptibility prerequisite is therefore not
+met: no full video, workflow or replacement of Oil Control Stream was produced. Six separated frames
+cannot prove flicker, temporal stability, speech preservation or preference, and the method cannot
+perform physical specular separation, pore synthesis, deblur, identity repair or natural-skin scoring.
+
+### Broad-highlight shoulder correction and bounded full-stream gate
+
+The first Surface formula operated on positive detail relative to the guided base. That is appropriate
+for compact glints but mathematically misses broad smooth oily regions already represented by the base.
+The node now adds a hue-preserving luminance-ratio shoulder over the guided base, bounded by the same
+per-pixel maximum correction. Its default broad compression is 0.45 between display luma 0.68 and 0.94;
+the local compact-highlight route remains separate. A zero broad strength is an exact no-op for that
+stage. The report cites Reinhard et al. 2002 for photographic tone compression and Li et al. CVPR 2017
+to make the stronger limitation explicit: real facial specular removal requires skin reflectance,
+illumination and geometry information that this non-generative SDR filter does not estimate.
+
+Focused tests add a flat bright-region fixture that the old residual-only math cannot change. The new
+shoulder reduces that plateau by more than 0.01 while zero strength stays exact source. Parameter-order,
+mask-exterior, alpha/auxiliary, AUDIO, chunk determinism, fail-closed and append-only registration
+contracts remain covered.
+
+The corrected six-frame v2 calibration compared exactly two routes: current Quality Stream and one
+Surface candidate at amount 0.75, smoothing 0.70, texture keep 0.85, compact highlight 0.65, broad
+highlight 0.55 from 0.68 to 0.94, blemish balance 0.35 and radius 2.5%. Both passed Texture Guard and
+Safety Audit with exact mask exterior. Final masked mean changes were 0.00013440 and 0.00840873;
+texture proxies were 0.99920106 and 0.99715394; brightest-skin-decile luma changes were -0.00002611
+and -0.01996538. Evidence is
+`artifacts/skin-finish-surface-calibration-20260825-v2/calibration_report.json`, with labelled sheet
+`face_contact_sheet_source_current_surface.png`.
+
+One bounded full-stream run then used the exact pinned 960x544x124 speaking source, 62 two-frame CPU
+chunks and the same Surface parameters. The first validation generated the exact same final candidate
+but incorrectly treated any source fallback as a whole-run failure and failed before persisting its
+diagnostics. The validator was corrected to match the existing Quality Stream fail-closed contract and
+to write every named gate before deciding. The required v2 run recorded 124/124 semantic face
+instances, two Surface and two Texture Guard source fallbacks, zero Safety Audit failed frames or
+chunks, maximum temporal effect jump 0.00381594, exact pre-encode mask exterior, strict 124-frame video
+decode, exact audio packet payloads and exact decoded PCM. ParseNet was CPU-only, uncached and released.
+Runtime was 944.394768 seconds with about 1996.301MiB peak process working set; H3 and SAM were not
+loaded and no pressure or cross-GPU matrix was run. The deterministic candidate SHA-256 from both
+executions is `0DD7F64AA7B1E16C893C27B20165A79B25A45294EA5029EF468AF8C8EAF7D0E7`.
+
+Authoritative evidence is
+`artifacts/skin-finish-surface-stream-20260825-v2/validation_report.json` (SHA-256
+`79F2AB4A4668AB60DC7C9079E69983DFEC52623EEFA6DAB2A3F8E1AEB38D8037`) plus
+`mechanical_diagnostics.json` (SHA-256
+`ADEB4AA410DE002B403F4CDF6624A734143EEA4AE13262E80BA2AB388978456D`). Anonymous review ID
+`b3aad4e0d57b` is complete. Its review ID and public-manifest hash matched the private key. The source
+won overall, skin naturalness, shine/highlight, tone evenness and halo/edges; texture retention,
+eyes/lips, temporal flicker, cross-person spill and identity/mouth were ties. The candidate won zero
+criteria, neither side had a hard failure, and the analyzer returned
+`HUMAN_JUDGMENT_RECORDED_NO_AUTO_ACCEPT`. Therefore the mechanical PASS is retained as an engineering
+result, but this parameter set fails subjective promotion and no workflow replacement is permitted.
+
+A separate mapping-blind decoded-media audit read only public `A.mp4`, `B.mp4` and the public manifest;
+it did not access the private key or infer which side was the candidate. Across all 124 frames, decoded
+PCM was exact, maximum face-ROI adjacent effect jump was 0.00305909, maximum full-frame RGB MAE was
+0.01143561 and maximum p99 difference-edge magnitude was 0.01703280. Frames 0, 21, 23, 45, 56 and 123
+were rendered as A/B plus 8x absolute-difference contact sheets; no gross temporal spike or obvious mask
+boundary was detected mechanically. Report SHA-256 is
+`CB2DBD975D420E370EC92A1C4FD198D793BAE53D69FFDCC06DF019FB4F89078B`; contact-sheet SHA-256 is
+`4BED0BFCB84E03145B8681F1A2D3529C4C547F0A2D7A4292A3987CB02012919F`. This diagnostic cannot judge
+naturalness or subtle flicker and did not replace the subsequently completed human decision.
+
+### Localized-highlight v2 correction after rejected human review
+
+Review `b3aad4e0d57b` rejected the absolute-luma parameter set: the source won overall, skin
+naturalness, shine/highlight, tone evenness and halo/edges; five criteria tied, the candidate won none
+and neither side hard-failed. This ruled out promotion and also ruled out simply increasing the same
+absolute shoulder.
+
+The targeted v2 formula keeps the same node ID and input order but changes the experimental broad
+route to positive multi-scale contrast against a large, mask-weighted skin-illumination estimate.
+Uniformly bright skin is therefore not treated as a broad highlight. A two-pixel inside-only support
+gate fades corrections to zero at hard mask boundaries. Its support geometry uses `MASK > 1e-5`,
+while the original probability remains the blend weight; this fixes a first calibration attempt that
+incorrectly erased three probability-valued close-up masks. The box average is now computed as
+mathematically equivalent separable horizontal and vertical passes. Deterministic tests compare it
+against the direct 2-D reference and cover uniform bright skin, localized highlights, hard boundaries
+and probability masks.
+
+The authoritative v5 six-frame calibration used one revised arm only. All six frames passed Surface,
+Texture Guard and Safety Audit. Final masked mean change was 0.00387333, brightest-skin-decile luma
+change was -0.00787700, texture proxy was 0.99280846 and the two-pixel-boundary/interior change ratio
+was 0.67757654. Surface execution itself took 4.34628 seconds, versus about 57.18 seconds before the
+separable optimization. Report SHA-256 is
+`E78E75C3A8AA46D68A3A611D8F57DD8366B7A3226EF4D36DF26300DEDFA68E99`.
+
+Exactly one full-stream candidate then processed the pinned 960x544x124 source in 62 two-frame CPU
+chunks. It recorded 124/124 semantic faces, zero Surface fallback, zero Texture Guard fallback, zero
+Safety Audit failed frames/chunks, maximum internal temporal effect jump 0.00173517, exact pre-encode
+mask exterior, strict video decode, exact 163-packet audio payload and exact decoded PCM. It loaded
+neither H3 nor SAM, took 741.01245 seconds and peaked at about 1997.340MiB working set. Candidate SHA-
+256 is `0C2D9C66A409C78CBCD3EAF8D471A7606D90EB81906DF83DFA9BD59B7436E8EF`.
+
+Evidence is `artifacts/skin-finish-surface-localized-stream-20260825-v3/validation_report.json`
+(SHA-256 `6A7DD736EBBEDF89ED204073D63EC95ED7A882C395EED09BC447B40AED92651C`) and
+`mechanical_diagnostics.json` (SHA-256
+`38468F75272EDCEF80170E6EE9068BF53B8AEC796AB9DE0D264F275218AF8E76`). The mapping-blind audit read
+no private key and measured maximum ROI temporal jump 0.00052624, maximum p99 difference edge
+0.01638918 and exact PCM; its report SHA-256 is
+`B26E8D11F12CD48394177838EA21510DA39C79FD1200FE85ECD069595C9FFD5C`. Anonymous review ID
+`8e89bff3bc95` then completed with a valid review-ID/public-manifest/private-key binding. Overall,
+skin naturalness, shine/highlight, tone evenness, texture retention, eyes/lips, temporal flicker,
+cross-person spill, halo/edges and identity/mouth were all ties. The candidate and source each won
+zero criteria, neither side had a hard failure, and the analyzer returned
+`HUMAN_JUDGMENT_RECORDED_NO_AUTO_ACCEPT`. Analysis SHA-256 is
+`4A8A662CAD38BD3D79E14741C3FDBD65B4800933272170A36E53CB1A64B7ACC1`.
+
+The revised formula therefore removes the obvious subjective regression of v1 but does not establish
+a perceptible benefit on this fixed pair. It is retained only as a mechanically safe experimental
+implementation: defaults and workflows remain unchanged, and no Surface workflow is added. Repeating
+the same full stream or increasing the same shoulder is not justified by this result; any later attempt
+must test a materially different surface-treatment method under a new predeclared review.
+
+## 2026-08-25 Skin Finish dichromatic-specular candidate
+
+`MiniMaxH3SkinFinishDichromaticT8Advanced` was appended at registry position 210 without changing
+positions 0-209, old schemas, defaults, widget order or workflows. In linear sRGB it uses a neutral-
+illuminant dichromatic approximation and only attenuates a positive specular estimate where local
+diffuse chromaticity, chroma dilution and direction consistency agree. Uniform same-chromaticity
+brightness is a no-op; near-neutral diffuse colours receive low confidence because the separation is
+ill-conditioned. The correction is bounded per pixel, fades only inside the semantic-mask boundary,
+keeps mask exterior and auxiliary channels exact, passes AUDIO as the same object and remains source-
+selected by default. This is not calibrated inverse rendering, a measured skin BRDF, deblur, pores,
+identity repair or a naturalness oracle.
+
+Fixed calibration v4 passed all six pinned frames with mean masked RGB change 0.00773290, brightest-
+skin-decile luma change -0.00775452, texture proxy 0.99985147 and boundary/interior change ratio
+0.30060201. One full 960x544x124 stream then used 62 two-frame CPU chunks. It recorded 124/124
+semantic faces, six frame-local dichromatic and Texture Guard fallbacks, zero Safety Audit failed
+frames/chunks, maximum internal temporal effect jump 0.00132667, exact pre-encode mask exterior,
+strict 124-frame decode, exact 163-packet audio payload and exact decoded PCM. It loaded neither H3 nor
+SAM, took 732.857519 seconds on two CPU threads and peaked at about 1964.262MiB working set. Candidate
+SHA-256 is `674F13719B13F2350178A8185796FB7089CC0F62F05F8E308513EFE44E99ADCA`; report SHA-256 is
+`94B7D9870A3DE93E5B2D5E93BB042936AD00A911D3AE4924074AF84EDEC4F191`.
+
+The public A/B temporal audit for review `b2e13261f44e` read no private mapping. It decoded all 124
+frames and exact PCM, measured maximum face-ROI temporal-effect jump 0.00057450 and maximum p99
+difference-edge magnitude 0.01626730, and returned `PASS_NO_GROSS_TEMPORAL_DELTA_DETECTED`. Audit
+report SHA-256 is `BFF8CB333CD4418C259EF340946D410DCF9177B2E5B011FEAB79EEDBD6C1FA25`. This only screens gross
+temporal risk. Human review `b2e13261f44e` then completed with a valid review-ID/public-manifest/private-
+key binding. B was source. Source won overall, skin naturalness, shine/highlight, tone evenness, texture
+retention, eyes/lips/features and halo/edges; temporal flicker, cross-person spill and identity/mouth
+tied. Candidate won zero criteria, and neither side had a hard failure. The reviewer note was
+“明显B组皮肤质感更好”. Canonical analysis SHA-256 is
+`653FDA0836CF3D3B4A108648F4FFA0EB346791F1CCA639711A4F8BDFB1C2CCF9`.
+
+After the mapping was revealed, the reviewer watched again and corrected the qualitative description
+to “基本一样”. That post-reveal statement cannot rewrite the already completed blind JSON or be counted
+as a second blind vote. The conservative combined conclusion is therefore not a claim of a clear
+regression, but that this parameterized dichromatic route has not established a perceptible benefit
+despite its mechanical pass. It remains disconnected and receives no workflow, default or quality
+promotion. Future work must not tune this implementation merely to manufacture a visible delta; it
+needs a new, predeclared treatment hypothesis and representative human gate.
+
+## 2026-08-25 VRetouchEr weight-independent adapter preflight
+
+The user's post-reveal rewatch changed the qualitative description of the dichromatic candidate to
+“基本一样”. This does not rewrite the completed blind form, but it reinforces the only defensible
+decision: the route has not established a perceptible benefit and remains disconnected.
+
+The next research arm audits the official MIT-licensed CVPR 2024 VRetouchEr repository at revision
+`ae25b5475680ed01958c017b32b669b4e46d7f9b`. The upstream generator consumes six 512x512 frames and
+returns the newest/current frame. Its demo loader center-crops each full frame to a square and uses
+modulo indexing at the beginning, so the first frames can read context from the video tail. The demo
+has no shot reset, tracked-person identity scope, original-resolution paste-back, semantic skin
+restriction, audio contract, fail-closed source path or ComfyUI unload policy. The audited source also
+contains hard-coded CUDA paths and targets Python 3.8, torch 1.13.1 and torchvision 0.14.1. These are
+upstream facts, not evidence of compatibility with the current torch 2.10 ComfyUI runtime.
+
+An unregistered clean-room adapter was therefore added before any model port. It builds exactly six
+causal frames and left-pads from the current shot start, never wraps to the video tail, and rejects a
+missing face or any shot-local track discontinuity. It crops only the reviewed face region to a square,
+uses explicit replicate padding at source borders, and resizes isotropically to the fixed 512 canvas;
+the full H3 image is never squeezed. The paste-back path accepts only the newest crop and intersects the
+existing semantic-skin support with the corresponding person track. Feathering is constrained inside
+that hard support, RGB outside it and all auxiliary channels remain bit-exact source, and automatic
+acceptance remains false.
+
+The read-only preflight tool defaults to
+`ComfyUI/models/facerestore_models/VRetouchEr/gen_best.pth`, records the official reference size of
+630,172,363 bytes, calls only `torch.load(weights_only=True,map_location='cpu')`, accepts only a nonempty
+string-to-Tensor state dict, and constructs no model or inference graph. A trusted official SHA-256 is
+still required because file size and safe deserialization do not prove checkpoint identity. The real
+local preflight currently returns `MISSING_CHECKPOINT`; consequently no checkpoint-backed parameter
+allocation, numerical inference, CUDA work, video, node or workflow was run or created.
+
+Thirty-four focused tests pass for frame-zero and shot-reset left padding, no tail wrap, track and face
+fail-closed behavior, square/isotropic crop geometry, six normalized 512 crops, semantic/person-only
+paste-back, exact exterior and auxiliary preservation, zero amount, weights-only loading, trusted-hash
+gating, tamper rejection, full state-structure matching, pure-operator numerics, generic-module-tree
+restoration and runtime ownership boundaries. Ruff and `py_compile` pass.
+
+The pinned nine-file source set also meta-constructs on torch 2.10 without allocating real parameter
+storage. A six-input shape-only forward succeeds after applying the normal whole-model device move:
+six `[1,3,512,512]` inputs produce one current-frame `[1,3,512,512]` result, six
+`[1,1,256,256]` masks and `[5,1,64,64,2]` flow. No numerical values, real parameters or real
+activations are evaluated. It describes 411 state tensors and 156,192,280 state elements: 154,226,050 parameters and
+1,966,230 buffers. The exact ordered key/shape/dtype/numel structure SHA-256 is
+`7ABD9ECFF0B49178FBF2CC7AFECF171228AC4ACDDBBCFC7A5A0484020DE8CEEA`. Parameter storage alone is
+estimated at 616,904,200 bytes for fp32 or 308,452,100 bytes for fp16/bf16; this excludes activations,
+workspaces and CUDA context. The exact Stage instantiates zero `DCNv2PackFlowGuided` modules, so the
+unused deform-convolution class in the source file is not evidence that this fixed graph executes DCN.
+The audit also isolates the upstream constructor's attempt to preload a missing separate SPyNet file;
+the meta path disables that preload and expects the eventual main checkpoint to match all 411 entries.
+
+An unregistered current-runtime bridge now pins every upstream model file it imports plus the two
+custom-operator source files whose formulae it substitutes. It implements fused leaky ReLU and
+upfirdn2d with ordinary PyTorch, and exposes only the norm-free `ConvModule` subset used by this fixed
+SPyNet graph. It removes the irrelevant `turtle/tkinter` dependency and disables only the absent
+external SPyNet preload. The bridge constructs the model on `meta`, requires the same 411-entry
+structure before a future trusted state dict can be assigned, and then permits only an exact
+`[6,3,512,512]` context. The pure upfirdn test compares against an independent explicit zero-insert,
+pad and convolution implementation rather than calling the bridge twice as its only oracle.
+Because upstream hard-codes the generic package name `model`, the bridge snapshots and removes that
+complete module tree only for the protected import, then removes the temporary upstream modules and
+restores every pre-existing entry. A real meta construction with a sentinel pre-existing `model`
+module returned the sentinel unchanged and retained the exact 411-entry graph.
+The numerical entry point also rejects a meta-only model before calling its forward method, so shape
+evidence cannot be accidentally presented as checkpoint-backed inference.
+
+Selective cleanup never calls ComfyUI's global unload. The new owner-scoped runtime session is a
+context manager: normal exit and exceptions both clear its own strong model reference, run GC/cache
+cleanup, report whether another strong reference survives, make repeated close idempotent and reject
+inference after closure. The older argument-only helper deliberately does not claim that a function
+argument can delete a model reference still held by the caller. These are ownership contract tests,
+not unload evidence with real weights or a CUDA memory-return measurement.
+
+An unregistered single-window processor now connects the previously separate contracts without
+exposing a node: causal planning, six actual 512 face crops, one runtime call, newest/current-frame-only
+semantic-skin and reviewed-person paste-back, report-only candidate output and session closure. A
+controlled bright-output model inspected the actual input tensors, not just plan metadata: their
+source indices were `[0,0,0,0,1,2]`. The source batch remained unchanged, RGB outside the effective
+mask and all auxiliary channels stayed exact, and neither automatic acceptance nor candidate
+selection was enabled. Separate tests prove track discontinuity stops before the model call and a
+model exception still closes the owner session. This validates orchestration only; a fake model says
+nothing about VRetouchEr numerics, quality, identity or memory.
+
+The runtime no longer depends on the temporary audit clone. The minimal nine-file MIT inference
+source, upstream license and a T8 boundary note are bundled under `vendor/vretoucher_upstream` at the
+same fixed revision. Only line endings are normalized from CRLF to LF; source verification hashes the
+CRLF-to-LF-normalized bytes. No checkpoint, training data, media, native CUDA/C++ source or compiled
+operator is included. The two upstream operator Python files remain only as formula provenance; the
+runtime still supplies the audited pure-PyTorch formulae. `THIRD_PARTY_NOTICES.md` records the
+redistribution and points to the complete retained license.
+
+The default bundled path passes all nine source hashes and repeats the full meta shape audit under
+torch 2.10: 411 state tensors, structure SHA
+`7ABD9ECFF0B49178FBF2CC7AFECF171228AC4ACDDBBCFC7A5A0484020DE8CEEA`, current-frame result
+`[1,3,512,512]`, six `[1,1,256,256]` masks and `[5,1,64,64,2]` flow. The bundled report is
+`artifacts/skin-finish-vretoucher-structure-audit-20260825/bundled_structure_report.json`, SHA-256
+`D052DA474262AE70CD4553C70BE18DF9738EEE802EC83DB8C202BEE4CB010DD6`. This removes a packaging
+dependency; it does not provide or validate the official checkpoint.
+
+The weight preflight can now consume the full meta report and reject any checkpoint whose ordered
+key, shape, dtype, numel or structure hash differs before model construction. Evidence is
+`artifacts/skin-finish-vretoucher-structure-audit-20260825/structure_report.json`, SHA-256
+`31528CA8F91366286008E59533FF0070C45123925091ABDE89CBFFCE7B0A9022`. The registry remains 211 nodes
+at positions 0-210 and every workflow remains unchanged. This closes only the weight-independent
+geometry, source-structure, small-operator formula and checkpoint-security contracts; real checkpoint
+compatibility, full numerical inference, visible skin benefit, identity, temporal stability,
+multi-person isolation, memory, owner-scope unload and 16GiB safety remain open.
+
+### Dry-run VRetouchEr single-window execution gate
+
+`tools/validate_skin_finish_vretoucher_single_window.py` now provides the only formal path from the
+weight-independent bridge toward a first numerical probe. Its default invocation is preflight-only.
+Inputs are a hash-bound JSON manifest containing no pickle or tensor file: one to six same-geometry
+static RGB/RGBA PNG source frames, one matching L-mode semantic-skin PNG, an optional matching reviewed
+person-mask PNG, one continuous reviewed shot-local track and one finite face box per frame. Every path
+must remain beneath the manifest directory and every asset requires a complete SHA-256. The validation
+bundle is capped at 2,100,000 pixels per source frame and always selects its newest frame as the only
+output target.
+
+A numerical run requires the exact token `I_ACCEPT_ONE_VRETOUCHER_WINDOW`, the trusted complete
+checkpoint SHA-256, the official 630,172,363-byte file, the pinned bundled source, port 8188 not
+listening and at least 12,000MiB free VRAM. That VRAM value is deliberately labelled a provisional
+start floor: it is not a measured peak, may be revised only from real evidence, and is not a 16GiB
+safety claim. The tool re-runs preflight immediately before loading, decodes and verifies the causal
+six-crop context before model allocation, and permits only one result directory per normalized
+manifest. A successful mechanical run can write only current-source, current-candidate and effective-
+mask PNGs plus an atomic report; `automatic_accept`, `candidate_selected`, quality, identity, temporal
+stability and 16GiB safety all remain false.
+
+Seven new tests cover safe paths and PNG hashes, traversal, content drift and post-preflight drift, missing-checkpoint early
+exit without importing or constructing the model, a single fake six-frame inference, exception-path
+owner release, and non-implicit confirmation/resource floors. Together with the existing adapter,
+weight, structure, runtime and pipeline files, all 41 VRetouchEr-focused tests pass. The real default
+preflight found the manifest and official checkpoint absent and reported 10,864MiB free VRAM below the
+provisional floor. It left `real_model_loaded=false`, `checkpoint_deserialized=false` and
+`inference_executed=false`. No node, workflow, video, H3, SAM, real VRetouchEr weight or pressure run was
+introduced.
+
+### Hash-bound single-window bundle builder
+
+The validator no longer requires a caller to hand-author paths and SHA-256 values. The separate
+`tools/build_skin_finish_vretoucher_single_window_manifest.py` imports neither Torch nor ComfyUI and
+defaults to inspection only. The caller supplies one to six reviewed static source PNGs, exactly one
+reviewed face box for each, one L-mode semantic-skin mask, an optional L-mode person mask and one
+shot-local track key. The builder rejects duplicate frames, mixed geometry/channel modes, over-2.1MP
+frames, non-intersecting boxes, non-L or geometry-mismatched masks and an existing output directory.
+
+Only explicit `--write-bundle` publishes data. It stages files on the destination volume, copies the
+input bytes without transcoding, verifies every hash during the copy, writes `manifest.json` and
+`build_report.json`, then renames the complete staging directory into a previously absent destination.
+It does not overwrite an old bundle. The files are not made operating-system read-only; the contract
+is instead hash-bound, so later edits are rejected by the formal validator.
+
+Five tests prove inspection-only zero writes, byte-exact publication, round-trip acceptance by the
+formal validator, face-box/geometry/mask rejection and non-overwrite behavior. The full VRetouchEr
+focused scope is now 46 tests. This closes reproducible input packaging only and does not detect a
+face, identify a person, judge mask semantics, load the checkpoint, execute inference or validate
+quality, identity, time consistency, memory or 16GiB safety.
+
+### Prepared real-input VRetouchEr single window
+
+A real model-free input bundle was prepared from existing reviewed evidence rather than generating
+new H3, SAM or ParseNet material. It uses source frames 6, 12 and 18 from shot 0 at 960x704, the same
+reviewed left-person track `0:0`, one reviewed face box per frame, the existing current-frame semantic-
+skin mask and a source-bound left-person region mask. The three-frame causal context is intentionally
+left-padded by the adapter at inference time; it is not wrapped to the end of the source video.
+
+The non-overwriting bundle is
+`artifacts/skin-finish-vretoucher-input-bundle-20260825-shot0-left`. The literal `manifest.json`
+SHA-256 is `550D642AA2F1F49A0A4AB3409465B7ABE76C220BCF40BABFF621280A3143F381`; the validator's normalized
+manifest SHA-256 is `EADD382D46C450060C294903445B34250B18279D5860F91D267461B262CCE878`. The build report returned
+`HASH_BOUND_SINGLE_WINDOW_BUNDLE_WRITTEN_NOT_EXECUTED` and explicitly records no Torch or ComfyUI
+import, no model load, no inference, no automatic acceptance and no candidate selection.
+
+The formal validator accepted the real input paths, hashes, static-PNG geometry, causal track, boxes
+and masks, then stopped with `ABSTAIN_CHECKPOINT_MISSING`. Port 8188 was not listening; 9,951MiB free
+VRAM was also below the provisional 12,000MiB start floor. `real_model_loaded`,
+`checkpoint_deserialized` and `inference_executed` all remained false. The preflight report SHA-256 is
+`8E371B80CBD5EA1052A4B036DED48A67A9270EA585A0D32A1FB974A0FB9DC039`. This closes only reproducible
+real-input preparation. The left-person mask is a deterministic source-region harness, not identity
+evidence, and no quality, model compatibility, memory peak, 16GiB safety or usable-node conclusion is
+available until the official checkpoint is supplied and passes the separate gates.
+
+### Real VRetouchEr checkpoint identity and CPU load gate
+
+The checkpoint manually obtained from the official Baidu Netdisk release was moved to
+`ComfyUI/models/facerestore_models/VRetouchEr/gen_best.pth`. It is exactly 630,172,363 bytes. SHA-256
+before and after the cross-volume move was
+`F008748623325FDDB9F8DE6523A8F00B3712CF5EA5CA4ED695EA6C9F03E9B733`, so the source copy was removed
+only after the destination hash matched.
+
+The read-only weight audit used `torch.load(weights_only=True,map_location=cpu)` and found 411 tensors:
+406 float32 and five int64. Every ordered key, shape, dtype and numel matched the pinned report; the
+state-structure SHA-256 is
+`7ABD9ECFF0B49178FBF2CC7AFECF171228AC4ACDDBBCFC7A5A0484020DE8CEEA`. Status was
+`EXACT_STRUCTURE_AND_TRUSTED_HASH_PASS_MODEL_NOT_LOADED`.
+
+A separate one-process CPU fp32 gate then constructed the pinned bundled network, assigned the real
+state dict with strict loading and immediately closed its owner-scoped session without a forward. It
+completed loading in 1.871 seconds and increased process RSS by about 694.89MiB. The close report was
+`VRETOUCHER_OWNER_CLEARED_OBJECT_RELEASED`, with no external model reference and no global ComfyUI
+unload. The process then exited, so its allocator retention did not persist. This proves real checkpoint
+compatibility with the audited bridge, not numerical output quality or GPU safety.
+
+The formal single-window validator subsequently accepted the checkpoint byte size, pinned SHA, all
+three reviewed input frames, masks, boxes and the normalized manifest. Port 8188 was quiet. It stopped
+with `ABSTAIN_PROVISIONAL_FREE_VRAM_FLOOR`: 11,136MiB was free against the independent 12,000MiB
+provisional start floor. Consequently `real_model_loaded`, `checkpoint_deserialized` and
+`inference_executed` remained false in the validator process. The preflight report is
+`artifacts/skin-finish-vretoucher-single-window-preflight-checkpoint-pass-20260825/latest_preflight.json`,
+SHA-256 `202C816F078AC0F7F9D968E2D66356EDC73EF87D829AF3ED5B48995219F74A32`. No floor was lowered and no
+CUDA pressure run was attempted.
+
+### First numerical VRetouchEr window: FP16 rejected, BF16 mechanical pass
+
+After free VRAM reached 15,113MiB, the validator ran one process at a time with all CPU thread pools
+limited to one. The first FP16 attempt exposed a real compatibility issue rather than OOM: the upstream
+FP32-oriented graph creates runtime Float tensors while the loaded parameters were Half, producing
+`expected scalar type Float but found Half`. No candidate was accepted. The runtime now enters CUDA
+autocast only for fp16/bfloat16 parameters, leaves CPU/fp32 unchanged, captures the full failure
+traceback and rechecks the owner weak reference after exception frames are detached. Twenty-three
+focused runtime/validator tests, Ruff and py_compile pass.
+
+The corrected FP16 path completed the model forward but returned non-finite proposal values. The new
+post-forward finite gate rejected them; no output candidate was written. This is evidence that FP16 is
+not numerically valid for this checkpoint/runtime, not a reason to sanitize NaNs or weaken the gate.
+
+One scientifically motivated BF16 retry then passed. It used CUDA autocast and returned a finite
+`[3,512,512]` current-frame proposal, six `[1,1,256,256]` masks and `[5,1,64,64,2]` flow. The validator
+wrote only source, candidate and effective-mask PNGs under
+`artifacts/skin-finish-vretoucher-single-window-real-20260825-shot0-left-v3-bf16/run-eadd382d46c4`.
+Automatic acceptance and candidate selection remained false. The owner report was
+`VRETOUCHER_OWNER_CLEARED_OBJECT_RELEASED`, no external model reference remained, no global ComfyUI
+model was unloaded, and free VRAM returned to 14,958MiB. Validation report SHA-256 is
+`7D39ADE8C22EFCD5C708FAEF8434FEBCD5DB6B7059803C0975708FAAC70FA9EE`.
+
+Every RGB value outside the effective mask is byte-exact. The mask contains 8,151 of 675,840 pixels
+(1.2061% of the frame); 10.8944% of mask pixels changed. Inside-mask mean absolute change is only
+0.08052/255 per channel, p95 is 1 and maximum is 5; whole-frame mean is 0.000971/255. The source face
+was already clean, so this result establishes finite BF16 mechanics and bounded paste-back only. It
+does not establish perceptible skin improvement, identity quality, temporal stability, multi-person
+isolation, a usable node or 16GiB repeated-run safety. A later quality gate must use one predeclared
+representative with visible imperfections; it must not tune this clean frame to manufacture a delta.
+
+### One predeclared oily-skin VRetouchEr window: still no quality promotion
+
+The follow-up used the existing 960x544, 124-frame oily-LoRA source rather than generating new H3
+material. The previously reviewed contact sheet identified frame 66 as the strongest of its six sampled
+forehead/nose highlight proxies (0.141). Frames 61 through 66 are one continuous detected track in shot
+0. A single CPU-thread process decoded those six frames and ran the pinned ParseNet only on current frame
+66. Its result exactly matched the earlier full-run record: `READY`, 91,708 selected pixels and skin-area
+fraction 0.21754557. The semantic preview excludes hair, eyes, brows, nose, mouth and background.
+
+The non-overwriting bundle is
+`artifacts/skin-finish-vretoucher-input-bundle-20260825-oily-frame66`. Its manifest-file SHA-256 is
+`D1788E175A3D665BFFB5C237DDDE5B516D377EB4AA7A17D04EE75736E1D8877F`; normalized-manifest SHA-256 is
+`1BF5886FDB0E08FE3CAF23C32C83D91B8D9CC0FBD6B579434001D3003192BAA4`. The formal preflight saw
+15,131MiB free VRAM, quiet port 8188 and the exact official checkpoint identity, so one BF16 process ran.
+No FP16 retry, parameter grid, video generation, repeated run or concurrent process was used.
+
+The result is under
+`artifacts/skin-finish-vretoucher-single-window-real-20260825-oily-frame66-bf16/run-1bf5886fdb0e`.
+Validation report SHA-256 is
+`4AE2F89908961704BA045BA74BAC8E2D9FCBAC1346165247F8C4AE462FE0A688`. The model returned finite output,
+the owner closed as `VRETOUCHER_OWNER_CLEARED_OBJECT_RELEASED`, no external reference remained, no
+global ComfyUI model was unloaded, and candidate selection stayed false. All values outside the
+effective mask are byte-exact source.
+
+The effective mask contains 113,885 pixels. Inside it, mean absolute RGB change is 0.94667/255 per
+channel, p95 is 3, p99 is 10 and maximum is 54; 75.6026% of mask pixels change. This is larger than the
+clean-window delta, but the highlight evidence remains weak: masked luminance p99 changes only from
+0.92836 to 0.92277, while the fraction above 0.85 changes from 20.2555% to 20.2415%. The labelled
+source/candidate/difference/mask sheet remains visually subtle and does not establish preferred skin
+quality or oil control. Therefore the 3-5 second gate remains closed and no node, workflow, README claim
+or default is added.
+
+### Official-path parity and controlled nose-mask ablation
+
+The pinned upstream inference and training files were inspected without running another model. Official
+test preprocessing opens RGB through PIL, applies `ToTensor`, resizes to 512 and normalizes all channels
+with mean/std 0.5 before stacking six chronological frames. The saved newest-frame output is interpreted
+in `[-1,1]`. The T8 bridge follows the same RGB channel order, range, temporal order and newest-frame
+selection. A deterministic 512-square regression now compares the actual six bridge inputs with the
+literal RGB-CHW `* 2 - 1` reference, including an asymmetric blue-channel sentinel; the exact focused
+test passes (`1 passed in 0.12s`). This rules out the suspected BGR/RGB, normalization and frame-order
+mismatches for that controlled input.
+
+The official training route pairs source faces with FFHQR retouched targets and describes facial
+imperfections/blemishes. It does not define generated specular-oil suppression as a task. This is the
+most plausible task-domain explanation for the weak H3 result, not proof that every suitable real-face
+input would fail.
+
+The first oily-window evaluation also had a separate mask confound: the production ParseNet policy
+protects the complete nose class, so the prominent nose highlight received exactly zero paste-back.
+One CPU-only ParseNet audit built a research mask that kept normal skin at weight 1.0 and added only the
+nose class at weight 0.35. It increased the nonzero mask from 113,885 to 127,943 pixels and covered
+28,176 of the frame's 31,524 high-luma pixels, while still excluding eyes, brows, mouth, hair and
+background. A hash-bound bundle was written at
+`artifacts/skin-finish-vretoucher-input-bundle-20260825-oily-frame66-nose035`; manifest-file SHA-256 is
+`3BE6DA6EC4A1A075D1C0FD564DCA6BAB2406CC72FC199C26ED5E9D2035CB2BFA` and normalized-manifest SHA-256 is
+`3303AC7392C0EE3DC717EFB7FC2A2D8C30BAB00EF7C4EE32340ACF52BD64361E`.
+
+Exactly one further serial BF16 window reused the same six source frames, checkpoint and model settings;
+the only treatment change was that controlled mask. Its report is under
+`artifacts/skin-finish-vretoucher-single-window-real-20260825-oily-frame66-nose035-bf16/run-3303ac7392c0`,
+SHA-256 `E820AA747E36027556F4C73568D1F661E24F90B35A1DD876809C1BE85BDA65EA`.
+The candidate remained finite, mask exterior stayed exact, selection stayed false and the owner again
+closed as `VRETOUCHER_OWNER_CLEARED_OBJECT_RELEASED` with no external reference or global ComfyUI
+unload. Inside the newly admitted nose class, mean absolute RGB change was only 0.15911/255, p95 1,
+p99 2 and maximum 6. Nose luminance p99 moved from 0.97652 to 0.97152, while the fraction above 0.85
+slightly increased from 37.4086% to 37.4167%. The three-way source/skin-only/skin-plus-nose sheet
+SHA-256 is `D89AED4752DAEC04A871CF940CE7D1FE13E61061A5BEE05EE5961A29D61EA4CD`.
+
+The ablation proves that the old safety mask excluded part of the intended target, but it still does
+not establish visible oil control after that target is admitted. Increasing nose weight, running a
+parameter grid or escalating to a 3-5 second video is therefore not scientifically justified. The
+VRetouchEr route remains unregistered research and no existing node, workflow, README or default changed.
