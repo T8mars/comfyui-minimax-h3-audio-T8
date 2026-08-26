@@ -25,9 +25,16 @@ latent, subject to finite/shape/rate/channel/duration checks.
 
 Evidence is kept locally under
 `artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e`. A separate randomized A/B
-page contains no reveal mapping and is ready for human listening. Until that review is returned,
-there is no claim of better sound, transcript/voice preservation, lip-sync preservation, general
-16GB safety or superiority over a conventional eight-step baseline. Frozen Cache remains deferred.
+page contained no reveal mapping during listening. One reviewer completed it and reported that the
+two sides were approximately the same, while the right side was slightly quieter. Reveal maps A to
+Audio Refine and B/right to the original, so the observed distinction is a slightly lower perceived
+level in the original arm, not a demonstrated fidelity advantage. The adjudication is
+`ABSTAIN_NO_CLEAR_IMPROVEMENT_KEEP_ORIGINAL_DEFAULT`; the Quality Gate remains false by default.
+The ignored private adjudication record SHA-256 is
+`83295D964C944F0343F693A25035509E7DC78F0291037D99461E205BCFC734D8`.
+This single prompt/seed/reviewer does not establish equivalence, non-inferiority, transcript/voice
+preservation, lip-sync preservation, general 16GB safety or superiority over a conventional
+eight-step baseline. Frozen Cache remains deferred.
 
 ## 2026-08-24 — Creator and external-bridge human-review adjudication
 

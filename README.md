@@ -78,7 +78,7 @@ ComfyUI/custom_nodes/minimax-h3-audio-T8
 | 音频完整性审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Integrity_Audit_Advanced.json` | 无；纯CPU信号分析 | 输出PASS/ABSTAIN和证据，不修音；循环音乐可能触发尾首相似提示 |
 | 音色远近漂移审计 | `05-speech-dialogue/2026-08-22_H3_Audio_Perceptual_Drift_Audit_Advanced.json` | 同内容、同时间线的基准和候选音频 | 真实试听异常的纯二采在1.4～3.6秒触发ABSTAIN，正常一采与本例80%混音PASS；它是声学复核提示，不诊断远场/混响/换声 |
 | 多人对白路由预检 | `05-speech-dialogue/2026-08-22_H3_Speaker_Routing_Audit_Advanced.json` | 每个角色独立参考音频 | 编译`<Audio N>`映射并检查重复波形、未结构化笑声/喘息和描述歧义 |
-| Audio Refine低步数音频精修 | `18-audio-refine/2026-08-26_H3_Audio_Refine_Turbo4_Plus_Refine4_Advanced_EXP.json` | 原始与候选共用同一MODEL、conditioning和完整AV latent | 1056×608×124的Turbo4+Refine4单次实跑和严格解码通过；Quality Gate默认false并精确回退原始AV，人工接受后才组合原视频latent与候选音频latent。听感优劣仍须匿名审听 |
+| Audio Refine低步数音频精修 | `18-audio-refine/2026-08-26_H3_Audio_Refine_Turbo4_Plus_Refine4_Advanced_EXP.json` | 原始与候选共用同一MODEL、conditioning和完整AV latent | 1056×608×124的Turbo4+Refine4单次实跑和严格解码通过；一名评审者判定整体差不多，只听出原始组略轻。证据不足以推广精修候选，因此Quality Gate继续默认false并保留原始AV |
 | 提示词预算与角色编译 | `14-prompt-relay/2026-08-22_H3_Prompt_Budget_Role_Compiler_Advanced.json` | CLIP为可选输入 | 默认7000匹配当前官方H3 CLI提交上限；7000/7001与三人物映射已测。真实Qwen3-VL 8B/Boogu编译文本为140个token、规划估算153。当前ComfyUI无7000字符硬拦截，故不把API/CLI规则冒充本地tokenizer硬上限；视觉/时间戳token在Conditioning阶段另行加入 |
 | 提示词服务路由 | `14-prompt-relay/2026-08-23_H3_Prompt_Provider_Router_Advanced_EXP.json` | 本地服务无需密钥；远程服务的密钥通过环境变量提供 | 默认不联网；原始`<d>`对白先替换为不可猜测令牌，provider只有逐字返回唯一令牌且位置正确才会恢复，真实对白不上传；可选0～2次合同修复且不重传参考图，默认0保持旧请求数；CPU-only 8B已有一条严格合同通过，但把“旋转”改成“站立”，仍未通过语义质量门 |
 | 提示词语义合同审计 | `14-prompt-relay/2026-08-23_H3_Prompt_Semantic_Contract_Audit_Advanced_EXP.json` | 无；纯本地字符串审计 | 已知“旋转→站立”真实Provider回归会被拒绝并保留原文；空锚点ABSTAIN，非法合同、对白变化和源媒体标签丢失fail closed。词组PASS不等于通用语义等价，仍需人工复核 |

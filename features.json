@@ -983,7 +983,7 @@
     "MiniMaxH3AudioRefineQualityGateT8Advanced"
   ],
   "audio_refine_advanced": {
-    "status": "implemented locally as four append-only Advanced EXP nodes plus one dated frontend workflow; the focused Audio Refine, workflow, smoke-runner and blind-review tests pass, one 1056x608x124 Turbo4+Refine4 quality pair completed with strict AV decode, and final human blind listening remains pending",
+    "status": "implemented locally as four append-only Advanced EXP nodes plus one dated frontend workflow; focused tests and one 1056x608x124 Turbo4+Refine4 strict-decode quality pair pass. One reviewer judged the blind pair approximately tied and heard the original arm slightly quieter, so the original remains the default and no quality promotion is granted",
     "date": "2026-08-26",
     "category": "T8/MiniMax H3/Audio/Experimental",
     "nodes": [
@@ -997,7 +997,7 @@
     "fixed_initial_scope": "exact uncached route only; CFG 1; native_flow; dual_clock_euler; video/audio shifts 12/3; video noise mask 0 and audio noise mask 1; explicit seed; connected model only",
     "failure_contract": "REJECT outranks ABSTAIN, and any protected final audio, lock/remix route, unsupported mask, unknown patch stack, changed binding, unknown resource state or less than 512MiB whole-device free VRAM / 16GiB host commit headroom returns a zero-step bypass rather than starting refinement",
     "representative_validation": "one bounded 1056x608x124, 24fps Chinese-dialogue run executed Turbo4 plus Refine4 in 414.14 seconds with 14,468MiB observed GPU peak and 1,642MiB minimum free VRAM. Original and raw candidate H.264/AAC files strictly decoded at 32kHz stereo. The raw candidate video changed despite the zero video mask, so the Quality Gate is required; its default fallback reproduced the original decoded video and audio hashes exactly. Evidence is artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e",
-    "human_review": "one randomized A/B package is ready under the ignored representative evidence directory; no perceptual superiority, transcript preservation, voice preservation or lip-sync claim is made before the reviewer export is returned",
+    "human_review": "one reviewer completed the randomized pair and reported 'approximately the same, but the right side is slightly quieter'. Private reveal was A=audio_refine and B=original, so the only observed distinction was slightly lower perceived level in the original arm. Adjudication is ABSTAIN_NO_CLEAR_IMPROVEMENT_KEEP_ORIGINAL_DEFAULT; private record SHA-256 is 83295D964C944F0343F693A25035509E7DC78F0291037D99461E205BCFC734D8. One prompt/seed/reviewer does not establish equivalence or non-inferiority",
     "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; signal metrics are review cues rather than a quality oracle. The nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
     "compatibility": "all 211 previously released node IDs retain their exact order, the four new IDs occupy positions 211 through 214, and every pre-existing workflow remains unchanged"
   },
