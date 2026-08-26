@@ -25,13 +25,15 @@ latent, subject to finite/shape/rate/channel/duration checks.
 
 Evidence is kept locally under
 `artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e`. A separate randomized A/B
-page contained no reveal mapping during listening. One reviewer completed it and reported that the
-two sides were approximately the same, while the right side was slightly quieter. Reveal maps A to
-Audio Refine and B/right to the original, so the observed distinction is a slightly lower perceived
-level in the original arm, not a demonstrated fidelity advantage. The adjudication is
-`ABSTAIN_NO_CLEAR_IMPROVEMENT_KEEP_ORIGINAL_DEFAULT`; the Quality Gate remains false by default.
-The ignored private adjudication record SHA-256 is
-`83295D964C944F0343F693A25035509E7DC78F0291037D99461E205BCFC734D8`.
+page contained no reveal mapping during listening. One reviewer initially reported that the two
+sides were approximately the same while the right side was slightly quieter, then explicitly
+clarified that the left side was better. Reveal maps A/left to Audio Refine and B/right to the
+original, so this fixed case records a slight subjective preference for the refined arm and a lower
+perceived level in the original arm. The adjudication is
+`LIMITED_HUMAN_PREFERENCE_AUDIO_REFINE_KEEP_MANUAL_GATE`; the Quality Gate remains false by default
+because one prompt, seed and reviewer do not establish general improvement or non-inferiority. The
+ignored private adjudication record SHA-256 is
+`C6EC049B71A56B2D166F0C40CE1C563DDA23D225213F8952EF843630AB071AB0`.
 This single prompt/seed/reviewer does not establish equivalence, non-inferiority, transcript/voice
 preservation, lip-sync preservation, general 16GB safety or superiority over a conventional
 eight-step baseline. Frozen Cache remains deferred.
