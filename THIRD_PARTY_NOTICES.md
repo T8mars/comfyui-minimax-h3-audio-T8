@@ -1,5 +1,16 @@
 # Third-party notices
 
+## Alibaba PAI MiniMax-H3 PDD acceleration adapters
+
+The optional `MiniMax H3 PDD 8-Step Setup (T8 Advanced EXP)` node implements a clean-room ComfyUI
+integration of the Parallel Decoding Distillation schedule and dynamic output-head behavior published
+with [`alibaba-pai/MiniMax-H3-Acc-LoRAs`](https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs).
+The implementation was reviewed against upstream revision
+`78db175437ee05df7ec492ee366f01b68b8d20e6`, whose reference code is distributed under the
+Apache License 2.0. No PDD model weight is committed or redistributed by this repository. Users must
+install the matching FL2VA or Ref2VA adapter and base model themselves. The node is optional and does
+not alter stable nodes or legacy workflows when it is not connected.
+
 ## LightX2V MiniMax H3 Turbo-SLA and SpargeAttn kernel
 
 The optional MiniMax H3 LightX2V SLA Advanced node implements a clean-room ComfyUI adapter for the

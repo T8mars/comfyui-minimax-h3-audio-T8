@@ -152,6 +152,7 @@ from .nodes_still_exp import (
 from .nodes_speech_exp import SPEECH_NODE_CLASSES
 from .nodes_source_av_exp import SOURCE_AV_NODE_CLASSES
 from .nodes_sla_attention_advanced import SLA_ATTENTION_ADVANCED_NODE_CLASSES
+from .nodes_pdd_advanced import PDD_ADVANCED_NODE_CLASSES
 from .nodes_visual_reference_exp import MiniMaxH3VisualReferenceStrengthEXPT8
 from .nodes_vram_policy_advanced import VRAM_POLICY_ADVANCED_NODE_CLASSES
 from .preflight import run_preflight
@@ -595,6 +596,7 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SKIN_FINISH_SPECULAR_FREQUENCY_NODE_CLASSES,
                 *SKIN_FINISH_SURFACE_NODE_CLASSES,
                 *SKIN_FINISH_DICHROMATIC_NODE_CLASSES,
+                *PDD_ADVANCED_NODE_CLASSES,
             ]
 
 

@@ -1,4 +1,24 @@
 {
+  "pdd_8step_acceleration_advanced": {
+    "status": "implemented locally as one append-only Advanced EXP setup node; both converted variants pass strict structure, current-Comfy assembly and one real 736x416x124 joint-AV render, but both real runs miss the 512MiB residual-VRAM safety gate and human quality review remains pending",
+    "date": "2026-08-27",
+    "node": "MiniMaxH3PDD8StepSetupT8Advanced",
+    "position": 212,
+    "upstream": "https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs at revision 78db175437ee05df7ec492ee366f01b68b8d20e6",
+    "contract": "matching full non-pruned native MiniMaxH3Model plus one converted FL2VA or Ref2VA PDD file. The node dynamically applies all 258 model-only LoRA residuals without mutating or requantizing the INT8 base, replaces the final layer with eight pre-fused video/audio PDD heads, returns Euler/simple 8 NFE at fixed 12/3 shifts, and moves bypass-only adapter tensors back to the MODEL offload device after normal ejection or partial injection failure",
+    "adapter_structure": "each file has 778 tensors: 516 BF16 A/B tensors, 258 FP32 alpha scalars and four BF16 32-interval output-head banks. The converted layout contains 206 rank-64 direct adapters and 52 rank-192 block-diagonal fused-QKV adapters; alpha/rank remains 1.0",
+    "compatibility": "FL2VA and Ref2VA metadata are strict and not interchangeable. AdaLN input must be 2688 and adaln_t_table must be absent. Ordinary LoRA loaders, pruned bases, existing weight patches/LoRA injections, duplicate PDD attachment and off-grid schedules are rejected. No old node ID, schema, widget order or default changed",
+    "installed_model_hashes": {
+      "FL2VA": "95b79e73dbad645f4f4ccd7fb8c5d864e7b978022a4c372f8cfaba82d3ff40bf",
+      "Ref2VA": "f4522e368ad7da1af19a283a728fbeb1f2b18866569ef9169b73786c3d69e4d2"
+    },
+    "workflows": [
+      "examples/workflows/19-pdd-acceleration/2026-08-27_H3_PDD_FL2VA_8Step_Advanced_EXP.json",
+      "examples/workflows/19-pdd-acceleration/2026-08-27_H3_PDD_Ref2VA_8Step_Advanced_EXP.json"
+    ],
+    "validation": "11 focused PDD unit/schema/frontend/lifecycle/current-layout tests plus the append-only registry test pass; the real-validator now has eight prompt/UI-history/resource/custom-dimension tests, and the complete existing registration/workflow compatibility file passes 35/35. Both converted files pass serial current-Comfy assembly with 258 mapped adapters, 258 bypass hooks, one dynamic final layer, one wrapper, nine sigma values and exact block indices 0..7. Real isolated FL2VA and Ref2VA runs each completed 8 NFE at 736x416x124 with strict H.264/AAC decode, finite audio and exact decoded-frame counts. FL2VA took 147.156s with 15663MiB peak used / 447MiB minimum free; Ref2VA took 139.718s with 15600MiB peak used / 510MiB minimum free. A separate Ref2VA 1152x640x124 run took 414.156s with 15610MiB peak used / 500MiB minimum free and also passed strict media mechanics",
+    "boundary": "real setup and media contracts pass, but all three runs fail the project's 512MiB residual-VRAM gate, so universal 16GiB safety is not established. The user accepted the 0.7MP Ref2VA visual result; it still visibly generated Chinese dialogue subtitles despite a no-subtitles prompt, recorded as a known adherence issue rather than a visual hard failure or low-resolution artefact. Listening, speedup versus an equal-contract control and repeated-use stability remain unverified. MODEL objects also do not retain the source diffusion filename, so the workflow/user remains responsible for choosing the matching base variant"
+  },
   "skin_finish_vretoucher_research_adapter": {
     "status": "causal-window, face-crop, source-safe paste-back, current-runtime bridge, single-window control pipeline and dry-run-by-default formal validator implemented locally as unregistered research modules. The official checkpoint passes byte size, pinned SHA-256, exact 411-entry structure and real CPU strict loading. CUDA FP16 is rejected because the official FP32-oriented graph returns non-finite values; CUDA BF16 with bounded autocast completes one real window, writes an unselected candidate and fully releases its owner reference. The clean source shows only a sub-visible delta, so no quality result, node or workflow is exposed",
     "date": "2026-08-25",
@@ -1158,7 +1178,8 @@
     "MiniMaxH3SkinFinishQualityVideoStreamT8Advanced",
     "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
     "MiniMaxH3SkinFinishSurfaceT8Advanced",
-    "MiniMaxH3SkinFinishDichromaticT8Advanced"
+    "MiniMaxH3SkinFinishDichromaticT8Advanced",
+    "MiniMaxH3PDD8StepSetupT8Advanced"
   ],
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",
