@@ -144,6 +144,9 @@ from .nodes_long_video_delivery_exp import (
     MiniMaxH3LongVideoComposeAcceptedT8,
     MiniMaxH3LongVideoOrchestratorT8,
 )
+from .nodes_long_video_in_node_loop_advanced import (
+    LONG_VIDEO_IN_NODE_LOOP_ADVANCED_NODE_CLASSES,
+)
 from .long_video_routes import register_long_video_background_routes
 from .nodes_still_exp import (
     MiniMaxH3StillConditioningT8,
@@ -603,6 +606,7 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SLA_PROFILE_ROUTER_ADVANCED_NODE_CLASSES,
                 *PDD_ADVANCED_NODE_CLASSES,
                 *AUDIO_REFINE_ADVANCED_NODE_CLASSES,
+                *LONG_VIDEO_IN_NODE_LOOP_ADVANCED_NODE_CLASSES,
             ]
 
 

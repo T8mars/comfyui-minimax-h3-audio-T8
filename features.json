@@ -1223,7 +1223,8 @@
     "MiniMaxH3AudioRefineQualityGateT8Advanced",
     "MiniMaxH3AudioRefineModelRouteT8Advanced",
     "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
-    "MiniMaxH3AudioRefineDualModelSetupT8Advanced"
+    "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
+    "MiniMaxH3LongVideoInNodeLoopT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",
@@ -1246,6 +1247,18 @@
     "human_review": "the first single-pair review recorded a slight preference for Audio Refine after the reviewer clarified that the left side was better. The later Phase 2 final review used three assessable pairs: clear speech, speech plus rain/music/transient, and I2VA speech. After reveal, base-without-Turbo Refine4 won audio 3/3 with no audio losses; overall it won one pair and tied two. This supports an opt-in route with a manual gate, not a universal quality or non-inferiority claim",
     "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; signal metrics are review cues rather than a quality oracle. The nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
     "compatibility": "all pre-Audio node IDs retain their exact order and schemas; the four Phase 1 IDs occupy positions 213 through 216, the three Phase 2 IDs occupy positions 217 through 219, and every pre-existing workflow remains unchanged"
+  },
+  "long_video_in_node_loop_advanced": {
+    "status": "implemented locally as one append-only Advanced EXP output node; unit, simulated interruption recovery, dated frontend-workflow validation and one real two-segment low-load H3 chain pass",
+    "date": "2026-08-27",
+    "node": "MiniMaxH3LongVideoInNodeLoopT8Advanced",
+    "position": 220,
+    "frontend_workflow": "examples/workflows/04-long-video/2026-08-27_H3_In_Node_Long_Video_Loop_Turbo4_Advanced_EXP.json",
+    "contract": "one ComfyUI execution runs fixed-window H3 segments strictly sequentially at batch 1, atomically persists and accepts each completed segment, resumes from the accepted manifest after interruption, and returns a file-backed final VIDEO rather than a full IMAGE batch",
+    "compatibility": "the first 220 node IDs, schemas, widget order, defaults and existing workflow bytes remain unchanged; the existing Background/AutoQueue and human-review routes remain available as the stable fallback",
+    "memory": "only the current segment AV latent, decoded media and bounded continuation tail may remain live; accepted history and final composition are file-backed. The node never calls unload_all_models and does not run multiple segment samples in parallel",
+    "verification": "1662 full-project tests, changed-scope Ruff, compileall, all workflow JSON parsing and git diff checks passed before the real run. The final focused scope has 11 in-node-loop tests and the broader long-video/registration/frontend scope has 129 passing tests; controlled cases cover second-segment failure, candidate reuse, final-compose retry without resampling, ComfyUI interruption and simulated torch OutOfMemoryError cleanup. The first isolated 256x256, 6-second, 4-NFE Turbo4 chain completed two serial segments in 82.234 seconds. A later single 1152x640 (0.737MP) run kept the same prompt, seed, six-second timeline, 124-frame render window and 22-frame context, and completed in 484.969 seconds. In both runs segment 0 delivered 124 frames plus a checksum-bound continuation context and segment 1 delivered only 20 new frames, so manifest revision 2 ended at exactly 144 frames and 192000 planned audio samples. The 0.7MP final file strictly decodes as 144-frame 24fps H.264 plus finite stereo 32kHz AAC, has SHA-256 069443ad0dbbdccfe87395418e756bdfd83231623cfec6f90203812070c9ac5a, and contains no audio interval of at least 200ms below -50dB. Six evenly spaced frames and six boundary-adjacent frames show one coherent clockwork-bird scene without black frames or visible segment reset",
+    "boundary": "automatic segment acceptance intentionally removes the per-segment human review gate. The 0.7MP run started only after 14604MiB free VRAM was available, observed 14162MiB peak used and 1948MiB minimum free, and therefore passed the fixed 512MiB sampled margin; this is one serial run, not a universal 16GB claim. AAC decoding exposes codec padding while the manifest timeline remains exactly 192000 samples. These runs do not prove arbitrary-duration identity, audio, scene quality, repeated stability, crash recovery under real OOM, or quality superiority; the 0.7MP result still requires the user's full-motion and full-audio review"
   },
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",

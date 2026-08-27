@@ -2,14 +2,14 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.50.0** · GPL-3.0-or-later
+当前版本：**1.51.0** · GPL-3.0-or-later
 
 ## 主要功能
 
 - 文生、图生、首尾帧、参考图/视频/音频、混合参考
 - 视频和音频双时钟采样
 - 原声保留、参考音频、音轨合成、低步数 Audio Refine
-- 多关键帧、长视频续写、断点恢复、Latent 放大
+- 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
 
@@ -32,6 +32,9 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 2. 新用户先用 `01-basic-generation` 或 `02-audio-control`。
 3. 把 JSON 拖进 ComfyUI，替换模型和素材后运行。
 4. 高级工作流先看同目录的 `README.md` 和画布 NOTE。
+
+希望只排队一次就自动完成全部长视频分段时，使用`04-long-video`中的
+`In_Node_Long_Video_Loop`工作流；需要逐段人工挑片时继续使用原有Background/Accepted路线。
 
 [查看全部工作流分类](examples/workflows/README.md)
 

@@ -1216,7 +1216,7 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == 220
+    assert len(ids) == 221
     assert ids == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
@@ -1227,7 +1227,7 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         "MiniMaxH3TurboSLAProfileRouterT8Advanced",
         "MiniMaxH3PDD8StepSetupT8Advanced",
     ]
-    assert ids[213:] == [
+    assert ids[213:220] == [
         "MiniMaxH3AudioRefineAuditT8Advanced",
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
@@ -1236,3 +1236,4 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
         "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     ]
+    assert ids[220] == "MiniMaxH3LongVideoInNodeLoopT8Advanced"

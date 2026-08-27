@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 220
+    assert len(ids) == 221
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -36,7 +36,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3TurboSLAProfileRouterT8Advanced",
         "MiniMaxH3PDD8StepSetupT8Advanced",
     ]
-    assert ids[213:] == [
+    assert ids[213:220] == [
         "MiniMaxH3AudioRefineAuditT8Advanced",
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
@@ -45,6 +45,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
         "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     ]
+    assert ids[220] == "MiniMaxH3LongVideoInNodeLoopT8Advanced"
     assert ids[:14] == [
         "MiniMaxH3AudioConditioningT8",
         "MiniMaxH3AudioLatentControlT8",

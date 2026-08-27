@@ -7,7 +7,7 @@
 | `01-basic-generation` | 稳定双时钟与不同音频步数组合的基础生成 |
 | `02-audio-control` | 音频锁定、重混、只参考及计划式音频注入 |
 | `03-image-video-edit` | 单帧语义编辑、源视频重绘、参考强度实验与 LanPaint 局部AV修复 |
-| `04-long-video` | 分段长视频、accepted manifest、后台续跑、完成态latent检查点、双时钟Euler逐NFE恢复，以及全局Prompt Relay事件时间线 |
+| `04-long-video` | 分段长视频、节点内一键串行、accepted manifest、后台续跑、完成态latent检查点、双时钟Euler逐NFE恢复，以及全局Prompt Relay事件时间线 |
 | `05-speech-dialogue` | 单人语音、参考音色、对白、长文本和音色库实验 |
 | `06-face-refine` | 单人/动漫/多人脸部五官修复与追踪回贴 |
 | `07-motion-detail` | 动态引导、尾段细化、Restart、STG与组合采样 |
