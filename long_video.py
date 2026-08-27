@@ -27,7 +27,7 @@ from .core import (
     AUDIO_LATENT_FPS,
     CANVAS_MULTIPLE,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     MIN_TRAINED_FRAMES,
     adapt_canvas,
     align_frame_count,
@@ -567,11 +567,6 @@ def build_long_video_conditioning(
 ):
     if width % CANVAS_MULTIPLE or height % CANVAS_MULTIPLE:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"Requested canvas has {width * height:,} pixels and exceeds the configured "
-            f"MiniMax H3 2.0MP cap of {MAX_PIXELS:,} pixels (1920x1088)"
-        )
     if not 0.0 <= audio_denoise_strength <= 1.0:
         raise ValueError("audio_denoise_strength must be between 0 and 1")
     if context_audio not in {"video_and_audio", "video_only"}:
@@ -603,6 +598,11 @@ def build_long_video_conditioning(
         raise ValueError("Motion context must be shorter than the current H3 target")
 
     warnings: list[str] = []
+    if width * height > REFERENCE_PIXEL_AREA:
+        warnings.append(
+            "Canvas exceeds the 1920x1088 reference area; execution remains allowed and "
+            "VRAM/runtime/OOM risk is owned by the user."
+        )
     keyframes: list[dict] = []
     keyframe_images: list[torch.Tensor] = []
     picture_labels: list[str] = []

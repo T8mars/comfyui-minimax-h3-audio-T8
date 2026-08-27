@@ -215,7 +215,7 @@ class MiniMaxH3AudioConditioningT8(io.ComfyNode):
                 io.Autogrow.Input("ref_audios", optional=True, template=io.Autogrow.TemplatePrefix(input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3)),
                 io.Boolean.Input(
                     "allow_above_reference_area",
-                    default=False,
+                    default=True,
                     optional=True,
                     advanced=True,
                     tooltip=(

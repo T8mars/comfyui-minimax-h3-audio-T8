@@ -657,7 +657,7 @@ def test_task_type_frontend_labels_preserve_canonical_backend_values():
     assert task_type.options == [
         "auto", "T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid",
     ]
-    assert highres_opt_in.default is False
+    assert highres_opt_in.default is True
     assert highres_opt_in.optional is True
     assert conditioning.define_schema().inputs[-1].id == "allow_above_reference_area"
 
@@ -730,7 +730,7 @@ def test_preflight_reports_alignment_audio_and_reference_guidance():
     assert not any("swapped" in warning for warning in data["warnings"])
 
 
-def test_preflight_allows_1080p_area_and_blocks_only_above_it():
+def test_preflight_treats_1080p_as_reference_area_without_blocking_larger_canvas():
     ready, warning_count, report = run_preflight(1920, 1088, 124, "native")
     data = json.loads(report)
     assert ready is True
@@ -738,9 +738,14 @@ def test_preflight_allows_1080p_area_and_blocks_only_above_it():
     assert data["facts"]["pixels"] == 1920 * 1088
     assert any("VRAM" in warning for warning in data["warnings"])
 
-    ready, _, report = run_preflight(1952, 1088, 124, "lock_source")
-    assert ready is False
-    assert len(json.loads(report)["errors"]) == 2
+    ready, warning_count, report = run_preflight(2080, 1152, 124, "native")
+    data = json.loads(report)
+    assert ready is True
+    assert warning_count >= 1
+    assert data["errors"] == []
+    assert data["facts"]["reference_pixel_area"] == 1920 * 1088
+    assert data["facts"]["pixel_area_policy"] == "warning_only_no_hard_cap"
+    assert any("execution is not blocked" in warning for warning in data["warnings"])
 
 
 def test_preflight_distinguishes_h3_video_and_audio_vaes_by_latent_contract():

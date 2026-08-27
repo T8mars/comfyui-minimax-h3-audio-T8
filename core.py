@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping
 
 import torch
@@ -14,7 +13,9 @@ import comfy.utils
 CANVAS_MULTIPLE = 32
 BASE_SHORT_EDGE = 768
 VRAM_CAUTION_PIXELS = 1344 * 768
-MAX_PIXELS = 1920 * 1088
+REFERENCE_PIXEL_AREA = 1920 * 1088
+# Compatibility alias for third-party code. This is a warning threshold, not a hard cap.
+MAX_PIXELS = REFERENCE_PIXEL_AREA
 REF_IMAGE_SHORT_EDGE = 2048
 FPS = 24
 AUDIO_LATENT_FPS = 40
@@ -51,10 +52,6 @@ def adapt_canvas(width: int, height: int) -> tuple[int, int]:
         nominal_width, nominal_height = BASE_SHORT_EDGE * ratio, BASE_SHORT_EDGE
     else:
         nominal_width, nominal_height = BASE_SHORT_EDGE, BASE_SHORT_EDGE / ratio
-    if nominal_width * nominal_height > MAX_PIXELS:
-        scale = math.sqrt(MAX_PIXELS / (nominal_width * nominal_height))
-        nominal_width *= scale
-        nominal_height *= scale
     return (
         max(CANVAS_MULTIPLE, round(nominal_width / CANVAS_MULTIPLE) * CANVAS_MULTIPLE),
         max(CANVAS_MULTIPLE, round(nominal_height / CANVAS_MULTIPLE) * CANVAS_MULTIPLE),

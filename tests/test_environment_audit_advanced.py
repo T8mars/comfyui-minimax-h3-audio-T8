@@ -175,6 +175,16 @@ def test_environment_audit_flags_unfixed_high_resolution_tiled_decode():
     )
 
 
+def test_environment_audit_above_reference_area_is_warning_only():
+    report = _audit(_snapshot(), width=2080, height=1152)
+    assert "canvas_area_above_reference_area" in {
+        item["code"] for item in report["issues"]["warnings"]
+    }
+    assert "canvas_area_above_reference_area" not in {
+        item["code"] for item in report["issues"]["hard"]
+    }
+
+
 def test_environment_audit_flags_regular_h3_decode_above_internal_tile_boundary():
     capabilities = _capabilities(tiled_decode_global_coordinates="unsupported")
     report = _audit(

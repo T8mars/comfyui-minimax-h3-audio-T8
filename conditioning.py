@@ -12,7 +12,7 @@ from comfy.model_base import MiniMaxH3 as MiniMaxH3BaseModel
 from .core import (
     CANVAS_MULTIPLE,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     REF_IMAGE_SHORT_EDGE,
     adapt_canvas,
     align_frame_count_down,
@@ -384,7 +384,7 @@ def build_conditioning(
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
     canvas_pixels = width * height
-    exceeds_reference_area = canvas_pixels > MAX_PIXELS
+    exceeds_reference_area = canvas_pixels > REFERENCE_PIXEL_AREA
     if not 0.0 <= audio_denoise_strength <= 1.0:
         raise ValueError("audio_denoise_strength must be between 0 and 1")
 

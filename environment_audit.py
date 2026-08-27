@@ -14,7 +14,7 @@ from .vram_policy import runtime_snapshot
 
 
 ENVIRONMENT_AUDIT_SCHEMA = "t8.minimax_h3.environment_audit.v1"
-MAX_PIXEL_AREA = 1920 * 1088
+REFERENCE_PIXEL_AREA = 1920 * 1088
 VRAM_CAUTION_PIXEL_AREA = 1344 * 768
 
 KNOWN_CORE_COMMITS = {
@@ -766,13 +766,13 @@ def audit_h3_environment(
     warnings: list[dict[str, Any]] = []
     unknown: list[dict[str, Any]] = []
 
-    if pixels > MAX_PIXEL_AREA:
+    if pixels > REFERENCE_PIXEL_AREA:
         _issue(
-            hard,
-            "canvas_area_exceeds_plugin_contract",
-            "Canvas area exceeds the plugin's 1920x1088 maximum contract.",
+            warnings,
+            "canvas_area_above_reference_area",
+            "Canvas area exceeds the 1920x1088 reference area; this is warning-only and does not block execution.",
             pixels=pixels,
-            maximum=MAX_PIXEL_AREA,
+            reference_area=REFERENCE_PIXEL_AREA,
         )
     audio_scale_state = _state(capabilities, "t8_custom_sampling_audio_scale")
     if audio_scale_state == "unsupported":

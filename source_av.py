@@ -12,7 +12,7 @@ import comfy.utils
 from .core import (
     AUDIO_LATENT_FPS,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     MAX_TRAINED_FRAMES,
     MIN_TRAINED_FRAMES,
     align_frame_count,
@@ -70,10 +70,6 @@ def prepare_source_media_window(
         raise ValueError("start_seconds must be nonnegative")
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("H3 source output width and height must be positive multiples of 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"H3 source output {width}x{height} exceeds the configured {MAX_PIXELS:,}-pixel limit"
-        )
     if short_video_policy not in SHORT_VIDEO_POLICIES:
         raise ValueError(f"Unknown short video policy {short_video_policy!r}")
     if short_audio_policy not in SHORT_AUDIO_POLICIES:
@@ -136,6 +132,11 @@ def prepare_source_media_window(
         "sample_rate": SOURCE_AUDIO_SAMPLE_RATE,
     }
     warnings = []
+    if width * height > REFERENCE_PIXEL_AREA:
+        warnings.append(
+            "Source output exceeds the 1920x1088 reference area; execution remains allowed "
+            "and VRAM/runtime/OOM risk is owned by the user."
+        )
     if held_video_frames:
         warnings.append(f"Held the last source frame for {held_video_frames} target frames.")
     if padded_audio_samples:
@@ -270,10 +271,6 @@ def _validate_video(video: torch.Tensor) -> tuple[int, int, int]:
     frames = frame_count_from_video_latent_t(video.shape[2])
     height = video.shape[-2] * 16
     width = video.shape[-1] * 16
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"H3 source canvas {width}x{height} exceeds the configured {MAX_PIXELS:,}-pixel limit"
-        )
     return frames, width, height
 
 
@@ -439,6 +436,11 @@ def prepare_source_av_latent(
     audio_output["noise_mask"] = effective_audio_mask
 
     warnings = []
+    if width * height > REFERENCE_PIXEL_AREA:
+        warnings.append(
+            "Source AV latent exceeds the 1920x1088 reference area; execution remains allowed "
+            "and VRAM/runtime/OOM risk is owned by the user."
+        )
     if not MIN_TRAINED_FRAMES <= frames <= MAX_TRAINED_FRAMES:
         warnings.append(
             f"{frames} source frames are outside the approximate H3 trained range "

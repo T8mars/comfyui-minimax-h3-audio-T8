@@ -1737,8 +1737,9 @@ universal voice-quality or lip-sync claim.
 The learned latent upscaler no longer treats the official 1920x1088 reference area as a hard 2MP
 execution cap. It preserves 32-pixel alignment, maximum 4x scale and aspect-ratio safeguards while
 reporting above-reference-area memory risk. Stable Conditioning remains fail-closed by default;
-only the newly appended optional high-resolution flag permits a larger requested canvas. Existing
-workflows omit that flag and retain the previous rejection behavior.
+as of v1.52.2, that fail-closed behavior applies to real tensor/layout contracts rather than canvas
+area. The legacy high-resolution flag remains at the schema tail for old-workflow compatibility but
+larger 32-aligned canvases are warning-only regardless of its saved value.
 
 ## 1.37.0 Enhance-A-Video / FETA Advanced experiment (2026-08-21)
 
@@ -6094,10 +6095,10 @@ base/overlay, SLA/PDD/Turbo LoRA and the learned latent-upscaler now report refe
 hashes and roles only as diagnostics. Their actual framework loader, safe deserializer or strict
 state-dict assignment is authoritative, so an incompatible model may fail naturally during execution.
 Checkpoint/resume, Hybrid artifact/sidecar, manifests, accepted media and runtime state hashes still
-prevent stale, cross-source or corrupted user data. Native H3 batch/channel/layout,
-17n+5 frame grid, 24fps reference semantics, 32-pixel alignment, official 1920x1088 reference area and
-explicitly scoped scientific NFE profiles also remain enforced. These are model or integrity contracts,
-not source-version whitelists.
+prevent stale, cross-source or corrupted user data. Native H3 batch/channel/layout, 17n+5 frame grid,
+24fps reference semantics, 32-pixel alignment and explicitly scoped scientific NFE profiles also remain
+enforced. The 1920x1088 area is retained only as a warning/reference threshold and does not block a
+larger canvas. These are model or integrity contracts, not source-version whitelists.
 
 The current suite collects 1557 tests. One complete serial run finished with 1554 passes and one
 Windows FFmpeg child-process failure; that exact Long Video fixture passed immediately in isolation.
@@ -6126,3 +6127,13 @@ decodes and has SHA-256
 no black frame, corruption or scene reset. Peak device use was about 14260MiB and minimum free VRAM
 about 1850MiB. This low-resolution mechanical result does not establish visual improvement, audio
 non-regression, arbitrary-duration stability or universal 16GiB safety.
+
+## Canvas area warning-only hotfix (2026-08-27)
+
+Version 1.52.2 removes the former 2,088,960-pixel execution gate from Conditioning, Source AV,
+Long Video (including both in-node loops), Multi-Keyframe, Still Image, SPEED, Prompt Relay resource
+estimation and Environment Audit. Positive dimensions and 32-pixel alignment remain mandatory. The
+legacy Conditioning opt-in stays at the schema tail so old workflows keep their input ordering, but
+its saved true/false value no longer changes admission. The reported 2,396,160-pixel case is covered by
+the equivalent valid 32-aligned 2080x1152 contract. A serial focused CPU suite passed 217 tests; no
+model generation, visual-quality test, memory-safety claim or stress test was performed.

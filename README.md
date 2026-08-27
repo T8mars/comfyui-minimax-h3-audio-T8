@@ -2,7 +2,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.52.1** · GPL-3.0-or-later
+当前版本：**1.52.2** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -58,6 +58,7 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 - 保留原声：`audio_mode=lock_source`，保存节点连接 `mux_audio`
 - 媒体标签：`<Picture 1>`、`<Video 1>`、`<Audio 1>`，编号必须对应输入
 - 宽高使用 32 的倍数；显存不足时先降分辨率、帧数和参考数量
+- `1920×1088` 只是风险参考面积，不是执行上限；更大画布会警告但不拦截，OOM 与画质风险由用户承担
 - 不要同时叠加多个接管 sampler、attention 或 MODEL forward 的节点
 
 ## PDD 8 步

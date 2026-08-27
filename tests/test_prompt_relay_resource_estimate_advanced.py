@@ -110,6 +110,12 @@ def test_standard_canvas_matrix_reports_all_three_h3_profiles():
     assert [item["selected_canvas"] for item in matrix] == [True, False, False]
 
 
+def test_resource_estimate_above_reference_area_warns_instead_of_blocking():
+    report = json.loads(_estimate(width=2080, height=1152)[4])
+    assert report["target"]["pixel_area"] == 2_396_160
+    assert any("estimator still runs" in warning for warning in report["warnings"])
+
+
 def test_joint_av_adds_audio_chunks_but_not_a_larger_peak_chunk():
     report = json.loads(_estimate(_plan(query_route="joint_av_exp"))[4])
     assert report["query_route"] == "joint_av_exp"
@@ -163,7 +169,6 @@ def test_reference_row_breakdown_uses_h3_aligned_video_length():
     [
         {"width": 735},
         {"height": 0},
-        {"width": 1920, "height": 1120},
         {"query_chunk_rows": 31},
         {"precision": "int8"},
         {"reference_video_count": -1},

@@ -17,7 +17,7 @@ from comfy.ldm.minimax.model import MiniMaxH3Model
 from .conditioning import build_conditioning, resolve_task_type
 from .core import (
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     align_frame_count,
     empty_av_latent,
     nested_av_parts,
@@ -74,10 +74,6 @@ def prepare_speed_calibration_window(
         raise ValueError("start_seconds must be finite and nonnegative")
     if width < 32 or height < 32 or width % 32 or height % 32:
         raise ValueError("Calibration width and height must be positive multiples of 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"Calibration canvas {width}x{height} exceeds the {MAX_PIXELS:,}-pixel limit"
-        )
     if resize_mode != "center_cover":
         raise ValueError("SPEED calibration only supports aspect-safe center_cover")
 
@@ -151,6 +147,14 @@ def prepare_speed_calibration_window(
             "Center-cover preserves geometry but discards source edges. It is appropriate for "
             "a fixed-grid spectrum dataset and is not evidence that the selected clips are "
             "independent, representative, diverse, or authorized."
+        ),
+        "warnings": (
+            [
+                "Calibration canvas exceeds the 1920x1088 reference area; execution remains "
+                "allowed and VRAM/runtime/OOM risk is owned by the user."
+            ]
+            if width * height > REFERENCE_PIXEL_AREA
+            else []
         ),
     }
     return selected, frame_count, canonical_json(report)
@@ -251,10 +255,6 @@ def resolve_stage_shapes(width: int, height: int, scales: Sequence[float]) -> li
     height = int(height)
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("Final H3 width and height must be positive multiples of 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"Final H3 canvas has {width * height:,} pixels and exceeds the 2.0MP cap"
-        )
     scales = validate_scales(scales)
     output: list[dict[str, Any]] = []
     seen: set[tuple[int, int]] = set()
@@ -292,6 +292,7 @@ def resolve_stage_shapes(width: int, height: int, scales: Sequence[float]) -> li
                 "effective_scale_height": scale_h,
                 "effective_scale": math.sqrt(scale_w * scale_h),
                 "snap_anisotropy": anisotropy,
+                "exceeds_reference_area": stage_width * stage_height > REFERENCE_PIXEL_AREA,
             }
         )
     for current, following in zip(output, output[1:]):

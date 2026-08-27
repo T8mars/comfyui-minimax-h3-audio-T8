@@ -13,7 +13,6 @@ from h3_audio_t8_pkg.still_image import (
     resolve_still_target,
     run_still_preflight,
 )
-from h3_audio_t8_pkg.core import MAX_PIXELS
 from helpers import FakeClip, FakeVideoVAE
 
 
@@ -99,16 +98,30 @@ def test_locked_silence_preserves_video_denoising_and_locks_audio():
     assert torch.all(audio_mask == 0)
 
 
-def test_canvas_from_edit_image_and_custom_1080p_stay_inside_supported_cap():
+def test_canvas_from_edit_image_and_custom_above_reference_area_remain_aligned():
     image = torch.zeros((1, 720, 1280, 3))
     width, height = resolve_still_canvas(image, "from_edit_image", 32, 32)
     assert width % 32 == 0 and height % 32 == 0
-    assert width * height <= MAX_PIXELS
 
     assert resolve_still_canvas(image, "custom", 1920, 1088) == (1920, 1088)
+    assert resolve_still_canvas(image, "custom", 2080, 1152) == (2080, 1152)
 
-    with pytest.raises(ValueError, match="2,088,960"):
-        resolve_still_canvas(image, "custom", 1952, 1088)
+    ready, warning_count, report = run_still_preflight(
+        "custom",
+        2080,
+        1152,
+        "direct_1_frame",
+        0.999,
+        "generate_and_discard",
+        video_vae=FakeVideoVAE(),
+        edit_image=image,
+    )
+    assert ready is True
+    assert warning_count >= 1
+    assert any(
+        "execution remains allowed" in warning
+        for warning in json.loads(report)["warnings"]
+    )
 
 
 def test_still_preflight_reports_missing_image_and_single_frame_ood_warning():

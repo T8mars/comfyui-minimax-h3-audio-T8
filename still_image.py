@@ -14,7 +14,7 @@ from .core import (
     AUDIO_LATENT_FPS,
     CANVAS_MULTIPLE,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     REF_IMAGE_SHORT_EDGE,
     VRAM_CAUTION_PIXELS,
     adapt_canvas,
@@ -57,22 +57,12 @@ def resolve_still_canvas(
 
     if canvas_mode == "from_edit_image":
         width, height = adapt_canvas(int(edit_image.shape[2]), int(edit_image.shape[1]))
-        while width * height > MAX_PIXELS:
-            if width >= height:
-                width -= CANVAS_MULTIPLE
-            else:
-                height -= CANVAS_MULTIPLE
     elif canvas_mode != "custom":
         raise ValueError(f"Unknown still canvas mode: {canvas_mode}")
 
     width, height = int(width), int(height)
     if width <= 0 or height <= 0 or width % CANVAS_MULTIPLE or height % CANVAS_MULTIPLE:
         raise ValueError("MiniMax H3 still width and height must be positive multiples of 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"Still canvas has {width * height:,} pixels; configured H3 2.0MP cap is "
-            f"{MAX_PIXELS:,} pixels (1920x1088)"
-        )
     return width, height
 
 
@@ -295,9 +285,14 @@ def run_still_preflight(
                 warnings.append(
                     "canvas short edge below 512 may collapse image structure; use from_edit_image or a larger custom canvas"
                 )
-            if resolved_width * resolved_height > VRAM_CAUTION_PIXELS:
+            if resolved_width * resolved_height > REFERENCE_PIXEL_AREA:
                 warnings.append(
-                    "high-resolution still canvas is supported up to 1920x1088 but may require substantially more VRAM"
+                    "still canvas exceeds the 1920x1088 reference area; execution remains "
+                    "allowed and VRAM/runtime/OOM risk is owned by the user"
+                )
+            elif resolved_width * resolved_height > VRAM_CAUTION_PIXELS:
+                warnings.append(
+                    "high-resolution still canvas may require substantially more VRAM"
                 )
         except ValueError as error:
             errors.append(str(error))

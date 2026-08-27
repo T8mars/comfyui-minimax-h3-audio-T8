@@ -24,7 +24,7 @@ from .conditioning import (
 from .core import (
     CANVAS_MULTIPLE,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     adapt_canvas,
     align_frame_count_down,
     empty_av_latent,
@@ -942,11 +942,6 @@ def _build_advanced_conditioning(
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
-    if width * height > MAX_PIXELS:
-        raise ValueError(
-            f"Requested canvas has {width * height:,} pixels and exceeds the configured "
-            f"MiniMax H3 2.0MP cap of {MAX_PIXELS:,} pixels (1920x1088); reduce width/height"
-        )
     for label, value in {
         "audio_denoise_strength": audio_denoise_strength,
         "first_frame_noise_aug": first_frame_noise_aug,
@@ -1218,6 +1213,11 @@ def _build_advanced_conditioning(
         f"pictures={len(picture_labels)}, videos={len(video_labels)}, audios={len(audio_labels)}",
         f"source_audio_tag={'<Audio ' + str(source_audio_ordinal) + '>' if source_audio_ordinal else 'none'}",
     ]
+    if width * height > REFERENCE_PIXEL_AREA:
+        report_lines.append(
+            "warning: canvas exceeds the 1920x1088 reference area; execution remains allowed "
+            "and VRAM/runtime/OOM risk is owned by the user"
+        )
     report_lines.extend(f"warning: {warning}" for warning in prompt_warnings)
     output_audio = final_audio if final_audio is not None else drive_audio
     return (

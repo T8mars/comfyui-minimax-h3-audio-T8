@@ -162,6 +162,21 @@ def test_prepare_exact_pair_preserves_storage_metadata_and_builds_masks():
     assert set(audio_latent) == {"samples", "audio_hash", "shared"}
 
 
+def test_source_av_above_reference_area_is_warning_only():
+    video = torch.zeros((1, 24, 2, 72, 130), dtype=torch.float32)
+    audio = make_audio(latent_t=8)
+    av, _video_out, _audio_out, report = prepare(
+        {"samples": video},
+        {"samples": audio},
+    )
+    out_video, _out_audio = av["samples"].unbind()
+    data = json.loads(report)
+
+    assert out_video.shape[-2:] == (72, 130)
+    assert data["facts"]["canvas"] == [2080, 1152]
+    assert any("execution remains allowed" in warning for warning in data["warnings"])
+
+
 def test_prepare_respects_existing_masks_before_stream_strength():
     video = make_video()
     audio = make_audio()

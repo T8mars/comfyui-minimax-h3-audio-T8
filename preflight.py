@@ -7,7 +7,7 @@ import torch
 from comfy.ldm.minimax.model import MiniMaxH3Model
 
 from .core import (
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     MAX_TRAINED_FRAMES,
     MIN_TRAINED_FRAMES,
     VRAM_CAUTION_PIXELS,
@@ -39,16 +39,17 @@ def run_preflight(
         errors.append("width and height must be positive multiples of 32")
     pixels = width * height
     facts["pixels"] = pixels
-    facts["max_pixel_area"] = MAX_PIXELS
-    if pixels > MAX_PIXELS:
-        errors.append(
-            f"canvas has {pixels:,} pixels; configured H3 2.0MP cap is "
-            f"{MAX_PIXELS:,} pixels (1920x1088)"
+    facts["reference_pixel_area"] = REFERENCE_PIXEL_AREA
+    facts["pixel_area_policy"] = "warning_only_no_hard_cap"
+    if pixels > REFERENCE_PIXEL_AREA:
+        warnings.append(
+            f"canvas has {pixels:,} pixels and exceeds the {REFERENCE_PIXEL_AREA:,}-pixel "
+            "1920x1088 reference area; execution is not blocked, but VRAM, runtime, OOM and "
+            "quality risk are owned by the user"
         )
     elif pixels > VRAM_CAUTION_PIXELS:
         warnings.append(
-            f"high-resolution canvas has {pixels:,} pixels; this is supported up to "
-            "1920x1088 but may require substantially more VRAM"
+            f"high-resolution canvas has {pixels:,} pixels and may require substantially more VRAM"
         )
     aligned = align_frame_count(length)
     facts["aligned_frames"] = aligned

@@ -820,7 +820,7 @@
     "optional_input_repairs": "all 211 registered nodes were audited; Speech Studio now accepts its optional speech_guard dependency, and four optional Context IR text inputs have Python defaults so legacy graphs may omit them",
     "model_identity_policy": "user-selected ParseNet, SFace, VRetouchEr, Hybrid base/overlay, SLA/PDD/Turbo LoRA and learned latent-upscaler file hashes, sizes, filenames and reference roles are diagnostic only; the real framework loader or strict state-dict assignment is authoritative",
     "intentionally_retained_integrity_checks": "checkpoint/resume files, Hybrid artifacts and sidecars, workflow plans, manifests, state bindings and accepted-media hashes remain enforced because they protect the user's own saved data rather than allowlisting a model",
-    "intentionally_retained_model_limits": "native H3 batch/layout/channel/frame-grid contracts, 24fps reference semantics, 32-pixel alignment and explicitly scoped scientific NFE profiles; 1920x1088 is retained only as a warning/reference area and is not a Conditioning execution gate",
+    "intentionally_retained_model_limits": "native H3 batch/layout/channel/frame-grid contracts, 24fps reference semantics, 32-pixel alignment and explicitly scoped scientific NFE profiles; 1920x1088 is retained only as a warning/reference area and is not an execution gate in any H3 canvas path",
     "workflow_maintenance_repairs": "workflow builders now compare canonical JSON semantics instead of raw bytes, decode normalized ComfyUI 0.4 widget serialization, and keep Quick Face Repair model selectors portable rather than embedding one machine's installed-model inventory",
     "verification": "1557 tests are collected. One complete serial run reached 1554 passes plus one transient Windows FFmpeg process failure, whose isolated rerun passed; after the two final Hybrid identity regressions were added, the 46-test Hybrid scope passed. A second complete rerun reached 69 percent without an assertion failure before a Windows native access violation in the Skin Finish video-stream fixture; that exact fixture also passed in isolation. All 147 frontend workflow JSON files parse with required ComfyUI nodes/links metadata; no GPU quality, speed or memory claim"
   },
@@ -844,9 +844,20 @@
     "frame_grid": "17n+5",
     "trained_frame_range": [124, 362],
     "reference_pixel_area": 2088960,
-    "max_16_9_resolution": [1920, 1088],
+    "reference_16_9_resolution": [1920, 1088],
     "vram_caution_pixel_area": 1032192,
     "conditioning_area_policy": "warning_only_no_hard_pixel_area_cap",
+    "area_warning_only_scope": [
+      "Conditioning",
+      "Source AV",
+      "Long Video and In-Node Long Video",
+      "Multi-Keyframe",
+      "Still Image",
+      "SPEED",
+      "Prompt Relay Resource Estimate",
+      "Environment Audit"
+    ],
+    "area_hotfix_verification": "217 focused CPU contract tests passed, including the reported 2396160-pixel area represented by the valid 32-aligned 2080x1152 canvas; no model generation or stress test was run",
     "batch_size": 1
   },
   "frontend_workflow_compatibility_hotfix": {

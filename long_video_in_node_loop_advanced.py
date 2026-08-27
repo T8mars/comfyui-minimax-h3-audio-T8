@@ -569,8 +569,6 @@ def run_long_video_in_node_loop(
 ) -> tuple[str, str, int, str, str]:
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 in-node long-video width and height must be divisible by 32")
-    if width * height > 2_088_960:
-        raise ValueError("MiniMax H3 in-node long-video canvas exceeds the 1920x1088 2.0MP cap")
     if bit_depth not in {8, 10}:
         raise ValueError("bit_depth must be 8 or 10")
     if not 0 <= crf <= 51:

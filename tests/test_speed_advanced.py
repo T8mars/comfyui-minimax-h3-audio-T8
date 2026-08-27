@@ -72,6 +72,13 @@ def test_stage_shapes_snap_to_32_without_aspect_distortion():
     assert stages[0]["latent_height"] == 20
     assert stages[-1]["latent_width"] % 2 == 0
     assert stages[-1]["latent_height"] % 2 == 0
+
+
+def test_stage_shapes_allow_canvas_above_reference_area():
+    stages = resolve_stage_shapes(2080, 1152, [0.5, 1.0])
+    assert stages[-1]["width"] == 2080
+    assert stages[-1]["height"] == 1152
+    assert stages[-1]["exceeds_reference_area"] is True
     assert stages[0]["snap_anisotropy"] < 0.05
 
 

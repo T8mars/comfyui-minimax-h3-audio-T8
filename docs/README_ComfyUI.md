@@ -1,5 +1,11 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-08-27 v1.52.2 canvas policy: `1920x1088` is a warning/reference area, not a hard
+> execution cap. Conditioning, Source AV, Long Video, Multi-Keyframe, Still Image, SPEED,
+> Prompt Relay resource estimation and Environment Audit allow larger 32-aligned canvases and
+> report user-owned VRAM/runtime/OOM risk. Existing `allow_above_reference_area` inputs remain only
+> for old-workflow schema compatibility and no longer gate execution.
+
 > 2026-08-27 PDD integration: one append-only Advanced EXP node now supports the converted Alibaba
 > PAI MiniMax-H3 FL2VA and Ref2VA Acc-8Step adapters. These are not ordinary LoRAs: each file has
 > 258 backbone adapters plus 32 absolute video and 32 absolute audio output heads. The node keeps the
@@ -361,8 +367,8 @@
 > Project v1.37.1 updates learned latent two-pass generation to a default 4+4 schedule, so the
 > low- and high-resolution stages execute eight joint AV Transformer calls in total. The standard
 > Mandarin speech probe completed at 1472x832x124 with strict video/audio decode and intelligible
-> speech. Learned upscale no longer imposes a 2MP execution ban; larger outputs require an explicit
-> high-resolution Conditioning opt-in and remain subject to user-owned VRAM and runtime risk. Saved
+> speech. Learned upscale no longer imposes a 2MP execution ban. Since v1.52.2, larger outputs no
+> longer require a Conditioning opt-in and remain subject to user-owned VRAM and runtime risk. Saved
 > workflows that explicitly use three or five refine calls remain compatible.
 
 > Project v1.37.0 appends two isolated Enhance-A-Video / FETA Advanced nodes and five importable

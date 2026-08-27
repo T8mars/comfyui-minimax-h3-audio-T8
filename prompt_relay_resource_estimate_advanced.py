@@ -8,7 +8,7 @@ from .core import (
     AUDIO_LATENT_FPS,
     CANVAS_MULTIPLE,
     FPS,
-    MAX_PIXELS,
+    REFERENCE_PIXEL_AREA,
     VRAM_CAUTION_PIXELS,
     align_frame_count,
     align_frame_count_down,
@@ -98,11 +98,6 @@ def estimate_prompt_relay_resources(
             "Prompt Relay Resource Estimate width and height must both be divisible by 32"
         )
     pixel_area = width * height
-    if pixel_area > MAX_PIXELS:
-        raise ValueError(
-            "Prompt Relay Resource Estimate canvas exceeds the MiniMax H3 "
-            f"{MAX_PIXELS:,}-pixel limit"
-        )
 
     query_chunk_rows = _checked_int("query_chunk_rows", query_chunk_rows, 32, 2048)
     precision = str(precision)
@@ -316,6 +311,11 @@ def estimate_prompt_relay_resources(
     if pixel_area > VRAM_CAUTION_PIXELS:
         warnings.append(
             "Canvas exceeds the project's 1.032MP caution threshold; total H3 activation pressure can be high even when the Relay bias estimate is small."
+        )
+    if pixel_area > REFERENCE_PIXEL_AREA:
+        warnings.append(
+            "Canvas exceeds the 1920x1088 reference area; the estimator still runs, but real "
+            "execution may OOM and remains the user's responsibility."
         )
     if peak_explicit_bias_bytes > 64 * 1024**2:
         warnings.append(

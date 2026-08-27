@@ -269,11 +269,11 @@ def test_canvas_above_reference_area_is_warning_only_without_opt_in():
     assert video.shape[-2:] == (68, 120)
 
     # Exact canvas from the user report: 2,396,160 pixels, formerly rejected.
-    args.update({"width": 2208, "height": 1088})
+    args.update({"width": 2080, "height": 1152})
     result = build_conditioning(**args, return_details=True)
     _conditioning, latent, *_rest, report, details = result
     video, _audio = latent["samples"].unbind()
-    assert video.shape[-2:] == (68, 138)
+    assert video.shape[-2:] == (72, 130)
     assert "execution remains allowed" in report
     assert details["exceeds_reference_area"] is True
     assert details["allow_above_reference_area"] is False
