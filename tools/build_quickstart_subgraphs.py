@@ -11,6 +11,257 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SUBGRAPH_NAMESPACE = uuid.UUID("cbf6f46f-d78c-4ca5-a822-75d1b450e56c")
 
 
+# Native ComfyUI 0.4 saves omit unlinked widget descriptors from node.inputs.
+# Quick-start proxy inputs still need a real inner input socket, so keep the
+# audited schema order only for node types whose controls are promoted below.
+# This is deliberately not a runtime compatibility gate: it is an offline
+# frontend serialization map covered by current-schema workflow tests.
+INPUT_LAYOUTS = {
+    "UNETLoader": [("unet_name", "COMBO", True), ("weight_dtype", "COMBO", True)],
+    "LoraLoaderBypassModelOnly": [
+        ("model", "MODEL", False),
+        ("lora_name", "COMBO", True),
+        ("strength_model", "FLOAT", True),
+    ],
+    "LoraLoaderModelOnly": [
+        ("model", "MODEL", False),
+        ("lora_name", "COMBO", True),
+        ("strength_model", "FLOAT", True),
+    ],
+    "CLIPLoader": [
+        ("clip_name", "COMBO", True),
+        ("type", "COMBO", True),
+        ("device", "COMBO", True),
+    ],
+    "VAELoader": [("vae_name", "COMBO", True)],
+    "MiniMaxH3AudioConditioningT8": [
+        ("clip", "CLIP", False),
+        ("video_vae", "VAE", False),
+        ("audio_vae", "VAE", False),
+        ("prompt", "STRING", True),
+        ("width", "INT", True),
+        ("height", "INT", True),
+        ("length", "INT", True),
+        ("task_type", "COMBO", True),
+        ("audio_mode", "COMBO", True),
+        ("audio_denoise_strength", "FLOAT", True),
+        ("add_source_as_reference", "BOOLEAN", True),
+        ("prompt_primary_audio_ordinal", "INT", True),
+        ("strict_prompt_tags", "BOOLEAN", True),
+        ("ref_image_size", "COMBO", True),
+        ("reference_video_policy", "COMBO", True),
+        ("drive_audio", "AUDIO", False),
+        ("final_audio", "AUDIO", False),
+        ("first_frame", "IMAGE", False),
+        ("last_frame", "IMAGE", False),
+    ],
+    "RandomNoise": [("noise_seed", "INT", True)],
+    "MiniMaxH3DualClockSamplerT8": [
+        ("model", "MODEL", False),
+        ("av_latent", "LATENT", False),
+        ("steps", "INT", True),
+        ("shift_video", "FLOAT", True),
+        ("shift_audio", "FLOAT", True),
+        ("sampler_name", "COMBO", True),
+        ("scheduler", "COMBO", True),
+    ],
+    "BasicScheduler": [
+        ("model", "MODEL", False),
+        ("scheduler", "COMBO", True),
+        ("steps", "INT", True),
+        ("denoise", "FLOAT", True),
+    ],
+    "KSamplerSelect": [("sampler_name", "COMBO", True)],
+    "LoadAudio": [("audio", "COMBO", True)],
+    "CreateVideo": [
+        ("images", "IMAGE", False),
+        ("fps", "FLOAT", True),
+        ("audio", "AUDIO", False),
+        ("bit_depth", "INT", True),
+    ],
+    "MiniMaxH3AudioPerceptualDriftAuditT8Advanced": [
+        ("reference_audio", "AUDIO", False),
+        ("candidate_audio", "AUDIO", False),
+        ("analysis_window_ms", "FLOAT", True),
+        ("hop_ms", "FLOAT", True),
+        ("active_rms_floor_dbfs", "FLOAT", True),
+        ("spectral_drift_threshold", "FLOAT", True),
+        ("level_delta_threshold_db", "FLOAT", True),
+        ("persistent_window_count", "INT", True),
+        ("max_duration_delta_ms", "FLOAT", True),
+    ],
+    "MiniMaxH3AudioWindowT8": [
+        ("audio", "AUDIO", False),
+        ("scene_start_seconds", "FLOAT", True),
+        ("scene_duration_seconds", "FLOAT", True),
+        ("warmup_seconds", "FLOAT", True),
+        ("cooldown_seconds", "FLOAT", True),
+        ("ensure_minimum_context", "BOOLEAN", True),
+    ],
+    "MiniMaxH3LongVideoOrchestratorT8": [
+        ("chain_id", "STRING", True),
+        ("total_duration_seconds", "FLOAT", True),
+        ("render_window_frames", "INT", True),
+        ("context_frames", "COMBO", True),
+        ("global_prompt", "STRING", True),
+        ("segment_prompts_json", "STRING", True),
+        ("base_seed", "INT", True),
+        ("seed_policy", "COMBO", True),
+        ("steps", "INT", True),
+        ("shift_video", "FLOAT", True),
+        ("shift_audio", "FLOAT", True),
+        ("sampler_name", "COMBO", True),
+        ("scheduler", "COMBO", True),
+    ],
+    "MiniMaxH3LongVideoConditioningT8": [
+        ("model", "MODEL", False),
+        ("clip", "CLIP", False),
+        ("video_vae", "VAE", False),
+        ("audio_vae", "VAE", False),
+        ("context", "H3_T8_CONTEXT", False),
+        ("segment_index", "INT", False),
+        ("context_frames", "INT", False),
+        ("context_audio", "COMBO", True),
+        ("prompt", "STRING", True),
+        ("width", "INT", True),
+        ("height", "INT", True),
+        ("length", "INT", False),
+        ("task_type", "COMBO", True),
+        ("audio_mode", "COMBO", True),
+        ("audio_denoise_strength", "FLOAT", True),
+        ("add_source_as_reference", "BOOLEAN", True),
+        ("prompt_primary_audio_ordinal", "INT", True),
+        ("strict_prompt_tags", "BOOLEAN", True),
+        ("ref_image_size", "COMBO", True),
+        ("reference_video_policy", "COMBO", True),
+        ("drive_audio", "AUDIO", False),
+        ("final_audio", "AUDIO", False),
+        ("first_frame", "IMAGE", False),
+        ("last_frame", "IMAGE", False),
+    ],
+    "MiniMaxH3LongVideoAcceptCandidateT8": [
+        ("candidate_json_path", "STRING", False),
+        ("accept_candidate", "BOOLEAN", True),
+        ("replace_policy", "COMBO", True),
+        ("strict_chain_identity", "BOOLEAN", True),
+    ],
+    "MiniMaxH3LongVideoCandidateSaveT8": [
+        ("frames", "IMAGE", False),
+        ("audio", "AUDIO", False),
+        ("av_latent", "LATENT", False),
+        ("chain_id", "STRING", False),
+        ("segment_index", "INT", False),
+        ("timeline_start_seconds", "FLOAT", False),
+        ("save_context", "BOOLEAN", False),
+        ("parent_candidate_id", "STRING", False),
+        ("parent_manifest_revision", "INT", False),
+        ("candidate_id", "STRING", True),
+        ("model_id", "STRING", True),
+        ("sampling_summary", "STRING", True),
+        ("prompt", "STRING", False),
+        ("seed", "INT", False),
+        ("bit_depth", "COMBO", True),
+        ("crf", "INT", True),
+    ],
+    "MiniMaxH3OutputTrimT8": [
+        ("frames", "IMAGE", False),
+        ("start_seconds", "FLOAT", True),
+        ("duration_seconds", "FLOAT", True),
+        ("fps", "FLOAT", True),
+        ("audio", "AUDIO", False),
+    ],
+    "MiniMaxH3SigmaShift": [
+        ("model", "MODEL", False),
+        ("shift_video", "FLOAT", True),
+        ("shift_audio", "FLOAT", True),
+    ],
+    "LoadVideo": [("file", "COMBO", True)],
+    "LoadImage": [("image", "COMBO", True)],
+    "MiniMaxH3FaceRefineParityPlanT8Advanced": [
+        ("frames", "IMAGE", False),
+        ("fps", "FLOAT", True),
+        ("detector_mode", "COMBO", True),
+        ("detector_model", "COMBO", True),
+        ("detector_device", "COMBO", True),
+        ("confidence", "FLOAT", True),
+        ("manual_roi_x", "FLOAT", True),
+        ("manual_roi_y", "FLOAT", True),
+        ("manual_roi_width", "FLOAT", True),
+        ("manual_roi_height", "FLOAT", True),
+        ("scene_cut_threshold", "FLOAT", True),
+        ("max_track_jump", "FLOAT", True),
+        ("max_gap_frames", "INT", True),
+        ("center_smooth_window", "INT", True),
+        ("size_smooth_window", "INT", True),
+        ("crop_factor", "FLOAT", True),
+        ("canvas_mode", "COMBO", True),
+        ("require_h3_grid", "BOOLEAN", True),
+        ("analysis_chunk_frames", "INT", True),
+    ],
+    "MiniMaxH3FaceRefineParityLatentT8Advanced": [
+        ("positive", "CONDITIONING", False),
+        ("av_latent", "LATENT", False),
+        ("crops", "IMAGE", False),
+        ("video_vae", "VAE", False),
+        ("face_plan", "H3_T8_FACE_REFINE_PARITY_PLAN", False),
+        ("audio_policy", "COMBO", True),
+        ("allow_multi_shot_exp", "BOOLEAN", True),
+    ],
+    "MiniMaxH3FaceRefinePerFrameDenoiseT8Advanced": [
+        ("av_latent", "LATENT", False),
+        ("face_plan", "H3_T8_FACE_REFINE_PARITY_PLAN", False),
+        ("strength_small_face", "FLOAT", True),
+        ("strength_large_face", "FLOAT", True),
+        ("scale_mode", "COMBO", True),
+        ("face_px_small", "FLOAT", True),
+        ("face_px_large", "FLOAT", True),
+        ("gamma", "FLOAT", True),
+        ("smooth_frames", "INT", True),
+        ("video_mask_mode", "COMBO", True),
+        ("require_locked_audio", "BOOLEAN", True),
+    ],
+    "MiniMaxH3FaceRefineParityStitchT8Advanced": [
+        ("base_frames", "IMAGE", False),
+        ("refined_crops", "IMAGE", False),
+        ("face_plan", "H3_T8_FACE_REFINE_PARITY_PLAN", False),
+        ("paste_region", "COMBO", True),
+        ("mask_dilation", "INT", True),
+        ("feather_source_px", "FLOAT", True),
+        ("colour_match", "FLOAT", True),
+        ("blend", "FLOAT", True),
+        ("undetected_frames", "COMBO", True),
+        ("max_face_mean_abs_delta", "FLOAT", True),
+        ("processing_device", "COMBO", True),
+    ],
+    "MiniMaxH3FaceRefineManual512RelativeBaselineT8Advanced": [
+        ("candidate_frames", "IMAGE", False),
+        ("face_plan", "H3_T8_FACE_REFINE_PARITY_PLAN", False),
+        ("latent_report_json", "STRING", False),
+        ("denoise_report_json", "STRING", False),
+        ("stitch_report_json", "STRING", False),
+        ("profile", "COMBO", True),
+        ("minimum_crop_face_height_px", "FLOAT", True),
+    ],
+    "MiniMaxH3CreatorSynchronizedCompareT8Advanced": [
+        ("frames_a", "IMAGE", False),
+        ("frames_b", "IMAGE", False),
+        ("label_a", "STRING", True),
+        ("label_b", "STRING", True),
+        ("seed_a", "INT", True),
+        ("seed_b", "INT", True),
+        ("winner", "COMBO", True),
+        ("reviewer_notes", "STRING", True),
+        ("require_equal_geometry", "BOOLEAN", True),
+    ],
+    "SaveVideo": [
+        ("video", "VIDEO", False),
+        ("filename_prefix", "STRING", True),
+        ("format", "COMBO", True),
+        ("codec", "COMFY_DYNAMICCOMBO_V3", False),
+    ],
+}
+
+
 def _uuid(name: str) -> str:
     return str(uuid.uuid5(SUBGRAPH_NAMESPACE, name))
 
@@ -27,6 +278,57 @@ def _input_index(node: dict, input_name: str) -> int:
         if item.get("name") == input_name:
             return index
     raise ValueError(f"node {node['id']} input {input_name!r} was not found")
+
+
+def _layout_entry(node: dict, input_name: str) -> tuple[str, str, bool]:
+    for entry in INPUT_LAYOUTS.get(str(node.get("type", "")), []):
+        if entry[0] == input_name:
+            return entry
+    raise ValueError(
+        f"node {node['id']} ({node.get('type')}) has no audited layout entry "
+        f"for input {input_name!r}"
+    )
+
+
+def _ensure_input(
+    node: dict,
+    links: list[dict],
+    input_name: str,
+    *,
+    input_type: str | None = None,
+    widget: bool = False,
+) -> int:
+    for index, item in enumerate(node.get("inputs", [])):
+        if item.get("name") == input_name:
+            if widget:
+                item["widget"] = {"name": input_name}
+            return index
+
+    layout = INPUT_LAYOUTS.get(str(node.get("type", "")), [])
+    layout_name, layout_type, layout_widget = _layout_entry(node, input_name)
+    order = {name: index for index, (name, _type, _widget) in enumerate(layout)}
+    target_order = order[layout_name]
+    inputs = node.setdefault("inputs", [])
+    slot = len(inputs)
+    for index, item in enumerate(inputs):
+        existing_order = order.get(str(item.get("name", "")), len(order))
+        if existing_order > target_order:
+            slot = index
+            break
+
+    for link in links:
+        if int(link["target_id"]) == int(node["id"]) and int(link["target_slot"]) >= slot:
+            link["target_slot"] = int(link["target_slot"]) + 1
+
+    item = {
+        "name": input_name,
+        "type": input_type or layout_type,
+    }
+    if widget or layout_widget:
+        item["widget"] = {"name": input_name}
+    item["link"] = None
+    inputs.insert(slot, item)
+    return slot
 
 
 def _output_index(node: dict, output_name: str) -> int:
@@ -73,16 +375,18 @@ def _remove_link(workflow: dict, links: list[dict], link_id: int) -> None:
 
 
 def _widget_index(node: dict, input_name: str) -> int:
-    target = _input_index(node, input_name)
-    index = -1
-    for position, item in enumerate(node.get("inputs", [])):
-        if "widget" in item:
-            index += 1
-        if position == target:
-            if "widget" not in item:
-                raise ValueError(f"node {node['id']} input {input_name!r} is not a widget")
-            return index
-    raise AssertionError("unreachable")
+    layout = INPUT_LAYOUTS.get(str(node.get("type", "")), [])
+    cursor = 0
+    for name, _input_type, widget in layout:
+        if not widget:
+            continue
+        if name == input_name:
+            return cursor
+        cursor += 2 if name in {"seed", "noise_seed"} else 1
+    raise ValueError(
+        f"node {node['id']} ({node.get('type')}) input {input_name!r} is not "
+        "an audited widget"
+    )
 
 
 def _set_widget(workflow: dict, node_id: int, input_name: str, value) -> None:
@@ -103,11 +407,40 @@ def _add_optional_input(node: dict, name: str, input_type: str) -> None:
     node.setdefault("inputs", []).append({"name": name, "type": input_type, "link": None})
 
 
+def _restore_proxy_source_inputs(workflow: dict, links: list[dict]) -> None:
+    """Rehydrate schema widget inputs required inside a subgraph definition.
+
+    Top-level native workflows correctly omit unlinked widgets.  A subgraph
+    definition is different: proxy widgets link to inner widget sockets, so its
+    inner nodes must carry those descriptors.  Rehydrating from the audited
+    schema order preserves the long-standing subgraph interface without putting
+    obsolete unlinked widgets back into the user-facing source workflows.
+    """
+
+    for node in workflow.get("nodes", []):
+        layout = INPUT_LAYOUTS.get(str(node.get("type", "")), [])
+        widget_values = node.get("widgets_values")
+        for name, input_type, widget in layout:
+            if (
+                widget
+                and isinstance(widget_values, list)
+                and _widget_index(node, name) < len(widget_values)
+            ):
+                _ensure_input(
+                    node,
+                    links,
+                    name,
+                    input_type=input_type,
+                    widget=True,
+                )
+
+
 def build_subgraph(spec: dict) -> dict:
     source = PROJECT_ROOT / spec["source"]
     workflow = json.loads(source.read_text(encoding="utf-8"))
     workflow = deepcopy(workflow)
     links = _object_links(workflow)
+    _restore_proxy_source_inputs(workflow, links)
     for node_id, input_name, value in spec.get("widget_overrides", []):
         _set_widget(workflow, node_id, input_name, value)
     for node_id, input_name, input_type in spec.get("optional_inputs", []):
@@ -119,7 +452,17 @@ def build_subgraph(spec: dict) -> dict:
     proxy_widgets = []
     for slot, entry in enumerate(spec.get("inputs", [])):
         node = _node(workflow, entry["node"])
-        target_slot = _input_index(node, entry["input"])
+        if entry.get("widget", False):
+            layout_type = _layout_entry(node, entry["input"])[1]
+            target_slot = _ensure_input(
+                node,
+                links,
+                entry["input"],
+                input_type=entry.get("type", layout_type),
+                widget=True,
+            )
+        else:
+            target_slot = _input_index(node, entry["input"])
         target = node["inputs"][target_slot]
         old_link = target.get("link")
         if old_link is not None:
@@ -548,6 +891,7 @@ def main() -> int:
         target.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(target)
     return 0

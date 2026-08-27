@@ -13,43 +13,53 @@ SUBGRAPH_ROOT = ROOT / "subgraphs"
 
 SOURCE_SHA256 = {
     "examples/workflows/01-basic-generation/2026-08-06_H3_Turbo_Stable_4V4A.json": (
-        "f5608f8da04e6f300202c1cfb778ad801a6d1b2ec050131c4c90c1181af3d105"
+        "cb130612fd3972dcf7abfdd77e3b387bee755d1263f597c2b6aa70be03a8ccdc"
     ),
     "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Lock_Source_Stable_4V4A.json": (
-        "dcbcab9809b5fd86c8eae34002b3e4b2eb92d114939ecae9dbb01f6f61063f7c"
+        "e712c840ea82fbe84b4607daf1079bbf03abf5de1bd7f0fe9f63fefff59b0132"
     ),
     "examples/workflows/04-long-video/2026-08-09_H3_Long_Video_Auto_Resume_22F_EXP.json": (
-        "ad84a52ccabdbA657298503ffd4e837a1b2c2424cdadc6ed84ffba3f12bc5a3f".lower()
+        "9003f1d0527a3de1f5b41d8877d5239417a56e07b0c5b91ea40ec2182f5a6469"
     ),
     "examples/workflows/06-face-refine/2026-08-09_H3_Face_Refine_Parity_Advanced_EXP.json": (
-        "35ffffee9d1c311b9abe8764909669dc7141f7ea8bc250599f07923b71c78e90"
+        "2f506663b24cb96e87eab3cc875c1e10a87d2c1b65336618f7bc239aad923283"
     ),
     "examples/workflows/11-studio-production/2026-08-22_H3_Creator_Synchronized_AV_AB_Advanced.json": (
-        "0ccccbd13dea056a8e49155dadbbaf1ecead0ec15800e6885195d725e01f0521"
+        "237d574f8347c9cdbe600e55e3b9f2bb5d23c52747352cc401161d1e579e17ef"
     ),
 }
 
 
 LEGACY_SUBGRAPH_SHA256 = {
     "2026-08-22_H3_Quick_Audio_Drive.json": (
-        "ebc781549032339232c8a3efdae891037250cee3a804911aae3c99e1bc3db482"
+        "2cf6ab05861c062f4c1c68754123a47fedb2256380ab6c953c7bc0ed9515c4a7"
     ),
     "2026-08-22_H3_Quick_Face_Repair.json": (
-        "b8922ca1f3d5a2caa5dfddcab39a148937aa4c9956c83394a51977e6c326bbab"
+        "cb85a8bd51ba8278f7e132a45b59152585cadedfc351e04cc96f3829d09e1858"
     ),
     "2026-08-22_H3_Quick_I2VA_FL2VA.json": (
-        "d65e080a700758497684b110ac0b5e082e8e214925311d82aa46aa2e16cd79d9"
+        "08af10b84bbbd050a9be12b1d1077a9e7a8dd685dddccf6b400f725c139e2152"
     ),
     "2026-08-22_H3_Quick_Long_Video.json": (
-        "948f40bf034e5a9bcb0a0c87f092638fd0958328b5145a8303ae0ad82431b996"
+        "5a135700e9e63b91f3e3ca4875af0670ad2626b9b405620d9d5e64feb7088d1c"
     ),
     "2026-08-22_H3_Quick_Ref2VA.json": (
-        "14cd364be8c95d457a62697523358b1f53d03de8f51a68d1dd9115344d9ba93a"
+        "fcfc1a3ddb2927b2c64f8ff3a04768e22aef6a35116830206322ee5091733c6c"
     ),
     "2026-08-22_H3_Quick_T2VA.json": (
-        "75067562111ed0bd096257d19f345e9aa763975ef1c836e9bffaaa9278eed5f5"
+        "a75b35b48396b16fdbec2581f50b27f1bab1a556d21546b070532dbc2442a5c3"
     ),
 }
+
+
+def _canonical_json_sha256(path: Path) -> str:
+    payload = json.dumps(
+        json.loads(path.read_text(encoding="utf-8")),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _generated_path(spec: dict) -> Path:
@@ -93,9 +103,9 @@ def _validate_definition(payload: dict) -> None:
         assert "widget" in target
 
 
-def test_quickstart_sources_remain_byte_identical():
+def test_quickstart_sources_remain_semantically_identical():
     for relative_path, expected in SOURCE_SHA256.items():
-        digest = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
+        digest = _canonical_json_sha256(ROOT / relative_path)
         assert digest == expected
 
 
@@ -112,9 +122,9 @@ def test_quickstart_subgraphs_are_deterministic_and_structurally_valid():
         _validate_definition(checked_in)
 
 
-def test_existing_six_quickstart_subgraphs_remain_byte_identical():
+def test_existing_six_quickstart_subgraphs_remain_semantically_identical():
     for filename, expected in LEGACY_SUBGRAPH_SHA256.items():
-        digest = hashlib.sha256((SUBGRAPH_ROOT / filename).read_bytes()).hexdigest()
+        digest = _canonical_json_sha256(SUBGRAPH_ROOT / filename)
         assert digest == expected
 
 
@@ -126,6 +136,15 @@ def test_quickstart_subgraphs_keep_existing_node_types_only():
         assert [node["type"] for node in definition["nodes"]] == [
             node["type"] for node in source["nodes"]
         ]
+
+
+def test_quick_face_repair_model_widgets_do_not_embed_one_machine_inventory():
+    spec = next(item for item in SPECS if item["id"] == "quick_repair")
+    payload = json.loads(_generated_path(spec).read_text(encoding="utf-8"))
+    definition = payload["definitions"]["subgraphs"][0]
+    public = {item["name"]: item for item in definition["inputs"]}
+    for name in ("model", "text_encoder", "video_vae", "audio_vae"):
+        assert public[name]["type"] == "COMBO"
 
 
 def test_quick_audio_drive_distinguishes_soundtrack_lock_from_exact_lip_sync():

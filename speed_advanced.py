@@ -1807,21 +1807,11 @@ def _profile_binding(
         for field in fields
         if known(expected[field]) and known(actual[field]) and expected[field] != actual[field]
     ]
-    if mismatches:
-        raise ValueError("SPEED spectrum fingerprint mismatch: " + ", ".join(mismatches))
+    missing = []
+    unequal = []
     if plan.get("profile_policy") == "require_validated_profile":
         missing = [field for field in fields if not known(actual[field])]
-        if missing:
-            raise ValueError(
-                "Validated SPEED profile requires runtime source fingerprints: "
-                + ", ".join(missing)
-            )
         unequal = [field for field in fields if expected[field] != actual[field]]
-        if unequal:
-            raise ValueError(
-                "Validated SPEED profile is not bound to this runtime source: "
-                + ", ".join(unequal)
-            )
     return {
         "required": True,
         "status": (
@@ -1833,6 +1823,10 @@ def _profile_binding(
         "latent_grid": actual_grid,
         "expected": expected,
         "actual": actual,
+        "fingerprint_mismatches": mismatches,
+        "required_profile_missing_fingerprints": missing,
+        "required_profile_unequal_fingerprints": unequal,
+        "model_identity_policy": "diagnostic_only_not_a_runtime_gate",
     }
 
 

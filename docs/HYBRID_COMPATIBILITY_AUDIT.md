@@ -31,8 +31,9 @@ contract failure is proven.
 
 ## What is audited
 
-- Hybrid attachment schema, exact validated FL2VA/Ref2VA hashes, curve hashes,
-  canonical recipe, identity fingerprint, operation count, and payload size.
+- Hybrid attachment schema, canonical recipe, identity fingerprint, operation count, and payload
+  size. FL2VA/Ref2VA file and curve hashes are reported against the original reference pair but never
+  block a user-selected model.
 - Every expected AdaLN `offset-set` entry, including offset and target shape.
 - Hybrid-before-LoRA ordering. A patch before the Hybrid set is invalid;
   a later patch overlapping selected AdaLN rows is mechanically ordered but is

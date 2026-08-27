@@ -593,17 +593,26 @@ def _assert_core_contract(
         "tokenizer": _source_sha256(MiniMaxH3Tokenizer.tokenize_with_weights),
         "extra_conds": _source_sha256(class_extra_conds),
     }
-    expected = {
-        "attention_forward": ATTENTION_FORWARD_SHA256S,
-        "packed_layout": PACKED_LAYOUT_SHA256S,
-        "tokenizer": TOKENIZER_SHA256S,
-        "extra_conds": EXTRA_CONDS_SHA256S,
-    }
-    mismatches = [name for name, value in hashes.items() if value not in expected[name]]
-    if mismatches:
+    from .sla_attention_advanced import _core_semantic_contract
+
+    semantic_contract = _core_semantic_contract()
+    tokenizer_parameters = inspect.signature(
+        MiniMaxH3Tokenizer.tokenize_with_weights
+    ).parameters
+    tokenizer_required = {"self", "text", "images", "minimax_ref_items"}
+    tokenizer_missing = sorted(tokenizer_required - set(tokenizer_parameters))
+    if tokenizer_missing:
         raise RuntimeError(
-            "Prompt Relay has not validated this ComfyUI H3 core contract: "
-            + ", ".join(f"{name}={hashes[name]}" for name in mismatches)
+            "Prompt Relay semantic contract lost MiniMax tokenizer parameters: "
+            f"{tokenizer_missing}"
+        )
+    extra_parameters = inspect.signature(class_extra_conds).parameters
+    if not any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in extra_parameters.values()
+    ):
+        raise RuntimeError(
+            "Prompt Relay semantic contract requires MiniMax H3 extra_conds **kwargs"
         )
 
     transformer = getattr(model, "model_options", {}).get("transformer_options", {})
@@ -649,7 +658,24 @@ def _assert_core_contract(
     extra_function = getattr(class_extra_conds, "__func__", class_extra_conds)
     if getattr(extra_function, "__module__", None) != "comfy.model_base":
         raise RuntimeError("Prompt Relay cannot stack with an existing extra_conds object patch")
-    return hashes
+    expected = {
+        "attention_forward": ATTENTION_FORWARD_SHA256S,
+        "packed_layout": PACKED_LAYOUT_SHA256S,
+        "tokenizer": TOKENIZER_SHA256S,
+        "extra_conds": EXTRA_CONDS_SHA256S,
+    }
+    return {
+        "source_hashes": hashes,
+        "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+        "reference_source_match": {
+            name: value in expected[name] for name, value in hashes.items()
+        },
+        "semantic_contract": semantic_contract,
+        "signatures": {
+            "tokenizer": list(tokenizer_parameters),
+            "extra_conds": list(extra_parameters),
+        },
+    }
 
 
 def _runtime_route(layout, binding: Mapping, device: torch.device) -> dict:

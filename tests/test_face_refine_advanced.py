@@ -29,6 +29,7 @@ from h3_audio_t8_pkg.face_refine_advanced import (
     stitch_face_refine_candidate,
 )
 from h3_audio_t8_pkg.nodes_face_refine_advanced import FACE_REFINE_ADVANCED_NODE_CLASSES
+from helpers import plugin_widget_map
 
 
 def _plan(frames, *, scene_cut_threshold=0.28, manual_x=0.0):
@@ -532,12 +533,12 @@ def test_anime_face_refine_examples_change_only_the_explicit_detector_route():
         for node in anime_frontend["nodes"]
         if node["type"] == "MiniMaxH3FaceRefinePlanT8Advanced"
     )
-    widget_names = [
-        item["widget"]["name"]
-        for item in plan["inputs"]
-        if isinstance(item.get("widget"), dict)
-    ]
-    widget_values = dict(zip(widget_names, plan["widgets_values"], strict=True))
+    plan_class = next(
+        node_class
+        for node_class in FACE_REFINE_ADVANCED_NODE_CLASSES
+        if node_class.define_schema().node_id == "MiniMaxH3FaceRefinePlanT8Advanced"
+    )
+    widget_values = plugin_widget_map(plan, plan_class)
     detector_keys = ("detector_mode", "detector_model", "detector_device")
     assert [widget_values[name] for name in detector_keys] == [
         "local_anime_onnx_exp",

@@ -776,11 +776,6 @@ def _box_iou(first: list[float], second: list[float]) -> float:
 def _create_pinned_yunet(width: int, height: int, confidence: float):
     path = _resolve_detector_path(YUNET_2023MAR_RELATIVE)
     model_hash = _file_sha256(path)
-    if model_hash != YUNET_2023MAR_SHA256:
-        raise ValueError(
-            "the two-pass stream requires the pinned OpenCV Zoo YuNet 2023mar model; "
-            f"expected {YUNET_2023MAR_SHA256}, got {model_hash}"
-        )
     try:
         import cv2
     except Exception as error:
@@ -801,9 +796,14 @@ def _create_pinned_yunet(width: int, height: int, confidence: float):
         "backend": "local_opencv_yunet",
         "model": _detector_report_name(path),
         "model_sha256": model_hash,
-        "official_opencv_zoo_match": True,
-        "model_source": YUNET_2023MAR_SOURCE,
-        "model_license": "MIT",
+        "official_opencv_zoo_match": model_hash == YUNET_2023MAR_SHA256,
+        "model_source": (
+            YUNET_2023MAR_SOURCE if model_hash == YUNET_2023MAR_SHA256 else None
+        ),
+        "model_license": (
+            "MIT" if model_hash == YUNET_2023MAR_SHA256 else "user_supplied_unverified"
+        ),
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
         "effective_device": "cpu",
         "network_download": False,
         "cached_after_analysis": False,

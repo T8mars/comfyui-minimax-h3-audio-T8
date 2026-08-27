@@ -334,7 +334,13 @@ def test_vram_policy_frontend_workflow_is_link_consistent_and_isolated():
     policy_input = next(
         item for item in loader["inputs"] if item["name"] == "vram_policy"
     )
-    assert links[policy_input["link"]][1:5] == [policy["id"], 0, loader["id"], 4]
+    policy_slot = loader["inputs"].index(policy_input)
+    assert links[policy_input["link"]][1:5] == [
+        policy["id"],
+        0,
+        loader["id"],
+        policy_slot,
+    ]
     for node in nodes.values():
         for input_value in node.get("inputs", []):
             link_id = input_value.get("link")

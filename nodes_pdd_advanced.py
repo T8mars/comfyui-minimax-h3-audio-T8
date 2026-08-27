@@ -71,8 +71,8 @@ class MiniMaxH3PDD8StepSetupT8Advanced(io.ComfyNode):
                     default="FL2VA",
                     display_name="base variant / 基模类型",
                     tooltip=(
-                        "Must match both the PDD file and the actual full base model. "
-                        "The node rejects FL2VA/Ref2VA adapter interchange."
+                        "Select how the PDD runtime should interpret the adapter. File metadata "
+                        "and variant mismatches are reported but do not block loading."
                     ),
                 ),
                 io.Float.Input(

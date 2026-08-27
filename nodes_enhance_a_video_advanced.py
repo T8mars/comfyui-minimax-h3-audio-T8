@@ -37,9 +37,8 @@ class MiniMaxH3EnhanceAVideoT8Advanced(io.ComfyNode):
                 io.Model.Input(
                     "model",
                     tooltip=(
-                        "Stock20: connect the native H3 model with no LoRA/cache/attention patch. "
-                        "Turbo8: connect the corrected 208-module Alpha8 bypass LoRA first, then "
-                        "this node; the runtime contract is checked strictly."
+                        "Connect the H3 model stack you want to run. LoRA hook count, strength, "
+                        "model identity and base family are reported but never used as load gates."
                     ),
                 ),
                 io.Sigmas.Input(
@@ -111,8 +110,8 @@ class MiniMaxH3EnhanceAVideoT8Advanced(io.ComfyNode):
                     options=list(EAV_SAMPLING_PROFILES),
                     default="stock20",
                     tooltip=(
-                        "stock20 rejects every LoRA. turbo8_alpha8 requires the corrected "
-                        "208-module Alpha8 bypass LoRA at strength 1.0 before this node."
+                        "Select the expected sigma schedule. Existing LoRA details are diagnostic "
+                        "only; incompatible user-selected models fail only in real execution."
                     ),
                 ),
             ],
@@ -267,9 +266,8 @@ class MiniMaxH3EnhanceAVideoSageComposerT8Advanced(io.ComfyNode):
                 io.Model.Input(
                     "model",
                     tooltip=(
-                        "Connect a native H3 model with no attention/object/block patch. "
-                        "For turbo8_alpha8, apply only the corrected 208-module Alpha8 "
-                        "bypass LoRA before this node."
+                        "Connect the H3 stack to run. Attention-owner conflicts remain explicit, "
+                        "but LoRA identity, hook count and strength do not block loading."
                     ),
                 ),
                 io.Sigmas.Input(
@@ -342,7 +340,7 @@ class MiniMaxH3EnhanceAVideoSageComposerT8Advanced(io.ComfyNode):
                     default="stock20",
                     tooltip=(
                         "reference scope is intentionally Stock20-only. visual scope also "
-                        "accepts the audited corrected Alpha8 Turbo8 path."
+                        "supports the Turbo8 schedule; LoRA identity is diagnostic only."
                     ),
                 ),
             ],

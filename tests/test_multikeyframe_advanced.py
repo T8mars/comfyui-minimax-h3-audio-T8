@@ -8,6 +8,8 @@ import pytest
 import torch
 from comfy.ldm.minimax import model as minimax_model
 
+import h3_audio_t8_pkg.multikeyframe_advanced as multikeyframe_module
+
 from h3_audio_t8_pkg.conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
     HYBRID_LAYOUT_LEGACY_SENTINEL,
@@ -392,6 +394,22 @@ def test_scoped_extra_conds_patch_repairs_positions_and_payload_order():
     assert "extra_conds" not in model.object_patches
 
 
+def test_equivalent_core_source_text_change_does_not_disable_multikeyframe(
+    monkeypatch,
+):
+    native_getsource = multikeyframe_module.inspect.getsource
+
+    def equivalent_source(value):
+        return native_getsource(value) + "\n# equivalent source-only change\n"
+
+    monkeypatch.setattr(multikeyframe_module.inspect, "getsource", equivalent_source)
+    assert native_middle_keyframe_support() is True
+    patched = patch_multikeyframe_model(
+        make_model_patcher(), require_per_condition_forward=True
+    )
+    assert "diffusion_model._forward" in patched.object_patches
+
+
 def test_per_condition_rows_and_timesteps_change_only_the_selected_condition():
     fake_model = types.SimpleNamespace(patch_size=(1, 2, 2))
     latents = [
@@ -533,7 +551,9 @@ def test_different_advanced_patch_version_is_rejected():
         del original.__func__._t8_multikeyframe_patch_version
 
 
-def test_wrapped_process_global_packed_layout_patch_is_rejected(monkeypatch):
+def test_semantically_compatible_process_global_packed_layout_wrapper_is_accepted(
+    monkeypatch,
+):
     original = minimax_model.PackedLayout.__init__
 
     @functools.wraps(original)
@@ -541,5 +561,40 @@ def test_wrapped_process_global_packed_layout_patch_is_rejected(monkeypatch):
         return original(self, *args, **kwargs)
 
     monkeypatch.setattr(minimax_model.PackedLayout, "__init__", wrapped)
-    with pytest.raises(RuntimeError, match="process-global"):
-        native_middle_keyframe_support()
+    assert native_middle_keyframe_support() is True
+
+
+def test_verified_obsolete_painter_layout_patch_is_bypassed_for_multikeyframe(
+    monkeypatch,
+):
+    original = minimax_model.PackedLayout.__init__
+
+    def obsolete_painter_wrapper(
+        self,
+        text_len,
+        latent_t,
+        latent_h,
+        latent_w,
+        audio_t,
+        keyframes=None,
+        refs=None,
+        frame_count=None,
+    ):
+        return original(
+            self,
+            text_len,
+            latent_t,
+            latent_h,
+            latent_w,
+            audio_t,
+            keyframes=keyframes,
+            refs=refs,
+            frame_count=frame_count,
+        )
+
+    obsolete_painter_wrapper._minimax_kfref_layout_patched = True
+    monkeypatch.setattr(
+        minimax_model.PackedLayout, "__init__", obsolete_painter_wrapper
+    )
+    assert native_middle_keyframe_support() is True
+    assert minimax_model.PackedLayout.__init__ is original

@@ -21,13 +21,10 @@ from h3_audio_t8_pkg.nodes_prompt_relay_preview_advanced import (
     PROMPT_RELAY_PREVIEW_ADVANCED_NODE_CLASSES,
 )
 from h3_audio_t8_pkg.prompt_relay_advanced import (
-    ATTENTION_FORWARD_SHA256S,
-    PACKED_LAYOUT_SHA256S,
     PROMPT_RELAY_BINDING_KEY,
     PROMPT_RELAY_PAYLOAD_KEY,
     PROMPT_RELAY_RUNTIME_KEY,
     PROMPT_RELAY_WRAPPER_KEY,
-    TOKENIZER_SHA256S,
     _assert_core_contract,
     _bind_layout_contract,
     _runtime_route,
@@ -551,10 +548,21 @@ def test_query_route_node_is_explicit_and_does_not_mutate_the_source_plan():
         configure_prompt_relay_query_route(plan, "unknown")
 
 
-def test_validated_comfy_h3_source_contracts_are_current():
-    assert _source_sha256(Attention.forward) in ATTENTION_FORWARD_SHA256S
-    assert _source_sha256(PackedLayout.__init__) in PACKED_LAYOUT_SHA256S
-    assert _source_sha256(MiniMaxH3Tokenizer.tokenize_with_weights) in TOKENIZER_SHA256S
+def test_validated_comfy_h3_source_hashes_are_diagnostic_only():
+    assert _source_sha256(Attention.forward)
+    assert _source_sha256(PackedLayout.__init__)
+    assert _source_sha256(MiniMaxH3Tokenizer.tokenize_with_weights)
+
+
+def test_equivalent_prompt_relay_source_text_change_is_not_a_compatibility_gate(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        prompt_relay_module, "_source_sha256", lambda _value: "unknown-source"
+    )
+    contract = _assert_core_contract(_native_h3_model_patcher())
+    assert contract["source_hash_policy"] == "diagnostic_only_not_a_compatibility_gate"
+    assert set(contract["source_hashes"].values()) == {"unknown-source"}
 
 
 def test_lora_or_weight_patch_before_prompt_relay_fails_closed(monkeypatch):

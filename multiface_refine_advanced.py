@@ -111,11 +111,6 @@ def _sface_path() -> Path:
             f"Missing OpenCV Zoo SFace model: {path}. Install {SFACE_MODEL_NAME} in "
             "ComfyUI/models/face_detection."
         )
-    actual = _file_sha256(path)
-    if actual != SFACE_EXPECTED_SHA256:
-        raise ValueError(
-            f"SFace model hash mismatch: expected {SFACE_EXPECTED_SHA256}, got {actual}"
-        )
     return path
 
 
@@ -254,6 +249,8 @@ def build_multiface_character_profile(
         0.35,
         "cpu",
     )
+    recognizer_path = _sface_path()
+    recognizer_hash = _file_sha256(recognizer_path)
     recognizer = _create_sface_recognizer()
     features: list[torch.Tensor] = []
     selected_boxes = []
@@ -284,7 +281,9 @@ def build_multiface_character_profile(
         "identity_backend": {
             "detector": "opencv_zoo_yunet_2023mar",
             "recognizer": "opencv_zoo_sface_2021dec",
-            "recognizer_sha256": SFACE_EXPECTED_SHA256,
+            "recognizer_sha256": recognizer_hash,
+            "official_opencv_zoo_match": recognizer_hash == SFACE_EXPECTED_SHA256,
+            "model_identity_policy": "diagnostic_only_not_a_load_gate",
             "device": "cpu",
             "license": "Apache-2.0",
             "identity_is_suggestion_not_proof": True,
@@ -301,7 +300,8 @@ def build_multiface_character_profile(
         "reference_face_policy": reference_face_policy,
         "reference_face_selections": selections,
         "detector": detector_report,
-        "recognizer_model_sha256": SFACE_EXPECTED_SHA256,
+        "recognizer_model_sha256": recognizer_hash,
+        "recognizer_official_match": recognizer_hash == SFACE_EXPECTED_SHA256,
         "persistent_biometric_storage": False,
         "identity_is_suggestion_not_proof": True,
     }

@@ -138,7 +138,7 @@ def test_bundled_source_is_pinned_and_meta_constructs_exact_graph():
         del model
 
 
-def test_runtime_weight_identity_gates_fail_before_deserialization(tmp_path: Path):
+def test_runtime_model_identity_is_not_a_preload_gate(tmp_path: Path):
     missing = tmp_path / "missing.pth"
     with pytest.raises(VRetouchRuntimeUnavailable) as error:
         load_vretoucher_model(
@@ -147,7 +147,7 @@ def test_runtime_weight_identity_gates_fail_before_deserialization(tmp_path: Pat
             expected_checkpoint_sha256="not-a-hash",
             device="cpu",
         )
-    assert error.value.status == "ABSTAIN_TRUSTED_CHECKPOINT_SHA256_REQUIRED"
+    assert error.value.status == "ABSTAIN_CHECKPOINT_MISSING"
     with pytest.raises(VRetouchRuntimeUnavailable) as error:
         load_vretoucher_model(
             tmp_path,
@@ -158,14 +158,14 @@ def test_runtime_weight_identity_gates_fail_before_deserialization(tmp_path: Pat
     assert error.value.status == "ABSTAIN_CHECKPOINT_MISSING"
     undersized = tmp_path / "undersized.pth"
     undersized.write_bytes(b"not a checkpoint")
-    with pytest.raises(VRetouchRuntimeUnavailable) as error:
+    with pytest.raises(Exception) as error:
         load_vretoucher_model(
             tmp_path,
             undersized,
             expected_checkpoint_sha256="0" * 64,
             device="cpu",
         )
-    assert error.value.status == "ABSTAIN_CHECKPOINT_SIZE_MISMATCH"
+    assert not isinstance(error.value, VRetouchRuntimeUnavailable)
 
 
 class _NoRunModel(torch.nn.Module):

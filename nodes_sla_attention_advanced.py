@@ -33,7 +33,10 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
             display_name="MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)",
             description=(
                 "Loads a structurally valid H3 FL2VA Turbo-SLA LoRA and owns the "
-                "LightX2V 85%-sparse Sage2 attention path for all 50 main H3 blocks. "
+                "LightX2V Sage2 attention path. The saved apply_lightx2v_sla mode remains "
+                "loadable as a diagnostic policy: short sequences stay dense; eligible "
+                "sequences use dense boundary forwards and prefix-protected sparse middle "
+                "forwards. The exact all-sparse upstream route remains an explicit EXP mode. "
                 "The upstream checkpoint defaults to 4 steps, video shift 6 and audio "
                 "shift 3; other native_flow NFE values are accepted as experimental. "
                 "External SageAttention/Sol-Attn/LoRA nodes must be bypassed."
@@ -62,8 +65,8 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
                     default=SLA_LORA_FILENAME,
                     tooltip=(
                         "Default LightX2V MiniMax H3 FL2V Turbo-SLA ComfyUI BF16 LoRA. "
-                        "Other H3 SLA safetensors are accepted when A/B pairs are complete "
-                        "and every patch maps to the loaded H3 base; file SHA is not pinned."
+                        "File name, SHA, size, metadata and tensor layout are diagnostic only. "
+                        "The selected file is passed to the real ComfyUI loader."
                     ),
                 ),
                 io.Combo.Input(
@@ -71,7 +74,16 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
                     options=list(SLA_MODES),
                     default="apply_lightx2v_sla",
                     tooltip=(
-                        "apply_lightx2v_sla runs the learned 85% block-sparse router. "
+                        "apply_lightx2v_sla is a diagnostic auto mode, not quality-safe: "
+                        "under 50K packed "
+                        "tokens it uses dense attention; longer sequences keep dense first/"
+                        "last forwards and protect text/keyframe/audio keys during sparse "
+                        "middle forwards. Both the short all-dense result and the earlier "
+                        "fixed-sparse result failed full-duration human review. Use the new "
+                        "Turbo / SLA Profile Router for the recommended Turbo8 fallback. "
+                        "apply_lightx2v_sla_upstream_exact_exp reproduces "
+                        "85% sparse attention on every forward and may collapse outside the "
+                        "published long 768p profile. "
                         "dense_lora_control keeps the same SLA LoRA but uses dense attention "
                         "for a scientific A/B. disabled_identity changes nothing."
                     ),
@@ -82,9 +94,8 @@ class MiniMaxH3LightX2VSLAT8Advanced(io.ComfyNode):
                     default="auto_detect_exp",
                     advanced=True,
                     tooltip=(
-                        "The upstream LoRA names a BF16 FL2VA base. auto_detect_exp also "
-                        "permits the current INT8 base but reports it as experimental; "
-                        "official_bf16_only refuses a quantized base."
+                        "Controls report labels only. Base dtype and quantization are recorded "
+                        "but never used to reject a user-selected model."
                     ),
                 ),
                 io.Int.Input(
@@ -172,9 +183,10 @@ class MiniMaxH3LightX2VSLAKJSageComposerT8Advanced(io.ComfyNode):
             display_name="MiniMax H3 LightX2V SLA + KJ Sage Composer (Advanced EXP)",
             description=(
                 "Compose an upstream KJNodes MiniMax H3 memory-efficient Sage patch "
-                "with LightX2V SLA under one audited attention owner. SLA apply calls "
-                "use block-sparse Sage2; dense-control and calls outside the SLA route "
-                "retain KJ Sage. No attention call runs both kernels."
+                "with LightX2V SLA under one audited attention owner. Diagnostic sparse "
+                "forwards use block-sparse Sage2; planned dense forwards, dense-control "
+                "and calls outside the SLA route retain KJ Sage. No attention call runs "
+                "both kernels."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -211,7 +223,10 @@ class MiniMaxH3LightX2VSLAKJSageComposerT8Advanced(io.ComfyNode):
                     options=list(SLA_MODES),
                     default="apply_lightx2v_sla",
                     tooltip=(
-                        "apply_lightx2v_sla uses SLA block-sparse Sage2. "
+                        "apply_lightx2v_sla uses a diagnostic sequence/forward policy that "
+                        "failed full-duration human review and is not quality-safe. "
+                        "Use the Turbo / SLA Profile Router for recommended Turbo8 output. "
+                        "The upstream-exact EXP option keeps all forwards 85% sparse. "
                         "dense_lora_control keeps the same LoRA and routes all 50 main "
                         "blocks through the authenticated upstream KJ Sage forward."
                     ),

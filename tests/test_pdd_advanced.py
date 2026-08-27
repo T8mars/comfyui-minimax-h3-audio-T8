@@ -104,7 +104,7 @@ def _fake_adapter_contract(variant: str):
     return metadata, slices, keys
 
 
-def test_adapter_header_contract_is_variant_strict_without_hash_lock(monkeypatch, tmp_path):
+def test_adapter_header_contract_reports_variant_without_blocking(monkeypatch, tmp_path):
     path = tmp_path / "adapter.safetensors"
     path.write_bytes(b"header")
     metadata, slices, keys = _fake_adapter_contract("FL2VA")
@@ -116,8 +116,9 @@ def test_adapter_header_contract_is_variant_strict_without_hash_lock(monkeypatch
     report = pdd.inspect_pdd_adapter(path, "FL2VA")
     assert report["adapter_count"] == 258
     assert report["tensor_count"] == 778
-    with pytest.raises(ValueError, match="must not be interchanged"):
-        pdd.inspect_pdd_adapter(path, "Ref2VA")
+    mismatch = pdd.inspect_pdd_adapter(path, "Ref2VA")
+    assert mismatch["base_variant_reference_match"] is False
+    assert mismatch["model_identity_policy"] == "diagnostic_only_not_a_load_gate"
 
 
 class _TinyAdaLN(nn.Module):
@@ -133,6 +134,9 @@ class _TinyFinal(nn.Module):
         self.adaln_proj = _TinyAdaLN()
         self.video_out = nn.Linear(3, 2)
         self.audio_out = nn.Linear(3, 1)
+
+    def forward(self, *_args, **_kwargs):
+        return "native-final"
 
 
 def test_final_layer_selects_each_official_block(monkeypatch):
@@ -204,6 +208,102 @@ def test_final_layer_supports_current_comfy_per_token_mod_rows(monkeypatch):
         torch.tensor([[6.0, 6.0], [6.0, 6.0]])
     )
     assert audio.float() == pytest.approx(torch.tensor([[6.0], [12.0]]))
+
+
+def test_final_layer_injection_preserves_native_parameter_paths_and_restores_forward(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        pdd,
+        "PDD_HEAD_SPECS",
+        {
+            "pdd.final_layer.video_out.weight": ((32, 2, 3), torch.bfloat16),
+            "pdd.final_layer.video_out.bias": ((32, 2), torch.bfloat16),
+            "pdd.final_layer.audio_out.weight": ((32, 1, 3), torch.bfloat16),
+            "pdd.final_layer.audio_out.bias": ((32, 1), torch.bfloat16),
+        },
+    )
+    base = _TinyFinal()
+    diffusion = nn.Module()
+    diffusion.final_layer = base
+    model = nn.Module()
+    model.diffusion_model = diffusion
+    native_paths = set(dict(model.named_parameters()))
+    assert native_paths == {
+        "diffusion_model.final_layer.video_out.weight",
+        "diffusion_model.final_layer.video_out.bias",
+        "diffusion_model.final_layer.audio_out.weight",
+        "diffusion_model.final_layer.audio_out.bias",
+    }
+
+    layer = pdd.PDDHeadFinalLayer(
+        base,
+        torch.ones((32, 2, 3), dtype=torch.bfloat16),
+        torch.zeros((32, 2), dtype=torch.bfloat16),
+        torch.ones((32, 1, 3), dtype=torch.bfloat16),
+        torch.zeros((32, 1), dtype=torch.bfloat16),
+        strength=1.0,
+        variant="Ref2VA",
+    )
+    injection = pdd._create_pdd_final_layer_injection(base, layer)
+
+    class _Patcher:
+        load_device = torch.device("cpu")
+        offload_device = torch.device("cpu")
+
+    assert base() == "native-final"
+    injection.inject(_Patcher())
+    assert model.diffusion_model.final_layer is base
+    assert set(dict(model.named_parameters())) == native_paths
+    assert not any(".base." in key for key in model.state_dict())
+    assert base.forward.__self__ is layer
+
+    injection.eject(_Patcher())
+    assert base() == "native-final"
+    assert set(dict(model.named_parameters())) == native_paths
+
+
+def test_pdd_runtime_injection_rolls_back_final_forward_when_backbone_inject_fails(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        pdd,
+        "PDD_HEAD_SPECS",
+        {
+            "pdd.final_layer.video_out.weight": ((32, 2, 3), torch.bfloat16),
+            "pdd.final_layer.video_out.bias": ((32, 2), torch.bfloat16),
+            "pdd.final_layer.audio_out.weight": ((32, 1, 3), torch.bfloat16),
+            "pdd.final_layer.audio_out.bias": ((32, 1), torch.bfloat16),
+        },
+    )
+    base = _TinyFinal()
+    layer = pdd.PDDHeadFinalLayer(
+        base,
+        torch.zeros((32, 2, 3), dtype=torch.bfloat16),
+        torch.zeros((32, 2), dtype=torch.bfloat16),
+        torch.zeros((32, 1, 3), dtype=torch.bfloat16),
+        torch.zeros((32, 1), dtype=torch.bfloat16),
+        strength=1.0,
+        variant="FL2VA",
+    )
+
+    class _FailingBackbone:
+        def inject(self, _patcher):
+            raise RuntimeError("synthetic backbone failure")
+
+        def eject(self, _patcher):
+            return None
+
+    class _Patcher:
+        load_device = torch.device("cpu")
+        offload_device = torch.device("cpu")
+
+    injection = pdd._create_pdd_runtime_injection(
+        _FailingBackbone(), base, layer
+    )
+    with pytest.raises(RuntimeError, match="synthetic backbone failure"):
+        injection.inject(_Patcher())
+    assert base() == "native-final"
 
 
 def test_node_schema_is_one_append_only_advanced_setup_node():

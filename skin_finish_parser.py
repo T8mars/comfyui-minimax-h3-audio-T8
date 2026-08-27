@@ -98,17 +98,7 @@ def _load_pinned_parsenet(path: Path | None = None):
             f"Install the pinned checkpoint at {resolved}; runtime download is disabled.",
         )
     actual_size = int(resolved.stat().st_size)
-    if actual_size != PARSENET_MODEL_SIZE:
-        raise _ParserUnavailable(
-            "REJECT_PARSENET_MODEL_SIZE_MISMATCH",
-            f"Expected {PARSENET_MODEL_SIZE} bytes, got {actual_size} at {resolved}.",
-        )
     actual_hash = _file_sha256(resolved)
-    if actual_hash.lower() != PARSENET_MODEL_SHA256:
-        raise _ParserUnavailable(
-            "REJECT_PARSENET_MODEL_HASH_MISMATCH",
-            f"Expected SHA-256 {PARSENET_MODEL_SHA256}, got {actual_hash}.",
-        )
     try:
         from facexlib.parsing.parsenet import ParseNet
     except Exception as error:
@@ -126,7 +116,7 @@ def _load_pinned_parsenet(path: Path | None = None):
     except Exception as error:
         raise _ParserUnavailable(
             "REJECT_PARSENET_SAFE_LOAD_FAILED",
-            f"Pinned ParseNet checkpoint failed safe loading: {error}",
+            f"Selected ParseNet checkpoint failed safe loading: {error}",
         ) from error
     try:
         model = ParseNet(in_size=512, out_size=512, parsing_ch=19)
@@ -136,10 +126,17 @@ def _load_pinned_parsenet(path: Path | None = None):
     except Exception as error:
         raise _ParserUnavailable(
             "REJECT_PARSENET_STATE_DICT_MISMATCH",
-            f"Pinned ParseNet state dict does not match the expected architecture: {error}",
+            f"Selected ParseNet state dict could not be loaded by ParseNet: {error}",
         ) from error
     finally:
         del state
+    model._t8_checkpoint_identity = {
+        "actual_size": actual_size,
+        "actual_sha256": actual_hash,
+        "reference_size_match": actual_size == PARSENET_MODEL_SIZE,
+        "reference_sha256_match": actual_hash.lower() == PARSENET_MODEL_SHA256,
+        "policy": "diagnostic_only_not_a_load_gate",
+    }
     return model, resolved, actual_hash
 
 

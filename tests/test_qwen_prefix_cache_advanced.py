@@ -83,6 +83,15 @@ def test_current_comfy_qwen_contract_is_known():
         "attention_forward",
         "transformer_block_forward",
     }
+    assert contract["source_hash_policy"] == "diagnostic_only_not_a_compatibility_gate"
+    assert contract["semantic_contract"]["status"] == "semantic_contract_validated"
+
+
+def test_equivalent_qwen_source_text_change_is_not_a_compatibility_gate(monkeypatch):
+    monkeypatch.setattr(prefix_cache, "_source_hash", lambda _value: "unknown-source")
+    contract = prefix_cache.core_contract()
+    assert contract["supported"] is True
+    assert set(contract["hashes"].values()) == {"unknown-source"}
 
 
 def test_prefix_split_requires_exact_full_token_sequence_including_visual_entries():

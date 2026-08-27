@@ -5,6 +5,53 @@ import math
 import torch
 
 
+_PRIMITIVE_WIDGET_TYPES = {"STRING", "INT", "FLOAT", "BOOLEAN", "COMBO"}
+_SEED_WIDGETS = {"seed", "noise_seed"}
+_SEED_CONTROLS = {"fixed", "increment", "decrement", "randomize"}
+
+
+def plugin_widget_map(node, node_class):
+    """Decode native ComfyUI 0.4 widget values from the registered schema.
+
+    Native saves omit unlinked widget descriptors from ``node.inputs`` while
+    retaining positional ``widgets_values`` (plus one control value for seeds).
+    Compatibility tests therefore have to use the node schema, not old input
+    slot positions.
+    """
+
+    info = node_class.define_schema().get_v1_info(node_class)
+    widget_names = []
+    for section in ("required", "optional"):
+        for name, spec in info.input.get(section, {}).items():
+            if not isinstance(spec, (list, tuple)) or not spec:
+                continue
+            options = spec[1] if len(spec) > 1 and isinstance(spec[1], dict) else {}
+            if options.get("forceInput"):
+                continue
+            if isinstance(spec[0], list) or spec[0] in _PRIMITIVE_WIDGET_TYPES:
+                widget_names.append(name)
+
+    values = node.get("widgets_values", [])
+    result = {}
+    cursor = 0
+    for name in widget_names:
+        if cursor >= len(values):
+            raise AssertionError(f"widget values ended before schema input {name!r}")
+        result[name] = values[cursor]
+        cursor += 1
+        if (
+            name in _SEED_WIDGETS
+            and cursor < len(values)
+            and values[cursor] in _SEED_CONTROLS
+        ):
+            cursor += 1
+    if cursor != len(values):
+        raise AssertionError(
+            f"{len(values) - cursor} widget value(s) were not described by the node schema"
+        )
+    return result
+
+
 class FakeClip:
     def __init__(self):
         self.tokenize_calls = []

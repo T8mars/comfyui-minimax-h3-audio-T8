@@ -1,5 +1,5 @@
 {
-  "id": "c8a41ca8-ce34-4de3-92d2-0a7a0c6e3078",
+  "id": "bb642f15-cfea-4df2-8fe0-638ec42a417f",
   "revision": 0,
   "last_node_id": 18,
   "last_link_id": 23,
@@ -182,7 +182,7 @@
     {
       "id": 6,
       "type": "LoadImage",
-      "title": "Load Image",
+      "title": "Replace with a same-scale final frame (demo repeats first)",
       "pos": [
         0,
         1500
@@ -386,8 +386,8 @@
         "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
       },
       "widgets_values": [
-        4,
-        6.0,
+        8,
+        12.0,
         3.0,
         "dual_clock_euler",
         "native_flow"
@@ -395,18 +395,18 @@
     },
     {
       "id": 9,
-      "type": "MiniMaxH3LightX2VSLAT8Advanced",
-      "title": "MiniMax H3 LightX2V SLA Loader + Attention (Advanced EXP)",
+      "type": "MiniMaxH3TurboSLAProfileRouterT8Advanced",
+      "title": "Recommended Turbo8 / exact SLA profile router",
       "pos": [
-        1320,
+        1760,
         0
       ],
       "size": [
         390,
-        308
+        390
       ],
       "flags": {},
-      "order": 8,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -443,13 +443,16 @@
       ],
       "properties": {
         "cnr_id": "minimax-h3-audio-T8",
-        "Node name for S&R": "MiniMaxH3LightX2VSLAT8Advanced"
+        "Node name for S&R": "MiniMaxH3TurboSLAProfileRouterT8Advanced"
       },
       "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
         "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors",
-        "apply_lightx2v_sla",
+        "consumer_turbo8_recommended",
         "auto_detect_exp",
-        512
+        512,
+        0.15,
+        0.9
       ]
     },
     {
@@ -465,7 +468,7 @@
         142
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -491,7 +494,7 @@
       "type": "BasicGuider",
       "title": "Basic Guider",
       "pos": [
-        1760,
+        2200,
         0
       ],
       "size": [
@@ -499,7 +502,7 @@
         132
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -533,7 +536,7 @@
       "type": "SamplerCustomAdvanced",
       "title": null,
       "pos": [
-        2200,
+        2640,
         0
       ],
       "size": [
@@ -541,7 +544,7 @@
         210
       ],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -595,7 +598,7 @@
       "type": "MiniMaxH3LightX2VSLAAuditT8Advanced",
       "title": "MiniMax H3 LightX2V SLA Runtime Audit (Advanced EXP)",
       "pos": [
-        2640,
+        3080,
         0
       ],
       "size": [
@@ -603,7 +606,7 @@
         132
       ],
       "flags": {},
-      "order": 12,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -642,7 +645,7 @@
       "type": "MiniMaxH3AVDecodeT8",
       "title": "MiniMax H3 AV Decode (T8)",
       "pos": [
-        3080,
+        3520,
         0
       ],
       "size": [
@@ -650,7 +653,7 @@
         158
       ],
       "flags": {},
-      "order": 13,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -706,7 +709,7 @@
       "type": "VHS_VideoCombine",
       "title": "Video Combine 🎥🅥🅗🅢",
       "pos": [
-        3520,
+        3960,
         0
       ],
       "size": [
@@ -714,7 +717,7 @@
         396
       ],
       "flags": {},
-      "order": 14,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -755,7 +758,7 @@
       "widgets_values": [
         24,
         0,
-        "MiniMaxH3_SLA/lightx2v_sla_fl2va_736x416_124f",
+        "MiniMaxH3_SLA/profile_router_turbo8_fl2va_736x416_124f",
         "video/h264-mp4",
         false,
         true
@@ -774,29 +777,6 @@
         430
       ],
       "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "Node name for S&R": "MarkdownNote",
-        "cnr_id": "comfy-core"
-      },
-      "widgets_values": "## 正确连接\n\n`原生 H3 UNET → Dual-Clock(4步 / native_flow / video shift 6 / audio shift 3) → LightX2V SLA → BasicGuider`。同时把 Dual-Clock 的同一组 `sigmas` 接入 SLA。SLA 节点自己加载固定 LoRA；必须删除或旁路旧 Turbo LoRA、KJ Sage、Sol-Attn、FETA、BlockCache、STG 和其他 attention wrapper。当前只开放 FL2VA，必须同时连接首帧与尾帧。"
-    },
-    {
-      "id": 17,
-      "type": "MarkdownNote",
-      "title": "② 模式、模型与参数",
-      "pos": [
-        1050,
-        1150
-      ],
-      "size": [
-        930,
-        430
-      ],
-      "flags": {},
       "order": 16,
       "mode": 0,
       "inputs": [],
@@ -805,14 +785,14 @@
         "Node name for S&R": "MarkdownNote",
         "cnr_id": "comfy-core"
       },
-      "widgets_values": "## 四种诊断模式（不等于质量通过）\n\n`apply_lightx2v_sla`：未发布的自动诊断计划。packed序列低于50K token时使用同SLA LoRA稠密attention；达到门槛后首尾采样前向保持稠密，中间前向才使用85%块稀疏，并额外保护文本、首尾帧和音频key。完整人审已经否决过短序列稠密fallback，不能再称为质量安全。`apply_lightx2v_sla_upstream_exact_exp`：所有前向固定85%稀疏，只用于复现上游实验。`dense_lora_control`：同一SLA LoRA全稠密，仅供归因，不是普通Turbo基线。`disabled_identity`：完全旁路。INT8仍是兼容实验；workspace只限制路由临时空间。"
+      "widgets_values": "## 推荐连接\n\n`原生 H3 UNET → Dual-Clock(8步 / native_flow / 12V / 3A) → Turbo / SLA Profile Router → BasicGuider`。默认消费级路线使用修正Alpha8普通Turbo LoRA，不加载SLA LoRA，也不进入SLA稀疏Attention。若本机已安装完整KJ MiniMax H3 Sage，可选接在Dual-Clock与Router之间；不要再加入外部LoRA、ModelAttentionBackend、Sol-Attn或其他Attention节点。"
     },
     {
-      "id": 18,
+      "id": 17,
       "type": "MarkdownNote",
-      "title": "③ 审计结果与科学边界",
+      "title": "② 模式、模型与参数",
       "pos": [
-        2100,
+        1050,
         1150
       ],
       "size": [
@@ -828,7 +808,30 @@
         "Node name for S&R": "MarkdownNote",
         "cnr_id": "comfy-core"
       },
-      "widgets_values": "## 运行后必须检查 Audit 与完整成片\n\n本模板默认把同一张近景图接到首尾帧，只隔离路线是否会自行崩坏；实际替换尾帧时必须保持人物占比、视角和场景尺度接近。736×416×124通常低于50K token，默认会报告 `auto_safe_short_sequence_dense_fallback_verified`、4×50个dense调用和0次稀疏调用，但这只是路由机械正确，不是画质通过。近景人物→航拍小点的旧样本已被完整人审否决，应改用更长时长、分段/中间关键帧，或只保留首帧。只有显式上游精确EXP才应全程200次稀疏。任何kernel failure或计划外fallback都失败，完整后半段和音频仍须人工验收。"
+      "widgets_values": "## 三个互斥Profile\n\n默认`consumer_turbo8_recommended`：修正Alpha8普通Turbo LoRA + 8 NFE + 12/3，Attention由原生稠密或已认证KJ Sage负责。`sla_4step_upstream_exact_exp`：SLA LoRA + 4 NFE + 6/3 + 全程85%稀疏，只接受发布证据覆盖的BF16或LightX2V FP8。`sla_4step_int8_bypass_exp`：仅研究INT8 ConvRot，动态应用LoRA且默认只在15%～90%进度启用SLA；4 NFE实际落为dense/sparse/sparse/sparse。切换两个SLA Profile时必须把Dual-Clock改为4/6/3。"
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "③ 审计结果与科学边界",
+      "pos": [
+        2100,
+        1150
+      ],
+      "size": [
+        930,
+        430
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## Audit、首尾帧与验收边界\n\n默认Turbo8应报告8次模型前向、0次SLA main/sparse/dense-control调用；KJ运行在SLA审计器之外。实验SLA应报告4×50次block-sparse且无kernel failure。LightX2V配置里的`infer_steps=5`是5个sigma网格点，实际仍是4次模型前向，不是少跑一步。此模板默认把同一张近景图同时接到首尾帧，只用于证明路线不会自行崩坏；实际使用时请替换为人物占比、视角和场景尺度接近的尾帧。近景人物→航拍小点的旧样本已被完整人审否决，不能称为连贯或SLA通过；必须改用更长镜头、分段/中间关键帧，或只保留首帧。官方SLA公开证据为1344×768×362、4 NFE、6/3与BF16/LightX2V FP8，不覆盖当前INT8短视频。"
     }
   ],
   "links": [
@@ -1020,11 +1023,11 @@
   "groups": [
     {
       "id": 1,
-      "title": "MiniMax H3 LightX2V SLA · FL2VA 4 NFE · 6V/3A",
+      "title": "MiniMax H3 Turbo8 default / SLA exact EXP profile router",
       "bounding": [
         -80,
         -80,
-        3300,
+        3740,
         1050
       ],
       "color": "#6b4fa1",
@@ -1054,7 +1057,8 @@
         120
       ]
     },
-    "workflow_title": "MiniMax H3 LightX2V SLA FL2VA 4-Step (Advanced EXP)"
+    "workflow_title": "MiniMax H3 Turbo8 Default / SLA Exact EXP Profile Router",
+    "workflow_name": "MiniMax H3 Turbo8 Default / SLA Exact EXP Profile Router"
   },
   "version": 0.4
 }

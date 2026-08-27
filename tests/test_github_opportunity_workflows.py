@@ -3,6 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from h3_audio_t8_pkg.nodes_prompt_rewriter_8b_advanced import (
+    MiniMaxH3PromptRewriter8BT8Advanced,
+)
+from helpers import plugin_widget_map
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_ROOT = ROOT / "examples" / "workflows"
@@ -30,17 +35,6 @@ def _assert_importable_contract(workflow: dict) -> None:
         assert link[3] in node_ids
 
 
-def _widget_map(node: dict) -> dict[str, object]:
-    result = {}
-    cursor = 0
-    for item in node["inputs"]:
-        if "widget" not in item:
-            continue
-        result[item["name"]] = node["widgets_values"][cursor]
-        cursor += 2 if item["name"] in {"seed", "noise_seed"} else 1
-    return result
-
-
 def test_prompt_rewriter_workflow_has_safe_local_unload_defaults():
     workflow = _load(
         "14-prompt-relay",
@@ -48,7 +42,7 @@ def test_prompt_rewriter_workflow_has_safe_local_unload_defaults():
     )
     _assert_importable_contract(workflow)
     node = _by_type(workflow)["MiniMaxH3PromptRewriter8BT8Advanced"][0]
-    values = _widget_map(node)
+    values = plugin_widget_map(node, MiniMaxH3PromptRewriter8BT8Advanced)
     assert values["base_model_path"] == "Qwen3-VL-8B-Instruct"
     assert values["adapter_path"] == "MiniMax-H3-Prompt-Rewriter-LoRA-8B"
     assert values["load_policy"] == "auto_cpu_offload"

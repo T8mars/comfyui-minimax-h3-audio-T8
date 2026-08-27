@@ -103,7 +103,11 @@ def _offsets_overlap(candidate: tuple[int, int, int] | None, expected: tuple[int
     return candidate_start < expected_end and expected_start < candidate_end
 
 
-def _validate_hybrid_attachment(attachment: Any, hard: list[dict[str, Any]]) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+def _validate_hybrid_attachment(
+    attachment: Any,
+    hard: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     if not isinstance(attachment, Mapping):
         _issue(hard, "hybrid_attachment_missing", "MODEL does not carry the validated T8 Hybrid artifact attachment.")
         return None, []
@@ -111,20 +115,32 @@ def _validate_hybrid_attachment(attachment: Any, hard: list[dict[str, Any]]) -> 
     if not isinstance(identity, Mapping):
         _issue(hard, "hybrid_identity_missing", "Hybrid attachment identity is missing or malformed.")
         return None, []
-    expected_fields = {
+    expected_contract_fields = {
         "schema": ARTIFACT_SCHEMA,
         "algorithm": ALGORITHM,
+    }
+    for key, expected in expected_contract_fields.items():
+        if identity.get(key) != expected:
+            _issue(
+                hard,
+                "hybrid_contract_mismatch",
+                f"Hybrid attachment contract field {key!r} is unsupported.",
+                field=key,
+                actual=identity.get(key),
+                expected=expected,
+            )
+    reference_identity_fields = {
         "base_sha256": KNOWN_QUALITY_BASE_SHA256,
         "overlay_sha256": KNOWN_REFERENCE_OVERLAY_SHA256,
         "base_curve_sha256": KNOWN_QUALITY_CURVE_SHA256,
         "overlay_curve_sha256": KNOWN_REFERENCE_CURVE_SHA256,
     }
-    for key, expected in expected_fields.items():
+    for key, expected in reference_identity_fields.items():
         if identity.get(key) != expected:
             _issue(
-                hard,
-                "hybrid_identity_mismatch",
-                f"Hybrid attachment identity field {key!r} is outside the validated P0 contract.",
+                warnings,
+                "hybrid_reference_identity_mismatch",
+                f"Hybrid attachment identity field {key!r} differs from the original reference pair; user-selected model identity is diagnostic only.",
                 field=key,
                 actual=identity.get(key),
                 expected=expected,
@@ -535,7 +551,11 @@ def audit_hybrid_compatibility(
     hard: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
     hybrid_attachment = _attachment(model, ATTACHMENT_KEY)
-    identity, operations = _validate_hybrid_attachment(hybrid_attachment, hard)
+    identity, operations = _validate_hybrid_attachment(
+        hybrid_attachment,
+        hard,
+        warnings,
+    )
     weight_patches = _audit_weight_patches(model, operations, hard)
     total_blocks = _total_blocks(model)
     block_cache = _audit_block_cache(model, total_blocks, hard)

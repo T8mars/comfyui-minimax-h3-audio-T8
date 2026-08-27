@@ -2,22 +2,23 @@
 
 本目录提供 MiniMax H3 FL2VA 的 LightX2V Turbo-SLA 实验工作流：基础版由SLA节点独占attention；组合版允许保留KJNodes的MiniMax H3 Sage完整forward，并由专用Composer逐调用选择唯一后端。普通SLA节点仍不接受KJ、Sol-Attn、FETA、Prompt Relay、BlockCache、STG或其他attention/block patch。
 
-## 两份入口
+## 三份入口
 
+- `2026-08-26_H3_Turbo_SLA_Profile_Router_FL2VA_Advanced_EXP.json`：推荐入口。默认使用普通修正Alpha8 Turbo8；只有明确选择实验Profile时才进入SLA精确路线。
 - `2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json`：基础严格版，Dual-Clock后直接接SLA。
 - `2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json`：KJ组合版，连接顺序为 `Dual-Clock → KJ MiniMax H3 Sage → SLA + KJ Composer`。`ModelAttentionBackend`不是必需；若已有且属于ComfyUI内置PyTorch/Comfy Kitchen后端，Composer会明确记录并替换它。Sol-Attn和未知Attention仍拒绝。
 
 ## 使用方法
 
 1. 默认可准备 `minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors`，放入 `ComfyUI/models/loras`。节点不再把所有SLA能力绑定到这一个文件SHA；其他H3 SLA safetensors必须具有完整A/B LoRA对，并在加载时全部映射到当前H3基座，否则仍会拒绝。
-2. 使用 FL2VA 基座，同时接入首帧与尾帧。上游 LoRA 明确标注的正式基座是 BF16 FL2VA；INT8 ConvRot 只属于本机兼容实验。
-3. 官方当前发布模型仍以 `native_flow`、4 NFE、视频 shift 6、音频 shift 3 为默认合同，并把同一组 `sigmas` 接入 SLA 节点。现在也允许8 NFE及其他有限native_flow步数，Runtime Audit会按实际NFE验收；非官方4步合同都会标为实验性，不代表质量更好。
-4. 生成时选 `apply_lightx2v_sla`；做同 LoRA 科学对照时选 `dense_lora_control`；完全旁路时选 `disabled_identity`。
-5. 采样后必须连接 Runtime Audit。默认4步应看到4次前向、每次50次主attention、共200次稀疏内核；8步则应看到8次与共400次。两者都必须是0 fallback、0 kernel failure。
+2. 使用 FL2VA 基座，同时接入首帧与尾帧。推荐模板默认重复同一张近景图，避免把首尾条件冲突误判成SLA失效；替换尾帧时应保持人物占比、视角和场景尺度接近。近景人物直接跳到航拍小点属于高风险镜头，应延长时长、拆分镜头/加入中间关键帧，或改为只接首帧。上游发布证据覆盖 BF16 checkpoint 和 LightX2V FP8 配方；没有证据覆盖本地 INT8 ConvRot + SLA。Profile Router 的SLA精确档因此会拒绝INT8；仅研究旁路档允许INT8动态LoRA，默认在采样进度15%～90%启用SLA。
+3. SLA发布路线使用 `native_flow`、4 NFE、视频 shift 6、音频 shift 3。官方配置的`infer_steps=5`是5个sigma网格点，调度器实际执行4次模型前向。旧节点仍可记录其他NFE实验；Profile Router不会把它们称为上游精确路线。
+4. `apply_lightx2v_sla`目前只保留为未发布的诊断计划：低于50K packed token会主动全稠密，较长序列会安排首尾稠密、中间稀疏并保护文本/首尾帧/音频key；它不再被推荐为“质量安全”模式。只有研究上游固定85%行为时才选 `apply_lightx2v_sla_upstream_exact_exp`。`dense_lora_control`只做“同一SLA LoRA改用稠密Attention”的机械归因，不能代替普通Turbo LoRA基线；完全旁路选 `disabled_identity`。
+5. 采样后必须连接 Runtime Audit。Profile Router默认Turbo8应报告8次模型前向和0次SLA调用；SLA精确档应看到4×50次稀疏内核。INT8旁路档默认应报告`dense/sparse/sparse/sparse`，对应4步模型前向开始点0%、25%、50%、75%；90%以后没有新的模型前向，不能误称为“末步恢复稠密”。这些计数只证明路由执行，不代表画质通过。
 
 若同时安装了旧版 `ComfyUI-PainterNodes`，它可能给 `PackedLayout` 安装一个仍转发已移除 `frame_count` 参数的全局补丁。SLA节点现在会复用T8 Hybrid的可执行兼容探针：只有在该补丁带有已知标记、其闭包中的原生构造器独立通过当前键帧+参考排列合同后，才解除这个过时包装；未知全局补丁仍会拒绝。更新后需要完整重启ComfyUI，旧的红框状态不会自行证明新代码仍失败，应重新执行节点并查看新的错误文本。
 
-组合版中，`apply_lightx2v_sla`的200次主调用必须全部进入SLA block-sparse Sage2，KJ调用数为0；`dense_lora_control`则必须有200次KJ Sage调用和0次SLA稀疏调用。每次Attention只计算一个后端，并不是把两个加速结果相乘。
+组合版中，短序列诊断性稠密fallback的200次主调用会全部进入KJ dense；长序列4 NFE自动模式由首尾100次KJ dense和中间100次SLA block-sparse组成；显式上游精确EXP才是200次SLA sparse和0次KJ。`dense_lora_control`始终为200次KJ。每次Attention只计算一个后端，并不是把两个加速结果相乘；这些计数只说明路由真实发生，不说明画质可用。
 
 ## 已完成验证
 
@@ -25,7 +26,12 @@
 - 固定模型 revision：`10ade67cd15ff7a135fa35c2a0673ea96c839247`。
 - 当时机械验证使用的参考LoRA SHA-256为`5CAE6DF40A06EA825F85FC8876C9EA1C9692C833A9AF07BB8B3BAC9CE2A71BAC`，208个LoRA patch全部映射并加载；这只是历史证据，不再是运行时唯一白名单。
 - RTX 4060 Ti / sm89 上，一条 256×256×22、4 NFE 的 FL2VA INT8 兼容机械运行完成：4×50 次稀疏调用，失败和回退均为 0。
+- 普通Turbo8以736×416×124、近景→航拍的不同首尾帧完成一次串行真实复测：124帧和32kHz双声道严格解码通过，但完整人审确认约一秒后进入持续的不合格强制变景，不能称为画面连贯。该次运行没有进入SLA路由（8次模型前向、0次SLA调用），因此它证明的是首尾条件冲突，不是SLA内核崩坏；最低剩余显存418MiB，亦低于512MiB安全门。
+- SLA精确档以同景别首尾帧完成一次736×416×124机械成片，但后续盲评导出把SLA候选标记为硬失败且所有维度都偏向普通Turbo8；由于评审同时选择`unsure`，形式结论为ABSTAIN而不是胜负票。无论哪种解释，都不能推荐当前INT8标准weight-patch SLA。Profile Router新增的`sla_4step_int8_bypass_exp`只用于验证动态LoRA旁路能否避免底模重数量化，默认仍是普通Turbo8。
+- 用户本轮提供的文件名含`124f`的问题视频实际是704×416、22帧、0.9167秒；容器信息优先于文件名。
+
+首尾素材的低负载审计也支持上述归因：近景与航拍图缩放到相同画布后，像素相关系数仅`0.032`、边缘IoU仅`0.0828`，ORB只有3个有效匹配且无法求得单应性；它们不是一个可由普通小幅镜头运动连接的同尺度锚点对。另一方面，同一稀疏块图上的随机张量检查显示，当前`spas-sage-attn`量化Sage2相对FP32参考的RMSE约`0.00517`，高精度Triton稀疏核约`0.00030`。这说明量化误差值得后续单独A/B，但不能解释那条0次SLA调用的失败过渡。
 
 ## 科学边界
 
-这里实现的是 LightX2V 发布版的 learned dynamic block router 数学与 Sage2 block-sparse 内核接入，不是一个可脱离 SLA LoRA 单独使用的通用“加速开关”，也不代表已经复现通用 SLA 论文中的全部 sparse+linear 分支。结构验证只能证明文件可安全映射，不能证明任意自命名文件真的是经过SLA训练的权重；模型来源与效果仍由用户确认。KJ组合器解决的是完整forward与ComfyUI attention override的hook冲突，并不让同一调用重复运行两种kernel。当前验证只证明默认4步节点、LoRA、路由和稀疏内核真实生效；8步及其他NFE属于兼容执行，不等于上游官方质量背书。尚未证明相对稠密对照的画质更好、速度一定更快、音频不劣或所有16GB工作流安全。公开工作流默认736×416×124，请按显卡余量逐步试用。
+这里实现的是 LightX2V 发布版 learned dynamic block router 数学与 Sage2 block-sparse 内核接入，不是可脱离SLA LoRA的通用加速开关，也不是通用SLA论文全部 sparse+linear 分支。现有证据只能把普通Turbo8提升为当前消费级推荐回退；SLA仍是BF16/LightX2V FP8证据族上的4-NFE实验路线。结构映射、内核零失败和单条连贯成片都不能证明画质更好、速度更快、音频非劣或普遍16GB安全。

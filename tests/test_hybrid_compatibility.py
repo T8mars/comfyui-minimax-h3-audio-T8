@@ -117,6 +117,35 @@ def test_exact_hybrid_patch_stack_passes_and_node_returns_same_model():
     assert json.loads(result[2])["model_passthrough"] is True
 
 
+def test_nonreference_model_identity_is_diagnostic_not_a_block():
+    model = FakePatcher()
+    identity = model.attachments[hybrid.ATTACHMENT_KEY]["identity"]
+    identity.update(
+        {
+            "base_sha256": "1" * 64,
+            "overlay_sha256": "2" * 64,
+            "base_curve_sha256": "3" * 64,
+            "overlay_curve_sha256": "4" * 64,
+        }
+    )
+    attachment = model.attachments[hybrid.ATTACHMENT_KEY]
+    attachment["fingerprint"] = hybrid.sha256_bytes(
+        hybrid.canonical_json(identity).encode("utf-8")
+    )
+
+    report = compatibility.audit_hybrid_compatibility(model)
+
+    assert report["compatible"] is True
+    assert not report["hard_errors"]
+    assert {
+        warning["code"] for warning in report["warnings"]
+    } == {
+        "hybrid_reference_identity_mismatch",
+        "hybrid_quality_remains_experimental",
+        "memory_gate_is_not_peak_proof",
+    }
+
+
 def test_nonselected_lora_patch_passes_but_adaln_overlap_after_hybrid_fails():
     model = FakePatcher()
     model.patches["diffusion_model.blocks.0.attn.qkv_proj.weight"] = [
@@ -414,11 +443,15 @@ def test_frontend_example_routes_audited_model_and_has_consistent_links():
         False,
         True,
     ]
-    assert links[audit["inputs"][0]["link"]][1:5] == [
-        sampler["id"], 0, audit["id"], 0,
+    model_input = next(item for item in audit["inputs"] if item["name"] == "model")
+    positive_input = next(item for item in audit["inputs"] if item["name"] == "positive")
+    model_slot = audit["inputs"].index(model_input)
+    positive_slot = audit["inputs"].index(positive_input)
+    assert links[model_input["link"]][1:5] == [
+        sampler["id"], 0, audit["id"], model_slot,
     ]
-    assert links[audit["inputs"][5]["link"]][1:5] == [
-        conditioning["id"], 0, audit["id"], 5,
+    assert links[positive_input["link"]][1:5] == [
+        conditioning["id"], 0, audit["id"], positive_slot,
     ]
     assert links[guider["inputs"][0]["link"]][1:5] == [
         audit["id"], 0, guider["id"], 0,

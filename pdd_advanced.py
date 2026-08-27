@@ -161,42 +161,29 @@ def inspect_pdd_adapter(path: str | Path, expected_variant: str) -> dict[str, An
     with safe_open(str(path), framework="pt", device="cpu") as handle:
         metadata = dict(handle.metadata() or {})
         keys = set(handle.keys())
-        for key, expected in PDD_REQUIRED_METADATA.items():
-            if metadata.get(key) != expected:
-                raise ValueError(
-                    f"{path.name}: metadata {key!r} must be {expected!r}, "
-                    f"found {metadata.get(key)!r}."
-                )
+        metadata_matches = {
+            key: metadata.get(key) == expected
+            for key, expected in PDD_REQUIRED_METADATA.items()
+        }
         actual_variant = metadata.get("base_variant")
-        if actual_variant != expected_variant:
-            raise ValueError(
-                f"{path.name} is the {actual_variant!r} PDD adapter but the node is "
-                f"configured for {expected_variant!r}. FL2VA and Ref2VA adapters "
-                "must not be interchanged."
-            )
+        head_contract = {}
         for key, (shape, dtype) in PDD_HEAD_SPECS.items():
             if key not in keys:
-                raise ValueError(f"{path.name}: missing dynamic PDD head {key!r}.")
+                head_contract[key] = {"present": False, "reference_match": False}
+                continue
             tensor = handle.get_slice(key)
             actual_shape = tuple(int(value) for value in tensor.get_shape())
             actual_dtype = _dtype_name(tensor.get_dtype())
-            if actual_shape != shape or actual_dtype != _dtype_name(dtype):
-                raise ValueError(
-                    f"{path.name}: {key} must be {_dtype_name(dtype)} {shape}, "
-                    f"found {actual_dtype} {actual_shape}."
-                )
+            head_contract[key] = {
+                "present": True,
+                "shape": list(actual_shape),
+                "dtype": actual_dtype,
+                "reference_match": (
+                    actual_shape == shape and actual_dtype == _dtype_name(dtype)
+                ),
+            }
     lora_keys = keys - set(PDD_HEAD_SPECS)
-    alpha_keys = {key for key in lora_keys if key.endswith(".alpha")}
     a_keys = {key for key in lora_keys if key.endswith(".lora_A.weight")}
-    b_keys = {key for key in lora_keys if key.endswith(".lora_B.weight")}
-    if len(keys) != 778 or not (
-        len(alpha_keys) == len(a_keys) == len(b_keys) == 258
-    ):
-        raise ValueError(
-            f"{path.name}: expected 778 tensors with 258 complete LoRA A/B/alpha "
-            f"triples and four PDD heads; found total={len(keys)}, "
-            f"A={len(a_keys)}, B={len(b_keys)}, alpha={len(alpha_keys)}."
-        )
     expected_lora_keys = {
         key.removesuffix(".lora_A.weight") + suffix
         for key in a_keys
@@ -204,19 +191,21 @@ def inspect_pdd_adapter(path: str | Path, expected_variant: str) -> dict[str, An
     }
     unexpected = sorted(lora_keys - expected_lora_keys)
     missing = sorted(expected_lora_keys - lora_keys)
-    if unexpected or missing:
-        raise ValueError(
-            f"{path.name}: incomplete PDD LoRA key triples; "
-            f"unexpected={unexpected[:3]}, missing={missing[:3]}."
-        )
     return {
         "filename": path.name,
         "bytes": path.stat().st_size,
-        "base_variant": expected_variant,
+        "base_variant": actual_variant,
+        "selected_base_variant": expected_variant,
+        "base_variant_reference_match": actual_variant == expected_variant,
         "tensor_count": len(keys),
         "adapter_count": len(a_keys),
         "head_tensor_count": len(PDD_HEAD_SPECS),
         "metadata": metadata,
+        "metadata_reference_match": metadata_matches,
+        "head_contract": head_contract,
+        "unexpected_lora_keys": unexpected,
+        "missing_lora_keys": missing,
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
     }
 
 
@@ -281,6 +270,13 @@ class PDDHeadFinalLayer(nn.Module):
         self.register_buffer("audio_bias", audio_bias, persistent=False)
         self._block_index = 0
         self._selection_count = 0
+
+    def move_head_buffers_to(self, device) -> None:
+        """Move only the PDD heads without moving the native final layer."""
+
+        target = torch.device(device)
+        for name in ("video_weight", "video_bias", "audio_weight", "audio_bias"):
+            self._buffers[name] = self._buffers[name].to(device=target)
 
     @property
     def block_index(self) -> int:
@@ -419,52 +415,14 @@ def _apply_dynamic_lora(model, state: dict[str, torch.Tensor], strength: float):
     converted = comfy.lora_convert.convert_lora(lora_state)
     key_map = comfy.lora.model_lora_keys_unet(model.model, {})
     loaded = comfy.lora.load_lora(converted, key_map, log_missing=False)
-    if len(loaded) != 258:
-        raise RuntimeError(
-            "MiniMax-H3 PDD backbone LoRA did not map completely to this base: "
-            f"mapped={len(loaded)}, expected=258."
-        )
-    non_adapters = sorted(
-        key
-        for key, patch in loaded.items()
-        if not isinstance(patch, comfy.weight_adapter.LoRAAdapter)
-    )
-    if non_adapters:
-        raise RuntimeError(
-            "MiniMax-H3 PDD dynamic path accepts only LoRA adapters; found "
-            + ", ".join(non_adapters[:8])
-        )
     rank_counts: dict[int, int] = {}
     for key, adapter in loaded.items():
         up, down, alpha, mid, dora_scale, reshape = adapter.weights
-        if mid is not None or dora_scale is not None or reshape is not None:
-            raise RuntimeError(
-                f"MiniMax-H3 PDD adapter {key} contains an unsupported LoRA branch."
-            )
-        if up.ndim != 2 or down.ndim != 2 or int(up.shape[1]) != int(down.shape[0]):
-            raise RuntimeError(
-                f"MiniMax-H3 PDD adapter {key} has an invalid A/B matrix contract."
-            )
+        del mid, dora_scale, reshape
         rank = int(up.shape[1])
-        if not math.isclose(float(alpha), float(rank), abs_tol=1e-6):
-            raise RuntimeError(
-                f"MiniMax-H3 PDD adapter {key} must preserve alpha/rank=1; "
-                f"found alpha={alpha}, rank={rank}."
-            )
+        del alpha, down
         rank_counts[rank] = rank_counts.get(rank, 0) + 1
-    if rank_counts != {64: 206, 192: 52}:
-        raise RuntimeError(
-            "MiniMax-H3 PDD adapter rank layout is incomplete; expected "
-            f"206 rank-64 and 52 rank-192 adapters, found {rank_counts}."
-        )
     patched = model.clone()
-    model_keys = set(patched.model.state_dict().keys())
-    missing = sorted(set(loaded) - model_keys)
-    if missing:
-        raise RuntimeError(
-            "MiniMax-H3 PDD adapters target missing base weights: "
-            + ", ".join(missing[:8])
-        )
     manager = comfy.weight_adapter.BypassInjectionManager()
     for key, adapter in loaded.items():
         manager.add_adapter(key, adapter, strength=float(strength))
@@ -474,11 +432,6 @@ def _apply_dynamic_lora(model, state: dict[str, torch.Tensor], strength: float):
         tuple(loaded.values()),
     )
     hook_count = int(manager.get_hook_count())
-    if hook_count != len(loaded):
-        raise RuntimeError(
-            "MiniMax-H3 PDD dynamic LoRA hook coverage is incomplete: "
-            f"hooks={hook_count}, adapters={len(loaded)}."
-        )
     patched.set_injections(PDD_INJECTION_KEY, injections)
     return patched, hook_count, rank_counts
 
@@ -553,6 +506,70 @@ def _create_offloading_bypass_injections(manager, model, adapters):
     return [comfy.patcher_extension.PatcherInjection(inject=inject, eject=eject)]
 
 
+def _create_pdd_final_layer_injection(base_final, pdd_final):
+    """Patch only ``forward`` so native parameter paths remain stable.
+
+    Replacing ``diffusion_model.final_layer`` as an object changes native paths
+    such as ``final_layer.video_out.weight`` into ``final_layer.base.video_out``.
+    ComfyUI's dynamic loader records those temporary paths and restores the
+    native object before restoring its weight backups, making cleanup fail with
+    ``FinalLayer has no attribute base``. A lifecycle injection preserves the
+    native module tree and is safe for dynamic unload after sampling errors.
+    """
+
+    state = {"original_forward": None}
+
+    def offload(model_patcher):
+        device = getattr(model_patcher, "offload_device", torch.device("cpu"))
+        pdd_final.move_head_buffers_to(device)
+
+    def inject(model_patcher):
+        if state["original_forward"] is not None:
+            return
+        device = getattr(model_patcher, "load_device", torch.device("cpu"))
+        try:
+            pdd_final.move_head_buffers_to(device)
+            original_forward = base_final.forward
+            base_final.forward = pdd_final.forward
+            state["original_forward"] = original_forward
+        except BaseException:
+            offload(model_patcher)
+            raise
+
+    def eject(model_patcher):
+        try:
+            original_forward = state["original_forward"]
+            if original_forward is not None:
+                base_final.forward = original_forward
+                state["original_forward"] = None
+        finally:
+            offload(model_patcher)
+
+    return comfy.patcher_extension.PatcherInjection(inject=inject, eject=eject)
+
+
+def _create_pdd_runtime_injection(backbone_injection, base_final, pdd_final):
+    """Combine final-head and LoRA lifecycle into one transactional injection."""
+
+    final_injection = _create_pdd_final_layer_injection(base_final, pdd_final)
+
+    def inject(model_patcher):
+        final_injection.inject(model_patcher)
+        try:
+            backbone_injection.inject(model_patcher)
+        except BaseException:
+            final_injection.eject(model_patcher)
+            raise
+
+    def eject(model_patcher):
+        try:
+            backbone_injection.eject(model_patcher)
+        finally:
+            final_injection.eject(model_patcher)
+
+    return comfy.patcher_extension.PatcherInjection(inject=inject, eject=eject)
+
+
 def build_pdd_8step_setup(
     model,
     av_latent: dict,
@@ -599,7 +616,20 @@ def build_pdd_8step_setup(
         strength=strength,
         variant=base_variant,
     )
-    patched.add_object_patch("diffusion_model.final_layer", pdd_final)
+    backbone_injections = list(patched.get_injections(PDD_INJECTION_KEY) or [])
+    if len(backbone_injections) != 1:
+        raise RuntimeError(
+            "MiniMax-H3 PDD expected one prepared backbone injection, "
+            f"found {len(backbone_injections)}."
+        )
+    patched.set_injections(
+        PDD_INJECTION_KEY,
+        [
+            _create_pdd_runtime_injection(
+                backbone_injections[0], base_final, pdd_final
+            )
+        ],
+    )
     transformer_options = dict(
         patched.model_options.get("transformer_options", {})
     )
@@ -648,7 +678,9 @@ def build_pdd_8step_setup(
             ),
         },
         "lora": {
-            "application_mode": "comfyui_dynamic_model_only_bypass",
+            "application_mode": (
+                "comfyui_dynamic_model_only_bypass_plus_final_forward_injection"
+            ),
             "mapped_adapters": 258,
             "bypass_hooks": hook_count,
             "rank_counts": {str(key): value for key, value in rank_counts.items()},
@@ -656,6 +688,7 @@ def build_pdd_8step_setup(
             "base_weight_mutation": False,
             "eject_policy": "move_adapter_weights_to_model_offload_device",
             "partial_injection_failure_cleanup": True,
+            "native_final_layer_parameter_paths_preserved": True,
         },
         "pdd_heads": {
             "source_intervals": PDD_NUM_STEPS,

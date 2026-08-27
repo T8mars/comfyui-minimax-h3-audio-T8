@@ -5,7 +5,6 @@ import hashlib
 import inspect
 import json
 import math
-from pathlib import Path
 import types
 
 import node_helpers
@@ -15,7 +14,6 @@ from comfy.ldm.minimax import model as minimax_model
 from .conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
     HYBRID_LAYOUT_LEGACY_SENTINEL,
-    NATIVE_GUIDE_PACKED_LAYOUT_SHA256,
     _encode_reference_audio,
     _resize_reference_image,
     assert_hybrid_layout_contract,
@@ -200,19 +198,14 @@ def resolve_keyframe_plan(plan, frame_count: int) -> list[dict]:
 
 
 def _assert_unmodified_packed_layout() -> None:
-    init = minimax_model.PackedLayout.__init__
-    code = getattr(init, "__code__", None)
-    code_file = Path(code.co_filename).resolve() if code is not None else None
-    module_file = Path(minimax_model.__file__).resolve()
-    if (
-        getattr(init, "__module__", None) != minimax_model.__name__
-        or getattr(init, "__qualname__", None) != "PackedLayout.__init__"
-        or code_file != module_file
-    ):
+    try:
+        assert_hybrid_layout_contract()
+    except RuntimeError as error:
         raise RuntimeError(
             "An external process-global MiniMax H3 PackedLayout patch is active. "
-            "Disable it before using the T8 Advanced multi-keyframe node."
-        )
+            "Disable it before using the T8 Advanced multi-keyframe node. "
+            f"Semantic probe: {error}"
+        ) from error
 
 
 def native_middle_keyframe_support() -> bool:
@@ -222,29 +215,11 @@ def native_middle_keyframe_support() -> bool:
         "latent": torch.zeros((1, 24, 1, 2, 2)),
     }
     parameters = inspect.signature(minimax_model.PackedLayout.__init__).parameters
-    if "frame_count" not in parameters:
-        packed_source = inspect.getsource(minimax_model.PackedLayout.__init__)
-        packed_sha256 = hashlib.sha256(packed_source.encode("utf-8")).hexdigest()
-        if packed_sha256 != NATIVE_GUIDE_PACKED_LAYOUT_SHA256:
-            raise RuntimeError(
-                "This ComfyUI build accepts a new MiniMax H3 Guide layout, but its exact "
-                "contract has not been validated by this plugin version."
-            )
-        layout = build_packed_layout(1, 2, 2, 2, 1, keyframes=[keyframe])
-        cond_segments = [
-            (start, stop) for start, stop, kind in layout.segments if kind == "cond"
-        ]
-        expected_t = 1.0 + FRAME_RESCALE * 2
-        if len(cond_segments) != 1 or not math.isclose(
-            float(layout.position_ids[cond_segments[0][0], 0]), expected_t
-        ):
-            raise RuntimeError(
-                "The native MiniMax H3 Guide position contract changed; Advanced "
-                "multi-keyframe execution was refused."
-            )
-        return True
+    kwargs = {"keyframes": [keyframe]}
+    if "frame_count" in parameters:
+        kwargs["frame_count"] = 5
     try:
-        build_packed_layout(1, 2, 2, 2, 1, keyframes=[keyframe], frame_count=5)
+        layout = build_packed_layout(1, 2, 2, 2, 1, **kwargs)
     except ValueError as exc:
         if "only first/last keyframe anchors are supported" in str(exc):
             return False
@@ -252,10 +227,18 @@ def native_middle_keyframe_support() -> bool:
             "MiniMax H3 PackedLayout rejected the Advanced capability probe with an "
             f"unknown contract: {exc}"
         ) from exc
-    raise RuntimeError(
-        "This ComfyUI build accepts middle MiniMax H3 keyframes through an unknown legacy "
-        "constructor contract. Advanced multi-keyframe execution was refused."
-    )
+    cond_segments = [
+        (start, stop) for start, stop, kind in layout.segments if kind == "cond"
+    ]
+    expected_t = 1.0 + FRAME_RESCALE * 2
+    if len(cond_segments) != 1 or not math.isclose(
+        float(layout.position_ids[cond_segments[0][0], 0]), expected_t
+    ):
+        raise RuntimeError(
+            "The native MiniMax H3 Guide position contract changed; Advanced "
+            "multi-keyframe execution was refused."
+        )
+    return True
 
 
 def _pixel_frames_from_latent_t(latent_t: int) -> int:
@@ -855,12 +838,23 @@ def patch_multikeyframe_model(model, require_per_condition_forward: bool):
                 )
             forward_source = inspect.getsource(forward_function)
             forward_sha256 = hashlib.sha256(forward_source.encode("utf-8")).hexdigest()
-            if forward_sha256 not in VALIDATED_FORWARD_SHA256S:
+            forward_parameters = inspect.signature(forward_function).parameters
+            required_parameters = {
+                "self",
+                "x",
+                "timestep",
+                "context",
+                "transformer_options",
+                "minimax_payload",
+            }
+            missing_parameters = sorted(
+                required_parameters - set(forward_parameters)
+            )
+            if missing_parameters:
                 raise RuntimeError(
-                    "This ComfyUI build does not match the validated MiniMax H3 _forward "
-                    "contract required for independent per-keyframe augmentation. "
-                    f"Expected one of {sorted(VALIDATED_FORWARD_SHA256S)}, got "
-                    f"{forward_sha256}."
+                    "This ComfyUI build changed the MiniMax H3 _forward signature; "
+                    "independent per-keyframe strength is disabled. Missing "
+                    f"parameter(s): {missing_parameters}; diagnostic_sha256={forward_sha256}"
                 )
             required_forward_contract = (
                 "layout = payload.get(\"layout\")",

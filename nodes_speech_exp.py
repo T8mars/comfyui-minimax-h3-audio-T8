@@ -1028,7 +1028,9 @@ class MiniMaxH3SpeechStudioT8(io.ComfyNode):
         unload_speaker_after_verify=True,
         peak_limit_dbfs=-1.0,
         release_policy="clear_execution_cache",
+        speech_guard=None,
     ):
+        del speech_guard  # Optional graph dependency; Studio owns its execution-local guard.
         graph = GraphBuilder()
         error_release_policy = (
             "keep_loaded" if release_policy == "keep_loaded" else "unload_all_models"

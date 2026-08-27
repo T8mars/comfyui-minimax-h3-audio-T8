@@ -48,7 +48,7 @@
         {
           "name": "model",
           "label": "Ref2VA模型",
-          "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']",
+          "type": "COMBO",
           "link": null,
           "widget": {
             "name": "model"
@@ -66,7 +66,7 @@
         {
           "name": "text_encoder",
           "label": "H3文本编码器",
-          "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
+          "type": "COMBO",
           "link": null,
           "widget": {
             "name": "text_encoder"
@@ -75,7 +75,7 @@
         {
           "name": "video_vae",
           "label": "视频VAE",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+          "type": "COMBO",
           "link": null,
           "widget": {
             "name": "video_vae"
@@ -84,7 +84,7 @@
         {
           "name": "audio_vae",
           "label": "音频VAE",
-          "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+          "type": "COMBO",
           "link": null,
           "widget": {
             "name": "audio_vae"
@@ -274,7 +274,7 @@
           {
             "id": "a2b00533-56b6-50dd-8586-6bd5221e3838",
             "name": "model",
-            "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']",
+            "type": "COMBO",
             "linkIds": [
               47
             ],
@@ -300,7 +300,7 @@
           {
             "id": "9eda2964-b6ec-5b93-b18d-ddf2a112deee",
             "name": "text_encoder",
-            "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
+            "type": "COMBO",
             "linkIds": [
               49
             ],
@@ -313,7 +313,7 @@
           {
             "id": "310e6df2-cd02-53d3-8f99-607d79b6fd2c",
             "name": "video_vae",
-            "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+            "type": "COMBO",
             "linkIds": [
               50
             ],
@@ -326,7 +326,7 @@
           {
             "id": "21a2d4ed-19a6-59c4-bb53-89e475b56e74",
             "name": "audio_vae",
-            "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+            "type": "COMBO",
             "linkIds": [
               51
             ],
@@ -834,7 +834,7 @@
             "inputs": [
               {
                 "name": "vae_name",
-                "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+                "type": "COMBO",
                 "widget": {
                   "name": "vae_name"
                 },
@@ -878,7 +878,7 @@
             "inputs": [
               {
                 "name": "vae_name",
-                "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']",
+                "type": "COMBO",
                 "widget": {
                   "name": "vae_name"
                 },
@@ -921,7 +921,7 @@
             "inputs": [
               {
                 "name": "clip_name",
-                "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']",
+                "type": "COMBO",
                 "widget": {
                   "name": "clip_name"
                 },
@@ -929,7 +929,7 @@
               },
               {
                 "name": "type",
-                "type": "['stable_diffusion', 'stable_cascade', 'sd3', 'stable_audio', 'mochi', 'ltxv', 'pixart', 'cosmos', 'lumina2', 'wan', 'hidream', 'chroma', 'ace', 'omnigen2', 'qwen_image', 'hunyuan_image', 'flux2', 'ovis', 'longcat_image', 'cogvideox', 'lens', 'pixeldit', 'ideogram4', 'boogu', 'krea2', 'joyimage', 'mage', 'minimax']",
+                "type": "COMBO",
                 "widget": {
                   "name": "type"
                 },
@@ -937,7 +937,7 @@
               },
               {
                 "name": "device",
-                "type": "['default', 'cpu']",
+                "type": "COMBO",
                 "widget": {
                   "name": "device"
                 },
@@ -981,7 +981,7 @@
             "inputs": [
               {
                 "name": "unet_name",
-                "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']",
+                "type": "COMBO",
                 "widget": {
                   "name": "unet_name"
                 },
@@ -989,7 +989,7 @@
               },
               {
                 "name": "weight_dtype",
-                "type": "['default', 'fp8_e4m3fn', 'fp8_e4m3fn_fast', 'fp8_e5m2']",
+                "type": "COMBO",
                 "widget": {
                   "name": "weight_dtype"
                 },
@@ -2255,14 +2255,6 @@
                   "name": "format"
                 },
                 "link": null
-              },
-              {
-                "name": "codec",
-                "type": "COMFY_DYNAMICCOMBO_V3",
-                "widget": {
-                  "name": "codec"
-                },
-                "link": null
               }
             ],
             "outputs": [
@@ -2673,7 +2665,7 @@
             "origin_slot": 3,
             "target_id": 8,
             "target_slot": 0,
-            "type": "['10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_beta1_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned.safetensors', '10Eros_compat_exp\\\\10Eros_Max_h3_fl2va_bf16_test4_pruned_B.safetensors', 'CogVideoX_5b_fun_GGUF_Q4_0.safetensors', 'ComfyUI_00001_.safetensors', 'FramePackI2V_HY_converted_experimental_fp8_e4m3fn.safetensors', 'FramePackI2V_HY_fp8_e4m3fn.safetensors', 'Framer_controlnet_fp16.safetensors', 'Framer_unet_fp16.safetensors', 'MelBandRoformer_fp32.safetensors', 'Phantom-Wan-14B_fp8_e4m3fn.safetensors', 'VACE1.3b.safetensors', 'Wan2.1-T2V-1.3B-Self-Forcing-DMD-VACE-FP16.safetensors', 'Wan2_1-Wan-I2V-ATI-14B_fp8_e4m3fn.safetensors', 'aniWan2114BFp8E4m3fn_i2v480pNew.safetensors', 'anima-base-v1.0.safetensors', 'hunyuan_video_720_cfgdistill_fp8_e4m3fn.safetensors', 'hunyuan_video_FastVideo_720_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors', 'hunyuan_video_I2V_fp8_e4m3fn.safetensors', 'minimax_h3_fl2va_int8_convrot.safetensors', 'minimax_h3_fl2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g099.safetensors', 'minimax_h3_ref2va_adaln_video_last8_g101.safetensors', 'minimax_h3_ref2va_attn_last8_g102.safetensors', 'minimax_h3_ref2va_attn_last8_g105.safetensors', 'minimax_h3_ref2va_int8_convrot.safetensors', 'minimax_h3_ref2va_patchin_hf101.safetensors', 'minimax_h3_ref2va_patchin_hf102_T8.safetensors', 'minimax_h3_ref2va_patchio_hf101.safetensors', 'minimax_h3_ref2va_pruned_int8_convrot.safetensors', 'minimax_h3_ref2va_videohead_hf101.safetensors', 'minimax_h3_ref2va_videohead_hf102.safetensors', 'minimax_h3_ref2va_videohead_hf104.safetensors', 'minimax_music3_dit_fp16.safetensors', 'minimax_music3_dit_fp32.safetensors', 'minimax_music3_dit_int8_convrot.safetensors', 'mochi\\\\mochi_preview_dit_GGUF_Q4_0_v2.safetensors', 'mochi\\\\mochi_preview_dit_fp8_e4m3fn.safetensors', 'mp_rank_00_model_states.pt', 'mp_rank_00_model_states_fp8.pt', 'mp_rank_00_model_states_fp8_map.pt', 'n-wan_1.3B_e10.safetensors', 'nsfw_wan_14b_e1.safetensors', 'self_forcing_dmd.pt', 'skyreels_hunyuan_i2v_fp8_e4m3fn.safetensors', 'skyreels_hunyuan_t2v_fp8_e4m3fn.safetensors', 'wan_1.3B_e20.safetensors', 'wan_1.3B_exp_e14.safetensors', 'z-image-turbo-fp8-e4m3fn.safetensors', 'z_image_bf16.safetensors']"
+            "type": "COMBO"
           },
           {
             "id": 48,
@@ -2689,7 +2681,7 @@
             "origin_slot": 5,
             "target_id": 7,
             "target_slot": 0,
-            "type": "['Long-ViT-L-14-GmP-SAE-TE-only.safetensors', 'ViT-L-14-GmP-SAE-TE-only.safetensors', 'clip-vit-large-patch14\\\\model.safetensors', 'clip_l.safetensors', 'gemma_3_12B_it.safetensors', 'google-flan-t5-large\\\\model.safetensors', 'llava_llama3_fp8_scaled.safetensors', 'minimax_music3_text_encoder_pruned_int8_convrot.safetensors', 'models_t5_umt5-xxl-enc-bf16.pth', 'nsfw_wan_umt5-xxl_fp8_scaled.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_fp16.safetensors', 'open-clip-xlm-roberta-large-vit-huge-14_visual_fp32.safetensors', 'qwen3.5_2b_bf16.safetensors', 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors', 'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 'qwen3vl_8b_fp8_scaled.safetensors', 'qwen_0.6b_ace15.safetensors', 'qwen_1.7b_ace15.safetensors', 'qwen_3_06b_base.safetensors', 'qwen_3_4b.safetensors', 't5\\\\google_t5-v1_1-xxl_encoderonly-fp8_e4m3fn.safetensors', 't5gemma_b_b_ul2.safetensors', 't5xxl_fp16.safetensors', 't5xxl_fp8_e4m3fn.safetensors', 'umt5-xxl-enc-bf16.safetensors', 'umt5_xxl_fp16.safetensors', 'umt5_xxl_fp8_e4m3fn_scaled.safetensors']"
+            "type": "COMBO"
           },
           {
             "id": 50,
@@ -2697,7 +2689,7 @@
             "origin_slot": 6,
             "target_id": 5,
             "target_slot": 0,
-            "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']"
+            "type": "COMBO"
           },
           {
             "id": 51,
@@ -2705,7 +2697,7 @@
             "origin_slot": 7,
             "target_id": 6,
             "target_slot": 0,
-            "type": "['Wan2.1_VAE.pth', 'Wan2_1_VAE_bf16.safetensors', 'WanVideo_MTV_Crafter_4DMoT_VQVAE_fp32.safetensors', 'ace_1.5_vae.safetensors', 'ae.safetensors', 'cog-vae-mz.safetensors', 'comfy-wan_2.1_vae.safetensors', 'cosmos_cv8x8x8_1.0.safetensors', 'diffusion_pytorch_model.safetensors', 'flux1_vae_bf16.safetensors', 'hunyuan_video_vae_bf16.safetensors', 'hunyuan_video_vae_fp32.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'minimax_music3_dav.safetensors', 'mochi\\\\mochi_preview_vae_bf16.safetensors', 'mochi\\\\mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_decoder_bf16.safetensors', 'mochi_preview_vae_encoder_bf16_.safetensors', 'mochi_preview_vae_encoder_fp32.safetensors', 'oldt5_xxl_fp8_e4m3fn_scaled.safetensors', 'pyramid_flow_vae_bf16.safetensors', 'pyramid_flow_vae_fp32.safetensors', 'qwen_image_vae.safetensors', 'sdxl_vae_fp16fix.safetensors', 'vae-ft-mse-840000-ema-pruned.safetensors', 'vae-i2v-hunyuan.pt', 'wan2.2_vae.safetensors', 'pixel_space']"
+            "type": "COMBO"
           },
           {
             "id": 52,

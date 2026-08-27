@@ -122,21 +122,31 @@ def test_saved_two_pass_audio_mode_workflow_contracts(
         assert nodes[27]["type"] == "LoadAudio"
         assert nodes[27]["widgets_values"] == [SOURCE_AUDIO]
         assert nodes[27]["outputs"][0]["links"] == [41, 42]
-        assert nodes[7]["inputs"][15]["link"] == 41
-        assert nodes[14]["inputs"][15]["link"] == 42
-        assert links[41][1:] == [27, 0, 7, 15, "AUDIO"]
-        assert links[42][1:] == [27, 0, 14, 15, "AUDIO"]
+        drive7 = next(item for item in nodes[7]["inputs"] if item["name"] == "drive_audio")
+        drive14 = next(item for item in nodes[14]["inputs"] if item["name"] == "drive_audio")
+        slot7 = nodes[7]["inputs"].index(drive7)
+        slot14 = nodes[14]["inputs"].index(drive14)
+        assert drive7["link"] == 41
+        assert drive14["link"] == 42
+        assert links[41][1:] == [27, 0, 7, slot7, "AUDIO"]
+        assert links[42][1:] == [27, 0, 14, slot14, "AUDIO"]
     else:
         assert 27 not in nodes
-        assert nodes[7]["inputs"][15]["link"] is None
-        assert nodes[14]["inputs"][15]["link"] is None
+        assert next(
+            item for item in nodes[7]["inputs"] if item["name"] == "drive_audio"
+        )["link"] is None
+        assert next(
+            item for item in nodes[14]["inputs"] if item["name"] == "drive_audio"
+        )["link"] is None
 
+    save_audio = next(item for item in nodes[21]["inputs"] if item["name"] == "audio")
+    save_audio_slot = nodes[21]["inputs"].index(save_audio)
     if save_mux_audio:
-        assert links[40][1:] == [14, 2, 21, 7, "AUDIO"]
+        assert links[40][1:] == [14, 2, 21, save_audio_slot, "AUDIO"]
         assert nodes[14]["outputs"][2]["links"] == [40]
         assert nodes[20]["outputs"][1]["links"] is None
     else:
-        assert links[40][1:] == [20, 1, 21, 7, "AUDIO"]
+        assert links[40][1:] == [20, 1, 21, save_audio_slot, "AUDIO"]
         assert nodes[20]["outputs"][1]["links"] == [40]
 
 

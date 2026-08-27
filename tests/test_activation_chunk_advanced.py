@@ -279,6 +279,13 @@ def test_configure_unknown_core_is_reported_or_blocked(monkeypatch):
         )
 
 
+def test_current_comfy_h3_activation_contract_is_semantically_supported():
+    contract = activation_chunk.core_contract()
+    assert contract["supported"] is True
+    assert contract["source_hash_policy"] == "diagnostic_only_not_a_compatibility_gate"
+    assert contract["semantic_contract"]["status"] == "semantic_contract_validated"
+
+
 def test_activation_chunk_node_schema_is_safe_by_default():
     schema = MiniMaxH3ActivationChunkT8Advanced.define_schema()
     inputs = {item.id: item for item in schema.inputs}

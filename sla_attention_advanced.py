@@ -14,6 +14,7 @@ import comfy.lora
 import comfy.lora_convert
 import comfy.patcher_extension
 import comfy.utils
+import comfy.weight_adapter
 from comfy.ldm.minimax.model import (
     FRAME_PER_TOKEN,
     Attention,
@@ -33,16 +34,19 @@ from .sampling import native_flow_sigmas
 # block router plus Sage2 block-sparse attention and does not expose a separate
 # sparse+linear projection branch in ComfyUI.
 SLA_RUNTIME_TYPE = "H3_T8_LIGHTX2V_SLA_RUNTIME"
-SLA_PATCH_VERSION = 1
+SLA_PATCH_VERSION = 2
 SLA_RUNTIME_KEY = "t8_h3_lightx2v_sla_runtime_v1"
 SLA_WRAPPER_KEY = "t8_h3_lightx2v_sla_v1"
+SLA_CONSUMER_TURBO_MODE = "consumer_turbo8_recommended"
 SLA_MODES = (
     "apply_lightx2v_sla",
     "dense_lora_control",
     "disabled_identity",
+    "apply_lightx2v_sla_upstream_exact_exp",
 )
 SLA_BASE_POLICIES = ("auto_detect_exp", "official_bf16_only")
 SLA_EXTERNAL_ATTENTION_POLICIES = ("reject", "compose_kj_sage")
+SLA_LORA_APPLICATION_POLICIES = ("standard_patch", "bypass_model_only")
 SLA_LORA_FILENAME = (
     "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors"
 )
@@ -52,6 +56,8 @@ SLA_LORA_TENSORS = 624
 SLA_LORA_PATCHES = 208
 SLA_SPARSITY_RATIO = 0.85
 SLA_KEEP_RATIO = 1.0 - SLA_SPARSITY_RATIO
+SLA_AUTO_SAFE_MIN_SPARSE_SEQUENCE = 50_000
+SLA_AUTO_SAFE_DENSE_EDGE_FORWARDS = 1
 SLA_Q_BLOCK = 128
 SLA_K_BLOCK = 64
 SLA_HEADS = 56
@@ -61,8 +67,167 @@ SLA_EXPECTED_NFE = 4
 SLA_MAX_NFE = 64
 SLA_SHIFT_VIDEO = 6.0
 SLA_SHIFT_AUDIO = 3.0
+SLA_FULL_RANGE_START_PERCENT = 0.0
+SLA_FULL_RANGE_END_PERCENT = 1.0
 SLA_LIGHTX2V_REVISION = "f8aee98b5462cca8d7288888146ebd95592bf266"
 SLA_MODEL_REVISION = "10ade67cd15ff7a135fa35c2a0673ea96c839247"
+
+SLA_SPARSE_MODES = {
+    "apply_lightx2v_sla",
+    "apply_lightx2v_sla_upstream_exact_exp",
+}
+SLA_EXECUTION_DENSE = "dense"
+SLA_EXECUTION_SPARSE = "sparse"
+
+
+def _validate_sla_percent_window(start_percent: float, end_percent: float) -> dict:
+    start = float(start_percent)
+    end = float(end_percent)
+    if not math.isfinite(start) or not math.isfinite(end):
+        raise ValueError("H3 SLA start/end percent must be finite")
+    if not 0.0 <= start < end <= 1.0:
+        raise ValueError(
+            "H3 SLA percent window requires 0 <= start_percent < end_percent <= 1"
+        )
+    return {
+        "start_percent": start,
+        "end_percent": end,
+        "full_range": math.isclose(start, 0.0, abs_tol=1.0e-9)
+        and math.isclose(end, 1.0, abs_tol=1.0e-9),
+        "boundary_semantics": "inclusive_current_model_forward_sigma",
+    }
+
+
+def _sampling_percent_from_video_sigma(video_sigma: float, shift_video: float) -> float:
+    """Invert the native-flow shift and return ComfyUI denoising progress.
+
+    ComfyUI defines percent 0 as the first/high-sigma model call and percent 1
+    as the terminal zero sigma. MiniMax H3 receives the shifted video sigma, so
+    the shift must be inverted before converting it to progress.
+    """
+    sigma = float(video_sigma)
+    shift = float(shift_video)
+    if not math.isfinite(sigma) or not 0.0 <= sigma <= 1.0 + 1.0e-6:
+        raise RuntimeError(f"H3 SLA observed invalid video sigma {sigma!r}")
+    if not math.isfinite(shift) or shift <= 0.0:
+        raise RuntimeError(f"H3 SLA observed invalid video shift {shift!r}")
+    sigma = min(max(sigma, 0.0), 1.0)
+    denominator = shift + sigma * (1.0 - shift)
+    if denominator <= 0.0:
+        raise RuntimeError("H3 SLA could not invert the shifted video sigma")
+    base_sigma = sigma / denominator
+    return min(max(1.0 - base_sigma, 0.0), 1.0)
+
+
+def _video_sigma_from_timestep(timestep) -> float:
+    if not torch.is_tensor(timestep) or int(timestep.numel()) < 1:
+        raise RuntimeError("H3 SLA requires the MiniMax H3 tensor timestep")
+    # MiniMaxH3Model receives model_sampling.timestep(sigma) = sigma * 1000.
+    return float(timestep.detach().float().flatten()[0].item()) / 1000.0
+
+
+def _forward_attention_policy(
+    *,
+    mode: str,
+    seq_len: int,
+    forward_index: int,
+    expected_nfe: int,
+    sampling_percent: float | None = None,
+    sparse_start_percent: float = SLA_FULL_RANGE_START_PERCENT,
+    sparse_end_percent: float = SLA_FULL_RANGE_END_PERCENT,
+) -> dict:
+    """Choose one attention owner for a complete H3 model forward.
+
+    The published H3 adapter was validated around a roughly 111K-token 768p
+    sequence.  Sparse-only SLA ablations are not a scientifically safe default
+    for the much shorter practical ComfyUI sequences.  The legacy public mode
+    therefore becomes a quality-first policy without changing its saved widget
+    value: short sequences stay dense, while eligible sequences keep dense
+    boundary denoising forwards and protect the packed condition prefix during
+    sparse middle forwards.  The exact released all-sparse route remains an
+    explicitly named experimental mode.
+    """
+    mode = str(mode)
+    seq_len = int(seq_len)
+    forward_index = int(forward_index)
+    expected_nfe = int(expected_nfe)
+    if mode == "dense_lora_control":
+        return {
+            "execution": SLA_EXECUTION_DENSE,
+            "reason": "explicit_dense_lora_control",
+            "protect_condition_prefix": False,
+        }
+    if mode == SLA_CONSUMER_TURBO_MODE:
+        return {
+            "execution": SLA_EXECUTION_DENSE,
+            "reason": "consumer_turbo_attention_owned_outside_sla",
+            "protect_condition_prefix": False,
+        }
+    if mode == "apply_lightx2v_sla_upstream_exact_exp":
+        window = _validate_sla_percent_window(
+            sparse_start_percent, sparse_end_percent
+        )
+        if not window["full_range"]:
+            if sampling_percent is None or not math.isfinite(float(sampling_percent)):
+                raise RuntimeError(
+                    "H3 SLA percent-window routing requires the current sampling percent"
+                )
+            current = float(sampling_percent)
+            epsilon = 1.0e-6
+            if (
+                current < float(window["start_percent"]) - epsilon
+                or current > float(window["end_percent"]) + epsilon
+            ):
+                return {
+                    "execution": SLA_EXECUTION_DENSE,
+                    "reason": "sla_percent_window_dense_boundary",
+                    "protect_condition_prefix": False,
+                }
+            return {
+                "execution": SLA_EXECUTION_SPARSE,
+                "reason": "sla_percent_window_active_85pct_sparse",
+                "protect_condition_prefix": False,
+            }
+        return {
+            "execution": SLA_EXECUTION_SPARSE,
+            "reason": "explicit_upstream_exact_85pct_sparse_experiment",
+            "protect_condition_prefix": False,
+        }
+    if mode != "apply_lightx2v_sla":
+        raise RuntimeError(f"H3 SLA cannot plan attention for mode {mode!r}")
+    if seq_len < SLA_AUTO_SAFE_MIN_SPARSE_SEQUENCE:
+        return {
+            "execution": SLA_EXECUTION_DENSE,
+            "reason": "auto_safe_short_sequence_dense_fallback",
+            "protect_condition_prefix": False,
+        }
+    edge = SLA_AUTO_SAFE_DENSE_EDGE_FORWARDS
+    if expected_nfe <= edge * 2 or forward_index < edge or forward_index >= expected_nfe - edge:
+        return {
+            "execution": SLA_EXECUTION_DENSE,
+            "reason": "auto_safe_dense_boundary_forward",
+            "protect_condition_prefix": False,
+        }
+    return {
+        "execution": SLA_EXECUTION_SPARSE,
+        "reason": "auto_safe_sparse_middle_forward",
+        "protect_condition_prefix": True,
+    }
+
+
+def _route_attention_execution(route: Mapping) -> str:
+    execution = route.get("attention_execution")
+    if execution in {SLA_EXECUTION_DENSE, SLA_EXECUTION_SPARSE}:
+        return str(execution)
+    # Compatibility for isolated callers created before auto-safe v1. Missing
+    # planning state must fail toward dense diagnostics, never toward the old
+    # all-sparse route. Neither route is a quality claim; only the explicit
+    # upstream-exact experiment can opt into sparse.
+    return (
+        SLA_EXECUTION_SPARSE
+        if route.get("mode") == "apply_lightx2v_sla_upstream_exact_exp"
+        else SLA_EXECUTION_DENSE
+    )
 
 ATTENTION_FORWARD_SHA256S = {
     "4e8888f72ea5ccf68fb5ce5b1178ab0ddea66ca61137fcf01df2308ef27bf0be",
@@ -122,7 +287,7 @@ def _validate_sigmas(
     if not bool(torch.isfinite(values).all()):
         raise ValueError("H3 LightX2V SLA received NaN/Inf sigmas")
     if not bool((values[:-1] > 0).all()) or abs(float(values[-1])) > 1.0e-7:
-        raise ValueError("H3 LightX2V SLA requires four positive sigmas then zero")
+        raise ValueError("H3 LightX2V SLA requires positive sigmas then a final zero")
     if not bool((values[:-1] >= values[1:]).all()):
         raise ValueError("H3 LightX2V SLA requires a monotonic sigma schedule")
     shift_video = float(shift_video)
@@ -137,6 +302,7 @@ def _validate_sigmas(
     return {
         "nfe": nfe,
         "entries": int(values.numel()),
+        "video_sigmas": [float(value) for value in values.tolist()],
         "scheduler": "native_flow",
         "shift_video": shift_video,
         "official_checkpoint_nfe": SLA_EXPECTED_NFE,
@@ -154,12 +320,16 @@ def _validate_lora_header(path: str | Path) -> dict:
     from safetensors import safe_open
 
     resolved = Path(path).resolve()
-    if resolved.suffix.lower() != ".safetensors":
-        raise RuntimeError("H3 SLA LoRA must be a safetensors file")
     stat = resolved.stat()
-    with safe_open(str(resolved), framework="pt", device="cpu") as handle:
-        keys = list(handle.keys())
-        metadata = dict(handle.metadata() or {})
+    keys = []
+    metadata = {}
+    header_error = None
+    try:
+        with safe_open(str(resolved), framework="pt", device="cpu") as handle:
+            keys = list(handle.keys())
+            metadata = dict(handle.metadata() or {})
+    except Exception as error:
+        header_error = f"{type(error).__name__}: {error}"
     suffix_a = ".lora_A.weight"
     suffix_b = ".lora_B.weight"
     suffix_alpha = ".alpha"
@@ -173,33 +343,10 @@ def _validate_lora_header(path: str | Path) -> dict:
         for key in keys
         if not key.endswith((suffix_a, suffix_b, suffix_alpha))
     ]
-    if unsupported:
-        raise RuntimeError(
-            "H3 SLA LoRA contains unsupported non-LoRA tensors: "
-            + ", ".join(unsupported[:8])
-        )
-    if not prefixes_a or prefixes_a != prefixes_b:
-        missing_a = sorted(prefixes_b - prefixes_a)
-        missing_b = sorted(prefixes_a - prefixes_b)
-        raise RuntimeError(
-            "H3 SLA LoRA requires complete A/B tensor pairs; "
-            f"missing_A={missing_a[:8]}, missing_B={missing_b[:8]}"
-        )
-    if not prefixes_alpha.issubset(prefixes_a):
-        raise RuntimeError("H3 SLA LoRA alpha tensors do not match its A/B pairs")
     foreign_targets = sorted(
         prefix for prefix in prefixes_a if not prefix.startswith("diffusion_model.")
     )
-    if foreign_targets:
-        raise RuntimeError(
-            "H3 SLA LoRA contains non-H3 diffusion targets: "
-            + ", ".join(foreign_targets[:8])
-        )
     base_model = str(metadata.get("base_model", "")).strip()
-    if base_model and "minimax" not in base_model.lower() and "h3" not in base_model.lower():
-        raise RuntimeError(
-            f"H3 SLA LoRA metadata names a foreign base model: {base_model!r}"
-        )
     header_fingerprint = hashlib.sha256(
         json.dumps(
             {"keys": sorted(keys), "metadata": metadata},
@@ -213,11 +360,22 @@ def _validate_lora_header(path: str | Path) -> dict:
         "bytes": int(stat.st_size),
         "sha256": None,
         "file_sha256_enforced": False,
-        "identity_policy": "structural_pairs_and_full_model_mapping",
+        "identity_policy": "diagnostic_only_not_a_load_gate",
+        "header_error": header_error,
         "header_fingerprint_sha256": header_fingerprint,
         "tensor_count": len(keys),
         "patch_count": len(prefixes_a),
         "alpha_count": len(prefixes_alpha),
+        "unsupported_keys": unsupported,
+        "missing_a_prefixes": sorted(prefixes_b - prefixes_a),
+        "missing_b_prefixes": sorted(prefixes_a - prefixes_b),
+        "unpaired_alpha_prefixes": sorted(prefixes_alpha - prefixes_a),
+        "foreign_targets": foreign_targets,
+        "metadata_base_model_reference_match": (
+            not base_model
+            or "minimax" in base_model.lower()
+            or "h3" in base_model.lower()
+        ),
         "metadata": metadata,
         "reference_artifact": {
             "filename": SLA_LORA_FILENAME,
@@ -349,15 +507,69 @@ def _model_dtype_contract(model, base_policy: str) -> dict:
         module_type = type(module).__name__
         quant_format = getattr(module, "quant_format", None)
         weight_type = type(weight).__name__
+        quant_params = getattr(weight, "_params", None)
+        convrot = getattr(quant_params, "convrot", None)
     except (AttributeError, IndexError) as exc:
-        raise RuntimeError("H3 SLA could not inspect the native H3 base weights") from exc
+        return {
+            "policy": base_policy,
+            "inspection_error": f"{type(exc).__name__}: {exc}",
+            "model_identity_policy": "diagnostic_only_not_a_load_gate",
+            "compatibility_status": "uninspected_user_selected_base",
+        }
     quantized = quant_format is not None or weight_type == "QuantizedTensor"
     official_bf16 = dtype == "torch.bfloat16" and not quantized
-    if base_policy == "official_bf16_only" and not official_bf16:
-        raise RuntimeError(
-            "official_bf16_only requires the upstream BF16 FL2VA base; "
-            f"observed {dtype} in {module_type}"
+
+    def _target_modules(blocks):
+        modules = []
+        for block in blocks:
+            attention = getattr(block, "attn", None)
+            mlp = getattr(block, "mlp", None)
+            modules.extend(
+                value
+                for value in (
+                    getattr(attention, "qkv_proj", None),
+                    getattr(attention, "out_proj", None),
+                    getattr(mlp, "fc1", None),
+                    getattr(mlp, "fc2", None),
+                )
+                if value is not None
+            )
+        return modules
+
+    main_targets = _target_modules(list(getattr(diffusion, "blocks", ()) or ()))
+    token_refiner = getattr(diffusion, "token_refiner", None)
+    refiner_targets = _target_modules(
+        list(getattr(token_refiner, "blocks", ()) or ())
+    )
+
+    def _is_int8_convrot(target) -> bool:
+        target_weight = getattr(target, "weight", None)
+        params = getattr(target_weight, "_params", None)
+        return (
+            str(getattr(target, "quant_format", "")) == "int8_tensorwise"
+            and type(target_weight).__name__ == "QuantizedTensor"
+            and bool(getattr(params, "convrot", False))
         )
+
+    def _is_unquantized(target) -> bool:
+        target_weight = getattr(target, "weight", None)
+        return (
+            getattr(target, "quant_format", None) is None
+            and type(target_weight).__name__ != "QuantizedTensor"
+        )
+
+    target_quantization = {
+        "main_target_count": len(main_targets),
+        "main_int8_convrot_count": sum(_is_int8_convrot(value) for value in main_targets),
+        "main_unquantized_count": sum(_is_unquantized(value) for value in main_targets),
+        "token_refiner_target_count": len(refiner_targets),
+        "token_refiner_int8_convrot_count": sum(
+            _is_int8_convrot(value) for value in refiner_targets
+        ),
+        "token_refiner_unquantized_count": sum(
+            _is_unquantized(value) for value in refiner_targets
+        ),
+    }
     return {
         "policy": base_policy,
         "observed_qkv_dtype": dtype,
@@ -366,9 +578,15 @@ def _model_dtype_contract(model, base_policy: str) -> dict:
         "observed_quant_format": (
             None if quant_format is None else str(quant_format)
         ),
+        "observed_convrot": bool(convrot),
+        "lora_target_quantization": target_quantization,
         "model_storage_bytes": int(model.model_size()),
         "quantized_base_observed": quantized,
         "official_bf16_base_observed": official_bf16,
+        "requested_policy_match": (
+            base_policy != "official_bf16_only" or official_bf16
+        ),
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
         "compatibility_status": (
             "official_base_dtype" if official_bf16 else "quantized_base_experimental"
         ),
@@ -497,9 +715,9 @@ def _assert_core_contract(
     if not hasattr(model, "clone") or not hasattr(model, "add_wrapper_with_key"):
         raise ValueError("H3 SLA requires a ComfyUI MODEL patcher")
     base = getattr(model, "model", None)
-    if not isinstance(base, MiniMaxH3BaseModel):
-        if type(getattr(base, "diffusion_model", None)).__name__ != "MiniMaxH3Model":
-            raise ValueError("H3 SLA currently requires the native ComfyUI MiniMax H3 model")
+    native_h3_model_observed = isinstance(base, MiniMaxH3BaseModel) or (
+        type(getattr(base, "diffusion_model", None)).__name__ == "MiniMaxH3Model"
+    )
 
     semantic_core = _core_semantic_contract()
 
@@ -557,6 +775,8 @@ def _assert_core_contract(
         "semantic_core": semantic_core,
         "core_hashes": semantic_core["source_hashes"],
         "base": _model_dtype_contract(model, base_policy),
+        "native_h3_model_observed": native_h3_model_observed,
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
         "dual_clock": {
             **shifts,
             "official_4step_shift_match": (
@@ -570,7 +790,17 @@ def _assert_core_contract(
     }
 
 
-def _apply_authenticated_lora(model, path: str | Path) -> tuple[object, dict]:
+def _apply_authenticated_lora(
+    model,
+    path: str | Path,
+    *,
+    application_policy: str = "standard_patch",
+) -> tuple[object, dict]:
+    application_policy = str(application_policy)
+    if application_policy not in SLA_LORA_APPLICATION_POLICIES:
+        raise ValueError(
+            f"Unknown H3 SLA LoRA application policy {application_policy!r}"
+        )
     contract = _validate_lora_header(path)
     state, metadata = comfy.utils.load_torch_file(
         str(path), safe_load=True, return_metadata=True
@@ -578,24 +808,27 @@ def _apply_authenticated_lora(model, path: str | Path) -> tuple[object, dict]:
     state = comfy.lora_convert.convert_lora(state)
     key_map = comfy.lora.model_lora_keys_unet(model.model, {})
     loaded = comfy.lora.load_lora(state, key_map, log_missing=False)
-    expected_patches = int(contract["patch_count"])
-    if len(loaded) != expected_patches:
-        raise RuntimeError(
-            "H3 SLA LoRA did not map completely to this H3 base: "
-            f"mapped={len(loaded)}, expected={expected_patches}"
-        )
     patched = model.clone()
-    applied = set(patched.add_patches(loaded, 1.0))
-    if applied != set(loaded):
-        missing = sorted(set(loaded) - applied)
-        raise RuntimeError(
-            "H3 SLA LoRA patch application was incomplete: "
-            f"applied={len(applied)}, missing={missing[:8]}"
-        )
+    if application_policy == "bypass_model_only":
+        manager = comfy.weight_adapter.BypassInjectionManager()
+        for key, adapter in loaded.items():
+            manager.add_adapter(key, adapter, strength=1.0)
+        injections = manager.create_injections(patched.model)
+        hook_count = int(manager.get_hook_count())
+        patched.set_injections("bypass_lora", injections)
+        contract["bypass_hook_count"] = hook_count
+        contract["applied_patch_count"] = hook_count
+        contract["application_mode"] = "comfyui_bypass_model_only"
+        contract["base_weight_mutation"] = False
+    else:
+        applied = set(patched.add_patches(loaded, 1.0))
+        contract["applied_patch_count"] = len(applied)
+        contract["unapplied_patch_keys"] = sorted(set(loaded) - applied)
+        contract["application_mode"] = "comfyui_standard_weight_patch"
+        contract["base_weight_mutation"] = True
     if metadata and hasattr(patched, "set_attachments"):
         patched.set_attachments("t8_h3_sla_lora_metadata", dict(metadata))
     contract["mapped_patch_count"] = len(loaded)
-    contract["applied_patch_count"] = len(applied)
     contract["strength_model"] = 1.0
     return patched, contract
 
@@ -640,7 +873,7 @@ def _compose_kj_sage_forward(module, patched_forward, *, source_sha256: str):
         route, tensor = _sla_route_from_call(args, kwargs)
         if route is None:
             return patched_forward(*args, **kwargs)
-        if route["mode"] == "apply_lightx2v_sla":
+        if _route_attention_execution(route) == SLA_EXECUTION_SPARSE:
             x = args[0] if args else kwargs.get("x")
             if tensor is not x and isinstance(x, list):
                 x.clear()
@@ -650,7 +883,7 @@ def _compose_kj_sage_forward(module, patched_forward, *, source_sha256: str):
                     kwargs = dict(kwargs)
                     kwargs["x"] = tensor
             return stock_forward(module, *args, **kwargs)
-        if route["mode"] != "dense_lora_control":
+        if route["mode"] not in SLA_SPARSE_MODES and route["mode"] != "dense_lora_control":
             return patched_forward(*args, **kwargs)
         output = patched_forward(*args, **kwargs)
         runtime: SLARuntime = route["runtime"]
@@ -743,6 +976,128 @@ def lightx2v_block_map(
     return sparse_map, topk
 
 
+def _overlapping_block_range(
+    start: int,
+    end: int,
+    block_size: int,
+    total_blocks: int,
+) -> tuple[int, int]:
+    first = max(0, min(int(total_blocks), int(start) // int(block_size)))
+    last = max(
+        first,
+        min(
+            int(total_blocks),
+            math.ceil(int(end) / int(block_size)),
+        ),
+    )
+    return first, last
+
+
+def protect_condition_prefix_blocks(
+    sparse_map: torch.Tensor,
+    layout_segments,
+    *,
+    k_block: int = SLA_K_BLOCK,
+) -> int:
+    """Pin text/keyframe/audio keys without displacing learned video top-k.
+
+    FL2VA packs every non-target-video segment before the final target video.
+    Pinning those key blocks on top of the learned router preserves access to
+    text, both keyframes and joint audio while leaving the video top-k intact.
+    This does not freeze audio and does not alter query rows.
+    """
+    if sparse_map.ndim != 4:
+        raise ValueError("H3 SLA prefix protection requires [B,H,QB,KB] map")
+    video_segments = [
+        (int(start), int(end))
+        for start, end, kind in layout_segments
+        if str(kind) == "video"
+    ]
+    if len(video_segments) != 1:
+        raise RuntimeError("H3 SLA prefix protection requires one target video segment")
+    video_start, _video_end = video_segments[0]
+    protected = min(int(sparse_map.shape[-1]), math.ceil(video_start / int(k_block)))
+    if protected > 0:
+        sparse_map[..., :protected] = 1
+    return protected
+
+
+def _selection_stats(values: torch.Tensor) -> dict:
+    values = values.detach().float()
+    if values.numel() == 0:
+        return {"minimum": 0.0, "mean": 0.0, "maximum": 0.0}
+    minimum, mean, maximum = torch.stack(
+        (values.min(), values.mean(), values.max())
+    ).cpu().tolist()
+    return {
+        "minimum": float(minimum),
+        "mean": float(mean),
+        "maximum": float(maximum),
+    }
+
+
+def sparse_route_coverage(
+    sparse_map: torch.Tensor,
+    layout_segments,
+    *,
+    q_block: int = SLA_Q_BLOCK,
+    k_block: int = SLA_K_BLOCK,
+) -> dict:
+    """Summarize selected keys by packed segment and video-time quadrant."""
+    if sparse_map.ndim != 4:
+        raise ValueError("H3 SLA coverage requires [B,H,QB,KB] map")
+    q_blocks = int(sparse_map.shape[-2])
+    k_blocks = int(sparse_map.shape[-1])
+    segments = [
+        (int(start), int(end), str(kind)) for start, end, kind in layout_segments
+    ]
+    by_kind: dict[str, list[tuple[int, int]]] = {}
+    for start, end, kind in segments:
+        by_kind.setdefault(kind, []).append((start, end))
+
+    coverage: dict[str, dict] = {}
+    for kind, ranges in by_kind.items():
+        key_indices: set[int] = set()
+        for start, end in ranges:
+            first, last = _overlapping_block_range(start, end, k_block, k_blocks)
+            key_indices.update(range(first, last))
+        if key_indices:
+            index = torch.tensor(
+                sorted(key_indices), device=sparse_map.device, dtype=torch.long
+            )
+            selected = sparse_map.index_select(-1, index).sum(dim=-1)
+        else:
+            selected = sparse_map[..., :0].sum(dim=-1)
+        coverage[f"keys_{kind}"] = {
+            "key_block_count": len(key_indices),
+            **_selection_stats(selected),
+        }
+
+    video = next(((a, b) for a, b, kind in segments if kind == "video"), None)
+    if video is not None:
+        video_start, video_end = video
+        video_length = video_end - video_start
+        for q_index in range(4):
+            q_start = video_start + (video_length * q_index) // 4
+            q_end = video_start + (video_length * (q_index + 1)) // 4
+            q_first, q_last = _overlapping_block_range(
+                q_start, q_end, q_block, q_blocks
+            )
+            for k_index in range(4):
+                k_start = video_start + (video_length * k_index) // 4
+                k_end = video_start + (video_length * (k_index + 1)) // 4
+                k_first, k_last = _overlapping_block_range(
+                    k_start, k_end, k_block, k_blocks
+                )
+                values = sparse_map[..., q_first:q_last, k_first:k_last].sum(dim=-1)
+                coverage[f"video_q{q_index + 1}_to_k{k_index + 1}"] = {
+                    "query_block_count": max(0, q_last - q_first),
+                    "key_block_count": max(0, k_last - k_first),
+                    **_selection_stats(values),
+                }
+    return coverage
+
+
 def _router_workspace_bytes(q: torch.Tensor) -> int:
     batch, heads, seq_len, dim = (int(value) for value in q.shape)
     q_blocks = math.ceil(seq_len / SLA_Q_BLOCK)
@@ -828,11 +1183,60 @@ class SLARuntime:
         self._aborted: str | None = None
         self._consumed = False
 
-    def begin_forward(self, route: Mapping) -> int:
+    def begin_forward(self, route: Mapping, *, video_sigma: float | None = None) -> int:
         with self._lock:
             if self._consumed:
                 raise RuntimeError("H3 SLA runtime token was already consumed")
             index = len(self._forwards)
+            sigma_contract = self.config.get("sigma_contract") or {}
+            expected_nfe = int(sigma_contract.get("nfe", SLA_EXPECTED_NFE))
+            if index >= expected_nfe:
+                raise RuntimeError(
+                    f"H3 SLA observed more than the expected {expected_nfe} model forwards"
+                )
+            configured_sigmas = list(sigma_contract.get("video_sigmas") or [])
+            if video_sigma is not None:
+                video_sigma = float(video_sigma)
+                if configured_sigmas and not math.isclose(
+                    video_sigma,
+                    float(configured_sigmas[index]),
+                    rel_tol=0.0,
+                    abs_tol=1.0e-5,
+                ):
+                    raise RuntimeError(
+                        "H3 SLA runtime sigma does not match the validated schedule: "
+                        f"forward={index}, observed={video_sigma}, "
+                        f"expected={configured_sigmas[index]}"
+                    )
+            window = dict(self.config.get("sparse_percent_window") or {})
+            start_percent = float(
+                window.get("start_percent", SLA_FULL_RANGE_START_PERCENT)
+            )
+            end_percent = float(
+                window.get("end_percent", SLA_FULL_RANGE_END_PERCENT)
+            )
+            window_contract = _validate_sla_percent_window(
+                start_percent, end_percent
+            )
+            sampling_percent = None
+            if video_sigma is not None:
+                sampling_percent = _sampling_percent_from_video_sigma(
+                    video_sigma,
+                    float(sigma_contract.get("shift_video", SLA_SHIFT_VIDEO)),
+                )
+            elif not window_contract["full_range"]:
+                raise RuntimeError(
+                    "H3 SLA percent-window routing requires the current video sigma"
+                )
+            policy = _forward_attention_policy(
+                mode=str(self.config.get("mode", "dense_lora_control")),
+                seq_len=int(route["seq_len"]),
+                forward_index=index,
+                expected_nfe=expected_nfe,
+                sampling_percent=sampling_percent,
+                sparse_start_percent=start_percent,
+                sparse_end_percent=end_percent,
+            )
             self._forwards.append(
                 {
                     "index": index,
@@ -844,6 +1248,13 @@ class SLARuntime:
                         int(route["latent_h"]),
                         int(route["latent_w"]),
                     ],
+                    "attention_execution": policy["execution"],
+                    "attention_policy_reason": policy["reason"],
+                    "video_sigma": video_sigma,
+                    "sampling_percent": sampling_percent,
+                    "protect_condition_prefix": bool(
+                        policy["protect_condition_prefix"]
+                    ),
                     "main_attention_calls": 0,
                     "sparse_kernel_calls": 0,
                     "dense_control_calls": 0,
@@ -854,13 +1265,38 @@ class SLARuntime:
                     "key_blocks_max": None,
                     "retained_key_blocks_min": None,
                     "retained_key_blocks_max": None,
+                    "retained_key_blocks_sum": 0.0,
+                    "retained_key_blocks_count": 0,
+                    "router_topk_min": None,
+                    "router_topk_max": None,
+                    "protected_prefix_blocks_min": None,
+                    "protected_prefix_blocks_max": None,
                     "retained_ratio_min": None,
                     "retained_ratio_max": None,
                     "retained_ratio_sum": 0.0,
                     "retained_ratio_count": 0,
+                    "coverage": {},
                 }
             )
             return index
+
+    def forward_policy(self, forward_index: int) -> dict:
+        with self._lock:
+            forward = self._forwards[int(forward_index)]
+            return {
+                "execution": forward["attention_execution"],
+                "reason": forward["attention_policy_reason"],
+                "protect_condition_prefix": forward["protect_condition_prefix"],
+            }
+
+    def should_capture_route_diagnostics(self, forward_index: int) -> bool:
+        with self._lock:
+            calls = int(self._forwards[int(forward_index)]["main_attention_calls"])
+            return calls in {0, SLA_EXPECTED_BLOCKS // 2, SLA_EXPECTED_BLOCKS - 1}
+
+    def should_capture_coverage(self, forward_index: int) -> bool:
+        with self._lock:
+            return int(self._forwards[int(forward_index)]["main_attention_calls"]) == 0
 
     def record_attention(
         self,
@@ -870,6 +1306,12 @@ class SLARuntime:
         workspace_bytes: int = 0,
         key_blocks: int = 0,
         retained_key_blocks: int = 0,
+        retained_key_blocks_min: int | None = None,
+        retained_key_blocks_mean: float | None = None,
+        retained_key_blocks_max: int | None = None,
+        router_topk: int | None = None,
+        protected_prefix_blocks: int = 0,
+        coverage: Mapping | None = None,
         external_backend: str | None = None,
     ) -> None:
         with self._lock:
@@ -880,22 +1322,86 @@ class SLARuntime:
                 forward["router_workspace_peak_bytes"] = max(
                     int(forward["router_workspace_peak_bytes"]), int(workspace_bytes)
                 )
-                ratio = float(retained_key_blocks) / float(key_blocks)
-                for prefix, value in (
-                    ("key_blocks", int(key_blocks)),
-                    ("retained_key_blocks", int(retained_key_blocks)),
-                    ("retained_ratio", ratio),
+                if int(key_blocks) <= 0:
+                    return
+                retained_min = int(
+                    retained_key_blocks
+                    if retained_key_blocks_min is None
+                    else retained_key_blocks_min
+                )
+                retained_max = int(
+                    retained_key_blocks
+                    if retained_key_blocks_max is None
+                    else retained_key_blocks_max
+                )
+                retained_mean = float(
+                    retained_key_blocks
+                    if retained_key_blocks_mean is None
+                    else retained_key_blocks_mean
+                )
+                ratio_min = float(retained_min) / float(key_blocks)
+                ratio_max = float(retained_max) / float(key_blocks)
+                ratio_mean = retained_mean / float(key_blocks)
+                for prefix, minimum_value, maximum_value in (
+                    ("key_blocks", int(key_blocks), int(key_blocks)),
+                    ("retained_key_blocks", retained_min, retained_max),
+                    ("retained_ratio", ratio_min, ratio_max),
                 ):
                     minimum = f"{prefix}_min"
                     maximum = f"{prefix}_max"
                     forward[minimum] = (
-                        value if forward[minimum] is None else min(forward[minimum], value)
+                        minimum_value
+                        if forward[minimum] is None
+                        else min(forward[minimum], minimum_value)
                     )
                     forward[maximum] = (
-                        value if forward[maximum] is None else max(forward[maximum], value)
+                        maximum_value
+                        if forward[maximum] is None
+                        else max(forward[maximum], maximum_value)
                     )
-                forward["retained_ratio_sum"] += ratio
+                forward["retained_key_blocks_sum"] += retained_mean
+                forward["retained_key_blocks_count"] += 1
+                if router_topk is not None:
+                    for suffix, function in (("min", min), ("max", max)):
+                        key = f"router_topk_{suffix}"
+                        value = int(router_topk)
+                        forward[key] = (
+                            value if forward[key] is None else function(forward[key], value)
+                        )
+                for suffix, function in (("min", min), ("max", max)):
+                    key = f"protected_prefix_blocks_{suffix}"
+                    value = int(protected_prefix_blocks)
+                    forward[key] = (
+                        value if forward[key] is None else function(forward[key], value)
+                    )
+                forward["retained_ratio_sum"] += ratio_mean
                 forward["retained_ratio_count"] += 1
+                for label, values in dict(coverage or {}).items():
+                    aggregate = forward["coverage"].setdefault(
+                        str(label),
+                        {
+                            "minimum": None,
+                            "maximum": None,
+                            "mean_sum": 0.0,
+                            "count": 0,
+                            "query_block_count": values.get("query_block_count"),
+                            "key_block_count": values.get("key_block_count"),
+                        },
+                    )
+                    minimum = float(values["minimum"])
+                    maximum = float(values["maximum"])
+                    aggregate["minimum"] = (
+                        minimum
+                        if aggregate["minimum"] is None
+                        else min(aggregate["minimum"], minimum)
+                    )
+                    aggregate["maximum"] = (
+                        maximum
+                        if aggregate["maximum"] is None
+                        else max(aggregate["maximum"], maximum)
+                    )
+                    aggregate["mean_sum"] += float(values["mean"])
+                    aggregate["count"] += 1
             else:
                 forward["dense_control_calls"] += 1
                 if external_backend == "kj_sage":
@@ -915,7 +1421,23 @@ class SLARuntime:
         with self._lock:
             if self._consumed:
                 raise RuntimeError("H3 SLA runtime token was already consumed")
-            forwards = [dict(value) for value in self._forwards]
+            forwards = []
+            for source in self._forwards:
+                forward = dict(source)
+                retained_count = int(forward.pop("retained_key_blocks_count", 0))
+                retained_sum = float(forward.pop("retained_key_blocks_sum", 0.0))
+                forward["retained_key_blocks_mean"] = (
+                    retained_sum / retained_count if retained_count else None
+                )
+                coverage_report = {}
+                for label, values in dict(forward.get("coverage") or {}).items():
+                    values = dict(values)
+                    count = int(values.pop("count", 0))
+                    mean_sum = float(values.pop("mean_sum", 0.0))
+                    values["mean"] = mean_sum / count if count else None
+                    coverage_report[label] = values
+                forward["coverage"] = coverage_report
+                forwards.append(forward)
             ratio_count = sum(
                 int(forward["retained_ratio_count"]) for forward in forwards
             )
@@ -1011,7 +1533,7 @@ def route_sla_attention(
         raise RuntimeError("H3 SLA requires the native H3 head dimension 128")
     runtime: SLARuntime = route["runtime"]
     forward_index = int(route["forward_index"])
-    if route["mode"] == "dense_lora_control":
+    if _route_attention_execution(route) == SLA_EXECUTION_DENSE:
         output = _dense_delegate(
             q, k, v, heads, transformer_options=transformer_options, kwargs=kwargs
         )
@@ -1032,7 +1554,30 @@ def route_sla_attention(
         k = k.contiguous()
         v = v.contiguous()
         sparse_map, topk = lightx2v_block_map(q, k)
+        protected_prefix_blocks = 0
+        if bool(route.get("protect_condition_prefix")):
+            protected_prefix_blocks = protect_condition_prefix_blocks(
+                sparse_map,
+                route.get("layout_segments") or (),
+            )
         key_blocks = int(sparse_map.shape[-1])
+        capture_diagnostics = runtime.should_capture_route_diagnostics(forward_index)
+        if capture_diagnostics:
+            selected_counts = sparse_map.sum(dim=-1)
+            retained_min = int(selected_counts.min().item())
+            retained_mean = float(selected_counts.float().mean().item())
+            retained_max = int(selected_counts.max().item())
+            coverage = (
+                sparse_route_coverage(
+                    sparse_map,
+                    route.get("layout_segments") or (),
+                )
+                if runtime.should_capture_coverage(forward_index)
+                else None
+            )
+        else:
+            retained_min = retained_mean = retained_max = None
+            coverage = None
         output = block_sparse_sage2_attn_cuda(
             q,
             k,
@@ -1060,8 +1605,14 @@ def route_sla_attention(
         forward_index,
         sparse=True,
         workspace_bytes=workspace,
-        key_blocks=key_blocks,
+        key_blocks=key_blocks if capture_diagnostics else 0,
         retained_key_blocks=topk,
+        retained_key_blocks_min=retained_min,
+        retained_key_blocks_mean=retained_mean,
+        retained_key_blocks_max=retained_max,
+        router_topk=topk,
+        protected_prefix_blocks=protected_prefix_blocks,
+        coverage=coverage,
     )
     batch, _heads, seq_len, head_dim = output.shape
     return output.transpose(1, 2).reshape(batch, seq_len, int(heads) * head_dim)
@@ -1110,6 +1661,9 @@ def build_sla_model(
     base_policy: str,
     max_router_workspace_mib: int,
     external_attention_policy: str = "reject",
+    lora_application_policy: str = "standard_patch",
+    sla_start_percent: float = SLA_FULL_RANGE_START_PERCENT,
+    sla_end_percent: float = SLA_FULL_RANGE_END_PERCENT,
 ):
     mode = str(mode)
     base_policy = str(base_policy)
@@ -1122,8 +1676,16 @@ def build_sla_model(
         raise ValueError(
             f"Unknown H3 SLA external attention policy {external_attention_policy!r}"
         )
+    lora_application_policy = str(lora_application_policy)
+    if lora_application_policy not in SLA_LORA_APPLICATION_POLICIES:
+        raise ValueError(
+            f"Unknown H3 SLA LoRA application policy {lora_application_policy!r}"
+        )
     if not 32 <= int(max_router_workspace_mib) <= 2048:
         raise ValueError("H3 SLA max_router_workspace_mib must be 32..2048")
+    sparse_percent_window = _validate_sla_percent_window(
+        sla_start_percent, sla_end_percent
+    )
 
     config = {
         "schema": SLA_PATCH_VERSION,
@@ -1141,7 +1703,19 @@ def build_sla_model(
         "expected_main_blocks": SLA_EXPECTED_BLOCKS,
         "base_policy": base_policy,
         "external_attention_policy": external_attention_policy,
+        "lora_application_policy": lora_application_policy,
+        "sparse_percent_window": sparse_percent_window,
         "max_router_workspace_mib": int(max_router_workspace_mib),
+        "quality_safety_policy": {
+            "legacy_apply_mode": "auto_safe_v1",
+            "minimum_sparse_sequence_tokens": SLA_AUTO_SAFE_MIN_SPARSE_SEQUENCE,
+            "dense_boundary_forwards_each_side": SLA_AUTO_SAFE_DENSE_EDGE_FORWARDS,
+            "sparse_middle_condition_prefix_protected": True,
+            "upstream_exact_mode": "apply_lightx2v_sla_upstream_exact_exp",
+            "hard_size_rejection": False,
+            "diagnostic_layers": [0, SLA_EXPECTED_BLOCKS // 2, SLA_EXPECTED_BLOCKS - 1],
+            "coverage_layer": 0,
+        },
         "scientific_boundary": (
             "This node reproduces the released LightX2V H3 dynamic block-routing math "
             "and Sage2 block-sparse execution path inside ComfyUI. It does not reproduce "
@@ -1172,14 +1746,18 @@ def build_sla_model(
         sigmas,
         shift_video=config["core_contract"]["dual_clock"]["video"],
     )
-    if mode == "apply_lightx2v_sla":
+    if mode in SLA_SPARSE_MODES:
         config["kernel_contract"] = _kernel_contract()
     else:
         config["kernel_contract"] = {
             "operator": "ComfyUI dense optimized attention control",
             "sparse_kernel_loaded": False,
         }
-    patched, lora_contract = _apply_authenticated_lora(model, lora_path)
+    patched, lora_contract = _apply_authenticated_lora(
+        model,
+        lora_path,
+        application_policy=lora_application_policy,
+    )
     config["lora_contract"] = lora_contract
     external_attention_contract = config["core_contract"]["external_attention"]
     if external_attention_policy == "compose_kj_sage":
@@ -1214,13 +1792,22 @@ def build_sla_model(
                 denoise_mask=kwargs.get("denoise_mask"),
                 audio_denoise_mask=kwargs.get("audio_denoise_mask"),
             )
-            forward_index = runtime.begin_forward(route)
+            forward_index = runtime.begin_forward(
+                route,
+                video_sigma=_video_sigma_from_timestep(timestep),
+            )
+            attention_policy = runtime.forward_policy(forward_index)
             route.update(
                 {
                     "runtime": runtime,
                     "forward_index": forward_index,
                     "mode": mode,
                     "max_router_workspace_mib": int(max_router_workspace_mib),
+                    "attention_execution": attention_policy["execution"],
+                    "attention_policy_reason": attention_policy["reason"],
+                    "protect_condition_prefix": attention_policy[
+                        "protect_condition_prefix"
+                    ],
                 }
             )
             transformer_options[SLA_RUNTIME_KEY] = route
@@ -1259,6 +1846,35 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
         if report["model_forward_count"] != 0:
             raise RuntimeError("Disabled H3 SLA unexpectedly observed model execution")
         report["status"] = "disabled_identity_verified"
+    elif mode == SLA_CONSUMER_TURBO_MODE:
+        sigma_contract = report["config"].get("sigma_contract") or {}
+        expected_nfe = int(sigma_contract.get("nfe", 8))
+        if expected_nfe != 8:
+            raise RuntimeError(
+                "H3 consumer Turbo profile lost its validated 8-NFE contract"
+            )
+        if report["model_forward_count"] != expected_nfe:
+            raise RuntimeError(
+                f"H3 consumer Turbo expected {expected_nfe} model forwards, observed "
+                f"{report['model_forward_count']}"
+            )
+        zeros = [0] * expected_nfe
+        for key in (
+            "main_attention_calls_per_forward",
+            "sparse_kernel_calls_per_forward",
+            "dense_control_calls_per_forward",
+            "external_sage_calls_per_forward",
+        ):
+            if report[key] != zeros:
+                raise RuntimeError(
+                    "H3 consumer Turbo profile unexpectedly entered the SLA attention "
+                    f"runtime: {key}={report[key]}"
+                )
+        if report["kernel_failure_count"]:
+            raise RuntimeError("H3 consumer Turbo profile recorded a runtime failure")
+        report["expected_nfe"] = expected_nfe
+        report["attention_execution_plan"] = ["outside_sla_owner"] * expected_nfe
+        report["status"] = "consumer_turbo8_profile_mechanically_verified"
     else:
         sigma_contract = report["config"].get("sigma_contract") or {}
         expected_nfe = int(sigma_contract.get("nfe", SLA_EXPECTED_NFE))
@@ -1281,19 +1897,65 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
         external_policy = report["config"].get(
             "external_attention_policy", "reject"
         )
-        if mode == "apply_lightx2v_sla":
-            if report["sparse_kernel_calls_per_forward"] != expected:
+        executions = [
+            str(value.get("attention_execution")) for value in report["forwards"]
+        ]
+        expected_sparse = [
+            SLA_EXPECTED_BLOCKS if value == SLA_EXECUTION_SPARSE else 0
+            for value in executions
+        ]
+        expected_dense = [
+            SLA_EXPECTED_BLOCKS if value == SLA_EXECUTION_DENSE else 0
+            for value in executions
+        ]
+        report["attention_execution_plan"] = executions
+        if mode in SLA_SPARSE_MODES:
+            if report["sparse_kernel_calls_per_forward"] != expected_sparse:
                 raise RuntimeError(
-                    "H3 SLA sparse calls do not cover all 50 blocks: "
+                    "H3 SLA sparse calls do not match the planned forwards: "
                     f"{report['sparse_kernel_calls_per_forward']}"
                 )
-            if report["dense_control_calls_per_forward"] != [0] * expected_nfe:
-                raise RuntimeError("H3 SLA silently fell back to dense main-block attention")
-            if report["external_sage_calls_per_forward"] != [0] * expected_nfe:
+            if report["dense_control_calls_per_forward"] != expected_dense:
                 raise RuntimeError(
-                    "H3 SLA apply path was incorrectly bypassed by external KJ Sage"
+                    "H3 SLA dense calls do not match the auto-safe execution plan: "
+                    f"{report['dense_control_calls_per_forward']}"
                 )
-            report["status"] = "lightx2v_dynamic_sparse_verified"
+            expected_external = (
+                expected_dense
+                if external_policy == "compose_kj_sage"
+                else [0] * expected_nfe
+            )
+            if report["external_sage_calls_per_forward"] != expected_external:
+                raise RuntimeError(
+                    "H3 SLA external KJ Sage calls do not match the planned dense forwards"
+                )
+            if mode == "apply_lightx2v_sla_upstream_exact_exp":
+                percent_window = dict(
+                    report["config"].get("sparse_percent_window") or {}
+                )
+                if bool(percent_window.get("full_range", True)):
+                    report["status"] = "lightx2v_upstream_exact_sparse_exp_verified"
+                elif (
+                    report["config"].get("lora_application_policy")
+                    == "bypass_model_only"
+                ):
+                    report["status"] = (
+                        "lightx2v_int8_bypass_percent_window_exp_verified"
+                    )
+                else:
+                    report["status"] = "lightx2v_sparse_percent_window_exp_verified"
+            elif all(value == SLA_EXECUTION_DENSE for value in executions):
+                reasons = {
+                    str(value.get("attention_policy_reason"))
+                    for value in report["forwards"]
+                }
+                report["status"] = (
+                    "auto_safe_short_sequence_dense_fallback_verified"
+                    if reasons == {"auto_safe_short_sequence_dense_fallback"}
+                    else "auto_safe_all_dense_boundary_verified"
+                )
+            else:
+                report["status"] = "auto_safe_dense_edge_sparse_middle_verified"
         else:
             if report["dense_control_calls_per_forward"] != expected:
                 raise RuntimeError("H3 SLA dense control did not cover all 50 blocks")
@@ -1309,8 +1971,24 @@ def finalize_sla_runtime(av_latent, runtime: SLARuntime):
                 if report["external_sage_calls_per_forward"] != [0] * expected_nfe:
                     raise RuntimeError("H3 SLA strict control observed external Sage calls")
                 report["status"] = "dense_lora_control_verified"
-    report["quality_claim"] = (
-        "mechanically audited only; visual quality, speedup and INT8-base parity require "
-        "a same-input/same-seed dense-control A/B review"
-    )
+    report["effective_sparse_forward_indices"] = [
+        int(index)
+        for index, execution in enumerate(
+            report.get("attention_execution_plan") or []
+        )
+        if execution == SLA_EXECUTION_SPARSE
+    ]
+    report["sampling_percents"] = [
+        value.get("sampling_percent") for value in report.get("forwards") or []
+    ]
+    if mode == SLA_CONSUMER_TURBO_MODE:
+        report["quality_claim"] = (
+            "mechanically audited corrected-Alpha8 Turbo8 route only; visual quality, "
+            "audio and INT8-base behavior still require full human review"
+        )
+    else:
+        report["quality_claim"] = (
+            "mechanically audited only; visual quality, speedup and INT8-base parity "
+            "require a same-input/same-seed ordinary-Turbo A/B review"
+        )
     return av_latent, _json(report)

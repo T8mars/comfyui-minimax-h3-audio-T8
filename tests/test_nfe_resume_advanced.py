@@ -462,11 +462,20 @@ def test_frontend_workflow_is_importable_documented_and_safe_by_default():
     assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
     assert sampler["widgets_values"][3] == "disabled"
     assert sampler["widgets_values"][7:9] == [False, False]
-    assert sampler["inputs"][8]["name"] == "run_contract_json"
-    contract_link = sampler["inputs"][8]["link"]
+    run_contract_input = next(
+        item for item in sampler["inputs"] if item["name"] == "run_contract_json"
+    )
+    run_contract_slot = sampler["inputs"].index(run_contract_input)
+    contract_link = run_contract_input["link"]
     assert contract_link is not None
     assert any(
-        link[:5] == [contract_link, contract["id"], 0, sampler["id"], 8]
+        link[:5] == [
+            contract_link,
+            contract["id"],
+            0,
+            sampler["id"],
+            run_contract_slot,
+        ]
         and link[5] == "STRING"
         for link in workflow["links"]
     )

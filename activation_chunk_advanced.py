@@ -34,6 +34,7 @@ def _source_hash(value: Any) -> str | None:
 def core_contract() -> dict[str, Any]:
     try:
         from comfy.ldm.minimax.model import DiTBlock, MLP, MiniMaxH3Model
+        from .sla_attention_advanced import _core_semantic_contract
     except Exception as error:
         return {
             "supported": False,
@@ -45,14 +46,54 @@ def core_contract() -> dict[str, Any]:
         _source_hash(DiTBlock.forward),
         _source_hash(MLP.forward),
     )
-    supported = None not in hashes and hashes in SUPPORTED_SOURCE_CONTRACTS
+    try:
+        semantic_contract = _core_semantic_contract()
+        required_signatures = {
+            "dit_block_forward": {
+                "self",
+                "x",
+                "t_emb",
+                "mod_segments",
+                "rope_freqs",
+                "transformer_options",
+            },
+            "mlp_forward": {"self", "x"},
+        }
+        functions = {
+            "dit_block_forward": DiTBlock.forward,
+            "mlp_forward": MLP.forward,
+        }
+        signatures = {}
+        for name, required in required_signatures.items():
+            parameters = list(inspect.signature(functions[name]).parameters)
+            missing = sorted(required - set(parameters))
+            if missing:
+                raise RuntimeError(
+                    f"Activation Chunk semantic contract lost {name} parameters: {missing}"
+                )
+            signatures[name] = parameters
+    except Exception as error:
+        return {
+            "supported": False,
+            "error": f"{type(error).__name__}: {error}",
+            "hashes": {
+                "minimax_h3_forward": hashes[0],
+                "dit_block_forward": hashes[1],
+                "mlp_forward": hashes[2],
+            },
+            "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+        }
     return {
-        "supported": bool(supported),
+        "supported": True,
         "hashes": {
             "minimax_h3_forward": hashes[0],
             "dit_block_forward": hashes[1],
             "mlp_forward": hashes[2],
         },
+        "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+        "reference_source_match": hashes in SUPPORTED_SOURCE_CONTRACTS,
+        "semantic_contract": semantic_contract,
+        "signatures": signatures,
         "contract": "current ComfyUI H3 dit/double_block callback with native block closure",
     }
 

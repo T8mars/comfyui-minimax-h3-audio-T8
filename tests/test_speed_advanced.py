@@ -48,7 +48,7 @@ from h3_audio_t8_pkg.speed_advanced import (
     resolve_stage_shapes,
     solve_segment_noise,
 )
-from helpers import FakeAudioVAE, FakeClip, FakeVideoVAE, make_audio
+from helpers import FakeAudioVAE, FakeClip, FakeVideoVAE, make_audio, plugin_widget_map
 
 
 def test_official_speed_equations_match_reference_formulas():
@@ -218,10 +218,13 @@ def test_delta_profile_binding_rejects_task_and_fingerprint_mismatches():
     assert _profile_binding(case_plan, case_source)["status"] == "matched"
     with pytest.raises(ValueError, match="task mismatch"):
         _profile_binding(plan, {**source, "resolved_task": "ref2va"})
-    with pytest.raises(ValueError, match="fingerprint mismatch"):
-        _profile_binding(plan, {**source, "vae_fingerprint": "sha256:vae-b"})
-    with pytest.raises(ValueError, match="requires runtime source fingerprints"):
-        _profile_binding(plan, {**source, "checkpoint_fingerprint": "unrecorded"})
+    mismatch = _profile_binding(plan, {**source, "vae_fingerprint": "sha256:vae-b"})
+    assert mismatch["fingerprint_mismatches"] == ["vae_fingerprint"]
+    missing = _profile_binding(plan, {**source, "checkpoint_fingerprint": "unrecorded"})
+    assert missing["required_profile_missing_fingerprints"] == [
+        "checkpoint_fingerprint"
+    ]
+    assert missing["model_identity_policy"] == "diagnostic_only_not_a_runtime_gate"
     with pytest.raises(ValueError, match="latent grid mismatch"):
         _profile_binding(plan, {**source, "length": 141})
     with pytest.raises(ValueError, match="latent grid mismatch"):
@@ -1017,12 +1020,21 @@ def test_speed_spectrum_dataset_frontend_workflow_is_safe_and_self_documenting()
         for node in nodes.values()
         if node["type"] == "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced"
     )
-    assert [item["name"] for item in accumulate["inputs"][-3:]] == [
+    accumulate_class = next(
+        node_class
+        for node_class in SPEED_ADVANCED_NODE_CLASSES
+        if node_class.define_schema().node_id
+        == "MiniMaxH3SPEEDSpectrumDatasetAccumulateT8Advanced"
+    )
+    assert [item.id for item in accumulate_class.define_schema().inputs[-3:]] == [
         "previous_dataset",
         "dataset_provenance_json",
         "source_entry_json",
     ]
-    assert accumulate["inputs"][-3]["link"] is None
+    previous_dataset = next(
+        item for item in accumulate["inputs"] if item["name"] == "previous_dataset"
+    )
+    assert previous_dataset["link"] is None
     assert accumulate["widgets_values"][:5] == [
         "batch_001",
         "T2VA",
@@ -1030,6 +1042,9 @@ def test_speed_spectrum_dataset_frontend_workflow_is_safe_and_self_documenting()
         "sha256:connected",
         32,
     ]
+    accumulate_widgets = plugin_widget_map(accumulate, accumulate_class)
+    assert accumulate_widgets["dataset_provenance_json"] == ""
+    assert accumulate_widgets["source_entry_json"] == ""
     plan = next(
         node
         for node in nodes.values()

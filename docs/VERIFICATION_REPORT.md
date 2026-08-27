@@ -5,6 +5,50 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-27 — Alibaba PAI PDD 8-step integration checkpoint
+
+The converted FL2VA and Ref2VA adapters were re-hashed after installation into `models/loras`:
+
+- FL2VA: `95b79e73dbad645f4f4ccd7fb8c5d864e7b978022a4c372f8cfaba82d3ff40bf`, 1,658,719,696 bytes;
+- Ref2VA: `f4522e368ad7da1af19a283a728fbeb1f2b18866569ef9169b73786c3d69e4d2`, 1,658,719,704 bytes.
+
+Each file contains exactly 778 tensors: 258 complete LoRA A/B/alpha triples and four 32-interval
+video/audio head-bank tensors. Current-Comfy CPU/meta integration maps all 258 adapters, creates 258
+dynamic bypass hooks, verifies 206 rank-64 plus 52 rank-192 fused-QKV adapters with alpha/rank 1,
+patches one PDD final layer, and installs one diffusion wrapper. The native 8-step schedule matches
+the official PDD boundaries with maximum error `2.50966925e-08`, selects blocks 0 through 7 exactly,
+and is bit-identical to this project's native-flow sigma helper.
+
+Eleven focused PDD tests cover plan normalization, schedule refusal, interval fusion, dtype normalization,
+variant-strict header validation, head selection, the PDD-only file picker, normal/failed-injection offload,
+current-Comfy per-token modulation rows, node schema and both frontend workflows; the separate append-only registry test also passes. The local
+lifecycle wrapper restores all hooks and moves bypass-only adapter tensors to the MODEL offload device after
+normal ejection or a partially failed injection, because current ComfyUI's generic bypass ejection only
+restores module forwards. An isolated CPU ComfyUI launch exposes the
+expected five inputs and four outputs through `/object_info`. Both real adapter files independently pass the
+serial meta integration tool.
+
+The subsequent isolated real-render gate used the matching full non-pruned INT8 ConvRot base, strength 1,
+Euler/simple, 8 NFE, 12/3 shifts, CFG 1, 736x416x124 and one process at a time. FL2VA completed in
+147.156 seconds with 15,663MiB peak used and 447MiB minimum free VRAM; Ref2VA completed in 139.718
+seconds with 15,600MiB peak used and 510MiB minimum free. Both setup reports contain 258 mapped
+adapters/hooks and exact block indices 0..7. Both outputs strictly decode as 124 H.264 frames at 24fps
+plus finite 32kHz stereo AAC. FL2VA has zero decoded samples at or above 0.999 absolute; Ref2VA has
+0.01395% at or above that diagnostic threshold and requires listening rather than an automatic quality claim.
+Both runs therefore pass setup/media mechanics but fail the fixed 512MiB residual-VRAM gate. The later
+visual review was accepted; listening remains independent, and no equal-contract speed control or repeated-use
+test was run.
+
+A requested higher-resolution Ref2VA confirmation then ran once at 1152x640x124 (0.737MP), with all
+other PDD sampling terms unchanged. It completed in 414.156 seconds, peaked at 15,610MiB used and left
+500MiB minimum free, again failing the fixed 512MiB residual gate. Strict video/audio/combined decode,
+exact 124-frame geometry and finite 32kHz stereo AAC all pass; decoded audio peak is 0.749909 with zero
+samples at or above the 0.999 clipping diagnostic. The contact sheet visibly contains generated Chinese
+dialogue subtitles even though the prompt requested no subtitles. Increasing resolution therefore does
+not resolve that adherence issue; it is not a low-resolution display artefact. The user accepted the 0.7MP
+visual result and did not treat the subtitle behavior as a visual hard failure; full listening remains an
+independent human-review gate.
+
 ## 2026-08-25 — Skin Finish learned-proposal route stopped at the single-frame gate
 
 The post-reveal reviewer correction for the dichromatic candidate was recorded as “basically the
@@ -1381,6 +1425,29 @@ can be recognized and replaced by the SLA owner; foreign attention owners remain
 Focused tests cover unknown-but-semantic core hashes, non-pinned structural LoRA headers, built-in
 attention replacement and eight-forward audit. No new GPU generation or perceptual claim is made
 by this repair.
+
+### 2026-08-26 SLA profile-router diagnosis
+
+The later user-supplied file named `lightx2v_sla_fl2va_736x416_124f_00002-audio.mp4` does not contain
+the geometry or duration advertised by its filename. FFprobe reports 704x416, exactly 22 frames and
+0.916667 seconds; its embedded workflow also requests length 22. It therefore cannot establish a
+failure that begins after the first second. A contact sheet still confirms a malformed visual frame,
+but the container length and the image defect are separate facts.
+
+One serial, non-stress control then used the same difficult distinct first/last images with the
+corrected ordinary Alpha8 Turbo route, 736x416x124, eight native-flow model evaluations and 12/3
+shifts. All 124 frames and the 32kHz stereo audio passed strict decode, but full-duration human review
+rejected the result because it entered a persistent forced scene/scale transition after about one
+second. Minimum observed free VRAM was 418MiB, so the project 512MiB safety gate also failed. Its audit
+recorded zero SLA calls; this isolates the failure to incompatible FL2VA anchors / unsupported camera
+transition rather than proving either success or failure of the SLA kernel.
+
+Current LightX2V source confirms that its H3 SLA config stores five sigma grid points and executes
+four model evaluations. It also validates the released BF16 checkpoint family and an FP8 inference
+recipe; no reviewed source validates the local ComfyUI INT8 ConvRot base with the SLA LoRA/router.
+The new append-only Profile Router therefore allows the exact 4-NFE/6/3/85-percent SLA profile only
+for BF16 or LightX2V-FP8 evidence families and refuses INT8 with an actionable fallback message. Old
+SLA nodes and their widget order remain unchanged for workflow compatibility and unsafe diagnostics.
 
 ## 1.43.0 append-only creator and compatibility helpers (2026-08-22)
 
@@ -5793,3 +5860,190 @@ A focused regression reproduced the exact `TypeError`. SLA now reuses the existi
 compatibility probe, which removes that wrapper only when its enclosed native constructor independently
 passes the current keyframe-plus-reference ordering contract. Unknown or unverifiable global wrappers
 remain fail-closed. This changes no node ID, widget order, workflow graph or sampling formula.
+
+### SLA persistent-tail-collapse quality investigation (local, human-rejected)
+
+A later full-timeline review invalidated the earlier implication that successful sparse-kernel calls
+were sufficient quality evidence. In a 736x416x124 FL2VA run, approximately the first second appeared
+normal and the remaining frames stayed collapsed. The earlier fixed-85-percent route and the later
+all-dense fallback with the same SLA LoRA were both rejected on full viewing. The dense rerun therefore
+rules out hidden sparse-kernel execution as the sole cause, but it does not establish a normal ordinary-
+Turbo control and cannot isolate SLA sparsity by itself. Container decoding and a single corrupt frame
+were ruled out mechanically. The failed packed sequence was approximately 12,587 tokens; the published
+1344x768x362 reference geometry is approximately 111,590 tokens.
+
+The existing saved `apply_lightx2v_sla` value currently compiles an experimental `auto_safe_v1` plan. Below
+50,000 packed tokens it performs dense attention on every model forward while keeping the same LoRA.
+At or above the boundary it keeps the first and final denoising forwards dense and uses SLA sparse
+attention only for the middle forwards. Sparse middle forwards preserve the learned video top-k and
+add all packed text, two visual-condition and joint-audio key blocks before the target video. This does
+not freeze audio or alter query rows; it can increase the actual retained ratio above 15 percent, so
+the requested 85-percent sparsity is not a measured speedup claim. The exact released all-forward route
+remains available only as `apply_lightx2v_sla_upstream_exact_exp`.
+
+Runtime Audit derives dense/sparse ownership per forward, rejects any unplanned call, and samples actual
+retention at layers 0, 25 and 49. Layer 0 additionally reports packed-segment and target-video quadrant
+coverage. Missing legacy planning metadata fails toward dense quality instead of silently restoring
+the unsafe all-sparse route. The internal patch schema is version 2; public node IDs, inputs, widget
+order and both dated workflow graphs remain unchanged. Focused CPU tests validate short all-dense,
+long dense/sparse/sparse/dense, exact all-sparse, KJ owner dispatch, prefix preservation and workflow
+widget compatibility.
+
+One guarded real rerun then reused the failed case's exact embedded API graph while changing only the
+output prefix: FL2VA, 736x416x124, seed `2608224201`, four native-flow NFEs, video/audio shifts 6/3 and
+the public `apply_lightx2v_sla` mode. It ran once in an isolated 8197 process with no parallel or stress
+arm and stopped the server immediately afterward. The downstream output could only execute after the
+Runtime Audit node; therefore a saved clip proves that its NFE, 50-block-per-forward, planned owner and
+zero-kernel-failure gates did not throw. The initial probe utility failed only after generation because
+the old History response did not retain the report string; the utility now captures the v3 WebSocket
+`executed` payload and persists the phase before post-processing.
+
+The mechanically valid container has 124 H.264 frames at 736x416/24fps and AAC stereo at 32kHz. Strict video,
+audio and combined decodes passed. Its SHA-256 is
+`DD3C6524C2FB60FECAB3462220C636B6E57EED4CFAD27CD0BE4E6DB0C1B492A2`; audio measured approximately
+-10.0 LUFS integrated with -1.1dBFS true peak. CPU analysis found no black/white frames, frozen pairs,
+container corruption or hidden sparse calls. The user then watched the complete clip and explicitly
+rejected the result because only the first second appeared normal. That verdict invalidates the prior
+sampled-frame implication that dense fallback repaired quality.
+
+The test fixture itself also prevents a clean causal claim: its first frame is a street-level close
+portrait while its final hard FL2VA frame is an elevated wide shot where the red subject is only a
+small dot. The output starts the required scale/camera transition after roughly one second, so subject
+shrinkage and SLA degradation cannot be separated on this fixture. It additionally uses an INT8
+ConvRot base, 736x416 and 124 frames, whereas the upstream public configuration validates the SLA LoRA
+together with 85-percent dynamic sparse attention, four model evaluations, 6/3 shifts, 768p FL2VA,
+an FP8 DiT/VAE and 362 frames. Keeping the SLA-trained LoRA while replacing its sparse attention with
+dense attention is not an upstream-validated ordinary-Turbo path.
+
+The 50K boundary is therefore retained only as unreleased diagnostic code, not a quality guarantee.
+The next single A/B must use matched-scale first/last images and compare ordinary FL2V four-step Turbo
+LoRA plus dense/Sage against SLA LoRA plus the upstream-exact SLA route. If the SLA arm fails again on
+the local INT8 short-video profile, that profile must ABSTAIN/fall back to an explicitly supplied
+ordinary Turbo LoRA; it must not silently run the SLA LoRA dense or a four-step bare base. Evidence is
+under `artifacts/sla-auto-safe-tail-validation-20260826/20260826-200927`.
+
+Follow-up evidence separated the failed fixture from the SLA implementation. The Profile Router
+transition rerun used the ordinary corrected-Alpha8 Turbo8 profile at 8 NFE and 12/3; its Runtime Audit
+recorded zero main, sparse and dense-control SLA calls on all eight forwards. Therefore the user's
+full-timeline rejection of that clip cannot be attributed to SLA attention. A same-frame control using
+the explicit 4-NFE/6/3 upstream-exact experimental route completed 50 sparse calls on each of four
+forwards and remained visually coherent across its 124-frame contact sheet. This is only an isolation
+control: it still uses the local INT8 base and short low-resolution geometry, so it does not establish
+upstream parity or consumer readiness.
+
+The two source anchors were also measured after resizing to one 736x416 canvas. The close portrait and
+aerial street view had a pixel correlation of `0.032`, edge IoU of `0.0828`, only three ORB ratio-test
+matches and no solvable homography. In contrast, the same-frame control scores 1.0 correlation/edge IoU
+with 644 ORB matches. These metrics do not define a universal creative limit, but they independently
+confirm that the failed pair is not a modest same-scene camera transform. The original user-supplied
+MP4 further embeds `length=22` and probes as 22 frames / 0.9167 seconds despite `124f` in its filename.
+
+The video branch of T8 dual-clock Euler was compared algebraically with LightX2V's `training_euler`:
+ComfyUI CONST returns `denoised = x - sigma * model_output`; H3 returns the negated native velocity;
+`to_d` therefore reconstructs that native velocity and the update is exactly
+`x + (sigma - sigma_next) * velocity`. No missing fifth model evaluation exists: LightX2V stores five
+sigma grid points for four updates.
+
+A low-load CUDA random-tensor probe then held the learned block map fixed and compared attention
+kernels. At 15-percent retained keys, the high-precision Triton sparse kernel had approximately
+`0.000302` RMSE against an independent selected-block FP32 reference; the installed quantized
+`spas-sage-attn` Sage2 path measured approximately `0.00517` RMSE, about 17 times larger, although its
+single-layer cosine similarity remained `0.99933`. This is a real candidate for a future precision
+backend A/B across 50 layers and multiple steps, not proof that it caused the rejected transition: the
+rejected Profile Router transition did not invoke this kernel at all.
+
+The later same-scale blind export did not promote SLA either. The reviewer selected `unsure`, so the
+formal analyzer correctly excluded the pair, but every retained preference field selected the ordinary
+Turbo8 control and the SLA arm was marked as the blocking failure. The result therefore establishes no
+SLA non-inferiority and denies automatic enablement; it is not valid evidence that the INT8 SLA route is
+usable.
+
+A code-path audit then found a previously uncontrolled quantization variable. The SLA loader used
+`ModelPatcher.add_patches`; for a ComfyUI `QuantizedTensor`, model patching dequantizes, adds the LoRA and
+calls `requantize_from_float`. LightX2V's published FP8 SLA configuration and its ordinary INT8 and INT8
+ConvRot configurations instead all declare `lora_dynamic_apply=true`. The project now has an append-only,
+non-default `sla_4step_int8_bypass_exp` profile that requires the observed INT8 Tensorwise ConvRot base
+and uses ComfyUI model-only bypass injection, leaving the quantized base weight untouched. It retains the
+same four model evaluations, 6/3 shifts and upstream-exact 85-percent sparse attention; only LoRA
+application changes. Thirty-eight focused CPU tests pass. No real render has run yet because the observed
+free VRAM was about 11.7GiB, below the existing 14.5GiB start gate, so this is a testable candidate rather
+than a quality fix.
+
+A header-only audit avoided allocating either model. The local base's block-0 QKV quantization record is
+`int8_tensorwise` with `convrot=true` and group size 256. The SLA LoRA and the already executed corrected
+Alpha8 Turbo bypass LoRA each contain 624 A/B/alpha tensors and exactly the same 208 target-module names.
+This removes target-set mismatch as a likely cause of bypass-hook failure, but it does not replace live
+208-hook injection, sampling, strict media decode or human review.
+
+The live loader gate was then closed in a fresh CPU-only process. It loaded the real 31.70GiB INT8
+ConvRot checkpoint and 1.82GiB SLA LoRA without CLIP, VAE, sampling or decode. In 2.625 seconds the
+profile verified all 200 main INT8 ConvRot targets, eight unquantized token-refiner targets, 208/208 LoRA
+mappings and 208/208 bypass hooks. The resulting ModelPatcher had no standard weight patches, contained
+the `bypass_lora` injection and reported `base_weight_mutation=false`. Observed RSS deltas were about
+4.72GiB for the dynamically loaded base and 5.58MiB for bypass binding. The independent process then
+exited, releasing its mappings. Evidence is
+`artifacts/sla-int8-bypass-loader-probe-20260826/report.json`. This proves loader mechanics only; the
+full-duration render, strict media audit and human quality gate remain pending.
+
+## Cross-feature runtime compatibility audit (2026-08-26)
+
+The SLA failure was not isolated. A tracked-source audit found five other execution paths that used an
+exact Python source hash as a compatibility decision: Activation Chunk, Qwen Prefix Cache, Prompt
+Relay, Enhance-A-Video, its external T8 BlockCache composition, and Multi-Keyframe admission. The
+current ComfyUI core at `b78cec879b9460d5cb25228a83a942fb78d2cd24` provided direct evidence of the
+problem: `MiniMaxH3Model._forward` had a new source hash (`14bdf...`) while the executable H3 layout,
+patch ordering and required signatures remained compatible, so Activation Chunk rejected the current
+core before execution.
+
+Six focused regressions first reproduced rejection after source-only-equivalent changes. The repaired
+paths retain every source fingerprint in reports, but no longer treat it as a whitelist. Admission now
+uses the minimum feature-specific executable contract:
+
+- H3 core users verify required method signatures, native video patch ordering and live PackedLayout
+  target-row placement.
+- Qwen Prefix Cache additionally retains its exact token-prefix/suffix binding, native model identity
+  and FixedKV numerical regression.
+- Prompt Relay retains its MODEL/CONDITIONING binding and single attention-owner rules.
+- EAV plus BlockCache requires exactly one cache outer wrapper, one diffusion wrapper, a CPU 50-block
+  prototype and only block 0/49 replacements; implementation hashes are diagnostic.
+- Multi-Keyframe probes the actual middle-frame position and accepts a semantically compatible global
+  layout wrapper. It bypasses only the specifically marked obsolete Painter wrapper whose enclosed
+  native constructor independently passes the same probe. Its copied per-keyframe forward remains
+  guarded by required signature and structural markers.
+
+A separate schema audit inspected all 211 registered nodes and found five optional inputs that were not
+actually omittable at Python execution time. Speech Studio now accepts its optional `speech_guard`
+dependency, and Context IR Provider/Compiler optional dialogue/transcript fields have defaults. A
+permanent registration test now fails if any future optional input is absent from `execute` or lacks a
+default. Modern frontend workflow tests were also corrected to inspect linked sockets by name instead
+of historical widget-inclusive slot numbers.
+
+The maintenance-tool audit found a second compatibility class that did not affect runtime sampling but
+could make valid modern workflows appear stale or non-portable. ClipProj and Quick Start builders had
+been locking raw JSON bytes and reconstructing widgets from the pre-ComfyUI-0.4 input-slot layout.
+They now hash canonical JSON semantics, decode registered widget schemas, and rebuild deterministically.
+Six Quick Start subgraphs remain semantically unchanged. Quick Face Repair additionally replaces four
+machine-specific installed-model inventories with portable `COMBO` selectors; its public UUID, input and
+output names, node types and execution graph remain unchanged. The ClipProj 4B workflow only updates its
+recorded canonical source identity. These are maintenance metadata/portability changes, not sampler or
+conditioning changes.
+
+The follow-up audit removed the remaining user-model allowlists. ParseNet, SFace, VRetouchEr, Hybrid
+base/overlay, SLA/PDD/Turbo LoRA and the learned latent-upscaler now report reference filenames, sizes,
+hashes and roles only as diagnostics. Their actual framework loader, safe deserializer or strict
+state-dict assignment is authoritative, so an incompatible model may fail naturally during execution.
+Checkpoint/resume, Hybrid artifact/sidecar, manifests, accepted media and runtime state hashes still
+prevent stale, cross-source or corrupted user data. Native H3 batch/channel/layout,
+17n+5 frame grid, 24fps reference semantics, 32-pixel alignment, official 1920x1088 reference area and
+explicitly scoped scientific NFE profiles also remain enforced. These are model or integrity contracts,
+not source-version whitelists.
+
+The current suite collects 1557 tests. One complete serial run finished with 1554 passes and one
+Windows FFmpeg child-process failure; that exact Long Video fixture passed immediately in isolation.
+After adding two final Hybrid identity regressions, the complete 46-test Hybrid scope passed. A second
+serial full-suite attempt reached 69 percent without a Python assertion failure before Windows raised a
+native access violation in the Skin Finish video-stream fixture; that exact fixture also passed in
+isolation. Repeating the native-media suite again would be a stress test rather than useful evidence, so
+it was not repeated. All 147 frontend workflow JSON files parse with required ComfyUI nodes/links
+metadata. This audit is CPU/contract evidence only and makes no new visual-quality, audio, speed, VRAM
+or general 16GiB claim.

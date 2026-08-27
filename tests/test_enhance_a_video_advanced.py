@@ -1047,6 +1047,25 @@ def test_disabled_returns_exact_original_model_and_tau_zero_is_not_used_as_off_s
     assert any("tau=0 is not an off switch" in note for note in report["notes"])
 
 
+def test_equivalent_eav_core_source_text_change_is_not_a_compatibility_gate(
+    monkeypatch,
+):
+    monkeypatch.setattr(eav_module, "_source_sha256", lambda _value: "unknown-source")
+    _patched, _runtime, report_json = build_eav_model(
+        _model_patcher(),
+        _stock20_sigmas(),
+        mode="report_only",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+    )
+    contract = json.loads(report_json)["core_contract"]
+    assert contract["source_hash_policy"] == "diagnostic_only_not_a_compatibility_gate"
+    assert set(contract["source_hashes"].values()) == {"unknown-source"}
+
+
 def test_stock20_and_model_conflicts_fail_closed(monkeypatch):
     _validate_stock20_sigmas(_stock20_sigmas())
     with pytest.raises(ValueError, match="21 sigma"):
@@ -1068,7 +1087,7 @@ def test_stock20_and_model_conflicts_fail_closed(monkeypatch):
         )
 
 
-def test_turbo8_requires_exact_alpha8_bypass_contract(monkeypatch):
+def test_turbo8_reports_alpha8_bypass_contract_without_model_gate(monkeypatch):
     _allow_fixture_core(monkeypatch)
     model = _add_alpha8_bypass(_model_patcher())
     patched, _runtime, report_json = build_eav_model(
@@ -1088,8 +1107,7 @@ def test_turbo8_requires_exact_alpha8_bypass_contract(monkeypatch):
     assert report["turbo_contract"]["hook_count"] == 208
     assert report["turbo_contract"]["strength_min"] == pytest.approx(1.0)
 
-    with pytest.raises(RuntimeError, match="208-module"):
-        build_eav_model(
+    _patched, _runtime, report_json = build_eav_model(
             _add_alpha8_bypass(_model_patcher(), hook_count=207),
             _turbo8_sigmas(),
             mode="apply_exp",
@@ -1100,8 +1118,9 @@ def test_turbo8_requires_exact_alpha8_bypass_contract(monkeypatch):
             g_hard_limit=1.5,
             sampling_profile="turbo8_alpha8",
         )
-    with pytest.raises(RuntimeError, match="strength 1.0"):
-        build_eav_model(
+    report = json.loads(report_json)
+    assert report["turbo_contract"]["reference_hook_count_match"] is False
+    _patched, _runtime, report_json = build_eav_model(
             _add_alpha8_bypass(_model_patcher(), strength=0.75),
             _turbo8_sigmas(),
             mode="apply_exp",
@@ -1112,6 +1131,8 @@ def test_turbo8_requires_exact_alpha8_bypass_contract(monkeypatch):
             g_hard_limit=1.5,
             sampling_profile="turbo8_alpha8",
         )
+    report = json.loads(report_json)
+    assert report["turbo_contract"]["reference_strength_match"] is False
 
 
 def test_block_cache_composer_is_append_only_cpu_stock20_and_disabled_is_identity(
@@ -1141,6 +1162,26 @@ def test_block_cache_composer_is_append_only_cpu_stock20_and_disabled_is_identit
     assert report["composer_profile"] == "block_cache_visual_stock20_v1"
     assert report["block_cache_contract"]["cache_device"] == "cpu"
     assert report["block_cache_contract"]["boundary_blocks"] == [0, 49]
+
+
+def test_equivalent_block_cache_source_text_change_is_not_a_compatibility_gate(
+    monkeypatch,
+):
+    source = _block_cache_model(monkeypatch)
+    monkeypatch.setattr(eav_module, "_source_sha256", lambda _value: "unknown-source")
+    _patched, _runtime, report_json = build_eav_block_cache_model(
+        source,
+        _stock20_sigmas(),
+        mode="report_only",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+    )
+    contract = json.loads(report_json)["block_cache_contract"]
+    assert contract["source_hash_policy"] == "diagnostic_only_not_a_compatibility_gate"
+    assert set(contract["source_hashes"].values()) == {"unknown-source"}
 
 
 def test_block_cache_composer_replaces_only_diffusion_owner_and_keeps_outer_lifecycle(
@@ -1769,14 +1810,6 @@ def test_strict_sage_frontend_workflow_uses_one_composer_and_three_notes():
     assert [item["name"] for item in composer["inputs"]] == [
         "model",
         "sigmas",
-        "task_scope",
-        "mode",
-        "tau",
-        "start_video_progress",
-        "end_video_progress",
-        "max_workspace_mib",
-        "g_hard_limit",
-        "sampling_profile",
     ]
     assert composer["widgets_values"] == [
         "visual",
@@ -1912,12 +1945,6 @@ def test_block_cache_eav_frontend_workflow_has_one_owner_and_audited_handoff():
     assert [item["name"] for item in composer["inputs"]] == [
         "model",
         "sigmas",
-        "mode",
-        "tau",
-        "start_video_progress",
-        "end_video_progress",
-        "max_workspace_mib",
-        "g_hard_limit",
     ]
     links = {link[0]: link for link in workflow["links"]}
 
@@ -2169,8 +2196,9 @@ def test_extended_eav_workflows_are_importable_and_strictly_wired(
     ]
     assert eav["widgets_values"][-1] == profile
     assert len(by_type.get("LoadImage", [])) == int(first_image) + int(last_image)
-    assert bool(conditioning["inputs"][17]["link"] is not None) is first_image
-    assert bool(conditioning["inputs"][18]["link"] is not None) is last_image
+    conditioning_inputs = {item["name"]: item for item in conditioning["inputs"]}
+    assert bool(conditioning_inputs["first_frame"]["link"] is not None) is first_image
+    assert bool(conditioning_inputs["last_frame"]["link"] is not None) is last_image
     assert len(by_type.get("MarkdownNote", [])) == 3
 
     loras = by_type.get("LoraLoaderBypassModelOnly", [])
@@ -2215,19 +2243,21 @@ def test_reference_eav_workflows_use_the_isolated_composer(task, has_first):
     assert "MiniMaxH3EnhanceAVideoT8Advanced" not in by_type
     assert conditioning["widgets_values"][1:5] == [1152, 640, 124, task]
     assert composer["widgets_values"] == ["apply_exp", 4.0, 0.0, 1.0, 32, 1.5]
-    assert composer["inputs"][-1]["name"] == "g_hard_limit"
-    assert bool(conditioning["inputs"][17]["link"] is not None) is has_first
-    assert conditioning["inputs"][18]["link"] is None
-    assert conditioning["inputs"][19]["name"] == "ref_images.ref_image_0"
-    assert conditioning["inputs"][19]["link"] is not None
+    assert [item["name"] for item in composer["inputs"]] == ["model", "sigmas"]
+    conditioning_inputs = {item["name"]: item for item in conditioning["inputs"]}
+    assert bool(conditioning_inputs["first_frame"]["link"] is not None) is has_first
+    assert conditioning_inputs["last_frame"]["link"] is None
+    reference_input = conditioning_inputs["ref_images.ref_image_0"]
+    assert reference_input["link"] is not None
     assert len(by_type["LoadImage"]) == 1 + int(has_first)
     assert len(by_type["MarkdownNote"]) == 3
     report = workflow["extra"]["t8_enhance_a_video"]
     assert "real 0.7MP A/B remains pending" in report["real_probe"]
 
-    reference_link = links[conditioning["inputs"][19]["link"]]
+    reference_link = links[reference_input["link"]]
     assert nodes[reference_link[1]]["type"] == "LoadImage"
-    assert reference_link[2:] == [0, conditioning["id"], 19, "IMAGE"]
+    reference_slot = conditioning["inputs"].index(reference_input)
+    assert reference_link[2:] == [0, conditioning["id"], reference_slot, "IMAGE"]
     for link_id, source, output_slot, target, input_slot, link_type in workflow["links"]:
         assert nodes[target]["inputs"][input_slot]["link"] == link_id
         assert link_id in (nodes[source]["outputs"][output_slot].get("links") or [])

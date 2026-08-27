@@ -366,28 +366,37 @@ def inspect_checkpoint_pair(
         raise ValueError(f"unsupported verification mode: {verification!r}")
     try:
         if base == overlay:
-            errors.append("quality base and reference overlay must be different files")
+            warnings.append("quality base and reference overlay point to the same file")
         base_header = _checkpoint_header(base)
         overlay_header = _checkpoint_header(overlay)
-        errors.extend(_validate_pruned_curve_header(base_header, "quality_base"))
-        errors.extend(_validate_pruned_curve_header(overlay_header, "reference_overlay"))
+        warnings.extend(_validate_pruned_curve_header(base_header, "quality_base"))
+        warnings.extend(_validate_pruned_curve_header(overlay_header, "reference_overlay"))
         if base_header["descriptors"] != overlay_header["descriptors"]:
-            errors.append("base and overlay tensor key/shape/dtype contracts are not identical")
+            warnings.append(
+                "base and overlay tensor key/shape/dtype contracts are not identical; "
+                "artifact construction may fail"
+            )
         base_sha = sha256_file(base) if verification == "full_sha256" else None
         overlay_sha = sha256_file(overlay) if verification == "full_sha256" else None
         base_role = _checkpoint_role(base_header, base_sha)
         overlay_role = _checkpoint_role(overlay_header, overlay_sha)
         if verification != "full_sha256":
-            errors.append("header_only_exp is diagnostic only; artifact construction requires full SHA-256 verification")
+            warnings.append(
+                "header_only_exp skips full-file identity reporting; model identity is not a load gate"
+            )
         else:
             if base_sha != KNOWN_QUALITY_BASE_SHA256:
-                errors.append("quality base SHA-256 is outside the exact P0 validated FL2VA pruned pair")
+                warnings.append(
+                    "quality base SHA-256 differs from the reference FL2VA file; continuing with the user-selected model"
+                )
             if overlay_sha != KNOWN_REFERENCE_OVERLAY_SHA256:
-                errors.append("reference overlay SHA-256 is outside the exact P0 validated Ref2VA pruned pair")
+                warnings.append(
+                    "reference overlay SHA-256 differs from the reference Ref2VA file; continuing with the user-selected model"
+                )
         if base_role != "quality_base_fl2va_pruned_curve":
-            errors.append(f"quality base role is not validated FL2VA pruned curve: {base_role}")
+            warnings.append(f"quality base reference-role diagnostic: {base_role}")
         if overlay_role != "reference_overlay_ref2va_pruned_curve":
-            errors.append(f"reference overlay role is not validated Ref2VA pruned curve: {overlay_role}")
+            warnings.append(f"reference overlay reference-role diagnostic: {overlay_role}")
         spec = recipe_spec(resolved_profile)
         source = {
             "base_path": str(base),
@@ -401,6 +410,7 @@ def inspect_checkpoint_pair(
             "base_curve_sha256": base_header["curve_sha256"],
             "overlay_curve_sha256": overlay_header["curve_sha256"],
             "header_signature_sha256": base_header["header_signature_sha256"],
+            "model_identity_policy": "diagnostic_only_not_a_build_gate",
         }
     except Exception as exc:
         errors.append(f"checkpoint inspection failed: {type(exc).__name__}: {exc}")
@@ -687,14 +697,10 @@ def _validate_manifest_contract(manifest: dict[str, Any]) -> None:
     expected_identity_fields = {
         "schema": ARTIFACT_SCHEMA,
         "algorithm": ALGORITHM,
-        "base_sha256": KNOWN_QUALITY_BASE_SHA256,
-        "overlay_sha256": KNOWN_REFERENCE_OVERLAY_SHA256,
-        "base_curve_sha256": KNOWN_QUALITY_CURVE_SHA256,
-        "overlay_curve_sha256": KNOWN_REFERENCE_CURVE_SHA256,
     }
     for key, expected in expected_identity_fields.items():
         if identity.get(key) != expected:
-            raise ValueError(f"hybrid artifact identity {key} is outside the P0 contract")
+            raise ValueError(f"hybrid artifact identity {key} is unsupported")
     expected_fingerprint = sha256_bytes(canonical_json(identity).encode("utf-8"))
     if manifest.get("fingerprint") != expected_fingerprint:
         raise ValueError("hybrid artifact identity fingerprint mismatch")
@@ -1774,13 +1780,11 @@ def load_hybrid_model(
     manifest = descriptor["manifest"]
     identity = manifest["identity"]
     base_sha = sha256_file(base)
-    if base_sha != identity["base_sha256"]:
-        raise ValueError("selected quality base does not match the artifact base SHA-256")
+    base_identity_match = base_sha == identity["base_sha256"]
     if base.name != identity["base_file_name"]:
-        # A renamed but bit-identical file is safe; retain a transparent warning.
         name_warning = (
             f"Selected base name {base.name!r} differs from manifest name "
-            f"{identity['base_file_name']!r}, but SHA-256 matches."
+            f"{identity['base_file_name']!r}."
         )
     else:
         name_warning = None
@@ -1793,10 +1797,17 @@ def load_hybrid_model(
     ]
     if name_warning:
         warnings.append(name_warning)
+    if not base_identity_match:
+        warnings.append(
+            "Selected base SHA-256 differs from the artifact build manifest; "
+            "continuing with the user-selected model without an identity gate."
+        )
     report = {
         "mode": mode,
         "base_file_name": base.name,
         "base_sha256": base_sha,
+        "artifact_base_sha256_match": base_identity_match,
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
         "weight_dtype": weight_dtype,
         "artifact_applied": True,
         "artifact_path": descriptor["path"],

@@ -335,8 +335,6 @@ def _detect_local_anime_onnx_exp(
     detector_device: str,
 ) -> tuple[list[list[dict]], dict]:
     path = _resolve_detector_path(detector_model)
-    if path.suffix.lower() != ".onnx":
-        raise ValueError("local_anime_onnx_exp requires the pinned anime YOLOv8 .onnx detector")
     try:
         import numpy as np
         import onnxruntime as ort
@@ -412,7 +410,7 @@ def _detect_local_anime_onnx_exp(
     except Exception as error:
         raise RuntimeError(
             f"Local anime detector {path.name!r} could not run through the isolated ONNX "
-            "backend. Use the pinned deepghs v1.4 nano model; other ONNX layouts fail closed."
+            "backend. This is the native runtime error for the user-selected model."
         ) from error
     finally:
         del session

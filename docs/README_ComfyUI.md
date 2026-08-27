@@ -1,10 +1,40 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
-> Frontend workflows are organized under `examples/workflows/01-basic-generation` through
-> `examples/workflows/16-raven-streaming`. Each category contains an independent `README.md` with
+> 2026-08-27 PDD integration: one append-only Advanced EXP node now supports the converted Alibaba
+> PAI MiniMax-H3 FL2VA and Ref2VA Acc-8Step adapters. These are not ordinary LoRAs: each file has
+> 258 backbone adapters plus 32 absolute video and 32 absolute audio output heads. The node keeps the
+> INT8 base unmodified through dynamic model-only bypass residuals, pre-fuses four source intervals
+> into each of eight runtime heads, and returns the required Euler/simple 8-NFE schedule at 12/3
+> shifts. It rejects pruned AdaLN-curve bases, adapter/base-variant interchange, other LoRA stacks and
+> non-official sigma grids. Both files pass current-Comfy mapping and isolated 736x416x124 real
+> joint-AV renders; a separate Ref2VA 1152x640x124 run also completed. All three outputs contain
+> exactly 124 finite H.264 frames and finite 32kHz stereo AAC, but their minimum free VRAM was only
+> 447/510/500MiB, so all fail the project's 512MiB residual safety gate. The user accepted the 0.7MP
+> Ref2VA visual result; it still generated dialogue subtitles despite an explicit no-subtitles instruction,
+> recorded as a known adherence issue rather than a visual hard failure. Speech and equal-contract speed comparison
+> remain pending; no universal 16GiB claim is made.
+
+> Frontend workflows are organized by purpose under `examples/workflows/`, including the new
+> `19-pdd-acceleration` category. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is
 > mirrored into the installed `MiniMax H3 T8` user-workflow menu; dated JSON filenames and graph
 > contents are preserved.
+
+> 2026-08-26 SLA quality correction: the append-only Turbo/SLA Profile Router now defaults to the
+> corrected ordinary Alpha8 Turbo LoRA at eight NFE and 12/3 shifts. A serial 736x416x124 rerun using
+> the difficult close-person to aerial final-frame transition strictly decoded, but full human review
+> rejected the result because it entered a persistent forced scene/scale transition after about one
+> second. Its runtime report contains eight ordinary Turbo forwards and zero SLA calls, so that clip is
+> evidence of incompatible FL2VA anchors, not an SLA-kernel failure or success. The recommended workflow
+> now repeats a same-scale anchor by default and tells users to replace it only with a compatible final
+> frame. Its minimum observed free VRAM was only 418MiB, below this project's 512MiB gate. The SLA
+> exact profile remains four model evaluations, 6/3 shifts and 85-percent dynamic sparsity: the official
+> LightX2V `infer_steps=5` value denotes five sigma grid points, not five model evaluations. Released
+> evidence covers the BF16 checkpoint family and LightX2V's FP8 recipe, not the local INT8 ConvRot base;
+> the new quality-oriented exact profile therefore refuses INT8 instead of silently calling it upstream
+> parity. Legacy SLA nodes remain loadable for diagnostics. The user-supplied file named `124f` in the
+> latest report actually probes as 704x416, 22 frames and 0.9167 seconds, so its filename cannot support
+> a conclusion about failure after one second.
 
 > The current local 1.45.0 candidate appends a fail-closed Prompt Semantic Contract Audit as node
 > 190 after the complete prior 189-node prefix, then appends a read-only NFE Run Contract compiler
@@ -934,7 +964,7 @@ sampler setup, then route its passthrough MODEL to `BasicGuider`. Connecting fin
 also verifies Long Video/MultiKeyframe pairing and actual reference modalities.
 
 The default `report_only` mode never blocks and returns the exact same MODEL object. The optional
-`block_hard_conflicts` mode rejects invalid Hybrid offset-set identity, Hybrid/LoRA order or AdaLN
+`block_hard_conflicts` mode rejects invalid Hybrid offset-set structure, Hybrid/LoRA order or AdaLN
 overlap, incomplete Block Cache/Sage contracts, Long Video/MultiKeyframe conflicts, mismatched
 Conditioning, and configured current-VRAM/host-commit gate failures. It recognizes stock, stable
 dual-clock/native AV and EXP multi-rate sampling without changing sampler mathematics.
@@ -1034,8 +1064,9 @@ Version 1.14.0 added the opt-in
 `examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Audio_Reference_Stock20_EXP.json`,
 `examples/workflows/09-hybrid-model/2026-08-09_H3_Hybrid_Model_Mixed_Reference_Stock20_EXP.json`,
 `hybrid_model_audio_reference_api.json`, and `hybrid_model_mixed_reference_api.json`.
-The graph strictly hashes the exact validated FL2VA/
-Ref2VA pruned pair, builds or reuses a 27.69 MiB curve-rebased target-slice artifact under
+The graph records the selected FL2VA/Ref2VA file and curve hashes for diagnostics and artifact
+integrity, but does not use reference-model fingerprints as an allowlist. It builds or reuses a
+27.69 MiB curve-rebased target-slice artifact under
 `ComfyUI/models/h3_hybrid_artifacts`, and then applies it to a MODEL loaded through ComfyUI's stock
 diffusion loader. It does not create a second full fused checkpoint. Keep the order Hybrid Loader →
 optional LoRA. `auto_match_reference_modalities_exp` reads the connected Conditioning and selects the

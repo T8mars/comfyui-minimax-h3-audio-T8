@@ -507,8 +507,13 @@ def test_motion_recovery_frontend_workflows_are_importable_and_safely_wired(
             "float32_exact",
             6,
         ]
+        retiming = by_type["MiniMaxH3MotionRetimingPrepareT8Advanced"]
+        source_audio = next(
+            item for item in retiming["inputs"] if item["name"] == "source_audio"
+        )
+        source_audio_slot = retiming["inputs"].index(source_audio)
         assert any(
-            link[1:5] == [segment["id"], 4, by_type["MiniMaxH3MotionRetimingPrepareT8Advanced"]["id"], 5]
+            link[1:5] == [segment["id"], 4, retiming["id"], source_audio_slot]
             for link in workflow["links"]
         )
     else:

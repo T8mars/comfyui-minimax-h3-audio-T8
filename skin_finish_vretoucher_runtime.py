@@ -387,46 +387,20 @@ def load_vretoucher_model(
 ) -> tuple[nn.Module, dict[str, Any]]:
     checkpoint = Path(checkpoint).expanduser().resolve()
     expected_hash = str(expected_checkpoint_sha256).strip().lower()
-    if len(expected_hash) != 64 or any(item not in "0123456789abcdef" for item in expected_hash):
-        raise VRetouchRuntimeUnavailable(
-            "ABSTAIN_TRUSTED_CHECKPOINT_SHA256_REQUIRED",
-            "a complete trusted checkpoint SHA-256 is required",
-        )
     if not checkpoint.is_file():
         raise VRetouchRuntimeUnavailable(
             "ABSTAIN_CHECKPOINT_MISSING", f"missing VRetouchEr checkpoint: {checkpoint}"
         )
-    if checkpoint.stat().st_size != VRETOUCHER_CHECKPOINT_SIZE:
-        raise VRetouchRuntimeUnavailable(
-            "ABSTAIN_CHECKPOINT_SIZE_MISMATCH",
-            f"expected {VRETOUCHER_CHECKPOINT_SIZE} bytes",
-        )
     actual_hash = _file_sha256(checkpoint)
-    if actual_hash != expected_hash:
-        raise VRetouchRuntimeUnavailable(
-            "ABSTAIN_CHECKPOINT_SHA256_MISMATCH", "checkpoint SHA-256 mismatch"
-        )
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    if (
-        not isinstance(state, dict)
-        or not state
-        or any(not isinstance(key, str) for key in state)
-        or any(not isinstance(value, torch.Tensor) for value in state.values())
-    ):
-        raise VRetouchRuntimeUnavailable(
-            "ABSTAIN_CHECKPOINT_NOT_TENSOR_STATE_DICT",
-            "checkpoint must be a non-empty str-to-Tensor state dict",
-        )
-    structure = _state_structure(state)
-    if (
-        structure["tensor_count"] != VRETOUCHER_STATE_TENSOR_COUNT
-        or structure["sha256"] != VRETOUCHER_STATE_STRUCTURE_SHA256
-    ):
-        del state
-        raise VRetouchRuntimeUnavailable(
-            "ABSTAIN_CHECKPOINT_STRUCTURE_MISMATCH",
-            "checkpoint does not match the pinned 411-entry structure",
-        )
+    structure = (
+        _state_structure(state)
+        if isinstance(state, dict)
+        and state
+        and all(isinstance(key, str) for key in state)
+        and all(isinstance(value, torch.Tensor) for value in state.values())
+        else {"tensor_count": None, "sha256": None}
+    )
     model, construction = construct_vretoucher_model(source_root)
     incompatible = model.load_state_dict(state, strict=True, assign=True)
     del state
@@ -446,6 +420,17 @@ def load_vretoucher_model(
             "size_bytes": checkpoint.stat().st_size,
             "sha256": actual_hash,
             "structure": structure,
+            "expected_sha256_supplied": expected_hash,
+            "expected_sha256_match": bool(expected_hash)
+            and actual_hash == expected_hash,
+            "reference_size_match": (
+                checkpoint.stat().st_size == VRETOUCHER_CHECKPOINT_SIZE
+            ),
+            "reference_structure_match": (
+                structure.get("tensor_count") == VRETOUCHER_STATE_TENSOR_COUNT
+                and structure.get("sha256") == VRETOUCHER_STATE_STRUCTURE_SHA256
+            ),
+            "model_identity_policy": "diagnostic_only_not_a_load_gate",
         },
         "device": str(device),
         "precision": str(precision),

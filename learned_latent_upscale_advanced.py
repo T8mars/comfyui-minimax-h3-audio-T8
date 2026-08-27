@@ -307,13 +307,20 @@ def _load_cached_model(model_name: str, precision: str) -> tuple[_CachedModel, b
             return cached, True
 
         file_hash = _sha256_file(model_path)
-        if file_hash.casefold() != KNOWN_MODEL_SHA256:
-            raise ValueError(
-                "Unsupported learned H3 latent-upscaler checkpoint fingerprint: "
-                f"{file_hash}. Expected {KNOWN_MODEL_SHA256}."
-            )
         state_dict = comfy.utils.load_torch_file(str(model_path), safe_load=True)
-        contract = validate_learned_resizer_state_dict(state_dict)
+        try:
+            contract = validate_learned_resizer_state_dict(state_dict)
+            contract["state_contract_match"] = True
+        except Exception as error:
+            # User-selected model identity is diagnostic only.  The actual
+            # architecture load below remains authoritative and may raise its
+            # native PyTorch error when the file is incompatible.
+            contract = {
+                "state_contract_match": False,
+                "state_contract_diagnostic": f"{type(error).__name__}: {error}",
+            }
+        contract["reference_file_match"] = file_hash.casefold() == KNOWN_MODEL_SHA256
+        contract["model_identity_policy"] = "diagnostic_only_not_a_load_gate"
         with torch.device("meta"):
             network = MiniMaxH3LearnedResizer3D()
         network.load_state_dict(state_dict, strict=True, assign=True)

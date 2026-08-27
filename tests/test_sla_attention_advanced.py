@@ -20,11 +20,15 @@ from h3_audio_t8_pkg.sla_attention_advanced import (
     _compose_kj_sage_forward,
     _inspect_kj_sage_contract,
     _model_dtype_contract,
+    _sampling_percent_from_video_sigma,
+    _validate_sla_percent_window,
     _validate_sigmas,
     finalize_sla_runtime,
     lightx2v_block_map,
     mean_pool_blocks,
+    protect_condition_prefix_blocks,
     route_sla_attention,
+    sparse_route_coverage,
 )
 from h3_audio_t8_pkg.sampling import native_flow_sigmas
 
@@ -53,6 +57,104 @@ def test_lightx2v_router_matches_direct_reference_and_floor_topk():
     assert topk == expected_topk == 1
     assert torch.equal(sparse_map, expected)
     assert torch.equal(sparse_map.sum(dim=-1), torch.ones_like(scores[..., 0]))
+
+
+def test_condition_prefix_protection_adds_keys_without_displacing_router_topk():
+    sparse_map = torch.zeros(1, 2, 4, 7, dtype=torch.int8)
+    sparse_map[..., 6] = 1
+    segments = [
+        [0, 64, "text"],
+        [64, 128, "cond"],
+        [128, 192, "audio"],
+        [192, 448, "video"],
+    ]
+    protected = protect_condition_prefix_blocks(sparse_map, segments)
+    assert protected == 3
+    assert bool((sparse_map[..., :3] == 1).all())
+    assert bool((sparse_map[..., 6] == 1).all())
+    assert bool((sparse_map.sum(dim=-1) == 4).all())
+
+    coverage = sparse_route_coverage(sparse_map, segments)
+    assert coverage["keys_text"]["minimum"] == 1.0
+    assert coverage["keys_cond"]["minimum"] == 1.0
+    assert coverage["keys_audio"]["minimum"] == 1.0
+    assert "video_q4_to_k4" in coverage
+
+
+def test_auto_safe_policy_is_dense_for_short_sequences_and_dense_at_long_edges():
+    short = sla._forward_attention_policy(
+        mode="apply_lightx2v_sla",
+        seq_len=12_587,
+        forward_index=1,
+        expected_nfe=4,
+    )
+    assert short["execution"] == "dense"
+    assert short["reason"] == "auto_safe_short_sequence_dense_fallback"
+
+    long_plan = [
+        sla._forward_attention_policy(
+            mode="apply_lightx2v_sla",
+            seq_len=111_590,
+            forward_index=index,
+            expected_nfe=4,
+        )
+        for index in range(4)
+    ]
+    assert [value["execution"] for value in long_plan] == [
+        "dense",
+        "sparse",
+        "sparse",
+        "dense",
+    ]
+    assert long_plan[1]["protect_condition_prefix"] is True
+    assert long_plan[0]["protect_condition_prefix"] is False
+
+    exact = sla._forward_attention_policy(
+        mode="apply_lightx2v_sla_upstream_exact_exp",
+        seq_len=1024,
+        forward_index=0,
+        expected_nfe=4,
+    )
+    assert exact["execution"] == "sparse"
+    assert exact["protect_condition_prefix"] is False
+
+    windowed = [
+        sla._forward_attention_policy(
+            mode="apply_lightx2v_sla_upstream_exact_exp",
+            seq_len=12_587,
+            forward_index=index,
+            expected_nfe=4,
+            sampling_percent=percent,
+            sparse_start_percent=0.15,
+            sparse_end_percent=0.90,
+        )
+        for index, percent in enumerate((0.0, 0.25, 0.50, 0.75))
+    ]
+    assert [value["execution"] for value in windowed] == [
+        "dense",
+        "sparse",
+        "sparse",
+        "sparse",
+    ]
+
+    boundary = sla._forward_attention_policy(
+        mode="apply_lightx2v_sla",
+        seq_len=sla.SLA_AUTO_SAFE_MIN_SPARSE_SEQUENCE,
+        forward_index=1,
+        expected_nfe=4,
+    )
+    assert boundary["execution"] == "sparse"
+
+    two_step = [
+        sla._forward_attention_policy(
+            mode="apply_lightx2v_sla",
+            seq_len=111_590,
+            forward_index=index,
+            expected_nfe=2,
+        )
+        for index in range(2)
+    ]
+    assert [value["execution"] for value in two_step] == ["dense", "dense"]
 
 
 def test_sigma_contract_accepts_official_4step_and_experimental_8step_native_flow():
@@ -112,7 +214,7 @@ def test_core_contract_bypasses_verified_obsolete_painter_layout_patch(monkeypat
     assert sla.PackedLayout.__init__ is native_init
 
 
-def test_lora_contract_uses_structure_not_one_pinned_file_hash(tmp_path):
+def test_lora_contract_reports_structure_without_using_it_as_a_load_gate(tmp_path):
     path = tmp_path / "community_h3_8step_sla_repacked.safetensors"
     save_file(
         {
@@ -125,7 +227,7 @@ def test_lora_contract_uses_structure_not_one_pinned_file_hash(tmp_path):
     report = sla._validate_lora_header(path)
     assert report["patch_count"] == 1
     assert report["file_sha256_enforced"] is False
-    assert report["identity_policy"] == "structural_pairs_and_full_model_mapping"
+    assert report["identity_policy"] == "diagnostic_only_not_a_load_gate"
 
 
 def test_builtin_pytorch_attention_override_is_replaceable_by_sla_owner():
@@ -225,8 +327,9 @@ def test_model_dtype_contract_does_not_mistake_quantized_compute_dtype_for_bf16(
     assert report["quantized_base_observed"] is True
     assert report["official_bf16_base_observed"] is False
     assert report["compatibility_status"] == "quantized_base_experimental"
-    with pytest.raises(RuntimeError, match="upstream BF16 FL2VA base"):
-        _model_dtype_contract(FakeModel(), "official_bf16_only")
+    strict_report = _model_dtype_contract(FakeModel(), "official_bf16_only")
+    assert strict_report["requested_policy_match"] is False
+    assert strict_report["model_identity_policy"] == "diagnostic_only_not_a_load_gate"
 
 
 def _runtime(mode: str) -> SLARuntime:
@@ -236,6 +339,24 @@ def _runtime(mode: str) -> SLARuntime:
             "sparsity_ratio_requested": sla.SLA_SPARSITY_RATIO,
         }
     )
+
+
+def test_sla_percent_window_uses_native_flow_progress_not_shifted_sigma():
+    sigmas = native_flow_sigmas(4, 6.0)
+    percents = [
+        _sampling_percent_from_video_sigma(float(sigma), 6.0)
+        for sigma in sigmas[:-1]
+    ]
+    assert percents == pytest.approx([0.0, 0.25, 0.50, 0.75], abs=1.0e-6)
+    assert _validate_sla_percent_window(0.15, 0.90) == {
+        "start_percent": 0.15,
+        "end_percent": 0.90,
+        "full_range": False,
+        "boundary_semantics": "inclusive_current_model_forward_sigma",
+    }
+    for start, end in ((-0.01, 0.9), (0.5, 0.5), (0.9, 0.1), (0.0, 1.01)):
+        with pytest.raises(ValueError, match="0 <= start_percent"):
+            _validate_sla_percent_window(start, end)
 
 
 def minimax_sageattn_forward(self, x, rope_freqs=None, transformer_options=None):
@@ -309,7 +430,7 @@ def test_kj_sage_composer_dispatches_one_backend_per_call():
     route = {
         "runtime": runtime,
         "forward_index": index,
-        "mode": "apply_lightx2v_sla",
+        "mode": "apply_lightx2v_sla_upstream_exact_exp",
         "seq_len": 8,
     }
     composed = _compose_kj_sage_forward(
@@ -326,8 +447,53 @@ def test_kj_sage_composer_dispatches_one_backend_per_call():
     assert report["external_sage_calls_per_forward"] == [1]
 
 
+def test_kj_sage_composer_uses_kj_for_auto_safe_dense_forward():
+    class FakeAttention:
+        def forward(self, x, **_kwargs):
+            return ("sla_stock", x)
+
+    module = FakeAttention()
+
+    def kj_forward(x, **_kwargs):
+        return ("kj_sage", x)
+
+    runtime = SLARuntime(
+        {"mode": "apply_lightx2v_sla", "sigma_contract": {"nfe": 4}}
+    )
+    index = runtime.begin_forward(
+        {
+            "task": "FL2VA",
+            "seq_len": 12_587,
+            "pixel_frames": 124,
+            "latent_t": 37,
+            "latent_h": 26,
+            "latent_w": 46,
+        }
+    )
+    policy = runtime.forward_policy(index)
+    route = {
+        "runtime": runtime,
+        "forward_index": index,
+        "mode": "apply_lightx2v_sla",
+        "seq_len": 12_587,
+        "attention_execution": policy["execution"],
+    }
+    composed = _compose_kj_sage_forward(
+        module, kj_forward, source_sha256="test-fingerprint"
+    )
+    result = composed(
+        torch.zeros(12_587, 4),
+        transformer_options={sla.SLA_RUNTIME_KEY: route},
+    )
+    assert result[0] == "kj_sage"
+    report = runtime.snapshot(consume=False)
+    assert report["forwards"][0]["attention_execution"] == "dense"
+    assert report["dense_control_calls_per_forward"] == [1]
+    assert report["external_sage_calls_per_forward"] == [1]
+
+
 def test_sparse_attention_route_uses_exact_map_without_dense_fallback(monkeypatch):
-    runtime = _runtime("apply_lightx2v_sla")
+    runtime = _runtime("apply_lightx2v_sla_upstream_exact_exp")
     route = {
         "task": "FL2VA",
         "seq_len": 129,
@@ -341,7 +507,7 @@ def test_sparse_attention_route_uses_exact_map_without_dense_fallback(monkeypatc
         {
             "runtime": runtime,
             "forward_index": forward_index,
-            "mode": "apply_lightx2v_sla",
+            "mode": "apply_lightx2v_sla_upstream_exact_exp",
             "max_router_workspace_mib": 512,
         }
     )
@@ -377,6 +543,19 @@ def test_sparse_attention_route_uses_exact_map_without_dense_fallback(monkeypatc
     assert report["dense_control_calls_per_forward"] == [0]
     assert report["forwards"][0]["retained_key_blocks_min"] == topk
     assert report["forwards"][0]["retained_key_blocks_max"] == topk
+
+
+def test_missing_auto_safe_route_plan_fails_toward_dense_quality():
+    assert (
+        sla._route_attention_execution({"mode": "apply_lightx2v_sla"})
+        == sla.SLA_EXECUTION_DENSE
+    )
+    assert (
+        sla._route_attention_execution(
+            {"mode": "apply_lightx2v_sla_upstream_exact_exp"}
+        )
+        == sla.SLA_EXECUTION_SPARSE
+    )
 
 
 def test_dense_control_delegates_and_records_without_router(monkeypatch):
@@ -420,7 +599,10 @@ def test_dense_control_delegates_and_records_without_router(monkeypatch):
 
 @pytest.mark.parametrize(
     ("mode", "sparse"),
-    [("apply_lightx2v_sla", True), ("dense_lora_control", False)],
+    [
+        ("apply_lightx2v_sla_upstream_exact_exp", True),
+        ("dense_lora_control", False),
+    ],
 )
 def test_runtime_audit_requires_four_forwards_and_fifty_blocks(mode, sparse):
     runtime = _runtime(mode)
@@ -454,7 +636,7 @@ def test_runtime_audit_requires_four_forwards_and_fifty_blocks(mode, sparse):
 def test_runtime_audit_uses_actual_eight_nfe_contract():
     runtime = SLARuntime(
         {
-            "mode": "apply_lightx2v_sla",
+            "mode": "apply_lightx2v_sla_upstream_exact_exp",
             "sigma_contract": {"nfe": 8},
             "sparsity_ratio_requested": sla.SLA_SPARSITY_RATIO,
         }
@@ -484,11 +666,191 @@ def test_runtime_audit_uses_actual_eight_nfe_contract():
     report = json.loads(report_json)
     assert report["model_forward_count"] == 8
     assert report["expected_nfe"] == 8
-    assert report["status"] == "lightx2v_dynamic_sparse_verified"
+    assert report["status"] == "lightx2v_upstream_exact_sparse_exp_verified"
+
+
+def test_int8_bypass_percent_window_audits_dense_then_three_sparse_forwards():
+    sigmas = native_flow_sigmas(4, 6.0)
+    runtime = SLARuntime(
+        {
+            "mode": "apply_lightx2v_sla_upstream_exact_exp",
+            "sigma_contract": {
+                "nfe": 4,
+                "shift_video": 6.0,
+                "video_sigmas": [float(value) for value in sigmas.tolist()],
+            },
+            "sparse_percent_window": {
+                "start_percent": 0.15,
+                "end_percent": 0.90,
+                "full_range": False,
+            },
+            "lora_application_policy": "bypass_model_only",
+            "sparsity_ratio_requested": sla.SLA_SPARSITY_RATIO,
+        }
+    )
+    for video_sigma in sigmas[:-1]:
+        index = runtime.begin_forward(
+            {
+                "task": "FL2VA",
+                "seq_len": 12_587,
+                "pixel_frames": 124,
+                "latent_t": 37,
+                "latent_h": 26,
+                "latent_w": 46,
+            },
+            video_sigma=float(video_sigma),
+        )
+        sparse = runtime.forward_policy(index)["execution"] == "sparse"
+        for _block in range(SLA_EXPECTED_BLOCKS):
+            runtime.record_attention(
+                index,
+                sparse=sparse,
+                workspace_bytes=4096 if sparse else 0,
+                key_blocks=16 if sparse else 0,
+                retained_key_blocks=2 if sparse else 0,
+            )
+
+    _latent, report_json = finalize_sla_runtime(
+        {"samples": torch.zeros(1)}, runtime
+    )
+    report = json.loads(report_json)
+    assert report["status"] == "lightx2v_int8_bypass_percent_window_exp_verified"
+    assert report["attention_execution_plan"] == [
+        "dense",
+        "sparse",
+        "sparse",
+        "sparse",
+    ]
+    assert report["dense_control_calls_per_forward"] == [50, 0, 0, 0]
+    assert report["sparse_kernel_calls_per_forward"] == [0, 50, 50, 50]
+    assert report["effective_sparse_forward_indices"] == [1, 2, 3]
+    assert report["sampling_percents"] == pytest.approx(
+        [0.0, 0.25, 0.50, 0.75], abs=1.0e-6
+    )
+
+
+def test_percent_window_runtime_rejects_missing_or_wrong_sigma():
+    sigmas = native_flow_sigmas(4, 6.0)
+    runtime = SLARuntime(
+        {
+            "mode": "apply_lightx2v_sla_upstream_exact_exp",
+            "sigma_contract": {
+                "nfe": 4,
+                "shift_video": 6.0,
+                "video_sigmas": [float(value) for value in sigmas.tolist()],
+            },
+            "sparse_percent_window": {
+                "start_percent": 0.15,
+                "end_percent": 0.90,
+                "full_range": False,
+            },
+        }
+    )
+    route = {
+        "task": "FL2VA",
+        "seq_len": 12_587,
+        "pixel_frames": 124,
+        "latent_t": 37,
+        "latent_h": 26,
+        "latent_w": 46,
+    }
+    with pytest.raises(RuntimeError, match="current video sigma"):
+        runtime.begin_forward(route)
+    with pytest.raises(RuntimeError, match="does not match"):
+        runtime.begin_forward(route, video_sigma=0.5)
+
+
+def test_auto_safe_runtime_audit_accepts_short_dense_fallback():
+    runtime = _runtime("apply_lightx2v_sla")
+    for _forward in range(SLA_EXPECTED_NFE):
+        index = runtime.begin_forward(
+            {
+                "task": "FL2VA",
+                "seq_len": 12_587,
+                "pixel_frames": 124,
+                "latent_t": 37,
+                "latent_h": 26,
+                "latent_w": 46,
+            }
+        )
+        assert runtime.forward_policy(index)["execution"] == "dense"
+        for _block in range(SLA_EXPECTED_BLOCKS):
+            runtime.record_attention(index, sparse=False)
+    _latent, report_json = finalize_sla_runtime(
+        {"samples": torch.zeros(1)}, runtime
+    )
+    report = json.loads(report_json)
+    assert report["status"] == "auto_safe_short_sequence_dense_fallback_verified"
+    assert report["attention_execution_plan"] == ["dense"] * 4
+    assert report["sparse_kernel_calls_per_forward"] == [0] * 4
+
+
+def test_auto_safe_runtime_audit_accepts_dense_edge_sparse_middle_plan():
+    runtime = _runtime("apply_lightx2v_sla")
+    for _forward in range(SLA_EXPECTED_NFE):
+        index = runtime.begin_forward(
+            {
+                "task": "FL2VA",
+                "seq_len": 111_590,
+                "pixel_frames": 362,
+                "latent_t": 107,
+                "latent_h": 48,
+                "latent_w": 84,
+            }
+        )
+        sparse = runtime.forward_policy(index)["execution"] == "sparse"
+        for _block in range(SLA_EXPECTED_BLOCKS):
+            runtime.record_attention(
+                index,
+                sparse=sparse,
+                workspace_bytes=4096 if sparse else 0,
+                key_blocks=16 if sparse else 0,
+                retained_key_blocks=2 if sparse else 0,
+            )
+    _latent, report_json = finalize_sla_runtime(
+        {"samples": torch.zeros(1)}, runtime
+    )
+    report = json.loads(report_json)
+    assert report["status"] == "auto_safe_dense_edge_sparse_middle_verified"
+    assert report["attention_execution_plan"] == [
+        "dense",
+        "sparse",
+        "sparse",
+        "dense",
+    ]
+
+
+def test_auto_safe_runtime_audit_labels_long_two_step_all_dense_boundary():
+    runtime = SLARuntime(
+        {
+            "mode": "apply_lightx2v_sla",
+            "sigma_contract": {"nfe": 2},
+            "sparsity_ratio_requested": sla.SLA_SPARSITY_RATIO,
+        }
+    )
+    for _forward in range(2):
+        index = runtime.begin_forward(
+            {
+                "task": "FL2VA",
+                "seq_len": 111_590,
+                "pixel_frames": 362,
+                "latent_t": 107,
+                "latent_h": 48,
+                "latent_w": 84,
+            }
+        )
+        for _block in range(SLA_EXPECTED_BLOCKS):
+            runtime.record_attention(index, sparse=False)
+    _latent, report_json = finalize_sla_runtime(
+        {"samples": torch.zeros(1)}, runtime
+    )
+    report = json.loads(report_json)
+    assert report["status"] == "auto_safe_all_dense_boundary_verified"
+    assert report["attention_execution_plan"] == ["dense", "dense"]
 
 
 def test_runtime_audit_refuses_missing_block():
-    runtime = _runtime("apply_lightx2v_sla")
+    runtime = _runtime("apply_lightx2v_sla_upstream_exact_exp")
     for _forward in range(4):
         index = runtime.begin_forward(
             {
@@ -578,6 +940,22 @@ def test_public_sla_workflow_is_importable_and_uses_one_attention_owner():
         "auto_detect_exp",
         512,
     ]
+    load_images = [
+        node["widgets_values"]
+        for node in workflow["nodes"]
+        if node["type"] == "LoadImage"
+    ]
+    notes = [
+        node["widgets_values"]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    ]
+    assert load_images == [
+        ["codex_prompt_relay_fl2va_first.png"],
+        ["codex_prompt_relay_fl2va_first.png"],
+    ]
+    assert any("完整人审已经否决" in note for note in notes)
+    assert any("人物占比、视角和场景尺度接近" in note for note in notes)
     forbidden = {
         "LoraLoaderModelOnly",
         "LoraLoaderBypassModelOnly",
@@ -621,5 +999,21 @@ def test_public_sla_kj_composer_workflow_has_one_conditional_attention_owner():
         "auto_detect_exp",
         512,
     ]
+    load_images = [
+        node["widgets_values"]
+        for node in workflow["nodes"]
+        if node["type"] == "LoadImage"
+    ]
+    notes = [
+        node["widgets_values"]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    ]
+    assert load_images == [
+        ["codex_prompt_relay_fl2va_first.png"],
+        ["codex_prompt_relay_fl2va_first.png"],
+    ]
+    assert any("完整人审已否决" in note for note in notes)
+    assert any("人物占比、视角和场景尺度接近" in note for note in notes)
     assert "ModelAttentionBackend" not in by_type
     assert "SolAttnMiniMax" not in by_type

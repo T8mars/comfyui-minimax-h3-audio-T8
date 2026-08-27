@@ -59,6 +59,8 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 工作流在 [`19-pdd-acceleration`](examples/workflows/19-pdd-acceleration)。PDD 必须使用专用节点，不能当普通 LoRA 加载。
 
+转换后的 FL2VA / Ref2VA PDD 加速 LoRA 下载：[t8star/MiniMax-H3-Acc-8Step-comfy](https://huggingface.co/t8star/MiniMax-H3-Acc-8Step-comfy)。下载后放到 `ComfyUI/models/loras`，并选择与基模一致的版本。
+
 默认：Euler/simple、8 NFE、shift `12 / 3`、CFG 1。
 
 ## 常见问题

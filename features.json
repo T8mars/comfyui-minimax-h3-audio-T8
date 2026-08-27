@@ -219,9 +219,9 @@
     "date": "2026-08-24",
     "node": "MiniMaxH3SkinFinishSemanticMaskT8Advanced",
     "position": 198,
-    "contract": "consumes the exact source IMAGE batch plus a source-bound Face Refine Plan, verifies the local FaceXLib ParseNet v0.2.2 checkpoint by byte size and SHA-256, safely loads it on CPU with weights_only=True, outputs only a semantic skin MASK and sampled green/red audit preview, then releases the model without a persistent cache",
+    "contract": "consumes the exact source IMAGE batch plus a source-bound Face Refine Plan, records the local FaceXLib ParseNet checkpoint byte size and SHA-256 as diagnostics, safely loads it on CPU with weights_only=True and strict state-dict assignment, outputs only a semantic skin MASK and sampled green/red audit preview, then releases the model without a persistent cache",
     "class_contract": "uses the verified ParseNet/CelebAMask-HQ order rather than the differently ordered BiSeNet list; skin is class 1, nose 2, eyes 4/5, brows 6/7, mouth/lips 10-12, hair 13, neck 17 and cloth 18. Nose, eyes, brows, lips, hair and accessories are excluded; neck and ears are not selected by default",
-    "security": "no runtime download, no arbitrary checkpoint path, exact 85,331,193-byte and 3d558d8d...20de2 hash gate, safe weights-only pickle loading only, missing dependency/model or source/hash mismatch returns an empty mask and ABSTAIN/REJECT",
+    "security": "no runtime download, no arbitrary checkpoint path, safe weights-only pickle loading only; the published size/hash are diagnostic and the real ParseNet strict state-dict load is authoritative. Missing dependency/model, unsafe load failure or source-plan mismatch returns an empty mask and ABSTAIN/REJECT",
     "workflow": "examples/workflows/17-skin-finish/2026-08-24_H3_Skin_Finish_Semantic_Mask_Advanced_EXP.json",
     "representative_validation": "the real pinned checkpoint was loaded once on CPU for source frames 0, 62 and 123 from the fixed 1088x544x124 portrait; all three masks were READY, full-frame skin fractions were 0.03961160/0.04021309/0.03950178, runtime was 8.431955 seconds, CUDA and network were unused, and the model was released after execute. Evidence is artifacts/skin-finish-semantic-parser-representative-3frame-20260824",
     "validation": "the current combined single- and multi-person Skin Finish scope passes 82 focused tests, relevant Ruff and py_compile, 206 non-artifact JSON parses, ComfyUI CPU whitelist quick-load, git diff check and 139/139 source-to-user workflow SHA parity; stable sampling.py is unchanged",
@@ -733,14 +733,15 @@
     "validation_boundary": "synthetic deterministic unit coverage plus one low-load real three-track calibration is implemented. Structural Audio Integrity now avoids the former short-window speech false positive, while the separate aligned-reference drift audit detects the known midstream candidate. Unicode CER/WER unit handling is mechanically covered for Chinese, Japanese, Korean, accented Latin, Cyrillic and Arabic, and all 14 historical real-H3 speech files now have fixed CPU-int8 ASR with mode/condition/outlier summaries. The ABX tooling, normalized legacy pilot, formal 10-target/10-utterance/3-seed plus three-impostor design and the bounded/resumable fair-media materializer are mechanically validated, but the formal identity collection remains zero of 300 and the multilingual collection remains zero of 120. No real formal A/B/X media or three-reviewer panel exists yet. Real opening-pop, tail-wrap, multilingual/multi-speaker listening, music/effects robustness, wider false-positive calibration and model-level causality remain pending"
   },
   "lightx2v_sla_attention_advanced": {
-    "status": "implemented in v1.44.0; local 2026-08-26 compatibility repair replaces brittle source/file hashes with semantic and structural contracts and audits the actual native_flow NFE",
+    "status": "implemented in v1.44.0; local 2026-08-26 quality review rejected both the fixed sparse and same-SLA dense fallback clips, so one append-only profile router now separates recommended corrected-Alpha8 Turbo8 from the exact SLA experiment without changing the three old node IDs or widgets",
     "date": "2026-08-26",
     "nodes": [
       "MiniMaxH3LightX2VSLAT8Advanced",
       "MiniMaxH3LightX2VSLAAuditT8Advanced",
-      "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced"
+      "MiniMaxH3LightX2VSLAKJSageComposerT8Advanced",
+      "MiniMaxH3TurboSLAProfileRouterT8Advanced"
     ],
-    "implementation": "the loader requires complete safetensors LoRA A/B pairs and full mapping/application to the loaded native H3 base without enforcing one filename, byte size or file SHA; it validates the live ComfyUI H3 core by required call signatures, exact patchify ordering and an executable FL2VA PackedLayout probe while retaining source hashes only as diagnostics. It reproduces the released LightX2V H3 dynamic block-routing math and owns the Sage2 block-sparse attention call for every main H3 block. The KJ Sage composer still authenticates the complete 50-block KJ whole-forward patch and conditionally dispatches exactly one backend per call; a separate one-shot audit rejects missing calls, KJ bypass, dense fallback, kernel failure and reused runtime tokens using the actual sigma NFE",
+    "implementation": "the legacy loader requires complete safetensors LoRA A/B pairs and full mapping/application to the loaded native H3 base without enforcing one filename, byte size or file SHA; it validates the live ComfyUI H3 core by required call signatures, exact patchify ordering and an executable FL2VA PackedLayout probe while retaining source hashes only as diagnostics. Legacy auto_safe_v1 remains loadable for diagnostics. The append-only Profile Router exposes corrected ordinary Alpha8 Turbo at 8 NFE and 12/3 without SLA calls, published-evidence SLA at 4 NFE and 6/3 with the released all-forward 85-percent Sage2 router, and one explicit non-default INT8 ConvRot dynamic-LoRA bypass experiment. The bypass profile leaves the quantized base untouched and exists only to isolate ComfyUI weight re-quantization; it has no quality claim. The router never rebrands dense SLA-LoRA execution as ordinary Turbo. Runtime Audit verifies actual model-forward and SLA-call ownership",
     "scientific_boundary": "this is LightX2V dynamic_sparse_attn routing-math plus Sage2 block-kernel parity inside ComfyUI, not the whole LightX2V inference runtime and not every sparse+linear branch of the general SLA paper",
     "fixed_sources": {
       "lightx2v_revision": "f8aee98b5462cca8d7288888146ebd95592bf266",
@@ -753,10 +754,11 @@
     },
     "fixed_sources_status": "historical reference evidence only; these file identity values are no longer a runtime whitelist",
     "runtime_compatibility_2026_08_26": "two user-observed compatible PackedLayout source hashes were rejected before execution and a repacked default SLA LoRA was rejected by exact file identity. The repaired route uses executable semantic probes, structural/full-mapping LoRA validation, recognizes a redundant ComfyUI built-in PyTorch or Comfy Kitchen attention override for replacement, and derives Runtime Audit forward counts from the connected native_flow sigmas. A real restarted-process run then exposed an obsolete marked ComfyUI-PainterNodes PackedLayout wrapper that forwarded the removed frame_count keyword; SLA now reuses the existing T8 Hybrid executable probe and unwraps it only when the enclosed native constructor independently passes the current ordering contract. The public workflows and all node widget orders remain unchanged",
-    "strict_scope": "native H3 FL2VA only; exact first and last visual keyframes; batch 1; native_flow 1-64 NFE with the upstream 4 NFE / video shift 6 / audio shift 3 contract still marked official and all other schedules marked experimental; 56 heads x 128 dimensions; q-block 128, k-block 64; requested sparsity 85 percent",
-    "base_policy": "the LoRA metadata names the official BF16 FL2VA base; official_bf16_only enforces it, while auto_detect_exp permits but explicitly reports a quantized INT8 base as experimental",
+    "quality_safety_2026_08_26": "one earlier user-reviewed fixed-sparse extreme-transition clip was rejected after its first second, but the latest user-supplied filename claiming 736x416x124 was independently probed as 704x416x22 and only 0.916667 seconds, so it cannot establish a post-one-second timeline. A new serial ordinary-Turbo8 control used the same distinct close-portrait and high-aerial keyframes at true 736x416x124; strict H264/AAC decode passed but full review rejected the forced transition. Minimum free VRAM was 418MiB, below the 512MiB safety gate. A separate same-scale SLA-exact 124-frame control passed mechanics, but its blind export selected unsure while every preference field favored Turbo8 and marked SLA as the blocking failure; formal non-inferiority was not established. A fresh CPU-only real loader probe has now mapped the real local INT8 base and SLA LoRA, created 208/208 bypass hooks, registered zero standard weight patches and reported base_weight_mutation=false. The dynamic-LoRA INT8 bypass candidate still has not rendered because free VRAM remains below the guarded start threshold. These results keep ordinary Turbo8 as the current consumer fallback and do not establish SLA visual superiority, audio non-inferiority, speedup or universal 16GiB safety",
+    "strict_scope": "Profile Router ordinary profile: H3 FL2VA, batch 1, native_flow exactly 8 NFE with 12/3 shifts and zero SLA calls. Profile Router SLA exact and INT8 bypass experiments: H3 FL2VA, exact first and last visual keyframes, batch 1, native_flow exactly 4 NFE with 6/3 shifts, 56 heads x 128 dimensions, q-block 128, k-block 64 and requested sparsity 85 percent. The INT8 bypass profile changes only LoRA application and reports whether int8_tensorwise ConvRot storage was observed without blocking other user selections. Five official sigma grid points correspond to four model evaluations. Legacy nodes retain wider diagnostic schedules without changing old widgets",
+    "base_policy": "all Profile Router base-family checks are diagnostic. The report compares the selected base with the released BF16/LightX2V FP8 evidence and the local INT8 ConvRot experiment, but no dtype, quantization family, filename, size or fingerprint blocks loading; an incompatible selection is allowed to fail naturally in the real execution path",
     "conflict_policy": "the strict SLA node remains fail-closed on external attention/object patches; a recognized ComfyUI built-in PyTorch or Comfy Kitchen optimized-attention override may be replaced by the SLA owner and is reported. Only the dedicated composer accepts exactly 50 consistently bound and fingerprinted KJ MiniMax H3 Sage forwards, while Sol-Attn, FETA, Prompt Relay, BlockCache, STG, unknown overrides and partial/foreign patches remain rejected",
-    "optional_dependency": "spas-sage-attn 0.1.0 compatible wheel; the first audited backend is pinned to RTX 40-series sm89 and never silently falls back to dense attention",
+    "optional_dependency": "spas-sage-attn 0.1.0 compatible wheel for the SLA exact profile; the first audited sparse backend is pinned to RTX 40-series sm89. The ordinary Turbo8 profile does not load or call SLA and may use native dense or an independently certified KJ Sage owner",
     "real_h3_verification": {
       "prompt_id": "0deca16d-7b84-4310-b6cf-b34ed1b798df",
       "hardware": "RTX 4060 Ti 16GiB, sm89",
@@ -777,16 +779,48 @@
       "router_workspace_peak_mib": 0.3088,
       "media": "ComfyUI/output/MiniMaxH3_SLA/sla_fl2va_int8_compat_256x256_22f_00001-audio.mp4"
     },
+    "profile_router_real_control": {
+      "hardware": "RTX 4060 Ti 16GiB",
+      "profile": "consumer_turbo8_recommended",
+      "geometry": "736x416x124",
+      "schedule": "8 NFE native_flow, video shift 12, audio shift 3",
+      "scene": "distinct close-portrait first frame to high-aerial final frame",
+      "media_status": "124 H264 frames and 32kHz stereo AAC strict decode PASS; every 0.25-second contact sample spatially coherent",
+      "minimum_free_vram_mib": 418,
+      "safety_gate": "FAIL because project minimum is 512MiB",
+      "video_sha256": "95A7ABEEDF4AD4C229FE1F1DD5B4D7325870D483EECD3547AF550C06AD00668C"
+    },
     "claims_withheld": [
-      "no visual-quality superiority claim before same-input same-seed dense-LoRA human A/B",
+      "no SLA visual-quality superiority claim from one ordinary-Turbo control and one same-frame SLA mechanical control",
       "no wall-clock speedup claim before BF16 0.7MP profiling",
       "no audio non-inferiority claim before listening",
       "no general 16GiB safety claim"
     ],
-    "workflow": "examples/workflows/15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json",
+    "workflow": "examples/workflows/15-sla-attention/2026-08-26_H3_Turbo_SLA_Profile_Router_FL2VA_Advanced_EXP.json",
+    "legacy_sla_workflow": "examples/workflows/15-sla-attention/2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json",
     "kj_sage_composer_workflow": "examples/workflows/15-sla-attention/2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json",
     "stable_node_schema_changed": false,
     "stable_sampling_changed": false
+  },
+  "runtime_compatibility_audit_2026_08_26": {
+    "status": "implemented locally; release pending",
+    "scope": "runtime compatibility gates, optional-input backward compatibility and workflow-maintenance portability only; no stable node ID, widget order, runtime default or sampling formula changed",
+    "proven_breakage": "the current ComfyUI core at b78cec879b9460d5cb25228a83a942fb78d2cd24 changed MiniMaxH3Model._forward source text to SHA-256 14bdf..., causing Activation Chunk to reject a semantically compatible core before execution",
+    "repaired_exact_source_gates": [
+      "Activation Chunk",
+      "Qwen reference prefix cache",
+      "Prompt Relay",
+      "Enhance-A-Video core",
+      "Enhance-A-Video plus T8 BlockCache",
+      "Multi-Keyframe PackedLayout and per-keyframe forward admission"
+    ],
+    "new_policy": "source hashes remain diagnostic evidence; compatibility is admitted by required signatures plus executable PackedLayout/patchify ordering or feature-specific wrapper and runtime structure",
+    "optional_input_repairs": "all 211 registered nodes were audited; Speech Studio now accepts its optional speech_guard dependency, and four optional Context IR text inputs have Python defaults so legacy graphs may omit them",
+    "model_identity_policy": "user-selected ParseNet, SFace, VRetouchEr, Hybrid base/overlay, SLA/PDD/Turbo LoRA and learned latent-upscaler file hashes, sizes, filenames and reference roles are diagnostic only; the real framework loader or strict state-dict assignment is authoritative",
+    "intentionally_retained_integrity_checks": "checkpoint/resume files, Hybrid artifacts and sidecars, workflow plans, manifests, state bindings and accepted-media hashes remain enforced because they protect the user's own saved data rather than allowlisting a model",
+    "intentionally_retained_model_limits": "native H3 batch/layout/channel/frame-grid contracts, 24fps reference semantics, 32-pixel alignment, official 1920x1088 reference area and explicitly scoped scientific NFE profiles",
+    "workflow_maintenance_repairs": "workflow builders now compare canonical JSON semantics instead of raw bytes, decode normalized ComfyUI 0.4 widget serialization, and keep Quick Face Repair model selectors portable rather than embedding one machine's installed-model inventory",
+    "verification": "1557 tests are collected. One complete serial run reached 1554 passes plus one transient Windows FFmpeg process failure, whose isolated rerun passed; after the two final Hybrid identity regressions were added, the 46-test Hybrid scope passed. A second complete rerun reached 69 percent without an assertion failure before a Windows native access violation in the Skin Finish video-stream fixture; that exact fixture also passed in isolation. All 147 frontend workflow JSON files parse with required ComfyUI nodes/links metadata; no GPU quality, speed or memory claim"
   },
   "prompt_tag_compatibility_hotfix": {
     "status": "implemented locally; not yet released",
@@ -1179,6 +1213,7 @@
     "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
     "MiniMaxH3SkinFinishSurfaceT8Advanced",
     "MiniMaxH3SkinFinishDichromaticT8Advanced",
+    "MiniMaxH3TurboSLAProfileRouterT8Advanced",
     "MiniMaxH3PDD8StepSetupT8Advanced"
   ],
   "github_opportunity_batch_2026_08_22": {
@@ -1216,8 +1251,8 @@
     ],
     "paper": "Enhance-A-Video, arXiv:2502.07508v3",
     "reference_commit": "NUS-HPC-AI-Lab/Enhance-A-Video@16a7899e6f55f85ea19f1d3a415c6dc0c4096176",
-    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks and only target-video output rows receive the direct residual gain; legacy composers preserve the existing backend, the explicit Strict Sage composer owns and audits sageattention.sageattn, the Prompt Relay composer replaces the two mutually exclusive standalone attention owners with one authenticated Relay-then-FETA route, the BlockCache composer delegates cache-hit finalization to the source-hash-pinned external T8 cache while auditing only blocks that actually execute, the STG composer applies the same FETA route to both main and skip-block weak branches while auditing exact extra joint-AV forwards, and the Long Video composer preserves the scoped extra_conds/layout owner while binding a fresh EAV runtime to each segment/context pair",
-    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer accepts native Ref2VA and task-Hybrid; an append-only Strict Sage composer owns the native HND Sage kernel route and requires 50 successful no-fallback Sage calls per forward; the append-only Prompt Relay composer accepts an authenticated current Relay MODEL and has completed one 736x416 20-step basic mechanical pair, while quality, listening and memory-safety gates remain open; the append-only BlockCache composer accepts only the source-hash-pinned T8 CPU cache with exact boundary-block patches, keeps its outer-sample lifecycle, and audits 50 EAV measurements on a full forward versus one on a cache hit; the append-only STG composer is native Stock20 visual-task only, owns the single post-CFG hook, measures 50 main blocks and 50-minus-skipped weak blocks; the append-only Long Video composer is native Stock20 only, authenticates the scoped extra_conds patch, binds segment_index/context_frames, validates motion offsets and audits each segment independently; these three latest composers have low-load deterministic contract coverage only; ordinary LoRA, external Sage object patches, direct standalone BlockCache/STG/Long Video stacking, model-Hybrid artifacts, unauthenticated interior keyframes and denoise masks remain rejected",
+    "implementation": "clean-room H3 full-3D adapter; exact temporal CFI is computed from target-video Q/K in bounded spatial chunks and only target-video output rows receive the direct residual gain; legacy composers preserve the existing backend, the explicit Strict Sage composer owns and audits sageattention.sageattn, the Prompt Relay composer replaces the two mutually exclusive standalone attention owners with one authenticated Relay-then-FETA route, the BlockCache composer delegates cache-hit finalization to the structurally authenticated external T8 cache while auditing only blocks that actually execute, the STG composer applies the same FETA route to both main and skip-block weak branches while auditing exact extra joint-AV forwards, and the Long Video composer preserves the scoped extra_conds/layout owner while binding a fresh EAV runtime to each segment/context pair",
+    "p1_scope": "batch-1 T2VA/I2VA/FL2VA/L2VA on native Stock20 across all 50 H3 DiT blocks, plus T2VA Turbo8 only with the corrected 208-hook Alpha8 bypass LoRA at strength 1.0; an isolated append-only Stock20 reference composer accepts native Ref2VA and task-Hybrid; an append-only Strict Sage composer owns the native HND Sage kernel route and requires 50 successful no-fallback Sage calls per forward; the append-only Prompt Relay composer accepts an authenticated current Relay MODEL and has completed one 736x416 20-step basic mechanical pair, while quality, listening and memory-safety gates remain open; the append-only BlockCache composer accepts the structurally authenticated T8 CPU cache with exact boundary-block topology, keeps its outer-sample lifecycle, and audits 50 EAV measurements on a full forward versus one on a cache hit; the append-only STG composer is native Stock20 visual-task only, owns the single post-CFG hook, measures 50 main blocks and 50-minus-skipped weak blocks; the append-only Long Video composer is native Stock20 only, authenticates the scoped extra_conds patch, binds segment_index/context_frames, validates motion offsets and audits each segment independently; these three latest composers have low-load deterministic contract coverage only; ordinary LoRA, external Sage object patches, direct standalone BlockCache/STG/Long Video stacking, model-Hybrid artifacts, unauthenticated interior keyframes and denoise masks remain rejected",
     "audio_boundary": "target-audio rows are never directly scaled, but H3 joint packed attention can change audio indirectly in later blocks; listening and signal audit are mandatory",
     "memory_boundary": "max_workspace_mib bounds the planned temporal score workspace only; it is not a whole-workflow VRAM guarantee",
     "frontend_workflows": [
@@ -1293,10 +1328,10 @@
       "decision": "basic mechanical compatibility passes; one low-load pair does not validate quality, audio non-inferiority, performance or 16GiB memory safety. The user stopped 0.7MP, cold/warm, consecutive-task and memory-limit stress testing after system instability"
     },
     "block_cache_composer_validation": {
-      "contract": "requires the separately installed T8 BlockCache MODEL with its exact one outer-sample wrapper, one diffusion wrapper, CPU cache configuration, 50-block cache prototype and only block 0/49 replacements; source hashes pin the cache class, config, patch call and both wrappers",
+      "contract": "requires the separately installed T8 BlockCache MODEL with exactly one outer-sample wrapper, one diffusion wrapper, CPU cache configuration, a 50-block cache prototype and only block 0/49 replacements; implementation source hashes are diagnostic and do not reject a structurally equivalent update",
       "composition": "the original cache outer wrapper still creates and releases execution-local state; one combined diffusion owner installs EAV routing and calls the authenticated cache diffusion wrapper, so cache-hit finalization is not copied",
       "audit": "each Stock20 forward records an explicit full/hit decision; active full forwards require 50 FETA measurements, active hits require one block-0 measurement, inactive forwards require zero measurements, and the first forward plus consecutive-hit limit are checked",
-      "scope": "deterministic low-load contract tests and source-hash integration diagnostic only; native Stock20 visual tasks and cache_device=cpu. The importable example uses a conservative 0.08 threshold but this is not a universal optimum. Real combined generation, speed benefit, quality, audio non-inferiority and memory safety remain unvalidated"
+      "scope": "deterministic low-load structural-contract tests plus diagnostic source fingerprints; native Stock20 visual tasks and cache_device=cpu. The importable example uses a conservative 0.08 threshold but this is not a universal optimum. Real combined generation, speed benefit, quality, audio non-inferiority and memory safety remain unvalidated"
     },
     "stg_composer_validation": {
       "contract": "one Stock20 visual-task composer owns the only sampler post-CFG hook and the EAV diffusion/attention route; ordinary EAV now rejects existing guidance hooks rather than silently stacking",
@@ -1455,7 +1490,7 @@
     "zero_event_passthrough": "an empty local prompt, empty events_json, or connected all-disabled typed Event chain produces an authenticated global-only Plan; Preview reports BYPASS, normal Conditioning keeps the original MODEL and stable CONDITIONING, and the Long Video composition keeps only its required scoped layout patch",
     "safe_default": "report_only",
     "fail_closed": [
-      "non-native or changed tokenizer/core contracts",
+      "non-native or semantically incompatible tokenizer/core contracts",
       "MODEL and CONDITIONING binding mismatch",
       "LoRA weight patch or bypass injection connected before Prompt Relay",
       "existing optimized attention override, diffusion wrapper or block replacement",
@@ -1950,13 +1985,14 @@
     "behavior": [
       "clone-local token-row chunking of only the H3 block MLP path",
       "attention remains full packed-sequence attention",
-      "unknown core or any existing dit/double_block replacement refuses apply_exp",
+      "a semantically incompatible core or any existing dit/double_block replacement refuses apply_exp; source hashes are diagnostic only",
       "report_only is the default and short rows can retain the exact native callback path"
     ],
     "validated": [
       "CPU formula equivalence within 2e-6",
       "native short-path bit equality",
       "noncontiguous segment and competing-owner refusal",
+      "current ComfyUI b78cec879b9460d5cb25228a83a942fb78d2cd24 passes the executable H3 layout/patch ordering contract despite a new MiniMaxH3Model._forward source hash",
       "real 256x256x22 one-step H3 smoke: activation-chunk versus native produced 22/22 byte-identical PNG frames and decoded PCM SHA-256 equality",
       "real FL2VA pruned INT8 736x416x124 cold A/B: chunk256 raised whole-device peak by 288.32MiB and changed runtime 39.188s to 39.875s",
       "same-process warm A/B: chunk256 changed peak by -22.88MiB, below the 128MiB material threshold, and changed runtime 32.109s to 31.437s",
@@ -1974,7 +2010,7 @@
       "bounded CPU-memory LRU for an exact native H3 visual-reference causal prefix",
       "prompt suffix is always recomputed and audio-only references bypass",
       "no disk persistence, no core-file patch and no mutation of the input CLIP",
-      "unknown core, token weights, schedules/hooks and non-native H3 CLIP fail closed or bypass"
+      "a semantically incompatible core, token weights, schedules/hooks and non-native H3 CLIP fail closed or bypass; source hashes are diagnostic only"
     ],
     "validated": [
       "real current ComfyUI tiny-Llama full-forward versus prefix-KV suffix-forward equivalence within 2e-6",
@@ -1988,13 +2024,13 @@
       "a real native 48-frame/2-second/24fps video-reference route recorded a real hit from a 110.7443MiB entry; the full OFF/HIT A/V pair reduced elapsed time by 13.81% and peak by 166.31MiB but left only 145.15/311.46MiB headroom, with video SSIM mean/min 0.95093/0.94463 and audio correlation 0.95303",
       "a three-material-combination x two-seed warm two-image matrix completed 6/6 real hits with every HIT arm faster and mean elapsed change -11.09%; video SSIM averaged 0.9314 with minimum frame 0.8531, audio correlation averaged 0.9771, post-pair private memory had no 256MiB staircase, and minimum whole-device headroom was 111.93MiB",
       "a Stock20 useful-profile follow-up with one seed per material combination completed 3/3 real faster HIT arms with mean elapsed change -5.00%, but video SSIM averaged 0.8227 with minimum frame 0.6052, audio correlation averaged 0.7188 with range 0.2603-0.9894, and minimum headroom was 190.68MiB; automated quality and safety promotion gates failed",
-      "ComfyUI v0.32.0-15 at 86aedfd9 passed the expanded Llama/Attention/TransformerBlock exact-source contract and tiny-Llama tuple-KV causal equivalence probe under explicit no-grad inference semantics",
+      "ComfyUI v0.32.0-15 at 86aedfd9 passed the expanded Llama/Attention/TransformerBlock signature contract and tiny-Llama tuple-KV causal equivalence probe under explicit no-grad inference semantics",
       "a real current-core same-process 32B NVFP4 control recorded one hit after one miss from a 108.283MiB entry; full OFF/HIT time was 13.297/9.375s, video SSIM mean/minimum 0.951217/0.924603, audio correlation 0.956522, and headroom only 116.998/337.583MiB",
-      "ComfyUI v0.32.0-16 at ddbaa8752 passed the exact-source contract, tiny-Llama equivalence probe, 447-test full regression and isolated plugin import after MiniMax projection-format detection moved before model construction",
+      "ComfyUI v0.32.0-16 at ddbaa8752 passed the semantic/signature contract, tiny-Llama equivalence probe, 447-test full regression and isolated plugin import after MiniMax projection-format detection moved before model construction",
       "a native 48-frame video-reference full A/V control on ddbaa8752 recorded one real hit after one miss from a 110.744MiB entry; OFF/HIT time was 25.266/15.578s, video SSIM mean/minimum 0.950934/0.944633, audio correlation 0.953029, and headroom only 344.340/338.833MiB",
       "LRU eviction, oversize refusal and report-only identity"
     ],
-    "status": "implemented Advanced EXP; exact old/current core source contracts and current-core real hit mechanics pass, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed; human blind interpretation and cross-GPU validation remain pending"
+    "status": "implemented Advanced EXP; old/current semantic core contracts and current-core real hit mechanics pass while source hashes remain diagnostics, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed; human blind interpretation and cross-GPU validation remain pending"
   },
   "experimental_studio_advanced": {
     "category": "T8/MiniMax H3/Studio/Experimental",
@@ -2896,10 +2932,10 @@
     "compatibility": {
       "empty_plan": "with all endpoint/reference raw augmentation values at 0.999, calls the stable conditioning path and returns the original MODEL without an Advanced patch",
       "current_core": "uses a scoped extra_conds repair on the cloned MODEL for interior packed positions; no global PackedLayout monkey patch",
-      "future_core": "if PackedLayout begins accepting native arbitrary-position keyframes, this version refuses execution until the full extra_conds/ref/audio/per-keyframe-augmentation contract is revalidated; it does not guess compatibility from a version string",
+      "future_core": "PackedLayout arbitrary-position support is admitted only after an executable middle-position probe verifies segment placement; source hashes and version strings do not decide compatibility",
       "hybrid_refs": "keeps keyframe latents before image, video, video_audio and audio reference latents in layout order",
       "fail_closed_conflicts": [
-        "external global MiniMax H3 PackedLayout patch",
+        "a semantically incompatible external global MiniMax H3 PackedLayout patch; a compatible wrapper is accepted and a specifically marked obsolete Painter wrapper is bypassed only after its enclosed native constructor passes independently",
         "unrecognized MODEL extra_conds or diffusion _forward patch",
         "stacking with the Long Video experimental model patch"
       ]
@@ -3100,7 +3136,7 @@
     ],
     "enforcement_contract": {
       "default": "report_only never blocks and returns the identical MODEL object",
-      "strict": "block_hard_conflicts raises only for mechanically established identity, patch, ordering, wrapper, scoped-conditioning or configured memory-gate failures",
+      "strict": "block_hard_conflicts raises only for artifact-integrity, patch, ordering, wrapper, scoped-conditioning or configured memory-gate failures; user-model identity differences are warnings",
       "cache": "runtime memory and patch stacks are re-audited on every execution through a non-cacheable fingerprint"
     },
     "hard_boundaries": [

@@ -265,7 +265,11 @@ def test_trajectory_examples_route_the_direct_transport_contract():
         )
 
     assert source(13, 0) == (7, 0)
-    assert source(13, 6) == (17, 0)
+    probe = nodes[13]
+    noise_seed_input = next(
+        item for item in probe["inputs"] if item["name"] == "noise_seed"
+    )
+    assert source(13, probe["inputs"].index(noise_seed_input)) == (17, 0)
     assert source(8, 0) == (13, 4)
     assert source(16, 0) == (15, 3)
     assert source(16, 3) == (15, 1)

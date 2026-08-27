@@ -180,12 +180,12 @@ def test_stale_face_plan_abstains_without_loading_model(monkeypatch):
     assert torch.count_nonzero(mask) == 0
 
 
-def test_wrong_sized_checkpoint_is_rejected_before_pickle_load(tmp_path):
+def test_unknown_checkpoint_identity_reaches_safe_native_loader(tmp_path):
     path = tmp_path / "parsing_parsenet.pth"
     path.write_bytes(b"not a checkpoint")
     with pytest.raises(_ParserUnavailable) as caught:
         _load_pinned_parsenet(path)
-    assert caught.value.status == "REJECT_PARSENET_MODEL_SIZE_MISMATCH"
+    assert caught.value.status == "REJECT_PARSENET_SAFE_LOAD_FAILED"
 
 
 def test_semantic_parser_schema_is_append_only_and_safe_by_default():

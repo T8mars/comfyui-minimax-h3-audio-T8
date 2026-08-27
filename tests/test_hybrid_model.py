@@ -233,9 +233,9 @@ def test_header_only_pair_inspection_is_diagnostic_and_never_build_authorizing(t
         "blocks_25_49_video_audio_exp",
         "header_only_exp",
     )
-    assert plan["compatible"] is False
-    assert any("diagnostic only" in error for error in plan["errors"])
-    with pytest.raises(ValueError, match="not compatible"):
+    assert plan["compatible"] is True
+    assert plan["source"]["model_identity_policy"] == "diagnostic_only_not_a_build_gate"
+    with pytest.raises(ValueError, match="full SHA-256 verification"):
         hybrid.build_hybrid_artifact(plan, tmp_path / "artifacts")
 
 
@@ -266,6 +266,20 @@ def test_artifact_validation_rejects_tampered_operation_manifest(tmp_path, monke
     sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
     with pytest.raises(ValueError, match="canonical recipe"):
         hybrid.validate_artifact_descriptor(artifact)
+
+
+def test_artifact_validation_does_not_gate_on_reference_model_hashes(
+    tmp_path, monkeypatch
+):
+    artifact, _plan = _build_tiny_artifact(tmp_path, monkeypatch)
+    monkeypatch.setattr(hybrid, "KNOWN_QUALITY_BASE_SHA256", "1" * 64)
+    monkeypatch.setattr(hybrid, "KNOWN_REFERENCE_OVERLAY_SHA256", "2" * 64)
+    monkeypatch.setattr(hybrid, "KNOWN_QUALITY_CURVE_SHA256", "3" * 64)
+    monkeypatch.setattr(hybrid, "KNOWN_REFERENCE_CURVE_SHA256", "4" * 64)
+
+    validated = hybrid.validate_artifact_descriptor(artifact)
+
+    assert validated["artifact_sha256"] == artifact["artifact_sha256"]
 
 
 def test_artifact_builder_refuses_to_overwrite_an_orphan(tmp_path, monkeypatch):

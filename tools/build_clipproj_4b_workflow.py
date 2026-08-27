@@ -24,7 +24,7 @@ TARGET = (
     / "12-system-memory"
     / "2026-08-23_H3_ClipProj_4B_T2VA_Bridge_Advanced_EXP.json"
 )
-SOURCE_SHA256 = "F3245007CAAE3868B1811A541FAC9EFD392AE2EC56D4503B84A4499619E2E862"
+SOURCE_SHA256 = "67BBF9CD42583BB1805F66B832743585AB835EEC783AF648C8289F12F18610E7"
 ENCODER_REVISION = "e5ea8b4dd7f38f348b138eb0fe29f92c0e367e96"
 ENCODER_SHA256 = "54BD5144DF0BBC25DD6CCADFCB826B521445A1B06AE5A42570BDD2974CA87094"
 PROJECTION_REVISION = "2ebdbcdc27a29a9607efdb221a9afcb9a0cdd808"
@@ -35,12 +35,15 @@ RUNTIME_VIDEO_SHA256 = "5078716547E0CB863BCD58387524A1C3E11D975096EE0CAD8FC59D30
 RUNTIME_AUDIO_SHA256 = "DC7D75BF49B34405F1159DBC9E1208555404F51C1D413A63D884FDBA8D3BE2C7"
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest().upper()
+def _canonical_workflow_sha256(path: Path) -> str:
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    payload = json.dumps(
+        workflow,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest().upper()
 
 
 def _single_node(workflow: dict, node_type: str) -> dict:
@@ -51,7 +54,7 @@ def _single_node(workflow: dict, node_type: str) -> dict:
 
 
 def build() -> dict:
-    observed_sha = _sha256(SOURCE)
+    observed_sha = _canonical_workflow_sha256(SOURCE)
     if observed_sha != SOURCE_SHA256:
         raise ValueError(
             "the reviewed 8B source workflow changed; audit it and update the locked SHA "

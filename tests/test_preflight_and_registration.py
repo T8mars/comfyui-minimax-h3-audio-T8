@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 from pathlib import Path
 
@@ -17,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 212
+    assert len(ids) == 213
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -144,7 +145,8 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[208] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
     assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
     assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
-    assert ids[211] == "MiniMaxH3PDD8StepSetupT8Advanced"
+    assert ids[211] == "MiniMaxH3TurboSLAProfileRouterT8Advanced"
+    assert ids[212] == "MiniMaxH3PDD8StepSetupT8Advanced"
 
     speech_ids = {
         "MiniMaxH3VoiceProfileT8",
@@ -596,6 +598,31 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "segment0_only",
         "persistent_identity_reference",
     ]
+
+
+def test_every_optional_node_input_is_omittable_by_legacy_workflows():
+    extension = h3_audio_t8_pkg.comfy_entrypoint()
+    node_classes = asyncio.run(extension.get_node_list())
+    failures = []
+    for node_class in node_classes:
+        schema = node_class.define_schema()
+        optional_names = {item.id for item in schema.inputs if item.optional}
+        signature = inspect.signature(node_class.execute)
+        accepts_kwargs = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
+        for name in sorted(optional_names):
+            parameter = signature.parameters.get(name)
+            if parameter is None and not accepts_kwargs:
+                failures.append(f"{schema.node_id}.{name}: not accepted by execute")
+            elif (
+                parameter is not None
+                and parameter.default is inspect.Parameter.empty
+                and not accepts_kwargs
+            ):
+                failures.append(f"{schema.node_id}.{name}: no Python default")
+    assert failures == []
 
 
 def test_task_type_frontend_labels_preserve_canonical_backend_values():

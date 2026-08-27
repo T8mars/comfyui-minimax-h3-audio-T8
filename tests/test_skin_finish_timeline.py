@@ -352,7 +352,7 @@ def test_new_node_defaults_are_safe_and_registration_is_strictly_append_only():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert node_ids[-12:] == [
+    assert node_ids[-14:-2] == [
         "MiniMaxH3SkinFinishMultiPersonSemanticMaskT8Advanced",
         "MiniMaxH3SkinFinishPersonProfileT8Advanced",
         "MiniMaxH3SkinFinishPerPersonT8Advanced",
@@ -366,7 +366,11 @@ def test_new_node_defaults_are_safe_and_registration_is_strictly_append_only():
         "MiniMaxH3SkinFinishSurfaceT8Advanced",
         "MiniMaxH3SkinFinishDichromaticT8Advanced",
     ]
-    assert len(node_ids) == 211
+    assert node_ids[-2:] == [
+        "MiniMaxH3TurboSLAProfileRouterT8Advanced",
+        "MiniMaxH3PDD8StepSetupT8Advanced",
+    ]
+    assert len(node_ids) == 213
 
 
 def test_timeline_workflow_is_importable_documented_and_source_safe():

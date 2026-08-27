@@ -146,20 +146,24 @@ def test_guarded_loader_delegates_exact_arguments_after_preflight():
     assert report["mechanically_compatible"] is True
 
 
-def test_guarded_loader_rejects_quantized_base_even_with_large_hardware():
+def test_guarded_loader_reports_quantized_base_without_blocking():
     calls = []
-    with pytest.raises(RuntimeError, match="QUANTIZED_OR_PRUNED_BASE"):
-        load_raven_model_guarded(
-            "minimax_h3_int8_convrot.safetensors",
-            "minimax_h3_raven.safetensors",
-            "default",
-            "block_mechanical_conflicts",
-            runtime=_runtime(calls=calls),
-            hardware=_hardware(),
-            installations=["C:/ComfyUI/custom_nodes/RAVEN"],
-            resolved_files=_resolved_files(),
-        )
-    assert calls == []
+    _model, report_json = load_raven_model_guarded(
+        "minimax_h3_int8_convrot.safetensors",
+        "minimax_h3_raven.safetensors",
+        "default",
+        "block_mechanical_conflicts",
+        runtime=_runtime(calls=calls),
+        hardware=_hardware(),
+        installations=["C:/ComfyUI/custom_nodes/RAVEN"],
+        resolved_files=_resolved_files(),
+    )
+    assert calls
+    report = json.loads(report_json)
+    assert any(
+        item["code"] == "QUANTIZED_OR_PRUNED_BASE"
+        for item in report["model_and_runtime_diagnostics"]
+    )
 
 
 def test_request_audit_passes_through_exact_objects_for_published_t2va():

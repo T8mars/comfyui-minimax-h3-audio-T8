@@ -221,12 +221,8 @@ def _reference_segment_contract(refs) -> list[tuple[str, int]]:
 def _turbo8_bypass_contract(model) -> dict:
     injections = getattr(model, "injections", {})
     nonempty = {key: value for key, value in injections.items() if bool(value)}
-    if set(nonempty) != {"bypass_lora"} or len(nonempty["bypass_lora"]) != 1:
-        raise RuntimeError(
-            "H3 EAV turbo8_alpha8 requires exactly one bypass_lora injection from "
-            "LoraLoaderBypassModelOnly"
-        )
-    injection = nonempty["bypass_lora"][0]
+    bypass_values = list(nonempty.get("bypass_lora", ()) or ())
+    injection = bypass_values[0] if bypass_values else None
     inject = getattr(injection, "inject", None)
     closure = getattr(inject, "__closure__", None) or ()
     managers = [
@@ -234,25 +230,22 @@ def _turbo8_bypass_contract(model) -> dict:
         for cell in closure
         if type(cell.cell_contents).__name__ == "BypassInjectionManager"
     ]
-    if len(managers) != 1:
-        raise RuntimeError(
-            "H3 EAV could not audit the current ComfyUI bypass-LoRA injection contract"
-        )
-    hooks = list(getattr(managers[0], "hooks", ()))
+    hooks = list(getattr(managers[0], "hooks", ())) if managers else []
     multipliers = [float(getattr(hook, "multiplier", float("nan"))) for hook in hooks]
-    if len(hooks) != EAV_TURBO8_BYPASS_HOOKS or not all(
+    strength_match = bool(multipliers) and all(
         math.isfinite(value) and abs(value - 1.0) <= 1e-7 for value in multipliers
-    ):
-        raise RuntimeError(
-            "H3 EAV turbo8_alpha8 requires the corrected 208-module Alpha8 bypass "
-            "LoRA at strength 1.0"
-        )
+    )
     return {
-        "injection_key": "bypass_lora",
-        "injection_count": 1,
+        "injection_key": "bypass_lora" if bypass_values else None,
+        "injection_count": len(bypass_values),
+        "other_injection_keys": sorted(key for key in nonempty if key != "bypass_lora"),
+        "manager_count": len(managers),
         "hook_count": len(hooks),
-        "strength_min": min(multipliers),
-        "strength_max": max(multipliers),
+        "strength_min": min(multipliers) if multipliers else None,
+        "strength_max": max(multipliers) if multipliers else None,
+        "reference_hook_count_match": len(hooks) == EAV_TURBO8_BYPASS_HOOKS,
+        "reference_strength_match": strength_match,
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
     }
 
 
@@ -451,9 +444,9 @@ def _assert_core_contract(
         raise ValueError("H3 EAV requires a ComfyUI MODEL patcher")
     _assert_no_sampler_guidance_hooks(model, owner="H3 EAV")
     base = getattr(model, "model", None)
-    if not isinstance(base, MiniMaxH3BaseModel):
-        if type(getattr(base, "diffusion_model", None)).__name__ != "MiniMaxH3Model":
-            raise ValueError("H3 EAV currently requires a native MiniMax H3 MODEL")
+    native_h3_model_observed = isinstance(base, MiniMaxH3BaseModel) or (
+        type(getattr(base, "diffusion_model", None)).__name__ == "MiniMaxH3Model"
+    )
 
     hashes = {
         "attention_forward": _source_sha256(Attention.forward),
@@ -461,18 +454,9 @@ def _assert_core_contract(
         "model_forward": _source_sha256(MiniMaxH3Model._forward),
         "patchify_video": _source_sha256(patchify_video),
     }
-    expected = {
-        "attention_forward": ATTENTION_FORWARD_SHA256S,
-        "packed_layout": PACKED_LAYOUT_SHA256S,
-        "model_forward": MODEL_FORWARD_SHA256S,
-        "patchify_video": PATCHIFY_VIDEO_SHA256S,
-    }
-    mismatches = [key for key, value in hashes.items() if value not in expected[key]]
-    if mismatches:
-        raise RuntimeError(
-            "H3 EAV has not validated this ComfyUI H3 core contract: "
-            + ", ".join(f"{key}={hashes[key]}" for key in mismatches)
-        )
+    from .sla_attention_advanced import _core_semantic_contract
+
+    semantic_contract = _core_semantic_contract()
 
     transformer = getattr(model, "model_options", {}).get("transformer_options", {})
     if "optimized_attention_override" in transformer:
@@ -484,12 +468,16 @@ def _assert_core_contract(
     diffusion = wrappers.get(comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL, {})
     if any(bool(value) for value in diffusion.values()):
         raise RuntimeError("H3 EAV cannot stack with an existing diffusion wrapper yet")
-    if bool(getattr(model, "patches", {})):
-        raise RuntimeError("H3 EAV rejects ordinary weight patches and non-bypass LoRA")
     if sampling_profile == "stock20":
-        if any(bool(value) for value in getattr(model, "injections", {}).values()):
-            raise RuntimeError("H3 EAV stock20 rejects LoRA/weight injections")
-        turbo_contract = None
+        turbo_contract = {
+            "model_patches_observed": len(getattr(model, "patches", {}) or {}),
+            "injection_keys_observed": sorted(
+                key
+                for key, value in (getattr(model, "injections", {}) or {}).items()
+                if bool(value)
+            ),
+            "model_identity_policy": "diagnostic_only_not_a_load_gate",
+        }
     elif sampling_profile == "turbo8_alpha8":
         turbo_contract = _turbo8_bypass_contract(model)
     else:
@@ -514,16 +502,36 @@ def _assert_core_contract(
             "H3 EAV cannot stack with existing H3 object patches: "
             + ", ".join(conflict_names)
         )
-    return {"core_hashes": hashes, "turbo_contract": turbo_contract}
+    expected = {
+        "attention_forward": ATTENTION_FORWARD_SHA256S,
+        "packed_layout": PACKED_LAYOUT_SHA256S,
+        "model_forward": MODEL_FORWARD_SHA256S,
+        "patchify_video": PATCHIFY_VIDEO_SHA256S,
+    }
+    core_contract = {
+        "source_hashes": hashes,
+        "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+        "reference_source_match": {
+            key: value in expected[key] for key, value in hashes.items()
+        },
+        "semantic_contract": semantic_contract,
+    }
+    return {
+        "native_h3_model_observed": native_h3_model_observed,
+        "model_identity_policy": "diagnostic_only_not_a_load_gate",
+        "core_hashes": hashes,
+        "core_contract": core_contract,
+        "turbo_contract": turbo_contract,
+    }
 
 
 def _assert_block_cache_contract(model) -> dict:
     """Authenticate the separately installed T8 BlockCache without importing it.
 
     The composer calls the already-attached BlockCache diffusion wrapper instead of
-    copying its cache/finalization implementation. Source hashes deliberately pin
-    the inter-project boundary so an upstream cache change fails closed until the
-    combined contract is reviewed again.
+    copying its cache/finalization implementation. Compatibility is admitted by the
+    executable wrapper/config/replacement structure below; source hashes are retained
+    only as diagnostics so comment/refactor-only changes do not break old workflows.
     """
     if not hasattr(model, "get_wrappers") or not hasattr(
         model, "remove_wrappers_with_key"
@@ -630,15 +638,6 @@ def _assert_block_cache_contract(model) -> dict:
         "patch_call": BLOCK_CACHE_PATCH_CALL_SHA256S,
         "config_class": BLOCK_CACHE_CONFIG_CLASS_SHA256S,
     }
-    mismatches = [
-        key for key, value in hashes.items() if value not in expected_hashes[key]
-    ]
-    if mismatches:
-        raise RuntimeError(
-            "H3 EAV + BlockCache has not validated the installed cache contract: "
-            + ", ".join(f"{key}={hashes[key]}" for key in mismatches)
-        )
-
     return {
         "prototype": prototype,
         "diffusion_wrapper": diffusion_wrappers[0],
@@ -646,6 +645,10 @@ def _assert_block_cache_contract(model) -> dict:
         "report": {
             "patch_version": EAV_BLOCK_CACHE_PATCH_VERSION,
             "source_hashes": hashes,
+            "source_hash_policy": "diagnostic_only_not_a_compatibility_gate",
+            "reference_source_match": {
+                key: value in expected_hashes[key] for key, value in hashes.items()
+            },
             "total_blocks": total_blocks,
             "boundary_blocks": [0, 49],
             "cache_device": cache_device,
@@ -1485,6 +1488,7 @@ def build_eav_model(
         ),
     )
     config["core_hashes"] = contracts["core_hashes"]
+    config["core_contract"] = contracts["core_contract"]
     config["turbo_contract"] = contracts["turbo_contract"]
     config["attention_backend_contract"] = (
         _strict_sage_contract() if attention_backend == "strict_sage_hnd" else None
@@ -1504,7 +1508,7 @@ def build_eav_model(
             if attention_backend == "strict_sage_hnd"
             else "Prompt Relay, BlockCache, Sage object patches and STG remain rejected"
         ),
-        "Turbo8 accepts only the corrected 208-module Alpha8 bypass LoRA at strength 1.0",
+        "Turbo8 LoRA hook count and strength are diagnostic only; user-selected model stacks are not rejected",
         "the runtime audit after sampling is authoritative for observed g and call counts",
     ]
     patched = model.clone()
@@ -1729,6 +1733,7 @@ def build_eav_stg_model(
         wrapper_key=EAV_STG_WRAPPER_KEY,
     )
     runtime.config["core_hashes"] = contracts["core_hashes"]
+    runtime.config["core_contract"] = contracts["core_contract"]
     runtime.config["turbo_contract"] = None
     runtime.config["stg_contract"] = dict(contract)
     runtime.config["notes"] = [
@@ -1850,6 +1855,7 @@ def build_eav_long_video_model(
         wrapper_key=EAV_LONG_VIDEO_WRAPPER_KEY,
     )
     runtime.config["core_hashes"] = core["core_hashes"]
+    runtime.config["core_contract"] = core["core_contract"]
     runtime.config["long_video_contract"] = dict(contract)
     runtime.config["notes"] = [
         "Long Video Conditioning remains the only extra_conds/layout owner; EAV owns only its per-segment diffusion and attention route",

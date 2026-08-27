@@ -214,7 +214,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "codex_prompt_relay_fl2va_last.png"
+        "codex_prompt_relay_fl2va_first.png"
       ]
     },
     {
@@ -315,7 +315,7 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "One continuous cinematic night shot on a rain-wet neon street. The same adult woman in a long red coat turns naturally toward a blue doorway while the camera glides backward. She clearly says in Mandarin: \"你在干嘛呢，我在这里呀，看看效果如何。\" Stable identity, natural anatomy, synchronized speech, footsteps, fabric motion and city ambience, no cuts.",
+        "One continuous cinematic night shot on a rain-wet neon street. Keep the adult woman in the long red coat at approximately the same portrait scale while she turns naturally toward the camera and takes one small step. She clearly says in Mandarin: \"你在干嘛呢，我在这里呀，看看效果如何。\" Stable identity and anatomy, restrained camera motion, synchronized speech and city ambience, no cuts, aerial pullback or sudden scale change.",
         736,
         416,
         124,
@@ -805,7 +805,7 @@
         "Node name for S&R": "MarkdownNote",
         "cnr_id": "comfy-core"
       },
-      "widgets_values": "## 两条互斥执行路径\n\n`apply_lightx2v_sla`：主路径使用SLA动态块路由和block-sparse Sage2；KJ调用数必须为0。`dense_lora_control`：保持同一SLA LoRA，但50个主块全部委托KJ Sage，供同seed对照。每次Attention只运行一个后端，并不是SLA与KJ重复计算。`disabled_identity`直接保留上游KJ模型且不加载SLA LoRA。正式基座仍是BF16 FL2VA，量化基座仅为兼容实验。"
+      "widgets_values": "## 互斥执行路径（每次Attention只有一个owner）\n\n默认`apply_lightx2v_sla`是未发布的自动诊断计划：短于50K token时全部委托KJ Sage稠密执行；足够长时首尾前向委托KJ，中间前向才使用SLA block-sparse Sage2并保护条件前缀。完整人审已否决短序列稠密fallback，不能称为质量安全。`apply_lightx2v_sla_upstream_exact_exp`才是所有前向85%稀疏。`dense_lora_control`全程委托KJ作同SLA LoRA对照；`disabled_identity`保留上游KJ且不加载LoRA。不会在同一次Attention重复计算两个后端。"
     },
     {
       "id": 18,
@@ -828,7 +828,7 @@
         "Node name for S&R": "MarkdownNote",
         "cnr_id": "comfy-core"
       },
-      "widgets_values": "## Audit必须通过\n\nSLA生成模式应为4次前向×50次block-sparse、0次KJ绕过；KJ稠密对照应为4×50次KJ Sage、0次SLA稀疏调用。任何forward替换、kernel failure或静默fallback都失败。此组合器解决的是KJ完整forward与SLA override的hook冲突，不承诺把两个加速比相乘，也不表示画质、速度、音频或所有16GB场景已经优于单独SLA。"
+      "widgets_values": "## Audit必须通过，画质仍须完整人审\n\n本模板默认把同一张近景图接到首尾帧，只隔离组合器是否会自行崩坏；替换尾帧时必须保持人物占比、视角和场景尺度接近。736×416×124默认会报告4次前向均为dense、200次KJ调用和0次SLA稀疏调用，但这只是路由事实，不是质量安全。近景人物→航拍小点的旧样本已被完整人审否决，应延长、分段/增加中间关键帧，或只接首帧。显式上游精确EXP才要求4×50次block-sparse和0次KJ。任何forward替换、kernel failure或计划外调用都失败；完整后半段画面与音频仍需人工验收。"
     },
     {
       "id": 19,

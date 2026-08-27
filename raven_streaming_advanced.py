@@ -225,6 +225,7 @@ def _preflight_loader(
 ) -> tuple[dict[str, Any], Mapping[str, Any]]:
     mechanical: list[dict[str, str]] = []
     reviewed: list[dict[str, str]] = []
+    model_diagnostics: list[dict[str, str]] = []
     runtime_error = None
     if runtime is None:
         try:
@@ -306,7 +307,7 @@ def _preflight_loader(
     lower_name = unet_name.casefold()
     quantized_tokens = ("int8", "fp8", "nvfp", "quant", "convrot", "pruned")
     if any(token in lower_name for token in quantized_tokens):
-        mechanical.append(
+        model_diagnostics.append(
             _finding(
                 "QUANTIZED_OR_PRUNED_BASE",
                 "RAVEN v0.1 requires the full non-pruned, non-quantized BF16 H3 base model",
@@ -323,7 +324,7 @@ def _preflight_loader(
         path, size = resolved_files.get(key, (None, None))
         file_report[key] = {"path": path, "bytes": size}
         if not path:
-            mechanical.append(
+            model_diagnostics.append(
                 _finding(
                     f"{key.upper()}_FILE",
                     f"selected RAVEN {key} file cannot be resolved",
@@ -332,9 +333,9 @@ def _preflight_loader(
 
     hw = dict(hardware or raven_hardware_snapshot())
     if not hw.get("cuda_available"):
-        mechanical.append(_finding("CUDA_REQUIRED", "RAVEN streaming requires CUDA"))
+        model_diagnostics.append(_finding("CUDA_REQUIRED", "RAVEN streaming requires CUDA"))
     if not hw.get("bf16_supported"):
-        mechanical.append(
+        model_diagnostics.append(
             _finding("BF16_REQUIRED", "the selected GPU must support BF16")
         )
 
@@ -381,6 +382,7 @@ def _preflight_loader(
         "hardware": hw,
         "comfy_feature_report": features,
         "mechanical_findings": mechanical,
+        "model_and_runtime_diagnostics": model_diagnostics,
         "reviewed_envelope_findings": reviewed,
         "mechanically_compatible": not mechanical,
         "inside_reviewed_envelope": not reviewed,
@@ -424,8 +426,9 @@ def load_raven_model_guarded(
         "block_outside_reviewed_envelope",
     }:
         raise ValueError(f"unknown RAVEN loader enforcement: {enforcement!r}")
-    # A report-only loader still has to return a real MODEL. It may waive the
-    # reviewed resource envelope, never a missing/broken plugin, model or LoRA.
+    # User-selected model identity, file selection and hardware suitability are
+    # diagnostic only. The delegated runtime is authoritative and may raise its
+    # native error when those selections cannot execute.
     if blocked:
         codes = [item["code"] for item in mechanical + reviewed]
         raise RuntimeError(
