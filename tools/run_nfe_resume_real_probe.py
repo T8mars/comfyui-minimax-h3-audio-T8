@@ -425,7 +425,7 @@ def preflight(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
-    return [
+    command = [
         str(args.python.resolve()),
         "main.py",
         "--listen",
@@ -437,7 +437,7 @@ def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
         "none",
         "--cache-none",
         "--reserve-vram",
-        "1.0",
+        str(getattr(args, "reserve_vram_gib", 1.0)),
         "--disable-all-custom-nodes",
         "--whitelist-custom-nodes",
         "minimax-h3-audio-T8",
@@ -454,6 +454,9 @@ def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
         "--database-url",
         "sqlite:///:memory:",
     ]
+    if getattr(args, "lowvram", False):
+        command.append("--lowvram")
+    return command
 
 
 class IsolatedServer:

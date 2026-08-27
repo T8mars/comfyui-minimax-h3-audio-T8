@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the two frontend-only MiniMax-H3 PDD example workflows."""
+"""Build the frontend-only MiniMax-H3 PDD example workflows."""
 
 from __future__ import annotations
 
@@ -20,6 +20,11 @@ REF_SOURCE = (
     WORKFLOW_ROOT
     / "03-image-video-edit"
     / "2026-08-10_H3_Ref2VA_Visual_Reference_Strength_EXP.json"
+)
+TWO_PASS_SOURCE = (
+    WORKFLOW_ROOT
+    / "13-latent-upscale"
+    / "2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json"
 )
 
 
@@ -73,6 +78,264 @@ def pdd_node(node_id: int, filename: str, variant: str, pos: list[int]) -> dict:
         },
         "widgets_values": [filename, variant, 1.0],
     }
+
+
+def split_sigmas_node(node_id: int, pos: list[int]) -> dict:
+    return {
+        "id": node_id,
+        "type": "SplitSigmas",
+        "title": "Split official PDD trajectory · 4 LOW + 4 HIGH",
+        "pos": pos,
+        "size": [390, 150],
+        "flags": {},
+        "order": node_id,
+        "mode": 0,
+        "inputs": [{"name": "sigmas", "type": "SIGMAS", "link": None}],
+        "outputs": [
+            {"name": "high_sigmas", "type": "SIGMAS", "links": None},
+            {"name": "low_sigmas", "type": "SIGMAS", "links": None},
+        ],
+        "properties": {
+            "cnr_id": "comfy-core",
+            "Node name for S&R": "SplitSigmas",
+        },
+        "widgets_values": [4],
+    }
+
+
+def high_geometry_sampler_node(source: dict) -> dict:
+    node = copy.deepcopy(source)
+    node["id"] = 16
+    node["title"] = "HIGH geometry sampler · reuse PDD MODEL · 12V/3A"
+    node["pos"] = [3520, 0]
+    node["order"] = 15
+    return node
+
+
+def _set_note(node: dict, title: str, text: str) -> None:
+    node["title"] = title
+    node["widgets_values"] = [text]
+
+
+def build_two_pass(variant: str) -> dict:
+    """Split the exact PDD eight-step trajectory around one learned upscale.
+
+    PDD's output heads are sigma-indexed.  The first sampler consumes official
+    blocks 0..3 and the second consumes blocks 4..7, so the graph still performs
+    eight total joint AV model evaluations rather than two independent 8-step
+    trajectories.  A fresh high-resolution sampler is required because the
+    custom dual-clock sampler closes over packed latent geometry.
+    """
+
+    if variant not in {"FL2VA", "Ref2VA"}:
+        raise ValueError(f"unsupported PDD two-pass variant: {variant}")
+    workflow = read(TWO_PASS_SOURCE)
+    workflow["nodes"] = [
+        copy.deepcopy(node) for node in workflow["nodes"] if node["id"] != 5
+    ]
+    by_id = {node["id"]: node for node in workflow["nodes"]}
+    base_name = (
+        "minimax_h3_fl2va_int8_convrot.safetensors"
+        if variant == "FL2VA"
+        else "minimax_h3_ref2va_int8_convrot.safetensors"
+    )
+    adapter_name = (
+        "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors"
+        if variant == "FL2VA"
+        else "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors"
+    )
+    task_type = variant
+    ref2va_stable = variant == "Ref2VA"
+    low_width, low_height = (864, 480) if ref2va_stable else (512, 288)
+    high_width, high_height = (1312, 736) if ref2va_stable else (1024, 576)
+    frame_count = 22 if ref2va_stable else 124
+    scale_by = 1.5 if ref2va_stable else 2.0
+    prompt = (
+        "One continuous cinematic shot of the same adult woman at a stable portrait scale. "
+        "Natural blinking, subtle head motion and realistic cloth movement. She says clearly "
+        "in Mandarin exactly once: <d>你在干嘛呢，我在这里呀，看看效果如何。</d> "
+        "Synchronized speech, natural ambience, no added words, no repeated mumbling, no "
+        "subtitles, no cuts or sudden scale changes."
+        if variant == "FL2VA"
+        else "Use <Picture 1> as the visual identity and appearance reference. In one continuous "
+        "cinematic portrait, keep the same adult woman at a stable scale while she turns gently "
+        "and blinks once. She says clearly in Mandarin exactly once: <d>你在干嘛呢，我在这里呀，"
+        "看看效果如何。</d> Synchronized speech, natural ambience, no added words, no repeated "
+        "mumbling, no subtitles, cuts or additional people."
+    )
+
+    by_id[4]["title"] = f"Full non-pruned H3 {variant} base"
+    by_id[4]["widgets_values"][0] = base_name
+    by_id[6]["title"] = (
+        "First frame · replace with your image"
+        if variant == "FL2VA"
+        else "Reference image · Picture 1"
+    )
+    by_id[6]["widgets_values"] = ["10A.jpg"]
+
+    source_sampler = copy.deepcopy(by_id[8])
+    workflow["nodes"] = [node for node in workflow["nodes"] if node["id"] not in {8, 9, 16}]
+    workflow["nodes"].extend(
+        [
+            pdd_node(8, adapter_name, variant, [880, 0]),
+            split_sigmas_node(9, [1320, 0]),
+            high_geometry_sampler_node(source_sampler),
+        ]
+    )
+    by_id = {node["id"]: node for node in workflow["nodes"]}
+
+    for node_id, width, height, title in (
+        (7, low_width, low_height, f"LOW {variant} Conditioning · {low_width}x{low_height}"),
+        (14, high_width, high_height, f"HIGH {variant} Conditioning · auto size from upscaler"),
+    ):
+        conditioning = by_id[node_id]
+        conditioning["title"] = title
+        conditioning["widgets_values"][0] = prompt
+        conditioning["widgets_values"][1] = width
+        conditioning["widgets_values"][2] = height
+        conditioning["widgets_values"][3] = frame_count
+        conditioning["widgets_values"][4] = task_type
+        if node_id == 14:
+            conditioning["widgets_values"][-1] = True
+        if variant == "Ref2VA" and not any(
+            item["name"] == "ref_images.ref_image_0"
+            for item in conditioning["inputs"]
+        ):
+            conditioning["inputs"].append(
+                {
+                    "name": "ref_images.ref_image_0",
+                    "type": "IMAGE",
+                    "link": None,
+                }
+            )
+
+    by_id[12]["title"] = "PASS 1 · PDD blocks 0–3 · use denoised_output"
+    by_id[13]["title"] = f"Learned video-latent upscale · default {scale_by:g}x"
+    by_id[13]["widgets_values"][0] = "minimax_h3_latent_upscaler_3d_fp16.safetensors"
+    by_id[13]["widgets_values"][1] = "scale_by"
+    by_id[13]["widgets_values"][2] = scale_by
+    by_id[13]["widgets_values"][4] = high_width
+    by_id[13]["widgets_values"][5] = high_height
+    by_id[13]["widgets_values"][8] = "fp16"
+    by_id[13]["widgets_values"][9] = "offload_after"
+    by_id[15]["title"] = "Reconcile HIGH latent · native joint AV continuation"
+    by_id[15]["widgets_values"] = ["auto", "legacy_policy", 0.0]
+    by_id[17]["title"] = "HIGH guider · PDD model"
+    by_id[18]["title"] = "PASS 2 fresh noise"
+    by_id[19]["title"] = "PASS 2 · PDD blocks 4–7 · decode output"
+    by_id[20]["title"] = "Decode completed HIGH AV"
+    by_id[21]["title"] = "Save PDD 4+4 synchronized MP4"
+    by_id[21]["widgets_values"][2] = (
+        f"MiniMaxH3_PDD/{variant.lower()}_learned_twopass_4plus4_"
+        f"{low_width}x{low_height}_scale_{str(scale_by).replace('.', 'p')}"
+    )
+    by_id[21]["widgets_values"][3] = "video/h265-mp4"
+
+    if variant == "FL2VA":
+        last_frame = copy.deepcopy(by_id[6])
+        last_frame["id"] = 27
+        last_frame["title"] = "Last frame · replace with your image"
+        last_frame["pos"] = [0, 1440]
+        last_frame["order"] = 26
+        workflow["nodes"].append(last_frame)
+
+    notes = {
+        22: (
+            "1 · Exact PDD 4+4 / 精确PDD双采",
+            "## 1 · One official PDD trajectory, not 8+8\nThe PDD Setup emits the official nine sigma values. `SplitSigmas step=4` sends blocks 0–3 to LOW and blocks 4–7 to HIGH. Total Transformer work remains exactly 8 joint AV forwards. Do not run two complete PDD schedules and do not change the split unless a separately trained PDD contract is available.",
+        ),
+        23: (
+            "2 · Geometry handoff / 几何交接",
+            "## 2 · Why HIGH has another sampler setup\nPass 1 must send `denoised_output` into Learned Latent Upscale. The upscaler changes packed video geometry, so HIGH creates a new dual-clock sampler from the already-patched PDD MODEL and the reconciled HIGH latent. Its generated full sigmas are intentionally unused; PASS 2 receives the lower half from the original PDD schedule.",
+        ),
+        24: (
+            "3 · Audio continuation / 音频继续采样",
+            "## 3 · Keep native joint AV continuation\nReconcile stays at `second_pass_audio_source=legacy_policy`. PASS 2 continues both video and audio through PDD blocks 4–7; do not freeze pass-1 audio or insert Two-Pass Audio Audit in this native route. Decode the PASS 2 `output`, not `denoised_output`.",
+        ),
+        25: (
+            "4 · Safe starting size / 建议起始尺寸",
+            (
+                "## 4 · Tested Ref2VA default\nThe formal Ref2VA workflow starts at `864x480x22` (about 0.4MP) with `scale_by=1.5`; 32-pixel alignment produces `1312x736x22`. One serial 16GB run passed with only 634MiB minimum free VRAM, so keep one job at a time. The upscaler's actual width/height already feed HIGH Conditioning."
+                if ref2va_stable
+                else "## 4 · Conservative FL2VA experiment\nThe FL2VA example starts at `512x288x124` and learned-upscales to `1024x576x124`. Its actual width/height already feed HIGH Conditioning. FL2VA has static contract coverage but no equivalent real two-pass render yet, so keep one job at a time."
+            ),
+        ),
+        26: (
+            "5 · Models and limits / 模型与边界",
+            f"## 5 · Required {variant} assets\nUse the full non-pruned `{base_name}` base, `{adapter_name}` through the dedicated PDD Setup, and `minimax_h3_latent_upscaler_3d_fp16.safetensors`. Do not add Turbo/SLA/ordinary LoRA. "
+            + (
+                "This Ref2VA 4+4 preset is the supported tested route; its one accepted render does not prove every model build, duration or 16GB environment safe."
+                if ref2va_stable
+                else "This FL2VA 4+4 route remains experimental until an equivalent real render is completed."
+            ),
+        ),
+    }
+    for node_id, (title, text) in notes.items():
+        _set_note(by_id[node_id], title, text)
+
+    endpoints = [
+        (3, 0, 7, 0, "CLIP"),
+        (1, 0, 7, 1, "VAE"),
+        (2, 0, 7, 2, "VAE"),
+        (4, 0, 8, 0, "MODEL"),
+        (7, 1, 8, 1, "LATENT"),
+        (8, 2, 9, 0, "SIGMAS"),
+        (8, 0, 10, 0, "MODEL"),
+        (7, 0, 10, 1, "CONDITIONING"),
+        (11, 0, 12, 0, "NOISE"),
+        (10, 0, 12, 1, "GUIDER"),
+        (8, 1, 12, 2, "SAMPLER"),
+        (9, 0, 12, 3, "SIGMAS"),
+        (7, 1, 12, 4, "LATENT"),
+        (12, 1, 13, 0, "LATENT"),
+        (13, 1, 14, 3, "INT"),
+        (13, 2, 14, 4, "INT"),
+        (3, 0, 14, 0, "CLIP"),
+        (1, 0, 14, 1, "VAE"),
+        (2, 0, 14, 2, "VAE"),
+        (13, 0, 15, 0, "LATENT"),
+        (14, 1, 15, 1, "LATENT"),
+        (14, 0, 15, 2, "CONDITIONING"),
+        (8, 0, 16, 0, "MODEL"),
+        (15, 0, 16, 1, "LATENT"),
+        (16, 0, 17, 0, "MODEL"),
+        (15, 1, 17, 1, "CONDITIONING"),
+        (18, 0, 19, 0, "NOISE"),
+        (17, 0, 19, 1, "GUIDER"),
+        (16, 1, 19, 2, "SAMPLER"),
+        (9, 1, 19, 3, "SIGMAS"),
+        (15, 0, 19, 4, "LATENT"),
+        (19, 0, 20, 0, "LATENT"),
+        (1, 0, 20, 1, "VAE"),
+        (2, 0, 20, 2, "VAE"),
+        (20, 0, 21, 0, "IMAGE"),
+        (20, 1, 21, 1, "AUDIO"),
+    ]
+    if variant == "FL2VA":
+        endpoints.extend(
+            [
+                (6, 0, 7, 5, "IMAGE"),
+                (27, 0, 7, 6, "IMAGE"),
+                (6, 0, 14, 7, "IMAGE"),
+                (27, 0, 14, 8, "IMAGE"),
+            ]
+        )
+    else:
+        endpoints.extend(
+            [
+                (6, 0, 7, 7, "IMAGE"),
+                (6, 0, 14, 9, "IMAGE"),
+            ]
+        )
+    relink(workflow, endpoints)
+    title = (
+        "MiniMax H3 PDD Ref2VA learned latent two-pass 4+4 Stable"
+        if ref2va_stable
+        else "MiniMax H3 PDD FL2VA learned latent two-pass 4+4 Advanced EXP"
+    )
+    workflow.setdefault("extra", {})["workflow_title"] = title
+    workflow["extra"]["workflow_name"] = title
+    return workflow
 
 
 def relink(workflow: dict, endpoints: list[tuple[int, int, int, int, str]]) -> None:
@@ -246,6 +509,8 @@ def main() -> None:
     outputs = {
         "2026-08-27_H3_PDD_FL2VA_8Step_Advanced_EXP.json": build_fl2va(),
         "2026-08-27_H3_PDD_Ref2VA_8Step_Advanced_EXP.json": build_ref2va(),
+        "2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json": build_two_pass("FL2VA"),
+        "2026-08-27_H3_PDD_Ref2VA_Learned_Latent_TwoPass_4Plus4_Stable.json": build_two_pass("Ref2VA"),
     }
     for name, workflow in outputs.items():
         path = OUTPUT / name

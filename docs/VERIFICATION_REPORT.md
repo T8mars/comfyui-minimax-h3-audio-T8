@@ -7,6 +7,34 @@ Ref2VA still-image status, also read the project-root `README.md` and
 
 ## 2026-08-27 — Alibaba PAI PDD 8-step integration checkpoint
 
+Two additional importable frontend workflows now compose PDD with the learned 3D latent upscaler for
+FL2VA and Ref2VA. They do not run PDD 8+8. One official nine-value sigma trajectory is split at index
+4: LOW consumes blocks 0 through 3, pass-1 `denoised_output` is learned-upscaled, HIGH rebuilds the
+geometry-specific dual-clock sampler, and PASS 2 consumes blocks 4 through 7. Total joint AV Transformer
+work remains eight model forwards. HIGH Conditioning is rebuilt at the upscaler's actual dimensions and
+the native `legacy_policy` audio continuation remains active.
+
+One requested low-load Ref2VA smoke ran serially under `--lowvram`, with no repetition or stress test:
+256x256x22 LOW to 512x512x22 HIGH. The server log contains two completed four-step sampler phases and the
+published combined output strictly decodes as exactly 22 H.264 frames at 24fps plus finite 32kHz stereo
+AAC. Audio peak is `0.830137` with zero decoded samples at or above `0.999`. The six-frame contact sheet is
+visually coherent. The first validator revision failed only while reading a changed report key after the
+video had already been saved; the completed media was recovered and checked without rerunning inference.
+This proves the mechanical Ref2VA 4+4 handoff at the small smoke contract only, not FL2VA quality,
+full-duration stability, production-resolution VRAM safety or superiority over single-pass PDD.
+
+A second user-requested one-shot Ref2VA check used 864x480x22 LOW (414,720 pixels, about 0.4MP)
+with `scale_by=1.5`. The learned upscaler preserved the source aspect as closely as its 32-pixel
+alignment permits and therefore produced 1312x736x22 HIGH (965,632 pixels), with effective scale
+`1.525908` and anisotropy `1.009756`. The complete 4+4 run finished in 70.922 seconds. Strict decode
+passes for exactly 22 H.264 frames and finite 32kHz stereo AAC; audio peak is `0.590970` with zero
+samples at or above `0.999`. Peak GPU use was 15,476MiB and minimum free VRAM was 634MiB, passing the
+512MiB project gate by only 122MiB. The contact sheet is visually coherent. This was one serial run,
+not a repeat or pressure test, so it establishes only this exact short contract on this machine.
+The user reviewed this result and reported no issue. The matching 864x480x22, `scale_by=1.5`
+Ref2VA frontend workflow is therefore published as the formal Stable PDD two-pass preset. FL2VA
+two-pass remains Advanced EXP because it has not received an equivalent real render and human review.
+
 The converted FL2VA and Ref2VA adapters were re-hashed after installation into `models/loras`:
 
 - FL2VA: `95b79e73dbad645f4f4ccd7fb8c5d864e7b978022a4c372f8cfaba82d3ff40bf`, 1,658,719,696 bytes;

@@ -1,13 +1,21 @@
 # MiniMax H3 PDD 8-Step / 8步蒸馏加速
 
-本目录提供 Alibaba PAI `MiniMax-H3-Acc-LoRAs` 的两份前端 ComfyUI 工作流。PDD 是 Parallel Decoding Distillation：源模型的32个时间间隔按每4个加权融合为一次模型前向，实际固定为8 NFE。它除了258个主干LoRA adapter，还带32组视频输出头和32组音频输出头；普通 `Load LoRA` 会漏掉这些动态输出头，因此不能代替专用节点。
+本目录提供 Alibaba PAI `MiniMax-H3-Acc-LoRAs` 的前端 ComfyUI 工作流。PDD 是 Parallel Decoding Distillation：源模型的32个时间间隔按每4个加权融合为一次模型前向，实际固定为8 NFE。它除了258个主干LoRA adapter，还带32组视频输出头和32组音频输出头；普通 `Load LoRA` 会漏掉这些动态输出头，因此不能代替专用节点。
 
 ## 工作流
 
 - `2026-08-27_H3_PDD_FL2VA_8Step_Advanced_EXP.json`：完整FL2VA基模、首帧+尾帧、联合音视频8步PDD。
 - `2026-08-27_H3_PDD_Ref2VA_8Step_Advanced_EXP.json`：完整Ref2VA基模、单张参考图、联合音视频8步PDD。
+- `2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json`：FL2VA学习型latent放大双采，LOW 4步 + HIGH 4步。
+- `2026-08-27_H3_PDD_Ref2VA_Learned_Latent_TwoPass_4Plus4_Stable.json`：正式Ref2VA学习型latent双采；默认864×480×22、1.5×，实际HIGH为1312×736×22。
 
-两个文件都是可直接拖入ComfyUI的前端工作流，不是API格式；画布中各有三个NOTE，解释接线、固定参数和验证边界。
+四个文件都是可直接拖入ComfyUI的前端工作流，不是API格式。双采工作流带五个NOTE，解释4+4切分、尺寸交接、音频继续采样和显存边界。Ref2VA双采已经实测并作为正式工作流；FL2VA双采仍保留Advanced EXP，等待同等真实验证。
+
+## PDD 双采为什么是 4+4
+
+双采不是完整8步跑两遍。专用PDD节点仍只产生一条官方9点sigma轨迹；`SplitSigmas step=4`把前4次模型前向交给LOW阶段，学习型latent放大后，再把后4次模型前向交给HIGH阶段。总Transformer调用仍是8次，对应PDD输出头block 0–7各一次。
+
+HIGH阶段必须重新建立与放大后latent尺寸一致的双时钟sampler，但它不会重新生成或替换PDD轨迹。PASS 2继续联合采样视频和音频，最终解码PASS 2的`output`。默认从512×288×124放大到1024×576×124；显存紧张时应先降低LOW尺寸或帧数，并保持一次只跑一个任务。
 
 ## 必需模型
 
@@ -37,7 +45,7 @@ PDD文件与基模变体不能互换。当前节点会验证PDD metadata、四�
 
 PDD主干adapter采用动态bypass，不会把残差合并进INT8底模再量化。模型正常eject或注入中途异常时，节点会恢复hook并把adapter tensor移回MODEL的offload设备；这修复的是adapter生命周期，不代表整个工作流已经通过16GB峰值显存验收。
 
-不要再串Dual-Clock、普通/其他Turbo LoRA、SLA LoRA或第二个PDD节点。低于1.0的strength虽然允许做研究性插值，但不属于上游质量配置。
+单采工作流不要再串另一个sampler或第二个PDD节点。双采示例中的HIGH双时钟sampler只负责匹配放大后的latent几何，sigma仍来自同一个PDD节点。两种路线都不要再叠加普通/其他Turbo LoRA或SLA LoRA。低于1.0的strength虽然允许做研究性插值，但不属于上游质量配置。
 
 ## 实现与当前验证
 

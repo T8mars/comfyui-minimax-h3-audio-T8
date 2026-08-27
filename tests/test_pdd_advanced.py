@@ -22,6 +22,16 @@ def test_pdd_plan_and_runtime_schedule_cover_the_eight_blocks_exactly():
     )
 
 
+def test_pdd_runtime_schedule_can_be_split_into_exact_four_plus_four_blocks():
+    sigmas = pdd.pdd_runtime_sigmas()
+    low_pass = sigmas[:5]
+    high_pass = sigmas[4:]
+    assert [pdd.pdd_block_index(value) for value in low_pass[:-1]] == [0, 1, 2, 3]
+    assert [pdd.pdd_block_index(value) for value in high_pass[:-1]] == [4, 5, 6, 7]
+    assert low_pass[-1] == high_pass[0]
+    assert high_pass[-1] == 0
+
+
 def test_pdd_schedule_rejects_wrong_nfe_and_wrong_grid():
     with pytest.raises(ValueError, match="exactly 8 model evaluations"):
         pdd.validate_pdd_sigmas(torch.linspace(1.0, 0.0, 5))
@@ -393,19 +403,31 @@ def test_bypass_injection_offloads_on_eject_and_partial_inject_failure(monkeypat
     ]
 
 
-def test_pdd_examples_are_frontend_workflows_with_three_local_notes():
+def test_pdd_examples_are_frontend_workflows_with_local_notes():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows" / "19-pdd-acceleration"
     expected = {
         "2026-08-27_H3_PDD_FL2VA_8Step_Advanced_EXP.json": (
             "FL2VA",
             "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors",
+            False,
         ),
         "2026-08-27_H3_PDD_Ref2VA_8Step_Advanced_EXP.json": (
             "Ref2VA",
             "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors",
+            False,
+        ),
+        "2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json": (
+            "FL2VA",
+            "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors",
+            True,
+        ),
+        "2026-08-27_H3_PDD_Ref2VA_Learned_Latent_TwoPass_4Plus4_Stable.json": (
+            "Ref2VA",
+            "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors",
+            True,
         ),
     }
-    for filename, (variant, adapter) in expected.items():
+    for filename, (variant, adapter, two_pass) in expected.items():
         workflow = json.loads((root / filename).read_text(encoding="utf-8"))
         assert workflow["version"] == 0.4
         assert isinstance(workflow["nodes"], list)
@@ -413,10 +435,9 @@ def test_pdd_examples_are_frontend_workflows_with_three_local_notes():
         assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
         types = [node["type"] for node in workflow["nodes"]]
         assert types.count("MiniMaxH3PDD8StepSetupT8Advanced") == 1
-        assert "MiniMaxH3DualClockSamplerT8" not in types
         assert "LoraLoaderModelOnly" not in types
         assert "LoraLoaderBypassModelOnly" not in types
-        assert types.count("MarkdownNote") >= 3
+        assert types.count("MarkdownNote") >= (5 if two_pass else 3)
         node = next(
             item
             for item in workflow["nodes"]
@@ -425,3 +446,53 @@ def test_pdd_examples_are_frontend_workflows_with_three_local_notes():
         assert node["widgets_values"] == [adapter, variant, 1.0]
         assert all(input_["link"] is not None for input_ in node["inputs"])
         assert all(output["links"] for output in node["outputs"][:3])
+        if not two_pass:
+            assert "MiniMaxH3DualClockSamplerT8" not in types
+            assert "SplitSigmas" not in types
+            continue
+
+        assert types.count("MiniMaxH3DualClockSamplerT8") == 1
+        assert types.count("SplitSigmas") == 1
+        assert types.count("SamplerCustomAdvanced") == 2
+        assert types.count("MiniMaxH3LearnedLatentUpscaleT8Advanced") == 1
+        assert types.count("MiniMaxH3TwoPassLatentReconcileT8Advanced") == 1
+        split = next(item for item in workflow["nodes"] if item["type"] == "SplitSigmas")
+        assert split["widgets_values"] == [4]
+        assert split["inputs"][0]["link"] is not None
+        assert all(output["links"] for output in split["outputs"])
+
+        links = {(link[1], link[2], link[3], link[4]) for link in workflow["links"]}
+        pdd_id = node["id"]
+        split_id = split["id"]
+        pass1 = next(
+            item
+            for item in workflow["nodes"]
+            if item["type"] == "SamplerCustomAdvanced" and "PASS 1" in item.get("title", "")
+        )
+        pass2 = next(
+            item
+            for item in workflow["nodes"]
+            if item["type"] == "SamplerCustomAdvanced" and "PASS 2" in item.get("title", "")
+        )
+        upscaler = next(
+            item
+            for item in workflow["nodes"]
+            if item["type"] == "MiniMaxH3LearnedLatentUpscaleT8Advanced"
+        )
+        high_sampler = next(
+            item
+            for item in workflow["nodes"]
+            if item["type"] == "MiniMaxH3DualClockSamplerT8"
+        )
+        assert (pdd_id, 2, split_id, 0) in links
+        assert (split_id, 0, pass1["id"], 3) in links
+        assert (split_id, 1, pass2["id"], 3) in links
+        assert (pass1["id"], 1, upscaler["id"], 0) in links
+        assert (pdd_id, 0, high_sampler["id"], 0) in links
+        if variant == "Ref2VA":
+            low_conditioning = next(item for item in workflow["nodes"] if item["id"] == 7)
+            high_conditioning = next(item for item in workflow["nodes"] if item["id"] == 14)
+            assert low_conditioning["widgets_values"][1:4] == [864, 480, 22]
+            assert high_conditioning["widgets_values"][1:4] == [1312, 736, 22]
+            assert upscaler["widgets_values"][2] == 1.5
+            assert workflow["extra"]["workflow_title"].endswith("Stable")
