@@ -1,1 +1,4 @@
-# No extra packages. torch and torchaudio are supplied by ComfyUI.
+# No extra packages are required for the base nodes.
+# torch, torchaudio, numpy, Pillow, and safetensors are supplied by ComfyUI.
+# Optional Advanced/EXP features check their own dependencies only when used;
+# keep them out of this file so installation cannot replace ComfyUI's Torch/CUDA stack.

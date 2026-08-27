@@ -154,7 +154,7 @@ def test_registration_is_append_only():
         node.define_schema().node_id
         for node in asyncio.run(MiniMaxH3AudioT8Extension().get_node_list())
     ]
-    assert node_ids[-1] == "MiniMaxH3GlobalCoordinateTiledVAET8Advanced"
+    assert node_ids[225] == "MiniMaxH3GlobalCoordinateTiledVAET8Advanced"
     from h3_audio_t8_pkg.nodes_tiled_vae_coordinates_advanced import (
         MiniMaxH3GlobalCoordinateTiledVAET8Advanced,
     )

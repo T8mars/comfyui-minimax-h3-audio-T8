@@ -234,3 +234,20 @@ for the specific language governing permissions and limitations under the Licens
 The multi-person tracker calls the SAM3.1 implementation supplied by the installed ComfyUI version. This
 repository does not copy that implementation or distribute `sam3.1_multiplex_fp16.safetensors`. Users remain
 responsible for the upstream checkpoint license and applicable use restrictions.
+
+## MiniMax H3 Fun ControlNet research and compatibility references
+
+The append-only H3 Fun ControlNet Advanced nodes were implemented against the public native-core
+design in [`Comfy-Org/ComfyUI#15860`](https://github.com/Comfy-Org/ComfyUI/pull/15860) and the
+documented interaction and packed-video-row findings in
+[`wyzborrero/ComfyUI-H3-FunControl`](https://github.com/wyzborrero/ComfyUI-H3-FunControl), which is
+published under the Apache License 2.0. The T8 compatibility implementation is independently
+integrated with this repository's current ComfyUI extension API; the community package is not a
+runtime dependency.
+
+ControlNet weights are not distributed in this repository. Users may separately obtain Kijai's
+MiniMax H3 experimental ControlNet checkpoint under the terms stated on its Hugging Face model
+page. Filename, byte size and fingerprint are diagnostic only: the installed ComfyUI framework
+loader and the checkpoint tensor structure are authoritative. The fallback keeps the five-block
+control tower dense, injects only into target-video rows and rejects Sol-Attn Morton token
+reordering because it changes the row order that the ControlNet was trained against.

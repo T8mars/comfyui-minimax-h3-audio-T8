@@ -8,6 +8,22 @@ from .nodes_audio_integrity_advanced import (
 from .nodes_attention_hooks_advanced import ATTENTION_HOOKS_ADVANCED_NODE_CLASSES
 from .nodes_forward_sync_advanced import FORWARD_SYNC_ADVANCED_NODE_CLASSES
 from .nodes_tiled_vae_coordinates_advanced import TILED_VAE_COORDINATES_ADVANCED_NODE_CLASSES
+from .nodes_h3_fun_control_advanced import H3_FUN_CONTROL_ADVANCED_NODE_CLASSES
+from .nodes_long_video_voice_context_advanced import (
+    LONG_VIDEO_VOICE_CONTEXT_ADVANCED_NODE_CLASSES,
+)
+from .nodes_long_video_seam_drift_advanced import (
+    LONG_VIDEO_SEAM_DRIFT_ADVANCED_NODE_CLASSES,
+)
+from .nodes_residency_strategy_advanced import (
+    RESIDENCY_STRATEGY_ADVANCED_NODE_CLASSES,
+)
+from .nodes_creator_segment_cache_advanced import (
+    CREATOR_SEGMENT_CACHE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_community_diagnostics_advanced import (
+    COMMUNITY_DIAGNOSTICS_ADVANCED_NODE_CLASSES,
+)
 from .nodes_activation_chunk_advanced import ACTIVATION_CHUNK_ADVANCED_NODE_CLASSES
 from .nodes_av_decode_safety_advanced import AV_DECODE_SAFETY_ADVANCED_NODE_CLASSES
 from .nodes_av_latent_builder_advanced import AV_LATENT_BUILDER_ADVANCED_NODE_CLASSES
@@ -619,6 +635,12 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *ATTENTION_HOOKS_ADVANCED_NODE_CLASSES,
                 *FORWARD_SYNC_ADVANCED_NODE_CLASSES,
                 *TILED_VAE_COORDINATES_ADVANCED_NODE_CLASSES,
+                *H3_FUN_CONTROL_ADVANCED_NODE_CLASSES,
+                *LONG_VIDEO_VOICE_CONTEXT_ADVANCED_NODE_CLASSES,
+                *LONG_VIDEO_SEAM_DRIFT_ADVANCED_NODE_CLASSES,
+                *RESIDENCY_STRATEGY_ADVANCED_NODE_CLASSES,
+                *CREATOR_SEGMENT_CACHE_ADVANCED_NODE_CLASSES,
+                *COMMUNITY_DIAGNOSTICS_ADVANCED_NODE_CLASSES,
             ]
 
 

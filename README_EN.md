@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.52.5** · GPL-3.0-or-later
+Current version: **1.53.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -20,6 +20,8 @@ Nodes marked `Advanced` or `EXP` are advanced or experimental. Start with their 
 ## Installation
 
 Search for `MiniMax H3 Audio T8` in ComfyUI Manager, install it, and restart ComfyUI.
+
+> **Update ComfyUI first:** this node pack uses the recent native MiniMax H3 core, `comfy_api.latest`, model-patching, and weight-adapter APIs. Updating only this node pack while keeping an older ComfyUI build may make every T8 node turn red or appear missing. Update the ComfyUI core, frontend, and Manager together, then fully exit and restart ComfyUI.
 
 Manual installation:
 
@@ -50,6 +52,7 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | Video/audio VAE | `models/vae` |
 | Turbo, SLA, PDD, and other LoRAs | `models/loras` |
 | Latent upscaler | `models/latent_upscale_models` |
+| H3 Fun ControlNet | `models/controlnet` |
 
 Do not mix FL2VA, Ref2VA, pruned, and full base-model variants.
 
@@ -76,8 +79,13 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 
 [`20-core-compatibility`](examples/workflows/20-core-compatibility) provides optional AV-latent, H3 Attention Hook, and per-step host-sync compatibility nodes. The tiled-VAE global-coordinate proposal produced stronger grid artifacts in the current fp16 VAE validation, so it remains a report-only, bypass-by-default audit and is not recommended as a fix. Existing workflows do not need changes.
 
+## Community Creation Tools
+
+[`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, and read-only diagnostics. Download the Fun Control model from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet) and place it in `models/controlnet`. The other nodes are report/plan-only by default: they do not delete cache files, unload models, or enable the still-draft official Generic Loops backend.
+
 ## Troubleshooting
 
+- **All T8 nodes turn red or appear missing after an update:** this usually means that the extension failed during startup, not that a workflow parameter or model file is wrong. Update the ComfyUI core, frontend, and Manager together, fully exit ComfyUI, and restart it. If the problem remains, find the first `IMPORT FAILED` / `ModuleNotFoundError` in the startup console. Missing `comfy_api.latest`, `comfy.weight_adapter`, `comfy.patcher_extension`, or `comfy.ldm.minimax` means that the ComfyUI core is too old; missing `torch`, `torchaudio`, `safetensors`, or `PIL` means that the active ComfyUI Python environment is incomplete. The basic nodes require no extra pip packages, so do not install optional packages blindly. Include the first complete import traceback, ComfyUI version, and node-pack version when reporting the problem.
 - **Shifted parameters or NaN widgets:** fully restart ComfyUI, then reload the workflow.
 - **Media-tag error:** check the connected media and tag numbering.
 - **Prompt Relay tokenizer error:** use the native `Load CLIP` node with `type=minimax`. Since 1.52.3, wrapped CLIP objects with hidden internal tokenizers are supported only when every token matches native H3 tokenization.

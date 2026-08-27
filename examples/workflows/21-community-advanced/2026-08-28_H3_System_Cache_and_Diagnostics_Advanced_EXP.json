@@ -1,0 +1,57 @@
+{
+  "id": "9007459a-b0a5-49e8-a0ec-35cf0c070111",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1, "type": "MarkdownNote", "title": "只读策略与诊断", "pos": [0, 0], "size": [980, 270], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
+      "widgets_values": "## 默认不会动系统状态\n\n- Residency只编译策略；不连接到兼容Loader就不会应用，也绝不`unload_all_models()`。\n- Creator Cache只按语义合同报告hit/stale/orphan并提出隔离计划；不打开、移动或删除文件，Accepted资产始终受保护。\n- Generic Loop只检查官方草案PR #15923是否真正落地，不会切换后端。\n- Official Risk Diagnostic只按你提供的遥测分类风险；证据不足就明确unknown，不按模型名、哈希、大小或画布面积拦截。"
+    },
+    {
+      "id": 2, "type": "MiniMaxH3ResidencyStrategyT8Advanced", "title": "低显存驻留策略（默认只报告）", "pos": [0, 330], "size": [470, 230], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [{"name": "model", "type": "MODEL", "link": null}, {"name": "clip", "type": "CLIP", "link": null}],
+      "outputs": [
+        {"name": "vram_policy", "type": "H3_T8_VRAM_POLICY", "links": null},
+        {"name": "recommended_reserve_gib", "type": "FLOAT", "links": null},
+        {"name": "current_gate_pass", "type": "BOOLEAN", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3ResidencyStrategyT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": ["report_only", 0]
+    },
+    {
+      "id": 3, "type": "MiniMaxH3CreatorSegmentCacheT8Advanced", "title": "Creator逐镜头语义缓存计划", "pos": [540, 330], "size": [520, 400], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [{"name": "workspace", "type": "H3_T8_CREATOR_WORKSPACE", "link": null}],
+      "outputs": [
+        {"name": "cache_plan", "type": "H3_T8_CREATOR_SEGMENT_CACHE_PLAN", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "hit_count", "type": "INT", "links": null},
+        {"name": "invalid_count", "type": "INT", "links": null},
+        {"name": "proposed_quarantine_count", "type": "INT", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3CreatorSegmentCacheT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": ["{\"model\":\"unknown\"}", "{\"loras\":[]}", "{\"steps\":8,\"shift_video\":12,\"shift_audio\":3}", "{\"effects\":[]}", "", 20.0, 100]
+    },
+    {
+      "id": 4, "type": "MiniMaxH3GenericLoopCapabilityT8Advanced", "title": "官方Generic Loops草案能力探针", "pos": [0, 800], "size": [470, 150], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "available", "type": "BOOLEAN", "links": null}, {"name": "status", "type": "STRING", "links": null}, {"name": "report_json", "type": "STRING", "links": null}],
+      "properties": {"Node name for S&R": "MiniMaxH3GenericLoopCapabilityT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": []
+    },
+    {
+      "id": 5, "type": "MiniMaxH3OfficialRiskDiagnosticT8Advanced", "title": "官方问题证据诊断（不拦截）", "pos": [540, 800], "size": [520, 430], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "status", "type": "STRING", "links": null}, {"name": "risk_count", "type": "INT", "links": null}, {"name": "report_json", "type": "STRING", "links": null}],
+      "properties": {"Node name for S&R": "MiniMaxH3OfficialRiskDiagnosticT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": [736, 416, 124, 0, 1, 0, "unknown", "", "", ""]
+    }
+  ],
+  "links": [], "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.78, "offset": [80, 80]}, "workflow_title": "MiniMax H3 System Cache and Diagnostics Advanced EXP"},
+  "version": 0.4
+}

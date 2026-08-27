@@ -1,0 +1,79 @@
+{
+  "id": "c1cc1c0f-d1cc-4be8-b205-1f1a834304cc",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "人物音色、句界和首段确认",
+      "pos": [0, 0], "size": [900, 280], "flags": {}, "order": 0, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
+      "widgets_values": "## 长视频声音上下文\n\n- `dialogue_timeline_json`逐句写人物、原文和起止时间；`voice_bindings_json`把人物绑定到最终`<Audio N>`编号。\n- 默认跨分段句子会ABSTAIN，不会悄悄截断或改写台词。\n- 本节点只编译提示词和pin帧，不重复注入、裁切或冻结音频。\n- 首段需要人工确认时，把计划接到Review Gate；真正分段暂停仍使用04-long-video里的Background/Accepted流程。"
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3LongVideoVoiceContextT8Advanced",
+      "title": "人物 → 音色与逐段提示计划",
+      "pos": [0, 340], "size": [580, 430], "flags": {}, "order": 1, "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "voice_context_plan", "type": "H3_T8_LONG_VIDEO_VOICE_CONTEXT_PLAN", "links": [1]},
+        {"name": "segment_prompts_json", "type": "STRING", "links": null},
+        {"name": "audio_pin_frames_json", "type": "STRING", "links": null},
+        {"name": "ready", "type": "BOOLEAN", "links": null},
+        {"name": "first_shot_review_required", "type": "BOOLEAN", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3LongVideoVoiceContextT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": ["my_h3_voice_context", 30.0, 124, 22, "同一人物、音色和环境声连续。", "[{\"character_id\":\"Character_A\",\"text\":\"你好。\",\"start_seconds\":0,\"end_seconds\":1.5}]", "{\"Character_A\":1}", "abstain", true]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3LongVideoVoiceReviewGateT8Advanced",
+      "title": "首段审核通过后再释放计划",
+      "pos": [650, 390], "size": [410, 180], "flags": {}, "order": 2, "mode": 0,
+      "inputs": [{"name": "voice_context_plan", "type": "H3_T8_LONG_VIDEO_VOICE_CONTEXT_PLAN", "link": 1}],
+      "outputs": [
+        {"name": "segment_prompts_json", "type": "STRING", "links": null},
+        {"name": "audio_pin_frames_json", "type": "STRING", "links": null},
+        {"name": "released", "type": "BOOLEAN", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3LongVideoVoiceReviewGateT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": [false]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "接缝漂移节点是独立后处理",
+      "pos": [0, 850], "size": [900, 210], "flags": {}, "order": 3, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
+      "widgets_values": "## 先报告，再决定是否生成候选\n\n把已经拼好的完整IMAGE序列接入。默认`report_only`逐值原样返回；只有明确选择`bounded_candidate_exp`才做渐变的低频增益/偏移。切镜、闪光、HDR不明、纹理或变化超限会逐帧回源。它不锐化、不造细节，也不处理AUDIO。"
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3LongVideoSeamDriftT8Advanced",
+      "title": "接缝亮度/色彩/纹理审计",
+      "pos": [0, 1110], "size": [540, 460], "flags": {}, "order": 4, "mode": 0,
+      "inputs": [
+        {"name": "frames", "type": "IMAGE", "link": null},
+        {"name": "person_roi", "type": "MASK", "link": null}
+      ],
+      "outputs": [
+        {"name": "frames", "type": "IMAGE", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3LongVideoSeamDriftT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": ["[124]", "report_only", "sdr_rec709_0_to_1", 3, 24, 0.18, 0.008, 1.08, 0.04, 0.06, 0.12]
+    }
+  ],
+  "links": [[1, 2, 0, 3, 0, "H3_T8_LONG_VIDEO_VOICE_CONTEXT_PLAN"]],
+  "groups": [], "config": {},
+  "extra": {"ds": {"scale": 0.78, "offset": [80, 80]}, "workflow_title": "MiniMax H3 Long Video Voice and Seam Advanced EXP"},
+  "version": 0.4
+}

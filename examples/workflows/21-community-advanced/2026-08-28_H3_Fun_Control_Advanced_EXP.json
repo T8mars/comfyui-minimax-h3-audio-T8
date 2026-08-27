@@ -1,0 +1,68 @@
+{
+  "id": "67ae6d16-acde-4bdb-94db-bb0a83e5ce3b",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "Fun Control 使用说明",
+      "pos": [0, 0],
+      "size": [900, 280],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
+      "widgets_values": "## 深度 / 姿态 / 边缘控制\n\n1. `control_video`必须先由对应预处理器生成；`control_kind`只是说明标签，不会自动把普通视频变成深度或骨骼。\n2. 宽高使用32倍数，帧数使用17n+5，并与正式生成完全一致。\n3. 把LoRA后的MODEL、Conditioning positive、视频VAE和控制IMAGE接入Apply；再把Apply输出MODEL和positive接回原工作流。\n4. 建议先用`strength=0.7`、`end_percent=0.75`。Sol Morton重排不兼容；不要同时叠加未知Attention所有者。"
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3FunControlLoaderT8Advanced",
+      "title": "加载 H3 Fun ControlNet",
+      "pos": [0, 340],
+      "size": [440, 120],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "control_net", "type": "H3_T8_FUN_CONTROL", "links": [1]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3FunControlLoaderT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": ["minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3FunControlApplyT8Advanced",
+      "title": "接入已预处理控制视频",
+      "pos": [520, 340],
+      "size": [470, 410],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": null},
+        {"name": "positive", "type": "CONDITIONING", "link": null},
+        {"name": "control_net", "type": "H3_T8_FUN_CONTROL", "link": 1},
+        {"name": "vae", "type": "VAE", "link": null},
+        {"name": "control_video", "type": "IMAGE", "link": null}
+      ],
+      "outputs": [
+        {"name": "model", "type": "MODEL", "links": null},
+        {"name": "positive", "type": "CONDITIONING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3FunControlApplyT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": [736, 416, 124, "depth", "exact", 0.7, 0.0, 0.75]
+    }
+  ],
+  "links": [[1, 2, 0, 3, 2, "H3_T8_FUN_CONTROL"]],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.9, "offset": [80, 80]}, "workflow_title": "MiniMax H3 Fun Control Advanced EXP"},
+  "version": 0.4
+}

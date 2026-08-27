@@ -142,8 +142,8 @@ function makeSkinFinishPreview(node) {
             `comparison_position=${safe.toFixed(2)}`;
     }
 
-    slider.addEventListener("input", () => renderPosition(Number(slider.value) / 100));
-    applyButton.addEventListener("click", () => {
+    const handleSliderInput = () => renderPosition(Number(slider.value) / 100);
+    const handleApplyClick = () => {
         const widget = node.widgets?.find((item) => item.name === "comparison_position");
         if (!widget) {
             summary.textContent = "未找到 comparison_position；请刷新ComfyUI前端";
@@ -156,7 +156,11 @@ function makeSkinFinishPreview(node) {
         node.setDirtyCanvas?.(true, true);
         summary.textContent =
             `已写回 comparison_position=${value.toFixed(2)}；请手动排队以更新全分辨率输出`;
-    });
+    };
+    const stopPointerPropagation = (event) => event.stopPropagation();
+    const stopWheelPropagation = (event) => event.stopPropagation();
+    slider.addEventListener("input", handleSliderInput);
+    applyButton.addEventListener("click", handleApplyClick);
 
     node._t8SkinFinishPreviewRender = (value) => {
         const payload = parsePayload(value);
@@ -185,8 +189,20 @@ function makeSkinFinishPreview(node) {
             `音频 ${payload.audio_status} · ${payload.review_status}`;
     };
 
-    root.addEventListener("pointerdown", (event) => event.stopPropagation());
-    root.addEventListener("wheel", (event) => event.stopPropagation());
+    root.addEventListener("pointerdown", stopPointerPropagation);
+    root.addEventListener("wheel", stopWheelPropagation);
+    node._t8SkinFinishPreviewCleanup = () => {
+        slider.removeEventListener("input", handleSliderInput);
+        applyButton.removeEventListener("click", handleApplyClick);
+        root.removeEventListener("pointerdown", stopPointerPropagation);
+        root.removeEventListener("wheel", stopWheelPropagation);
+        sourceImage.removeAttribute("src");
+        candidateImage.removeAttribute("src");
+        root.replaceChildren();
+        latestPayload = null;
+        node._t8SkinFinishPreviewRender = null;
+        node._t8SkinFinishPreviewCleanup = null;
+    };
     renderPosition(latestPayload?.comparison_position ?? 0.5);
     return root;
 }
@@ -200,6 +216,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             const result = onNodeCreated?.apply(this, arguments);
+            this._t8SkinFinishPreviewCleanup?.();
             const root = makeSkinFinishPreview(this);
             this.addDOMWidget("t8_skin_finish_preview", "preview", root, {
                 serialize: false,
@@ -208,6 +225,12 @@ app.registerExtension({
             });
             this.setSize?.([Math.max(this.size?.[0] ?? 0, 520), Math.max(this.size?.[1] ?? 0, 660)]);
             return result;
+        };
+
+        const onRemoved = nodeType.prototype.onRemoved;
+        nodeType.prototype.onRemoved = function () {
+            this._t8SkinFinishPreviewCleanup?.();
+            return onRemoved?.apply(this, arguments);
         };
 
         const onExecuted = nodeType.prototype.onExecuted;

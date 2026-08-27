@@ -1,4 +1,43 @@
 {
+  "community_creation_batch_advanced": {
+    "status": "implemented as seven append-only Advanced/EXP nodes; old node IDs, schemas, defaults and workflows remain unchanged",
+    "date": "2026-08-28",
+    "nodes": [
+      "MiniMaxH3LongVideoVoiceContextT8Advanced",
+      "MiniMaxH3LongVideoVoiceReviewGateT8Advanced",
+      "MiniMaxH3LongVideoSeamDriftT8Advanced",
+      "MiniMaxH3ResidencyStrategyT8Advanced",
+      "MiniMaxH3CreatorSegmentCacheT8Advanced",
+      "MiniMaxH3GenericLoopCapabilityT8Advanced",
+      "MiniMaxH3OfficialRiskDiagnosticT8Advanced"
+    ],
+    "positions": [228, 229, 230, 231, 232, 233, 234],
+    "long_video_voice": "maps exact dialogue turns to final <Audio N> ordinals and produces independent global/local pin-frame plans without injecting or truncating waveforms. Cross-boundary dialogue defaults to ABSTAIN; the review gate is explicit and hash-bound",
+    "seam_drift": "report-only by default; optional candidate uses bounded gain/offset over reviewed seam windows and fails back per frame on cuts, flashes, SDR uncertainty, excessive change or texture drift. It never synthesizes detail or touches audio",
+    "residency": "compiles side-effect-free report_only/minimum_memory/balanced/faster VRAM policies from observable runtime facts. It never unloads unrelated models and applies nothing unless wired to a compatible loader",
+    "creator_cache": "semantic per-shot/variant cache planning across source, model, LoRA, prompt, sampling and effect contracts with accepted-artifact protection and byte/count LRU quarantine proposals; no file mutation occurs",
+    "generic_loops": "read-only capability probe for ComfyUI PR 15923. The upstream contract is still draft, so the released T8 in-node loop remains authoritative and no draft scheduler backend is enabled",
+    "official_diagnostics": "read-only evidence classifier for residual VRAM/V-copy observations, reference load, Sage FP8, audio numerical integrity, multi-speaker reference coverage and 17-frame dark-flash periodicity. Unknown evidence remains unknown and model name/hash/size never blocks execution",
+    "boundary": "diagnostic and planning nodes do not prove universal quality, long-duration stability, crash recovery or 16GB safety. Fun Control is the only GPU-generative addition in this batch; one serial 256x256x22 Turbo4 canny run passed strict H.264/AAC decode and visual contact-sheet inspection, but this low-resolution smoke test proves execution mechanics only, not quality superiority or general 16GB safety"
+  },
+  "h3_fun_control_advanced": {
+    "status": "implemented as two append-only experimental nodes with native-core capability detection and a legacy clone-scoped fallback; no existing node schema or workflow is changed",
+    "date": "2026-08-28",
+    "nodes": [
+      "MiniMaxH3FunControlLoaderT8Advanced",
+      "MiniMaxH3FunControlApplyT8Advanced"
+    ],
+    "positions": [226, 227],
+    "model": "ComfyUI/models/controlnet/minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors",
+    "model_source": "https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet",
+    "model_policy": "checkpoint filename, size and hash are diagnostic only; the current ComfyUI framework loader and structural tensor contract are authoritative",
+    "controls": ["depth", "pose", "canny", "HED", "MLSD", "custom"],
+    "runtime": "the control video is fit to an explicit 32-aligned H3 canvas and 17n+5 frame count, VAE-encoded once, packed to 196 control columns and injected at base layers 0/10/20/30/40. The control tower stays dense while only target-video rows receive control skips; audio rows never receive those skips",
+    "compatibility": "uses ComfyUI native MiniMaxH3ControlNet when the callable capability exists. Older cores use clone-scoped DiT replacement hooks and ModelPatcher additional-model residency/offload. Strength zero is a true identity bypass",
+    "validation": "one serial current-Comfy run loaded the Kijai INT8 ConvRot union ControlNet, encoded a 256x256x22 canny control clip and completed Turbo4 dual-clock sampling in 33.6 seconds. The result strictly decoded as 22 H.264 frames plus finite 32kHz stereo AAC; SHA-256 840A9576B9AB6EE04643B4975B8F48E0CB11C279654224C80CCAFC294ADFF771. Five sampled frames were coherent and followed the moving-person silhouette without black or corrupted frames",
+    "evidence": "artifacts/fun-control-validation-20260828/contact_sheet.png",
+    "boundary": "Sol-Attn Morton reordering is rejected. Control kind labels describe already-preprocessed IMAGE batches and do not certify the upstream depth, pose or edge estimator. The 256x256x22 smoke run proves mechanics only; production-resolution quality, control accuracy across preprocessors, repeated-run memory behavior and general 16GB safety remain unproven, so the workflow stays Advanced EXP"
+  },
   "official_h3_core_pr_compatibility": {
     "status": "three compatibility directions are implemented plus native-first PDD loading. The fourth tiled-VAE direction is registered only as a report-only experimental audit after a real fp16 decode contradicted the upstream quality claim; existing workflows and node schemas are unchanged",
     "date": "2026-08-28",
@@ -1263,7 +1302,16 @@
     "MiniMaxH3AVLatentBuilderT8Advanced",
     "MiniMaxH3AttentionHooksT8Advanced",
     "MiniMaxH3ForwardSyncOptimizationT8Advanced",
-    "MiniMaxH3GlobalCoordinateTiledVAET8Advanced"
+    "MiniMaxH3GlobalCoordinateTiledVAET8Advanced",
+    "MiniMaxH3FunControlLoaderT8Advanced",
+    "MiniMaxH3FunControlApplyT8Advanced",
+    "MiniMaxH3LongVideoVoiceContextT8Advanced",
+    "MiniMaxH3LongVideoVoiceReviewGateT8Advanced",
+    "MiniMaxH3LongVideoSeamDriftT8Advanced",
+    "MiniMaxH3ResidencyStrategyT8Advanced",
+    "MiniMaxH3CreatorSegmentCacheT8Advanced",
+    "MiniMaxH3GenericLoopCapabilityT8Advanced",
+    "MiniMaxH3OfficialRiskDiagnosticT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

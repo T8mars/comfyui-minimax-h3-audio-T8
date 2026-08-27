@@ -98,6 +98,14 @@ function makeTimelineView(node) {
         node.setDirtyCanvas?.(true, true);
     };
 
+    node._t8TimelineCleanup = () => {
+        track.replaceChildren();
+        rows.replaceChildren();
+        root.replaceChildren();
+        node._t8TimelineRender = null;
+        node._t8TimelineCleanup = null;
+    };
+
     return root;
 }
 
@@ -110,6 +118,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             const result = onNodeCreated?.apply(this, arguments);
+            this._t8TimelineCleanup?.();
             const root = makeTimelineView(this);
             this.addDOMWidget("t8_timeline_preview", "timeline", root, {
                 serialize: false,
@@ -118,6 +127,12 @@ app.registerExtension({
             });
             this.setSize?.([Math.max(this.size?.[0] ?? 0, 480), Math.max(this.size?.[1] ?? 0, 520)]);
             return result;
+        };
+
+        const onRemoved = nodeType.prototype.onRemoved;
+        nodeType.prototype.onRemoved = function () {
+            this._t8TimelineCleanup?.();
+            return onRemoved?.apply(this, arguments);
         };
 
         const onExecuted = nodeType.prototype.onExecuted;

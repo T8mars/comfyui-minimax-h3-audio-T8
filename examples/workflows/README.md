@@ -24,5 +24,6 @@
 | `18-audio-refine` | Turbo低步数生成音频的精确无缓存双时钟尾段精修、原始/候选试听、逐值视频latent回填和默认回退原结果的人工质量门（实验） |
 | `19-pdd-acceleration` | Alibaba PAI MiniMax-H3 PDD 8步蒸馏，分别用于完整FL2VA与Ref2VA基模的动态LoRA和输出头（实验） |
 | `20-core-compatibility` | 官方H3 AV Latent、Attention Hook、逐步同步优化和tiled VAE全局坐标的可选兼容节点 |
+| `21-community-advanced` | Fun Control、长视频人物音色/句界、接缝漂移、低显存驻留、Creator语义缓存与只读诊断 |
 
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。

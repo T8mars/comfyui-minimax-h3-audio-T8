@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.52.5** · GPL-3.0-or-later
+当前版本：**1.53.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -20,6 +20,8 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 ## 安装
 
 在 ComfyUI Manager 搜索 `MiniMax H3 Audio T8`，安装后重启 ComfyUI。
+
+> **先更新 ComfyUI 本体：** 本节点包使用新版 ComfyUI 的原生 MiniMax H3、`comfy_api.latest`、模型补丁和权重适配接口。只更新节点包但保留旧版 ComfyUI，可能导致整套 T8 节点同时爆红或显示缺失。请把 ComfyUI 本体、前端和 Manager 一起更新，再完全退出并重启。
 
 手动安装：
 
@@ -51,6 +53,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | 视频/音频 VAE | `models/vae` |
 | Turbo、SLA、PDD 等 LoRA | `models/loras` |
 | Latent 放大模型 | `models/latent_upscale_models` |
+| H3 Fun ControlNet | `models/controlnet` |
 
 FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
@@ -77,8 +80,13 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 [`20-core-compatibility`](examples/workflows/20-core-compatibility) 提供 AV latent、H3 Attention Hook 和每步 host sync 的按需兼容节点。Tiled VAE 全局坐标候选在当前 fp16 VAE 实测中反而加重规则网格，因此只保留默认旁路的实验审计，不作为修复推荐。旧工作流不需要修改。
 
+## 社区创作增强
+
+[`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存和只读诊断。Fun Control 模型下载自 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)，放入`models/controlnet`；其余节点默认只生成计划或报告，不会自动删缓存、卸载模型或启用尚在草案中的官方 Generic Loops。
+
 ## 常见问题
 
+- **更新后所有 T8 节点同时爆红/显示缺失：** 这通常表示插件在启动时整体加载失败，不是工作流参数或模型文件问题。先把 ComfyUI 本体、前端和 Manager 一起更新，完全退出后重启；仍失败时查看启动终端中的第一条 `IMPORT FAILED` / `ModuleNotFoundError`。缺少 `comfy_api.latest`、`comfy.weight_adapter`、`comfy.patcher_extension` 或 `comfy.ldm.minimax` 表示 ComfyUI 本体过旧；缺少 `torch`、`torchaudio`、`safetensors` 或 `PIL` 表示当前 ComfyUI Python 环境不完整。基础节点不需要额外 pip 依赖，不要盲目安装可选包；反馈时请附上第一段完整导入报错、ComfyUI 版本和本节点版本。
 - **参数错位或 NaN：** 完整重启 ComfyUI，再重新载入工作流。
 - **媒体标签报错：** 检查素材连接和标签编号。
 - **Prompt Relay tokenizer 报错：** 优先使用原生 `Load CLIP` 并选择 `type=minimax`；1.52.3起兼容隐藏内部 tokenizer 的CLIP包装，但实际token必须与原生H3逐项一致。
