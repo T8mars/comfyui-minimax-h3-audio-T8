@@ -4,17 +4,24 @@ from comfy_api.latest import io
 
 from .audio_refine_advanced import (
     AUDIO_REFINE_AUDIT_TYPE,
+    AUDIO_REFINE_MODEL_ROUTE_TYPE,
+    AUDIO_REFINE_PHASE2_PLAN_TYPE,
     AUDIO_REFINE_PLAN_TYPE,
     audit_audio_refine,
     gate_audio_refine_candidate,
     plan_audio_refine,
+    plan_audio_refine_phase2,
+    route_audio_refine_model,
     setup_audio_refine,
+    setup_audio_refine_dual_model,
 )
 
 
 CATEGORY = "T8/MiniMax H3/Audio/Experimental"
 AudioRefineAuditIO = io.Custom(AUDIO_REFINE_AUDIT_TYPE)
 AudioRefinePlanIO = io.Custom(AUDIO_REFINE_PLAN_TYPE)
+AudioRefineModelRouteIO = io.Custom(AUDIO_REFINE_MODEL_ROUTE_TYPE)
+AudioRefinePhase2PlanIO = io.Custom(AUDIO_REFINE_PHASE2_PLAN_TYPE)
 
 
 class MiniMaxH3AudioRefineAuditT8Advanced(io.ComfyNode):
@@ -206,6 +213,168 @@ class MiniMaxH3AudioRefineDualClockSetupT8Advanced(io.ComfyNode):
         return float("nan")
 
 
+class MiniMaxH3AudioRefineModelRouteT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineModelRouteT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Model Route / "
+                "音频精修双模型路由 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Binds the audited first-pass MODEL to an explicit same-Turbo or "
+                "base-without-Turbo refine MODEL using runtime base/patch UUIDs, "
+                "weight-patch structure and LoRA metadata. Unknown stacks fail closed."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefineAuditIO.Input("audit"),
+                io.Model.Input("first_pass_model"),
+                io.Model.Input("refine_model"),
+                io.Combo.Input(
+                    "route_strategy",
+                    options=["same_turbo_stack", "base_without_turbo"],
+                    default="same_turbo_stack",
+                ),
+                io.Int.Input(
+                    "declared_first_pass_nfe",
+                    default=4,
+                    min=4,
+                    max=4,
+                    advanced=True,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("refine_model"),
+                AudioRefineModelRouteIO.Output("route"),
+                io.String.Output("decision"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        values = route_audio_refine_model(**kwargs)
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
+class MiniMaxH3AudioRefinePhase2PlanT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefinePhase2PlanT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Phase 2 Plan / "
+                "音频精修二阶段计划 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Builds the signed four-NFE Phase 2 tail for a proven model route. "
+                "Only the pre-registered 0.35 and 0.50 denoise points are accepted."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefineModelRouteIO.Input("route"),
+                io.Int.Input("refine_steps", default=4, min=4, max=4),
+                io.Float.Input(
+                    "audio_denoise",
+                    default=0.50,
+                    min=0.35,
+                    max=0.50,
+                    step=0.15,
+                    round=0.01,
+                ),
+                io.Int.Input(
+                    "refine_seed",
+                    default=0,
+                    min=0,
+                    max=0xFFFFFFFFFFFFFFFF,
+                ),
+            ],
+            outputs=[
+                AudioRefinePhase2PlanIO.Output("plan"),
+                io.String.Output("decision"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, route, refine_steps, audio_denoise, refine_seed):
+        values = plan_audio_refine_phase2(
+            route,
+            refine_steps,
+            audio_denoise,
+            refine_seed,
+        )
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+
+class MiniMaxH3AudioRefineDualModelSetupT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineDualModelSetupT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Dual-Model Setup / "
+                "音频精修双模型装配 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Revalidates the signed Audit/Route/Plan, refine MODEL, conditioning, "
+                "latent and resource gates, then emits the exact uncached dual-clock "
+                "partial tail for SamplerCustomAdvanced."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefinePhase2PlanIO.Input("plan"),
+                io.Model.Input("refine_model"),
+                io.Conditioning.Input("positive"),
+                io.Latent.Input("av_latent"),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                io.Noise.Output("noise"),
+                io.Guider.Output("guider"),
+                io.Sampler.Output("sampler"),
+                io.Sigmas.Output("sigmas"),
+                io.Latent.Output("latent"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, plan, refine_model, positive, av_latent):
+        result = setup_audio_refine_dual_model(
+            plan=plan,
+            refine_model=refine_model,
+            positive=positive,
+            av_latent=av_latent,
+        )
+        return io.NodeOutput(
+            result.model,
+            result.noise,
+            result.guider,
+            result.sampler,
+            result.sigmas,
+            result.latent,
+            result.report_json,
+            ui={"text": (result.report_json,)},
+        )
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
 class MiniMaxH3AudioRefineQualityGateT8Advanced(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -294,4 +463,7 @@ AUDIO_REFINE_ADVANCED_NODE_CLASSES = [
     MiniMaxH3AudioRefinePlanT8Advanced,
     MiniMaxH3AudioRefineDualClockSetupT8Advanced,
     MiniMaxH3AudioRefineQualityGateT8Advanced,
+    MiniMaxH3AudioRefineModelRouteT8Advanced,
+    MiniMaxH3AudioRefinePhase2PlanT8Advanced,
+    MiniMaxH3AudioRefineDualModelSetupT8Advanced,
 ]

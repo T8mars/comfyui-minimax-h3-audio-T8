@@ -465,7 +465,7 @@ def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
         "none",
         "--cache-none",
         "--reserve-vram",
-        "1.0",
+        str(float(getattr(args, "reserve_vram_gib", 1.0))),
         "--extra-model-paths-config",
         str(extra_paths),
         "--disable-all-custom-nodes",

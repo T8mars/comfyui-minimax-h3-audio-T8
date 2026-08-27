@@ -25,8 +25,12 @@ from .vram_policy import runtime_snapshot
 
 AUDIO_REFINE_AUDIT_TYPE = "H3_T8_AUDIO_REFINE_AUDIT"
 AUDIO_REFINE_PLAN_TYPE = "H3_T8_AUDIO_REFINE_PLAN"
+AUDIO_REFINE_MODEL_ROUTE_TYPE = "H3_T8_AUDIO_REFINE_MODEL_ROUTE"
+AUDIO_REFINE_PHASE2_PLAN_TYPE = "H3_T8_AUDIO_REFINE_PHASE2_PLAN"
 AUDIO_REFINE_AUDIT_SCHEMA = "t8.minimax_h3.audio_refine.audit.v1"
 AUDIO_REFINE_PLAN_SCHEMA = "t8.minimax_h3.audio_refine.plan.v1"
+AUDIO_REFINE_MODEL_ROUTE_SCHEMA = "t8.minimax_h3.audio_refine.model_route.v1"
+AUDIO_REFINE_PHASE2_PLAN_SCHEMA = "t8.minimax_h3.audio_refine.phase2_plan.v1"
 
 _MIB = 1024 * 1024
 _GIB = 1024 * _MIB
@@ -182,6 +186,163 @@ def _model_manifest(model: Any) -> tuple[dict[str, Any], bool, bool]:
     }
     manifest["structure_sha256"] = _sha256_text(canonical_json(manifest))
     return manifest, is_h3 and sampling is not None, patch_stack_unvalidated
+
+
+def _safe_signature_value(value: Any) -> Any:
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else _qualified_name(value)
+    if isinstance(value, torch.Tensor):
+        return {
+            "type": _qualified_name(value),
+            "shape": [int(item) for item in value.shape],
+            "dtype": str(value.dtype),
+        }
+    if isinstance(value, Mapping):
+        return {
+            str(key): _safe_signature_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_safe_signature_value(item) for item in value]
+    return {"type": _qualified_name(value)}
+
+
+def _patch_payload_kind(payload: Any) -> str:
+    if isinstance(payload, (list, tuple)) and payload:
+        head = payload[0]
+        if isinstance(head, str):
+            return head.lower()
+    name = _qualified_name(payload).lower()
+    if "loraadapter" in name:
+        return "lora_adapter"
+    return name
+
+
+def _patch_entry_signature(entry: Any) -> tuple[dict[str, Any], bool]:
+    if not isinstance(entry, (list, tuple)) or len(entry) < 3:
+        return {"valid": False, "type": _qualified_name(entry)}, False
+    strength_patch = _finite_number(entry[0])
+    strength_model = _finite_number(entry[2])
+    offset = entry[3] if len(entry) > 3 else None
+    function = entry[4] if len(entry) > 4 else None
+    valid = strength_patch is not None and strength_model is not None
+    return {
+        "valid": valid,
+        "strength_patch": strength_patch,
+        "strength_model": strength_model,
+        "payload_kind": _patch_payload_kind(entry[1]),
+        "payload_type": _qualified_name(entry[1]),
+        "offset": _safe_signature_value(offset),
+        "function": None if function is None else _qualified_name(function),
+    }, valid
+
+
+def _runtime_weight_stack_manifest(model: Any) -> dict[str, Any]:
+    model_manifest, is_h3_model, patch_stack_unvalidated = _model_manifest(model)
+    patches = _mapping(getattr(model, "patches", {}))
+    attachments = _mapping(getattr(model, "attachments", {}))
+    metadata = attachments.get("lora_metadata")
+    metadata_signature = (
+        _safe_signature_value(metadata) if isinstance(metadata, Mapping) else None
+    )
+    key_records: list[dict[str, Any]] = []
+    strengths_patch: set[float] = set()
+    strengths_model: set[float] = set()
+    payload_kinds: set[str] = set()
+    entry_count = 0
+    maximum_entries_per_key = 0
+    invalid_entry_count = 0
+    offsets_present = False
+    functions_present = False
+    for key in sorted(patches, key=str):
+        raw_entries = patches[key]
+        entries = (
+            list(raw_entries)
+            if isinstance(raw_entries, (list, tuple))
+            else [raw_entries]
+        )
+        maximum_entries_per_key = max(maximum_entries_per_key, len(entries))
+        entry_signatures = []
+        for entry in entries:
+            signature, valid = _patch_entry_signature(entry)
+            entry_signatures.append(signature)
+            entry_count += 1
+            if not valid:
+                invalid_entry_count += 1
+            if signature.get("strength_patch") is not None:
+                strengths_patch.add(float(signature["strength_patch"]))
+            if signature.get("strength_model") is not None:
+                strengths_model.add(float(signature["strength_model"]))
+            payload_kinds.add(str(signature.get("payload_kind")))
+            offsets_present = offsets_present or signature.get("offset") is not None
+            functions_present = functions_present or signature.get("function") is not None
+        key_records.append({"key": str(key), "entries": entry_signatures})
+
+    metadata_base = "" if metadata_signature is None else str(
+        metadata_signature.get("base_model", "")
+    )
+    metadata_steps = "" if metadata_signature is None else str(
+        metadata_signature.get("sampler_steps", "")
+    )
+    metadata_source_sha = "" if metadata_signature is None else str(
+        metadata_signature.get("conversion_source_sha256", "")
+    )
+    metadata_is_turbo4 = (
+        metadata_base.lower().replace("_", "-") == "minimax-h3"
+        and metadata_steps == "4"
+        and re.fullmatch(r"[0-9a-fA-F]{64}", metadata_source_sha) is not None
+    )
+    single_lora_structure = (
+        entry_count > 0
+        and maximum_entries_per_key == 1
+        and invalid_entry_count == 0
+        and strengths_patch == {1.0}
+        and strengths_model == {1.0}
+        and payload_kinds <= {"lora", "lora_adapter"}
+        and not offsets_present
+        and not functions_present
+    )
+    portable = {
+        "weight_patches": key_records,
+        "attachment_keys": sorted(str(key) for key in attachments),
+        "lora_metadata": metadata_signature,
+    }
+    manifest = {
+        "model_object_id": int(id(model)),
+        "base_object_id": int(id(getattr(model, "model", None))),
+        "clone_base_uuid": str(getattr(model, "clone_base_uuid", "")),
+        "patches_uuid": str(getattr(model, "patches_uuid", "")),
+        "is_h3_model": bool(is_h3_model),
+        "patch_stack_unvalidated": bool(patch_stack_unvalidated),
+        "model_structure_sha256": model_manifest["structure_sha256"],
+        "weight_patch_key_count": len(patches),
+        "weight_patch_entry_count": entry_count,
+        "maximum_entries_per_key": maximum_entries_per_key,
+        "invalid_entry_count": invalid_entry_count,
+        "strength_patch_values": sorted(strengths_patch),
+        "strength_model_values": sorted(strengths_model),
+        "payload_kinds": sorted(payload_kinds),
+        "offsets_present": offsets_present,
+        "functions_present": functions_present,
+        "attachment_keys": sorted(str(key) for key in attachments),
+        "lora_metadata": metadata_signature,
+        "lora_metadata_sha256": (
+            None
+            if metadata_signature is None
+            else _sha256_text(canonical_json(metadata_signature))
+        ),
+        "weight_stack_sha256": _sha256_text(canonical_json(portable)),
+        "turbo4_single_stack": bool(metadata_is_turbo4 and single_lora_structure),
+    }
+    runtime_payload = {
+        **manifest,
+        "runtime_stack_sha256": None,
+    }
+    runtime_payload.pop("runtime_stack_sha256")
+    manifest["runtime_stack_sha256"] = _sha256_text(canonical_json(runtime_payload))
+    return manifest
 
 
 def _parse_audio_mode(report: Any) -> tuple[str | None, str | None]:
@@ -614,6 +775,139 @@ def _validate_signed_descriptor(
     return descriptor
 
 
+def _append_reason(reason_codes: list[str], code: str) -> None:
+    if code not in reason_codes:
+        reason_codes.append(code)
+
+
+def route_audio_refine_model(
+    *,
+    audit: dict[str, Any],
+    first_pass_model: Any,
+    refine_model: Any,
+    route_strategy: str,
+    declared_first_pass_nfe: int = 4,
+) -> tuple[Any, dict[str, Any], str, str]:
+    audit = _validate_signed_descriptor(
+        audit,
+        schema=AUDIO_REFINE_AUDIT_SCHEMA,
+        label="audio refine audit",
+    )
+    if route_strategy not in {"same_turbo_stack", "base_without_turbo"}:
+        raise ValueError(
+            "route_strategy must be same_turbo_stack or base_without_turbo"
+        )
+    if isinstance(declared_first_pass_nfe, bool) or declared_first_pass_nfe != 4:
+        raise ValueError("Phase 2 currently requires declared_first_pass_nfe=4")
+
+    audit_bindings = _mapping(audit.get("bindings", {}))
+    first_model_manifest, _, _ = _model_manifest(first_pass_model)
+    if int(audit_bindings.get("model_object_id", -1)) != id(first_pass_model):
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: first_pass_model is not the audited MODEL object"
+        )
+    if audit_bindings.get("model_structure_sha256") != first_model_manifest.get(
+        "structure_sha256"
+    ):
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: first_pass_model structure changed after Audit"
+        )
+
+    first_stack = _runtime_weight_stack_manifest(first_pass_model)
+    refine_stack = _runtime_weight_stack_manifest(refine_model)
+    reason_codes = list(audit.get("reason_codes", []))
+    audit_decision = str(audit.get("decision"))
+    if audit_decision not in {"ALLOW", "ABSTAIN", "REJECT"}:
+        raise ValueError("REJECT_DESCRIPTOR_TAMPERED: audit decision is unsupported")
+
+    if first_stack["maximum_entries_per_key"] > 1:
+        _append_reason(reason_codes, "ABSTAIN_REPEATED_OR_MIXED_LORA_STACK")
+    elif not first_stack["turbo4_single_stack"]:
+        _append_reason(reason_codes, "ABSTAIN_UNKNOWN_FIRST_PASS_STACK")
+    if first_stack["attachment_keys"] != ["lora_metadata"]:
+        _append_reason(reason_codes, "ABSTAIN_UNKNOWN_FIRST_PASS_ATTACHMENTS")
+    if not refine_stack["is_h3_model"] or refine_stack["patch_stack_unvalidated"]:
+        _append_reason(reason_codes, "ABSTAIN_UNKNOWN_REFINE_MODEL_STACK")
+
+    same_base_object = first_stack["base_object_id"] == refine_stack["base_object_id"]
+    same_weight_stack = (
+        first_stack["weight_stack_sha256"] == refine_stack["weight_stack_sha256"]
+        and first_stack["patches_uuid"] == refine_stack["patches_uuid"]
+        and first_stack["lora_metadata_sha256"]
+        == refine_stack["lora_metadata_sha256"]
+    )
+    same_weights_api: bool | None = None
+    checker = getattr(first_pass_model, "clone_has_same_weights", None)
+    if first_pass_model is refine_model:
+        same_weights_api = True
+    elif callable(checker):
+        try:
+            same_weights_api = bool(checker(refine_model))
+        except Exception:
+            same_weights_api = False
+
+    if route_strategy == "same_turbo_stack":
+        if not refine_stack["turbo4_single_stack"]:
+            _append_reason(reason_codes, "ABSTAIN_REFINE_STACK_NOT_TURBO4")
+        if not same_base_object or not same_weight_stack:
+            _append_reason(reason_codes, "ABSTAIN_SAME_STACK_RELATION_UNPROVEN")
+        if same_weights_api is False:
+            _append_reason(reason_codes, "ABSTAIN_SAME_WEIGHTS_API_REJECTED")
+    else:
+        if not same_base_object:
+            _append_reason(reason_codes, "ABSTAIN_BASE_OBJECT_RELATION_UNPROVEN")
+        if (
+            refine_stack["weight_patch_entry_count"] != 0
+            or refine_stack["lora_metadata"] is not None
+        ):
+            _append_reason(reason_codes, "ABSTAIN_REFINE_MODEL_STILL_PATCHED")
+        if refine_stack["attachment_keys"]:
+            _append_reason(reason_codes, "ABSTAIN_UNKNOWN_REFINE_MODEL_ATTACHMENTS")
+
+    new_route_reasons = [
+        code for code in reason_codes if code not in audit.get("reason_codes", [])
+    ]
+    if audit_decision == "REJECT":
+        decision = "REJECT"
+    elif audit_decision == "ABSTAIN" or new_route_reasons:
+        decision = "ABSTAIN"
+    else:
+        decision = "ALLOW"
+    relationship = {
+        "same_base_object": same_base_object,
+        "same_weight_stack": same_weight_stack,
+        "clone_has_same_weights": same_weights_api,
+    }
+    descriptor = _finish_descriptor(
+        {
+            "schema": AUDIO_REFINE_MODEL_ROUTE_SCHEMA,
+            "decision": decision,
+            "reason_codes": reason_codes,
+            "audit_payload_sha256": audit["payload_sha256"],
+            "audit": audit,
+            "route_strategy": route_strategy,
+            "declared_first_pass_nfe": int(declared_first_pass_nfe),
+            "first_pass_stack": first_stack,
+            "refine_stack": refine_stack,
+            "relationship": relationship,
+            "bindings": {
+                "first_pass_model_object_id": int(id(first_pass_model)),
+                "refine_model_object_id": int(id(refine_model)),
+                "first_pass_runtime_stack_sha256": first_stack[
+                    "runtime_stack_sha256"
+                ],
+                "refine_runtime_stack_sha256": refine_stack["runtime_stack_sha256"],
+            },
+            "identity_boundary": (
+                "Runtime stack identity only; disk asset paths are recorded by the "
+                "validation runner, not inferred from MODEL."
+            ),
+            "quality_claim": "none; model routing is only a mechanical contract",
+        }
+    )
+    return refine_model, descriptor, decision, canonical_json(descriptor, indent=2)
+
+
 def _shift_sigma(base_sigma: float, shift: float) -> float:
     value = float(base_sigma)
     if value == 0.0:
@@ -694,6 +988,85 @@ def plan_audio_refine(
                 "cache": "disabled_exact",
             },
             "quality_claim": "none; the plan has not sampled or evaluated audio",
+        }
+    )
+    return descriptor, decision, canonical_json(descriptor, indent=2)
+
+
+def plan_audio_refine_phase2(
+    route: dict[str, Any],
+    refine_steps: int,
+    audio_denoise: float,
+    refine_seed: int,
+) -> tuple[dict[str, Any], str, str]:
+    route = _validate_signed_descriptor(
+        route,
+        schema=AUDIO_REFINE_MODEL_ROUTE_SCHEMA,
+        label="audio refine model route",
+    )
+    if isinstance(refine_steps, bool) or refine_steps != 4:
+        raise ValueError("Phase 2 currently requires refine_steps=4")
+    if isinstance(audio_denoise, bool):
+        raise ValueError("audio_denoise must be 0.35 or 0.50")
+    denoise = float(audio_denoise)
+    registered = next(
+        (
+            value
+            for value in (0.35, 0.50)
+            if math.isclose(denoise, value, rel_tol=0.0, abs_tol=1.0e-9)
+        ),
+        None,
+    )
+    if registered is None:
+        raise ValueError(
+            "Phase 2 audio_denoise must be a pre-registered point: 0.35 or 0.50"
+        )
+    if isinstance(refine_seed, bool) or not isinstance(refine_seed, int):
+        raise ValueError("refine_seed must be an integer")
+    if not 0 <= refine_seed <= 0xFFFFFFFFFFFFFFFF:
+        raise ValueError("refine_seed must be between 0 and 2^64-1")
+    decision = str(route.get("decision"))
+    if decision not in {"ALLOW", "ABSTAIN", "REJECT"}:
+        raise ValueError("REJECT_DESCRIPTOR_TAMPERED: route decision is unsupported")
+
+    full_steps = int(refine_steps / registered)
+    base_sigmas = [
+        float((refine_steps - index) / full_steps)
+        for index in range(refine_steps + 1)
+    ]
+    video_sigmas = [_shift_sigma(value, 12.0) for value in base_sigmas]
+    audio_sigmas = [_shift_sigma(value, 3.0) for value in base_sigmas]
+    first_pass_nfe = int(route["declared_first_pass_nfe"])
+    descriptor = _finish_descriptor(
+        {
+            "schema": AUDIO_REFINE_PHASE2_PLAN_SCHEMA,
+            "decision": decision,
+            "reason_codes": list(route.get("reason_codes", [])),
+            "route_payload_sha256": route["payload_sha256"],
+            "route": route,
+            "route_strategy": route["route_strategy"],
+            "declared_first_pass_nfe": first_pass_nfe,
+            "actual_refine_nfe": int(refine_steps),
+            "declared_total_nfe": first_pass_nfe + int(refine_steps),
+            "full_steps": int(full_steps),
+            "requested_audio_denoise": registered,
+            "effective_audio_denoise": float(refine_steps / full_steps),
+            "refine_seed": int(refine_seed),
+            "base_sigmas": base_sigmas,
+            "video_sigmas": video_sigmas,
+            "audio_sigmas": audio_sigmas,
+            "fixed_contract": {
+                "cfg": 1.0,
+                "shift_video": 12.0,
+                "shift_audio": 3.0,
+                "sampler_name": "dual_clock_euler",
+                "scheduler": "native_flow",
+                "video_noise_mask": 0.0,
+                "audio_noise_mask": 1.0,
+                "cache": "disabled_exact",
+            },
+            "training_distribution_equivalence_claim": False,
+            "quality_claim": "none; equal total NFE does not imply equal training distribution",
         }
     )
     return descriptor, decision, canonical_json(descriptor, indent=2)
@@ -947,6 +1320,188 @@ def setup_audio_refine(
         "cfg": 1.0,
         "resource_snapshot": resource_manifest,
         "plan_payload_sha256": plan["payload_sha256"],
+        "quality_claim": "none; sampling and human listening have not occurred",
+    }
+    return AudioRefineSetupResult(
+        model=patched_model,
+        noise=AudioRefineRandomNoise(int(plan["refine_seed"])),
+        guider=AudioRefineBasicGuider(patched_model, positive),
+        sampler=sampler,
+        sigmas=sigmas,
+        latent=refined_latent,
+        report_json=canonical_json(report, indent=2),
+    )
+
+
+def _verify_phase2_setup_bindings(
+    plan: Mapping[str, Any],
+    refine_model: Any,
+    positive: Any,
+    av_latent: dict,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    route = _validate_signed_descriptor(
+        plan.get("route"),
+        schema=AUDIO_REFINE_MODEL_ROUTE_SCHEMA,
+        label="embedded audio refine model route",
+    )
+    if plan.get("route_payload_sha256") != route.get("payload_sha256"):
+        raise ValueError(
+            "REJECT_DESCRIPTOR_TAMPERED: Phase 2 Plan does not bind the Route"
+        )
+    audit = _validate_signed_descriptor(
+        route.get("audit"),
+        schema=AUDIO_REFINE_AUDIT_SCHEMA,
+        label="embedded audio refine audit",
+    )
+    if route.get("audit_payload_sha256") != audit.get("payload_sha256"):
+        raise ValueError(
+            "REJECT_DESCRIPTOR_TAMPERED: Model Route does not bind the Audit"
+        )
+
+    mismatches: list[str] = []
+    route_bindings = _mapping(route.get("bindings", {}))
+    refine_stack = _runtime_weight_stack_manifest(refine_model)
+    if int(route_bindings.get("refine_model_object_id", -1)) != id(refine_model):
+        mismatches.append("refine_model_object")
+    if route_bindings.get("refine_runtime_stack_sha256") != refine_stack.get(
+        "runtime_stack_sha256"
+    ):
+        mismatches.append("refine_model_stack")
+
+    audit_bindings = _mapping(audit.get("bindings", {}))
+    try:
+        run_contract_sha256 = _recompile_bound_run_contract(audit, positive)
+    except ValueError:
+        mismatches.append("conditioning")
+    else:
+        if audit_bindings.get("run_contract_sha256") != run_contract_sha256:
+            mismatches.append("conditioning")
+    try:
+        latent_result = classify_audio_refine_latent(
+            av_latent,
+            hash_chunk_megabytes=int(audit.get("hash_chunk_megabytes", 8)),
+        )
+    except (TypeError, ValueError, RuntimeError):
+        mismatches.append("latent")
+    else:
+        if audit_bindings.get("latent_manifest_sha256") != latent_result.get(
+            "manifest_sha256"
+        ):
+            mismatches.append("latent")
+    if mismatches:
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: changed " + ", ".join(sorted(set(mismatches)))
+        )
+    return route, audit
+
+
+def setup_audio_refine_dual_model(
+    *,
+    plan: dict[str, Any],
+    refine_model: Any,
+    positive: Any,
+    av_latent: dict,
+    setup_sampling_fn=setup_dual_clock_sampling,
+    runtime_snapshot_fn=runtime_snapshot,
+) -> AudioRefineSetupResult:
+    plan = _validate_signed_descriptor(
+        plan,
+        schema=AUDIO_REFINE_PHASE2_PLAN_SCHEMA,
+        label="audio refine Phase 2 plan",
+    )
+    route, audit = _verify_phase2_setup_bindings(
+        plan, refine_model, positive, av_latent
+    )
+    plan_decision = str(plan.get("decision"))
+    if plan_decision == "REJECT":
+        raise ValueError(
+            "REJECT_AUDIO_REFINE_PHASE2_PLAN: "
+            + ", ".join(plan.get("reason_codes", []))
+        )
+    if plan_decision not in {"ALLOW", "ABSTAIN"}:
+        raise ValueError("REJECT_DESCRIPTOR_TAMPERED: Phase 2 decision is unsupported")
+
+    try:
+        snapshot = runtime_snapshot_fn()
+    except Exception as error:
+        snapshot = {"inspection_error": f"{type(error).__name__}: {error}"}
+    gates = _mapping(audit.get("resource_gates", {}))
+    original_resource = _mapping(audit.get("resource_snapshot", {}))
+    resource_manifest, resource_reason = _resource_manifest(
+        snapshot,
+        node_owned_incremental_bytes=int(
+            original_resource.get("node_owned_incremental_bytes", 0)
+        ),
+        minimum_free_vram_mib=max(
+            512.0, float(gates.get("minimum_free_vram_mib", 512.0))
+        ),
+        minimum_commit_headroom_gib=max(
+            16.0, float(gates.get("minimum_commit_headroom_gib", 16.0))
+        ),
+    )
+    reason_codes = list(plan.get("reason_codes", []))
+    if resource_reason:
+        _append_reason(reason_codes, resource_reason)
+    if plan_decision == "ABSTAIN" or resource_reason:
+        return _bypass_setup_result(
+            plan=plan,
+            model=refine_model,
+            positive=positive,
+            av_latent=av_latent,
+            reason_codes=reason_codes,
+            resource_snapshot=resource_manifest,
+        )
+
+    full_steps = int(plan["full_steps"])
+    actual_nfe = int(plan["actual_refine_nfe"])
+    patched_model, sampler, full_sigmas = setup_sampling_fn(
+        refine_model,
+        av_latent,
+        full_steps,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+    )
+    if not isinstance(full_sigmas, torch.Tensor) or full_sigmas.ndim != 1:
+        raise ValueError("Audio Refine Phase 2 returned an invalid sigma tensor")
+    if full_sigmas.numel() != full_steps + 1:
+        raise ValueError("Audio Refine Phase 2 full sigma schedule has the wrong length")
+    sigmas = full_sigmas[-(actual_nfe + 1) :].detach().to(
+        device="cpu", dtype=torch.float32
+    )
+    expected_sigmas = torch.tensor(plan["video_sigmas"], dtype=torch.float32)
+    if not torch.allclose(sigmas, expected_sigmas, rtol=1.0e-6, atol=1.0e-7):
+        raise ValueError("Audio Refine Phase 2 sigma tail differs from the signed Plan")
+
+    video, audio = nested_av_parts(av_latent)
+    refined_latent = av_latent.copy()
+    refined_latent["noise_mask"] = comfy.nested_tensor.NestedTensor(
+        (
+            torch.zeros(video.shape, dtype=torch.float32, device=video.device),
+            torch.ones(audio.shape, dtype=torch.float32, device=audio.device),
+        )
+    )
+    report = {
+        "schema": "t8.minimax_h3.audio_refine.phase2_setup.v1",
+        "decision": "ALLOW",
+        "reason_codes": reason_codes,
+        "bypassed": False,
+        "route_strategy": route["route_strategy"],
+        "declared_first_pass_nfe": plan["declared_first_pass_nfe"],
+        "actual_refine_nfe": actual_nfe,
+        "declared_total_nfe": plan["declared_total_nfe"],
+        "full_steps": full_steps,
+        "sigmas": [float(value) for value in sigmas.tolist()],
+        "video_noise_mask": 0.0,
+        "audio_noise_mask": 1.0,
+        "cfg": 1.0,
+        "resource_snapshot": resource_manifest,
+        "plan_payload_sha256": plan["payload_sha256"],
+        "refine_runtime_stack_sha256": route["bindings"][
+            "refine_runtime_stack_sha256"
+        ],
+        "training_distribution_equivalence_claim": False,
         "quality_claim": "none; sampling and human listening have not occurred",
     }
     return AudioRefineSetupResult(

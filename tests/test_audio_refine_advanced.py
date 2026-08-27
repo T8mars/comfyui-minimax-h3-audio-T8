@@ -13,6 +13,10 @@ import h3_audio_t8_pkg
 from h3_audio_t8_pkg.audio_refine_advanced import (
     AUDIO_REFINE_AUDIT_SCHEMA,
     AUDIO_REFINE_AUDIT_TYPE,
+    AUDIO_REFINE_MODEL_ROUTE_SCHEMA,
+    AUDIO_REFINE_MODEL_ROUTE_TYPE,
+    AUDIO_REFINE_PHASE2_PLAN_SCHEMA,
+    AUDIO_REFINE_PHASE2_PLAN_TYPE,
     AUDIO_REFINE_PLAN_SCHEMA,
     AUDIO_REFINE_PLAN_TYPE,
     AudioRefineBasicGuider,
@@ -23,12 +27,18 @@ from h3_audio_t8_pkg.audio_refine_advanced import (
     classify_audio_refine_latent,
     gate_audio_refine_candidate,
     plan_audio_refine,
+    plan_audio_refine_phase2,
+    route_audio_refine_model,
     setup_audio_refine,
+    setup_audio_refine_dual_model,
 )
 from h3_audio_t8_pkg.nodes_audio_refine_advanced import (
     AUDIO_REFINE_ADVANCED_NODE_CLASSES,
     MiniMaxH3AudioRefineAuditT8Advanced,
+    MiniMaxH3AudioRefineDualModelSetupT8Advanced,
     MiniMaxH3AudioRefineDualClockSetupT8Advanced,
+    MiniMaxH3AudioRefineModelRouteT8Advanced,
+    MiniMaxH3AudioRefinePhase2PlanT8Advanced,
     MiniMaxH3AudioRefinePlanT8Advanced,
     MiniMaxH3AudioRefineQualityGateT8Advanced,
 )
@@ -86,8 +96,13 @@ class FakeModelPatcher:
         object_patches=None,
         shift_video=None,
         shift_audio=None,
+        base_model=None,
+        patches=None,
+        attachments=None,
+        patches_uuid="base",
+        clone_base_uuid="shared-base",
     ):
-        self.model = MiniMaxH3BaseModel()
+        self.model = base_model or MiniMaxH3BaseModel()
         self.model_sampling = ModelSamplingFlow()
         transformer_options = {
             "patches_replace": patches_replace or {},
@@ -100,9 +115,11 @@ class FakeModelPatcher:
         self.model_options = {
             "transformer_options": transformer_options
         }
-        self.patches = {}
+        self.patches = dict(patches or {})
         self.object_patches = dict(object_patches or {})
-        self.attachments = {}
+        self.attachments = dict(attachments or {})
+        self.patches_uuid = patches_uuid
+        self.clone_base_uuid = clone_base_uuid
 
     def is_dynamic(self):
         return False
@@ -122,7 +139,13 @@ class FakeModelPatcher:
         clone.patches = dict(self.patches)
         clone.object_patches = dict(self.object_patches)
         clone.attachments = dict(self.attachments)
+        clone.patches_uuid = self.patches_uuid
+        clone.clone_base_uuid = self.clone_base_uuid
         return clone
+
+    def clone_has_same_weights(self, clone, allow_multigpu=False):
+        del allow_multigpu
+        return self.model is clone.model and self.patches_uuid == clone.patches_uuid
 
 
 def _runtime(*, free_mib: float = 4096.0, commit_gib: float = 64.0):
@@ -622,6 +645,240 @@ def test_existing_abstain_plan_returns_empty_sigma_bypass():
     assert isinstance(result.noise, AudioRefineBypassNoise)
 
 
+def _turbo4_metadata():
+    return {
+        "format": "pt",
+        "base_model": "MiniMax-H3",
+        "sampler_steps": "4",
+        "conversion_source_sha256": "A" * 64,
+        "application": "W_eff = W + lora_B @ lora_A",
+    }
+
+
+def _turbo4_model(*, base_model=None, patches_uuid="turbo4", repeated=False):
+    patch = (
+        1.0,
+        ("lora", (torch.ones((1, 1)), torch.ones((1, 1)))),
+        1.0,
+        None,
+        None,
+    )
+    entries = [patch, patch] if repeated else [patch]
+    return FakeModelPatcher(
+        base_model=base_model,
+        patches={"diffusion_model.blocks.0.attn.qkv_proj.weight": entries},
+        attachments={"lora_metadata": _turbo4_metadata()},
+        patches_uuid=patches_uuid,
+        clone_base_uuid="shared-base",
+    )
+
+
+def _phase2_bundle(*, strategy="base_without_turbo", denoise=0.5):
+    first_model = _turbo4_model()
+    positive = _positive()
+    latent = _latent()
+    audit, decision, _ = _audit(
+        model=first_model,
+        positive=positive,
+        av_latent=latent,
+    )
+    assert decision == "ALLOW"
+    if strategy == "same_turbo_stack":
+        refine_model = first_model.clone()
+    else:
+        refine_model = FakeModelPatcher(
+            base_model=first_model.model,
+            patches_uuid="base",
+            clone_base_uuid="shared-base",
+        )
+    routed_model, route, decision, _ = route_audio_refine_model(
+        audit=audit,
+        first_pass_model=first_model,
+        refine_model=refine_model,
+        route_strategy=strategy,
+        declared_first_pass_nfe=4,
+    )
+    assert routed_model is refine_model
+    assert decision == "ALLOW"
+    plan, decision, _ = plan_audio_refine_phase2(route, 4, denoise, 2608260404)
+    assert decision == "ALLOW"
+    return first_model, refine_model, positive, latent, route, plan
+
+
+def test_phase2_contract_constants_are_append_only():
+    assert AUDIO_REFINE_MODEL_ROUTE_TYPE == "H3_T8_AUDIO_REFINE_MODEL_ROUTE"
+    assert AUDIO_REFINE_MODEL_ROUTE_SCHEMA == "t8.minimax_h3.audio_refine.model_route.v1"
+    assert AUDIO_REFINE_PHASE2_PLAN_TYPE == "H3_T8_AUDIO_REFINE_PHASE2_PLAN"
+    assert AUDIO_REFINE_PHASE2_PLAN_SCHEMA == "t8.minimax_h3.audio_refine.phase2_plan.v1"
+
+
+@pytest.mark.parametrize("strategy", ["same_turbo_stack", "base_without_turbo"])
+def test_phase2_model_route_accepts_only_proven_runtime_relationships(strategy):
+    first_model, refine_model, _, _, route, _ = _phase2_bundle(strategy=strategy)
+
+    assert route["route_strategy"] == strategy
+    assert route["declared_first_pass_nfe"] == 4
+    assert route["first_pass_stack"]["turbo4_single_stack"] is True
+    assert route["first_pass_stack"]["base_object_id"] == id(first_model.model)
+    assert route["refine_stack"]["base_object_id"] == id(refine_model.model)
+    assert route["relationship"]["same_base_object"] is True
+    assert route["quality_claim"] == "none; model routing is only a mechanical contract"
+
+
+def test_same_turbo_route_ignores_only_the_validated_sampling_object_patch():
+    sampling = ModelSamplingFlow()
+    first_model = _turbo4_model()
+    first_model.model_sampling = sampling
+    first_model.object_patches = {"model_sampling": sampling}
+    first_model.model_options["transformer_options"].update(
+        {
+            "minimax_h3_sigma_shift_video": 12.0,
+            "minimax_h3_sigma_shift_audio": 3.0,
+        }
+    )
+    refine_model = _turbo4_model(
+        base_model=first_model.model,
+        patches_uuid=first_model.patches_uuid,
+    )
+    positive = _positive()
+    latent = _latent()
+    audit, audit_decision, _ = _audit(
+        model=first_model,
+        positive=positive,
+        av_latent=latent,
+    )
+    assert audit_decision == "ALLOW"
+
+    _, route, decision, _ = route_audio_refine_model(
+        audit=audit,
+        first_pass_model=first_model,
+        refine_model=refine_model,
+        route_strategy="same_turbo_stack",
+        declared_first_pass_nfe=4,
+    )
+
+    assert decision == "ALLOW"
+    assert route["relationship"]["same_weight_stack"] is True
+    assert route["first_pass_stack"]["model_structure_sha256"] != route[
+        "refine_stack"
+    ]["model_structure_sha256"]
+
+
+@pytest.mark.parametrize(
+    ("model_factory", "expected_code"),
+    [
+        (
+            lambda: FakeModelPatcher(
+                patches={"weight": [(1.0, ("lora", ()), 1.0, None, None)]},
+                patches_uuid="unknown",
+            ),
+            "ABSTAIN_UNKNOWN_FIRST_PASS_STACK",
+        ),
+        (
+            lambda: _turbo4_model(repeated=True),
+            "ABSTAIN_REPEATED_OR_MIXED_LORA_STACK",
+        ),
+    ],
+)
+def test_phase2_model_route_fails_closed_for_unknown_or_repeated_lora(
+    model_factory, expected_code
+):
+    first_model = model_factory()
+    positive = _positive()
+    latent = _latent()
+    audit, _, _ = _audit(model=first_model, positive=positive, av_latent=latent)
+    refine_model = first_model.clone()
+
+    _, route, decision, _ = route_audio_refine_model(
+        audit=audit,
+        first_pass_model=first_model,
+        refine_model=refine_model,
+        route_strategy="same_turbo_stack",
+        declared_first_pass_nfe=4,
+    )
+
+    assert decision == "ABSTAIN"
+    assert expected_code in route["reason_codes"]
+
+
+def test_base_without_turbo_rejects_a_different_base_or_remaining_patch():
+    first_model = _turbo4_model()
+    positive = _positive()
+    latent = _latent()
+    audit, _, _ = _audit(model=first_model, positive=positive, av_latent=latent)
+
+    for refine_model in (
+        FakeModelPatcher(patches_uuid="base"),
+        _turbo4_model(base_model=first_model.model, patches_uuid="other-lora"),
+    ):
+        _, route, decision, _ = route_audio_refine_model(
+            audit=audit,
+            first_pass_model=first_model,
+            refine_model=refine_model,
+            route_strategy="base_without_turbo",
+            declared_first_pass_nfe=4,
+        )
+        assert decision == "ABSTAIN"
+        assert route["reason_codes"]
+
+
+@pytest.mark.parametrize("denoise", [0.35, 0.5])
+def test_phase2_plan_accepts_only_preregistered_denoise_points(denoise):
+    *_, plan = _phase2_bundle(denoise=denoise)
+
+    assert plan["actual_refine_nfe"] == 4
+    assert plan["declared_first_pass_nfe"] == 4
+    assert plan["declared_total_nfe"] == 8
+    assert plan["requested_audio_denoise"] == denoise
+    assert plan["training_distribution_equivalence_claim"] is False
+
+
+@pytest.mark.parametrize("steps,denoise", [(3, 0.5), (5, 0.5), (4, 0.4), (4, 1.0)])
+def test_phase2_plan_rejects_unregistered_steps_or_denoise(steps, denoise):
+    *_, route, _ = _phase2_bundle()
+    with pytest.raises(ValueError):
+        plan_audio_refine_phase2(route, steps, denoise, 1)
+
+
+def test_phase2_setup_uses_refine_model_and_revalidates_all_bindings():
+    _, refine_model, positive, latent, _, plan = _phase2_bundle()
+    called = {}
+
+    def fake_setup(model, connected_latent, steps, *args):
+        called.update(model=model, latent=connected_latent, steps=steps, args=args)
+        return model.clone(), object(), _full_video_sigmas(steps)
+
+    result = setup_audio_refine_dual_model(
+        plan=plan,
+        refine_model=refine_model,
+        positive=positive,
+        av_latent=latent,
+        setup_sampling_fn=fake_setup,
+        runtime_snapshot_fn=_runtime,
+    )
+
+    assert called["model"] is refine_model
+    assert called["latent"] is latent
+    assert called["steps"] == plan["full_steps"]
+    assert result.sigmas.tolist() == pytest.approx(plan["video_sigmas"])
+    assert json.loads(result.report_json)["route_strategy"] == "base_without_turbo"
+
+    changed_model = FakeModelPatcher(
+        base_model=refine_model.model,
+        patches_uuid="changed",
+        clone_base_uuid="shared-base",
+    )
+    with pytest.raises(ValueError, match="REJECT_CONTRACT_MISMATCH"):
+        setup_audio_refine_dual_model(
+            plan=plan,
+            refine_model=changed_model,
+            positive=positive,
+            av_latent=latent,
+            setup_sampling_fn=lambda *args: pytest.fail("must fail before setup"),
+            runtime_snapshot_fn=_runtime,
+        )
+
+
 def test_real_sampler_custom_advanced_empty_sigmas_skips_prepare_sampling(
     monkeypatch,
 ):
@@ -764,6 +1021,9 @@ def test_audio_refine_node_schemas_are_append_only_experimental_contracts():
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
         "MiniMaxH3AudioRefineQualityGateT8Advanced",
+        "MiniMaxH3AudioRefineModelRouteT8Advanced",
+        "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
+        "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     ]
     assert all(schema.is_experimental is True for schema in schemas)
     assert all(schema.category == "T8/MiniMax H3/Audio/Experimental" for schema in schemas)
@@ -825,12 +1085,48 @@ def test_audio_refine_node_schemas_are_append_only_experimental_contracts():
         "decision",
         "report_json",
     ]
+    assert [item.id for item in schemas[4].inputs] == [
+        "audit",
+        "first_pass_model",
+        "refine_model",
+        "route_strategy",
+        "declared_first_pass_nfe",
+    ]
+    assert [item.id for item in schemas[4].outputs] == [
+        "refine_model",
+        "route",
+        "decision",
+        "report_json",
+    ]
+    assert [item.id for item in schemas[5].inputs] == [
+        "route",
+        "refine_steps",
+        "audio_denoise",
+        "refine_seed",
+    ]
+    assert [item.id for item in schemas[6].inputs] == [
+        "plan",
+        "refine_model",
+        "positive",
+        "av_latent",
+    ]
+    assert [item.id for item in schemas[6].outputs] == [
+        "model",
+        "noise",
+        "guider",
+        "sampler",
+        "sigmas",
+        "latent",
+        "report_json",
+    ]
 
 
 def test_audio_refine_schema_defaults_lock_the_reviewed_route():
     audit_schema = MiniMaxH3AudioRefineAuditT8Advanced.define_schema()
     plan_schema = MiniMaxH3AudioRefinePlanT8Advanced.define_schema()
     quality_gate_schema = MiniMaxH3AudioRefineQualityGateT8Advanced.define_schema()
+    route_schema = MiniMaxH3AudioRefineModelRouteT8Advanced.define_schema()
+    phase2_schema = MiniMaxH3AudioRefinePhase2PlanT8Advanced.define_schema()
 
     protected_audio = audit_schema.inputs[6]
     minimum_vram = audit_schema.inputs[7]
@@ -850,6 +1146,30 @@ def test_audio_refine_schema_defaults_lock_the_reviewed_route():
     assert plan_schema.inputs[3].default == 0
     assert plan_schema.inputs[4].options == ["connected_model_explicit"]
     assert quality_gate_schema.inputs[4].default is False
+    assert route_schema.inputs[3].options == [
+        "same_turbo_stack",
+        "base_without_turbo",
+    ]
+    assert route_schema.inputs[3].default == "same_turbo_stack"
+    assert route_schema.inputs[4].default == 4
+    assert (route_schema.inputs[4].min, route_schema.inputs[4].max) == (4, 4)
+    assert phase2_schema.inputs[1].default == 4
+    assert (phase2_schema.inputs[1].min, phase2_schema.inputs[1].max) == (4, 4)
+    assert phase2_schema.inputs[2].default == 0.5
+    assert (phase2_schema.inputs[2].min, phase2_schema.inputs[2].max) == (0.35, 0.5)
+
+
+def test_phase2_runtime_contract_nodes_publish_auditable_history_reports():
+    schemas = {
+        schema.node_id: schema
+        for schema in (
+            MiniMaxH3AudioRefineModelRouteT8Advanced.define_schema(),
+            MiniMaxH3AudioRefinePhase2PlanT8Advanced.define_schema(),
+            MiniMaxH3AudioRefineDualModelSetupT8Advanced.define_schema(),
+        )
+    }
+
+    assert all(schema.is_output_node is True for schema in schemas.values())
 
 
 def test_runtime_sensitive_nodes_disable_comfy_result_cache():
@@ -859,6 +1179,14 @@ def test_runtime_sensitive_nodes_disable_comfy_result_cache():
     assert torch.isnan(
         torch.tensor(
             MiniMaxH3AudioRefineDualClockSetupT8Advanced.fingerprint_inputs()
+        )
+    )
+    assert torch.isnan(
+        torch.tensor(MiniMaxH3AudioRefineModelRouteT8Advanced.fingerprint_inputs())
+    )
+    assert torch.isnan(
+        torch.tensor(
+            MiniMaxH3AudioRefineDualModelSetupT8Advanced.fingerprint_inputs()
         )
     )
 
@@ -888,7 +1216,7 @@ def test_audio_refine_registration_appends_after_the_released_211_node_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == 215
+    assert len(ids) == 218
     assert ids == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
@@ -900,4 +1228,7 @@ def test_audio_refine_registration_appends_after_the_released_211_node_prefix():
         "MiniMaxH3AudioRefinePlanT8Advanced",
         "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
         "MiniMaxH3AudioRefineQualityGateT8Advanced",
+        "MiniMaxH3AudioRefineModelRouteT8Advanced",
+        "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
+        "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     ]

@@ -980,26 +980,32 @@
     "MiniMaxH3AudioRefineAuditT8Advanced",
     "MiniMaxH3AudioRefinePlanT8Advanced",
     "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
-    "MiniMaxH3AudioRefineQualityGateT8Advanced"
+    "MiniMaxH3AudioRefineQualityGateT8Advanced",
+    "MiniMaxH3AudioRefineModelRouteT8Advanced",
+    "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
+    "MiniMaxH3AudioRefineDualModelSetupT8Advanced"
   ],
   "audio_refine_advanced": {
-    "status": "implemented locally as four append-only Advanced EXP nodes plus one dated frontend workflow; focused tests and one 1056x608x124 Turbo4+Refine4 strict-decode quality pair pass. One reviewer judged the blind pair approximately tied and heard the original arm slightly quieter, so the original remains the default and no quality promotion is granted",
+    "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",
     "date": "2026-08-26",
     "category": "T8/MiniMax H3/Audio/Experimental",
     "nodes": [
       "MiniMaxH3AudioRefineAuditT8Advanced",
       "MiniMaxH3AudioRefinePlanT8Advanced",
       "MiniMaxH3AudioRefineDualClockSetupT8Advanced",
-      "MiniMaxH3AudioRefineQualityGateT8Advanced"
+      "MiniMaxH3AudioRefineQualityGateT8Advanced",
+      "MiniMaxH3AudioRefineModelRouteT8Advanced",
+      "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
+      "MiniMaxH3AudioRefineDualModelSetupT8Advanced"
     ],
-    "positions": [211, 212, 213, 214],
-    "contract": "audits and content-binds the connected H3 MODEL, positive Conditioning and complete nested AV latent, plans a deterministic partial-tail schedule, exposes standard MODEL/NOISE/GUIDER/SAMPLER/SIGMAS/LATENT outputs for ComfyUI SamplerCustomAdvanced, then defaults to the original result until a human explicitly accepts a mechanically eligible candidate",
+    "positions": [211, 212, 213, 214, 215, 216, 217],
+    "contract": "Phase 1 audits and content-binds a connected H3 MODEL, Conditioning and nested AV latent, plans an exact partial tail and defaults to the original until human acceptance. Phase 2 separately binds an audited Turbo4 first-pass MODEL to an explicit same-Turbo or same-base/no-weight-patch refine MODEL using runtime stack fingerprints, then emits the same standard sampler outputs",
     "fixed_initial_scope": "exact uncached route only; CFG 1; native_flow; dual_clock_euler; video/audio shifts 12/3; video noise mask 0 and audio noise mask 1; explicit seed; connected model only",
     "failure_contract": "REJECT outranks ABSTAIN, and any protected final audio, lock/remix route, unsupported mask, unknown patch stack, changed binding, unknown resource state or less than 512MiB whole-device free VRAM / 16GiB host commit headroom returns a zero-step bypass rather than starting refinement",
     "representative_validation": "one bounded 1056x608x124, 24fps Chinese-dialogue run executed Turbo4 plus Refine4 in 414.14 seconds with 14,468MiB observed GPU peak and 1,642MiB minimum free VRAM. Original and raw candidate H.264/AAC files strictly decoded at 32kHz stereo. The raw candidate video changed despite the zero video mask, so the Quality Gate is required; its default fallback reproduced the original decoded video and audio hashes exactly. Evidence is artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e",
-    "human_review": "one reviewer initially reported 'approximately the same, but the right side is slightly quieter', then explicitly clarified that the left side was better. Private reveal was A/left=audio_refine and B/right=original, recording a slight subjective preference for the refined arm and slightly lower perceived level in the original arm. Adjudication is LIMITED_HUMAN_PREFERENCE_AUDIO_REFINE_KEEP_MANUAL_GATE; private record SHA-256 is C6EC049B71A56B2D166F0C40CE1C563DDA23D225213F8952EF843630AB071AB0. One prompt/seed/reviewer does not establish general improvement, equivalence or non-inferiority",
+    "human_review": "the first single-pair review recorded a slight preference for Audio Refine after the reviewer clarified that the left side was better. The later Phase 2 final review used three assessable pairs: clear speech, speech plus rain/music/transient, and I2VA speech. After reveal, base-without-Turbo Refine4 won audio 3/3 with no audio losses; overall it won one pair and tied two. This supports an opt-in route with a manual gate, not a universal quality or non-inferiority claim",
     "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; signal metrics are review cues rather than a quality oracle. The nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
-    "compatibility": "all 211 previously released node IDs retain their exact order, the four new IDs occupy positions 211 through 214, and every pre-existing workflow remains unchanged"
+    "compatibility": "all 215 Phase 1 node IDs retain their exact order and schemas; the three Phase 2 IDs occupy positions 215 through 217, and every pre-existing workflow remains unchanged"
   },
   "github_opportunity_batch_2026_08_22": {
     "status": "implemented as append-only opt-in helpers; legacy node order 0-154, schemas, defaults and workflow files remain unchanged",
