@@ -1,8 +1,10 @@
 # MiniMax H3 Audio T8
 
+简体中文 | [English](README_EN.md)
+
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.52.4** · GPL-3.0-or-later
+当前版本：**1.52.5** · GPL-3.0-or-later
 
 ## 主要功能
 

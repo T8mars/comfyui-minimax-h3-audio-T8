@@ -18,6 +18,7 @@ META_LINE_RE = re.compile(
     r'(?m)^(\s*"version"\s*:\s*")(\d+\.\d+\.\d+)("\s*,?\s*)$'
 )
 README_CURRENT_RE = re.compile(r"(当前版本：\*\*)(\d+\.\d+\.\d+)(\*\*)")
+README_EN_CURRENT_RE = re.compile(r"(Current version: \*\*)(\d+\.\d+\.\d+)(\*\*)")
 
 
 def _version_tuple(value: str) -> tuple[int, int, int]:
@@ -40,9 +41,11 @@ def read_version_state(project_root: Path = PROJECT_ROOT) -> dict[str, Any]:
     pyproject_path = root / "pyproject.toml"
     meta_path = root / "meta.json"
     readme_path = root / "README.md"
+    readme_en_path = root / "README_EN.md"
     pyproject_text = _read_text(pyproject_path)
     meta_text = _read_text(meta_path)
     readme_text = _read_text(readme_path)
+    readme_en_text = _read_text(readme_en_path)
 
     try:
         pyproject_data = tomllib.loads(pyproject_text)
@@ -59,11 +62,18 @@ def read_version_state(project_root: Path = PROJECT_ROOT) -> dict[str, Any]:
     if len(README_CURRENT_RE.findall(readme_text)) != 1:
         raise ValueError("README.md must contain exactly one current-version marker")
     readme_version = readme_match.group(2)
+    readme_en_match = README_EN_CURRENT_RE.search(readme_en_text)
+    if readme_en_match is None:
+        raise ValueError("README_EN.md has no unique current-version marker")
+    if len(README_EN_CURRENT_RE.findall(readme_en_text)) != 1:
+        raise ValueError("README_EN.md must contain exactly one current-version marker")
+    readme_en_version = readme_en_match.group(2)
 
     versions = {
         "pyproject.toml": pyproject_version,
         "meta.json": meta_version,
         "README.md": readme_version,
+        "README_EN.md": readme_en_version,
     }
     for version in versions.values():
         _version_tuple(version)
@@ -78,6 +88,7 @@ def read_version_state(project_root: Path = PROJECT_ROOT) -> dict[str, Any]:
             "pyproject.toml": pyproject_text,
             "meta.json": meta_text,
             "README.md": readme_text,
+            "README_EN.md": readme_en_text,
         },
     }
 
@@ -129,6 +140,9 @@ def prepare_version_update(
         "README.md": _replace_one(
             README_CURRENT_RE, texts["README.md"], target, "README.md"
         ),
+        "README_EN.md": _replace_one(
+            README_EN_CURRENT_RE, texts["README_EN.md"], target, "README_EN.md"
+        ),
     }
     return {
         "schema": "t8.minimax_h3.release_version_plan.v1",
@@ -165,9 +179,10 @@ def apply_version_update(plan: dict[str, Any]) -> dict[str, Any]:
         "pyproject.toml",
         "meta.json",
         "README.md",
+        "README_EN.md",
     }:
         raise ValueError("release version plan has an invalid file set")
-    order = ("pyproject.toml", "meta.json", "README.md")
+    order = ("pyproject.toml", "meta.json", "README.md", "README_EN.md")
     originals = {relative: _read_text(root / relative) for relative in order}
     try:
         for relative in order:
@@ -212,8 +227,9 @@ def _public_plan(plan: dict[str, Any]) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate or atomically synchronize pyproject.toml, meta.json and README.md "
-            "before a GitHub push. This tool never commits, pushes or publishes."
+            "Validate or atomically synchronize pyproject.toml, meta.json, README.md "
+            "and README_EN.md before a GitHub push. This tool never commits, pushes "
+            "or publishes."
         )
     )
     parser.add_argument("--project-root", type=Path, default=PROJECT_ROOT)
@@ -224,7 +240,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="write the three metadata files atomically; otherwise print a dry-run plan",
+        help="write the four metadata files atomically; otherwise print a dry-run plan",
     )
     return parser
 

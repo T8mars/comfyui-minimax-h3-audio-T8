@@ -28,6 +28,10 @@ def _project(tmp_path: Path, version: str = "1.45.0") -> Path:
         f"# Demo\n\n当前版本：**{version}**\n\n历史版本：1.2.3\n",
         encoding="utf-8",
     )
+    (root / "README_EN.md").write_text(
+        f"# Demo\n\nCurrent version: **{version}**\n\nPrevious version: 1.2.3\n",
+        encoding="utf-8",
+    )
     return root
 
 
@@ -61,7 +65,7 @@ def test_semver_bumps_reset_lower_components(level, expected):
     assert bumped_version("1.45.0", level) == expected
 
 
-def test_dry_run_prepares_only_the_three_current_release_markers(tmp_path):
+def test_dry_run_prepares_only_the_four_current_release_markers(tmp_path):
     root = _project(tmp_path)
     before = {path.name: path.read_bytes() for path in root.iterdir()}
 
@@ -69,7 +73,12 @@ def test_dry_run_prepares_only_the_three_current_release_markers(tmp_path):
 
     assert plan["current_version"] == "1.45.0"
     assert plan["target_version"] == "1.46.0"
-    assert set(plan["files"]) == {"pyproject.toml", "meta.json", "README.md"}
+    assert set(plan["files"]) == {
+        "pyproject.toml",
+        "meta.json",
+        "README.md",
+        "README_EN.md",
+    }
     assert {path.name: path.read_bytes() for path in root.iterdir()} == before
     assert "历史版本：1.2.3" in plan["updated_texts"]["README.md"]
 
@@ -84,7 +93,12 @@ def test_apply_atomically_synchronizes_metadata_without_git_side_effects(tmp_pat
     assert result["git_commit_created"] is False
     assert result["git_push_started"] is False
     assert result["registry_publish_started"] is False
-    assert set(result["sha256"]) == {"pyproject.toml", "meta.json", "README.md"}
+    assert set(result["sha256"]) == {
+        "pyproject.toml",
+        "meta.json",
+        "README.md",
+        "README_EN.md",
+    }
     assert "历史版本：1.2.3" in (root / "README.md").read_text(encoding="utf-8")
 
 
@@ -134,6 +148,17 @@ def test_readme_current_marker_must_be_unique(tmp_path):
     readme = (root / "README.md").read_text(encoding="utf-8")
     (root / "README.md").write_text(
         readme + "\n当前版本：**1.45.0**\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="exactly one"):
+        read_version_state(root)
+
+
+def test_english_readme_current_marker_must_be_unique(tmp_path):
+    root = _project(tmp_path)
+    readme = (root / "README_EN.md").read_text(encoding="utf-8")
+    (root / "README_EN.md").write_text(
+        readme + "\nCurrent version: **1.45.0**\n", encoding="utf-8"
     )
 
     with pytest.raises(ValueError, match="exactly one"):
