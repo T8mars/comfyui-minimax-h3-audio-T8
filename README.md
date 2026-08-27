@@ -2,7 +2,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.52.3** · GPL-3.0-or-later
+当前版本：**1.52.4** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -70,6 +70,10 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 默认：Euler/simple、8 NFE、shift `12 / 3`、CFG 1。
 
 目录中同时提供 FL2VA / Ref2VA 的学习型 latent 双采工作流：严格把同一条 PDD 轨迹分成 LOW 4 步和 HIGH 4 步，总 NFE 仍为 8。正式 Ref2VA 预设为 864×480×22、1.5×；FL2VA 双采暂保留实验标记。
+
+## 官方核心兼容
+
+[`20-core-compatibility`](examples/workflows/20-core-compatibility) 提供 AV latent、H3 Attention Hook 和每步 host sync 的按需兼容节点。Tiled VAE 全局坐标候选在当前 fp16 VAE 实测中反而加重规则网格，因此只保留默认旁路的实验审计，不作为修复推荐。旧工作流不需要修改。
 
 ## 常见问题
 

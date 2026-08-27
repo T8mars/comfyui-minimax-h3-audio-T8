@@ -12,6 +12,74 @@ from h3_audio_t8_pkg import nodes_pdd_advanced as pdd_nodes
 from h3_audio_t8_pkg.nodes_pdd_advanced import PDD_ADVANCED_NODE_CLASSES
 
 
+def test_native_pdd_core_probe_is_semantic_and_reports_current_capabilities(monkeypatch):
+    class _NativeFinal:
+        def forward(
+            self,
+            x,
+            t_emb,
+            video_seg,
+            audio_seg,
+            sigma,
+            sample_sigmas,
+            shifts,
+        ):
+            del x, t_emb, video_seg, audio_seg, sigma, sample_sigmas, shifts
+
+    class _Diffusion:
+        final_layer = _NativeFinal()
+
+    def fake_load_lora(_lora, _to_load, log_missing=False):
+        assert log_missing is False
+        return {
+            "diffusion_model.final_layer.video_out.weight": ("set", (torch.zeros(3, 2),)),
+            "diffusion_model.final_layer.video_out.bias": ("set", (torch.zeros(3),)),
+        }
+
+    monkeypatch.setattr(pdd.comfy.lora, "load_lora", fake_load_lora)
+    monkeypatch.setattr(
+        pdd.comfy.lora,
+        "calculate_shape",
+        lambda _patches, _weight, _key: torch.Size((3, 2)),
+    )
+
+    report = pdd.probe_native_pdd_core(_Diffusion())
+
+    assert report["available"] is True
+    assert report["policy"] == "semantic_capability_probe_no_version_or_hash_gate"
+    assert "sigma" in report["final_layer_parameters"]
+
+
+def test_native_pdd_core_probe_rejects_partial_core_support():
+    class _LegacyFinal:
+        def forward(self, x, t_emb, video_seg, audio_seg):
+            del x, t_emb, video_seg, audio_seg
+
+    report = pdd.probe_native_pdd_core(type("_Diffusion", (), {"final_layer": _LegacyFinal()})())
+
+    assert report["available"] is False
+    assert report["final_layer_schedule_args"] is False
+
+
+def test_native_pdd_state_flattens_head_banks_without_mutating_source(monkeypatch):
+    monkeypatch.setattr(pdd.comfy.lora_convert, "convert_lora", lambda value: dict(value))
+    state = {
+        "diffusion_model.blocks.0.attn.to_q.lora_A.weight": torch.zeros(2, 3),
+        "pdd.final_layer.video_out.weight": torch.zeros(2, 3, 4),
+        "pdd.final_layer.video_out.bias": torch.zeros(2, 3),
+        "pdd.final_layer.audio_out.weight": torch.zeros(2, 5, 4),
+        "pdd.final_layer.audio_out.bias": torch.zeros(2, 5),
+    }
+
+    converted = pdd._native_pdd_lora_state(state)
+
+    assert converted["diffusion_model.final_layer.video_out.set_weight"].shape == (6, 4)
+    assert converted["diffusion_model.final_layer.video_out.set_bias"].shape == (6,)
+    assert converted["diffusion_model.final_layer.audio_out.set_weight"].shape == (10, 4)
+    assert converted["diffusion_model.final_layer.audio_out.set_bias"].shape == (10,)
+    assert state["pdd.final_layer.video_out.weight"].shape == (2, 3, 4)
+
+
 def test_pdd_plan_and_runtime_schedule_cover_the_eight_blocks_exactly():
     plans = torch.stack([pdd.pdd_plan(12.0, index) for index in range(8)])
     assert plans.shape == (8, 32)

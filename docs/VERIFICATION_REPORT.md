@@ -6156,3 +6156,24 @@ The complete Prompt Relay scope passed 87 tests. Registration and frontend workf
 passed another 48 tests. Focused Ruff and `py_compile` checks passed. This is a CPU/token-contract
 compatibility repair: no node ID, widget order, workflow graph, model patch, sampling formula, GPU
 generation, visual/audio claim or memory-safety claim changed.
+
+## Official MiniMax H3 core PR compatibility (2026-08-28)
+
+Five open ComfyUI pull requests were audited against the installed H3 core. The plugin now appends an
+H3 AV latent builder, a clone-scoped standard attention-hook bridge, and an instance-scoped forward
+optimization that reduces the two visible sigma host synchronizations to one while caching text-token
+tags only on the current payload. Existing PDD setup now prefers the official shape-changing
+`set_weight`/`set_bias` path when an executable semantic probe passes and otherwise retains the tested
+T8 fallback. Admission uses callable signatures, shapes and behavior; source hashes, ComfyUI versions,
+model hashes and file sizes are diagnostic only.
+
+The tiled-VAE global-coordinate proposal was not promoted. A serial decode used the installed fp16 H3
+video VAE and one real final H3 latent at 736x416. Both outputs were finite, but the proposed global
+coordinates introduced visibly stronger regular grid and stripe artifacts. Mean absolute pixel
+difference from the local-coordinate control was `0.012596`, maximum difference was `0.341046`, and
+the compatibility clone matched a direct core-style patch exactly (`max difference 0`). The registered
+node therefore defaults to `report_only`, returns the original VAE object unchanged and exposes the
+global-coordinate path only as an explicitly named experimental reproduction mode.
+
+The four new node IDs are appended at positions 222-225; no prior node ID, widget order or saved
+workflow was changed. The frontend example is under `examples/workflows/20-core-compatibility`.

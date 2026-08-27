@@ -16,6 +16,7 @@ again.
 from __future__ import annotations
 
 import json
+import inspect
 import math
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,127 @@ PDD_REQUIRED_METADATA = {
     "scheduler": "simple",
     "comfyui_loader": "MiniMax H3 PDD Loader",
 }
+
+
+def probe_native_pdd_core(diffusion=None) -> dict[str, Any]:
+    """Probe the semantics added by ComfyUI PR #15908 without version gates."""
+    probe_weight = torch.zeros((3, 2))
+    probe_bias = torch.zeros((3,))
+    details: dict[str, Any] = {
+        "set_weight_loaded": False,
+        "set_bias_loaded": False,
+        "shape_changing_set": False,
+        "final_layer_schedule_args": False,
+    }
+
+    try:
+        loaded = comfy.lora.load_lora(
+            {
+                "probe.set_weight": probe_weight,
+                "probe.set_bias": probe_bias,
+            },
+            {"probe": "diffusion_model.final_layer.video_out.weight"},
+            log_missing=False,
+        )
+        details["set_weight_loaded"] = (
+            "diffusion_model.final_layer.video_out.weight" in loaded
+        )
+        details["set_bias_loaded"] = (
+            "diffusion_model.final_layer.video_out.bias" in loaded
+        )
+
+        patches = [(1.0, ("set", (probe_weight,)), 1.0, None, None)]
+        shape = comfy.lora.calculate_shape(
+            patches,
+            torch.zeros((1, 2)),
+            "t8_pdd_semantic_probe",
+        )
+        details["shape_changing_set"] = tuple(shape) == tuple(probe_weight.shape)
+    except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as error:
+        details["patch_probe_error"] = f"{type(error).__name__}: {error}"
+
+    final_layer = getattr(diffusion, "final_layer", None)
+    forward = getattr(final_layer, "forward", None)
+    if callable(forward):
+        try:
+            parameters = set(inspect.signature(forward).parameters)
+            details["final_layer_schedule_args"] = {
+                "sigma",
+                "sample_sigmas",
+                "shifts",
+            }.issubset(parameters)
+            details["final_layer_parameters"] = sorted(parameters)
+        except (TypeError, ValueError) as error:
+            details["final_layer_probe_error"] = f"{type(error).__name__}: {error}"
+
+    details["available"] = all(
+        bool(details[key])
+        for key in (
+            "set_weight_loaded",
+            "set_bias_loaded",
+            "shape_changing_set",
+            "final_layer_schedule_args",
+        )
+    )
+    details["policy"] = "semantic_capability_probe_no_version_or_hash_gate"
+    return details
+
+
+def _native_pdd_lora_state(state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    lora_state = {
+        key: value for key, value in state.items() if key.startswith("diffusion_model.")
+    }
+    converted = dict(comfy.lora_convert.convert_lora(lora_state))
+    for source, target in (
+        (
+            "pdd.final_layer.video_out.weight",
+            "diffusion_model.final_layer.video_out.set_weight",
+        ),
+        (
+            "pdd.final_layer.video_out.bias",
+            "diffusion_model.final_layer.video_out.set_bias",
+        ),
+        (
+            "pdd.final_layer.audio_out.weight",
+            "diffusion_model.final_layer.audio_out.set_weight",
+        ),
+        (
+            "pdd.final_layer.audio_out.bias",
+            "diffusion_model.final_layer.audio_out.set_bias",
+        ),
+    ):
+        tensor = state[source]
+        if target.endswith(".set_weight"):
+            tensor = tensor.reshape(-1, tensor.shape[-1])
+        else:
+            tensor = tensor.reshape(-1)
+        converted[target] = tensor.contiguous()
+    return converted
+
+
+def _apply_native_pdd_lora(model, state: dict[str, torch.Tensor], strength: float):
+    converted = _native_pdd_lora_state(state)
+    key_map = comfy.lora.model_lora_keys_unet(model.model, {})
+    loaded = comfy.lora.load_lora(converted, key_map, log_missing=False)
+    adapter_count = sum(
+        key.endswith(".lora_A.weight") for key in state if key.startswith("diffusion_model.")
+    )
+    expected_targets = adapter_count + 4
+    if len(loaded) != expected_targets:
+        raise ValueError(
+            "MiniMax H3 PDD native loading did not map every backbone adapter and "
+            f"head tensor: expected {expected_targets} targets, mapped {len(loaded)}."
+        )
+
+    patched = model.clone()
+    applied = set(patched.add_patches(loaded, float(strength)))
+    if applied != set(loaded):
+        missing = sorted(str(key) for key in set(loaded) - applied)
+        raise ValueError(
+            "MiniMax H3 PDD native loading could not apply all mapped targets: "
+            + ", ".join(missing[:8])
+        )
+    return patched, len(loaded), adapter_count
 
 
 def shifted_sigma(shift: float, sigma: torch.Tensor) -> torch.Tensor:
@@ -603,49 +725,68 @@ def build_pdd_8step_setup(
     state, metadata = comfy.utils.load_torch_file(
         str(pdd_lora_path), safe_load=True, return_metadata=True
     )
-    patched, hook_count, rank_counts = _apply_dynamic_lora(model, state, strength)
-    base_final = patched.get_model_object("diffusion_model.final_layer")
-    if isinstance(base_final, PDDHeadFinalLayer):
-        raise ValueError("A MiniMax-H3 PDD final layer is already attached.")
-    pdd_final = PDDHeadFinalLayer(
-        base_final,
-        state["pdd.final_layer.video_out.weight"],
-        state["pdd.final_layer.video_out.bias"],
-        state["pdd.final_layer.audio_out.weight"],
-        state["pdd.final_layer.audio_out.bias"],
-        strength=strength,
-        variant=base_variant,
-    )
-    backbone_injections = list(patched.get_injections(PDD_INJECTION_KEY) or [])
-    if len(backbone_injections) != 1:
-        raise RuntimeError(
-            "MiniMax-H3 PDD expected one prepared backbone injection, "
-            f"found {len(backbone_injections)}."
+    native_capability = probe_native_pdd_core(diffusion)
+    use_native_core = bool(native_capability["available"] and strength == 1.0)
+    if use_native_core:
+        patched, native_patch_targets, mapped_adapters = _apply_native_pdd_lora(
+            model, state, strength
         )
-    patched.set_injections(
-        PDD_INJECTION_KEY,
-        [
-            _create_pdd_runtime_injection(
-                backbone_injections[0], base_final, pdd_final
+        hook_count = 0
+        rank_counts: dict[int, int] = {}
+        application_mode = "comfyui_native_pdd_set_weight_set_bias"
+        base_weight_mutation = True
+        final_paths_preserved = True
+    else:
+        patched, hook_count, rank_counts = _apply_dynamic_lora(model, state, strength)
+        mapped_adapters = sum(rank_counts.values())
+        native_patch_targets = 0
+        base_final = patched.get_model_object("diffusion_model.final_layer")
+        if isinstance(base_final, PDDHeadFinalLayer):
+            raise ValueError("A MiniMax-H3 PDD final layer is already attached.")
+        pdd_final = PDDHeadFinalLayer(
+            base_final,
+            state["pdd.final_layer.video_out.weight"],
+            state["pdd.final_layer.video_out.bias"],
+            state["pdd.final_layer.audio_out.weight"],
+            state["pdd.final_layer.audio_out.bias"],
+            strength=strength,
+            variant=base_variant,
+        )
+        backbone_injections = list(patched.get_injections(PDD_INJECTION_KEY) or [])
+        if len(backbone_injections) != 1:
+            raise RuntimeError(
+                "MiniMax-H3 PDD expected one prepared backbone injection, "
+                f"found {len(backbone_injections)}."
             )
-        ],
-    )
-    transformer_options = dict(
-        patched.model_options.get("transformer_options", {})
-    )
-    transformer_options.update(
-        {
-            "minimax_h3_pdd_final": pdd_final,
-            "minimax_h3_sigma_shift_video": PDD_SHIFT_VIDEO,
-            "minimax_h3_sigma_shift_audio": PDD_SHIFT_AUDIO,
-        }
-    )
-    patched.model_options["transformer_options"] = transformer_options
-    patched.add_wrapper_with_key(
-        comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL,
-        PDD_WRAPPER_KEY,
-        pdd_forward_wrapper,
-    )
+        patched.set_injections(
+            PDD_INJECTION_KEY,
+            [
+                _create_pdd_runtime_injection(
+                    backbone_injections[0], base_final, pdd_final
+                )
+            ],
+        )
+        transformer_options = dict(
+            patched.model_options.get("transformer_options", {})
+        )
+        transformer_options.update(
+            {
+                "minimax_h3_pdd_final": pdd_final,
+                "minimax_h3_sigma_shift_video": PDD_SHIFT_VIDEO,
+                "minimax_h3_sigma_shift_audio": PDD_SHIFT_AUDIO,
+            }
+        )
+        patched.model_options["transformer_options"] = transformer_options
+        patched.add_wrapper_with_key(
+            comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL,
+            PDD_WRAPPER_KEY,
+            pdd_forward_wrapper,
+        )
+        application_mode = (
+            "comfyui_dynamic_model_only_bypass_plus_final_forward_injection"
+        )
+        base_weight_mutation = False
+        final_paths_preserved = True
     if metadata and hasattr(patched, "set_attachments"):
         patched.set_attachments("t8_minimax_h3_pdd_lora_metadata", dict(metadata))
 
@@ -664,7 +805,7 @@ def build_pdd_8step_setup(
         torch.max(torch.abs(torch.as_tensor(sigmas, dtype=torch.float64) - expected_native))
     )
     report = {
-        "schema": "t8_minimax_h3_pdd_8step_setup_v1",
+        "schema": "t8_minimax_h3_pdd_8step_setup_v2",
         "status": "ready_for_real_render_validation",
         "adapter": {key: value for key, value in contract.items() if key != "metadata"},
         "base": {
@@ -678,17 +819,20 @@ def build_pdd_8step_setup(
             ),
         },
         "lora": {
-            "application_mode": (
-                "comfyui_dynamic_model_only_bypass_plus_final_forward_injection"
-            ),
-            "mapped_adapters": 258,
+            "application_mode": application_mode,
+            "mapped_adapters": mapped_adapters,
             "bypass_hooks": hook_count,
             "rank_counts": {str(key): value for key, value in rank_counts.items()},
             "strength": strength,
-            "base_weight_mutation": False,
-            "eject_policy": "move_adapter_weights_to_model_offload_device",
-            "partial_injection_failure_cleanup": True,
-            "native_final_layer_parameter_paths_preserved": True,
+            "base_weight_mutation": base_weight_mutation,
+            "native_patch_targets": native_patch_targets,
+            "eject_policy": (
+                "comfyui_model_patcher"
+                if use_native_core
+                else "move_adapter_weights_to_model_offload_device"
+            ),
+            "partial_injection_failure_cleanup": not use_native_core,
+            "native_final_layer_parameter_paths_preserved": final_paths_preserved,
         },
         "pdd_heads": {
             "source_intervals": PDD_NUM_STEPS,
@@ -703,9 +847,20 @@ def build_pdd_8step_setup(
             **schedule,
         },
         "compatibility": {
+            "native_core_probe": native_capability,
+            "native_core_used": use_native_core,
+            "native_core_bypass_reason": (
+                None
+                if use_native_core
+                else (
+                    "strength_below_one_requires_t8_head_blending"
+                    if native_capability["available"] and strength != 1.0
+                    else "native_pdd_semantics_not_available"
+                )
+            ),
             "full_non_pruned_only": True,
             "pruned_supported": False,
-            "ordinary_lora_loader_supported": False,
+            "ordinary_lora_loader_supported": bool(native_capability["available"]),
             "additional_lora_stack_supported": False,
             "real_fl2va_render_validated": False,
             "real_ref2va_render_validated": False,

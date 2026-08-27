@@ -1,0 +1,143 @@
+{
+  "id": "5ab3ab0e-432f-4ea8-8f85-fb1d921a4d03",
+  "revision": 0,
+  "last_node_id": 6,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "官方 H3 核心兼容节点怎么用",
+      "pos": [0, 0],
+      "size": [920, 330],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## 按需接入，不要全部强行串联\n\n- **Attention Hooks → Forward Sync**：接在模型加载/LoRA之后、Guider之前。前者给旧核心补标准Attention Hook，后者减少每步主机同步。\n- **Tiled VAE Coordinate Audit**：默认`report_only`，只报告并原样返回VAE。当前真实fp16解码否决了全局坐标候选；实验应用仅用于复现，不是修复。\n- **AV Latent Builder**：仅在已有独立视频latent和音频latent时使用。\n\n新版ComfyUI原生具备对应能力时，节点会自动透传。原工作流无需修改。"
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3AttentionHooksT8Advanced",
+      "title": "旧核心补标准 H3 Attention Hook",
+      "pos": [0, 390],
+      "size": [410, 150],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": null}
+      ],
+      "outputs": [
+        {"name": "model", "type": "MODEL", "links": [1]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AttentionHooksT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3ForwardSyncOptimizationT8Advanced",
+      "title": "减少每步 host sync；不改 schedule",
+      "pos": [500, 390],
+      "size": [430, 150],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1}
+      ],
+      "outputs": [
+        {"name": "model", "type": "MODEL", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ForwardSyncOptimizationT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3GlobalCoordinateTiledVAET8Advanced",
+      "title": "Tiled VAE 使用完整 latent 坐标",
+      "pos": [0, 650],
+      "size": [430, 150],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "video_vae", "type": "VAE", "link": null}
+      ],
+      "outputs": [
+        {"name": "video_vae", "type": "VAE", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3GlobalCoordinateTiledVAET8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": ["report_only"]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3AVLatentBuilderT8Advanced",
+      "title": "组合原生 H3 视频/音频 latent",
+      "pos": [500, 650],
+      "size": [430, 170],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "video_latent", "type": "LATENT", "link": null},
+        {"name": "audio_latent", "type": "LATENT", "link": null}
+      ],
+      "outputs": [
+        {"name": "av_latent", "type": "LATENT", "links": null}
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVLatentBuilderT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "title": "兼容原则",
+      "pos": [0, 900],
+      "size": [920, 260],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## 不靠版本号、文件大小或模型哈希放行\n\n全部兼容节点先检查实际函数签名和语义能力。未知结构会停止该兼容节点，不会修改原模型/VAE；不会因为用户模型指纹不同而报错。PDD仍使用19目录的专用工作流。\n\n**Tiled VAE重要结论：** 当前fp16 VAE真实单帧复核中，上游全局坐标候选反而出现更强规则网格，因此默认`report_only`并原样返回VAE；不要把实验模式当修复使用。"
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "MODEL"]
+  ],
+  "groups": [
+    {"id": 1, "title": "MODEL兼容链（可选）", "bounding": [-30, 345, 990, 235], "color": "#36536b", "font_size": 22, "flags": {}},
+    {"id": 2, "title": "独立工具（按需）", "bounding": [-30, 605, 990, 255], "color": "#4d5b43", "font_size": 22, "flags": {}}
+  ],
+  "config": {},
+  "extra": {
+    "ds": {"scale": 0.85, "offset": [100, 100]},
+    "workflow_title": "MiniMax H3 Official Core Compatibility Advanced"
+  },
+  "version": 0.4
+}

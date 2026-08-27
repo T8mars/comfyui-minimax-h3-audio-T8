@@ -1,4 +1,26 @@
 {
+  "official_h3_core_pr_compatibility": {
+    "status": "three compatibility directions are implemented plus native-first PDD loading. The fourth tiled-VAE direction is registered only as a report-only experimental audit after a real fp16 decode contradicted the upstream quality claim; existing workflows and node schemas are unchanged",
+    "date": "2026-08-28",
+    "nodes": [
+      "MiniMaxH3AVLatentBuilderT8Advanced",
+      "MiniMaxH3AttentionHooksT8Advanced",
+      "MiniMaxH3ForwardSyncOptimizationT8Advanced",
+      "MiniMaxH3GlobalCoordinateTiledVAET8Advanced"
+    ],
+    "positions": [222, 223, 224, 225],
+    "upstream_prs": [
+      "https://github.com/Comfy-Org/ComfyUI/pull/15735",
+      "https://github.com/Comfy-Org/ComfyUI/pull/15270",
+      "https://github.com/Comfy-Org/ComfyUI/pull/15908",
+      "https://github.com/Comfy-Org/ComfyUI/pull/15560",
+      "https://github.com/Comfy-Org/ComfyUI/pull/15561"
+    ],
+    "compatibility": "capabilities are detected by callable behavior, signatures and source features, never by a ComfyUI version, exact core hash, LoRA file hash or file size. Native support passes through; legacy support uses clone-scoped object or method patches. Unknown structures fail before mutating the supplied MODEL or VAE",
+    "validation": "focused tests pass for latent shape/timeline validation, native-first PDD set-weight/set-bias mapping and fallback, standard attention hook behavior and metadata, single sigma host extraction plus once-per-payload text-tag caching, isolated tiled-VAE coordinate cloning, safe report-only default, schema and append-only registration. The full project suite passes 1721 tests. Ruff and Python compilation pass",
+    "workflow": "examples/workflows/20-core-compatibility/2026-08-28_H3_Official_Core_Compatibility_Advanced.json",
+    "boundary": "the compatibility workflow is a wiring reference, not a quality claim. Attention ownership still must be explicit and the forward optimizer refuses unknown Python structures. On the installed fp16 H3 VAE, a real 736x416 one-frame decode produced finite output but the upstream global-coordinate candidate visibly introduced stronger regular grid/stripe artifacts; clone output matched a direct core-style patch exactly, ruling out the clone layer. The node therefore returns the source VAE unchanged by default and experimental apply is not recommended"
+  },
   "pdd_8step_acceleration_advanced": {
     "status": "implemented as one append-only Advanced setup node plus FL2VA/Ref2VA frontend 4+4 learned-latent two-pass workflows. The accepted Ref2VA 864x480x22 scale_by 1.5 route is published as the formal Stable workflow; FL2VA two-pass remains Advanced EXP pending equivalent real validation",
     "date": "2026-08-27",
@@ -1237,7 +1259,11 @@
     "MiniMaxH3AudioRefinePhase2PlanT8Advanced",
     "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     "MiniMaxH3LongVideoInNodeLoopT8Advanced",
-    "MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced"
+    "MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced",
+    "MiniMaxH3AVLatentBuilderT8Advanced",
+    "MiniMaxH3AttentionHooksT8Advanced",
+    "MiniMaxH3ForwardSyncOptimizationT8Advanced",
+    "MiniMaxH3GlobalCoordinateTiledVAET8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",
