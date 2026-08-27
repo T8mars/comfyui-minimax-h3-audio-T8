@@ -102,6 +102,35 @@ class NativeLikeFakeClip:
         return [[torch.zeros((1, len(entries), 8)), {"minimax_token_tags": tags}]]
 
 
+class OpaqueNativeLikeFakeClip(NativeLikeFakeClip):
+    def __init__(self):
+        # Reproduces CLIP proxy/wrapper objects which keep the public tokenize
+        # contract but do not expose ComfyUI's nested tokenizer implementation.
+        self.tokenizer = types.SimpleNamespace()
+
+
+class _FallbackNativeTokenizer:
+    def __init__(self):
+        self.qwen3vl_32b = _ByteInner()
+
+    def tokenize_with_weights(self, text, **_kwargs):
+        return {
+            "qwen3vl_32b": self.qwen3vl_32b.tokenize_with_weights(text)
+        }
+
+
+class _MismatchedFallbackNativeTokenizer(_FallbackNativeTokenizer):
+    def __init__(self):
+        super().__init__()
+        original = self.qwen3vl_32b.tokenize_with_weights
+
+        def mismatched(text, **kwargs):
+            batches = original(text, **kwargs)
+            return [[(int(token_id) + 1, weight) for token_id, weight in batches[0]]]
+
+        self.qwen3vl_32b.tokenize_with_weights = mismatched
+
+
 class MiniMaxH3Model(torch.nn.Module):
     pass
 
@@ -748,6 +777,76 @@ def test_chinese_token_binding_uses_authoritative_tail_and_byte_offsets():
     assert len(binding["events"]) == 3
     assert all(event["text_key_end"] > event["text_key_start"] for event in binding["events"])
     assert binding["events"][0]["text_key_end"] <= binding["events"][1]["text_key_start"]
+
+
+def test_hidden_native_tokenizer_is_accepted_only_after_exact_token_equivalence(monkeypatch):
+    plan, prompt, *_ = _plan()
+    clip = OpaqueNativeLikeFakeClip()
+    tokens = clip.tokenize(prompt)
+    conditioning = clip.encode_from_tokens_scheduled(tokens)
+    monkeypatch.setattr(
+        prompt_relay_module,
+        "MiniMaxH3Tokenizer",
+        _FallbackNativeTokenizer,
+    )
+
+    binding = build_prompt_relay_binding(clip, plan, prompt, conditioning, tokens)
+
+    assert binding["prompt_token_count"] == len(prompt.encode("utf-8"))
+    assert len(binding["events"]) == 3
+
+
+def test_current_comfy_native_tokenizer_survives_public_only_clip_wrapper():
+    native = MiniMaxH3Tokenizer()
+
+    class PublicOnlyClip:
+        tokenizer = types.SimpleNamespace()
+
+        @staticmethod
+        def tokenize(prompt):
+            return native.tokenize_with_weights(prompt)
+
+    prompt = "夜晚的女人抬手，然后快速转身"
+    ids, hf = prompt_relay_module._prompt_token_ids(PublicOnlyClip(), prompt)
+    expected = native.qwen3vl_32b.tokenize_with_weights(
+        prompt,
+        return_word_ids=False,
+        disable_weights=True,
+    )
+
+    assert ids == [entry[0] for entry in expected[0]]
+    assert prompt_relay_module._token_byte_offsets(prompt, ids, hf)[-1][1] == len(
+        prompt.encode("utf-8")
+    )
+
+
+def test_hidden_incompatible_tokenizer_is_not_silently_accepted(monkeypatch):
+    plan, prompt, *_ = _plan()
+    clip = OpaqueNativeLikeFakeClip()
+    tokens = clip.tokenize(prompt)
+    conditioning = clip.encode_from_tokens_scheduled(tokens)
+    monkeypatch.setattr(
+        prompt_relay_module,
+        "MiniMaxH3Tokenizer",
+        _MismatchedFallbackNativeTokenizer,
+    )
+
+    with pytest.raises(RuntimeError, match="not token-equivalent"):
+        build_prompt_relay_binding(clip, plan, prompt, conditioning, tokens)
+
+
+def test_missing_tokenizer_and_public_tokenize_contract_has_actionable_error():
+    plan, prompt, *_ = _plan()
+    clip = types.SimpleNamespace(tokenizer=types.SimpleNamespace())
+    entries = [(int(value), 1.0) for value in prompt.encode("utf-8")]
+    tokens = {"qwen3vl_32b": [entries]}
+    conditioning = [[
+        torch.zeros((1, len(entries), 8)),
+        {"minimax_token_tags": torch.ones(len(entries), dtype=torch.long)},
+    ]]
+
+    with pytest.raises(RuntimeError, match="built-in Load CLIP node with type=minimax"):
+        build_prompt_relay_binding(clip, plan, prompt, conditioning, tokens)
 
 
 def test_repeated_chinese_events_bind_to_distinct_authoritative_token_spans():

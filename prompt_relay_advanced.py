@@ -424,23 +424,106 @@ def _inner_tokenizer(clip):
     outer = getattr(clip, "tokenizer", None)
     inner = getattr(outer, "qwen3vl_32b", None)
     hf = getattr(inner, "tokenizer", None)
-    if inner is None or hf is None or not hasattr(hf, "byte_decoder"):
-        raise RuntimeError("Prompt Relay requires ComfyUI's native MiniMax H3 Qwen tokenizer")
+    if (
+        inner is None
+        or not callable(getattr(inner, "tokenize_with_weights", None))
+        or hf is None
+        or not hasattr(hf, "byte_decoder")
+        or not callable(getattr(hf, "convert_ids_to_tokens", None))
+    ):
+        return None
     return inner, hf
 
 
-def _prompt_token_ids(clip, prompt: str) -> tuple[list[int], object]:
-    inner, hf = _inner_tokenizer(clip)
-    batches = inner.tokenize_with_weights(
-        prompt,
-        return_word_ids=False,
-        disable_weights=True,
-    )
+def _text_token_ids(batches, *, source: str) -> list[int]:
     if len(batches) != 1:
-        raise RuntimeError("Prompt Relay prompt exceeds the supported single token batch")
+        raise RuntimeError(f"Prompt Relay {source} produced more than one token batch")
     ids = [entry[0] for entry in batches[0]]
     if not ids or not all(isinstance(token, int) for token in ids):
-        raise RuntimeError("Prompt Relay prompt tokenization produced a non-text token")
+        raise RuntimeError(f"Prompt Relay {source} produced a non-text token")
+    return ids
+
+
+def _verified_native_tokenizer_fallback(clip, prompt: str) -> tuple[list[int], object]:
+    tokenize = getattr(clip, "tokenize", None)
+    if not callable(tokenize):
+        raise RuntimeError(
+            "Prompt Relay could not inspect the connected CLIP tokenizer and no public "
+            "tokenize() contract is available. Use ComfyUI's built-in Load CLIP node "
+            "with type=minimax and connect it directly to Prompt Relay."
+        )
+
+    try:
+        connected_tokens = tokenize(prompt)
+        connected_entries = _authoritative_entries(connected_tokens)
+        connected_ids = _text_token_ids(
+            [connected_entries],
+            source="connected CLIP tokenizer",
+        )
+    except Exception as error:
+        raise RuntimeError(
+            "Prompt Relay could not verify the connected CLIP's public token output. "
+            "Use ComfyUI's built-in Load CLIP node with type=minimax and connect it "
+            "directly to Prompt Relay."
+        ) from error
+
+    try:
+        native_outer = MiniMaxH3Tokenizer()
+        native_inner = getattr(native_outer, "qwen3vl_32b", None)
+        native_hf = getattr(native_inner, "tokenizer", None)
+        if (
+            native_inner is None
+            or not callable(getattr(native_inner, "tokenize_with_weights", None))
+            or native_hf is None
+            or not hasattr(native_hf, "byte_decoder")
+            or not callable(getattr(native_hf, "convert_ids_to_tokens", None))
+        ):
+            raise TypeError("native MiniMax H3 tokenizer lacks the byte-token contract")
+        native_ids = _text_token_ids(
+            native_inner.tokenize_with_weights(
+                prompt,
+                return_word_ids=False,
+                disable_weights=True,
+            ),
+            source="native MiniMax H3 tokenizer",
+        )
+    except Exception as error:
+        raise RuntimeError(
+            "Prompt Relay could not construct ComfyUI's native MiniMax H3 tokenizer "
+            "for compatibility verification. Update or repair ComfyUI before retrying."
+        ) from error
+
+    if connected_ids != native_ids:
+        connected_hash = hashlib.sha256(
+            _canonical_json(connected_ids).encode("utf-8")
+        ).hexdigest()
+        native_hash = hashlib.sha256(
+            _canonical_json(native_ids).encode("utf-8")
+        ).hexdigest()
+        raise RuntimeError(
+            "Prompt Relay connected CLIP is not token-equivalent to ComfyUI's native "
+            "MiniMax H3 tokenizer "
+            f"(connected={len(connected_ids)}:{connected_hash[:12]}, "
+            f"native={len(native_ids)}:{native_hash[:12]}). Use the built-in Load CLIP "
+            "node with type=minimax; arbitrary tokenizer substitution would misroute "
+            "local prompt timing."
+        )
+    return native_ids, native_hf
+
+
+def _prompt_token_ids(clip, prompt: str) -> tuple[list[int], object]:
+    direct = _inner_tokenizer(clip)
+    if direct is None:
+        return _verified_native_tokenizer_fallback(clip, prompt)
+    inner, hf = direct
+    ids = _text_token_ids(
+        inner.tokenize_with_weights(
+            prompt,
+            return_word_ids=False,
+            disable_weights=True,
+        ),
+        source="prompt tokenization",
+    )
     return ids, hf
 
 

@@ -6137,3 +6137,22 @@ legacy Conditioning opt-in stays at the schema tail so old workflows keep their 
 its saved true/false value no longer changes admission. The reported 2,396,160-pixel case is covered by
 the equivalent valid 32-aligned 2080x1152 contract. A serial focused CPU suite passed 217 tests; no
 model generation, visual-quality test, memory-safety claim or stress test was performed.
+
+## Prompt Relay public-tokenizer compatibility hotfix (2026-08-28)
+
+Issue #13 reported that Prompt Relay rejected a CLIP value before sampling because its internal
+`tokenizer.qwen3vl_32b.tokenizer` path was not visible. The reported ComfyUI commit and the locally
+validated core contain the same native MiniMax H3 tokenizer source, so the fix does not assume that an
+older core uses different tokenization and does not remove exact prompt-token binding.
+
+The original direct native path is unchanged. If a CLIP proxy hides the internal object, version 1.52.3
+uses its public `tokenize()` output, requires exactly one `qwen3vl_32b` batch, constructs ComfyUI's
+bundled native `MiniMaxH3Tokenizer`, and compares every prompt token ID. Only an exact match may reuse
+the native byte decoder for local-character-span binding. Missing public tokenization and any token
+length or ID mismatch remain fail-closed with an actionable `Load CLIP / type=minimax` diagnostic, so
+an arbitrary tokenizer cannot silently shift event timing.
+
+The complete Prompt Relay scope passed 87 tests. Registration and frontend workflow compatibility
+passed another 48 tests. Focused Ruff and `py_compile` checks passed. This is a CPU/token-contract
+compatibility repair: no node ID, widget order, workflow graph, model patch, sampling formula, GPU
+generation, visual/audio claim or memory-safety claim changed.

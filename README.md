@@ -2,7 +2,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.52.2** · GPL-3.0-or-later
+当前版本：**1.52.3** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -75,6 +75,7 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 - **参数错位或 NaN：** 完整重启 ComfyUI，再重新载入工作流。
 - **媒体标签报错：** 检查素材连接和标签编号。
+- **Prompt Relay tokenizer 报错：** 优先使用原生 `Load CLIP` 并选择 `type=minimax`；1.52.3起兼容隐藏内部 tokenizer 的CLIP包装，但实际token必须与原生H3逐项一致。
 - **没有保留原声：** 使用 `lock_source`，并连接 `mux_audio`。
 - **OOM：** 关闭并发，降低分辨率/帧数，再逐个关闭高级节点排查。
 
