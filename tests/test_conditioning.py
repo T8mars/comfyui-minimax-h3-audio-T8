@@ -252,7 +252,7 @@ def test_orphan_video_soundtrack_is_rejected():
         build_conditioning(**args)
 
 
-def test_canvas_allows_1080p_area_and_requires_explicit_opt_in_above_it():
+def test_canvas_above_reference_area_is_warning_only_without_opt_in():
     args = base_args()
     args.update({
         "width": 1920,
@@ -268,12 +268,18 @@ def test_canvas_allows_1080p_area_and_requires_explicit_opt_in_above_it():
     video, _audio = latent["samples"].unbind()
     assert video.shape[-2:] == (68, 120)
 
-    args.update({"width": 1952, "height": 1088})
-    with pytest.raises(ValueError, match="2,088,960"):
-        build_conditioning(**args)
+    # Exact canvas from the user report: 2,396,160 pixels, formerly rejected.
+    args.update({"width": 2208, "height": 1088})
+    result = build_conditioning(**args, return_details=True)
+    _conditioning, latent, *_rest, report, details = result
+    video, _audio = latent["samples"].unbind()
+    assert video.shape[-2:] == (68, 138)
+    assert "execution remains allowed" in report
+    assert details["exceeds_reference_area"] is True
+    assert details["allow_above_reference_area"] is False
+    assert details["reference_area_policy"] == "warning_only_no_area_gate"
 
     args["allow_above_reference_area"] = True
-    _conditioning, latent, *_rest, report = build_conditioning(**args)
-    video, _audio = latent["samples"].unbind()
-    assert video.shape[-2:] == (68, 122)
-    assert "execution was explicitly allowed" in report
+    _conditioning, latent_opt_in, *_rest = build_conditioning(**args)
+    video_opt_in, _audio = latent_opt_in["samples"].unbind()
+    assert video_opt_in.shape == video.shape

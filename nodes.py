@@ -219,9 +219,9 @@ class MiniMaxH3AudioConditioningT8(io.ComfyNode):
                     optional=True,
                     advanced=True,
                     tooltip=(
-                        "Allows an explicitly requested canvas above the 1920x1088 reference "
-                        "area. Intended for learned two-pass high-resolution workflows; no "
-                        "VRAM guarantee is implied. Old workflows remain false by default."
+                        "Legacy workflow compatibility input. Canvases above the 1920x1088 "
+                        "reference area are now allowed regardless of this value and only emit "
+                        "a VRAM/runtime warning."
                     ),
                 ),
             ],
