@@ -134,6 +134,39 @@ tests. Ruff, targeted `py_compile`, `features.json` parsing and `git diff --chec
 existing Triton deprecation warnings were unchanged. No H3, SAM, CUDA, GFPGAN inference or video
 generation was run during this closing regression.
 
+## 2026-08-26 — MiniMax H3 Audio Refine bounded quality pair
+
+Four append-only experimental nodes now cover preflight Audit, deterministic partial-tail Plan,
+dual-clock Setup and a source-first Quality Gate. The old runtime node prefix at positions 0 through
+210 is retained. The initial route is deliberately narrow: the connected model only, CFG 1,
+`native_flow`, `dual_clock_euler`, video/audio shifts 12/3, deterministic noise, video mask zero and
+audio mask one. Protected final/locked/remix audio and unknown transformer patch stacks fail closed.
+
+One bounded quality pair used 1056x608, 124 frames at 24fps, a clear Chinese dialogue prompt, four
+Turbo first-pass steps and four refine steps at `audio_denoise=0.50`. It completed in 414.14 seconds;
+whole-device telemetry observed a 14,468MiB GPU peak and 1,642MiB minimum free VRAM. Original and
+raw-refine H.264/AAC files both strictly decoded at 32kHz stereo. The raw candidate's decoded video
+hash differed from the source, proving that a zero video mask alone is not an exact preservation
+contract in the current ComfyUI path. The Quality Gate therefore defaults to the original result;
+its fallback decoded video and audio hashes were exact matches to the original. After explicit
+acceptance it reconstructs the output from the exact original video latent and candidate audio
+latent, subject to finite/shape/rate/channel/duration checks.
+
+Evidence is kept locally under
+`artifacts/audio-refine-quality-pair-20260826/20260826-041947-c544a81e`. A separate randomized A/B
+page contained no reveal mapping during listening. One reviewer initially reported that the two
+sides were approximately the same while the right side was slightly quieter, then explicitly
+clarified that the left side was better. Reveal maps A/left to Audio Refine and B/right to the
+original, so this fixed case records a slight subjective preference for the refined arm and a lower
+perceived level in the original arm. The adjudication is
+`LIMITED_HUMAN_PREFERENCE_AUDIO_REFINE_KEEP_MANUAL_GATE`; the Quality Gate remains false by default
+because one prompt, seed and reviewer do not establish general improvement or non-inferiority. The
+ignored private adjudication record SHA-256 is
+`C6EC049B71A56B2D166F0C40CE1C563DDA23D225213F8952EF843630AB071AB0`.
+This single prompt/seed/reviewer does not establish equivalence, non-inferiority, transcript/voice
+preservation, lip-sync preservation, general 16GB safety or superiority over a conventional
+eight-step baseline. Frozen Cache remains deferred.
+
 ## 2026-08-24 — Creator and external-bridge human-review adjudication
 
 Three current `final` reviewer exports were checked against their exact private review IDs and

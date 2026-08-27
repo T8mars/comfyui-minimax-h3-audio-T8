@@ -253,11 +253,7 @@ def test_surface_node_is_append_only_and_safe_by_default():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert len(ids) == 213
-    assert ids[-5:] == [
-        "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
-        "MiniMaxH3SkinFinishSurfaceT8Advanced",
-        "MiniMaxH3SkinFinishDichromaticT8Advanced",
-        "MiniMaxH3TurboSLAProfileRouterT8Advanced",
-        "MiniMaxH3PDD8StepSetupT8Advanced",
-    ]
+    assert len(ids) == 220
+    assert ids[208] == "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced"
+    assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
+    assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"

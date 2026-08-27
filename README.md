@@ -8,7 +8,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 
 - 文生、图生、首尾帧、参考图/视频/音频、混合参考
 - 视频和音频双时钟采样
-- 原声保留、参考音频、音轨合成
+- 原声保留、参考音频、音轨合成、低步数 Audio Refine
 - 多关键帧、长视频续写、断点恢复、Latent 放大
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
