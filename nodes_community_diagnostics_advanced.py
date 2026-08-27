@@ -5,6 +5,7 @@ from comfy_api.latest import io
 from .community_diagnostics_advanced import (
     diagnose_official_h3_risks,
     probe_generic_loop_capability,
+    probe_taeh3_preview_capability,
 )
 
 
@@ -87,7 +88,39 @@ class MiniMaxH3OfficialRiskDiagnosticT8Advanced(io.ComfyNode):
         return float("nan")
 
 
+class MiniMaxH3TAEH3PreviewCapabilityT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3TAEH3PreviewCapabilityT8Advanced",
+            display_name="MiniMax H3 TAEH3 Preview Capability / 快速预览能力 (Advanced EXP/T8)",
+            description=(
+                "Read-only inspection of ComfyUI's native TAEH3 progress-preview path and the "
+                "installed models/vae_approx asset. It never changes preview settings or sampling."
+            ),
+            category=CATEGORY,
+            inputs=[],
+            outputs=[
+                io.Boolean.Output("available"),
+                io.Boolean.Output("active"),
+                io.String.Output("status"),
+                io.String.Output("report_json"),
+            ],
+            is_experimental=True,
+            is_output_node=True,
+        )
+
+    @classmethod
+    def execute(cls):
+        return io.NodeOutput(*probe_taeh3_preview_capability())
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
 COMMUNITY_DIAGNOSTICS_ADVANCED_NODE_CLASSES = [
     MiniMaxH3GenericLoopCapabilityT8Advanced,
     MiniMaxH3OfficialRiskDiagnosticT8Advanced,
+    MiniMaxH3TAEH3PreviewCapabilityT8Advanced,
 ]

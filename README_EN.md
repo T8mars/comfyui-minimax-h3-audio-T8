@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.53.0** · GPL-3.0-or-later
+Current version: **1.54.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -53,6 +53,7 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | Turbo, SLA, PDD, and other LoRAs | `models/loras` |
 | Latent upscaler | `models/latent_upscale_models` |
 | H3 Fun ControlNet | `models/controlnet` |
+| TAEH3 preview model | `models/vae_approx` |
 
 Do not mix FL2VA, Ref2VA, pruned, and full base-model variants.
 
@@ -81,11 +82,15 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 
 ## Community Creation Tools
 
-[`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, and read-only diagnostics. Download the Fun Control model from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet) and place it in `models/controlnet`. The other nodes are report/plan-only by default: they do not delete cache files, unload models, or enable the still-draft official Generic Loops backend.
+[`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, native TAEH3 preview inspection, and read-only diagnostics. Download the Fun Control model from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet) and place it in `models/controlnet`. Download `taeh3.safetensors` from [madebyollin/taehv](https://github.com/madebyollin/taehv), place it in `models/vae_approx`, and start ComfyUI with TAESD preview selected. The other nodes are report/plan-only by default: they do not delete cache files, unload models, change preview settings, or enable the still-draft official Generic Loops backend.
+
+For a Qwen reference-prefix cache plus the separately installed [T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8), use the Ref2VA Stock20 template under [`12-system-memory`](examples/workflows/12-system-memory). It is a performance-first EXP route, not a bit-exact, VRAM-saving, or universal 16GB-safety claim.
 
 ## Troubleshooting
 
-- **All T8 nodes turn red or appear missing after an update:** this usually means that the extension failed during startup, not that a workflow parameter or model file is wrong. Update the ComfyUI core, frontend, and Manager together, fully exit ComfyUI, and restart it. If the problem remains, find the first `IMPORT FAILED` / `ModuleNotFoundError` in the startup console. Missing `comfy_api.latest`, `comfy.weight_adapter`, `comfy.patcher_extension`, or `comfy.ldm.minimax` means that the ComfyUI core is too old; missing `torch`, `torchaudio`, `safetensors`, or `PIL` means that the active ComfyUI Python environment is incomplete. The basic nodes require no extra pip packages, so do not install optional packages blindly. Include the first complete import traceback, ComfyUI version, and node-pack version when reporting the problem.
+- **After an August 22 or later update, every T8 node turns red or appears missing:** the extension failed during startup; this is not a model-file or workflow-parameter problem. Update the ComfyUI core, frontend, and Manager together, fully exit ComfyUI, and restart it.
+- **Use the first startup error to identify the cause:** missing `comfy_api.latest`, `comfy.weight_adapter`, `comfy.patcher_extension`, or `comfy.ldm.minimax` means that the ComfyUI core is too old. Missing `torch`, `torchaudio`, `numpy`, `safetensors`, or `PIL` (package name: `Pillow`) means that the Python environment used by ComfyUI is incomplete.
+- **Repairing dependencies:** reinstall ComfyUI's own `requirements.txt` with the exact Python executable that starts ComfyUI; users of bundled distributions should prefer that bundle's updater. Do not install into the system Python, and do not blindly add optional SLA, Transformers, or OpenCV packages for the basic nodes, because that can replace the working Torch/CUDA stack. When reporting the issue, include the first complete `IMPORT FAILED` / `ModuleNotFoundError`, the ComfyUI version, and this node-pack version.
 - **Shifted parameters or NaN widgets:** fully restart ComfyUI, then reload the workflow.
 - **Media-tag error:** check the connected media and tag numbering.
 - **Prompt Relay tokenizer error:** use the native `Load CLIP` node with `type=minimax`. Since 1.52.3, wrapped CLIP objects with hidden internal tokenizers are supported only when every token matches native H3 tokenization.

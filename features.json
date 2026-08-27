@@ -1,6 +1,6 @@
 {
   "community_creation_batch_advanced": {
-    "status": "implemented as seven append-only Advanced/EXP nodes; old node IDs, schemas, defaults and workflows remain unchanged",
+    "status": "implemented as eight append-only Advanced/EXP nodes; old node IDs, schemas, defaults and workflows remain unchanged",
     "date": "2026-08-28",
     "nodes": [
       "MiniMaxH3LongVideoVoiceContextT8Advanced",
@@ -9,15 +9,17 @@
       "MiniMaxH3ResidencyStrategyT8Advanced",
       "MiniMaxH3CreatorSegmentCacheT8Advanced",
       "MiniMaxH3GenericLoopCapabilityT8Advanced",
-      "MiniMaxH3OfficialRiskDiagnosticT8Advanced"
+      "MiniMaxH3OfficialRiskDiagnosticT8Advanced",
+      "MiniMaxH3TAEH3PreviewCapabilityT8Advanced"
     ],
-    "positions": [228, 229, 230, 231, 232, 233, 234],
+    "positions": [228, 229, 230, 231, 232, 233, 234, 235],
     "long_video_voice": "maps exact dialogue turns to final <Audio N> ordinals and produces independent global/local pin-frame plans without injecting or truncating waveforms. Cross-boundary dialogue defaults to ABSTAIN; the review gate is explicit and hash-bound",
     "seam_drift": "report-only by default; optional candidate uses bounded gain/offset over reviewed seam windows and fails back per frame on cuts, flashes, SDR uncertainty, excessive change or texture drift. It never synthesizes detail or touches audio",
     "residency": "compiles side-effect-free report_only/minimum_memory/balanced/faster VRAM policies from observable runtime facts. It never unloads unrelated models and applies nothing unless wired to a compatible loader",
     "creator_cache": "semantic per-shot/variant cache planning across source, model, LoRA, prompt, sampling and effect contracts with accepted-artifact protection and byte/count LRU quarantine proposals; no file mutation occurs",
     "generic_loops": "read-only capability probe for ComfyUI PR 15923. The upstream contract is still draft, so the released T8 in-node loop remains authoritative and no draft scheduler backend is enabled",
     "official_diagnostics": "read-only evidence classifier for residual VRAM/V-copy observations, reference load, Sage FP8, audio numerical integrity, multi-speaker reference coverage and 17-frame dark-flash periodicity. Unknown evidence remains unknown and model name/hash/size never blocks execution",
+    "taeh3_preview": "read-only capability probe for ComfyUI's native TAEH3 H3 progress preview. The installed 24-channel temporal decoder in models/vae_approx is inspected structurally without loading it, changing preview settings or sampling; current native behavior previews only the first video frame at each step",
     "boundary": "diagnostic and planning nodes do not prove universal quality, long-duration stability, crash recovery or 16GB safety. Fun Control is the only GPU-generative addition in this batch; one serial 256x256x22 Turbo4 canny run passed strict H.264/AAC decode and visual contact-sheet inspection, but this low-resolution smoke test proves execution mechanics only, not quality superiority or general 16GB safety"
   },
   "h3_fun_control_advanced": {
@@ -1311,7 +1313,8 @@
     "MiniMaxH3ResidencyStrategyT8Advanced",
     "MiniMaxH3CreatorSegmentCacheT8Advanced",
     "MiniMaxH3GenericLoopCapabilityT8Advanced",
-    "MiniMaxH3OfficialRiskDiagnosticT8Advanced"
+    "MiniMaxH3OfficialRiskDiagnosticT8Advanced",
+    "MiniMaxH3TAEH3PreviewCapabilityT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",
@@ -2156,7 +2159,8 @@
       "bounded CPU-memory LRU for an exact native H3 visual-reference causal prefix",
       "prompt suffix is always recomputed and audio-only references bypass",
       "no disk persistence, no core-file patch and no mutation of the input CLIP",
-      "a semantically incompatible core, token weights, schedules/hooks and non-native H3 CLIP fail closed or bypass; source hashes are diagnostic only"
+      "a semantically incompatible core, token weights, schedules/hooks and non-native H3 CLIP fail closed or bypass; source hashes are diagnostic only",
+      "a dated Ref2VA Stock20 workflow composes the CLIP-only prefix cache with the separately installed MODEL-only T8 BlockCache at threshold 0.08, CPU storage and at most two consecutive hits; the two cache domains remain independent and no external source is bundled"
     ],
     "validated": [
       "real current ComfyUI tiny-Llama full-forward versus prefix-KV suffix-forward equivalence within 2e-6",
@@ -2176,7 +2180,7 @@
       "a native 48-frame video-reference full A/V control on ddbaa8752 recorded one real hit after one miss from a 110.744MiB entry; OFF/HIT time was 25.266/15.578s, video SSIM mean/minimum 0.950934/0.944633, audio correlation 0.953029, and headroom only 344.340/338.833MiB",
       "LRU eviction, oversize refusal and report-only identity"
     ],
-    "status": "implemented Advanced EXP; old/current semantic core contracts and current-core real hit mechanics pass while source hashes remain diagnostics, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed; human blind interpretation and cross-GPU validation remain pending"
+    "status": "implemented Advanced EXP; old/current semantic core contracts and current-core real hit mechanics pass while source hashes remain diagnostics, single-image has three-cold/three-warm timing evidence, automated two-image multi-material repetition is complete, and Stock20 automated quality/safety promotion failed. The external BlockCache composition is now documented as a performance-first workflow only; it is not a lossless, VRAM-saving or 16GB-safe claim"
   },
   "experimental_studio_advanced": {
     "category": "T8/MiniMax H3/Studio/Experimental",

@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.53.0** · GPL-3.0-or-later
+当前版本：**1.54.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -54,6 +54,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | Turbo、SLA、PDD 等 LoRA | `models/loras` |
 | Latent 放大模型 | `models/latent_upscale_models` |
 | H3 Fun ControlNet | `models/controlnet` |
+| TAEH3 快速预览模型 | `models/vae_approx` |
 
 FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
@@ -82,11 +83,15 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 ## 社区创作增强
 
-[`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存和只读诊断。Fun Control 模型下载自 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)，放入`models/controlnet`；其余节点默认只生成计划或报告，不会自动删缓存、卸载模型或启用尚在草案中的官方 Generic Loops。
+[`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存、TAEH3原生快速预览检查和只读诊断。Fun Control 模型下载自 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)，放入`models/controlnet`；从[madebyollin/taehv](https://github.com/madebyollin/taehv)下载`taeh3.safetensors`放入`models/vae_approx`，并在ComfyUI启动参数中选择TAESD预览。其余节点默认只生成计划或报告，不会自动删缓存、卸载模型、修改预览设置或启用尚在草案中的官方 Generic Loops。
+
+需要把Qwen参考前缀缓存与外部[T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8)组合时，使用[`12-system-memory`](examples/workflows/12-system-memory)中的Ref2VA Stock20模板。它是性能优先EXP，不保证bit-exact、省显存或16GB安全。
 
 ## 常见问题
 
-- **更新后所有 T8 节点同时爆红/显示缺失：** 这通常表示插件在启动时整体加载失败，不是工作流参数或模型文件问题。先把 ComfyUI 本体、前端和 Manager 一起更新，完全退出后重启；仍失败时查看启动终端中的第一条 `IMPORT FAILED` / `ModuleNotFoundError`。缺少 `comfy_api.latest`、`comfy.weight_adapter`、`comfy.patcher_extension` 或 `comfy.ldm.minimax` 表示 ComfyUI 本体过旧；缺少 `torch`、`torchaudio`、`safetensors` 或 `PIL` 表示当前 ComfyUI Python 环境不完整。基础节点不需要额外 pip 依赖，不要盲目安装可选包；反馈时请附上第一段完整导入报错、ComfyUI 版本和本节点版本。
+- **8 月 22 日后更新，所有 T8 节点同时爆红/显示缺失：** 这是插件在启动时整体导入失败，不是模型或工作流参数问题。先把 ComfyUI 本体、前端和 Manager 一起更新，完全退出后重启。
+- **根据启动终端的第一条报错判断：** 缺少 `comfy_api.latest`、`comfy.weight_adapter`、`comfy.patcher_extension` 或 `comfy.ldm.minimax`，说明 ComfyUI 本体过旧；缺少 `torch`、`torchaudio`、`numpy`、`safetensors` 或 `PIL`（安装包名是 `Pillow`），说明当前 ComfyUI 使用的 Python 基础环境不完整。
+- **修复依赖：** 用启动 ComfyUI 的同一个 Python，重新安装 ComfyUI 自己的 `requirements.txt`；整合包用户优先使用整合包更新器。不要在系统 Python 中安装，也不要为了基础节点盲装 SLA、Transformers、OpenCV 等可选依赖，以免替换 Torch/CUDA。反馈时请附第一段完整 `IMPORT FAILED` / `ModuleNotFoundError`、ComfyUI 版本和本节点版本。
 - **参数错位或 NaN：** 完整重启 ComfyUI，再重新载入工作流。
 - **媒体标签报错：** 检查素材连接和标签编号。
 - **Prompt Relay tokenizer 报错：** 优先使用原生 `Load CLIP` 并选择 `type=minimax`；1.52.3起兼容隐藏内部 tokenizer 的CLIP包装，但实际token必须与原生H3逐项一致。

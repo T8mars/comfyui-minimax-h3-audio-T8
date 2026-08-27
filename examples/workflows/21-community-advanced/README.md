@@ -4,6 +4,6 @@
 
 - `H3_Fun_Control`：把已经预处理好的深度、姿态或边缘视频接入 H3。控制视频必须和目标宽高、帧数一致；`strength=0`为原样旁路。当前模型放在`ComfyUI/models/controlnet`。
 - `H3_Long_Video_Voice_and_Seam`：按人物绑定最终`<Audio N>`、检查跨段句子和首段人工确认；另一个独立节点只审计/缓解已拼接IMAGE的亮度与色彩接缝，不处理音频。
-- `H3_System_Cache_and_Diagnostics`：低显存策略、Creator分段语义缓存、Generic Loops能力和官方问题证据诊断。它们默认只报告或生成计划，不会卸载模型、删除缓存或切换草案后端。
+- `H3_System_Cache_and_Diagnostics`：低显存策略、Creator分段语义缓存、Generic Loops能力、官方问题证据诊断和TAEH3原生快速预览检查。它们默认只报告或生成计划，不会卸载模型、删除缓存、切换草案后端或修改ComfyUI预览设置。TAEH3模型放在`ComfyUI/models/vae_approx/taeh3.safetensors`，启动时选择TAESD预览；它只显示每步的视频第一帧，最终成片仍以H3视频VAE为准。
 
 边界：Fun Control尚需最终人工画质审核；其余节点主要用于计划、审计和安全接入，不代表普遍16GB安全或质量提升。

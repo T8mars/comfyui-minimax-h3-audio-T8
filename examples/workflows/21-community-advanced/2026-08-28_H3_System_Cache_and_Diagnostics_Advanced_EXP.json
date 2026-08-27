@@ -1,7 +1,7 @@
 {
   "id": "9007459a-b0a5-49e8-a0ec-35cf0c070111",
   "revision": 0,
-  "last_node_id": 5,
+  "last_node_id": 7,
   "last_link_id": 0,
   "nodes": [
     {
@@ -49,6 +49,24 @@
       "outputs": [{"name": "status", "type": "STRING", "links": null}, {"name": "risk_count", "type": "INT", "links": null}, {"name": "report_json", "type": "STRING", "links": null}],
       "properties": {"Node name for S&R": "MiniMaxH3OfficialRiskDiagnosticT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
       "widgets_values": [736, 416, 124, 0, 1, 0, "unknown", "", "", ""]
+    },
+    {
+      "id": 6, "type": "MiniMaxH3TAEH3PreviewCapabilityT8Advanced", "title": "TAEH3 原生快速预览能力（只读）", "pos": [0, 1030], "size": [470, 180], "flags": {}, "order": 5, "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "available", "type": "BOOLEAN", "links": null},
+        {"name": "active", "type": "BOOLEAN", "links": null},
+        {"name": "status", "type": "STRING", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"Node name for S&R": "MiniMaxH3TAEH3PreviewCapabilityT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
+      "widgets_values": []
+    },
+    {
+      "id": 7, "type": "MarkdownNote", "title": "TAEH3 使用说明", "pos": [540, 1260], "size": [520, 240], "flags": {}, "order": 6, "mode": 0,
+      "inputs": [], "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
+      "widgets_values": "## 快速预览，不改变生成结果\n\n1. 把`taeh3.safetensors`放入`ComfyUI/models/vae_approx`。\n2. 启动ComfyUI时选择`TAESD`预览方式；节点只检查当前能力，不会代你修改设置。\n3. 当前ComfyUI每个采样步只预览视频第一帧，不是完整动态预览。\n4. TAEH3只是近似进度图；最终质量仍以H3视频VAE解码为准。"
     }
   ],
   "links": [], "groups": [], "config": {},

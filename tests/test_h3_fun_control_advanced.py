@@ -115,6 +115,73 @@ def test_sol_morton_is_rejected_before_control_encode():
         )
 
 
+def test_native_multi_control_chains_previous_control_and_reports_budget():
+    created = []
+
+    class _NativeControl:
+        def __init__(self):
+            self.previous = None
+            self.hint = None
+
+        def copy(self):
+            child = _NativeControl()
+            created.append(child)
+            return child
+
+        def set_cond_hint(self, hint, strength, window, *, vae):
+            self.hint = (hint, strength, window, vae)
+            return self
+
+        def set_previous_controlnet(self, previous):
+            self.previous = previous
+            return self
+
+    class _Model:
+        model_options = {}
+
+        def __init__(self, attachments=None):
+            self.attachments = dict(attachments or {})
+
+        def clone(self):
+            return _Model(self.attachments)
+
+        def get_attachment(self, key):
+            return self.attachments.get(key)
+
+        def set_attachments(self, key, value):
+            self.attachments[key] = value
+
+    frames = torch.zeros(5, 32, 32, 3)
+    positive = [[torch.zeros(1), {}]]
+    vae = object()
+    bundle = fun.H3FunControlBundle(
+        "native", _NativeControl(), "union.safetensors", "union.safetensors", {}
+    )
+    first_model, first_positive, _ = fun.apply_h3_fun_control(
+        _Model(), positive, bundle, vae, frames, 32, 32, 5,
+        "depth", "exact", 0.55, 0.0, 0.75,
+    )
+    second_model, second_positive, report_json = fun.apply_h3_fun_control(
+        first_model, first_positive, bundle, vae, frames, 32, 32, 5,
+        "pose", "exact", 0.60, 0.1, 0.8,
+    )
+
+    first_control = first_positive[0][1]["control"]
+    second_control = second_positive[0][1]["control"]
+    assert len(created) == 2
+    assert first_control.previous is None
+    assert second_control.previous is first_control
+    attachment = second_model.get_attachment(fun.FUN_CONTROL_ATTACHMENT_KEY)
+    assert [item["kind"] for item in attachment["controls"]] == ["depth", "pose"]
+    assert attachment["combined_strength"] == pytest.approx(1.15)
+    report = json.loads(report_json)
+    assert report["control_count"] == 2
+    assert report["combined_strength"] == pytest.approx(1.15)
+    assert report["warnings"] == [
+        "combined control strength exceeds 1.0; saturation is possible"
+    ]
+
+
 def test_loader_uses_framework_structure_not_filename_size_or_hash(monkeypatch, tmp_path):
     path = tmp_path / "arbitrary-user-name.safetensors"
     path.write_bytes(b"not-a-real-checkpoint")

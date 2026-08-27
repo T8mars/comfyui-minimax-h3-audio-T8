@@ -5,11 +5,13 @@ import importlib
 import inspect
 import json
 import math
+from pathlib import Path
 from typing import Any
 
 
 GENERIC_LOOP_SCHEMA = "t8.minimax_h3.generic_loop_capability.v1"
 OFFICIAL_DIAGNOSTIC_SCHEMA = "t8.minimax_h3.official_issue_diagnostic.v1"
+TAEH3_PREVIEW_SCHEMA = "t8.minimax_h3.taeh3_preview_capability.v1"
 
 
 def _json_object(value: str, name: str) -> dict[str, Any]:
@@ -111,6 +113,161 @@ def probe_generic_loop_capability() -> tuple[bool, str, str]:
         ),
     }
     return available, status, json.dumps(report, ensure_ascii=False, indent=2)
+
+
+def _taeh3_asset_report(path: Path) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "path": str(path),
+        "filename": path.name,
+        "exists": path.is_file(),
+        "bytes": path.stat().st_size if path.is_file() else None,
+        "structure": "unavailable",
+        "decoder_input_channels": None,
+        "tensor_count": None,
+        "error": None,
+    }
+    if not path.is_file():
+        return result
+    try:
+        from safetensors import safe_open
+
+        with safe_open(str(path), framework="pt", device="cpu") as handle:
+            keys = list(handle.keys())
+            result["tensor_count"] = len(keys)
+            if "decoder.1.weight" in keys:
+                shape = tuple(handle.get_slice("decoder.1.weight").get_shape())
+                result["decoder_input_channels"] = int(shape[1]) if len(shape) == 4 else None
+                result["decoder_entry_shape"] = list(shape)
+            if "decoder.22.bias" in keys:
+                result["decoder_exit_shape"] = list(
+                    handle.get_slice("decoder.22.bias").get_shape()
+                )
+            temporal = any(key.startswith("decoder.") for key in keys)
+            channels_ok = result["decoder_input_channels"] == 24
+            result["structure"] = (
+                "LIKELY_NATIVE_TAEHV_24CH" if temporal and channels_ok else "UNRECOGNIZED"
+            )
+    except Exception as error:
+        result["error"] = f"{type(error).__name__}: {error}"
+    return result
+
+
+def probe_taeh3_preview_capability() -> tuple[bool, bool, str, str]:
+    """Inspect current ComfyUI's native H3 preview path without enabling it."""
+
+    import_errors: dict[str, str] = {}
+    modules: dict[str, Any] = {}
+    for name in ("folder_paths", "latent_preview", "comfy.latent_formats"):
+        try:
+            modules[name] = importlib.import_module(name)
+        except Exception as error:
+            import_errors[name] = f"{type(error).__name__}: {error}"
+
+    latent_preview = modules.get("latent_preview")
+    latent_formats = modules.get("comfy.latent_formats")
+    folder_paths = modules.get("folder_paths")
+
+    video_format = getattr(latent_formats, "MiniMaxH3Video", None)
+    decoder_name = getattr(video_format, "taesd_decoder_name", None)
+    video_taes = list(getattr(latent_preview, "VIDEO_TAES", ()))
+    core_support = bool(
+        decoder_name == "taeh3"
+        and "taeh3" in video_taes
+        and getattr(latent_preview, "TAEHVPreviewerImpl", None) is not None
+    )
+
+    filenames: list[str] = []
+    paths: list[Path] = []
+    if folder_paths is not None:
+        try:
+            filenames = [
+                str(name)
+                for name in folder_paths.get_filename_list("vae_approx")
+                if str(name).startswith("taeh3")
+            ]
+            for filename in filenames:
+                resolved = folder_paths.get_full_path("vae_approx", filename)
+                if resolved:
+                    paths.append(Path(resolved))
+        except Exception as error:
+            import_errors["vae_approx_scan"] = f"{type(error).__name__}: {error}"
+
+    assets = [_taeh3_asset_report(path) for path in paths]
+    selected = assets[0] if assets else None
+    asset_compatible = bool(
+        selected and selected.get("structure") == "LIKELY_NATIVE_TAEHV_24CH"
+    )
+
+    preview_method = "unknown"
+    if latent_preview is not None:
+        method = getattr(getattr(latent_preview, "args", None), "preview_method", None)
+        preview_method = str(getattr(method, "name", method or "unknown"))
+    active = preview_method.casefold() in {"taesd", "latentpreviewmethod.taesd"}
+
+    callback_source = ""
+    preview_source = ""
+    if latent_preview is not None:
+        try:
+            callback_source = inspect.getsource(latent_preview.prepare_callback)
+        except (OSError, TypeError):
+            pass
+        try:
+            preview_source = inspect.getsource(
+                latent_preview.TAEHVPreviewerImpl.decode_latent_to_preview
+            )
+        except (OSError, TypeError):
+            pass
+    video_stream_only = "x0.tensors[0]" in callback_source
+    first_frame_only = "x0[:1, :, :1]" in preview_source
+
+    available = bool(core_support and asset_compatible)
+    if not core_support:
+        status = "CORE_NATIVE_TAEH3_UNAVAILABLE"
+    elif not selected:
+        status = "TAEH3_MODEL_MISSING"
+    elif not asset_compatible:
+        status = "TAEH3_MODEL_STRUCTURE_UNRECOGNIZED"
+    elif active:
+        status = "ACTIVE_NATIVE_TAESD_PREVIEW"
+    else:
+        status = "READY_ENABLE_TAESD_PREVIEW"
+
+    report = {
+        "schema": TAEH3_PREVIEW_SCHEMA,
+        "status": status,
+        "available": available,
+        "active": active,
+        "current_preview_method": preview_method,
+        "core": {
+            "native_support": core_support,
+            "decoder_name": decoder_name,
+            "video_taes": video_taes,
+            "nested_av_video_stream_only_observed": video_stream_only,
+            "first_video_frame_per_step_observed": first_frame_only,
+        },
+        "assets": assets,
+        "selected_asset": selected,
+        "import_errors": import_errors,
+        "activation": [
+            "Place a compatible taeh3*.safetensors file in ComfyUI/models/vae_approx.",
+            "Set ComfyUI Preview method to TAESD in Manager/settings, or start ComfyUI with --preview-method taesd.",
+            "Restart ComfyUI after adding or replacing the preview model.",
+        ],
+        "recommended_model": "https://github.com/madebyollin/taehv/tree/main/safetensors",
+        "side_effects": False,
+        "preview_method_changed": False,
+        "model_loaded": False,
+        "sampling_changed": False,
+        "audio_decoded_by_preview": False if video_stream_only else "unknown",
+        "hard_gates": False,
+        "model_hash_gate": False,
+        "boundary": (
+            "TAEH3 is an approximate progress preview, not the final H3 VAE decode. The current "
+            "native callback previews the first video frame of each step rather than an animated "
+            "whole-shot preview. Structural inspection is diagnostic and never blocks generation."
+        ),
+    }
+    return available, active, status, json.dumps(report, ensure_ascii=False, indent=2)
 
 
 def _finite_number(value: object) -> float | None:

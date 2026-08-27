@@ -6,6 +6,9 @@ from pathlib import Path
 from h3_audio_t8_pkg.nodes_prompt_rewriter_8b_advanced import (
     MiniMaxH3PromptRewriter8BT8Advanced,
 )
+from h3_audio_t8_pkg.nodes_qwen_prefix_cache_advanced import (
+    MiniMaxH3QwenReferencePrefixCacheT8Advanced,
+)
 from helpers import plugin_widget_map
 
 
@@ -88,3 +91,52 @@ def test_blockswap_workflow_is_isolated_from_comfy_model_and_turbo_lora():
     sampler = types["MiniMaxH3KSampler"][0]
     assert bridge["widgets_values"][0] == "upstream_default_auto"
     assert sampler["widgets_values"][2:4] == [20, 1.0]
+
+
+def test_qwen_prefix_and_external_blockcache_workflow_keeps_cache_domains_separate():
+    workflow = _load(
+        "12-system-memory",
+        "2026-08-28_H3_Qwen_Prefix_and_Block_Cache_Ref2VA_Stock20_Advanced_EXP.json",
+    )
+    _assert_importable_contract(workflow)
+    types = _by_type(workflow)
+    assert len(types["MiniMaxH3QwenReferencePrefixCacheT8Advanced"]) == 1
+    assert len(types["MiniMaxH3QwenPrefixCacheStatsT8Advanced"]) == 1
+    assert len(types["MiniMaxH3BlockCacheT8"]) == 1
+    assert len(types["MiniMaxH3AudioConditioningT8"]) == 1
+    assert len(types["MiniMaxH3DualClockSamplerT8"]) == 1
+    assert "MiniMaxH3VisualReferenceStrengthEXPT8" not in types
+
+    qwen = types["MiniMaxH3QwenReferencePrefixCacheT8Advanced"][0]
+    values = plugin_widget_map(qwen, MiniMaxH3QwenReferencePrefixCacheT8Advanced)
+    assert values == {
+        "mode": "memory_lru_exp",
+        "max_entries": 1,
+        "maximum_cache_mib": 256.0,
+        "cache_epoch": 0,
+    }
+    assert types["MiniMaxH3BlockCacheT8"][0]["widgets_values"] == [
+        0.08,
+        0.08,
+        0.95,
+        2,
+        "cpu",
+        8,
+        False,
+    ]
+
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    links = {link[0]: link for link in workflow["links"]}
+    conditioning = types["MiniMaxH3AudioConditioningT8"][0]
+    sampler = types["MiniMaxH3DualClockSamplerT8"][0]
+    clip_link = links[next(item for item in conditioning["inputs"] if item["name"] == "clip")["link"]]
+    model_link = links[next(item for item in sampler["inputs"] if item["name"] == "model")["link"]]
+    assert nodes[clip_link[1]]["type"] == "MiniMaxH3QwenReferencePrefixCacheT8Advanced"
+    assert nodes[model_link[1]]["type"] == "MiniMaxH3BlockCacheT8"
+    notes = "\n".join(
+        str(node["widgets_values"])
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    )
+    for required in ("CLIP缓存", "MODEL缓存", "0.08", "不是无损模式", "16GB"):
+        assert required in notes

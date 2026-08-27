@@ -1,0 +1,1065 @@
+{
+  "id": "20d93ef5-c5c0-4ec0-b21c-7edec9f20a44",
+  "revision": 0,
+  "last_node_id": 19,
+  "last_link_id": 26,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "1. Full H3 Ref2VA INT8 model",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        380,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "2. H3 Qwen3-VL text encoder",
+      "pos": [
+        0,
+        130
+      ],
+      "size": [
+        380,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "3. H3 video VAE",
+      "pos": [
+        0,
+        280
+      ],
+      "size": [
+        380,
+        65
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "4. H3 audio VAE",
+      "pos": [
+        0,
+        390
+      ],
+      "size": [
+        380,
+        65
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "title": "5. Replace with the Ref2VA reference image",
+      "pos": [
+        0,
+        510
+      ],
+      "size": [
+        380,
+        350
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_reference_image.png",
+        "image"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "Ref2VA Stock20 · cached Qwen reference prefix",
+      "pos": [
+        460,
+        0
+      ],
+      "size": [
+        620,
+        760
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 21
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            8,
+            14
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "Use <Picture 1> as the visual reference. A natural cinematic portrait in soft window light, realistic skin and fabric texture, stable identity and composition. Natural room ambience, no music.",
+        736,
+        416,
+        124,
+        "Ref2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "Existing sampler settings (not changed by the EXP node)",
+      "pos": [
+        1140,
+        340
+      ],
+      "size": [
+        560,
+        220
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 25
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        20,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "title": "Fixed seed for controlled A/B",
+      "pos": [
+        1140,
+        620
+      ],
+      "size": [
+        330,
+        90
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608102201,
+        "fixed"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "BasicGuider",
+      "pos": [
+        1760,
+        110
+      ],
+      "size": [
+        300,
+        90
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        1760,
+        270
+      ],
+      "size": [
+        340,
+        190
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 10
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 11
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 13
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3AVDecodeT8",
+      "pos": [
+        2170,
+        180
+      ],
+      "size": [
+        340,
+        150
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "VHS_VideoCombine",
+      "title": "Save synchronized cache-composition candidate",
+      "pos": [
+        2590,
+        80
+      ],
+      "size": [
+        470,
+        520
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3_T8/QwenPrefix_BlockCache_Ref2VA_Stock20_EXP",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+      "title": "Qwen reference-prefix LRU · one bounded CPU entry",
+      "pos": [
+        430,
+        -300
+      ],
+      "size": [
+        520,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "cache_handle",
+          "type": "H3_T8_QWEN_PREFIX_CACHE",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3QwenReferencePrefixCacheT8Advanced"
+      },
+      "widgets_values": [
+        "memory_lru_exp",
+        1,
+        256.0,
+        0
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3QwenPrefixCacheStatsT8Advanced",
+      "title": "Qwen cache stats · forced after Conditioning",
+      "pos": [
+        1090,
+        -300
+      ],
+      "size": [
+        470,
+        150
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "cache_handle",
+          "type": "H3_T8_QWEN_PREFIX_CACHE",
+          "link": 22
+        },
+        {
+          "name": "after_report",
+          "type": "STRING",
+          "link": 23,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3QwenPrefixCacheStatsT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3BlockCacheT8",
+      "title": "External H3 BlockCache · conservative CPU profile",
+      "pos": [
+        430,
+        840
+      ],
+      "size": [
+        520,
+        310
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BlockCacheT8"
+      },
+      "widgets_values": [
+        0.08,
+        0.08,
+        0.95,
+        2,
+        "cpu",
+        8,
+        false
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "① 两种缓存的职责",
+      "pos": [
+        0,
+        1220
+      ],
+      "size": [
+        620,
+        260
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": "## CLIP缓存与MODEL缓存互不替代\n\n- Qwen Prefix Cache只复用相同参考媒体的视觉前缀；新的文字后缀仍重算。\n- 外部BlockCache只缓存H3 DiT中间块；block 0会重算，最多连续命中2次。\n- 首次运行是预热；换参考图、模型、LoRA或合同后应视为新任务。"
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "② 安装与推荐参数",
+      "pos": [
+        650,
+        1220
+      ],
+      "size": [
+        620,
+        260
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": "## 需要单独安装外部BlockCache\n\n此工作流依赖`comfyui-minimax-h3-blockcache-T8`，本项目不会复制它的源码。推荐从`0.08 / CPU / max 2 hits`开始；Qwen缓存保持1条、256MiB。不要同时串联EasyCache、LazyCache、Spectrum或其他DiT block replacement。"
+    },
+    {
+      "id": 19,
+      "type": "MarkdownNote",
+      "title": "③ 结果边界",
+      "pos": [
+        1300,
+        1220
+      ],
+      "size": [
+        620,
+        260
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": "## 性能优先EXP，不是无损模式\n\n受测Qwen缓存和BlockCache都可能因浮点路径或跳过block改变画面/音频；`0.08`只是历史Stock20质量优先候选，不保证所有素材。它们也不等于省显存或16GB安全。重要成片请与Cache OFF同seed试听和审片。"
+    }
+  ],
+  "links": [
+    [
+      3,
+      3,
+      0,
+      6,
+      1,
+      "VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      6,
+      7,
+      "IMAGE"
+    ],
+    [
+      8,
+      6,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      9,
+      8,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      9,
+      0,
+      11,
+      0,
+      "NOISE"
+    ],
+    [
+      11,
+      10,
+      0,
+      11,
+      1,
+      "GUIDER"
+    ],
+    [
+      12,
+      8,
+      1,
+      11,
+      2,
+      "SAMPLER"
+    ],
+    [
+      13,
+      8,
+      2,
+      11,
+      3,
+      "SIGMAS"
+    ],
+    [
+      14,
+      6,
+      1,
+      11,
+      4,
+      "LATENT"
+    ],
+    [
+      15,
+      11,
+      0,
+      12,
+      0,
+      "LATENT"
+    ],
+    [
+      16,
+      3,
+      0,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      17,
+      4,
+      0,
+      12,
+      2,
+      "VAE"
+    ],
+    [
+      18,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      12,
+      1,
+      13,
+      1,
+      "AUDIO"
+    ],
+    [
+      20,
+      2,
+      0,
+      14,
+      0,
+      "CLIP"
+    ],
+    [
+      21,
+      14,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      22,
+      14,
+      1,
+      15,
+      0,
+      "H3_T8_QWEN_PREFIX_CACHE"
+    ],
+    [
+      23,
+      6,
+      5,
+      15,
+      1,
+      "STRING"
+    ],
+    [
+      24,
+      1,
+      0,
+      16,
+      0,
+      "MODEL"
+    ],
+    [
+      25,
+      16,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      26,
+      6,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "H3 Ref2VA model + reference",
+      "bounding": [
+        -40,
+        -60,
+        1160,
+        960
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "EXP global visual strength: start 0.999, then 0.995 / 0.990",
+      "bounding": [
+        1100,
+        -60,
+        1040,
+        840
+      ],
+      "color": "#9e633f",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Decode + synchronized MP4",
+      "bounding": [
+        2140,
+        -60,
+        970,
+        760
+      ],
+      "color": "#3f9e64",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [
+        75,
+        165
+      ]
+    },
+    "ue_links": [],
+    "workflow_title": "MiniMax H3 Qwen Prefix + External BlockCache Ref2VA Stock20 Advanced EXP"
+  },
+  "version": 0.4
+}

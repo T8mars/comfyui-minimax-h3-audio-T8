@@ -7,6 +7,7 @@
 - `Environment_Audit`：报告ComfyUI、Torch、GPU、依赖和能力探针。
 - `Activation_Chunk`：实验性MLP激活分块，降低部分中间激活峰值。
 - `Qwen_Prefix_Cache`：复用重复参考前缀，减少重复编码。
+- `2026-08-28_H3_Qwen_Prefix_and_Block_Cache_Ref2VA_Stock20_Advanced_EXP.json`：把本项目的Qwen参考前缀缓存与另行安装的T8 BlockCache组合到完整Ref2VA Stock20链；CLIP和MODEL缓存域保持独立。
 - `Trajectory_Probe`：记录采样轨迹，定位sigma/时钟/坏帧问题。
 - `2026-08-22_H3_External_BlockSwap_Stock20_Advanced_EXP.json`：把 T8 的保守 BlockSwap 参数桥接到独立 MiniMax H3 流式运行时。
 - `2026-08-22_H3_ClipProj_Compatibility_Audit_Advanced_EXP.json`：只读审计外部ClipProj版本、4B/8B投影维度、Qwen3-VL声明和加载模式。
@@ -25,6 +26,8 @@
 ## 使用方法与注意事项
 
 排错先运行Environment Audit和Trajectory Probe。Activation Chunk、Prefix Cache、VBAR和Block Cache解决的是不同内存/计算问题，不应混称。
+
+Qwen+BlockCache组合模板需要单独安装`comfyui-minimax-h3-blockcache-T8`。Qwen缓存默认只保留1条、256MiB；BlockCache从`threshold=0.08`、CPU、最多连续2次命中开始。两者都会改变执行路径，历史输出也不是bit-exact；它是性能优先EXP，不是无损、省显存或16GB安全保证。重要成片请用同seed关闭缓存做一次对照。
 
 外部 BlockSwap 工作流需要单独安装 `xiaolibai-sys/ComfyUI-MiniMaxH3`；本机核对 revision 为 `099aa38c122cea030ce45a51eb1d83208b16a363`。该上游当前未声明源码许可证，因此本项目不复制或再分发其源码，只输出兼容的 `MINIMAX_H3_SWAP` 参数对象。桥只能连接外部 `MiniMaxH3KSampler`，不能连接 ComfyUI 官方 `MODEL`。示例从736×416、5秒、Stock20、SDPA和上游自动显存策略开始；未做16GB压力认证，不承诺不会OOM。
 

@@ -15,7 +15,7 @@
 | `09-hybrid-model` | FL2VA/Ref2VA混合权重补丁、兼容审计和显存策略 |
 | `10-speed` | SPEED空间渐进采样、频谱标定与多任务研究路线 |
 | `11-studio-production` | 时间线、上下文、选择性修复、解码安全和交付工具 |
-| `12-system-memory` | 环境审计、激活分块、前缀缓存、轨迹诊断和外部 BlockSwap 桥接 |
+| `12-system-memory` | 环境审计、激活分块、Qwen前缀缓存、外部BlockCache组合、轨迹诊断和外部BlockSwap桥接 |
 | `13-latent-upscale` | 普通32整除放大、学习型3D latent放大与二阶段H3生成 |
 | `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力、可选联合AV路由与8B提示词重写 |
 | `15-sla-attention` | LightX2V Turbo-SLA LoRA、动态块稀疏 Sage2、KJ Sage单入口组合器与强制运行审计（实验） |
@@ -24,6 +24,6 @@
 | `18-audio-refine` | Turbo低步数生成音频的精确无缓存双时钟尾段精修、原始/候选试听、逐值视频latent回填和默认回退原结果的人工质量门（实验） |
 | `19-pdd-acceleration` | Alibaba PAI MiniMax-H3 PDD 8步蒸馏，分别用于完整FL2VA与Ref2VA基模的动态LoRA和输出头（实验） |
 | `20-core-compatibility` | 官方H3 AV Latent、Attention Hook、逐步同步优化和tiled VAE全局坐标的可选兼容节点 |
-| `21-community-advanced` | Fun Control、长视频人物音色/句界、接缝漂移、低显存驻留、Creator语义缓存与只读诊断 |
+| `21-community-advanced` | Fun Control、长视频人物音色/句界、接缝漂移、低显存驻留、Creator语义缓存、TAEH3原生预览检查与只读诊断 |
 
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。
