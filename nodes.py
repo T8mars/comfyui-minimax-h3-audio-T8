@@ -147,6 +147,9 @@ from .nodes_long_video_delivery_exp import (
 from .nodes_long_video_in_node_loop_advanced import (
     LONG_VIDEO_IN_NODE_LOOP_ADVANCED_NODE_CLASSES,
 )
+from .nodes_long_video_in_node_loop_effects_advanced import (
+    LONG_VIDEO_IN_NODE_LOOP_EFFECTS_ADVANCED_NODE_CLASSES,
+)
 from .long_video_routes import register_long_video_background_routes
 from .nodes_still_exp import (
     MiniMaxH3StillConditioningT8,
@@ -607,6 +610,7 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *PDD_ADVANCED_NODE_CLASSES,
                 *AUDIO_REFINE_ADVANCED_NODE_CLASSES,
                 *LONG_VIDEO_IN_NODE_LOOP_ADVANCED_NODE_CLASSES,
+                *LONG_VIDEO_IN_NODE_LOOP_EFFECTS_ADVANCED_NODE_CLASSES,
             ]
 
 

@@ -20,6 +20,7 @@ from h3_audio_t8_pkg.enhance_a_video_advanced import (
     build_eav_long_video_model,
     build_eav_model,
     build_eav_prompt_relay_model,
+    build_eav_prompt_relay_long_video_model,
     build_eav_stg_model,
     exact_chunked_cfi,
     finalize_eav_runtime,
@@ -1535,6 +1536,66 @@ def test_long_video_composer_disabled_preserves_exact_scoped_model(monkeypatch):
     assert returned is source
     _latent, report_json = finalize_eav_runtime({"samples": torch.zeros(1)}, runtime)
     assert json.loads(report_json)["status"] == "eav_disabled_long_video_passthrough"
+
+
+def test_prompt_relay_long_video_composer_has_one_owner_and_segment_binding(monkeypatch):
+    from h3_audio_t8_pkg.prompt_relay_long_video_advanced import (
+        PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY,
+        PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA,
+    )
+
+    _allow_fixture_core(monkeypatch)
+    source = patch_long_video_model(_relay_model(monkeypatch))
+    binding = source.get_attachment(prompt_relay_module.PROMPT_RELAY_WRAPPER_KEY)[
+        "binding"
+    ]
+    source.set_attachments(
+        PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY,
+        {
+            "schema": PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA,
+            "global_plan_hash": "global-fixture",
+            "projected_plan_hash": "projected-fixture",
+            "binding_hash": binding["binding_hash"],
+            "segment_index": 1,
+        },
+    )
+    patched, runtime, report_json = build_eav_prompt_relay_long_video_model(
+        source,
+        _stock20_sigmas(),
+        segment_index=1,
+        context_frames=22,
+        mode="report_only",
+        tau=4.0,
+        start_video_progress=0.0,
+        end_video_progress=1.0,
+        max_workspace_mib=32,
+        g_hard_limit=1.5,
+    )
+
+    wrapper_type = eav_module.comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    assert not patched.get_wrappers(
+        wrapper_type, prompt_relay_module.PROMPT_RELAY_WRAPPER_KEY
+    )
+    assert not patched.get_wrappers(wrapper_type, eav_module.EAV_WRAPPER_KEY)
+    assert len(
+        patched.get_wrappers(
+            wrapper_type, eav_module.EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY
+        )
+    ) == 1
+    report = json.loads(report_json)
+    assert report["composer_profile"] == "prompt_relay_long_video_segment_stock20_v1"
+    assert report["long_video_contract"]["segment_index"] == 1
+    assert report["prompt_relay_contract"]["global_plan_hash"] == "global-fixture"
+    assert runtime.config["prompt_relay_contract"]["projected_plan_hash"] == (
+        "projected-fixture"
+    )
+    override = patched.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    assert (
+        override._t8_h3_eav_prompt_relay_long_video_patch_version
+        == eav_module.EAV_PROMPT_RELAY_LONG_VIDEO_PATCH_VERSION
+    )
 
 
 def test_long_video_composer_rejects_unscoped_model_and_wrong_context(monkeypatch):

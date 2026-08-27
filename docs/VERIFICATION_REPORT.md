@@ -6108,3 +6108,21 @@ isolation. Repeating the native-media suite again would be a stress test rather 
 it was not repeated. All 147 frontend workflow JSON files parse with required ComfyUI nodes/links
 metadata. This audit is CPU/contract evidence only and makes no new visual-quality, audio, speed, VRAM
 or general 16GiB claim.
+
+## In-node Long Video with Prompt Relay and Enhance-A-Video (2026-08-27)
+
+An append-only output node now projects one global Prompt Relay plan across all segment timelines and
+creates a fresh Enhance-A-Video runtime for every segment. Long Video remains the only packed-layout
+and extra-conditioning owner; one combined wrapper routes Prompt Relay before applying FETA to target
+video rows. Existing Long Video, Prompt Relay and EAV nodes and workflows are unchanged.
+
+The full project passes 1673 tests. One isolated serial 256x256, six-second Stock20 run used a
+124-frame render window and 22-frame continuation context. Segment 0 delivered frames 0-124; segment 1
+rendered 102-226 and delivered only 124-144. Both segments completed 20 model forwards, shared the
+same global Relay-plan hash, used distinct projected-plan hashes and wrote verified effect-audit
+sidecars before acceptance. The final 144-frame 24fps H.264 and finite stereo 32kHz AAC file strictly
+decodes and has SHA-256
+`691a32f9b9891a23435fbe5f5ddb3ff5f0ed2978e84b3a5929513e8e71ce4f55`. Sampled frames 118-129 show
+no black frame, corruption or scene reset. Peak device use was about 14260MiB and minimum free VRAM
+about 1850MiB. This low-resolution mechanical result does not establish visual improvement, audio
+non-regression, arbitrary-duration stability or universal 16GiB safety.

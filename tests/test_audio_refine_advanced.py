@@ -1216,7 +1216,7 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == 221
+    assert len(ids) == 222
     assert ids == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
@@ -1237,3 +1237,4 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         "MiniMaxH3AudioRefineDualModelSetupT8Advanced",
     ]
     assert ids[220] == "MiniMaxH3LongVideoInNodeLoopT8Advanced"
+    assert ids[221] == "MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced"

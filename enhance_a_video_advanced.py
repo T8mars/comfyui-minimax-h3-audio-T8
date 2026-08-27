@@ -43,6 +43,8 @@ EAV_STG_PATCH_VERSION = 1
 EAV_STG_BRANCH_KEY = "t8_h3_eav_stg_branch_v1"
 EAV_LONG_VIDEO_WRAPPER_KEY = "t8_h3_eav_long_video_v1"
 EAV_LONG_VIDEO_PATCH_VERSION = 1
+EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY = "t8_h3_eav_prompt_relay_long_video_v1"
+EAV_PROMPT_RELAY_LONG_VIDEO_PATCH_VERSION = 1
 BLOCK_CACHE_KEY = "minimax_h3_block_cache_t8"
 BLOCK_CACHE_WRAPPER_KEY = "minimax_h3_block_cache_t8"
 EAV_MODES = ("disabled", "report_only", "apply_exp")
@@ -1874,6 +1876,267 @@ def build_eav_long_video_model(
             },
         )
     return patched, runtime, _json(runtime.config)
+
+
+def build_eav_prompt_relay_long_video_model(
+    model,
+    sigmas: torch.Tensor,
+    *,
+    segment_index: int,
+    context_frames: int,
+    mode: str,
+    tau: float,
+    start_video_progress: float,
+    end_video_progress: float,
+    max_workspace_mib: int,
+    g_hard_limit: float,
+):
+    """Compose Prompt Relay, scoped Long Video and FETA under one attention owner.
+
+    Long Video remains the only ``extra_conds``/packed-layout owner. Prompt Relay
+    supplies the segment-projected text route, then FETA measures and scales only
+    target-video output rows. A fresh EAV runtime is created for every segment so
+    an interrupted run can never reuse an already-consumed audit token.
+    """
+    from .long_video import LONG_VIDEO_PATCH_VERSION
+    from .prompt_relay_advanced import (
+        PROMPT_RELAY_PATCH_VERSION,
+        PROMPT_RELAY_PAYLOAD_KEY,
+        PROMPT_RELAY_RUNTIME_KEY,
+        PROMPT_RELAY_WRAPPER_KEY,
+        _runtime_route as _prompt_relay_runtime_route,
+        prompt_relay_model_contract,
+    )
+    from .prompt_relay_long_video_advanced import (
+        PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY,
+        PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA,
+    )
+
+    relay = prompt_relay_model_contract(model)
+    binding = dict(relay["binding"])
+    long_video_contract = _assert_long_video_contract(
+        model,
+        segment_index=segment_index,
+        context_frames=context_frames,
+    )
+    projection = (
+        model.get_attachment(PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY)
+        if hasattr(model, "get_attachment")
+        else None
+    )
+    if not isinstance(projection, Mapping):
+        raise RuntimeError(
+            "H3 EAV + Prompt Relay + Long Video requires the applied projected "
+            "Long Video Prompt Relay MODEL"
+        )
+    expected_projection = {
+        "schema": PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA,
+        "binding_hash": str(binding["binding_hash"]),
+        "segment_index": int(segment_index),
+    }
+    mismatches = [
+        key
+        for key, value in expected_projection.items()
+        if projection.get(key) != value
+    ]
+    if mismatches:
+        raise RuntimeError(
+            "H3 EAV + Prompt Relay + Long Video projection binding changed: "
+            + ", ".join(mismatches)
+        )
+
+    clean = model.clone()
+    wrapper_type = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+    clean.remove_wrappers_with_key(wrapper_type, PROMPT_RELAY_WRAPPER_KEY)
+    clean.model_options["transformer_options"].pop("optimized_attention_override", None)
+    if hasattr(clean, "remove_attachments"):
+        clean.remove_attachments(PROMPT_RELAY_WRAPPER_KEY)
+
+    eav_model, runtime, _report = build_eav_model(
+        clean,
+        sigmas,
+        mode=mode,
+        tau=tau,
+        start_video_progress=start_video_progress,
+        end_video_progress=end_video_progress,
+        max_workspace_mib=max_workspace_mib,
+        g_hard_limit=g_hard_limit,
+        sampling_profile="stock20",
+        allowed_tasks=("LongVideoSegment0", "LongVideoMotion"),
+        allow_reference_blocks=True,
+        composer_profile="prompt_relay_long_video_segment_stock20_v1",
+        attention_backend="native_optimized",
+        long_video_contract=long_video_contract,
+        allowed_live_extra_conds_patch_versions=(LONG_VIDEO_PATCH_VERSION,),
+        wrapper_key=EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY,
+    )
+    relay_summary = {
+        "patch_version": PROMPT_RELAY_PATCH_VERSION,
+        "global_plan_hash": str(projection.get("global_plan_hash", "")),
+        "projected_plan_hash": str(projection.get("projected_plan_hash", "")),
+        "binding_hash": str(binding["binding_hash"]),
+        "layout_contract_hash": str(binding["layout_contract"]["contract_hash"]),
+        "query_route": str(binding["query_route"]),
+        "query_chunk_rows": int(relay["query_chunk_rows"]),
+        "event_count": len(binding["events"]),
+        "segment_index": int(segment_index),
+        "composition_order": (
+            "long_video_layout_then_prompt_relay_attention_then_target_video_feta_gain"
+        ),
+        "adds_model_forwards": False,
+    }
+    runtime.config["prompt_relay_contract"] = relay_summary
+    runtime.config["long_video_contract"] = dict(long_video_contract)
+    runtime.config["notes"] = [
+        "Long Video is the sole extra_conds and packed-layout owner",
+        "one combined wrapper applies projected Prompt Relay first and target-video FETA second",
+        "the composer adds no model forwards and creates one fresh EAV audit runtime per segment",
+        "Stock20 is the first admitted combined sampling contract",
+        "audio is never directly scaled by FETA, but joint-AV listening remains required",
+    ]
+    if str(mode) == "disabled":
+        return model, runtime, _json(runtime.config)
+
+    eav_model.remove_wrappers_with_key(
+        wrapper_type, EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY
+    )
+    eav_model.model_options["transformer_options"].pop(
+        "optimized_attention_override", None
+    )
+    if hasattr(eav_model, "remove_attachments"):
+        eav_model.remove_attachments(EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY)
+    expected_hash = str(binding["binding_hash"])
+    expected_task = (
+        "LongVideoSegment0" if int(segment_index) == 0 else "LongVideoMotion"
+    )
+
+    def _combined_wrapper(
+        executor,
+        x,
+        timestep,
+        context,
+        transformer_options=None,
+        **kwargs,
+    ):
+        transformer_options = transformer_options if transformer_options is not None else {}
+        if len(executor.wrappers) != 1:
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay + Long Video detected another diffusion "
+                "wrapper after binding"
+            )
+        installed = transformer_options.get("optimized_attention_override")
+        if (
+            getattr(installed, "_t8_h3_eav_prompt_relay_long_video_patch_version", None)
+            != EAV_PROMPT_RELAY_LONG_VIDEO_PATCH_VERSION
+            or getattr(installed, "_t8_prompt_relay_binding_hash", None)
+            != expected_hash
+        ):
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay + Long Video attention owner was replaced"
+            )
+        replacements = transformer_options.get("patches_replace", {})
+        if isinstance(replacements, Mapping) and any(
+            bool(value) for value in replacements.values()
+        ):
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay + Long Video refuses runtime block replacements"
+            )
+        supplied_hash = kwargs.pop(PROMPT_RELAY_PAYLOAD_KEY, None)
+        if supplied_hash != expected_hash:
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay + Long Video MODEL and CONDITIONING hashes differ"
+            )
+        payload = kwargs.get("minimax_payload")
+        if not isinstance(payload, Mapping):
+            raise RuntimeError(
+                "H3 EAV + Prompt Relay + Long Video could not find minimax_payload"
+            )
+        if (
+            EAV_RUNTIME_KEY in transformer_options
+            or PROMPT_RELAY_RUNTIME_KEY in transformer_options
+        ):
+            raise RuntimeError(
+                "Nested H3 EAV + Prompt Relay + Long Video runtime state was refused"
+            )
+        try:
+            relay_route = _prompt_relay_runtime_route(
+                payload.get("layout"), binding, x[0].device
+            )
+            eav_route = _runtime_route(
+                x=x,
+                timestep=timestep,
+                context=context,
+                payload=payload,
+                denoise_mask=kwargs.get("denoise_mask"),
+                audio_denoise_mask=kwargs.get("audio_denoise_mask"),
+                start_progress=float(start_video_progress),
+                end_progress=float(end_video_progress),
+                allowed_tasks=("LongVideoSegment0", "LongVideoMotion"),
+                allow_reference_blocks=True,
+                long_video_contract=long_video_contract,
+            )
+            if str(eav_route["task"]) != expected_task:
+                raise RuntimeError(
+                    "H3 EAV + Prompt Relay + Long Video segment task drifted"
+                )
+            forward_index = runtime.begin_forward(
+                sigma_video=eav_route["sigma_video"],
+                progress_video=eav_route["progress_video"],
+                route=eav_route,
+            )
+            eav_route.update(
+                {
+                    "mode": str(mode),
+                    "tau": float(tau),
+                    "max_workspace_mib": int(max_workspace_mib),
+                    "g_hard_limit": float(g_hard_limit),
+                    "runtime": runtime,
+                    "forward_index": forward_index,
+                    "attention_backend": "native_optimized",
+                }
+            )
+            transformer_options[PROMPT_RELAY_RUNTIME_KEY] = relay_route
+            transformer_options[EAV_RUNTIME_KEY] = eav_route
+            return executor(x, timestep, context, transformer_options, **kwargs)
+        except BaseException as exc:
+            runtime.abort(exc)
+            raise
+        finally:
+            transformer_options.pop(PROMPT_RELAY_RUNTIME_KEY, None)
+            transformer_options.pop(EAV_RUNTIME_KEY, None)
+
+    def _combined_attention(*args, **kwargs):
+        return route_eav_prompt_relay_attention(
+            *args,
+            query_chunk_rows=int(relay["query_chunk_rows"]),
+            **kwargs,
+        )
+
+    eav_model.add_wrapper_with_key(
+        wrapper_type,
+        EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY,
+        _combined_wrapper,
+    )
+    eav_model.set_model_optimized_attention(_combined_attention)
+    installed = eav_model.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+    installed._t8_h3_eav_patch_version = EAV_PATCH_VERSION
+    installed._t8_prompt_relay_binding_hash = expected_hash
+    installed._t8_h3_eav_prompt_relay_long_video_patch_version = (
+        EAV_PROMPT_RELAY_LONG_VIDEO_PATCH_VERSION
+    )
+    if hasattr(eav_model, "set_attachments"):
+        eav_model.set_attachments(
+            EAV_PROMPT_RELAY_LONG_VIDEO_WRAPPER_KEY,
+            {
+                "patch_version": EAV_PROMPT_RELAY_LONG_VIDEO_PATCH_VERSION,
+                "eav_config": dict(runtime.config),
+                "prompt_relay": relay_summary,
+                "long_video_contract": dict(long_video_contract),
+            },
+        )
+    return eav_model, runtime, _json(runtime.config)
 
 
 def build_eav_block_cache_model(

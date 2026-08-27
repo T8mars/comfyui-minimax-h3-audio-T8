@@ -2,7 +2,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.51.0** · GPL-3.0-or-later
+当前版本：**1.52.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -35,6 +35,8 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 
 希望只排队一次就自动完成全部长视频分段时，使用`04-long-video`中的
 `In_Node_Long_Video_Loop`工作流；需要逐段人工挑片时继续使用原有Background/Accepted路线。
+需要同时使用Prompt Relay和Enhance-A-Video时，使用同目录的
+`In_Node_Long_Video_Prompt_Relay_EAV_Stock20_Advanced`工作流（原生20步，不接Turbo LoRA）。
 
 [查看全部工作流分类](examples/workflows/README.md)
 
