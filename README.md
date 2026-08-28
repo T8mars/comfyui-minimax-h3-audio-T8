@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.54.0** · GPL-3.0-or-later
+当前版本：**1.54.1** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -91,7 +91,7 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 - **8 月 22 日后更新，所有 T8 节点同时爆红/显示缺失：** 这是插件在启动时整体导入失败，不是模型或工作流参数问题。先把 ComfyUI 本体、前端和 Manager 一起更新，完全退出后重启。
 - **根据启动终端的第一条报错判断：** 缺少 `comfy_api.latest`、`comfy.weight_adapter`、`comfy.patcher_extension` 或 `comfy.ldm.minimax`，说明 ComfyUI 本体过旧；缺少 `torch`、`torchaudio`、`numpy`、`safetensors` 或 `PIL`（安装包名是 `Pillow`），说明当前 ComfyUI 使用的 Python 基础环境不完整。
-- **修复依赖：** 用启动 ComfyUI 的同一个 Python，重新安装 ComfyUI 自己的 `requirements.txt`；整合包用户优先使用整合包更新器。不要在系统 Python 中安装，也不要为了基础节点盲装 SLA、Transformers、OpenCV 等可选依赖，以免替换 Torch/CUDA。反馈时请附第一段完整 `IMPORT FAILED` / `ModuleNotFoundError`、ComfyUI 版本和本节点版本。
+- **修复依赖：** 本项目根目录的 `requirements.txt` 为空是正常设计，基础依赖由 ComfyUI 提供。请用启动 ComfyUI 的同一个 Python，重新安装 **ComfyUI 本体**的 `requirements.txt`；整合包用户优先使用整合包更新器。不要在系统 Python 中安装，也不要为了基础节点盲装 SLA、Transformers、OpenCV 等可选依赖，以免替换 Torch/CUDA。反馈时请附第一段完整 `IMPORT FAILED` / `ModuleNotFoundError`、ComfyUI 版本和本节点版本。
 - **参数错位或 NaN：** 完整重启 ComfyUI，再重新载入工作流。
 - **媒体标签报错：** 检查素材连接和标签编号。
 - **Prompt Relay tokenizer 报错：** 优先使用原生 `Load CLIP` 并选择 `type=minimax`；1.52.3起兼容隐藏内部 tokenizer 的CLIP包装，但实际token必须与原生H3逐项一致。
