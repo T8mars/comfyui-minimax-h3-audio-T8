@@ -6,6 +6,7 @@
 
 - `In_Node_Long_Video_Loop_Turbo4_Advanced`：一次排队后在同一个输出节点内严格串行完成全部片段，逐段原子落盘并在中断后按相同合同续跑，最后流式合成为一个VIDEO；不需要手工修改`segment_index`或反复点击队列（实验）。
 - `In_Node_Long_Video_Prompt_Relay_EAV_Stock20_Advanced`：在同一个严格串行内循环里，把一条全局Prompt Relay时间线投影到每个片段，并为每段独立执行、审计Enhance-A-Video；旧内循环节点保持不变（实验）。
+- `FreeNoise_Prompt_Relay_EAV_Long_Video_Advanced`：在上述内循环前加入FreeNoise视频噪声时间重排；它不占用Attention，因此可与Prompt Relay和EAV组合，音频噪声保持原生独立（实验）。
 - `Native_Latent_Timeline_Concat`：把两段或更多已采样完成的H3联合AV latent按原生时间格合并，供后续一次VAE解码（实验）。
 - `Native_Latent_Continuation_Concat`：核对Long Video Planner/Conditioning报告，并在双时钟上移除续段重新注入的完整5/22/39帧上下文，而不是固定只去5帧（实验）。
 - `Native_Latent_Resume_Manifest`：为保存/重载后的完整H3联合AV latent生成精确内容SHA-256，或用旧清单严格核对是否可安全续接（实验；不负责保存文件）。
@@ -39,6 +40,8 @@ Long Video续接专用拼接已完成CPU结构验证：124帧时间线接一个1
 In-Node Loop路线适合“不需要逐段人工筛选、希望点一次就跑完整条”的任务。默认`124`帧渲染窗、`22`帧上下文、batch 1，内存只保留当前段；完成段与续接上下文写入磁盘。中断、OOM或ComfyUI重启后，保持模型、提示词、参考、采样参数和`chain_id`不变即可续跑；任一合同参数改变时必须换新的`chain_id`。它会自动接受每个成功片段，因此需要逐段挑片时仍应使用Background/Accepted路线。节点只在片段边界释放自身临时对象，不调用全局模型卸载，也不承诺任意显卡、任意模型封装都不会OOM。
 
 Relay/EAV内循环模板固定为`20步 + dual_clock_euler + native_flow`，不接Turbo LoRA。Prompt Relay Plan只建立一次，`length`必须覆盖最终长片；内循环节点的`global_prompt`和`segment_prompts_json`保持为空。每段顺序固定为：投影全局Relay → 组装Long Video上下文 → 建立精确双时钟sigma → 单一Relay/FETA组合器 → 采样 → EAV审计 → 写候选与`effects_audit.json` → 接受。默认512MiB只是下一段启动前余量门，不是显存峰值保证；联合AV仍需最终试听。
+
+FreeNoise模板默认`paper_permutation`：所有续段共享一个视频噪声池，但每段按确定性时间置换重新排列；音频噪声不重排。`variance_preserving_blend`可用`reuse_ratio`在共享池与该段独立噪声之间混合。该配置写入断点合同，改变mode、base seed或比例后必须换新的`chain_id`。原论文还在同一个长latent中执行滑窗时序Attention融合，而H3路线仍按124帧训练窗口独立续段，因此这里明确称为FreeNoise噪声重排适配，不宣传完整复现或必然改善接缝。
 
 该组合路线已完成一条单任务、严格串行的256×256×6秒真实Stock20验证：两段分别交付124帧和20个新帧，最终为144帧/24fps、32kHz双声道；两段都执行20次模型前向，使用同一全局Relay计划但生成不同的分段投影。最终文件严格联合解码通过，跨段118～129帧没有黑屏、花屏或场景重置；最低空闲显存约1,850MiB。这个低分辨率机械样本只证明组合、时间线、审计、续接和媒体封装可用，不代表画质提升、音频无差异、任意时长或通用16GB安全。
 

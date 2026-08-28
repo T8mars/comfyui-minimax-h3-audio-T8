@@ -1,0 +1,120 @@
+{
+  "id": "22240b71-607c-40fb-a199-4c95a9ecaa29",
+  "revision": 0,
+  "last_node_id": 6,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "轨迹控制不是采样轨迹断点",
+      "pos": [0, 0],
+      "size": [960, 250],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "MarkdownNote"},
+      "widgets_values": "## 使用顺序\n\n`关键帧JSON → Trajectory Plan → Render → MiniMax H3 Fun Control Apply.control_video`\n\n- 坐标全部是0～1归一化画布，支持多个`object_id`，但每个对象仍需清楚参考图。\n- `reference_sprite`保留参考图宽高比并按bbox移动；它是可视化控制视频，不是把人物直接粘进最终视频。\n- 这是借鉴TrailBlazer的创作交互，不是复刻其U-Net Attention算法；H3是共享音视频Transformer，本节点不接管Attention也不改音频。"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "title": "人物/物体参考图；透明或MASK更好",
+      "pos": [0, 320],
+      "size": [390, 430],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [2]},
+        {"name": "MASK", "type": "MASK", "links": [3]}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
+      "widgets_values": ["replace_with_subject_reference.png", "image"]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3TrajectoryControlPlanT8Advanced",
+      "title": "1. 编辑关键帧bbox和强度",
+      "pos": [440, 320],
+      "size": [600, 500],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "trajectory_plan", "type": "H3_T8_TRAJECTORY_CONTROL_PLAN", "links": [1]},
+        {"name": "path_preview", "type": "IMAGE", "links": [4]},
+        {"name": "report_json", "type": "STRING", "links": null},
+        {"name": "object_count", "type": "INT", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3TrajectoryControlPlanT8Advanced"},
+      "widgets_values": ["[{\"frame\":0,\"object_id\":\"subject\",\"x\":0.10,\"y\":0.25,\"width\":0.22,\"height\":0.48,\"strength\":1.0},{\"frame\":61,\"object_id\":\"subject\",\"x\":0.40,\"y\":0.10,\"width\":0.18,\"height\":0.42,\"strength\":0.85},{\"frame\":123,\"object_id\":\"subject\",\"x\":0.68,\"y\":0.28,\"width\":0.22,\"height\":0.48,\"strength\":1.0}]", 1152, 640, 124, 24.0, "smoothstep", "clip_to_canvas"]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3TrajectoryControlRenderT8Advanced",
+      "title": "2. 渲染成Fun Control可用的控制视频",
+      "pos": [1090, 350],
+      "size": [520, 330],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "trajectory_plan", "type": "H3_T8_TRAJECTORY_CONTROL_PLAN", "link": 1},
+        {"name": "reference_images", "type": "IMAGE", "link": 2},
+        {"name": "reference_masks", "type": "MASK", "link": 3}
+      ],
+      "outputs": [
+        {"name": "control_video", "type": "IMAGE", "links": [5]},
+        {"name": "trajectory_masks", "type": "MASK", "links": null},
+        {"name": "preview", "type": "IMAGE", "links": null},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3TrajectoryControlRenderT8Advanced"},
+      "widgets_values": ["reference_sprite", 0.01, 6, 0.0]
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "title": "bbox轨迹抽样预览",
+      "pos": [440, 880],
+      "size": [430, 160],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 4}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "title": "最终控制视频；接Fun Control Apply",
+      "pos": [1660, 380],
+      "size": [430, 160],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 5}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [1, 3, 0, 4, 0, "H3_T8_TRAJECTORY_CONTROL_PLAN"],
+    [2, 2, 0, 4, 1, "IMAGE"],
+    [3, 2, 1, 4, 2, "MASK"],
+    [4, 3, 1, 5, 0, "IMAGE"],
+    [5, 4, 0, 6, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.83, "offset": [120, 70]}, "frontendVersion": "1.24.3"},
+  "version": 0.4
+}

@@ -1,0 +1,154 @@
+{
+  "id": "8f9d07da-c94a-4cee-8472-cccb7e333ec6",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "RealBasicVSR用途和边界 / Read this first",
+      "pos": [0, 0],
+      "size": [900, 270],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "MarkdownNote"},
+      "widgets_values": "## H3生成后时序修复（可选，不是二次生成）\n\n- 节点采用OpenMMLab RealBasicVSR x4官方架构，对已有视频做时序一致性与细节恢复。\n- 默认`native_size_restore`保持原分辨率；`x4_super_resolution`会输出宽高各4倍，显存和内存明显增加。\n- AUDIO是原对象直通：不重采样、不降噪、不改音量。\n- 它不能重建已经缺失的身份、修复口型，也不能保证消除生成崩坏；建议先做候选对比再采用。"
+    },
+    {
+      "id": 2,
+      "type": "LoadVideo",
+      "title": "选择需要时序修复的H3视频",
+      "pos": [0, 330],
+      "size": [390, 124],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "VIDEO", "type": "VIDEO", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadVideo"},
+      "widgets_values": ["replace_with_h3_video.mp4"]
+    },
+    {
+      "id": 3,
+      "type": "GetVideoComponents",
+      "title": "解出帧和原始音频",
+      "pos": [440, 330],
+      "size": [390, 110],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [{"name": "video", "type": "VIDEO", "link": 1}],
+      "outputs": [
+        {"name": "images", "type": "IMAGE", "links": [2]},
+        {"name": "audio", "type": "AUDIO", "links": [3]},
+        {"name": "fps", "type": "FLOAT", "links": null},
+        {"name": "bit_depth", "type": "INT", "links": null}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "GetVideoComponents"},
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3RealBasicVSRRestoreT8Advanced",
+      "title": "8帧串行窗口；音频原样直通",
+      "pos": [880, 300],
+      "size": [590, 390],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "frames", "type": "IMAGE", "link": 2},
+        {"name": "audio", "type": "AUDIO", "link": 3}
+      ],
+      "outputs": [
+        {"name": "restored_frames", "type": "IMAGE", "links": [4, 6]},
+        {"name": "source_frames", "type": "IMAGE", "links": [5]},
+        {"name": "audio", "type": "AUDIO", "links": [7]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3RealBasicVSRRestoreT8Advanced"},
+      "widgets_values": ["realbasicvsr_wogan_c64b20_300k.pth", "native_size_restore", 0.65, 8, 2, "auto", "prefer_ema", "offload_after"]
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "title": "原片 / Source",
+      "pos": [1530, 120],
+      "size": [390, 150],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 5}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "title": "时序修复候选 / Candidate",
+      "pos": [1530, 330],
+      "size": [390, 150],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 4}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "CreateVideo",
+      "title": "合成候选；保持H3常用24fps",
+      "pos": [1530, 550],
+      "size": [390, 264],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 6},
+        {"name": "audio", "type": "AUDIO", "link": 7, "shape": 7}
+      ],
+      "outputs": [{"name": "VIDEO", "type": "VIDEO", "links": [8]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "CreateVideo"},
+      "widgets_values": [24.0, 8, "sRGB"]
+    },
+    {
+      "id": 8,
+      "type": "SaveVideo",
+      "title": "保存时序修复候选",
+      "pos": [1970, 550],
+      "size": [390, 238],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "video", "type": "VIDEO", "link": 8},
+        {"name": "format", "type": "COMFY_DYNAMICCOMBO_V3", "link": null},
+        {"name": "codec", "type": "COMFY_DYNAMICCOMBO_V3", "link": null, "shape": 7}
+      ],
+      "outputs": [{"name": "video", "type": "VIDEO", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "SaveVideo"},
+      "widgets_values": ["MiniMaxH3/RealBasicVSR/candidate"]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "VIDEO"],
+    [2, 3, 0, 4, 0, "IMAGE"],
+    [3, 3, 1, 4, 1, "AUDIO"],
+    [4, 4, 0, 6, 0, "IMAGE"],
+    [5, 4, 1, 5, 0, "IMAGE"],
+    [6, 4, 0, 7, 0, "IMAGE"],
+    [7, 4, 2, 7, 1, "AUDIO"],
+    [8, 7, 0, 8, 0, "VIDEO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.82, "offset": [120, 90]}, "frontendVersion": "1.24.3"},
+  "version": 0.4
+}

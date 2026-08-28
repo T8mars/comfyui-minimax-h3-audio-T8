@@ -1809,3 +1809,35 @@ JSON or count as another blind vote. The conservative conclusion is simply that 
 was not established. This parameterized route stays disconnected, with no recommended workflow/default
 or quality claim. It also does not provide physical BRDF recovery, deblur, pore generation or identity
 repair.
+
+## Classic-paper Advanced/EXP nodes (2026-08-28)
+
+This batch adds six opt-in routes without changing any previously released node schema or workflow:
+
+- **RAFT Motion Audit / Mask Propagation** reads a local torchvision-compatible RAFT Small or Large
+  checkpoint from `models/optical_flow`. The audit reports motion, cuts and forward/backward
+  consistency. Propagation transports a reviewed mask between explicit keyframes; it does not assign
+  identities, sharpen frames or repair faces.
+- **Trajectory Fun Control** converts normalized bounding-box keyframes into an interpolated path,
+  preview and Fun Control conditioning video. It is inspired by creator-facing trajectory control,
+  but does not claim to reproduce TrailBlazer's U-Net attention edits.
+- **RealBasicVSR Restore** reads an MMagic-compatible checkpoint from `models/upscale_models`, processes
+  overlapping temporal windows serially and either returns native size or x4 output. Audio is passed
+  through unchanged. It is a post-process, so it cannot recover missing identity or fix lip sync.
+- **FreeNoise Long Video** supplies a deterministic shared video-noise pool to either in-node long-video
+  loop. It leaves audio noise native. Because H3 still renders independent continuation windows, this
+  is a noise-rescheduling adaptation rather than a full reproduction of FreeNoise's one-latent sliding
+  temporal attention.
+- **Dual-Clock AYS Schedule Contract** defaults to the existing native-flow schedule. Manual mode accepts
+  only a complete, strictly descending `1 -> 0` base-sigma list and maps it through separate video/audio
+  shifts. Schedules published for SD, SDXL or SVD are not labelled H3-optimal.
+- **CADS Visual Reference Annealing** applies the paper's condition-noise interpolation and optional
+  moment rescaling to visual reference/keyframe latents only. It does not anneal audio references or the
+  target audio stream. H3 quality is not calibrated, so use a fixed-seed A/B and review identity,
+  endpoint, action and composition adherence before accepting a candidate.
+
+The dated ComfyUI workflows are under `03-image-video-edit`, `04-long-video` and `07-motion-detail`.
+FreeInit and PAG are deliberately not exposed: the current H3 joint audio/video flow and packed
+attention layout do not yet provide a validated joint re-noising or isolated perturbed-attention
+contract. A same-name approximation would have undefined audio behavior or conflicting attention
+ownership.

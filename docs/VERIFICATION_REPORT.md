@@ -6177,3 +6177,40 @@ global-coordinate path only as an explicitly named experimental reproduction mod
 
 The four new node IDs are appended at positions 222-225; no prior node ID, widget order or saved
 workflow was changed. The frontend example is under `examples/workflows/20-core-compatibility`.
+
+## Classic-paper Advanced/EXP contract batch (2026-08-28)
+
+Six creator-facing routes were appended at registration positions 236-243: RAFT motion audit and
+reviewed-mask propagation, bbox-keyframe trajectory planning/rendering for H3 Fun Control,
+RealBasicVSR temporal restoration, FreeNoise video-noise rescheduling for both in-node long-video
+runners, a dual-clock AYS schedule contract, and CADS visual-reference annealing. The previous 236
+node IDs and their input/widget order remain unchanged.
+
+The implementation intentionally distinguishes faithful components from H3 adaptations. RAFT uses a
+real torchvision RAFT backend. The RealBasicVSR architecture strictly loaded the local official-format
+checkpoint with no missing or unexpected tensors and completed one two-frame 64x64 low-load CUDA
+inference. FreeNoise implements deterministic temporal noise reuse/permutation but not the paper's
+single-long-latent sliding temporal attention. AYS does not ship an SD/SDXL/SVD table as an H3 optimum;
+its default is the original native-flow schedule and manual mode only validates an externally calibrated
+base knot list. CADS follows the published condition-annealing formula but remains uncalibrated for H3
+identity and endpoint adherence. Trajectory control creates explicit control frames for the existing Fun
+Control path and does not copy TrailBlazer's U-Net attention mechanism.
+
+One serial low-load torchvision RAFT Small run completed on twelve 256x256 frames. No H3 generation,
+multi-seed quality grid, stress test or general 16GiB claim was run. Model files remain outside Git and
+are never downloaded at runtime; filename, byte size and SHA-256 are diagnostic rather than execution
+allowlists. Each node releases only resources it owns and never calls global ComfyUI model unload.
+
+After correcting two serialized workflow output-link indices, all 166 frontend workflows parsed and
+passed the compatibility suite. Six new project workflows were copied byte-for-byte to the ComfyUI user
+menu, with matching SHA-256 values and a final mirror count of 166. Project regression was split to avoid
+native-media concurrency pressure: 1,752 non-delivery tests and all 28 Long Video Delivery tests passed
+serially (1,780 total). The two FFmpeg cases that had failed during an earlier concurrent full run also
+passed separately. Ruff passed for all non-vendored source, `compileall`, JSON parsing and `git diff
+--check` passed; the pinned VRetouchEr upstream vendor retains its pre-existing lint findings unchanged.
+
+FreeInit and PAG remain rejected implementation gates, not missing deliverables. FreeInit needs a
+validated MiniMax H3 flow-forward-noise and joint AV reinitialization contract. PAG needs one composer
+that can isolate target-video rows in H3 packed self-attention, report both main and perturbed forwards,
+and demonstrate acceptable audio behavior without conflicting with SLA, Prompt Relay, Enhance-A-Video
+or STG ownership. Until those conditions are met, no same-name approximation is registered.

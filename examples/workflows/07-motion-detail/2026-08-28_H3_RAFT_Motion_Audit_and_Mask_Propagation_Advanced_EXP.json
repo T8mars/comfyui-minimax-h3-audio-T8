@@ -1,0 +1,168 @@
+{
+  "id": "72be1013-3adb-4cd7-a7cb-7da9ee452d0b",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "RAFT用途和边界 / Read this first",
+      "pos": [0, 0],
+      "size": [930, 250],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "MarkdownNote"},
+      "widgets_values": "## 先做运动审计，再按需传播遮罩\n\n- Motion Audit只测相邻帧光流、前后向一致性和切镜；不会修脸、锐化或修改H3采样。\n- Mask Propagation只传播一名已人工确认的人物/物体MASK，不会自动判断身份。多人请每人运行一次。\n- 镜头切换、长时间遮挡或人物重入后必须重新给关键帧MASK。默认`analysis_max_side=640`、`pair_batch_size=1`是低负载起点。"
+    },
+    {
+      "id": 2,
+      "type": "LoadVideo",
+      "title": "选择需要审计/传播遮罩的视频",
+      "pos": [0, 310],
+      "size": [390, 124],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "VIDEO", "type": "VIDEO", "links": [1]}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadVideo"},
+      "widgets_values": ["replace_with_source_video.mp4"]
+    },
+    {
+      "id": 3,
+      "type": "GetVideoComponents",
+      "title": "解出原始帧；音频不进入光流节点",
+      "pos": [440, 310],
+      "size": [390, 110],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [{"name": "video", "type": "VIDEO", "link": 1}],
+      "outputs": [
+        {"name": "images", "type": "IMAGE", "links": [2, 3]},
+        {"name": "audio", "type": "AUDIO", "links": null},
+        {"name": "fps", "type": "FLOAT", "links": null},
+        {"name": "bit_depth", "type": "INT", "links": null}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "GetVideoComponents"},
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3RAFTMotionAuditT8Advanced",
+      "title": "1. 先看真实运动、切镜与一致性",
+      "pos": [880, 290],
+      "size": [530, 330],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "frames", "type": "IMAGE", "link": 2}],
+      "outputs": [
+        {"name": "flow_preview", "type": "IMAGE", "links": [5]},
+        {"name": "report_json", "type": "STRING", "links": null},
+        {"name": "mean_motion_px", "type": "FLOAT", "links": null},
+        {"name": "p95_motion_px", "type": "FLOAT", "links": null},
+        {"name": "scene_cut_count", "type": "INT", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3RAFTMotionAuditT8Advanced"},
+      "widgets_values": ["raft_small_C_T_V2-01064c6d.pth", "raft_small", "auto", 640, 1, true, 0.2, "offload_after"]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "title": "关键帧MASK：白色是同一人物/物体",
+      "pos": [0, 550],
+      "size": [390, 430],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": null},
+        {"name": "MASK", "type": "MASK", "links": [4]}
+      ],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "LoadImage"},
+      "widgets_values": ["replace_with_reviewed_keyframe_mask.png", "image"]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3RAFTMaskPropagationT8Advanced",
+      "title": "2. 镜头内传播一名已确认角色的MASK",
+      "pos": [440, 690],
+      "size": [560, 480],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "frames", "type": "IMAGE", "link": 3},
+        {"name": "keyframe_masks", "type": "MASK", "link": 4}
+      ],
+      "outputs": [
+        {"name": "propagated_masks", "type": "MASK", "links": null},
+        {"name": "confidence_masks", "type": "MASK", "links": null},
+        {"name": "preview", "type": "IMAGE", "links": [6]},
+        {"name": "report_json", "type": "STRING", "links": null}
+      ],
+      "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3RAFTMaskPropagationT8Advanced"},
+      "widgets_values": ["0", "raft_small_C_T_V2-01064c6d.pth", "raft_small", "auto", 640, 1, 0.2, 2.0, 0.08, true, "offload_after"]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "title": "光流方向/强度预览（不是修复结果）",
+      "pos": [1470, 290],
+      "size": [430, 160],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 5}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "title": "绿色区域=传播后的MASK预览",
+      "pos": [1060, 720],
+      "size": [430, 160],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 6}],
+      "outputs": [{"name": "images", "type": "IMAGE", "links": null}],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "MarkdownNote",
+      "title": "关键参数 / Recommended settings",
+      "pos": [1060, 930],
+      "size": [650, 310],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"cnr_id": "comfy-core", "Node name for S&R": "MarkdownNote"},
+      "widgets_values": "## 建议参数\n\n- `model_type`必须和权重架构一致；项目不按文件名、哈希或大小拦截，选错由PyTorch正常报结构不匹配。\n- 单张MASK时`keyframe_indices=0`，它会向后传播；多关键帧时先把MASK组成batch，再写`0,24,48`。\n- `minimum_confidence`越高越保守；遮挡处缺失比串到另一个人更安全。\n- `scene_cut_threshold`切断跨镜传播；切镜后补新MASK，不要强行降低阈值。\n- 输出MASK可接多人修脸或Skin Finish等后续节点；本工作流不改视频音频。"
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "VIDEO"],
+    [2, 3, 0, 4, 0, "IMAGE"],
+    [3, 3, 0, 6, 0, "IMAGE"],
+    [4, 5, 1, 6, 1, "MASK"],
+    [5, 4, 0, 7, 0, "IMAGE"],
+    [6, 6, 2, 8, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.82, "offset": [140, 80]}, "frontendVersion": "1.24.3"},
+  "version": 0.4
+}

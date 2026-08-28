@@ -12,6 +12,8 @@ import comfy.sample
 import comfy.utils
 import latent_preview
 
+from .freenoise_advanced import free_noise_config, reschedule_h3_noise
+
 from .audio_ops import decode_av_latent, trim_av_output
 from .enhance_a_video_advanced import (
     build_eav_long_video_model,
@@ -203,6 +205,7 @@ def _sample_prepared_segment(
     sampler,
     sigmas: torch.Tensor,
     seed: int,
+    segment_index: int = 0,
 ) -> dict:
     latent = dict(av_latent)
     latent_image = comfy.sample.fix_empty_latent_channels(
@@ -217,6 +220,12 @@ def _sample_prepared_segment(
         int(seed),
         latent.get("batch_index"),
     )
+    noise_report = {"status": "disabled"}
+    noise_config = free_noise_config(model)
+    if noise_config is not None:
+        noise, noise_report = reschedule_h3_noise(
+            noise, config=noise_config, segment_index=int(segment_index)
+        )
     guider = _SingleConditionGuider(model)
     guider.set_conditioning(positive)
     preview_callback = latent_preview.prepare_callback(
@@ -242,6 +251,8 @@ def _sample_prepared_segment(
     output.pop("downscale_ratio_spacial", None)
     output.pop("downscale_ratio_temporal", None)
     output["samples"] = samples
+    if noise_config is not None:
+        output["_h3_t8_free_noise_report"] = noise_report
     return output
 
 
@@ -504,6 +515,9 @@ def run_long_video_in_node_loop_effects(
         ref_video_audios=ref_video_audios,
         ref_audios=ref_audios,
     )
+    noise_config = free_noise_config(model)
+    if noise_config is not None:
+        base_contract["free_noise"] = noise_config
     contract = {
         "schema": EFFECTS_LOOP_SCHEMA,
         "format": EFFECTS_LOOP_FORMAT,
@@ -825,6 +839,10 @@ def run_long_video_in_node_loop_effects(
                             sampler=sampler,
                             sigmas=sigmas,
                             seed=segment.seed,
+                            segment_index=segment.index,
+                        )
+                        noise_report = sampled.pop(
+                            "_h3_t8_free_noise_report", {"status": "disabled"}
                         )
                         eav_audit_report = {"status": "disabled"}
                         if eav_runtime is not None:
@@ -893,6 +911,7 @@ def run_long_video_in_node_loop_effects(
                                 "conditioning": _json_object(conditioning_report_json),
                                 "trim": _json_object(trim_report_json),
                                 "resource_preflight": preflight,
+                                "free_noise": noise_report,
                             },
                         )
                     finally:
@@ -966,6 +985,7 @@ def run_long_video_in_node_loop_effects(
                 "manifest_path": str(root / "manifest.json"),
                 "sampling_summary": sampling_summary,
                 "effect_contract": contract["effects"],
+                "free_noise": noise_config or {"status": "disabled"},
                 "segment_audits": audits,
                 "resume_action": (
                     "adopted_existing_then_completed"

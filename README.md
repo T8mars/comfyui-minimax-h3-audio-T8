@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.54.1** · GPL-3.0-or-later
+当前版本：**1.55.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -14,6 +14,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
+- RAFT运动审计、轨迹控制、RealBasicVSR、FreeNoise、AYS校准契约、CADS视觉参考退火
 
 带 `Advanced` 或 `EXP` 的节点属于高级/实验功能，建议直接使用配套工作流。
 
@@ -55,6 +56,8 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | Latent 放大模型 | `models/latent_upscale_models` |
 | H3 Fun ControlNet | `models/controlnet` |
 | TAEH3 快速预览模型 | `models/vae_approx` |
+| RAFT 光流模型 | `models/optical_flow` |
+| RealBasicVSR | `models/upscale_models` |
 
 FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
@@ -86,6 +89,14 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 [`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存、TAEH3原生快速预览检查和只读诊断。Fun Control 模型下载自 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)，放入`models/controlnet`；从[madebyollin/taehv](https://github.com/madebyollin/taehv)下载`taeh3.safetensors`放入`models/vae_approx`，并在ComfyUI启动参数中选择TAESD预览。其余节点默认只生成计划或报告，不会自动删缓存、卸载模型、修改预览设置或启用尚在草案中的官方 Generic Loops。
 
 需要把Qwen参考前缀缓存与外部[T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8)组合时，使用[`12-system-memory`](examples/workflows/12-system-memory)中的Ref2VA Stock20模板。它是性能优先EXP，不保证bit-exact、省显存或16GB安全。
+
+## 论文能力实验
+
+- [`07-motion-detail`](examples/workflows/07-motion-detail)：RAFT运动审计/MASK传播、轨迹控制、RealBasicVSR时序恢复、H3双时钟AYS校准契约。
+- [`04-long-video`](examples/workflows/04-long-video)：FreeNoise视频初始噪声重排，可接普通或Prompt Relay/EAV内循环。
+- [`03-image-video-edit`](examples/workflows/03-image-video-edit)：CADS视觉参考退火；只改视觉条件，不改音频条件。
+
+AYS没有可直接套用的H3官方最优时间表；默认仍是原生flow。FreeInit和PAG目前没有可靠的H3联合音视频数学/Attention合同，因此没有做同名伪实现。
 
 ## 常见问题
 

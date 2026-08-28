@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.54.1** · GPL-3.0-or-later
+Current version: **1.55.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,6 +14,7 @@ Current version: **1.54.1** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
+- RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
 
 Nodes marked `Advanced` or `EXP` are advanced or experimental. Start with their bundled workflows.
 
@@ -54,6 +55,8 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | Latent upscaler | `models/latent_upscale_models` |
 | H3 Fun ControlNet | `models/controlnet` |
 | TAEH3 preview model | `models/vae_approx` |
+| RAFT optical-flow weights | `models/optical_flow` |
+| RealBasicVSR weights | `models/upscale_models` |
 
 Do not mix FL2VA, Ref2VA, pruned, and full base-model variants.
 
@@ -85,6 +88,14 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 [`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, native TAEH3 preview inspection, and read-only diagnostics. Download the Fun Control model from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet) and place it in `models/controlnet`. Download `taeh3.safetensors` from [madebyollin/taehv](https://github.com/madebyollin/taehv), place it in `models/vae_approx`, and start ComfyUI with TAESD preview selected. The other nodes are report/plan-only by default: they do not delete cache files, unload models, change preview settings, or enable the still-draft official Generic Loops backend.
 
 For a Qwen reference-prefix cache plus the separately installed [T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8), use the Ref2VA Stock20 template under [`12-system-memory`](examples/workflows/12-system-memory). It is a performance-first EXP route, not a bit-exact, VRAM-saving, or universal 16GB-safety claim.
+
+## Paper-Inspired Experiments
+
+- [`07-motion-detail`](examples/workflows/07-motion-detail): RAFT motion audit/mask propagation, trajectory control, RealBasicVSR temporal restoration, and the H3 dual-clock AYS calibration contract.
+- [`04-long-video`](examples/workflows/04-long-video): FreeNoise video-initialization rescheduling for the standard or Prompt Relay/EAV in-node loop.
+- [`03-image-video-edit`](examples/workflows/03-image-video-edit): CADS visual-reference annealing; audio conditions remain unchanged.
+
+There is no official H3-optimized AYS schedule to copy, so the default remains native flow. FreeInit and PAG do not yet have a validated H3 joint-AV mathematical/attention contract and were not implemented under misleading names.
 
 ## Troubleshooting
 

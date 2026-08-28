@@ -251,3 +251,15 @@ page. Filename, byte size and fingerprint are diagnostic only: the installed Com
 loader and the checkpoint tensor structure are authoritative. The fallback keeps the five-block
 control tower dense, injects only into target-video rows and rejects Sol-Attn Morton token
 reordering because it changes the row order that the ControlNet was trained against.
+
+## RAFT and RealBasicVSR optional runtimes
+
+The motion-audit nodes call torchvision's RAFT Small/Large implementation and load user-installed
+weights from `ComfyUI/models/optical_flow`. Torchvision and its model weights remain subject to
+their upstream terms; neither is copied or downloaded at runtime by this repository.
+
+The optional RealBasicVSR node contains a dependency-light inference adaptation of OpenMMLab
+MMagic's RealBasicVSR, BasicVSR and SPyNet architectures under Apache License 2.0. The detailed
+notice is in [`THIRD_PARTY_NOTICES/RealBasicVSR.md`](THIRD_PARTY_NOTICES/RealBasicVSR.md). Model
+weights are not bundled or downloaded at runtime, and filename, size or hash is never an execution
+allowlist.

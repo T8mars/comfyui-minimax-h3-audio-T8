@@ -185,6 +185,12 @@ from .nodes_sla_profile_router_advanced import (
 from .nodes_pdd_advanced import PDD_ADVANCED_NODE_CLASSES
 from .nodes_visual_reference_exp import MiniMaxH3VisualReferenceStrengthEXPT8
 from .nodes_vram_policy_advanced import VRAM_POLICY_ADVANCED_NODE_CLASSES
+from .nodes_optical_flow_advanced import OPTICAL_FLOW_ADVANCED_NODE_CLASSES
+from .nodes_trajectory_control_advanced import TRAJECTORY_CONTROL_ADVANCED_NODE_CLASSES
+from .nodes_realbasicvsr_advanced import REALBASICVSR_ADVANCED_NODE_CLASSES
+from .nodes_freenoise_advanced import FREENOISE_ADVANCED_NODE_CLASSES
+from .nodes_ays_schedule_advanced import AYS_SCHEDULE_ADVANCED_NODE_CLASSES
+from .nodes_cads_visual_advanced import CADS_VISUAL_ADVANCED_NODE_CLASSES
 from .preflight import run_preflight
 from .prompt_tags import prepare_prompt
 from .sampling import (
@@ -641,6 +647,12 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *RESIDENCY_STRATEGY_ADVANCED_NODE_CLASSES,
                 *CREATOR_SEGMENT_CACHE_ADVANCED_NODE_CLASSES,
                 *COMMUNITY_DIAGNOSTICS_ADVANCED_NODE_CLASSES,
+                *OPTICAL_FLOW_ADVANCED_NODE_CLASSES,
+                *TRAJECTORY_CONTROL_ADVANCED_NODE_CLASSES,
+                *REALBASICVSR_ADVANCED_NODE_CLASSES,
+                *FREENOISE_ADVANCED_NODE_CLASSES,
+                *AYS_SCHEDULE_ADVANCED_NODE_CLASSES,
+                *CADS_VISUAL_ADVANCED_NODE_CLASSES,
             ]
 
 

@@ -1,4 +1,74 @@
 {
+  "cads_visual_reference_advanced": {
+    "status": "implemented as one append-only Advanced/EXP MODEL wrapper; no existing conditioning or sampler schema changed",
+    "date": "2026-08-28",
+    "node": "MiniMaxH3CADSVisualReferenceT8Advanced",
+    "position": 243,
+    "paper": "CADS: Unleashing the Diversity of Diffusion Models through Condition-Annealed Sampling, ICLR 2024",
+    "implementation": "applies sqrt(gamma(t))*condition + s*sqrt(1-gamma(t))*noise to H3 visual condition latents at every shifted-video-sigma step, with the paper's optional mean/std rescaling blend",
+    "scope": "visual references and visual keyframes only; audio reference latents and the target audio stream are not modified",
+    "modes": ["paper_independent", "stable_fixed_path"],
+    "scientific_boundary": "the paper did not calibrate MiniMax H3. This remains EXP because increased diversity can weaken identity, endpoint, action and composition adherence"
+  },
+  "ays_dual_clock_schedule_contract_advanced": {
+    "status": "implemented as one append-only Advanced/EXP sampler/schedule setup node; no existing Dual-Clock node or workflow changed",
+    "date": "2026-08-28",
+    "node": "MiniMaxH3DualClockAYSScheduleT8Advanced",
+    "position": 242,
+    "paper": "Align Your Steps: Optimizing Sampling Schedules in Diffusion Models, ICML 2024",
+    "profiles": ["native_flow_baseline", "manual_h3_calibrated"],
+    "implementation": "validates one strictly descending base-flow knot list and maps it to separate H3 video/audio clocks using their respective shift transforms",
+    "scientific_boundary": "AYS schedules are model, dataset and solver specific. No SD, SDXL or SVD schedule is presented as H3-optimal, and a user label is never treated as proof that KLUB optimization was run"
+  },
+  "freenoise_long_video_advanced": {
+    "status": "implemented as one append-only MODEL planning node consumed by both existing in-node long-video runners; no old runner schema or workflow changed",
+    "date": "2026-08-28",
+    "node": "MiniMaxH3FreeNoiseLongVideoT8Advanced",
+    "position": 241,
+    "paper": "FreeNoise: Tuning-Free Longer Video Diffusion via Noise Rescheduling, ICLR 2024",
+    "implementation": "deterministic shared video-noise temporal pool with a per-segment permutation; paper_permutation uses full reuse and variance_preserving_blend optionally mixes independent segment noise while preserving variance",
+    "composition": "works before either standard in-node loop or Relay/EAV loop because it owns no attention hook; audio noise is left native and independent while the shared H3 Transformer can still couple final AV behavior",
+    "scientific_boundary": "the original paper also performs temporal attention over sliding windows inside one long latent. H3 uses independent trained-window continuation segments here, so this is a noise-rescheduling adaptation rather than a faithful full FreeNoise reproduction",
+    "compatibility": "all prior 241 node IDs retain exact order and schema; this node appends at position 241"
+  },
+  "realbasicvsr_temporal_restore_advanced": {
+    "status": "implemented as one append-only Advanced/EXP post-processing node; no existing H3 conditioning, sampler, decode or workflow contract changed",
+    "date": "2026-08-28",
+    "node": "MiniMaxH3RealBasicVSRRestoreT8Advanced",
+    "position": 240,
+    "backend": "dependency-light inference adaptation of OpenMMLab MMagic RealBasicVSR/BasicVSR/SPyNet; Apache-2.0 attribution is included and model weights are not bundled or downloaded at runtime",
+    "workflow": "serial overlapping temporal windows, optional native-size restoration or x4 output, source/candidate strength blend and exact AUDIO object passthrough",
+    "memory": "default 8-frame windows with two-frame overlap and sequential image cleaning; release affects only this node's model and never calls ComfyUI global unload",
+    "scientific_boundary": "post-processes temporal/detail consistency but cannot reconstruct missing identity, repair lip sync or guarantee correction of generative artifacts; no filename/hash/byte-size identity gate is used",
+    "compatibility": "all prior 240 node IDs retain exact order and schema; this node appends at position 240"
+  },
+  "trajectory_control_advanced": {
+    "status": "implemented as two append-only Advanced/EXP planning and rendering nodes; no existing H3, Fun Control, sampler or workflow contract changed",
+    "date": "2026-08-28",
+    "nodes": [
+      "MiniMaxH3TrajectoryControlPlanT8Advanced",
+      "MiniMaxH3TrajectoryControlRenderT8Advanced"
+    ],
+    "positions": [238, 239],
+    "interaction": "explicit normalized bbox keyframes, multiple object IDs, linear/smoothstep/hold interpolation, per-keyframe strength, clip-or-reject canvas policy and a visual path preview",
+    "rendering": "soft region, bbox outline or aspect-preserving reference sprite control video plus trajectory MASK. The output is intended for the existing MiniMax H3 Fun Control Apply node",
+    "scientific_boundary": "TrailBlazer-inspired creator interaction only. It does not reproduce TrailBlazer's U-Net cross-attention surgery because MiniMax H3 is a packed joint-AV flow Transformer; it owns no H3 attention, modifies no audio and makes no trajectory-adherence guarantee",
+    "compatibility": "all prior 238 node IDs retain exact order and schema; the trajectory nodes append at 238-239"
+  },
+  "optical_flow_motion_advanced": {
+    "status": "implemented as two append-only Advanced/EXP nodes; no existing node schema, widget order, default or workflow was changed",
+    "date": "2026-08-28",
+    "nodes": [
+      "MiniMaxH3RAFTMotionAuditT8Advanced",
+      "MiniMaxH3RAFTMaskPropagationT8Advanced"
+    ],
+    "positions": [236, 237],
+    "backend": "torchvision RAFT Small/Large with user-selected weights from ComfyUI/models/optical_flow; model filename, byte size and SHA-256 are never execution allowlists",
+    "motion_audit": "read-only pairwise optical-flow magnitude, optional forward/backward consistency and scene-cut reporting. It diagnoses motion and temporal collapse but does not sharpen, repair faces or modify H3 sampling",
+    "mask_propagation": "one reviewed identity/object mask is transported between explicit keyframes with bidirectional flow, forward/backward confidence, cut stops and optional edge extension. It never performs identity assignment and should be run once per person",
+    "memory": "pair batch defaults to one and analysis defaults to a 640-pixel long side. offload_after moves only RAFT weights back to CPU and never calls ComfyUI's global model unload",
+    "scientific_boundary": "this first backend is original RAFT-compatible torchvision inference. SEA-RAFT remains a separately labelled future backend because its uncertainty head and checkpoint/config contract are not interchangeable with RAFT"
+  },
   "community_creation_batch_advanced": {
     "status": "implemented as eight append-only Advanced/EXP nodes; old node IDs, schemas, defaults and workflows remain unchanged",
     "date": "2026-08-28",
@@ -1314,7 +1384,15 @@
     "MiniMaxH3CreatorSegmentCacheT8Advanced",
     "MiniMaxH3GenericLoopCapabilityT8Advanced",
     "MiniMaxH3OfficialRiskDiagnosticT8Advanced",
-    "MiniMaxH3TAEH3PreviewCapabilityT8Advanced"
+    "MiniMaxH3TAEH3PreviewCapabilityT8Advanced",
+    "MiniMaxH3RAFTMotionAuditT8Advanced",
+    "MiniMaxH3RAFTMaskPropagationT8Advanced",
+    "MiniMaxH3TrajectoryControlPlanT8Advanced",
+    "MiniMaxH3TrajectoryControlRenderT8Advanced",
+    "MiniMaxH3RealBasicVSRRestoreT8Advanced",
+    "MiniMaxH3FreeNoiseLongVideoT8Advanced",
+    "MiniMaxH3DualClockAYSScheduleT8Advanced",
+    "MiniMaxH3CADSVisualReferenceT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

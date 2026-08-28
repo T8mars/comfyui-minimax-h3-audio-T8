@@ -33,6 +33,7 @@ from .long_video_delivery import (
 )
 from .long_video_orchestration import resolve_long_video_orchestration
 from .sampling import setup_dual_clock_sampling
+from .freenoise_advanced import free_noise_config, reschedule_h3_noise
 
 
 LOOP_SCHEMA = 1
@@ -289,6 +290,7 @@ def _sample_one_segment(
     shift_audio: float,
     sampler_name: str,
     scheduler: str,
+    segment_index: int = 0,
 ) -> dict:
     sampled_model, sampler, sigmas = setup_dual_clock_sampling(
         model,
@@ -312,6 +314,11 @@ def _sample_one_segment(
         int(seed),
         latent.get("batch_index"),
     )
+    noise_config = free_noise_config(sampled_model)
+    if noise_config is not None:
+        noise, _noise_report = reschedule_h3_noise(
+            noise, config=noise_config, segment_index=int(segment_index)
+        )
     guider = _SingleConditionGuider(sampled_model)
     guider.set_conditioning(positive)
     preview_callback = latent_preview.prepare_callback(
@@ -635,6 +642,9 @@ def run_long_video_in_node_loop(
         ref_video_audios=ref_video_audios,
         ref_audios=ref_audios,
     )
+    noise_config = free_noise_config(model)
+    if noise_config is not None:
+        contract["free_noise"] = noise_config
     contract_sha256 = _sha256_json(contract)
     segment_count = len(orchestration.segments)
 
@@ -790,6 +800,7 @@ def run_long_video_in_node_loop(
                             shift_audio=orchestration.shift_audio,
                             sampler_name=orchestration.sampler_name,
                             scheduler=orchestration.scheduler,
+                            segment_index=segment.index,
                         )
                         frames, generated_audio, _video_latent, _audio_latent = (
                             decode_av_latent(sampled, video_vae, audio_vae)
@@ -896,6 +907,7 @@ def run_long_video_in_node_loop(
                 "state_path": str(state_path),
                 "manifest_path": str(root / "manifest.json"),
                 "sampling_summary": orchestration.sampling_summary,
+                "free_noise": noise_config or {"status": "disabled"},
                 "resume_action": (
                     "adopted_existing_then_completed"
                     if adopted

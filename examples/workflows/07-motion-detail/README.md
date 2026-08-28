@@ -20,6 +20,10 @@
 - `H3_Enhance_A_Video_FETA_STG_T2VA_Stock20`：由单一组合节点同时拥有FETA与STG；FETA一致作用于主/弱分支，并审计额外联合AV前向。
 - `H3_Motion_Recovery_Fullclip_Stock20`：736×416自动起步模板；Analyzer默认自动判定，只有确有动作过载才请求整段二采，平静片直接ABSTAIN并原样交付pass 1。
 - `H3_Motion_Recovery_Windowed_Stock20`：1152×640自动分窗模板；只有自动门通过才请求带handle的热点窗口，窗口结果按计划哈希落盘并支持中断续跑。
+- `H3_RAFT_Motion_Audit_and_Mask_Propagation`：先用真实光流审计运动/切镜，再把一名已人工确认的人物或物体MASK在镜头内传播；适合给多人修脸和Skin Finish补检测间隔，不负责身份判断或修复画面。
+- `H3_Trajectory_Fun_Control`：用归一化bbox关键帧规划人物/物体移动轨迹，渲染参考精灵、软区域或框线控制视频，再接现有Fun Control Apply；不接管H3 Attention，也不修改音频。
+- `H3_RealBasicVSR_Temporal_Restore`：H3生成后的可选时序/细节修复；默认保持原分辨率，8帧串行窗口并保留2帧重叠，AUDIO原对象直通。
+- `H3_Dual_Clock_AYS_Schedule_Contract`：保留原生H3时间表，或导入真正针对H3校准的base sigma节点；分别映射视频/音频shift。它不会把SD、SDXL或SVD的AYS数组冒充成H3最优表。
 - 其他单路线工作流用于A/B诊断。
 
 ## Motion Recovery 使用方法
@@ -51,6 +55,12 @@ FETA 路线已完成 736×416 与 1152×640 两档、124帧、20步、同 seed �
 Ref2VA 和任务型 Hybrid 也各完成一组 1152×640、124帧、Stock20 的 disabled/apply 实测。两条增强端都命中20次前向、每次50个主块；接受成片均通过视频、音频和联合解码门。Ref2VA 的自动音频相关约0.8695且最低显存余量仅约417MiB，Hybrid约0.9867；这些值只说明差异大小，不能替代盲看、盲听或参考遵循审核。Hybrid在这里指“首帧条件 + 独立参考图”的任务类型，不是混合模型权重节点。
 
 ## 使用方法与注意事项
+
+RAFT工作流默认读取`ComfyUI/models/optical_flow/raft_small_C_T_V2-01064c6d.pth`。`model_type`必须与权重架构一致；项目不会按文件名、哈希或大小阻止用户模型。单MASK时`keyframe_indices=0`并向后传播，多锚点时先把MASK组成batch，再填入相同数量的帧号。切镜、长遮挡和人物重入后必须补新锚点；多人需每人独立运行一次，不能把颜色轨迹当作身份。
+
+RealBasicVSR模型放在`ComfyUI/models/upscale_models`；示例使用`realbasicvsr_wogan_c64b20_300k.pth`，节点运行时不会下载。默认`native_size_restore / strength=0.65 / chunk=8 / overlap=2`是低负载候选起点；`x4_super_resolution`会把宽高各放大4倍，资源消耗显著增加。该节点不能重建身份、修复口型或保证消除生成崩坏，必须与原片对照后再决定是否采用。
+
+AYS工作流默认仍是`native_flow_baseline`，因此只用于验证新节点接线，不自动提高画质。只有获得针对当前MiniMax H3模型、任务数据和求解器离线校准的`steps+1`个base sigma时，才使用`manual_h3_calibrated`；必须从1.0严格递减到0.0。论文的优化过程需要模型/数据特定的KL上界估计，不能靠套用其他模型的固定数组替代。
 
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
