@@ -6240,3 +6240,38 @@ validated MiniMax H3 flow-forward-noise and joint AV reinitialization contract. 
 that can isolate target-video rows in H3 packed self-attention, report both main and perturbed forwards,
 and demonstrate acceptable audio behavior without conflicting with SLA, Prompt Relay, Enhance-A-Video
 or STG ownership. Until those conditions are met, no same-name approximation is registered.
+
+## Recent creator-node effect audit (2026-08-28)
+
+The six-node delivery above was followed by bounded, serial, same-seed H3 effect checks. This addendum
+separates **an observable effect** from **a general quality claim**; no stress matrix or multi-seed sweep
+was run.
+
+- **FreeNoise:** one 1152x640x144 two-segment Turbo4 long-video pair completed with the target-video
+  noise rescheduled in both segments and target-audio noise unchanged. The bird path visibly changed.
+  This proves temporal video-noise routing, not improved continuity.
+- **CADS:** one 736x416x22 Stock20 disabled/apply pair completed. Reference annealing changed blink
+  timing and local eye/detail structure, but the difference was subtle and no arm was consistently
+  superior. The feature remains experimental and identity/reference adherence must be reviewed.
+- **Trajectory + Fun Control:** one 736x416x22 Turbo8 baseline/controlled pair completed. The controlled
+  arm followed the requested upward-middle/downward-right trajectory more strongly. The first attempt
+  also exposed an actionable incompatibility: the local pruned/basis control model has an 8-value AdaLN
+  input while the full base has 2688. The Apply node now compares live tensor dimensions before VAE
+  work and explains the required pairing; it does not gate filenames, hashes or sizes. With
+  `end_percent=0.85`, the last 15 percent is intentionally released, so endpoint locking requires 1.0.
+- **Prompt Relay + Enhance-A-Video:** one 1152x640x22 Stock20 Relay-only/apply pair rendered the authored
+  red-left, green-upper-center and blue-right windows in order. EAV raised mean Laplacian variance from
+  `464.8855` to `596.7232` and slightly raised temporal change from `2.8356` to `2.9989`, proving a real
+  visual effect. It was not audio-neutral: waveform correlation was `0.2080` and RMS became `2.1605x`
+  the Relay-only arm. FETA directly scales target-video attention rows only, but later joint-AV layers
+  can propagate that change into audio; important dialogue still requires A/B listening.
+- **Dual-clock AYS schedule contract:** one 736x416x22 Turbo8 native/manual-knot pair completed. The
+  uncalibrated manual sensitivity array raised mean Laplacian variance from `75.1691` to `107.0719`,
+  kept temporal change similar (`13.4756` versus `13.3232`), and reduced audio RMS to `0.6976x` native
+  with waveform correlation `0.9691`. This proves that imported knots affect the real dual-clock run;
+  it is not a KLUB-optimized MiniMax H3 AYS schedule and is not shipped as a quality preset.
+
+Ignored machine-readable reports and local comparison media are under
+`artifacts/recent-feature-effect-audit-20260828/`. They are intentionally not packaged in Git. The
+source-controlled workflow notes contain the model-pairing and audio-review boundaries established by
+these checks.

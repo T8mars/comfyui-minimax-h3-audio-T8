@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -199,6 +200,62 @@ def test_loader_uses_framework_structure_not_filename_size_or_hash(monkeypatch, 
     assert bundle.filename == path.name
     assert bundle.control == {"model": fake_control, "patcher": fake_patcher}
     assert report["fingerprint_policy"].startswith("diagnostic_only")
+
+
+def test_curve_control_rejects_full_width_base_before_vae_encode():
+    class _VAE:
+        def encode(self, _frames):
+            raise AssertionError("AdaLN mismatch must fail before VAE encode")
+
+    base_block = SimpleNamespace(
+        adaln_proj=SimpleNamespace(linear=nn.Linear(2688, 2, bias=False))
+    )
+    control_block = SimpleNamespace(
+        adaln_proj=SimpleNamespace(linear=nn.Linear(8, 2, bias=False))
+    )
+    model = SimpleNamespace(
+        model=SimpleNamespace(diffusion_model=SimpleNamespace(blocks=[base_block])),
+        model_options={"transformer_options": {}},
+    )
+    bundle = fun.H3FunControlBundle(
+        "compatibility",
+        {"model": SimpleNamespace(control_blocks=[control_block])},
+        "arbitrary-control.safetensors",
+        "arbitrary-control.safetensors",
+        {},
+    )
+    with pytest.raises(RuntimeError, match="2688.*8"):
+        fun.apply_h3_fun_control(
+            model,
+            [[torch.zeros(1), {}]],
+            bundle,
+            _VAE(),
+            torch.zeros(5, 32, 32, 3),
+            32,
+            32,
+            5,
+            "depth",
+            "exact",
+            0.8,
+            0.0,
+            0.85,
+        )
+
+
+def test_adaln_pairing_uses_live_shapes_not_model_names_or_hashes():
+    base = SimpleNamespace(adaln_t_table=torch.zeros(1025, 8))
+    control_block = SimpleNamespace(
+        adaln_proj=SimpleNamespace(linear=nn.Linear(8, 2, bias=False))
+    )
+    model = SimpleNamespace(model=SimpleNamespace(diffusion_model=base))
+    bundle = fun.H3FunControlBundle(
+        "compatibility",
+        {"model": SimpleNamespace(control_blocks=[control_block])},
+        "user-renamed-anything.safetensors",
+        "user-renamed-anything.safetensors",
+        {},
+    )
+    fun._assert_compatible_adaln_pair(model, bundle)
 
 
 def test_registration_is_append_only_and_schema_is_experimental():

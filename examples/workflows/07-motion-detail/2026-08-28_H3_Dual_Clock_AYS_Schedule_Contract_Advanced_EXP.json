@@ -626,7 +626,7 @@
         "Node name for S&R": "MarkdownNote",
         "cnr_id": "comfy-core"
       },
-      "widgets_values": "## AYS Schedule Contract\n\n- 默认 `native_flow_baseline` 与原 H3 8 步时间表一致，不声称提升质量。\n- 只有拿到针对 **MiniMax H3 + 当前求解器 + 当前任务数据** 校准的 `steps+1` 个 base sigma 后，才切换 `manual_h3_calibrated`。\n- 列表必须从 1.0 严格递减到 0.0；节点会分别用 video/audio shift 映射同一组 base knots。\n- 不要把 SD、SDXL 或 SVD 的 AYS 数组直接复制到 H3。"
+      "widgets_values": "## AYS Schedule Contract\n\n- 默认 `native_flow_baseline` 与原 H3 8 步时间表一致，不声称提升质量。\n- 只有拿到针对 **MiniMax H3 + 当前求解器 + 当前任务数据** 校准的 `steps+1` 个 base sigma 后，才切换 `manual_h3_calibrated`。\n- 列表必须从 1.0 严格递减到 0.0；节点会分别用 video/audio shift 映射同一组 base knots。\n- 736×416×22、8步敏感性实测确认手工knots会同时改变画面和音频，但测试数组不是H3优化预设，且本例音量下降约30%。\n- 不要把 SD、SDXL 或 SVD 的 AYS 数组直接复制到 H3。重要对白必须保留原生对照并试听。"
     }
   ],
   "links": [

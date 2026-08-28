@@ -377,6 +377,53 @@ def _video_span(mod_segments) -> tuple[int, int] | None:
     return (start, stop) if stop > start else None
 
 
+def _adaln_input_dim(module: Any) -> int | None:
+    """Read the executable AdaLN input width without using file identity."""
+    table = getattr(module, "adaln_t_table", None)
+    if table is not None and getattr(table, "ndim", 0) == 2:
+        return int(table.shape[-1])
+    blocks = getattr(module, "blocks", None)
+    if blocks is None:
+        blocks = getattr(module, "control_blocks", None)
+    if blocks is None or len(blocks) == 0:
+        return None
+    block = blocks[0]
+    projection = getattr(getattr(block, "adaln_proj", None), "linear", None)
+    weight = getattr(projection, "weight", None)
+    if weight is None or getattr(weight, "ndim", 0) != 2:
+        return None
+    return int(weight.shape[1])
+
+
+def _assert_compatible_adaln_pair(model, bundle: H3FunControlBundle) -> None:
+    """Reject an impossible base/control pair before encoding or sampling.
+
+    Kijai's ``adaln_basis`` ControlNet consumes the same eight-dimensional
+    curve coordinates as a pruned H3 base.  The original dense H3 and original
+    Fun-Control release both consume the full 2688-dimensional time embedding.
+    Mixing those representations cannot be repaired by padding or reshaping the
+    weights, so compare the live module contracts instead of filenames, hashes,
+    or byte sizes.
+    """
+    if bundle.backend != "compatibility":
+        return
+    base = getattr(getattr(model, "model", None), "diffusion_model", None)
+    holder = bundle.control if isinstance(bundle.control, Mapping) else {}
+    control = holder.get("model")
+    base_dim = _adaln_input_dim(base) if base is not None else None
+    control_dim = _adaln_input_dim(control) if control is not None else None
+    if base_dim is None or control_dim is None or base_dim == control_dim:
+        return
+    raise RuntimeError(
+        "MiniMax H3 Fun Control AdaLN representation mismatch: "
+        f"the selected base model consumes {base_dim} values but the selected "
+        f"ControlNet consumes {control_dim}. Use an adaln_basis/curve-form "
+        "ControlNet with a *_pruned_* H3 base, or pair the original full-width "
+        "ControlNet with the original full-width H3 base. This check uses live "
+        "tensor shapes only; filenames, hashes, and file sizes are not restricted."
+    )
+
+
 def _dense_control_options(options: Mapping[str, Any] | None) -> dict[str, Any]:
     cleaned = dict(options or {})
     for key in tuple(cleaned):
@@ -568,6 +615,7 @@ def apply_h3_fun_control(
         length=length,
         fit_mode=fit_mode,
     )
+    _assert_compatible_adaln_pair(model, control_bundle)
     prior = model.get_attachment(FUN_CONTROL_ATTACHMENT_KEY) if hasattr(model, "get_attachment") else None
     prior_controls = list(prior.get("controls", ())) if isinstance(prior, Mapping) else []
     entry = {

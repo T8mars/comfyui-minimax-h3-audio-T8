@@ -873,7 +873,7 @@
       "inputs": [],
       "outputs": [],
       "properties": {},
-      "widgets_values": "## 当前仍是Advanced / EXP\n\n本例是`video_only_paper`：Relay不直接给目标音频query加时间bias，FETA也不直接缩放音频行；但H3是联合AV Transformer，声音仍可能被后续共享层间接改变。切到`joint_av_exp`时Relay会直接路由音频query，更必须完整试听。`max_workspace_mib`只约束FETA分数缓冲，不是整卡显存保证。先固定素材/seed/NFE做disabled/apply单变量对照。"
+      "widgets_values": "## 当前仍是Advanced / EXP\n\n本例是`video_only_paper`：Relay不直接给目标音频query加时间bias，FETA也不直接缩放音频行；但H3是联合AV Transformer，声音仍可能被后续共享层间接改变。1152×640×22同seed实测中，FETA画面高频量提高约28%，同时音频RMS变成disabled端约2.16倍、波形相关约0.21；因此重要对白必须保留disabled对照并完整试听。切到`joint_av_exp`时Relay会直接路由音频query，更需要审核。`max_workspace_mib`只约束FETA分数缓冲，不是整卡显存保证。"
     },
     {
       "id": 20,

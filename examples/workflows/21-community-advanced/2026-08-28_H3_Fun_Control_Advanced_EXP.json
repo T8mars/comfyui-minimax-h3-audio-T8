@@ -16,7 +16,7 @@
       "inputs": [],
       "outputs": [],
       "properties": {"Node name for S&R": "MarkdownNote", "cnr_id": "comfy-core"},
-      "widgets_values": "## 深度 / 姿态 / 边缘控制\n\n1. `control_video`必须先由对应预处理器生成；`control_kind`只是说明标签，不会自动把普通视频变成深度或骨骼。\n2. 宽高使用32倍数，帧数使用17n+5，并与正式生成完全一致。\n3. 把LoRA后的MODEL、Conditioning positive、视频VAE和控制IMAGE接入Apply；再把Apply输出MODEL和positive接回原工作流。\n4. 建议先用`strength=0.7`、`end_percent=0.75`。Sol Morton重排不兼容；不要同时叠加未知Attention所有者。"
+      "widgets_values": "## 深度 / 姿态 / 边缘控制\n\n1. `control_video`必须先由对应预处理器生成；`control_kind`只是说明标签，不会自动把普通视频变成深度或骨骼。\n2. 宽高使用32倍数，帧数使用17n+5，并与正式生成完全一致。\n3. **模型必须成对**：pruned / basis控制模型只配同为8维AdaLN输入的pruned / basis H3主模型；原始dense控制模型才配2688维完整H3主模型。节点按实际张量维度检查，不按文件名、哈希或大小限制。\n4. 把LoRA后的MODEL、Conditioning positive、视频VAE和控制IMAGE接入Apply；再把Apply输出MODEL和positive接回原工作流。\n5. 736×416×22真实轨迹测试使用`strength=0.8`、`end_percent=0.85`已确认控制有效。需要锁定最后落点时把`end_percent`设为1.0；小于1.0会主动释放尾段控制。\n6. Sol Morton重排不兼容；不要同时叠加未知Attention所有者。"
     },
     {
       "id": 2,
@@ -57,7 +57,7 @@
         {"name": "report_json", "type": "STRING", "links": null}
       ],
       "properties": {"Node name for S&R": "MiniMaxH3FunControlApplyT8Advanced", "cnr_id": "minimax-h3-audio-T8"},
-      "widgets_values": [736, 416, 124, "depth", "exact", 0.7, 0.0, 0.75]
+      "widgets_values": [736, 416, 124, "depth", "exact", 0.8, 0.0, 0.85]
     }
   ],
   "links": [[1, 2, 0, 3, 2, "H3_T8_FUN_CONTROL"]],

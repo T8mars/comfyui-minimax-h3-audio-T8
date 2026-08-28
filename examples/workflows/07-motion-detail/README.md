@@ -60,7 +60,7 @@ RAFT工作流默认读取`ComfyUI/models/optical_flow/raft_small_C_T_V2-01064c6d
 
 RealBasicVSR模型放在`ComfyUI/models/upscale_models`；示例使用`realbasicvsr_wogan_c64b20_300k.pth`，节点运行时不会下载。真实32帧H3片段复核中，`strength=0.65`出现明显过锐、亮边和塑料感，因此默认已校正为`native_size_restore / strength=0.30 / chunk=8 / overlap=2`。`x4_super_resolution`会把宽高各放大4倍，资源消耗显著增加。该节点不能重建身份、修复口型或保证消除生成崩坏，必须与原片对照后再决定是否采用。
 
-AYS工作流默认仍是`native_flow_baseline`，因此只用于验证新节点接线，不自动提高画质。只有获得针对当前MiniMax H3模型、任务数据和求解器离线校准的`steps+1`个base sigma时，才使用`manual_h3_calibrated`；必须从1.0严格递减到0.0。论文的优化过程需要模型/数据特定的KL上界估计，不能靠套用其他模型的固定数组替代。
+AYS工作流默认仍是`native_flow_baseline`，因此只用于验证新节点接线，不自动提高画质。736×416×22、8步同seed敏感性实测证明手工base knots确实改变联合AV结果：测试数组令平均拉普拉斯量提高约42%，时序变化量基本相同，但音频RMS降到原生约70%。这只证明调度被真实应用，不证明它是更好的H3调度。只有获得针对当前MiniMax H3模型、任务数据和求解器离线校准的`steps+1`个base sigma时，才使用`manual_h3_calibrated`；必须从1.0严格递减到0.0。论文的优化过程需要模型/数据特定的KL上界估计，不能靠套用其他模型的固定数组替代。
 
 先一次只启用一种方法，固定图像、提示词、seed、分辨率和NFE进行对比。Restart会联合迁移AV状态；STG会增加额外模型前向并可能明显改变声音；Temporal Detail属于生成后像素处理。需要组合时只用Mixer的明确参数和冲突检查。
 
@@ -68,7 +68,7 @@ FETA 必须按工作流中的顺序连接，并保留 Runtime Audit。`disabled`
 
 Strict Sage模板是一个独立追加路线：组合节点直接调用本机 `sageattention.sageattn` 的HND内核，并由Runtime Audit要求每次模型前向50个成功Sage调用、零失败、零静默回退。KJNodes的MiniMax H3 Sage节点会整块替换`Attention.forward`并绕过FETA观测入口，因此不能与普通EAV节点串联。本机单条1152×640×124、Stock20实测完成20次前向、1000次FETA测量和1000次Sage调用；H.264/AAC成片通过视频、音频和联合三轮严格解码。与同seed原生attention增强端相比，视频SSIM约0.8641、音频相关约0.9145，只证明结果发生变化；尚无人工盲评，也不授予画质、速度、音频非劣或通用16GB安全结论。
 
-Prompt Relay组合模板同样是隔离追加路线。普通EAV和普通Prompt Relay都需要拥有同一个diffusion wrapper与`optimized_attention_override`，所以不能直接串联；组合节点会验证当前Relay绑定、至少两个事件、PackedLayout与wrapper归属，然后在一次attention调用中依次执行Relay路由和FETA目标视频增益。`disabled`仅关闭FETA并保留原Relay MODEL不变，适合作为单变量对照。当前只开放Stock20 T2VA；确定性合同、注册顺序、导入接线和Runtime Audit交接已通过，但真实0.7MP生成、听感、重复显存和质量门仍待完成，因此不得宣传提质、音频非劣或16GB安全。
+Prompt Relay组合模板同样是隔离追加路线。普通EAV和普通Prompt Relay都需要拥有同一个diffusion wrapper与`optimized_attention_override`，所以不能直接串联；组合节点会验证当前Relay绑定、至少两个事件、PackedLayout与wrapper归属，然后在一次attention调用中依次执行Relay路由和FETA目标视频增益。`disabled`仅关闭FETA并保留原Relay MODEL不变，适合作为单变量对照。当前只开放Stock20 T2VA。新增的1152×640×22同seed实测中，红色左侧、绿色上中、蓝色右侧三个短事件按顺序出现，证明Relay不是空路由；EAV端平均拉普拉斯量提高约28%，但音频RMS变为Relay-only的约2.16倍、波形相关约0.21。FETA直接只缩放目标视频attention行，后续联合AV层仍会间接改变音频，因此当前不得宣传稳定提质、音频非劣或通用16GB安全，带重要对白时必须对照试听。
 
 BlockCache组合模板要求另行安装`comfyui-minimax-h3-blockcache-T8`，并只接受已核对源码哈希的50块H3 CPU缓存合同。原BlockCache的outer-sample wrapper继续负责每次采样的缓存克隆和释放；组合器只接管diffusion owner，full前向审计实际执行的50个块，cache hit只审计仍执行的block 0。模板把阈值设为较保守的`0.08`、最多连续命中2次，但这不是通用最优参数。当前仅完成低负载确定性合同、真实插件源码哈希和可导入工作流检查，没有重新做高负载模型测试，因此不宣称提速、提质、音频非劣或16GB安全。
 
