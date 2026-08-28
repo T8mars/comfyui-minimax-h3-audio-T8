@@ -21,7 +21,7 @@
 | `15-sla-attention` | LightX2V Turbo-SLA LoRA、动态块稀疏 Sage2、KJ Sage单入口组合器与强制运行审计（实验） |
 | `16-raven-streaming` | 外部RAVEN因果分块T2VA、统一参数、加载前资源保护与请求合同审计（实验） |
 | `17-skin-finish` | 最终解码后的肤色/油光候选、专用Oil Control低内存文件流、Studio镜头内参数关键帧、候选低频与来源高频解耦、单轨及SAM3.1逐镜多人五点ParseNet语义皮肤MASK、可续跑状态、YuNet代理两遍流和ParseNet语义Quality Stream，以及源片相对的曝光/纹理/裁切P2硬门（实验） |
-| `18-audio-refine` | Turbo低步数生成音频的精确无缓存双时钟尾段精修、原始/候选试听、逐值视频latent回填和默认回退原结果的人工质量门（实验） |
+| `18-audio-refine` | Turbo4/8、最终双采、PDD、EAV、Prompt Relay与长视频8步的可选音频精修；保留原视频、人工试听、默认回退（实验） |
 | `19-pdd-acceleration` | Alibaba PAI MiniMax-H3 PDD 8步蒸馏，分别用于完整FL2VA与Ref2VA基模的动态LoRA和输出头（实验） |
 | `20-core-compatibility` | 官方H3 AV Latent、Attention Hook、逐步同步优化和tiled VAE全局坐标的可选兼容节点 |
 | `21-community-advanced` | Fun Control、长视频人物音色/句界、接缝漂移、低显存驻留、Creator语义缓存、TAEH3原生预览检查与只读诊断 |

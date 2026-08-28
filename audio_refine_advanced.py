@@ -27,10 +27,38 @@ AUDIO_REFINE_AUDIT_TYPE = "H3_T8_AUDIO_REFINE_AUDIT"
 AUDIO_REFINE_PLAN_TYPE = "H3_T8_AUDIO_REFINE_PLAN"
 AUDIO_REFINE_MODEL_ROUTE_TYPE = "H3_T8_AUDIO_REFINE_MODEL_ROUTE"
 AUDIO_REFINE_PHASE2_PLAN_TYPE = "H3_T8_AUDIO_REFINE_PHASE2_PLAN"
+AUDIO_REFINE_COMPAT_ROUTE_TYPE = "H3_T8_AUDIO_REFINE_COMPAT_ROUTE"
+AUDIO_REFINE_COMPAT_PLAN_TYPE = "H3_T8_AUDIO_REFINE_COMPAT_PLAN"
 AUDIO_REFINE_AUDIT_SCHEMA = "t8.minimax_h3.audio_refine.audit.v1"
 AUDIO_REFINE_PLAN_SCHEMA = "t8.minimax_h3.audio_refine.plan.v1"
 AUDIO_REFINE_MODEL_ROUTE_SCHEMA = "t8.minimax_h3.audio_refine.model_route.v1"
 AUDIO_REFINE_PHASE2_PLAN_SCHEMA = "t8.minimax_h3.audio_refine.phase2_plan.v1"
+AUDIO_REFINE_COMPAT_ROUTE_SCHEMA = "t8.minimax_h3.audio_refine.compat_route.v1"
+AUDIO_REFINE_COMPAT_PLAN_SCHEMA = "t8.minimax_h3.audio_refine.compat_plan.v1"
+
+_AUDIO_REFINE_COMPAT_PROFILES = {
+    "turbo4": {"first_pass_nfe": 4, "runtime_owner": "plain"},
+    "turbo8": {"first_pass_nfe": 8, "runtime_owner": "plain"},
+    "learned_latent_twopass_final8": {
+        "first_pass_nfe": 8,
+        "runtime_owner": "plain",
+    },
+    "pdd8": {"first_pass_nfe": 8, "runtime_owner": "plain"},
+    "pdd4_plus4": {"first_pass_nfe": 8, "runtime_owner": "plain"},
+    "eav_turbo8": {"first_pass_nfe": 8, "runtime_owner": "plain"},
+    "prompt_relay_turbo8": {
+        "first_pass_nfe": 8,
+        "runtime_owner": "prompt_relay",
+    },
+    "long_video_turbo8": {
+        "first_pass_nfe": 8,
+        "runtime_owner": "long_video",
+    },
+    "long_video_prompt_relay_turbo8": {
+        "first_pass_nfe": 8,
+        "runtime_owner": "long_video_prompt_relay",
+    },
+}
 
 _MIB = 1024 * 1024
 _GIB = 1024 * _MIB
@@ -908,6 +936,287 @@ def route_audio_refine_model(
     return refine_model, descriptor, decision, canonical_json(descriptor, indent=2)
 
 
+def _positive_prompt_relay_binding_hash(positive: Any) -> str:
+    from .prompt_relay_advanced import (
+        PROMPT_RELAY_BINDING_KEY,
+        PROMPT_RELAY_PAYLOAD_KEY,
+    )
+
+    hashes: set[str] = set()
+    if not isinstance(positive, (list, tuple)):
+        raise RuntimeError("Prompt Relay Audio Refine requires CONDITIONING rows")
+    for row in positive:
+        if not isinstance(row, (list, tuple)) or len(row) < 2:
+            continue
+        metadata = _mapping(row[1])
+        binding = _mapping(metadata.get(PROMPT_RELAY_BINDING_KEY))
+        binding_hash = binding.get("binding_hash")
+        model_cond = _mapping(metadata.get("model_conds", {})).get(
+            PROMPT_RELAY_PAYLOAD_KEY
+        )
+        cond_hash = getattr(model_cond, "cond", None)
+        if isinstance(binding_hash, str) and binding_hash:
+            if cond_hash != binding_hash:
+                raise RuntimeError(
+                    "Prompt Relay MODEL/CONDITIONING binding hashes differ"
+                )
+            hashes.add(binding_hash)
+    if len(hashes) != 1:
+        raise RuntimeError(
+            "Prompt Relay Audio Refine requires exactly one authenticated binding"
+        )
+    return next(iter(hashes))
+
+
+def _authenticated_compat_runtime(
+    model: Any,
+    positive: Any,
+    runtime_owner: str,
+) -> dict[str, Any]:
+    if runtime_owner == "plain":
+        return {
+            "runtime_owner": "plain",
+            "authorized_patch_stack": False,
+        }
+
+    from .long_video import LONG_VIDEO_PATCH_VERSION
+
+    base = getattr(model, "model", None)
+    live_extra = getattr(base, "__dict__", {}).get("extra_conds")
+    live_function = getattr(live_extra, "__func__", live_extra)
+    long_video_version = getattr(
+        live_function, "_t8_long_video_patch_version", None
+    )
+
+    if runtime_owner == "long_video":
+        if long_video_version != LONG_VIDEO_PATCH_VERSION:
+            raise RuntimeError(
+                "Long Video Audio Refine requires the current authenticated "
+                "Long Video MODEL output"
+            )
+        object_patch_keys = set(
+            str(key) for key in _mapping(getattr(model, "object_patches", {}))
+        )
+        if object_patch_keys != {"extra_conds"}:
+            raise RuntimeError(
+                "Long Video Audio Refine refuses additional MODEL object patches"
+            )
+        return {
+            "runtime_owner": runtime_owner,
+            "authorized_patch_stack": True,
+            "long_video_patch_version": int(long_video_version),
+        }
+
+    from .prompt_relay_advanced import (
+        PROMPT_RELAY_WRAPPER_KEY,
+        prompt_relay_model_contract,
+    )
+
+    relay = prompt_relay_model_contract(model)
+    conditioning_hash = _positive_prompt_relay_binding_hash(positive)
+    if conditioning_hash != relay["binding_hash"]:
+        raise RuntimeError(
+            "Prompt Relay MODEL and Audio Refine CONDITIONING are not the same plan"
+        )
+
+    allowed_object_patches: set[str] = set()
+    allowed_runtime_attachments = {PROMPT_RELAY_WRAPPER_KEY}
+    runtime = {
+        "runtime_owner": runtime_owner,
+        "authorized_patch_stack": True,
+        "prompt_relay_patch_version": int(relay["patch_version"]),
+        "prompt_relay_binding_hash": str(relay["binding_hash"]),
+        "prompt_relay_plan_hash": str(relay["binding"]["plan_hash"]),
+        "prompt_relay_query_route": str(relay["binding"]["query_route"]),
+        "prompt_relay_event_count": len(relay["binding"]["events"]),
+    }
+    if runtime_owner == "long_video_prompt_relay":
+        from .prompt_relay_long_video_advanced import (
+            PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY,
+            PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA,
+        )
+
+        long_attachment = (
+            model.get_attachment(PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY)
+            if hasattr(model, "get_attachment")
+            else None
+        )
+        if not isinstance(long_attachment, Mapping):
+            raise RuntimeError(
+                "Long Video Prompt Relay Audio Refine requires its projected-window "
+                "MODEL attachment"
+            )
+        if int(long_attachment.get("schema", -1)) != int(
+            PROMPT_RELAY_LONG_VIDEO_PROJECTION_SCHEMA
+        ):
+            raise RuntimeError("Long Video Prompt Relay attachment schema is unsupported")
+        if str(long_attachment.get("binding_hash", "")) != relay["binding_hash"]:
+            raise RuntimeError(
+                "Long Video Prompt Relay attachment and MODEL binding hashes differ"
+            )
+        if long_video_version != LONG_VIDEO_PATCH_VERSION:
+            raise RuntimeError(
+                "Long Video Prompt Relay Audio Refine requires the current Long Video patch"
+            )
+        allowed_object_patches = {"extra_conds"}
+        allowed_runtime_attachments.add(PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY)
+        runtime.update(
+            {
+                "long_video_patch_version": int(long_video_version),
+                "global_plan_hash": str(
+                    long_attachment.get("global_plan_hash", "")
+                ),
+                "projected_plan_hash": str(
+                    long_attachment.get("projected_plan_hash", "")
+                ),
+                "segment_index": int(long_attachment.get("segment_index", -1)),
+            }
+        )
+    elif long_video_version is not None:
+        raise RuntimeError(
+            "Single-segment Prompt Relay profile cannot consume a Long Video MODEL"
+        )
+
+    object_patch_keys = set(
+        str(key) for key in _mapping(getattr(model, "object_patches", {}))
+    )
+    if object_patch_keys != allowed_object_patches:
+        raise RuntimeError(
+            "Prompt Relay Audio Refine refuses additional MODEL object patches"
+        )
+    attachment_keys = set(
+        str(key) for key in _mapping(getattr(model, "attachments", {}))
+    )
+    unknown_runtime_attachments = attachment_keys.difference(
+        allowed_runtime_attachments | {"lora_metadata"}
+    )
+    if unknown_runtime_attachments:
+        raise RuntimeError(
+            "Prompt Relay Audio Refine refuses unknown MODEL attachments: "
+            + ", ".join(sorted(unknown_runtime_attachments))
+        )
+    return runtime
+
+
+def route_audio_refine_compatibility(
+    *,
+    audit: dict[str, Any],
+    refine_model: Any,
+    positive: Any,
+    generation_profile: str,
+    declared_first_pass_nfe: int,
+) -> tuple[Any, dict[str, Any], str, str]:
+    """Bind a final AV latent to an append-only 4/8-step refinement profile.
+
+    The old Phase-2 route remains intentionally strict.  This route does not
+    inspect model filenames, file sizes, or disk hashes; it authenticates only
+    the live runtime owners that must remain active during refinement.
+    """
+
+    audit = _validate_signed_descriptor(
+        audit,
+        schema=AUDIO_REFINE_AUDIT_SCHEMA,
+        label="audio refine audit",
+    )
+    profile = str(generation_profile)
+    profile_contract = _AUDIO_REFINE_COMPAT_PROFILES.get(profile)
+    if profile_contract is None:
+        raise ValueError(f"unsupported Audio Refine generation_profile {profile!r}")
+    if isinstance(declared_first_pass_nfe, bool):
+        raise ValueError("declared_first_pass_nfe must be an integer")
+    first_pass_nfe = int(declared_first_pass_nfe)
+    if first_pass_nfe != int(profile_contract["first_pass_nfe"]):
+        raise ValueError(
+            f"{profile} requires declared_first_pass_nfe="
+            f"{profile_contract['first_pass_nfe']}"
+        )
+
+    audit_bindings = _mapping(audit.get("bindings", {}))
+    model_manifest, is_h3_model, patch_stack_unvalidated = _model_manifest(
+        refine_model
+    )
+    if int(audit_bindings.get("model_object_id", -1)) != id(refine_model):
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: refine_model is not the audited MODEL object"
+        )
+    if audit_bindings.get("model_structure_sha256") != model_manifest.get(
+        "structure_sha256"
+    ):
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: refine_model structure changed after Audit"
+        )
+    if not is_h3_model:
+        raise ValueError("REJECT_NOT_MINIMAX_H3_MODEL")
+
+    runtime_owner = str(profile_contract["runtime_owner"])
+    runtime_contract = _authenticated_compat_runtime(
+        refine_model,
+        positive,
+        runtime_owner,
+    )
+    reason_codes = list(audit.get("reason_codes", []))
+    findings = list(audit.get("findings", []))
+    authorized_patch_stack = bool(runtime_contract["authorized_patch_stack"])
+    if authorized_patch_stack:
+        reason_codes = [
+            code
+            for code in reason_codes
+            if code != "ABSTAIN_PATCH_STACK_UNVALIDATED"
+        ]
+        findings = [
+            item
+            for item in findings
+            if item.get("code") != "ABSTAIN_PATCH_STACK_UNVALIDATED"
+        ]
+    elif patch_stack_unvalidated:
+        _append_reason(reason_codes, "ABSTAIN_PATCH_STACK_UNVALIDATED")
+
+    audit_decision = str(audit.get("decision"))
+    if audit_decision == "REJECT":
+        decision = "REJECT"
+    elif reason_codes:
+        decision = "ABSTAIN"
+    else:
+        decision = "ALLOW"
+    stack = _runtime_weight_stack_manifest(refine_model)
+    descriptor = _finish_descriptor(
+        {
+            "schema": AUDIO_REFINE_COMPAT_ROUTE_SCHEMA,
+            "decision": decision,
+            "reason_codes": reason_codes,
+            "warning_codes": list(audit.get("warning_codes", [])),
+            "effective_findings": findings,
+            "audit_payload_sha256": audit["payload_sha256"],
+            "audit": audit,
+            "generation_profile": profile,
+            "declared_first_pass_nfe": first_pass_nfe,
+            "runtime_contract": runtime_contract,
+            "bindings": {
+                "refine_model_object_id": int(id(refine_model)),
+                "refine_runtime_stack_sha256": stack["runtime_stack_sha256"],
+                "run_contract_sha256": audit_bindings.get("run_contract_sha256"),
+                "latent_manifest_sha256": audit_bindings.get(
+                    "latent_manifest_sha256"
+                ),
+            },
+            "delivery_contract": {
+                "refine_final_av_only": True,
+                "rerun_generation_effect": False,
+                "continuation_must_use_original_av": profile.startswith(
+                    "long_video_"
+                ),
+                "eav_not_reapplied": profile == "eav_turbo8",
+                "pdd_not_reapplied": profile in {"pdd8", "pdd4_plus4"},
+                "two_pass_refine_after_final_pass": profile
+                == "learned_latent_twopass_final8",
+            },
+            "model_asset_fingerprint_policy": "diagnostic_only_never_a_hard_gate",
+            "quality_claim": "none; compatibility is not a listening result",
+        }
+    )
+    return refine_model, descriptor, decision, canonical_json(descriptor, indent=2)
+
+
 def _shift_sigma(base_sigma: float, shift: float) -> float:
     value = float(base_sigma)
     if value == 0.0:
@@ -1067,6 +1376,82 @@ def plan_audio_refine_phase2(
             },
             "training_distribution_equivalence_claim": False,
             "quality_claim": "none; equal total NFE does not imply equal training distribution",
+        }
+    )
+    return descriptor, decision, canonical_json(descriptor, indent=2)
+
+
+def plan_audio_refine_compatibility(
+    route: dict[str, Any],
+    refine_steps: int,
+    audio_denoise: float,
+    refine_seed: int,
+) -> tuple[dict[str, Any], str, str]:
+    route = _validate_signed_descriptor(
+        route,
+        schema=AUDIO_REFINE_COMPAT_ROUTE_SCHEMA,
+        label="audio refine compatibility route",
+    )
+    if isinstance(refine_steps, bool) or int(refine_steps) != 4:
+        raise ValueError("Audio Refine compatibility route currently requires refine_steps=4")
+    if isinstance(audio_denoise, bool):
+        raise ValueError("audio_denoise must be 0.35 or 0.50")
+    denoise = float(audio_denoise)
+    registered = next(
+        (
+            value
+            for value in (0.35, 0.50)
+            if math.isclose(denoise, value, rel_tol=0.0, abs_tol=1.0e-9)
+        ),
+        None,
+    )
+    if registered is None:
+        raise ValueError("audio_denoise must be a registered point: 0.35 or 0.50")
+    if isinstance(refine_seed, bool) or not isinstance(refine_seed, int):
+        raise ValueError("refine_seed must be an integer")
+    if not 0 <= refine_seed <= 0xFFFFFFFFFFFFFFFF:
+        raise ValueError("refine_seed must be between 0 and 2^64-1")
+
+    full_steps = int(4 / registered)
+    base_sigmas = [float((4 - index) / full_steps) for index in range(5)]
+    video_sigmas = [_shift_sigma(value, 12.0) for value in base_sigmas]
+    audio_sigmas = [_shift_sigma(value, 3.0) for value in base_sigmas]
+    decision = str(route.get("decision"))
+    if decision not in {"ALLOW", "ABSTAIN", "REJECT"}:
+        raise ValueError("REJECT_DESCRIPTOR_TAMPERED: route decision is unsupported")
+    first_pass_nfe = int(route["declared_first_pass_nfe"])
+    descriptor = _finish_descriptor(
+        {
+            "schema": AUDIO_REFINE_COMPAT_PLAN_SCHEMA,
+            "decision": decision,
+            "reason_codes": list(route.get("reason_codes", [])),
+            "warning_codes": list(route.get("warning_codes", [])),
+            "route_payload_sha256": route["payload_sha256"],
+            "route": route,
+            "generation_profile": route["generation_profile"],
+            "declared_first_pass_nfe": first_pass_nfe,
+            "actual_refine_nfe": 4,
+            "declared_total_nfe": first_pass_nfe + 4,
+            "full_steps": full_steps,
+            "requested_audio_denoise": registered,
+            "effective_audio_denoise": float(4 / full_steps),
+            "refine_seed": int(refine_seed),
+            "base_sigmas": base_sigmas,
+            "video_sigmas": video_sigmas,
+            "audio_sigmas": audio_sigmas,
+            "fixed_contract": {
+                "cfg": 1.0,
+                "shift_video": 12.0,
+                "shift_audio": 3.0,
+                "sampler_name": "dual_clock_euler",
+                "scheduler": "native_flow",
+                "video_noise_mask": 0.0,
+                "audio_noise_mask": 1.0,
+                "cache": "disabled_exact",
+            },
+            "delivery_contract": dict(route["delivery_contract"]),
+            "training_distribution_equivalence_claim": False,
+            "quality_claim": "none; sampling and listening have not occurred",
         }
     )
     return descriptor, decision, canonical_json(descriptor, indent=2)
@@ -1512,6 +1897,249 @@ def setup_audio_refine_dual_model(
         sigmas=sigmas,
         latent=refined_latent,
         report_json=canonical_json(report, indent=2),
+    )
+
+
+def _verify_compat_setup_bindings(
+    plan: Mapping[str, Any],
+    refine_model: Any,
+    positive: Any,
+    av_latent: dict,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    route = _validate_signed_descriptor(
+        plan.get("route"),
+        schema=AUDIO_REFINE_COMPAT_ROUTE_SCHEMA,
+        label="embedded audio refine compatibility route",
+    )
+    if plan.get("route_payload_sha256") != route.get("payload_sha256"):
+        raise ValueError(
+            "REJECT_DESCRIPTOR_TAMPERED: Compatibility Plan does not bind the Route"
+        )
+    audit = _validate_signed_descriptor(
+        route.get("audit"),
+        schema=AUDIO_REFINE_AUDIT_SCHEMA,
+        label="embedded audio refine audit",
+    )
+    if route.get("audit_payload_sha256") != audit.get("payload_sha256"):
+        raise ValueError(
+            "REJECT_DESCRIPTOR_TAMPERED: Compatibility Route does not bind the Audit"
+        )
+
+    mismatches: list[str] = []
+    route_bindings = _mapping(route.get("bindings", {}))
+    refine_stack = _runtime_weight_stack_manifest(refine_model)
+    if int(route_bindings.get("refine_model_object_id", -1)) != id(refine_model):
+        mismatches.append("refine_model_object")
+    if route_bindings.get("refine_runtime_stack_sha256") != refine_stack.get(
+        "runtime_stack_sha256"
+    ):
+        mismatches.append("refine_model_stack")
+
+    profile_contract = _AUDIO_REFINE_COMPAT_PROFILES.get(
+        str(route.get("generation_profile"))
+    )
+    if profile_contract is None:
+        mismatches.append("generation_profile")
+    else:
+        try:
+            current_runtime = _authenticated_compat_runtime(
+                refine_model,
+                positive,
+                str(profile_contract["runtime_owner"]),
+            )
+        except (TypeError, ValueError, RuntimeError):
+            mismatches.append("runtime_contract")
+        else:
+            if current_runtime != route.get("runtime_contract"):
+                mismatches.append("runtime_contract")
+
+    audit_bindings = _mapping(audit.get("bindings", {}))
+    try:
+        run_contract_sha256 = _recompile_bound_run_contract(audit, positive)
+    except ValueError:
+        mismatches.append("conditioning")
+    else:
+        if audit_bindings.get("run_contract_sha256") != run_contract_sha256:
+            mismatches.append("conditioning")
+    try:
+        latent_result = classify_audio_refine_latent(
+            av_latent,
+            hash_chunk_megabytes=int(audit.get("hash_chunk_megabytes", 8)),
+        )
+    except (TypeError, ValueError, RuntimeError):
+        mismatches.append("latent")
+    else:
+        if audit_bindings.get("latent_manifest_sha256") != latent_result.get(
+            "manifest_sha256"
+        ):
+            mismatches.append("latent")
+    if mismatches:
+        raise ValueError(
+            "REJECT_CONTRACT_MISMATCH: changed "
+            + ", ".join(sorted(set(mismatches)))
+        )
+    return route, audit
+
+
+def setup_audio_refine_compatibility(
+    *,
+    plan: dict[str, Any],
+    refine_model: Any,
+    positive: Any,
+    av_latent: dict,
+    setup_sampling_fn=setup_dual_clock_sampling,
+    runtime_snapshot_fn=runtime_snapshot,
+) -> AudioRefineSetupResult:
+    plan = _validate_signed_descriptor(
+        plan,
+        schema=AUDIO_REFINE_COMPAT_PLAN_SCHEMA,
+        label="audio refine compatibility plan",
+    )
+    route, audit = _verify_compat_setup_bindings(
+        plan, refine_model, positive, av_latent
+    )
+    plan_decision = str(plan.get("decision"))
+    if plan_decision == "REJECT":
+        raise ValueError(
+            "REJECT_AUDIO_REFINE_COMPAT_PLAN: "
+            + ", ".join(plan.get("reason_codes", []))
+        )
+    if plan_decision not in {"ALLOW", "ABSTAIN"}:
+        raise ValueError(
+            "REJECT_DESCRIPTOR_TAMPERED: Compatibility decision is unsupported"
+        )
+
+    try:
+        snapshot = runtime_snapshot_fn()
+    except Exception as error:
+        snapshot = {"inspection_error": f"{type(error).__name__}: {error}"}
+    gates = _mapping(audit.get("resource_gates", {}))
+    original_resource = _mapping(audit.get("resource_snapshot", {}))
+    resource_manifest, resource_reason = _resource_manifest(
+        snapshot,
+        node_owned_incremental_bytes=int(
+            original_resource.get("node_owned_incremental_bytes", 0)
+        ),
+        minimum_free_vram_mib=max(
+            512.0, float(gates.get("minimum_free_vram_mib", 512.0))
+        ),
+        minimum_commit_headroom_gib=max(
+            16.0, float(gates.get("minimum_commit_headroom_gib", 16.0))
+        ),
+    )
+    reason_codes = list(plan.get("reason_codes", []))
+    if resource_reason:
+        _append_reason(reason_codes, resource_reason)
+    if plan_decision == "ABSTAIN" or resource_reason:
+        return _bypass_setup_result(
+            plan=plan,
+            model=refine_model,
+            positive=positive,
+            av_latent=av_latent,
+            reason_codes=reason_codes,
+            resource_snapshot=resource_manifest,
+        )
+
+    full_steps = int(plan["full_steps"])
+    actual_nfe = int(plan["actual_refine_nfe"])
+    patched_model, sampler, full_sigmas = setup_sampling_fn(
+        refine_model,
+        av_latent,
+        full_steps,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+    )
+    if not isinstance(full_sigmas, torch.Tensor) or full_sigmas.ndim != 1:
+        raise ValueError("Audio Refine compatibility setup returned invalid SIGMAS")
+    if full_sigmas.numel() != full_steps + 1:
+        raise ValueError("Audio Refine compatibility full sigma schedule is invalid")
+    sigmas = full_sigmas[-(actual_nfe + 1) :].detach().to(
+        device="cpu", dtype=torch.float32
+    )
+    expected_sigmas = torch.tensor(plan["video_sigmas"], dtype=torch.float32)
+    if not torch.allclose(sigmas, expected_sigmas, rtol=1.0e-6, atol=1.0e-7):
+        raise ValueError("Audio Refine compatibility SIGMAS differ from the signed Plan")
+
+    video, audio = nested_av_parts(av_latent)
+    refined_latent = av_latent.copy()
+    refined_latent["noise_mask"] = comfy.nested_tensor.NestedTensor(
+        (
+            torch.zeros(video.shape, dtype=torch.float32, device=video.device),
+            torch.ones(audio.shape, dtype=torch.float32, device=audio.device),
+        )
+    )
+    report = {
+        "schema": "t8.minimax_h3.audio_refine.compat_setup.v1",
+        "decision": "ALLOW",
+        "reason_codes": reason_codes,
+        "bypassed": False,
+        "generation_profile": route["generation_profile"],
+        "runtime_contract": route["runtime_contract"],
+        "declared_first_pass_nfe": plan["declared_first_pass_nfe"],
+        "actual_refine_nfe": actual_nfe,
+        "declared_total_nfe": plan["declared_total_nfe"],
+        "full_steps": full_steps,
+        "sigmas": [float(value) for value in sigmas.tolist()],
+        "video_noise_mask": 0.0,
+        "audio_noise_mask": 1.0,
+        "cfg": 1.0,
+        "resource_snapshot": resource_manifest,
+        "plan_payload_sha256": plan["payload_sha256"],
+        "delivery_contract": route["delivery_contract"],
+        "quality_claim": "none; sampling and human listening have not occurred",
+    }
+    return AudioRefineSetupResult(
+        model=patched_model,
+        noise=AudioRefineRandomNoise(int(plan["refine_seed"])),
+        guider=AudioRefineBasicGuider(patched_model, positive),
+        sampler=sampler,
+        sigmas=sigmas,
+        latent=refined_latent,
+        report_json=canonical_json(report, indent=2),
+    )
+
+
+def split_audio_refine_long_video_delivery(
+    *,
+    original_continuation_av_latent: dict,
+    reviewed_delivery_av_latent: dict,
+    candidate_selected: bool,
+    segment_index: int,
+) -> tuple[dict, dict, str]:
+    """Keep continuation state original while allowing reviewed delivery audio."""
+
+    original_video, original_audio = nested_av_parts(
+        original_continuation_av_latent
+    )
+    delivery_video, delivery_audio = nested_av_parts(reviewed_delivery_av_latent)
+    if tuple(original_video.shape) != tuple(delivery_video.shape):
+        raise ValueError("Long Video delivery video latent shape differs from continuation")
+    if tuple(original_audio.shape) != tuple(delivery_audio.shape):
+        raise ValueError("Long Video delivery audio latent shape differs from continuation")
+    if not bool(torch.isfinite(delivery_audio).all().item()):
+        raise ValueError("Long Video delivery audio latent contains NaN or Infinity")
+    safe_delivery = reviewed_delivery_av_latent.copy()
+    safe_delivery["samples"] = comfy.nested_tensor.NestedTensor(
+        (original_video, delivery_audio)
+    )
+    report = {
+        "schema": "t8.minimax_h3.audio_refine.long_video_delivery.v1",
+        "segment_index": int(segment_index),
+        "candidate_selected": bool(candidate_selected),
+        "continuation_is_exact_original_object": True,
+        "delivery_video_exact_original": True,
+        "delivery_audio_source": (
+            "reviewed_candidate" if bool(candidate_selected) else "original_fallback"
+        ),
+        "next_segment_input": "continuation_av_latent_only",
+        "quality_claim": "none; this node only enforces state separation",
+    }
+    return (
+        original_continuation_av_latent,
+        safe_delivery,
+        canonical_json(report, indent=2),
     )
 
 

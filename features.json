@@ -1401,7 +1401,11 @@
     "MiniMaxH3RealBasicVSRRestoreT8Advanced",
     "MiniMaxH3FreeNoiseLongVideoT8Advanced",
     "MiniMaxH3DualClockAYSScheduleT8Advanced",
-    "MiniMaxH3CADSVisualReferenceT8Advanced"
+    "MiniMaxH3CADSVisualReferenceT8Advanced",
+    "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+    "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+    "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+    "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",
@@ -1424,6 +1428,23 @@
     "human_review": "the first single-pair review recorded a slight preference for Audio Refine after the reviewer clarified that the left side was better. The later Phase 2 final review used three assessable pairs: clear speech, speech plus rain/music/transient, and I2VA speech. After reveal, base-without-Turbo Refine4 won audio 3/3 with no audio losses; overall it won one pair and tied two. This supports an opt-in route with a manual gate, not a universal quality or non-inferiority claim",
     "boundaries": "generative audio-latent resampling can alter words, speaker character, performance, music, effects and lip synchronization; signal metrics are review cues rather than a quality oracle. The nodes do not guarantee improvement, losslessness, transcript preservation, voice preservation, universal 16GiB safety or zero VRAM growth; Frozen Cache is not implemented",
     "compatibility": "all pre-Audio node IDs retain their exact order and schemas; the four Phase 1 IDs occupy positions 213 through 216, the three Phase 2 IDs occupy positions 217 through 219, and every pre-existing workflow remains unchanged"
+  },
+  "audio_refine_compatibility_advanced": {
+    "status": "implemented locally as four append-only Advanced EXP nodes with seven importable frontend workflows; deterministic routing, registration and workflow checks passed",
+    "date": "2026-08-29",
+    "category": "T8/MiniMax H3/Audio/Experimental",
+    "nodes": [
+      "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+      "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+      "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+      "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced"
+    ],
+    "positions": [244, 245, 246, 247],
+    "contract": "The original Phase-2 Turbo4-only route remains unchanged. The compatibility route adds explicit final-latent profiles for Turbo4/8, learned two-pass final output, PDD8/PDD4+4, EAV Turbo8, Prompt Relay Turbo8 and Long Video Turbo8. Prompt Relay and Long Video runtime owners are authenticated from their live MODEL/CONDITIONING contracts; model filenames, byte sizes and disk hashes are diagnostic only and never hard execution gates.",
+    "long_video": "The delivery split always returns the exact original segment AV latent for continuation and a separate reviewed delivery latent with the original video restored. Candidate audio must never feed the next segment.",
+    "boundaries": "Refine remains a four-NFE uncached dual-clock audio tail with CFG1, native_flow, shifts 12/3 and a default-false human Quality Gate. EAV and PDD are not reapplied in the sidecar. The combined Long Video Prompt Relay plus EAV route remains Stock20-only and is not advertised as Turbo8.",
+    "verification": "1806 full-project tests passed, including all 173 frontend workflows and all 248 ComfyUI extension schemas. Ruff, compileall and git diff checks passed. No extra GPU render was run because the sampling implementation is unchanged and the ComfyUI service was offline; candidate listening remains a manual gate.",
+    "compatibility": "all prior 244 node IDs retain their exact registration positions; the four new IDs are appended at positions 244 through 247 and no released node schema or workflow is rewritten"
   },
   "long_video_in_node_loop_advanced": {
     "status": "implemented locally as one append-only Advanced EXP output node; unit, simulated interruption recovery, dated frontend-workflow validation and one real two-segment low-load H3 chain pass",

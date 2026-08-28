@@ -10,9 +10,14 @@ import torch
 from comfy_extras.nodes_custom_sampler import SamplerCustomAdvanced
 
 import h3_audio_t8_pkg
+import h3_audio_t8_pkg.audio_refine_advanced as audio_refine_module
 from h3_audio_t8_pkg.audio_refine_advanced import (
     AUDIO_REFINE_AUDIT_SCHEMA,
     AUDIO_REFINE_AUDIT_TYPE,
+    AUDIO_REFINE_COMPAT_PLAN_SCHEMA,
+    AUDIO_REFINE_COMPAT_PLAN_TYPE,
+    AUDIO_REFINE_COMPAT_ROUTE_SCHEMA,
+    AUDIO_REFINE_COMPAT_ROUTE_TYPE,
     AUDIO_REFINE_MODEL_ROUTE_SCHEMA,
     AUDIO_REFINE_MODEL_ROUTE_TYPE,
     AUDIO_REFINE_PHASE2_PLAN_SCHEMA,
@@ -27,13 +32,18 @@ from h3_audio_t8_pkg.audio_refine_advanced import (
     classify_audio_refine_latent,
     gate_audio_refine_candidate,
     plan_audio_refine,
+    plan_audio_refine_compatibility,
     plan_audio_refine_phase2,
     route_audio_refine_model,
+    route_audio_refine_compatibility,
+    setup_audio_refine_compatibility,
     setup_audio_refine,
     setup_audio_refine_dual_model,
+    split_audio_refine_long_video_delivery,
 )
 from h3_audio_t8_pkg.nodes_audio_refine_advanced import (
     AUDIO_REFINE_ADVANCED_NODE_CLASSES,
+    AUDIO_REFINE_COMPAT_ADVANCED_NODE_CLASSES,
     MiniMaxH3AudioRefineAuditT8Advanced,
     MiniMaxH3AudioRefineDualModelSetupT8Advanced,
     MiniMaxH3AudioRefineDualClockSetupT8Advanced,
@@ -185,6 +195,26 @@ def test_audio_refine_contract_constants_are_stable():
     assert AUDIO_REFINE_PLAN_TYPE == "H3_T8_AUDIO_REFINE_PLAN"
     assert AUDIO_REFINE_AUDIT_SCHEMA == "t8.minimax_h3.audio_refine.audit.v1"
     assert AUDIO_REFINE_PLAN_SCHEMA == "t8.minimax_h3.audio_refine.plan.v1"
+
+
+def test_audio_refine_compatibility_contract_is_append_only():
+    assert AUDIO_REFINE_COMPAT_ROUTE_TYPE == "H3_T8_AUDIO_REFINE_COMPAT_ROUTE"
+    assert AUDIO_REFINE_COMPAT_PLAN_TYPE == "H3_T8_AUDIO_REFINE_COMPAT_PLAN"
+    assert AUDIO_REFINE_COMPAT_ROUTE_SCHEMA == (
+        "t8.minimax_h3.audio_refine.compat_route.v1"
+    )
+    assert AUDIO_REFINE_COMPAT_PLAN_SCHEMA == (
+        "t8.minimax_h3.audio_refine.compat_plan.v1"
+    )
+    assert [
+        node.define_schema().node_id
+        for node in AUDIO_REFINE_COMPAT_ADVANCED_NODE_CLASSES
+    ] == [
+        "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+        "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+        "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+        "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
+    ]
 
 
 def test_joint_av_manifest_is_content_bound_and_deterministic():
@@ -879,6 +909,164 @@ def test_phase2_setup_uses_refine_model_and_revalidates_all_bindings():
         )
 
 
+@pytest.mark.parametrize(
+    ("profile", "nfe"),
+    [
+        ("turbo4", 4),
+        ("turbo8", 8),
+        ("learned_latent_twopass_final8", 8),
+        ("pdd8", 8),
+        ("pdd4_plus4", 8),
+        ("eav_turbo8", 8),
+    ],
+)
+def test_compatibility_route_accepts_plain_final_latent_profiles(profile, nfe):
+    model = FakeModelPatcher()
+    positive = _positive()
+    latent = _latent()
+    audit, audit_decision, _ = _audit(
+        model=model,
+        positive=positive,
+        av_latent=latent,
+    )
+    assert audit_decision == "ALLOW"
+
+    returned, route, decision, _ = route_audio_refine_compatibility(
+        audit=audit,
+        refine_model=model,
+        positive=positive,
+        generation_profile=profile,
+        declared_first_pass_nfe=nfe,
+    )
+
+    assert returned is model
+    assert decision == "ALLOW"
+    assert route["generation_profile"] == profile
+    assert route["declared_first_pass_nfe"] == nfe
+    assert route["model_asset_fingerprint_policy"] == (
+        "diagnostic_only_never_a_hard_gate"
+    )
+
+
+def test_compatibility_route_rejects_wrong_declared_nfe():
+    model = FakeModelPatcher()
+    positive = _positive()
+    latent = _latent()
+    audit, _, _ = _audit(model=model, positive=positive, av_latent=latent)
+
+    with pytest.raises(ValueError, match="requires declared_first_pass_nfe=8"):
+        route_audio_refine_compatibility(
+            audit=audit,
+            refine_model=model,
+            positive=positive,
+            generation_profile="eav_turbo8",
+            declared_first_pass_nfe=4,
+        )
+
+
+def test_compatibility_prompt_relay_authorization_removes_only_patch_abstain(
+    monkeypatch,
+):
+    model = FakeModelPatcher(wrappers={"relay": [object()]})
+    positive = _positive()
+    latent = _latent()
+    audit, audit_decision, _ = _audit(
+        model=model,
+        positive=positive,
+        av_latent=latent,
+    )
+    assert audit_decision == "ABSTAIN"
+    assert "ABSTAIN_PATCH_STACK_UNVALIDATED" in audit["reason_codes"]
+    monkeypatch.setattr(
+        audio_refine_module,
+        "_authenticated_compat_runtime",
+        lambda _model, _positive_value, owner: {
+            "runtime_owner": owner,
+            "authorized_patch_stack": True,
+            "prompt_relay_binding_hash": "authenticated",
+        },
+    )
+
+    _, route, decision, _ = route_audio_refine_compatibility(
+        audit=audit,
+        refine_model=model,
+        positive=positive,
+        generation_profile="prompt_relay_turbo8",
+        declared_first_pass_nfe=8,
+    )
+
+    assert decision == "ALLOW"
+    assert "ABSTAIN_PATCH_STACK_UNVALIDATED" not in route["reason_codes"]
+    assert route["runtime_contract"]["prompt_relay_binding_hash"] == (
+        "authenticated"
+    )
+
+
+def test_compatibility_plan_and_setup_report_real_total_nfe():
+    model = FakeModelPatcher()
+    positive = _positive()
+    latent = _latent()
+    audit, _, _ = _audit(model=model, positive=positive, av_latent=latent)
+    _, route, route_decision, _ = route_audio_refine_compatibility(
+        audit=audit,
+        refine_model=model,
+        positive=positive,
+        generation_profile="turbo8",
+        declared_first_pass_nfe=8,
+    )
+    assert route_decision == "ALLOW"
+    plan, plan_decision, _ = plan_audio_refine_compatibility(
+        route,
+        4,
+        0.50,
+        29,
+    )
+    assert plan_decision == "ALLOW"
+    assert plan["declared_total_nfe"] == 12
+    called = {}
+
+    def fake_setup(model_value, latent_value, steps, *args):
+        called.update(model=model_value, latent=latent_value, steps=steps, args=args)
+        return model_value.clone(), object(), _full_video_sigmas(steps)
+
+    result = setup_audio_refine_compatibility(
+        plan=plan,
+        refine_model=model,
+        positive=positive,
+        av_latent=latent,
+        setup_sampling_fn=fake_setup,
+        runtime_snapshot_fn=_runtime,
+    )
+    report = json.loads(result.report_json)
+    assert called["model"] is model
+    assert report["generation_profile"] == "turbo8"
+    assert report["declared_total_nfe"] == 12
+    assert torch.allclose(result.sigmas, torch.tensor(plan["video_sigmas"]))
+
+
+def test_long_video_delivery_never_feeds_refined_audio_to_continuation():
+    original = _latent()
+    reviewed = _latent(audio_offset=10.0)
+
+    continuation, delivery, report_json = split_audio_refine_long_video_delivery(
+        original_continuation_av_latent=original,
+        reviewed_delivery_av_latent=reviewed,
+        candidate_selected=True,
+        segment_index=3,
+    )
+    original_video, original_audio = original["samples"].unbind()
+    delivery_video, delivery_audio = delivery["samples"].unbind()
+    continuation_video, continuation_audio = continuation["samples"].unbind()
+    assert continuation is original
+    assert torch.equal(continuation_video, original_video)
+    assert torch.equal(continuation_audio, original_audio)
+    assert torch.equal(delivery_video, original_video)
+    assert not torch.equal(delivery_audio, original_audio)
+    report = json.loads(report_json)
+    assert report["next_segment_input"] == "continuation_av_latent_only"
+    assert report["delivery_video_exact_original"] is True
+
+
 def test_real_sampler_custom_advanced_empty_sigmas_skips_prepare_sampling(
     monkeypatch,
 ):
@@ -1216,7 +1404,7 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == 244
+    assert len(ids) == 248
     assert ids == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
@@ -1247,6 +1435,12 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
     assert ids[226:228] == [
         "MiniMaxH3FunControlLoaderT8Advanced",
         "MiniMaxH3FunControlApplyT8Advanced",
+    ]
+    assert ids[244:248] == [
+        "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+        "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+        "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+        "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
     ]
     assert ids[228:235] == [
         "MiniMaxH3LongVideoVoiceContextT8Advanced",

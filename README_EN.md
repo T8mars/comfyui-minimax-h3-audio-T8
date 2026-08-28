@@ -4,13 +4,13 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.55.2** · GPL-3.0-or-later
+Current version: **1.56.0** · GPL-3.0-or-later
 
 ## Features
 
 - Text-to-video, image-to-video, first/last-frame, image/video/audio references, and mixed references
 - Independent video/audio dual-clock sampling
-- Source-audio preservation, audio references, track mixing, and low-step Audio Refine
+- Source-audio preservation, references, and mixing; optional Audio Refine for Turbo4/8, two-pass, PDD, EAV, Prompt Relay, and 8-step long video
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations

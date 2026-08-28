@@ -9,6 +9,16 @@
 - `2026-08-26_H3_Audio_Refine_Phase2_Base_Refine4_Advanced_EXP.json`：Turbo4 首遍后改用同一无 Turbo 基座做 Refine4；用于确认去掉蒸馏 LoRA 是否真的改善声音，不能预设结果。
 - `2026-08-26_H3_Audio_Refine_Phase2_Base_Ordinary8_Control_Advanced_EXP.json`：无 Turbo 基座单次普通 8 NFE 成本控制。它不执行 Audio Refine，也不能被称为训练分布匹配控制。
 
+2026-08-29 新增的兼容工作流不会替换上面任何旧文件：
+
+- `2026-08-29_H3_Audio_Refine_Turbo8_Plus_Refine4_Advanced_EXP.json`：Turbo8 完成后追加 Refine4，总计 12 NFE。
+- `2026-08-29_H3_Audio_Refine_Learned_TwoPass_Final8_Advanced_EXP.json`：学习型 Latent 双采，只在 Pass2 最终输出后精修。
+- `2026-08-29_H3_Audio_Refine_PDD_Ref2VA8_Advanced_EXP.json`：PDD 8步生成完成后，使用明确连接的基础 H3 模型做 Refine4；不会重复 PDD。
+- `2026-08-29_H3_Audio_Refine_PDD_Ref2VA_4Plus4_Advanced_EXP.json`：PDD 4+4 双采完成后再精修，总计 12 NFE；Pass1 音频不提前修改。
+- `2026-08-29_H3_Audio_Refine_EAV_Turbo8_Advanced_EXP.json`：EAV 仅用于原始 Turbo8 生成，Audio Refine 侧不重复 EAV。
+- `2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP.json`：复用同一 Prompt Relay 模型、Conditioning 与时间绑定。
+- `2026-08-29_H3_Audio_Refine_Long_Video_Prompt_Relay_Turbo8_Advanced_EXP.json`：长视频 Prompt Relay Turbo8。下一段只接原始 continuation；人工接受后的音频只用于本段交付。
+
 后三个工作流必须分别运行，不要一次全部排队。四臂对照由 Turbo4 原始、普通 8 NFE、Turbo4 + 同栈 Refine4、Turbo4 + base Refine4 组成；总 NFE 相同不代表训练分布相同。
 
 ## 使用方法
@@ -18,6 +28,8 @@
 3. `Audio Refine Quality Gate` 默认 `accept_candidate=false`，最终结果一定回退原始 AV latent。只有人工确认候选后才改成 `true`。
 4. 接受候选时，质量门只采用候选音频 latent，并把原始视频 latent 逐值回填，防止音频精修意外改画面。
 5. `lock_source`、`final_audio`、受保护外部音轨和未经验证的 `remix_source` 不进入精修；审计会旁路或拒绝。
+6. 新兼容路由的 `generation_profile` 必须与工作流一致。模型文件名、文件大小和 SHA 只写入报告，不会因为指纹不同阻止运行。
+7. PDD/EAV 不在 Audio Refine 侧重复应用；Prompt Relay 复用现有绑定。长视频必须把 `continuation_av_latent` 接回上下文节点，不能用 `delivery_av_latent` 续写。
 
 ## 参数与成果
 
@@ -34,3 +46,5 @@
 无缓存精修的每一步仍接近一次完整 H3 Transformer 前向，不是只计算音频。审计要求整卡至少 512MiB 空闲、系统提交余量至少 16GiB；这只是最低拒绝门，不等于所有 16GB 显卡都不会 OOM。Frozen Cache、并发、压力矩阵、跨 GPU、CFG>1、动态 CFG、第三方 sampler 和未知 transformer 补丁不属于当前稳定范围。
 
 Audio Refine 是生成式音频 latent 重采样，不是波形降噪、EQ、锐化或无损修复。它可能改字、增删音节、改变人物声音、表演、音乐、音效、环境声和口型同步；信号审计只能提示风险，不能自动证明候选更好。
+
+当前没有把 EAV + Prompt Relay + 长视频的 Stock20 组合冒充为 Turbo8；只有上面列出的独立 8步路线进入兼容工作流。

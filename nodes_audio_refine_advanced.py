@@ -4,16 +4,22 @@ from comfy_api.latest import io
 
 from .audio_refine_advanced import (
     AUDIO_REFINE_AUDIT_TYPE,
+    AUDIO_REFINE_COMPAT_PLAN_TYPE,
+    AUDIO_REFINE_COMPAT_ROUTE_TYPE,
     AUDIO_REFINE_MODEL_ROUTE_TYPE,
     AUDIO_REFINE_PHASE2_PLAN_TYPE,
     AUDIO_REFINE_PLAN_TYPE,
     audit_audio_refine,
     gate_audio_refine_candidate,
     plan_audio_refine,
+    plan_audio_refine_compatibility,
     plan_audio_refine_phase2,
     route_audio_refine_model,
+    route_audio_refine_compatibility,
+    setup_audio_refine_compatibility,
     setup_audio_refine,
     setup_audio_refine_dual_model,
+    split_audio_refine_long_video_delivery,
 )
 
 
@@ -22,6 +28,8 @@ AudioRefineAuditIO = io.Custom(AUDIO_REFINE_AUDIT_TYPE)
 AudioRefinePlanIO = io.Custom(AUDIO_REFINE_PLAN_TYPE)
 AudioRefineModelRouteIO = io.Custom(AUDIO_REFINE_MODEL_ROUTE_TYPE)
 AudioRefinePhase2PlanIO = io.Custom(AUDIO_REFINE_PHASE2_PLAN_TYPE)
+AudioRefineCompatRouteIO = io.Custom(AUDIO_REFINE_COMPAT_ROUTE_TYPE)
+AudioRefineCompatPlanIO = io.Custom(AUDIO_REFINE_COMPAT_PLAN_TYPE)
 
 
 class MiniMaxH3AudioRefineAuditT8Advanced(io.ComfyNode):
@@ -375,6 +383,220 @@ class MiniMaxH3AudioRefineDualModelSetupT8Advanced(io.ComfyNode):
         return float("nan")
 
 
+class MiniMaxH3AudioRefineCompatibilityRouteT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine 4/8-Step Compatibility Route / "
+                "音频精修4/8步兼容路由 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Append-only route for final-latent Audio Refine after Turbo4/8, "
+                "learned two-pass, PDD, EAV, Prompt Relay and Long Video. The MODEL "
+                "connected here is the explicit refine MODEL; filenames, sizes and "
+                "disk hashes are never execution gates."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefineAuditIO.Input("audit"),
+                io.Model.Input("refine_model"),
+                io.Conditioning.Input("positive"),
+                io.Combo.Input(
+                    "generation_profile",
+                    options=[
+                        "turbo4",
+                        "turbo8",
+                        "learned_latent_twopass_final8",
+                        "pdd8",
+                        "pdd4_plus4",
+                        "eav_turbo8",
+                        "prompt_relay_turbo8",
+                        "long_video_turbo8",
+                        "long_video_prompt_relay_turbo8",
+                    ],
+                    default="turbo8",
+                ),
+                io.Int.Input(
+                    "declared_first_pass_nfe",
+                    default=8,
+                    min=4,
+                    max=8,
+                    step=4,
+                ),
+            ],
+            outputs=[
+                io.Model.Output("refine_model"),
+                AudioRefineCompatRouteIO.Output("route"),
+                io.String.Output("decision"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        values = route_audio_refine_compatibility(**kwargs)
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
+class MiniMaxH3AudioRefineCompatibilityPlanT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Compatibility Plan / "
+                "音频精修兼容计划 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Builds the fixed four-NFE final audio tail for a signed compatibility "
+                "route. Total NFE is reported as cost only, never as a training-distribution "
+                "equivalence claim."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefineCompatRouteIO.Input("route"),
+                io.Int.Input("refine_steps", default=4, min=4, max=4),
+                io.Float.Input(
+                    "audio_denoise",
+                    default=0.50,
+                    min=0.35,
+                    max=0.50,
+                    step=0.15,
+                    round=0.01,
+                ),
+                io.Int.Input(
+                    "refine_seed",
+                    default=0,
+                    min=0,
+                    max=0xFFFFFFFFFFFFFFFF,
+                ),
+            ],
+            outputs=[
+                AudioRefineCompatPlanIO.Output("plan"),
+                io.String.Output("decision"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, route, refine_steps, audio_denoise, refine_seed):
+        values = plan_audio_refine_compatibility(
+            route,
+            refine_steps,
+            audio_denoise,
+            refine_seed,
+        )
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+
+class MiniMaxH3AudioRefineCompatibilitySetupT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Compatibility Setup / "
+                "音频精修兼容装配 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Revalidates the compatibility route, Relay/Long Video ownership when "
+                "present, conditioning, final AV latent and resources, then emits the "
+                "uncached four-NFE dual-clock audio tail for SamplerCustomAdvanced."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                AudioRefineCompatPlanIO.Input("plan"),
+                io.Model.Input("refine_model"),
+                io.Conditioning.Input("positive"),
+                io.Latent.Input("av_latent"),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                io.Noise.Output("noise"),
+                io.Guider.Output("guider"),
+                io.Sampler.Output("sampler"),
+                io.Sigmas.Output("sigmas"),
+                io.Latent.Output("latent"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, plan, refine_model, positive, av_latent):
+        result = setup_audio_refine_compatibility(
+            plan=plan,
+            refine_model=refine_model,
+            positive=positive,
+            av_latent=av_latent,
+        )
+        return io.NodeOutput(
+            result.model,
+            result.noise,
+            result.guider,
+            result.sampler,
+            result.sigmas,
+            result.latent,
+            result.report_json,
+            ui={"text": (result.report_json,)},
+        )
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
+class MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
+            display_name=(
+                "MiniMax H3 Audio Refine Long Video Delivery Split / "
+                "长视频精修交付分流 (T8 Advanced EXP)"
+            ),
+            description=(
+                "Keeps the exact original segment AV latent for continuation and emits a "
+                "separate reviewed delivery latent whose video is forcibly restored from "
+                "the original. Never feed delivery_av_latent into the next segment."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            is_output_node=True,
+            inputs=[
+                io.Latent.Input("original_continuation_av_latent"),
+                io.Latent.Input("reviewed_delivery_av_latent"),
+                io.Boolean.Input("candidate_selected", default=False),
+                io.Int.Input("segment_index", default=0, min=0, max=1000000),
+            ],
+            outputs=[
+                io.Latent.Output("continuation_av_latent"),
+                io.Latent.Output("delivery_av_latent"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, **kwargs):
+        values = split_audio_refine_long_video_delivery(**kwargs)
+        return io.NodeOutput(*values, ui={"text": (values[-1],)})
+
+    @classmethod
+    def fingerprint_inputs(cls, **_kwargs):
+        return float("nan")
+
+
 class MiniMaxH3AudioRefineQualityGateT8Advanced(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -466,4 +688,12 @@ AUDIO_REFINE_ADVANCED_NODE_CLASSES = [
     MiniMaxH3AudioRefineModelRouteT8Advanced,
     MiniMaxH3AudioRefinePhase2PlanT8Advanced,
     MiniMaxH3AudioRefineDualModelSetupT8Advanced,
+]
+
+
+AUDIO_REFINE_COMPAT_ADVANCED_NODE_CLASSES = [
+    MiniMaxH3AudioRefineCompatibilityRouteT8Advanced,
+    MiniMaxH3AudioRefineCompatibilityPlanT8Advanced,
+    MiniMaxH3AudioRefineCompatibilitySetupT8Advanced,
+    MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced,
 ]
