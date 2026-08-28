@@ -61,6 +61,23 @@ def test_scene_cut_flash_black_and_hdr_abstain_to_source():
     assert "hdr" in json.loads(report)["boundaries"][0]["status"]
 
 
+def test_boundary_frame_rollback_abstains_the_whole_transition_atomically():
+    frames = torch.cat([_textured(0.40, 4), _textured(0.50, 8)])
+    output, status, report_json = process_long_video_seam_drift(
+        frames,
+        "[4]",
+        mode="bounded_candidate_exp",
+        transition_frames=8,
+        scene_cut_threshold=0.5,
+        maximum_frame_change=0.001,
+    )
+    report = json.loads(report_json)
+    assert status == "source_identity_abstain"
+    assert torch.equal(output, frames)
+    assert report["atomic_boundary_commit"] is True
+    assert report["boundaries"][0]["status"] == "abstain_boundary_frame_rolled_back"
+
+
 def test_roi_is_reported_without_hard_mask_paste_boundary():
     frames = torch.cat([_textured(0.35, 4), _textured(0.38, 4)])
     mask = torch.zeros(1, 32, 32)

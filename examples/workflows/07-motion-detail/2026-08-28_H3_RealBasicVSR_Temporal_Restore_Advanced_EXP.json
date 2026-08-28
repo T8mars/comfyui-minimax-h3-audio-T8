@@ -16,7 +16,7 @@
       "inputs": [],
       "outputs": [],
       "properties": {"cnr_id": "comfy-core", "Node name for S&R": "MarkdownNote"},
-      "widgets_values": "## H3生成后时序修复（可选，不是二次生成）\n\n- 节点采用OpenMMLab RealBasicVSR x4官方架构，对已有视频做时序一致性与细节恢复。\n- 默认`native_size_restore`保持原分辨率；`x4_super_resolution`会输出宽高各4倍，显存和内存明显增加。\n- AUDIO是原对象直通：不重采样、不降噪、不改音量。\n- 它不能重建已经缺失的身份、修复口型，也不能保证消除生成崩坏；建议先做候选对比再采用。"
+      "widgets_values": "## H3生成后时序修复（可选，不是二次生成）\n\n- 节点采用OpenMMLab RealBasicVSR x4官方架构，对已有视频做时序一致性与细节恢复。\n- 默认`native_size_restore`保持原分辨率；`x4_super_resolution`会输出宽高各4倍，显存和内存明显增加。\n- 真实H3片段复核后默认强度改为`0.30`：仍有可见锐度提升，且比`0.65`明显减少白边、过锐和塑料感。强度越大不代表效果越好。\n- AUDIO是原对象直通：不重采样、不降噪、不改音量。\n- 它不能重建已经缺失的身份、修复口型，也不能保证消除生成崩坏；建议先做候选对比再采用。"
     },
     {
       "id": 2,
@@ -71,7 +71,7 @@
         {"name": "report_json", "type": "STRING", "links": null}
       ],
       "properties": {"cnr_id": "minimax-h3-audio-T8", "Node name for S&R": "MiniMaxH3RealBasicVSRRestoreT8Advanced"},
-      "widgets_values": ["realbasicvsr_wogan_c64b20_300k.pth", "native_size_restore", 0.65, 8, 2, "auto", "prefer_ema", "offload_after"]
+      "widgets_values": ["realbasicvsr_wogan_c64b20_300k.pth", "native_size_restore", 0.3, 8, 2, "auto", "prefer_ema", "offload_after"]
     },
     {
       "id": 5,

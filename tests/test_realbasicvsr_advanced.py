@@ -123,5 +123,12 @@ def test_frontend_workflow_is_native_and_documents_audio_passthrough():
     assert "MiniMaxH3RealBasicVSRRestoreT8Advanced" in types
     assert {"LoadVideo", "GetVideoComponents", "CreateVideo", "SaveVideo", "MarkdownNote"} <= types
     note = next(node for node in nodes.values() if node["type"] == "MarkdownNote")
+    restore_node = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3RealBasicVSRRestoreT8Advanced"
+    )
     assert "AUDIO" in note["widgets_values"]
     assert "不重采样" in note["widgets_values"]
+    assert "0.30" in note["widgets_values"]
+    assert restore_node["widgets_values"][2] == 0.3

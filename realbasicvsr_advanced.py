@@ -169,7 +169,7 @@ def restore_realbasicvsr(
     model_path: Path,
     model_name: str,
     output_mode: str = "native_size_restore",
-    strength: float = 0.65,
+    strength: float = 0.30,
     chunk_frames: int = 8,
     overlap_frames: int = 2,
     precision: str = "auto",
@@ -289,4 +289,3 @@ def restore_realbasicvsr(
         ),
     }
     return candidate.contiguous(), source, audio, _canonical_json(report)
-

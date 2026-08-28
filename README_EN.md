@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.55.0** · GPL-3.0-or-later
+Current version: **1.55.1** · GPL-3.0-or-later
 
 ## Features
 

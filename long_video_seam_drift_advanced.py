@@ -219,6 +219,7 @@ def process_long_video_seam_drift(
                 before_rgb, after_rgb, float(maximum_gain), float(maximum_offset)
             )
             stop = min(int(source.shape[0]), boundary + transition)
+            staged_frames: dict[int, torch.Tensor] = {}
             for frame_index in range(boundary, stop):
                 alpha = 1.0 - (frame_index - boundary) / max(1, transition)
                 original = source[frame_index]
@@ -242,9 +243,17 @@ def process_long_video_seam_drift(
                 ):
                     rolled_back_frames += 1
                     continue
-                candidate[frame_index] = proposed
-                corrected_frames += 1
-            if corrected_frames:
+                staged_frames[frame_index] = proposed
+            if boundary not in staged_frames:
+                eligible = False
+                reason = "abstain_boundary_frame_rolled_back"
+            elif _frame_mad(source[boundary - 1], staged_frames[boundary]) >= seam_mad:
+                eligible = False
+                reason = "abstain_candidate_did_not_improve_seam"
+            elif staged_frames:
+                for frame_index, proposed in staged_frames.items():
+                    candidate[frame_index] = proposed
+                corrected_frames = len(staged_frames)
                 applied_count += 1
                 previous_candidate_stop = stop
                 reason = "bounded_candidate_applied"
@@ -306,6 +315,7 @@ def process_long_video_seam_drift(
         "person_roi_connected": roi is not None,
         "audio_touched": False,
         "detail_generation": False,
+        "atomic_boundary_commit": True,
         "boundaries": reports,
         "contract": (
             "display-domain bounded low-frequency gain/offset with per-frame rollback; "

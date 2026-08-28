@@ -47,7 +47,7 @@ class MiniMaxH3RealBasicVSRRestoreT8Advanced(io.ComfyNode):
                 io.Audio.Input("audio", optional=True),
                 io.Combo.Input("model_name", options=_model_names()),
                 io.Combo.Input("output_mode", options=list(OUTPUT_MODES), default="native_size_restore"),
-                io.Float.Input("strength", default=0.65, min=0.0, max=1.0, step=0.01),
+                io.Float.Input("strength", default=0.30, min=0.0, max=1.0, step=0.01),
                 io.Int.Input("chunk_frames", default=8, min=2, max=32),
                 io.Int.Input("overlap_frames", default=2, min=0, max=16),
                 io.Combo.Input("precision", options=list(PRECISIONS), default="auto"),
@@ -79,4 +79,3 @@ class MiniMaxH3RealBasicVSRRestoreT8Advanced(io.ComfyNode):
 
 
 REALBASICVSR_ADVANCED_NODE_CLASSES = [MiniMaxH3RealBasicVSRRestoreT8Advanced]
-

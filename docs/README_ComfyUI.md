@@ -1823,7 +1823,11 @@ This batch adds six opt-in routes without changing any previously released node 
   but does not claim to reproduce TrailBlazer's U-Net attention edits.
 - **RealBasicVSR Restore** reads an MMagic-compatible checkpoint from `models/upscale_models`, processes
   overlapping temporal windows serially and either returns native size or x4 output. Audio is passed
-  through unchanged. It is a post-process, so it cannot recover missing identity or fix lip sync.
+  through unchanged. A real 32-frame H3 clip showed that strength `0.65` raised mean Laplacian variance
+  from 273.10 to 1059.52 but visibly produced over-sharpening and bright edge halos. The default was
+  therefore reduced to `0.30`; the same clip reached 531.80 with roughly half the mean pixel change
+  (0.00804 instead of 0.01750) and materially less ringing. This is one fixed low-load review, not a
+  universal optimum. It is a post-process, so it cannot recover missing identity or fix lip sync.
 - **FreeNoise Long Video** supplies a deterministic shared video-noise pool to either in-node long-video
   loop. It leaves audio noise native. Because H3 still renders independent continuation windows, this
   is a noise-rescheduling adaptation rather than a full reproduction of FreeNoise's one-latent sliding

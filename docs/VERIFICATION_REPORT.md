@@ -6196,10 +6196,36 @@ base knot list. CADS follows the published condition-annealing formula but remai
 identity and endpoint adherence. Trajectory control creates explicit control frames for the existing Fun
 Control path and does not copy TrailBlazer's U-Net attention mechanism.
 
-One serial low-load torchvision RAFT Small run completed on twelve 256x256 frames. No H3 generation,
-multi-seed quality grid, stress test or general 16GiB claim was run. Model files remain outside Git and
-are never downloaded at runtime; filename, byte size and SHA-256 are diagnostic rather than execution
-allowlists. Each node releases only resources it owns and never calls global ComfyUI model unload.
+The initial synthetic RAFT smoke was followed by four serial real-input effect reviews without a stress
+matrix. RAFT Small processed 48 frames from a real 1152x640 H3 bird clip at a 640-pixel analysis side.
+Five reviewed masks at frames 0/12/24/36/47 yielded nonzero propagated masks on 48/48 frames, mean
+forward/backward flow confidence `0.826199` and mean final propagation confidence `0.567456`. The
+side-by-side video tracks the subject usefully, but visible foreground holes and occasional floor/tail
+inclusion confirm that RAFT is transport rather than identity segmentation; new anchors remain mandatory
+after occlusion, re-entry or cuts.
+
+The two-object trajectory renderer produced a strictly decodable 1152x640x124 control video and nonzero
+mask on all 124 frames, with smoothstep paths crossing as authored. This proves the creator-facing plan and
+control-video effect, not that H3 Fun Control follows it in a useful-resolution final render.
+
+RealBasicVSR strictly loaded the local official-format checkpoint and processed 32 real H3 frames at
+416x232. Strength `0.65` increased mean Laplacian variance from `273.0993` to `1059.5230` but visibly
+created over-sharpening, bright edge halos and a plastic look. Strength `0.30` reached `531.8011` with mean
+absolute change `0.008042`, p95 `0.031373` and materially milder ringing. The code, node and workflow
+default were therefore changed from `0.65` to `0.30`; AUDIO remained the exact same Python object.
+
+The natural H3 long-video boundary correctly abstained with mean RGB drift `0.001263`. A controlled
+real-frame probe injected a fixed five-percent display-domain gain drift after a reviewed boundary. The
+bounded candidate corrected 16 frames, reduced seam MAD from `0.021009` to `0.013025`, limited maximum
+per-pixel change to `0.029761` and strictly decoded. The run exposed a real atomicity defect: a rejected
+boundary frame could previously leave later transition frames modified. The implementation now stages the
+whole transition and commits it only when the boundary frame is safe and the seam error improves; otherwise
+the complete transition returns exact source.
+
+No new H3 generation, multi-seed quality grid, stress test or general 16GiB claim was run for these four
+reviews. Model files remain outside Git and are never downloaded at runtime; filename, byte size and
+SHA-256 are diagnostic rather than execution allowlists. Each node releases only resources it owns and
+never calls global ComfyUI model unload.
 
 After correcting two serialized workflow output-link indices, all 166 frontend workflows parsed and
 passed the compatibility suite. Six new project workflows were copied byte-for-byte to the ComfyUI user

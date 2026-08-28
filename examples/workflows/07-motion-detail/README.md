@@ -58,7 +58,7 @@ Ref2VA 和任务型 Hybrid 也各完成一组 1152×640、124帧、Stock20 的 d
 
 RAFT工作流默认读取`ComfyUI/models/optical_flow/raft_small_C_T_V2-01064c6d.pth`。`model_type`必须与权重架构一致；项目不会按文件名、哈希或大小阻止用户模型。单MASK时`keyframe_indices=0`并向后传播，多锚点时先把MASK组成batch，再填入相同数量的帧号。切镜、长遮挡和人物重入后必须补新锚点；多人需每人独立运行一次，不能把颜色轨迹当作身份。
 
-RealBasicVSR模型放在`ComfyUI/models/upscale_models`；示例使用`realbasicvsr_wogan_c64b20_300k.pth`，节点运行时不会下载。默认`native_size_restore / strength=0.65 / chunk=8 / overlap=2`是低负载候选起点；`x4_super_resolution`会把宽高各放大4倍，资源消耗显著增加。该节点不能重建身份、修复口型或保证消除生成崩坏，必须与原片对照后再决定是否采用。
+RealBasicVSR模型放在`ComfyUI/models/upscale_models`；示例使用`realbasicvsr_wogan_c64b20_300k.pth`，节点运行时不会下载。真实32帧H3片段复核中，`strength=0.65`出现明显过锐、亮边和塑料感，因此默认已校正为`native_size_restore / strength=0.30 / chunk=8 / overlap=2`。`x4_super_resolution`会把宽高各放大4倍，资源消耗显著增加。该节点不能重建身份、修复口型或保证消除生成崩坏，必须与原片对照后再决定是否采用。
 
 AYS工作流默认仍是`native_flow_baseline`，因此只用于验证新节点接线，不自动提高画质。只有获得针对当前MiniMax H3模型、任务数据和求解器离线校准的`steps+1`个base sigma时，才使用`manual_h3_calibrated`；必须从1.0严格递减到0.0。论文的优化过程需要模型/数据特定的KL上界估计，不能靠套用其他模型的固定数组替代。
 

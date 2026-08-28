@@ -39,6 +39,9 @@
     "backend": "dependency-light inference adaptation of OpenMMLab MMagic RealBasicVSR/BasicVSR/SPyNet; Apache-2.0 attribution is included and model weights are not bundled or downloaded at runtime",
     "workflow": "serial overlapping temporal windows, optional native-size restoration or x4 output, source/candidate strength blend and exact AUDIO object passthrough",
     "memory": "default 8-frame windows with two-frame overlap and sequential image cleaning; release affects only this node's model and never calls ComfyUI global unload",
+    "default_strength": 0.3,
+    "validation": "one serial real 1152x640 H3 source was center-cropped/downscaled to 416x232 and restored for 32 frames. Strength 0.65 raised mean Laplacian variance from 273.0993 to 1059.5230 but visibly created over-sharpening, bright edge halos and a plastic look. Strength 0.30 raised it to 531.8011 with mean absolute change 0.008042, p95 0.031373 and visibly milder ringing. Both review videos strictly decoded and the AUDIO object was passed through by identity. The default is therefore 0.30, not 0.65",
+    "evidence": "artifacts/classic-paper-effect-validation-20260828/realbasicvsr-strength030/realbasicvsr_native_restore_side_by_side.mp4",
     "scientific_boundary": "post-processes temporal/detail consistency but cannot reconstruct missing identity, repair lip sync or guarantee correction of generative artifacts; no filename/hash/byte-size identity gate is used",
     "compatibility": "all prior 240 node IDs retain exact order and schema; this node appends at position 240"
   },
@@ -52,6 +55,8 @@
     "positions": [238, 239],
     "interaction": "explicit normalized bbox keyframes, multiple object IDs, linear/smoothstep/hold interpolation, per-keyframe strength, clip-or-reject canvas policy and a visual path preview",
     "rendering": "soft region, bbox outline or aspect-preserving reference sprite control video plus trajectory MASK. The output is intended for the existing MiniMax H3 Fun Control Apply node",
+    "validation": "one serial 1152x640x124 two-object smoothstep plan rendered a finite control video and nonzero trajectory mask on all 124 frames. The review MP4 strictly decoded and showed the two boxes crossing along the authored paths. This proves the planning/rendering effect only; a useful-resolution H3 Fun Control generation is still required to judge final trajectory adherence",
+    "evidence": "artifacts/classic-paper-effect-validation-20260828/trajectory/trajectory_control_1152x640_124f.mp4",
     "scientific_boundary": "TrailBlazer-inspired creator interaction only. It does not reproduce TrailBlazer's U-Net cross-attention surgery because MiniMax H3 is a packed joint-AV flow Transformer; it owns no H3 attention, modifies no audio and makes no trajectory-adherence guarantee",
     "compatibility": "all prior 238 node IDs retain exact order and schema; the trajectory nodes append at 238-239"
   },
@@ -67,6 +72,8 @@
     "motion_audit": "read-only pairwise optical-flow magnitude, optional forward/backward consistency and scene-cut reporting. It diagnoses motion and temporal collapse but does not sharpen, repair faces or modify H3 sampling",
     "mask_propagation": "one reviewed identity/object mask is transported between explicit keyframes with bidirectional flow, forward/backward confidence, cut stops and optional edge extension. It never performs identity assignment and should be run once per person",
     "memory": "pair batch defaults to one and analysis defaults to a 640-pixel long side. offload_after moves only RAFT weights back to CPU and never calls ComfyUI's global model unload",
+    "validation": "one serial real 1152x640 H3 bird clip was evaluated for 48 frames with RAFT Small at a 640-pixel analysis side. Five reviewed GrabCut anchors at frames 0/12/24/36/47 produced nonzero propagated masks on 48/48 frames, mean forward/backward flow confidence 0.826199 and mean final propagation confidence 0.567456; the strict-decode side-by-side review showed useful subject following but also visible foreground holes and occasional floor/tail inclusion",
+    "evidence": "artifacts/classic-paper-effect-validation-20260828/raft/raft_mask_propagation_side_by_side.mp4",
     "scientific_boundary": "this first backend is original RAFT-compatible torchvision inference. SEA-RAFT remains a separately labelled future backend because its uncertainty head and checkpoint/config contract are not interchangeable with RAFT"
   },
   "community_creation_batch_advanced": {
@@ -84,7 +91,9 @@
     ],
     "positions": [228, 229, 230, 231, 232, 233, 234, 235],
     "long_video_voice": "maps exact dialogue turns to final <Audio N> ordinals and produces independent global/local pin-frame plans without injecting or truncating waveforms. Cross-boundary dialogue defaults to ABSTAIN; the review gate is explicit and hash-bound",
-    "seam_drift": "report-only by default; optional candidate uses bounded gain/offset over reviewed seam windows and fails back per frame on cuts, flashes, SDR uncertainty, excessive change or texture drift. It never synthesizes detail or touches audio",
+    "seam_drift": "report-only by default; optional candidate uses bounded gain/offset over reviewed seam windows and atomically accepts or rejects the whole transition on cuts, flashes, SDR uncertainty, excessive change, non-improving boundary error or texture drift. It never synthesizes detail or touches audio",
+    "seam_drift_validation": "a natural 32-frame H3 long-video boundary correctly abstained at mean RGB drift 0.001263. A controlled probe then injected a fixed 5% display-domain gain drift into 32 real decoded H3 frames; the bounded candidate corrected all 16 transition frames, reduced boundary MAD from 0.021009 to 0.013025, capped maximum per-pixel change at 0.029761 and strictly decoded. A regression now guarantees that if the boundary frame is rejected, no later transition frame is committed",
+    "seam_drift_evidence": "artifacts/classic-paper-effect-validation-20260828/seam-drift/seam_drift_bounded_side_by_side.mp4",
     "residency": "compiles side-effect-free report_only/minimum_memory/balanced/faster VRAM policies from observable runtime facts. It never unloads unrelated models and applies nothing unless wired to a compatible loader",
     "creator_cache": "semantic per-shot/variant cache planning across source, model, LoRA, prompt, sampling and effect contracts with accepted-artifact protection and byte/count LRU quarantine proposals; no file mutation occurs",
     "generic_loops": "read-only capability probe for ComfyUI PR 15923. The upstream contract is still draft, so the released T8 in-node loop remains authoritative and no draft scheduler backend is enabled",
