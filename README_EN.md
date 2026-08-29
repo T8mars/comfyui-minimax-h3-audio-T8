@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.56.1** · GPL-3.0-or-later
+Current version: **1.56.2** · GPL-3.0-or-later
 
 ## Features
 
@@ -76,6 +76,8 @@ Workflows are under [`19-pdd-acceleration`](examples/workflows/19-pdd-accelerati
 Download the converted FL2VA/Ref2VA PDD acceleration LoRAs from [t8star/MiniMax-H3-Acc-8Step-comfy](https://huggingface.co/t8star/MiniMax-H3-Acc-8Step-comfy), place them in `ComfyUI/models/loras`, and select the variant matching your base model.
 
 Defaults: Euler/simple, 8 NFE, shifts `12 / 3`, CFG 1.
+
+Recent ComfyUI builds automatically use the official PDD FinalLayer; older builds keep the project's compatibility fallback. Selection is capability-based and never blocked by a ComfyUI version, model hash, or file size.
 
 The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA. They split the same PDD trajectory into LOW 4 steps and HIGH 4 steps, so total NFE remains 8. The validated Ref2VA preset uses 864×480×22 with 1.5× upscale; the FL2VA two-pass route remains experimental.
 

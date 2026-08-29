@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.56.1** · GPL-3.0-or-later
+当前版本：**1.56.2** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -77,6 +77,8 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 转换后的 FL2VA / Ref2VA PDD 加速 LoRA 下载：[t8star/MiniMax-H3-Acc-8Step-comfy](https://huggingface.co/t8star/MiniMax-H3-Acc-8Step-comfy)。下载后放到 `ComfyUI/models/loras`，并选择与基模一致的版本。
 
 默认：Euler/simple、8 NFE、shift `12 / 3`、CFG 1。
+
+新版 ComfyUI 会自动使用官方 PDD FinalLayer；旧版继续走本项目的兼容回退。判断只看运行时能力，不按 ComfyUI 版本、模型哈希或文件大小拦截。
 
 目录中同时提供 FL2VA / Ref2VA 的学习型 latent 双采工作流：严格把同一条 PDD 轨迹分成 LOW 4 步和 HIGH 4 步，总 NFE 仍为 8。正式 Ref2VA 预设为 864×480×22、1.5×；FL2VA 双采暂保留实验标记。
 

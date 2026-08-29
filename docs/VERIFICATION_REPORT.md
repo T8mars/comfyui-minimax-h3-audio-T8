@@ -5,6 +5,38 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-29 — Official ComfyUI native PDD FinalLayer compatibility
+
+ComfyUI PR #15908 was validated against official core commit
+`e7051b03758a1247e3adb84a5b784ffacb9a23bd`. The merged contract differs from
+the PR's early `set_weight/set_bias` draft: it uses a schedule-aware native
+FinalLayer, shape-changing padded `diff` patches, and ModelPatcher handling for
+resized weight and bias tensors in both normal and low-VRAM load/unload paths.
+
+`MiniMaxH3PDD8StepSetupT8Advanced` now probes those runtime semantics. When
+present, all 258 backbone adapters use ComfyUI's ordinary LoRA mapping while
+the four converted-file absolute head banks are transformed in memory to the
+native row-0-full-head plus row-1-to-31-offset layout. Four padded patches with
+`strength_model=0` replace the base one-head tensors through ModelPatcher. An
+older core continues to use the already validated dynamic-bypass and T8
+final-head fallback. No ComfyUI version, model SHA-256, file size, or filename
+is an execution allowlist.
+
+Focused tests prove the native and fallback head mathematics agree for all
+eight blocks at video shift 12 and audio shift 3. Both installed FL2VA and
+Ref2VA files pass serial meta assembly with 258 backbone targets, four native
+head targets, zero fallback hooks, nine sigma values and exact block indices
+0 through 7. The complete repository passes 1,813 tests.
+
+Two guarded real runs were then executed serially, never concurrently, at
+736x416x22, Euler/simple, eight NFE, shifts 12/3 and CFG 1. FL2VA and Ref2VA
+both selected the official native path and emitted exactly 22 finite H.264
+frames with finite 32kHz stereo AAC; strict video, audio and combined decoding
+passed. FL2VA peaked at 15,628MiB with 482MiB minimum free and therefore missed
+the project's 512MiB comfort margin. Ref2VA peaked at 15,477MiB with 633MiB
+minimum free and passed that margin. These are short compatibility renders,
+not stress, quality-superiority, repeated-use, or universal 16GiB evidence.
+
 ## 2026-08-27 — Alibaba PAI PDD 8-step integration checkpoint
 
 Two additional importable frontend workflows now compose PDD with the learned 3D latent upscaler for

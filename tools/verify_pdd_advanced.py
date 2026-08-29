@@ -2,9 +2,10 @@
 """Serial, CPU/meta integration verifier for the T8 MiniMax-H3 PDD node.
 
 This deliberately does not render or allocate the H3 base on CUDA.  It proves
-that a converted adapter maps to all 258 current-Comfy modules, creates all
-dynamic bypass hooks, installs the dynamic PDD final head and returns the exact
-8-step native sampler contract.  Run FL2VA and Ref2VA one at a time.
+that a converted adapter maps to all 258 current-Comfy modules and returns the
+exact 8-step sampler contract.  On a core with ComfyUI PR #15908 it also proves
+that the four shape-changing native PDD head patches are selected; older cores
+remain covered by the dynamic fallback.  Run FL2VA and Ref2VA one at a time.
 """
 
 from __future__ import annotations
@@ -44,6 +45,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--variant", choices=("FL2VA", "Ref2VA"), required=True)
     parser.add_argument("--comfy-root", type=Path, default=DEFAULT_COMFY_ROOT)
     parser.add_argument("--project-root", type=Path, default=DEFAULT_PROJECT_ROOT)
+    parser.add_argument(
+        "--require-native-core",
+        action="store_true",
+        help="Fail unless the official ComfyUI native PDD FinalLayer path is used.",
+    )
     return parser.parse_args()
 
 
@@ -81,21 +87,58 @@ def main() -> int:
         )
         report = json.loads(report_json)
         final = patched.get_model_object("diffusion_model.final_layer")
-        wrappers = patched.get_wrappers("diffusion_model", pdd.PDD_WRAPPER_KEY)
-        injections = patched.get_injections(pdd.PDD_INJECTION_KEY)
-        assert type(final).__name__ == "PDDHeadFinalLayer"
-        assert len(wrappers) == 1
-        assert len(injections) == 1
+        wrappers = patched.get_wrappers("diffusion_model", pdd.PDD_WRAPPER_KEY) or []
+        injections = patched.get_injections(pdd.PDD_INJECTION_KEY) or []
         assert report["lora"]["mapped_adapters"] == 258
-        assert report["lora"]["bypass_hooks"] == 258
-        assert report["lora"]["rank_counts"] == {"64": 206, "192": 52}
         assert report["sampling"]["block_indices"] == list(range(8))
         assert len(sigmas) == 9
         assert sampler is not None
+        native = bool(report["compatibility"]["native_core_used"])
+        if args.require_native_core:
+            assert native, report["compatibility"]["native_core_probe"]
+        if native:
+            assert type(final).__name__ == "FinalLayer"
+            assert len(wrappers) == 0
+            assert len(injections) == 0
+            assert report["lora"]["bypass_hooks"] == 0
+            assert report["lora"]["native_patch_targets"] == 262
+            assert report["lora"]["native_head_patch_targets"] == 4
+            assert report["lora"]["rank_counts"] == {}
+            assert len(patched.patches) == 262
+            expected_head_shapes = {
+                "diffusion_model.final_layer.video_out.weight": (32 * 96, 5376),
+                "diffusion_model.final_layer.video_out.bias": (32 * 96,),
+                "diffusion_model.final_layer.audio_out.weight": (32 * 32, 5376),
+                "diffusion_model.final_layer.audio_out.bias": (32 * 32,),
+            }
+            model_state = patched.model.state_dict()
+            for key, expected_shape in expected_head_shapes.items():
+                entries = patched.patches[key]
+                assert len(entries) == 1
+                strength_patch, patch, strength_model, offset, function = entries[0]
+                assert strength_patch == 1.0
+                assert strength_model == 0.0
+                assert offset is None
+                assert function is None
+                assert patch[0] == "diff"
+                assert patch[1][1] == {"pad_weight": True}
+                assert tuple(
+                    pdd.comfy.lora.calculate_shape(
+                        entries, model_state[key], key
+                    )
+                ) == expected_shape
+            mode = "native_final_layer"
+        else:
+            assert type(final).__name__ == "PDDHeadFinalLayer"
+            assert len(wrappers) == 1
+            assert len(injections) == 1
+            assert report["lora"]["bypass_hooks"] == 258
+            assert report["lora"]["rank_counts"] == {"64": 206, "192": 52}
+            mode = "dynamic_fallback"
         print(json.dumps(report, ensure_ascii=False, sort_keys=True), flush=True)
         print(
             f"T8_PDD_META_INTEGRATION=PASS variant={args.variant} "
-            "dynamic_hooks=258 blocks=0..7",
+            f"mode={mode} blocks=0..7",
             flush=True,
         )
     finally:

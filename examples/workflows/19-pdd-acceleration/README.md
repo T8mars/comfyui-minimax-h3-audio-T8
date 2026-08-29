@@ -43,14 +43,14 @@ PDD文件与基模变体不能互换。当前节点会验证PDD metadata、四�
 - audio shift：`3.0`
 - CFG：`1.0`（BasicGuider）
 
-PDD主干adapter采用动态bypass，不会把残差合并进INT8底模再量化。模型正常eject或注入中途异常时，节点会恢复hook并把adapter tensor移回MODEL的offload设备；这修复的是adapter生命周期，不代表整个工作流已经通过16GB峰值显存验收。
+新版ComfyUI（已包含官方PR #15908语义）会优先使用原生PDD FinalLayer：258个主干adapter走ComfyUI LoRA路径，四个绝对head bank由专用节点转换为原生首head+offset格式，并由ModelPatcher负责加载和恢复。旧版ComfyUI继续使用已验证的动态bypass与T8 final-head回退。选择依据是运行时能力，不是版本号、模型hash或文件大小。
 
 单采工作流不要再串另一个sampler或第二个PDD节点。双采示例中的HIGH双时钟sampler只负责匹配放大后的latent几何，sigma仍来自同一个PDD节点。两种路线都不要再叠加普通/其他Turbo LoRA或SLA LoRA。低于1.0的strength虽然允许做研究性插值，但不属于上游质量配置。
 
 ## 实现与当前验证
 
-主干LoRA通过ComfyUI动态bypass residual运行，不把BF16 LoRA先合并再重新量化到INT8基模。32组输出头在加载时预融合成8组运行头；采样时只允许官方8点sigma网格并逐点选择block 0到7。
+当前节点有两条等价路径：新版核心使用官方原生32-head FinalLayer，旧核心把32组输出头预融合成8组运行头。两条路径都只允许官方8点sigma网格并逐点选择block 0到7；单元测试已证明视频shift 12、音频shift 3下八个block的head结果一致。当前转换文件仍必须使用专用节点，因为普通LoRA节点不会理解四个`pdd.final_layer.*`绝对head bank。
 
-两份转换文件已完成SHA-256复核、778 tensor结构检查、258/258当前ComfyUI模块映射、动态钩子装配和8步schedule一致性检查。两条真实736×416×124联合音画链已严格串行完成：FL2VA/Ref2VA分别约147.156/139.718秒；另有一条Ref2VA 1152×640×124复核耗时414.156秒。三条均为124帧H.264与32kHz双声道AAC并通过严格解码；最低显存余量分别只有447/510/500MiB，均低于项目固定512MiB安全门。因此本节点当前能完成受测16GB链，但不能宣传普遍16GB安全。用户确认0.7MP Ref2VA画面没有问题；它仍生成了对白字幕，即便提示词明确写了不需要字幕，记录为模型/提示遵循问题而非画面硬失败或低分辨率显示错误。对白听感和相对普通8步的速度收益仍需人工/同合同对照。继续使用时不要并发排队。
+2026-08-29在官方ComfyUI `e7051b0`上，两份文件均以原生路径完成736×416×22串行真实渲染：258个主干adapter、4个原生head补丁、0个回退hook，8 NFE与block 0–7全部正确；H.264、32kHz双声道AAC、帧数及数值有限性均严格通过。FL2VA/Ref2VA峰值使用约15628/15477MiB，最低余量约482/633MiB，因此前者仍低于项目512MiB舒适余量，不宣传普遍16GB安全。之前旧回退路径的736×416×124、1152×640×124和Ref2VA 4+4双采结果继续有效。继续使用时不要并发排队。
 
 上游：<https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs>，本次固定复核revision `78db175437ee05df7ec492ee366f01b68b8d20e6`，参考实现许可证Apache-2.0。

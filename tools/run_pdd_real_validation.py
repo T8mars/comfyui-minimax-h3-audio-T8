@@ -471,6 +471,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout-seconds", type=float, default=1800.0)
     parser.add_argument("--min-free-vram-mib", type=int, default=14500)
     parser.add_argument(
+        "--require-native-core",
+        action="store_true",
+        help="Fail mechanical acceptance unless ComfyUI's native PDD path is used.",
+    )
+    parser.add_argument(
         "--recover-run-root",
         type=Path,
         help=(
@@ -522,15 +527,45 @@ def _finalize_completed_run(
         height=args.height,
         frame_count=args.frame_count,
     )
+    native = bool(setup.get("compatibility", {}).get("native_core_used"))
+    if native:
+        path_checks = {
+            "native_patch_targets_262": int(
+                setup.get("lora", {}).get("native_patch_targets") or 0
+            )
+            == 262,
+            "native_head_patch_targets_4": int(
+                setup.get("lora", {}).get("native_head_patch_targets") or 0
+            )
+            == 4,
+            "native_hooks_zero": int(
+                setup.get("lora", {}).get("bypass_hooks") or 0
+            )
+            == 0,
+            "native_model_patcher_lifecycle": setup.get("lora", {}).get(
+                "eject_policy"
+            )
+            == "comfyui_model_patcher",
+        }
+    else:
+        path_checks = {
+            "fallback_hooks_258": int(
+                setup.get("lora", {}).get("bypass_hooks") or 0
+            )
+            == 258,
+            "fallback_offload_lifecycle": setup.get("lora", {}).get(
+                "eject_policy"
+            )
+            == "move_adapter_weights_to_model_offload_device",
+        }
     setup_checks = {
         "variant": setup.get("adapter", {}).get("base_variant") == args.variant,
         "mapped_258": int(setup.get("lora", {}).get("mapped_adapters") or 0) == 258,
-        "hooks_258": int(setup.get("lora", {}).get("bypass_hooks") or 0) == 258,
         "block_indices_0_to_7": setup.get("sampling", {}).get("block_indices")
         == list(range(8)),
         "nfe_8": int(setup.get("sampling", {}).get("nfe") or 0) == 8,
-        "offload_lifecycle_enabled": setup.get("lora", {}).get("eject_policy")
-        == "move_adapter_weights_to_model_offload_device",
+        "required_native_core": native if args.require_native_core else True,
+        **path_checks,
     }
     media_checks = _media_checks(
         media,
@@ -604,10 +639,6 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError("ffmpeg and ffprobe are required for PDD recovery")
         _, expected_hash = EXPECTED_LORA[args.variant]
         actual_hash = shared._sha256_file(paths["pdd_lora"]).lower()
-        if actual_hash != expected_hash:
-            raise RuntimeError(
-                f"installed {args.variant} PDD validation file hash changed: {actual_hash}"
-            )
         run_root = args.recover_run_root
         phase_path = run_root / "phase.json"
         if not phase_path.is_file():
@@ -652,6 +683,9 @@ def main(argv: list[str] | None = None) -> int:
                     "path": str(paths["pdd_lora"]),
                     "bytes": paths["pdd_lora"].stat().st_size,
                     "sha256": actual_hash,
+                    "known_reference_sha256": expected_hash,
+                    "known_reference_sha256_match": actual_hash == expected_hash,
+                    "identity_policy": "diagnostic_only_not_a_load_gate",
                 },
             }
         if report.get("variant") != args.variant:
@@ -697,10 +731,6 @@ def main(argv: list[str] | None = None) -> int:
 
     _, expected_hash = EXPECTED_LORA[args.variant]
     actual_hash = shared._sha256_file(paths["pdd_lora"]).lower()
-    if actual_hash != expected_hash:
-        raise RuntimeError(
-            f"installed {args.variant} PDD validation file hash changed: {actual_hash}"
-        )
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     run_root = args.artifact_root / f"{run_id}-{args.variant.lower()}"
@@ -732,6 +762,9 @@ def main(argv: list[str] | None = None) -> int:
             "path": str(paths["pdd_lora"]),
             "bytes": paths["pdd_lora"].stat().st_size,
             "sha256": actual_hash,
+            "known_reference_sha256": expected_hash,
+            "known_reference_sha256_match": actual_hash == expected_hash,
+            "identity_policy": "diagnostic_only_not_a_load_gate",
         },
     }
     phase = None

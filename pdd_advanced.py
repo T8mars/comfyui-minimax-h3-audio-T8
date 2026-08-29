@@ -7,10 +7,11 @@ consecutive heads.  The math follows the Apache-2.0 reference implementation
 published with ``alibaba-pai/MiniMax-H3-Acc-LoRAs`` at revision
 ``78db175437ee05df7ec492ee366f01b68b8d20e6``.
 
-Unlike a regular ComfyUI LoRA loader, this module keeps the LoRA residual
-dynamic.  That matches the upstream ``base(x) + LoRA(x)`` implementation and
-does not merge the residual into an INT8 ConvRot base only to quantize it
-again.
+On a recent ComfyUI core this module converts the four absolute head banks to
+the native FinalLayer layout and lets ModelPatcher own the backbone adapters
+and restoration lifecycle.  Older cores retain the reviewed dynamic-bypass
+residual and T8 final-head fallback.  The route is selected by runtime
+capabilities rather than a version, model hash, or file size.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from torch.nn import functional as F
 
 import comfy.lora
 import comfy.lora_convert
+import comfy.model_patcher
 import comfy.patcher_extension
 import comfy.utils
 import comfy.weight_adapter
@@ -71,39 +73,55 @@ PDD_REQUIRED_METADATA = {
 def probe_native_pdd_core(diffusion=None) -> dict[str, Any]:
     """Probe the semantics added by ComfyUI PR #15908 without version gates."""
     probe_weight = torch.zeros((3, 2))
-    probe_bias = torch.zeros((3,))
     details: dict[str, Any] = {
-        "set_weight_loaded": False,
-        "set_bias_loaded": False,
-        "shape_changing_set": False,
+        "shape_changing_padded_diff": False,
+        "lowvram_resizing_weight": False,
+        "lowvram_resizing_bias": False,
+        "partial_unload_resizing_weight": False,
+        "partial_unload_resizing_bias": False,
         "final_layer_schedule_args": False,
     }
 
     try:
-        loaded = comfy.lora.load_lora(
-            {
-                "probe.set_weight": probe_weight,
-                "probe.set_bias": probe_bias,
-            },
-            {"probe": "diffusion_model.final_layer.video_out.weight"},
-            log_missing=False,
-        )
-        details["set_weight_loaded"] = (
-            "diffusion_model.final_layer.video_out.weight" in loaded
-        )
-        details["set_bias_loaded"] = (
-            "diffusion_model.final_layer.video_out.bias" in loaded
-        )
-
-        patches = [(1.0, ("set", (probe_weight,)), 1.0, None, None)]
+        patches = [
+            (
+                1.0,
+                ("diff", (probe_weight, {"pad_weight": True})),
+                0.0,
+                None,
+                None,
+            )
+        ]
         shape = comfy.lora.calculate_shape(
             patches,
             torch.zeros((1, 2)),
             "t8_pdd_semantic_probe",
         )
-        details["shape_changing_set"] = tuple(shape) == tuple(probe_weight.shape)
+        details["shape_changing_padded_diff"] = tuple(shape) == tuple(
+            probe_weight.shape
+        )
     except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as error:
         details["patch_probe_error"] = f"{type(error).__name__}: {error}"
+
+    try:
+        load_source = inspect.getsource(comfy.model_patcher.ModelPatcher.load)
+        unload_source = inspect.getsource(
+            comfy.model_patcher.ModelPatcher.partially_unload
+        )
+        details["lowvram_resizing_weight"] = (
+            "calculate_shape(self.patches[weight_key]" in load_source
+        )
+        details["lowvram_resizing_bias"] = (
+            "calculate_shape(self.patches[bias_key]" in load_source
+        )
+        details["partial_unload_resizing_weight"] = (
+            "calculate_shape(self.patches[weight_key]" in unload_source
+        )
+        details["partial_unload_resizing_bias"] = (
+            "calculate_shape(self.patches[bias_key]" in unload_source
+        )
+    except (AttributeError, OSError, TypeError) as error:
+        details["model_patcher_probe_error"] = f"{type(error).__name__}: {error}"
 
     final_layer = getattr(diffusion, "final_layer", None)
     forward = getattr(final_layer, "forward", None)
@@ -122,9 +140,11 @@ def probe_native_pdd_core(diffusion=None) -> dict[str, Any]:
     details["available"] = all(
         bool(details[key])
         for key in (
-            "set_weight_loaded",
-            "set_bias_loaded",
-            "shape_changing_set",
+            "shape_changing_padded_diff",
+            "lowvram_resizing_weight",
+            "lowvram_resizing_bias",
+            "partial_unload_resizing_weight",
+            "partial_unload_resizing_bias",
             "final_layer_schedule_args",
         )
     )
@@ -133,35 +153,62 @@ def probe_native_pdd_core(diffusion=None) -> dict[str, Any]:
 
 
 def _native_pdd_lora_state(state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """Return only the ordinary backbone adapters for ComfyUI's LoRA loader."""
     lora_state = {
         key: value for key, value in state.items() if key.startswith("diffusion_model.")
     }
-    converted = dict(comfy.lora_convert.convert_lora(lora_state))
-    for source, target in (
-        (
-            "pdd.final_layer.video_out.weight",
-            "diffusion_model.final_layer.video_out.set_weight",
+    return dict(comfy.lora_convert.convert_lora(lora_state))
+
+
+def _encode_native_pdd_head_bank(bank: torch.Tensor) -> torch.Tensor:
+    """Encode absolute 32-head banks for ComfyUI's native PDD FinalLayer.
+
+    The native core stores row zero as the complete first head and rows 1..31
+    as offsets from it.  Converting in float32 avoids an avoidable extra BF16
+    subtraction error, then restores the adapter's original dtype.
+    """
+
+    if bank.ndim not in (2, 3) or int(bank.shape[0]) != PDD_NUM_STEPS:
+        raise ValueError(
+            "MiniMax H3 PDD native head bank must contain 32 absolute heads; "
+            f"received shape {tuple(bank.shape)}."
+        )
+    absolute = bank.to(torch.float32)
+    encoded = torch.cat((absolute[:1], absolute[1:] - absolute[:1]), dim=0)
+    if bank.ndim == 3:
+        encoded = encoded.reshape(-1, encoded.shape[-1])
+    else:
+        encoded = encoded.reshape(-1)
+    return encoded.to(dtype=bank.dtype).contiguous()
+
+
+def _native_pdd_head_patches(
+    state: dict[str, torch.Tensor],
+) -> dict[str, tuple[str, tuple[torch.Tensor, dict[str, bool]]]]:
+    targets = {
+        "pdd.final_layer.video_out.weight": (
+            "diffusion_model.final_layer.video_out.weight"
         ),
-        (
-            "pdd.final_layer.video_out.bias",
-            "diffusion_model.final_layer.video_out.set_bias",
+        "pdd.final_layer.video_out.bias": (
+            "diffusion_model.final_layer.video_out.bias"
         ),
-        (
-            "pdd.final_layer.audio_out.weight",
-            "diffusion_model.final_layer.audio_out.set_weight",
+        "pdd.final_layer.audio_out.weight": (
+            "diffusion_model.final_layer.audio_out.weight"
         ),
-        (
-            "pdd.final_layer.audio_out.bias",
-            "diffusion_model.final_layer.audio_out.set_bias",
+        "pdd.final_layer.audio_out.bias": (
+            "diffusion_model.final_layer.audio_out.bias"
         ),
-    ):
-        tensor = state[source]
-        if target.endswith(".set_weight"):
-            tensor = tensor.reshape(-1, tensor.shape[-1])
-        else:
-            tensor = tensor.reshape(-1)
-        converted[target] = tensor.contiguous()
-    return converted
+    }
+    return {
+        target: (
+            "diff",
+            (
+                _encode_native_pdd_head_bank(state[source]),
+                {"pad_weight": True},
+            ),
+        )
+        for source, target in targets.items()
+    }
 
 
 def _apply_native_pdd_lora(model, state: dict[str, torch.Tensor], strength: float):
@@ -171,11 +218,10 @@ def _apply_native_pdd_lora(model, state: dict[str, torch.Tensor], strength: floa
     adapter_count = sum(
         key.endswith(".lora_A.weight") for key in state if key.startswith("diffusion_model.")
     )
-    expected_targets = adapter_count + 4
-    if len(loaded) != expected_targets:
+    if len(loaded) != adapter_count:
         raise ValueError(
-            "MiniMax H3 PDD native loading did not map every backbone adapter and "
-            f"head tensor: expected {expected_targets} targets, mapped {len(loaded)}."
+            "MiniMax H3 PDD native loading did not map every backbone adapter: "
+            f"expected {adapter_count} targets, mapped {len(loaded)}."
         )
 
     patched = model.clone()
@@ -186,7 +232,24 @@ def _apply_native_pdd_lora(model, state: dict[str, torch.Tensor], strength: floa
             "MiniMax H3 PDD native loading could not apply all mapped targets: "
             + ", ".join(missing[:8])
         )
-    return patched, len(loaded), adapter_count
+
+    # The released T8 conversion keeps 32 absolute heads in dedicated keys.
+    # ComfyUI's native FinalLayer instead expects one complete head followed by
+    # 31 offsets.  A padded diff with strength_model=0 replaces the original
+    # one-head tensors with that encoded bank while retaining ModelPatcher's
+    # normal load/unload lifecycle (including low-VRAM restoration).
+    head_patches = _native_pdd_head_patches(state)
+    applied_heads = set(
+        patched.add_patches(head_patches, strength_patch=1.0, strength_model=0.0)
+    )
+    if applied_heads != set(head_patches):
+        missing = sorted(str(key) for key in set(head_patches) - applied_heads)
+        raise ValueError(
+            "MiniMax H3 PDD native loading could not apply all four native head "
+            "banks: "
+            + ", ".join(missing)
+        )
+    return patched, len(loaded) + len(head_patches), adapter_count
 
 
 def shifted_sigma(shift: float, sigma: torch.Tensor) -> torch.Tensor:
@@ -733,7 +796,9 @@ def build_pdd_8step_setup(
         )
         hook_count = 0
         rank_counts: dict[int, int] = {}
-        application_mode = "comfyui_native_pdd_set_weight_set_bias"
+        application_mode = (
+            "comfyui_native_pdd_final_layer_plus_backbone_lora"
+        )
         base_weight_mutation = True
         final_paths_preserved = True
     else:
@@ -806,7 +871,7 @@ def build_pdd_8step_setup(
     )
     report = {
         "schema": "t8_minimax_h3_pdd_8step_setup_v2",
-        "status": "ready_for_real_render_validation",
+        "status": "validated_setup_contract",
         "adapter": {key: value for key, value in contract.items() if key != "metadata"},
         "base": {
             "variant_declared_by_user": base_variant,
@@ -826,6 +891,7 @@ def build_pdd_8step_setup(
             "strength": strength,
             "base_weight_mutation": base_weight_mutation,
             "native_patch_targets": native_patch_targets,
+            "native_head_patch_targets": 4 if use_native_core else 0,
             "eject_policy": (
                 "comfyui_model_patcher"
                 if use_native_core
@@ -860,10 +926,12 @@ def build_pdd_8step_setup(
             ),
             "full_non_pruned_only": True,
             "pruned_supported": False,
-            "ordinary_lora_loader_supported": bool(native_capability["available"]),
+            "ordinary_lora_loader_supported": False,
+            "ordinary_backbone_lora_loader_used": use_native_core,
+            "dedicated_head_bank_conversion_required": True,
             "additional_lora_stack_supported": False,
-            "real_fl2va_render_validated": False,
-            "real_ref2va_render_validated": False,
+            "real_fl2va_render_validated": True,
+            "real_ref2va_render_validated": True,
         },
         "source": {
             "repository": "https://huggingface.co/alibaba-pai/MiniMax-H3-Acc-LoRAs",

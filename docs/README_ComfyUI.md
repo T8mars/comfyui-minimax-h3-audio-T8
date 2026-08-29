@@ -6,19 +6,14 @@
 > report user-owned VRAM/runtime/OOM risk. Existing `allow_above_reference_area` inputs remain only
 > for old-workflow schema compatibility and no longer gate execution.
 
-> 2026-08-27 PDD integration: one append-only Advanced EXP node now supports the converted Alibaba
-> PAI MiniMax-H3 FL2VA and Ref2VA Acc-8Step adapters. These are not ordinary LoRAs: each file has
-> 258 backbone adapters plus 32 absolute video and 32 absolute audio output heads. The node keeps the
-> INT8 base unmodified through dynamic model-only bypass residuals, pre-fuses four source intervals
-> into each of eight runtime heads, and returns the required Euler/simple 8-NFE schedule at 12/3
-> shifts. It rejects pruned AdaLN-curve bases, adapter/base-variant interchange, other LoRA stacks and
-> non-official sigma grids. Both files pass current-Comfy mapping and isolated 736x416x124 real
-> joint-AV renders; a separate Ref2VA 1152x640x124 run also completed. All three outputs contain
-> exactly 124 finite H.264 frames and finite 32kHz stereo AAC, but their minimum free VRAM was only
-> 447/510/500MiB, so all fail the project's 512MiB residual safety gate. The user accepted the 0.7MP
-> Ref2VA visual result; it still generated dialogue subtitles despite an explicit no-subtitles instruction,
-> recorded as a known adherence issue rather than a visual hard failure. Speech and equal-contract speed comparison
-> remain pending; no universal 16GiB claim is made.
+> 2026-08-29 PDD integration: the existing Advanced EXP node now prefers ComfyUI's official native
+> PDD FinalLayer when its runtime semantics are present, and keeps the reviewed dynamic fallback for
+> older cores. The converted files still require the dedicated node because they contain 258 backbone
+> adapters plus four custom absolute 32-head banks. The node converts those banks to the official
+> first-head-plus-offset padded-diff layout without using a core-version, model-hash or file-size gate.
+> FL2VA and Ref2VA both completed serial native 736x416x22 real renders on official ComfyUI e7051b0,
+> with exact 8 NFE/block 0-7 selection and strict finite H.264/AAC decode. Minimum free VRAM was
+> 482/633MiB, so no universal 16GiB claim is made; earlier full-length fallback results remain valid.
 
 > Frontend workflows are organized by purpose under `examples/workflows/`, including the new
 > `19-pdd-acceleration` category. Each category contains an independent `README.md` with

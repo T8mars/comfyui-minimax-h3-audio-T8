@@ -29,14 +29,28 @@ def test_native_pdd_core_probe_is_semantic_and_reports_current_capabilities(monk
     class _Diffusion:
         final_layer = _NativeFinal()
 
-    def fake_load_lora(_lora, _to_load, log_missing=False):
-        assert log_missing is False
-        return {
-            "diffusion_model.final_layer.video_out.weight": ("set", (torch.zeros(3, 2),)),
-            "diffusion_model.final_layer.video_out.bias": ("set", (torch.zeros(3),)),
-        }
+    def fake_load(self, device_to=None, lowvram_model_memory=0):
+        del device_to, lowvram_model_memory
+        weight_key = "probe.weight"
+        bias_key = "probe.bias"
+        comfy = pdd.comfy
+        comfy.lora.calculate_shape(self.patches[weight_key], None, weight_key)
+        comfy.lora.calculate_shape(self.patches[bias_key], None, bias_key)
 
-    monkeypatch.setattr(pdd.comfy.lora, "load_lora", fake_load_lora)
+    def fake_partially_unload(self, device_to=None, memory_to_free=0):
+        del device_to, memory_to_free
+        weight_key = "probe.weight"
+        bias_key = "probe.bias"
+        comfy = pdd.comfy
+        comfy.lora.calculate_shape(self.patches[weight_key], None, weight_key)
+        comfy.lora.calculate_shape(self.patches[bias_key], None, bias_key)
+
+    monkeypatch.setattr(pdd.comfy.model_patcher.ModelPatcher, "load", fake_load)
+    monkeypatch.setattr(
+        pdd.comfy.model_patcher.ModelPatcher,
+        "partially_unload",
+        fake_partially_unload,
+    )
     monkeypatch.setattr(
         pdd.comfy.lora,
         "calculate_shape",
@@ -47,6 +61,7 @@ def test_native_pdd_core_probe_is_semantic_and_reports_current_capabilities(monk
 
     assert report["available"] is True
     assert report["policy"] == "semantic_capability_probe_no_version_or_hash_gate"
+    assert report["shape_changing_padded_diff"] is True
     assert "sigma" in report["final_layer_parameters"]
 
 
@@ -61,7 +76,7 @@ def test_native_pdd_core_probe_rejects_partial_core_support():
     assert report["final_layer_schedule_args"] is False
 
 
-def test_native_pdd_state_flattens_head_banks_without_mutating_source(monkeypatch):
+def test_native_pdd_state_keeps_only_backbone_adapters(monkeypatch):
     monkeypatch.setattr(pdd.comfy.lora_convert, "convert_lora", lambda value: dict(value))
     state = {
         "diffusion_model.blocks.0.attn.to_q.lora_A.weight": torch.zeros(2, 3),
@@ -73,11 +88,62 @@ def test_native_pdd_state_flattens_head_banks_without_mutating_source(monkeypatc
 
     converted = pdd._native_pdd_lora_state(state)
 
-    assert converted["diffusion_model.final_layer.video_out.set_weight"].shape == (6, 4)
-    assert converted["diffusion_model.final_layer.video_out.set_bias"].shape == (6,)
-    assert converted["diffusion_model.final_layer.audio_out.set_weight"].shape == (10, 4)
-    assert converted["diffusion_model.final_layer.audio_out.set_bias"].shape == (10,)
+    assert set(converted) == {
+        "diffusion_model.blocks.0.attn.to_q.lora_A.weight"
+    }
     assert state["pdd.final_layer.video_out.weight"].shape == (2, 3, 4)
+
+
+def test_native_pdd_head_bank_encodes_first_head_plus_offsets():
+    absolute = torch.arange(32 * 2 * 3, dtype=torch.float32).reshape(32, 2, 3)
+    encoded = pdd._encode_native_pdd_head_bank(absolute)
+    rows = encoded.reshape_as(absolute)
+
+    assert rows[0] == pytest.approx(absolute[0])
+    assert rows[1:] == pytest.approx(absolute[1:] - absolute[:1])
+
+
+@pytest.mark.parametrize("shift", [pdd.PDD_SHIFT_VIDEO, pdd.PDD_SHIFT_AUDIO])
+def test_native_and_fallback_head_math_are_equivalent_for_every_block(shift):
+    absolute = torch.arange(32 * 2 * 3, dtype=torch.float64).reshape(32, 2, 3)
+    encoded = pdd._encode_native_pdd_head_bank(absolute).reshape_as(absolute)
+    fallback, _ = pdd._fuse_head_bank(
+        absolute,
+        torch.zeros((32, 2), dtype=torch.float64),
+        shift,
+    )
+
+    for block in range(pdd.PDD_NFE):
+        start = block * pdd.PDD_BLOCK_SIZE
+        stop = start + pdd.PDD_BLOCK_SIZE
+        plan = pdd.pdd_plan(shift, block)[start:stop]
+        first = max(start, 1)
+        native = encoded[0] + torch.einsum(
+            "n,noi->oi",
+            plan[first - start :],
+            encoded[first:stop],
+        )
+        assert native == pytest.approx(fallback[block])
+
+
+def test_native_pdd_head_patches_use_padded_diff_for_all_four_targets():
+    state = {
+        "pdd.final_layer.video_out.weight": torch.zeros(32, 2, 3),
+        "pdd.final_layer.video_out.bias": torch.zeros(32, 2),
+        "pdd.final_layer.audio_out.weight": torch.zeros(32, 1, 3),
+        "pdd.final_layer.audio_out.bias": torch.zeros(32, 1),
+    }
+    patches = pdd._native_pdd_head_patches(state)
+
+    assert set(patches) == {
+        "diffusion_model.final_layer.video_out.weight",
+        "diffusion_model.final_layer.video_out.bias",
+        "diffusion_model.final_layer.audio_out.weight",
+        "diffusion_model.final_layer.audio_out.bias",
+    }
+    for patch_type, values in patches.values():
+        assert patch_type == "diff"
+        assert values[1] == {"pad_weight": True}
 
 
 def test_pdd_plan_and_runtime_schedule_cover_the_eight_blocks_exactly():
