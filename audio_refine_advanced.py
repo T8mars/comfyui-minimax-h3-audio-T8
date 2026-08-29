@@ -376,6 +376,43 @@ def _runtime_weight_stack_manifest(model: Any) -> dict[str, Any]:
 def _parse_audio_mode(report: Any) -> tuple[str | None, str | None]:
     if not isinstance(report, str):
         return None, "conditioning_report must be a string"
+
+    # Stable Conditioning returns a line-oriented report, while Prompt Relay
+    # wraps that report in structured JSON so it can also expose its routing
+    # audit.  Accept only the documented fields and reject conflicting values;
+    # arbitrary nested JSON is deliberately not searched.
+    candidates: list[str] = []
+    try:
+        structured = json.loads(report)
+    except json.JSONDecodeError:
+        structured = None
+    if isinstance(structured, Mapping):
+        direct_mode = structured.get("audio_mode")
+        if isinstance(direct_mode, str) and direct_mode.strip():
+            candidates.append(direct_mode.strip())
+
+        long_video_report = structured.get("long_video_report")
+        if isinstance(long_video_report, Mapping):
+            nested_mode = long_video_report.get("audio_mode")
+            if isinstance(nested_mode, str) and nested_mode.strip():
+                candidates.append(nested_mode.strip())
+
+        stable_report = structured.get("stable_conditioning_report")
+        if isinstance(stable_report, str):
+            candidates.extend(
+                value.strip()
+                for value in re.findall(
+                    r"(?m)^audio_mode=([^\r\n]+)$", stable_report
+                )
+                if value.strip()
+            )
+
+        distinct = sorted(set(candidates))
+        if len(distinct) == 1:
+            return distinct[0], None
+        if len(distinct) > 1:
+            return None, "conditioning_report contains conflicting audio_mode values"
+
     matches = re.findall(r"(?m)^audio_mode=([^\r\n]+)$", report)
     if len(matches) != 1:
         return None, "conditioning_report must contain exactly one audio_mode= line"

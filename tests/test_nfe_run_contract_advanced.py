@@ -4,6 +4,7 @@ import json
 
 import pytest
 import torch
+import comfy.conds
 
 from h3_audio_t8_pkg.nfe_run_contract_advanced import (
     NFE_RUN_CONTRACT_SCHEMA,
@@ -115,6 +116,21 @@ def test_contract_rejects_cycles_in_conditioning_metadata():
     cyclic.append(cyclic)
     with pytest.raises(ValueError, match="contains a cycle"):
         _compile(positive=[[torch.zeros((1, 1, 1)), {"cycle": cyclic}]])
+
+
+def test_contract_hashes_prompt_relay_cond_constant_by_payload():
+    baseline = _positive()
+    baseline[0][1]["model_conds"] = {
+        "t8_prompt_relay_binding_hash": comfy.conds.CONDConstant("binding-a")
+    }
+    changed = _positive()
+    changed[0][1]["model_conds"] = {
+        "t8_prompt_relay_binding_hash": comfy.conds.CONDConstant("binding-b")
+    }
+
+    first = _compile(positive=baseline)[1]
+    assert first == _compile(positive=baseline)[1]
+    assert first != _compile(positive=changed)[1]
 
 
 def test_node_schema_is_append_only_experimental_and_safe():

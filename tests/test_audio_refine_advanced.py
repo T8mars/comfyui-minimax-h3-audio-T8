@@ -390,6 +390,36 @@ def test_audit_rejects_malformed_conditioning_contract(overrides, reason):
     assert reason in audit["reason_codes"]
 
 
+def test_audit_accepts_prompt_relay_structured_audio_mode_report():
+    report = json.dumps(
+        {
+            "audio_mode": "native",
+            "stable_conditioning_report": (
+                "task=T2VA\naudio_mode=native\nframes=22"
+            ),
+        }
+    )
+
+    audit, decision, _ = _audit(conditioning_report=report)
+
+    assert decision == "ALLOW"
+    assert audit["audio_mode"] == "native"
+
+
+def test_audit_rejects_conflicting_structured_audio_modes():
+    report = json.dumps(
+        {
+            "audio_mode": "native",
+            "long_video_report": {"audio_mode": "reference_only"},
+        }
+    )
+
+    audit, decision, _ = _audit(conditioning_report=report)
+
+    assert decision == "REJECT"
+    assert "REJECT_AUDIO_MODE_AMBIGUOUS" in audit["reason_codes"]
+
+
 def test_audit_rejects_invalid_latent_or_wrong_model():
     invalid = _latent()
     video, audio = invalid["samples"].unbind()

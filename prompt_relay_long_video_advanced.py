@@ -372,6 +372,7 @@ def build_prompt_relay_long_video_conditioning(
         "long_video_schema": LONG_VIDEO_SCHEMA,
         "segment_index": int(segment_index),
         "resolved_task": details["resolved_task"],
+        "audio_mode": details["audio_mode"],
         "query_route": query_route,
         "global_plan_hash": plan["global_plan_hash"],
         "projected_plan_hash": plan["plan_hash"],
@@ -394,6 +395,7 @@ def build_prompt_relay_long_video_conditioning(
         "attention_patch_installed": status == "applied_exp",
         "core_hashes": core_hashes,
         "long_video_report": json.loads(long_report),
+        "stable_conditioning_report": long_report,
         "warnings": [
             "Long Video Prompt Relay is an isolated Advanced composition; old Long Video nodes are unchanged",
             "video_only_paper remains the default; joint_av_exp perceptual advantage remains unverified",

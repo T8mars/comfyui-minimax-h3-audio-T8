@@ -219,6 +219,8 @@ def test_combined_segment_zero_installs_both_scoped_contracts(monkeypatch):
         "projected_plan_hash"
     ] == projected["plan_hash"]
     assert parsed["status"] == "applied_exp"
+    assert parsed["audio_mode"] == "native"
+    assert json.loads(parsed["stable_conditioning_report"])["audio_mode"] == "native"
     assert parsed["render_window_frames"] == [0, 124]
     assert parsed["dense_s_by_s_mask_created"] is False
     assert latent["samples"].is_nested

@@ -159,6 +159,21 @@ class _ConditioningDigester:
             _feed(hasher, "bytes", value)
             return
 
+        value_type = type(value)
+        if (
+            value_type.__module__ == "comfy.conds"
+            and value_type.__qualname__ == "CONDConstant"
+            and hasattr(value, "cond")
+        ):
+            # Prompt Relay authenticates MODEL/CONDITIONING ownership with a
+            # scalar CONDConstant(binding_hash).  Bind its actual payload into
+            # the contract instead of hashing object identity or accepting
+            # arbitrary runtime objects.
+            _feed(hasher, "comfy-cond-constant-start")
+            self._digest(value.cond, hasher, f"{path}.cond")
+            _feed(hasher, "comfy-cond-constant-end")
+            return
+
         if isinstance(value, Mapping):
             identity = self._enter(value, path)
             try:
@@ -188,7 +203,6 @@ class _ConditioningDigester:
                 self._active_containers.remove(identity)
             return
 
-        value_type = type(value)
         raise ValueError(
             "positive conditioning contains unsupported runtime object "
             f"{value_type.__module__}.{value_type.__qualname__} at {path}"
