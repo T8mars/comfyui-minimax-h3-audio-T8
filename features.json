@@ -1,21 +1,24 @@
 {
   "nvidia_sol_engine_h3_super_acceleration_advanced": {
-    "status": "implemented as five append-only Advanced/EXP nodes; no existing H3, LTX, sampler, attention or workflow schema changed",
+    "status": "implemented as six append-only Advanced/EXP nodes; the sixth is an independent low-sigma identity-preserve setup and no prior H3, LTX, sampler, attention or workflow schema changed",
     "date": "2026-08-29",
     "nodes": [
       "MiniMaxH3SolEngineDraftToLTXT8Advanced",
       "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
       "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
       "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
-      "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
+      "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+      "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
     ],
     "upstream": "NVIDIA Sol-Engine H3 Super Acceleration, NVlabs/Sana sol-engine commit d0c0a4685ab5dc2336d18b7213d85f13def92418",
     "pipeline": "decoded H3 4-step RGB draft -> aspect-preserving half-resolution full LTX-2.5 Video VAE encode -> official x2 LTX latent upsampler using the same full VAE for per-channel statistics -> LTX-2.5 dev plus distilled LoRA 0.8 -> Euler sigmas 0.909375/0.725/0.421875/0 with dense self-attention layer 0 and optional Sol-Attn layers 1-47 -> TAEHV Wide final decode",
+    "identity_preserve_variant": "independent default-dense EXP route with exact sigmas 0.5/0.412/0.350/0, three Euler updates, CFG 1 and refiner LoRA 0.8; optional Sol uses constant tau 1.0 only on exact custom knots and is not described as official parity",
     "audio": "H3 audio bypasses LTX Stage 2 and is reused unchanged",
     "fallback": "missing optional ComfyUI-SolAttn_triton keeps the exact 3-step refiner schedule but falls back to dense attention without blocking",
     "constraints": "no model filename, hash, byte-size, or pixel-area execution allowlist; non-reference shapes are reported as adaptations rather than rejected",
     "local_default": "official Lightricks Comfy INT8 ConvRot Dev Transformer and projected Gemma4 text encoder; BF16 remains selectable, and kernel_precision controls attention activations rather than checkpoint storage dtype",
     "real_validation": "2026-08-30 corrected full-LTX-VAE smoke passed: 17 frames at 640x384/24fps, full VideoVAE encode -> official latent upsampler -> exact three-step LTX refiner -> TAEHV final decode, H264/AAC strict decode clean, 32kHz stereo source audio preserved; the 2026-08-29 TAEHV-encode run remains invalidated as parity evidence",
+    "identity_preserve_validation": "one serial 22-frame input produced a strict-decode-clean 640x384x17 candidate in 35.96 seconds using exact sigmas 0.5/0.412/0.350/0 and dense attention; decoded audio PCM was identical to the official-schedule control, and sampled frames remained visibly closer to the H3 source on this fixture, but no universal face-identity or high-resolution claim is made",
     "scientific_boundary": "NVIDIA's published 22.2x result is a fixed 4xGB200 resident benchmark and is not claimed for ComfyUI or consumer GPUs"
   },
   "cads_visual_reference_advanced": {
@@ -1473,7 +1476,8 @@
     "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
     "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
     "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
-    "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
+    "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+    "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

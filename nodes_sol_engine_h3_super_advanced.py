@@ -9,6 +9,7 @@ from .sol_engine_h3_super_advanced import (
     encode_h3_frames_with_taehv,
     load_taehv_wide,
     prepare_h3_draft_for_ltx_refiner,
+    setup_ltx_identity_preserve_refiner,
     setup_ltx_stage2_refiner,
 )
 
@@ -156,6 +157,115 @@ class MiniMaxH3SolEngineLTXRefinerSetupT8Advanced(io.ComfyNode):
         )
 
 
+class MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+            display_name=(
+                "H3 Super: LTX-2.5 Low-Sigma Identity Refiner / "
+                "LTX低Sigma保脸细化 (Advanced/T8)"
+            ),
+            description=(
+                "Append-only identity-preserving Stage-2 route. The default schedule is "
+                "[0.5, 0.412, 0.350, 0]: three Euler updates with complete terminal denoising. "
+                "Dense attention is the validated-first default. Optional Sol-Attn uses a "
+                "conservative constant tau 1.0 EXP policy instead of remapping custom knots to "
+                "the official per-step tau schedule. H3 audio remains on the external bypass."
+            ),
+            category=CATEGORY,
+            is_experimental=True,
+            inputs=[
+                io.Model.Input(
+                    "model",
+                    tooltip=(
+                        "LTX-2.5 dev transformer with the distilled refiner LoRA applied at 0.8."
+                    ),
+                ),
+                io.Boolean.Input("enabled", default=True),
+                io.Combo.Input(
+                    "schedule_mode",
+                    options=["identity_preserve_0p5", "manual_exp"],
+                    default="identity_preserve_0p5",
+                    tooltip=(
+                        "The preset always uses 0.5, 0.412, 0.350, 0. manual_exp parses the next field."
+                    ),
+                ),
+                io.String.Input(
+                    "manual_sigmas",
+                    default="0.5, 0.412, 0.350, 0",
+                    tooltip=(
+                        "Comma-separated, finite, strictly descending values ending at zero. "
+                        "Used only when schedule_mode=manual_exp."
+                    ),
+                ),
+                io.Combo.Input(
+                    "attention_backend",
+                    options=[
+                        "dense_reference",
+                        "auto_sol_attn_conservative_exp",
+                    ],
+                    default="dense_reference",
+                    tooltip=(
+                        "Dense isolates the sigma change. The Sol route is optional and experimental."
+                    ),
+                ),
+                io.Int.Input(
+                    "min_tokens",
+                    default=4096,
+                    min=0,
+                    max=1048576,
+                    step=512,
+                    advanced=True,
+                ),
+                io.Combo.Input(
+                    "kernel_precision",
+                    options=["bf16_official", "int8_experimental"],
+                    default="bf16_official",
+                    advanced=True,
+                ),
+                io.Boolean.Input("verbose", default=False, advanced=True),
+            ],
+            outputs=[
+                io.Model.Output("model"),
+                io.Sampler.Output("sampler"),
+                io.Sigmas.Output("sigmas"),
+                io.Float.Output("refiner_lora_strength"),
+                io.String.Output("report_json"),
+            ],
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        model,
+        enabled,
+        schedule_mode,
+        manual_sigmas,
+        attention_backend,
+        min_tokens,
+        kernel_precision,
+        verbose,
+    ):
+        patched, sigmas, strength, report = setup_ltx_identity_preserve_refiner(
+            model,
+            enabled,
+            schedule_mode,
+            manual_sigmas,
+            attention_backend,
+            min_tokens,
+            kernel_precision,
+            verbose,
+        )
+        return io.NodeOutput(
+            patched,
+            comfy.samplers.sampler_object("euler"),
+            sigmas,
+            strength,
+            report,
+        )
+
+
 class MiniMaxH3SolEngineTAEHVLoaderT8Advanced(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -262,4 +372,5 @@ SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES = [
     MiniMaxH3SolEngineTAEHVLoaderT8Advanced,
     MiniMaxH3SolEngineTAEHVEncodeT8Advanced,
     MiniMaxH3SolEngineTAEHVDecodeT8Advanced,
+    MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced,
 ]

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import json
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "examples" / "workflows" / "22-sol-engine-h3-super"
 OUT_FILE = OUT_DIR / "2026-08-29_H3_Sol_Engine_Super_Acceleration_LTX25_Advanced_EXP.json"
+IDENTITY_OUT_FILE = (
+    OUT_DIR
+    / "2026-08-30_H3_Sol_Engine_LTX25_Identity_Preserve_3Step_Advanced_EXP.json"
+)
 USER_DIR = (
     ROOT.parents[1]
     / "user"
@@ -589,14 +594,87 @@ def build_workflow():
     }
 
 
+def build_identity_preserve_workflow():
+    workflow = deepcopy(build_workflow())
+    workflow["id"] = "d9d0686f-3e3c-4cef-b71e-989fc71cfc75"
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+
+    setup = nodes[10]
+    setup["type"] = "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
+    setup["title"] = "6. Identity-preserve 3-step Euler / 低Sigma保脸三步细化"
+    setup["size"] = [540, 300]
+    setup["properties"] = {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+    }
+    setup["widgets_values"] = [
+        True,
+        "identity_preserve_0p5",
+        "0.5, 0.412, 0.350, 0",
+        "dense_reference",
+        4096,
+        "bf16_official",
+        False,
+    ]
+
+    nodes[16]["title"] = "7. Identity-preserve refiner — exactly 3 Euler updates"
+    nodes[20]["title"] = "11. Save identity-preserve candidate"
+    nodes[20]["widgets_values"][0] = (
+        "MiniMaxH3/sol_engine_ltx25_identity_preserve_candidate"
+    )
+
+    nodes[21]["title"] = "What changes / 这个版本改了什么"
+    nodes[21]["widgets_values"] = [
+        "## Low-Sigma identity-preserve Stage 2\n\n"
+        "This keeps the same full LTX-2.5 Video VAE, learned x2 latent upscaler, "
+        "distilled Refiner LoRA 0.8, Euler sampler and final TAEHV decode. Only the "
+        "Stage-2 sigma schedule changes. H3 audio still **bypasses** LTX Stage 2 and "
+        "is trimmed/muxed unchanged. The original NVIDIA parity workflow remains separate."
+    ]
+    nodes[22]["title"] = "Exact Sigma and attention / 精确参数"
+    nodes[22]["widgets_values"] = [
+        "## Exact default: `0.5 → 0.412 → 0.350 → 0`\n\n"
+        "Four sigma points mean **exactly 3 Euler updates**. With ComfyUI's LTX flow "
+        "sampling, the 0.5 start mixes 0.5 x noise + 0.5 x the upscaled latent. This is "
+        "a latent-space coefficient, not a promise of 50% identity retention; terminal 0 "
+        "still completes denoising. "
+        "Dense Attention is the default so Sigma is the only changed variable. Optional "
+        "Sol-Attn uses a conservative constant tau 1.0 EXP policy; it does not pretend "
+        "these custom knots are the official tau 1.0/1.25/1.5 schedule."
+    ]
+    nodes[23]["widgets_values"][0] += (
+        "\n\nThis workflow uses the same model files as the official parity workflow; "
+        "no additional model, filename hash, byte-size allowlist or pixel ceiling is required."
+    )
+    nodes[24]["title"] = "Use and review / 使用与审核"
+    nodes[24]["widgets_values"] = [
+        "## Recommended first run\n\n"
+        "Keep `identity_preserve_0p5`, `dense_reference`, Euler, CFG 1 and LoRA 0.8. "
+        "Use the same positive prompt as the H3 draft. Compare the full face, motion and "
+        "fine detail against the official Stage-2 result. This lower-Sigma route is an "
+        "identity/detail experiment, not NVIDIA's published parity schedule and not a "
+        "guarantee that every face will remain unchanged."
+    ]
+    workflow["groups"][1]["title"] = (
+        "LTX-2.5 identity-preserve low-Sigma 3-step refiner"
+    )
+    return workflow
+
+
+def _write_and_mirror(path: Path, workflow: dict):
+    payload = json.dumps(workflow, ensure_ascii=False, indent=2) + "\n"
+    path.write_text(payload, encoding="utf-8")
+    mirror = USER_DIR / path.name
+    shutil.copy2(path, mirror)
+    print(path)
+    print(mirror)
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     USER_DIR.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(build_workflow(), ensure_ascii=False, indent=2) + "\n"
-    OUT_FILE.write_text(payload, encoding="utf-8")
-    shutil.copy2(OUT_FILE, USER_DIR / OUT_FILE.name)
-    print(OUT_FILE)
-    print(USER_DIR / OUT_FILE.name)
+    _write_and_mirror(OUT_FILE, build_workflow())
+    _write_and_mirror(IDENTITY_OUT_FILE, build_identity_preserve_workflow())
 
 
 if __name__ == "__main__":

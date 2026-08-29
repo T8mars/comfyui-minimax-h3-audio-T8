@@ -15,6 +15,11 @@
 > with exact 8 NFE/block 0-7 selection and strict finite H.264/AAC decode. Minimum free VRAM was
 > 482/633MiB, so no universal 16GiB claim is made; earlier full-length fallback results remain valid.
 
+> 2026-08-30 H3 Super low-Sigma route: use the independent identity-preserve workflow when
+> the official LTX Stage-2 full denoise changes faces too much. Its exact schedule is
+> `0.5 -> 0.412 -> 0.350 -> 0` (three Euler updates), with Dense Attention as the default.
+> The official parity workflow is unchanged, and H3 audio continues to bypass LTX Stage 2.
+
 > Frontend workflows are organized by purpose under `examples/workflows/`, including the new
 > `19-pdd-acceleration` category. Each category contains an independent `README.md` with
 > purpose, validated outcomes, usage guidance and explicit limitations. The same hierarchy is

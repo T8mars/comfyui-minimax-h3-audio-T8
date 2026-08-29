@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.57.1** · GPL-3.0-or-later
+当前版本：**1.58.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -90,6 +90,8 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 ## NVIDIA H3 Super Acceleration
 
 这是两阶段方案，不是 H3 Attention 开关：H3 先跑 4 步草稿，完整 LTX-2.5 Video VAE 编码后经官方 x2 latent upscaler 放大，LTX-2.5 再做 3 步 Refiner，最后才由 TAEHV Wide 快速解码。TAEHV Encode 不得作为 Refiner 输入；H3 音频直接旁路并在最终保存时复用。
+
+目录内同时提供低 Sigma 保脸实验版：`0.5 → 0.412 → 0.350 → 0`，仍是3次 Euler 更新，默认 Dense Attention。它保留更多放大后的原 latent，适合官方完全降噪版导致人脸变化过大时做 A/B；不是官方 Sigma 对齐路线，也不保证所有素材都更好。
 
 配套模型整包：[t8star/Minimax-H3-Super-Acceleration-Comfy](https://huggingface.co/t8star/Minimax-H3-Super-Acceleration-Comfy)。下载时保留仓库中的目录结构，把各目录复制到 `ComfyUI/models` 即可。完整文件名和路径见 [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super)。Sol-Attn 是可选依赖，未安装时自动使用 Dense Attention。
 

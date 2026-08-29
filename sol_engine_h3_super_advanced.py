@@ -15,6 +15,7 @@ from .sol_engine_taehv import TAEHVLTX23Wide
 
 OFFICIAL_STAGE2_SIGMAS = (0.909375, 0.725, 0.421875, 0.0)
 OFFICIAL_STAGE2_TAUS = (1.0, 1.25, 1.5)
+IDENTITY_PRESERVE_STAGE2_SIGMAS = (0.5, 0.412, 0.350, 0.0)
 OFFICIAL_REFINER_LORA_STRENGTH = 0.8
 OFFICIAL_REFINER_LAYER_COUNT = 48
 OFFICIAL_SOURCE_WIDTH = 864
@@ -285,6 +286,49 @@ def official_stage2_sigmas(device: torch.device | str = "cpu") -> torch.Tensor:
     return torch.tensor(OFFICIAL_STAGE2_SIGMAS, dtype=torch.float32, device=device)
 
 
+def _parse_manual_stage2_sigmas(values: str | list[float] | tuple[float, ...] | torch.Tensor) -> tuple[float, ...]:
+    if torch.is_tensor(values):
+        raw_values = values.detach().cpu().flatten().tolist()
+    elif isinstance(values, str):
+        normalized = values.replace("→", ",").replace(";", ",")
+        tokens = [token.strip() for token in normalized.split(",") if token.strip()]
+        try:
+            raw_values = [float(token) for token in tokens]
+        except ValueError as exc:
+            raise ValueError(f"invalid sigma in manual schedule: {values!r}") from exc
+    else:
+        raw_values = list(values)
+
+    if len(raw_values) < 2:
+        raise ValueError("manual sigma schedule needs at least two values")
+    sigmas = tuple(float(value) for value in raw_values)
+    if not all(math.isfinite(value) for value in sigmas):
+        raise ValueError("manual sigma schedule values must all be finite")
+    if sigmas[0] <= 0.0 or sigmas[0] > 1.0 or any(value < 0.0 or value > 1.0 for value in sigmas):
+        raise ValueError("manual sigma schedule values must stay in [0, 1] and start above 0")
+    if any(left <= right for left, right in zip(sigmas, sigmas[1:])):
+        raise ValueError("manual sigma schedule must be strictly descending")
+    if not math.isclose(sigmas[-1], 0.0, rel_tol=0.0, abs_tol=1.0e-8):
+        raise ValueError("manual sigma schedule must end at 0 for complete denoising")
+    return (*sigmas[:-1], 0.0)
+
+
+def identity_preserve_stage2_sigmas(
+    schedule_mode: str = "identity_preserve_0p5",
+    manual_sigmas: str | list[float] | tuple[float, ...] | torch.Tensor = (
+        "0.5, 0.412, 0.350, 0"
+    ),
+    device: torch.device | str = "cpu",
+) -> torch.Tensor:
+    if schedule_mode == "identity_preserve_0p5":
+        values = IDENTITY_PRESERVE_STAGE2_SIGMAS
+    elif schedule_mode == "manual_exp":
+        values = _parse_manual_stage2_sigmas(manual_sigmas)
+    else:
+        raise ValueError(f"unsupported identity-preserve schedule mode: {schedule_mode!r}")
+    return torch.tensor(values, dtype=torch.float32, device=device)
+
+
 def stage2_tau_for_sigma(value: Any) -> float | None:
     if value is None:
         return None
@@ -380,6 +424,68 @@ def _make_official_stage2_override(
         return delegates[tau](func, q, k, v, heads, *args, **kwargs)
 
     override._t8_sol_engine_h3_super = True
+    override._t8_sol_engine_previous = previous
+    return override
+
+
+def _sigma_scalar(value: Any) -> float | None:
+    if value is None:
+        return None
+    if torch.is_tensor(value):
+        if value.numel() == 0:
+            return None
+        return float(value.flatten()[0].detach().cpu())
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return None
+        return float(value[0])
+    return float(value)
+
+
+def _make_identity_preserve_stage2_override(
+    backend: Any,
+    previous: Callable[..., Any] | None,
+    *,
+    schedule: tuple[float, ...],
+    min_tokens: int,
+    int8_qk: bool,
+    int8_pv: bool,
+    verbose: bool,
+) -> Callable[..., Any]:
+    """Optional conservative Sol route for a non-official low-sigma schedule.
+
+    The published per-step tau progression is tied to the official Stage-2
+    schedule.  A custom schedule therefore never uses nearest-neighbour tau
+    remapping.  The opt-in EXP route holds the least aggressive published tau
+    at 1.0 and only activates for an exact non-zero knot in this schedule.
+    """
+
+    delegate = backend.make_override(
+        tau=1.0,
+        min_tokens=int(min_tokens),
+        verbose=bool(verbose),
+        int8_qk=bool(int8_qk),
+        int8_pv=bool(int8_pv),
+        sink_conditioning="off",
+        dense_blocks=frozenset({0}),
+        previous=previous,
+    )
+    active_sigmas = tuple(value for value in schedule if value > 0.0)
+
+    def override(func, q, k, v, heads, *args, **kwargs):
+        transformer_options = kwargs.get("transformer_options")
+        options = transformer_options if isinstance(transformer_options, dict) else {}
+        block = options.get("sol_block")
+        sigma = _sigma_scalar(options.get("sigmas"))
+        exact_knot = sigma is not None and any(
+            math.isclose(sigma, knot, rel_tol=0.0, abs_tol=1.0e-5)
+            for knot in active_sigmas
+        )
+        if block is None or int(block) == 0 or not exact_knot:
+            return _call_dense(previous, func, q, k, v, heads, *args, **kwargs)
+        return delegate(func, q, k, v, heads, *args, **kwargs)
+
+    override._t8_sol_engine_h3_super_identity_preserve = True
     override._t8_sol_engine_previous = previous
     return override
 
@@ -541,3 +647,147 @@ def setup_ltx_stage2_refiner(
         ),
     }
     return cloned, sigmas, OFFICIAL_REFINER_LORA_STRENGTH, _json(report)
+
+
+def setup_ltx_identity_preserve_refiner(
+    model: Any,
+    enabled: bool = True,
+    schedule_mode: str = "identity_preserve_0p5",
+    manual_sigmas: str = "0.5, 0.412, 0.350, 0",
+    attention_backend: str = "dense_reference",
+    min_tokens: int = 4096,
+    kernel_precision: str = "bf16_official",
+    verbose: bool = False,
+    *,
+    sol_backend: Any | None = None,
+) -> tuple[Any, torch.Tensor, float, str]:
+    """Configure an append-only low-sigma LTX Stage-2 identity route.
+
+    This intentionally does not modify the official NVIDIA parity node.  Dense
+    attention is the default so the lower entry sigma is the only algorithmic
+    variable.  The optional Sol route is explicitly experimental and uses a
+    constant tau=1.0 rather than pretending the custom knots are official ones.
+    """
+
+    if attention_backend not in {
+        "dense_reference",
+        "auto_sol_attn_conservative_exp",
+    }:
+        raise ValueError(f"unsupported attention backend: {attention_backend!r}")
+    if kernel_precision not in {"bf16_official", "int8_experimental"}:
+        raise ValueError(f"unsupported kernel precision: {kernel_precision!r}")
+
+    sigmas = identity_preserve_stage2_sigmas(schedule_mode, manual_sigmas)
+    sigma_values = tuple(float(value) for value in sigmas.tolist())
+    base_report = {
+        "pipeline": "ltx25_stage2_identity_preserve_low_sigma_exp",
+        "schedule_profile": schedule_mode,
+        "stage2_sigmas": list(sigma_values),
+        "nfe": len(sigma_values) - 1,
+        "entry_sigma": sigma_values[0],
+        "terminal_sigma": sigma_values[-1],
+        "sampler": "euler",
+        "refiner_lora_strength": OFFICIAL_REFINER_LORA_STRENGTH,
+        "official_stage2_parity": False,
+        "audio_policy": "do_not_encode_or_denoise_h3_audio_in_ltx_stage2",
+        "model_identity_policy": "no_filename_hash_byte_size_or_pixel_area_execution_gate",
+    }
+    if not enabled:
+        return model, sigmas, OFFICIAL_REFINER_LORA_STRENGTH, _json(
+            {**base_report, "status": "disabled_passthrough"}
+        )
+
+    try:
+        diffusion_model = model.get_model_object("diffusion_model")
+    except Exception as exc:
+        return model, sigmas, OFFICIAL_REFINER_LORA_STRENGTH, _json(
+            {
+                **base_report,
+                "status": "unsupported_model_passthrough",
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+        )
+
+    blocks = _transformer_blocks(diffusion_model)
+    if blocks is None:
+        return model, sigmas, OFFICIAL_REFINER_LORA_STRENGTH, _json(
+            {
+                **base_report,
+                "status": "unsupported_model_passthrough",
+                "reason": "connected model exposes no LTX transformer_blocks",
+            }
+        )
+
+    block_count = len(blocks)
+    existing = _existing_dit_replacements(model)
+    model_options = getattr(model, "model_options", {})
+    original_transformer_options = model_options.get("transformer_options", {})
+    previous_override = original_transformer_options.get("optimized_attention_override")
+    backend = sol_backend if sol_backend is not None else find_loaded_sol_attn_backend()
+    use_sol = (
+        attention_backend == "auto_sol_attn_conservative_exp"
+        and backend is not None
+    )
+
+    if use_sol:
+        patched = model.clone()
+        for index in range(block_count):
+            previous_patch = existing.get(("double_block", index))
+            patched.set_model_patch_replace(
+                _block_tagger(index, previous_patch),
+                "dit",
+                "double_block",
+                index,
+            )
+        options = dict(patched.model_options.get("transformer_options", {}))
+        int8 = kernel_precision == "int8_experimental"
+        options["optimized_attention_override"] = _make_identity_preserve_stage2_override(
+            backend,
+            previous_override,
+            schedule=sigma_values,
+            min_tokens=int(min_tokens),
+            int8_qk=int8,
+            int8_pv=int8,
+            verbose=bool(verbose),
+        )
+        options["t8_sol_engine_h3_super_identity_preserve"] = {
+            "stage2_sigmas": list(sigma_values),
+            "tau_policy": "constant_1p0_conservative_exp",
+            "dense_layers": [0],
+            "sol_layers": list(range(1, block_count)),
+            "audio_policy": "external_h3_audio_passthrough",
+        }
+        patched.model_options["transformer_options"] = options
+        attention_status = "sol_attn_conservative_exp_active"
+    else:
+        patched = model
+        attention_status = (
+            "dense_reference_requested"
+            if attention_backend == "dense_reference"
+            else "dense_fallback_sol_attn_not_loaded"
+        )
+
+    report = {
+        **base_report,
+        "status": "configured",
+        "attention": attention_status,
+        "attention_backend_requested": attention_backend,
+        "kernel_precision": kernel_precision,
+        "min_tokens": int(min_tokens),
+        "transformer_layers_observed": block_count,
+        "official_transformer_layer_count": OFFICIAL_REFINER_LAYER_COUNT,
+        "dense_self_attention_layers": [0] if use_sol else list(range(block_count)),
+        "sol_self_attention_layers": list(range(1, block_count)) if use_sol else [],
+        "sol_tau_policy": "constant_1p0_conservative_exp" if use_sol else "not_applied",
+        "composition": {
+            "existing_dit_replacements_preserved": sum(
+                1 for index in range(block_count) if ("double_block", index) in existing
+            ),
+            "existing_attention_override_chained": previous_override is not None and use_sol,
+        },
+        "scientific_boundary": (
+            "The lower entry sigma retains more of the upscaled LTX latent before three Euler updates, "
+            "but it is not NVIDIA's official distilled Stage-2 schedule and needs human identity/detail review."
+        ),
+    }
+    return patched, sigmas, OFFICIAL_REFINER_LORA_STRENGTH, _json(report)

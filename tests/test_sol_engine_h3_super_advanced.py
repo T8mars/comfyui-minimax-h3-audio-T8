@@ -25,6 +25,44 @@ def test_official_stage2_schedule_and_tau_mapping_are_exact():
     assert super_h3.stage2_tau_for_sigma(torch.tensor([0.0])) is None
 
 
+def test_identity_preserve_stage2_schedule_is_exactly_three_updates():
+    sigmas = super_h3.identity_preserve_stage2_sigmas(
+        "identity_preserve_0p5",
+        "ignored by preset",
+    )
+
+    assert sigmas.tolist() == pytest.approx([0.5, 0.412, 0.350, 0.0])
+    assert len(sigmas) - 1 == 3
+
+
+def test_manual_identity_schedule_accepts_the_corrected_exact_values():
+    sigmas = super_h3.identity_preserve_stage2_sigmas(
+        "manual_exp",
+        "0.5, 0.412, 0.350, 0",
+    )
+
+    assert sigmas.tolist() == pytest.approx([0.5, 0.412, 0.350, 0.0])
+    assert len(sigmas) - 1 == 3
+
+
+@pytest.mark.parametrize(
+    ("manual_sigmas", "message"),
+    [
+        ("0.5, 0.5, 0", "strictly descending"),
+        ("0.5, 0.35", "end at 0"),
+        ("0.5, nan, 0", "finite"),
+        ("0.5, inf, 0", "finite"),
+        ("0.5, nope, 0", "invalid sigma"),
+    ],
+)
+def test_manual_identity_schedule_rejects_ambiguous_or_non_finite_values(
+    manual_sigmas,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        super_h3.identity_preserve_stage2_sigmas("manual_exp", manual_sigmas)
+
+
 def test_h3_draft_handoff_uses_half_geometry_and_ltx_frame_grid():
     frames = torch.linspace(0, 1, 243 * 24 * 43 * 3).reshape(243, 24, 43, 3)
     prepared, width, height, kept, dropped, duration, report_json = (
@@ -154,6 +192,60 @@ def test_missing_sol_backend_is_dense_passthrough_not_a_hard_error():
     assert report["model_identity_policy"] == (
         "no_filename_hash_byte_size_or_pixel_area_execution_gate"
     )
+
+
+def test_identity_preserve_setup_defaults_to_dense_and_reports_exact_schedule():
+    model = _FakePatcher()
+    patched, sigmas, strength, report_json = (
+        super_h3.setup_ltx_identity_preserve_refiner(model)
+    )
+    report = json.loads(report_json)
+
+    assert patched is model
+    assert sigmas.tolist() == pytest.approx([0.5, 0.412, 0.350, 0.0])
+    assert strength == pytest.approx(0.8)
+    assert report["attention"] == "dense_reference_requested"
+    assert report["nfe"] == 3
+    assert report["entry_sigma"] == pytest.approx(0.5)
+    assert report["terminal_sigma"] == pytest.approx(0.0)
+    assert report["official_stage2_parity"] is False
+    assert report["audio_policy"] == "do_not_encode_or_denoise_h3_audio_in_ltx_stage2"
+    assert report["model_identity_policy"] == (
+        "no_filename_hash_byte_size_or_pixel_area_execution_gate"
+    )
+
+
+def test_identity_preserve_conservative_sol_uses_tau_one_only_on_exact_schedule():
+    model = _FakePatcher()
+    backend = _FakeSolBackend()
+    patched, _, _, report_json = super_h3.setup_ltx_identity_preserve_refiner(
+        model,
+        attention_backend="auto_sol_attn_conservative_exp",
+        sol_backend=backend,
+    )
+    report = json.loads(report_json)
+    override = patched.model_options["transformer_options"][
+        "optimized_attention_override"
+    ]
+
+    assert report["attention"] == "sol_attn_conservative_exp_active"
+    assert [call[0] for call in backend.calls] == [1.0]
+    assert override(
+        lambda *_args, **_kwargs: {"route": "dense"},
+        object(),
+        object(),
+        object(),
+        32,
+        transformer_options={"sol_block": 12, "sigmas": torch.tensor([0.412])},
+    ) == {"route": "sol", "tau": 1.0}
+    assert override(
+        lambda *_args, **_kwargs: {"route": "dense"},
+        object(),
+        object(),
+        object(),
+        32,
+        transformer_options={"sol_block": 12, "sigmas": torch.tensor([0.725])},
+    ) == {"route": "dense"}
 
 
 def test_sol_backend_discovery_ignores_hostile_optional_module_proxy(monkeypatch):
@@ -348,3 +440,44 @@ def test_frontend_workflow_is_complete_official_stage2_and_keeps_audio_external(
         for link in links
     )
     assert len(nodes) == len(workflow["nodes"])
+
+
+def test_identity_preserve_frontend_workflow_uses_exact_user_schedule_and_notes():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "22-sol-engine-h3-super"
+        / "2026-08-30_H3_Sol_Engine_LTX25_Identity_Preserve_3Step_Advanced_EXP.json"
+    )
+    workflow = json.loads(path.read_text(encoding="utf-8"))
+    setup = next(
+        node for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
+    )
+    sampler = next(
+        node for node in workflow["nodes"] if node["type"] == "SamplerCustomAdvanced"
+    )
+    notes = [
+        node["widgets_values"][0]
+        for node in workflow["nodes"]
+        if node["type"] == "MarkdownNote"
+    ]
+
+    assert setup["widgets_values"] == [
+        True,
+        "identity_preserve_0p5",
+        "0.5, 0.412, 0.350, 0",
+        "dense_reference",
+        4096,
+        "bf16_official",
+        False,
+    ]
+    assert "widgets_values_named" not in setup
+    assert "3 Euler updates" in sampler["title"]
+    assert len(notes) >= 4
+    assert any("0.5" in text and "0.412" in text and "0.350" in text for text in notes)
+    assert any("Dense" in text and "Sol" in text for text in notes)
+    assert any("audio" in text.lower() and "bypass" in text.lower() for text in notes)
+    assert any("not a promise of 50% identity retention" in text for text in notes)

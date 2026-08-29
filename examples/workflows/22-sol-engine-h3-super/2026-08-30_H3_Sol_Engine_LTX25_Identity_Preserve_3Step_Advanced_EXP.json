@@ -1,0 +1,1530 @@
+{
+  "id": "d9d0686f-3e3c-4cef-b71e-989fc71cfc75",
+  "revision": 0,
+  "last_node_id": 26,
+  "last_link_id": 33,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "1. Load the decoded MiniMax H3 draft / 载入H3草稿视频",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        400,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_h3_draft_24fps.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "2. Split frames; audio stays outside LTX / 拆帧且音频旁路",
+      "pos": [
+        450,
+        0
+      ],
+      "size": [
+        410,
+        126
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            3,
+            25,
+            29
+          ]
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3SolEngineDraftToLTXT8Advanced",
+      "title": "3. H3 draft → LTX-2.5 refiner input (official defaults)",
+      "pos": [
+        920,
+        0
+      ],
+      "size": [
+        460,
+        250
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 3,
+          "widget": {
+            "name": "fps"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ltx_encoder_frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "encoder_width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "encoder_height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "kept_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "dropped_tail_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "output_duration_seconds",
+          "type": "FLOAT",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SolEngineDraftToLTXT8Advanced"
+      },
+      "widgets_values": [
+        1920,
+        1088,
+        "trim_to_8n_plus_1",
+        24.0
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "LTX-2.5 original video VAE (required)",
+      "pos": [
+        920,
+        330
+      ],
+      "size": [
+        460,
+        70
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "ltx-2.5-video-vae-conv-bf16.safetensors",
+            "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+            "directory": "vae"
+          }
+        ]
+      },
+      "widgets_values": [
+        "ltx-2.5-video-vae-conv-bf16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAEEncode",
+      "title": "4. Full LTX-2.5 Video VAE encode (required)",
+      "pos": [
+        1440,
+        0
+      ],
+      "size": [
+        380,
+        132
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAEEncode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "LatentUpscaleModelLoader",
+      "title": "Official LTX-2.5 x2 latent upscaler",
+      "pos": [
+        1440,
+        180
+      ],
+      "size": [
+        420,
+        82
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT_UPSCALE_MODEL",
+          "type": "LATENT_UPSCALE_MODEL",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LatentUpscaleModelLoader",
+        "models": [
+          {
+            "name": "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors",
+            "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors",
+            "directory": "latent_upscale_models"
+          }
+        ]
+      },
+      "widgets_values": [
+        "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LTXVLatentUpsampler",
+      "title": "5. Learned latent x2 upscale",
+      "pos": [
+        1910,
+        40
+      ],
+      "size": [
+        320,
+        100
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 6
+        },
+        {
+          "name": "upscale_model",
+          "type": "LATENT_UPSCALE_MODEL",
+          "link": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LTXVLatentUpsampler"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "UNETLoader",
+      "title": "LTX-2.5 dev transformer (official Comfy INT8 local default)",
+      "pos": [
+        0,
+        530
+      ],
+      "size": [
+        470,
+        86
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader",
+        "models": [
+          {
+            "name": "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+            "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+            "directory": "diffusion_models"
+          }
+        ]
+      },
+      "widgets_values": [
+        "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "LoraLoaderModelOnly",
+      "title": "Official distilled refiner LoRA — fixed strength 0.8",
+      "pos": [
+        530,
+        530
+      ],
+      "size": [
+        450,
+        92
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "models": [
+          {
+            "name": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+            "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+            "directory": "loras"
+          }
+        ]
+      },
+      "widgets_values": [
+        "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+        0.8
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+      "title": "6. Identity-preserve 3-step Euler / 低Sigma保脸三步细化",
+      "pos": [
+        1040,
+        510
+      ],
+      "size": [
+        540,
+        300
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "refiner_lora_strength",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
+      },
+      "widgets_values": [
+        true,
+        "identity_preserve_0p5",
+        "0.5, 0.412, 0.350, 0",
+        "dense_reference",
+        4096,
+        "bf16_official",
+        false
+      ]
+    },
+    {
+      "id": 11,
+      "type": "CLIPLoader",
+      "title": "LTX-2.5 text encoder",
+      "pos": [
+        0,
+        730
+      ],
+      "size": [
+        470,
+        110
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            14,
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+            "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/main/text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+            "directory": "text_encoders"
+          }
+        ]
+      },
+      "widgets_values": [
+        "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+        "ltxv",
+        "default"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "CLIPTextEncode",
+      "title": "Use the same positive prompt as the H3 draft",
+      "pos": [
+        530,
+        720
+      ],
+      "size": [
+        500,
+        160
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "Replace this text with the exact prompt used to generate the MiniMax H3 draft."
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 13,
+      "type": "CLIPTextEncode",
+      "title": "Negative prompt (official default: empty)",
+      "pos": [
+        530,
+        910
+      ],
+      "size": [
+        500,
+        120
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 14,
+      "type": "CFGGuider",
+      "title": "CFG 1.0",
+      "pos": [
+        1600,
+        510
+      ],
+      "size": [
+        320,
+        150
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 11
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 32
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CFGGuider"
+      },
+      "widgets_values": [
+        1.0
+      ]
+    },
+    {
+      "id": 15,
+      "type": "RandomNoise",
+      "title": "Stage-2 noise",
+      "pos": [
+        1600,
+        700
+      ],
+      "size": [
+        320,
+        90
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        42,
+        "fixed"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "SamplerCustomAdvanced",
+      "title": "7. Identity-preserve refiner — exactly 3 Euler updates",
+      "pos": [
+        2290,
+        430
+      ],
+      "size": [
+        360,
+        210
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 19
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 18
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 13
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+      "title": "8. Official TAEHV Wide decode",
+      "pos": [
+        2720,
+        430
+      ],
+      "size": [
+        360,
+        190
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 21
+        },
+        {
+          "name": "taehv",
+          "type": "T8_SOL_ENGINE_TAEHV",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
+      },
+      "widgets_values": [
+        "auto_official",
+        "bf16_official"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "9. Trim bypassed H3 audio to the retained video duration",
+      "pos": [
+        3140,
+        400
+      ],
+      "size": [
+        470,
+        235
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 23
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "link": 24,
+          "widget": {
+            "name": "duration_seconds"
+          }
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 25,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 26,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0.0,
+        10.041667,
+        24.0
+      ]
+    },
+    {
+      "id": 19,
+      "type": "CreateVideo",
+      "title": "10. Mux refined frames with untouched H3 audio",
+      "pos": [
+        3680,
+        410
+      ],
+      "size": [
+        410,
+        180
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 27
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 28,
+          "shape": 7
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 29,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "link": 30,
+          "widget": {
+            "name": "bit_depth"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            31
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 20,
+      "type": "SaveVideo",
+      "title": "11. Save identity-preserve candidate",
+      "pos": [
+        4160,
+        410
+      ],
+      "size": [
+        470,
+        165
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/sol_engine_ltx25_identity_preserve_candidate",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+      "title": "TAEHV Wide codec used by NVIDIA Stage 2",
+      "pos": [
+        1440,
+        310
+      ],
+      "size": [
+        430,
+        90
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "taehv",
+          "type": "T8_SOL_ENGINE_TAEHV",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+        "models": [
+          {
+            "name": "taeltx2_3_wide.pth",
+            "url": "https://raw.githubusercontent.com/madebyollin/taehv/32ac0146b11007cda5a57b60a3b35653361fb8a4/taeltx2_3_wide.pth",
+            "directory": "taehv"
+          }
+        ]
+      },
+      "widgets_values": [
+        "taeltx2_3_wide.pth"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "LTXVConditioning",
+      "title": "LTX frame-rate conditioning — official 24 fps",
+      "pos": [
+        1090,
+        820
+      ],
+      "size": [
+        390,
+        130
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 16
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            32
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LTXVConditioning"
+      },
+      "widgets_values": [
+        24.0
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MarkdownNote",
+      "title": "What changes / 这个版本改了什么",
+      "pos": [
+        0,
+        -360
+      ],
+      "size": [
+        920,
+        280
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Low-Sigma identity-preserve Stage 2\n\nThis keeps the same full LTX-2.5 Video VAE, learned x2 latent upscaler, distilled Refiner LoRA 0.8, Euler sampler and final TAEHV decode. Only the Stage-2 sigma schedule changes. H3 audio still **bypasses** LTX Stage 2 and is trimmed/muxed unchanged. The original NVIDIA parity workflow remains separate."
+      ],
+      "color": "#243",
+      "bgcolor": "#354"
+    },
+    {
+      "id": 22,
+      "type": "MarkdownNote",
+      "title": "Exact Sigma and attention / 精确参数",
+      "pos": [
+        980,
+        -360
+      ],
+      "size": [
+        980,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Exact default: `0.5 → 0.412 → 0.350 → 0`\n\nFour sigma points mean **exactly 3 Euler updates**. With ComfyUI's LTX flow sampling, the 0.5 start mixes 0.5 x noise + 0.5 x the upscaled latent. This is a latent-space coefficient, not a promise of 50% identity retention; terminal 0 still completes denoising. Dense Attention is the default so Sigma is the only changed variable. Optional Sol-Attn uses a conservative constant tau 1.0 EXP policy; it does not pretend these custom knots are the official tau 1.0/1.25/1.5 schedule."
+      ],
+      "color": "#243",
+      "bgcolor": "#354"
+    },
+    {
+      "id": 23,
+      "type": "MarkdownNote",
+      "title": "Required models / 必需模型",
+      "pos": [
+        2020,
+        -360
+      ],
+      "size": [
+        1040,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Required LTX-2.5 assets\n\n1. `ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors`\n2. `ltx-2.5-22b-distilled-lora-450-bf16.safetensors`\n3. `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors`\n4. `ltx-2.5-video-vae-conv-bf16.safetensors` (**required encoder and upscaler statistics**)\n5. `ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors`\n6. `taeltx2_3_wide.pth` (**final decode only**; put in `models/taehv`)\n\nOptional acceleration: Kijai `ComfyUI-SolAttn_triton`. If it is absent or not eligible, the node keeps dense attention and does not block execution. Model names, hashes, byte sizes and output pixel area are never used as execution gates. The default Transformer and text encoder are official Comfy INT8 releases for local feasibility; selecting BF16 recreates the unquantized NVIDIA model policy but requires substantially more disk and memory.\n\nThis workflow uses the same model files as the official parity workflow; no additional model, filename hash, byte-size allowlist or pixel ceiling is required."
+      ],
+      "color": "#243",
+      "bgcolor": "#354"
+    },
+    {
+      "id": 24,
+      "type": "MarkdownNote",
+      "title": "Use and review / 使用与审核",
+      "pos": [
+        3120,
+        -360
+      ],
+      "size": [
+        1030,
+        280
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfyui-minimax-h3-audio-T8",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## Recommended first run\n\nKeep `identity_preserve_0p5`, `dense_reference`, Euler, CFG 1 and LoRA 0.8. Use the same positive prompt as the H3 draft. Compare the full face, motion and fine detail against the official Stage-2 result. This lower-Sigma route is an identity/detail experiment, not NVIDIA's published parity schedule and not a guarantee that every face will remain unchanged."
+      ],
+      "color": "#243",
+      "bgcolor": "#354"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      2,
+      3,
+      1,
+      "FLOAT"
+    ],
+    [
+      4,
+      3,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      4,
+      0,
+      5,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      5,
+      0,
+      7,
+      0,
+      "LATENT"
+    ],
+    [
+      7,
+      6,
+      0,
+      7,
+      1,
+      "LATENT_UPSCALE_MODEL"
+    ],
+    [
+      8,
+      4,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      11,
+      10,
+      0,
+      14,
+      0,
+      "MODEL"
+    ],
+    [
+      12,
+      10,
+      1,
+      16,
+      2,
+      "SAMPLER"
+    ],
+    [
+      13,
+      10,
+      2,
+      16,
+      3,
+      "SIGMAS"
+    ],
+    [
+      14,
+      11,
+      0,
+      12,
+      0,
+      "CLIP"
+    ],
+    [
+      15,
+      11,
+      0,
+      13,
+      0,
+      "CLIP"
+    ],
+    [
+      16,
+      12,
+      0,
+      26,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      17,
+      13,
+      0,
+      26,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      14,
+      0,
+      16,
+      1,
+      "GUIDER"
+    ],
+    [
+      19,
+      15,
+      0,
+      16,
+      0,
+      "NOISE"
+    ],
+    [
+      20,
+      7,
+      0,
+      16,
+      4,
+      "LATENT"
+    ],
+    [
+      21,
+      16,
+      0,
+      17,
+      0,
+      "LATENT"
+    ],
+    [
+      22,
+      25,
+      0,
+      17,
+      1,
+      "T8_SOL_ENGINE_TAEHV"
+    ],
+    [
+      23,
+      17,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      3,
+      5,
+      18,
+      1,
+      "FLOAT"
+    ],
+    [
+      25,
+      2,
+      2,
+      18,
+      2,
+      "FLOAT"
+    ],
+    [
+      26,
+      2,
+      1,
+      18,
+      3,
+      "AUDIO"
+    ],
+    [
+      27,
+      18,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      28,
+      18,
+      1,
+      19,
+      1,
+      "AUDIO"
+    ],
+    [
+      29,
+      2,
+      2,
+      19,
+      2,
+      "FLOAT"
+    ],
+    [
+      30,
+      2,
+      3,
+      19,
+      3,
+      "COMBO"
+    ],
+    [
+      31,
+      19,
+      0,
+      20,
+      0,
+      "VIDEO"
+    ],
+    [
+      32,
+      26,
+      0,
+      14,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      33,
+      26,
+      1,
+      14,
+      2,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "H3 draft input and deterministic handoff",
+      "bounding": [
+        -40,
+        -60,
+        2310,
+        500
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "LTX-2.5 identity-preserve low-Sigma 3-step refiner",
+      "bounding": [
+        -40,
+        460,
+        3140,
+        620
+      ],
+      "color": "#8b5a9e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Decode, exact audio bypass trim and delivery",
+      "bounding": [
+        2660,
+        340,
+        2020,
+        360
+      ],
+      "color": "#4b8b57",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        120,
+        390
+      ]
+    },
+    "frontendVersion": "1.26.7"
+  },
+  "version": 0.4
+}

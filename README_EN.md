@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.57.1** · GPL-3.0-or-later
+Current version: **1.58.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -90,6 +90,8 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 ## NVIDIA H3 Super Acceleration
 
 [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) implements NVIDIA's two-stage route: an H3 4-step draft is encoded by the full LTX-2.5 Video VAE, enlarged with the official x2 LTX latent upscaler, refined by LTX-2.5 for three Euler updates, and finally decoded by TAEHV Wide. TAEHV Encode must not feed the refiner. H3 audio bypasses Stage 2 and is muxed back unchanged.
+
+The same folder also includes an experimental low-sigma identity-preserving Stage 2 using `0.5 → 0.412 → 0.350 → 0` (three Euler updates). It defaults to Dense Attention so the sigma schedule is the only changed variable. Use it for A/B review when the official full-denoise route changes faces too much; it is not NVIDIA's parity schedule and is not a universal identity guarantee.
 
 Download the complete model bundle from [t8star/Minimax-H3-Super-Acceleration-Comfy](https://huggingface.co/t8star/Minimax-H3-Super-Acceleration-Comfy). Preserve its folder structure and copy the folders into `ComfyUI/models`. Exact filenames and paths are listed in the [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) README. Sol-Attn is optional; the route falls back to dense attention when it is unavailable.
 

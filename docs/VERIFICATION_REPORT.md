@@ -5,6 +5,23 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-30 — LTX-2.5 low-Sigma identity-preserve Stage 2
+
+An independent append-only setup node and frontend workflow now expose the exact schedule
+`0.5 -> 0.412 -> 0.350 -> 0`: four Sigma points and exactly three Euler updates. The
+official `0.909375 -> 0.725 -> 0.421875 -> 0` node and workflow are unchanged. The new
+route defaults to Dense Attention so Sigma is the only changed algorithmic variable; its
+optional Sol-Attn mode is explicitly EXP and holds tau at 1.0 instead of incorrectly mapping
+the custom knots to NVIDIA's per-step tau sequence. H3 audio remains outside Stage 2.
+
+One serial low-load run reused the corrected full-LTX-VAE 320x192x22 fixture and produced
+640x384x17 H.264 plus 32 kHz stereo AAC in 35.96 seconds. All three model updates completed,
+strict FFmpeg decode passed, and decoded audio PCM exactly matched the official-schedule
+control. In the sampled first/middle/final frames, the low-Sigma candidate remained visibly
+closer to the H3 source face than the official full-denoise control. This is a one-short-clip
+smoke observation, not a universal identity, high-resolution, multi-person or memory-safety
+claim; the optional Sol-Attn mode was not part of this run.
+
 ## 2026-08-29 — NVIDIA H3 Super Acceleration Stage-2 validation
 
 Correction on 2026-08-30: the original workflow incorrectly used TAEHV Encode as the
@@ -23,7 +40,7 @@ inspection found a coherent subject across the clip with no first-frame-only col
 This is a corrected-chain mechanical validation, not a claim of NVIDIA's 4xGB200 speedup
 or a full-resolution perceptual benchmark.
 
-The five append-only H3 Super nodes were audited against `NVlabs/Sana` sol-engine commit
+The original five append-only H3 Super nodes were audited against `NVlabs/Sana` sol-engine commit
 `d0c0a4685ab5dc2336d18b7213d85f13def92418`. The corrected Stage-2 route uses the full
 LTX-2.5 Video VAE encoder, the official x2 LTX latent upscaler, LTX-2.5 Dev with distilled LoRA strength 0.8, CFG 1, and
 the three Euler updates `0.909375 -> 0.725 -> 0.421875 -> 0`. H3 audio bypasses LTX and is
