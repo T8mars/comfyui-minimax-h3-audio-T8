@@ -7,9 +7,25 @@ Ref2VA still-image status, also read the project-root `README.md` and
 
 ## 2026-08-29 — NVIDIA H3 Super Acceleration Stage-2 validation
 
+Correction on 2026-08-30: the original workflow incorrectly used TAEHV Encode as the
+LTX Refiner input. NVIDIA keeps the full LTX-2.5 Video VAE encoder because the Refiner
+was trained on its latent distribution; TAEHV belongs only at the final decode. The
+2026-08-29 small mechanical run is therefore invalid as a Stage-2 quality/parity proof.
+The corrected workflow uses `VAEEncode` with `ltx-2.5-video-vae-conv-bf16.safetensors`
+before `LTXVLatentUpsampler` and retains TAEHV only after the Refiner.
+
+The corrected route was then executed in an isolated ComfyUI process on 2026-08-30.
+The low-load smoke used 17 frames at 640x384 and 24 fps. Runtime logs confirmed that
+ComfyUI loaded `VideoVAE` before `LatentUpsampler`, followed by the exact three Euler
+updates and final TAEHV decode. The resulting H264/AAC file passed strict video and audio
+decode, contained all 17 frames, and retained 32 kHz stereo source audio. Contact-frame
+inspection found a coherent subject across the clip with no first-frame-only collapse.
+This is a corrected-chain mechanical validation, not a claim of NVIDIA's 4xGB200 speedup
+or a full-resolution perceptual benchmark.
+
 The five append-only H3 Super nodes were audited against `NVlabs/Sana` sol-engine commit
-`d0c0a4685ab5dc2336d18b7213d85f13def92418`. The implemented Stage-2 route uses TAEHV Wide,
-the official x2 LTX latent upscaler, LTX-2.5 Dev with distilled LoRA strength 0.8, CFG 1, and
+`d0c0a4685ab5dc2336d18b7213d85f13def92418`. The corrected Stage-2 route uses the full
+LTX-2.5 Video VAE encoder, the official x2 LTX latent upscaler, LTX-2.5 Dev with distilled LoRA strength 0.8, CFG 1, and
 the three Euler updates `0.909375 -> 0.725 -> 0.421875 -> 0`. H3 audio bypasses LTX and is
 trimmed only to the kept video duration.
 

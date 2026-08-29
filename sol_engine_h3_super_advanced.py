@@ -314,9 +314,19 @@ def find_loaded_sol_attn_backend() -> Any | None:
     """
 
     for module in tuple(sys.modules.values()):
-        if module is None or not callable(getattr(module, "make_override", None)):
+        if module is None:
             continue
-        path = str(getattr(module, "__file__", "")).replace("\\", "/").lower()
+        try:
+            make_override = getattr(module, "make_override", None)
+            path = str(getattr(module, "__file__", "")).replace("\\", "/").lower()
+        except Exception:
+            # Some optional custom-node compatibility shims deliberately expose
+            # module-level __getattr__ hooks which raise ImportError when their
+            # CUDA extension is unavailable.  Backend discovery must treat those
+            # modules as unrelated and preserve the documented dense fallback.
+            continue
+        if not callable(make_override):
+            continue
         if "solattn_triton" in path or "sol-attn_triton" in path:
             return module
     return None

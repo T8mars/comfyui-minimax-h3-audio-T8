@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.57.0** · GPL-3.0-or-later
+Current version: **1.57.1** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,7 +14,7 @@ Current version: **1.57.0** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
-- NVIDIA H3 Super Acceleration: H3 4-step draft followed by a TAEHV + LTX-2.5 3-step refiner
+- NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
 - RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
 
 Nodes marked `Advanced` or `EXP` are advanced or experimental. Start with their bundled workflows.
@@ -89,9 +89,9 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 
 ## NVIDIA H3 Super Acceleration
 
-[`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) implements NVIDIA's two-stage route: an H3 4-step draft is encoded by TAEHV Wide, enlarged with the official x2 LTX latent upscaler, refined by LTX-2.5 for three Euler updates, and decoded by TAEHV Wide. H3 audio bypasses Stage 2 and is muxed back unchanged.
+[`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) implements NVIDIA's two-stage route: an H3 4-step draft is encoded by the full LTX-2.5 Video VAE, enlarged with the official x2 LTX latent upscaler, refined by LTX-2.5 for three Euler updates, and finally decoded by TAEHV Wide. TAEHV Encode must not feed the refiner. H3 audio bypasses Stage 2 and is muxed back unchanged.
 
-The bundled workflow uses the official Lightricks Comfy INT8 Dev Transformer and text encoder as a practical local default. It also needs the LTX-2.5 distilled LoRA at strength `0.8`, conv VAE, x2 latent upscaler, and `taeltx2_3_wide.pth`. Exact filenames and download links are in the folder README. Sol-Attn is optional; the route falls back to dense attention when it is unavailable.
+Download the complete model bundle from [t8star/Minimax-H3-Super-Acceleration-Comfy](https://huggingface.co/t8star/Minimax-H3-Super-Acceleration-Comfy). Preserve its folder structure and copy the folders into `ComfyUI/models`. Exact filenames and paths are listed in the [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) README. Sol-Attn is optional; the route falls back to dense attention when it is unavailable.
 
 ## Community Creation Tools
 

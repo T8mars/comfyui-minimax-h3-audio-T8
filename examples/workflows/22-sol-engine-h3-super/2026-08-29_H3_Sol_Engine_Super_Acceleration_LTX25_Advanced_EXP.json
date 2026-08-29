@@ -205,6 +205,7 @@
           "name": "VAE",
           "type": "VAE",
           "links": [
+            5,
             8
           ]
         }
@@ -226,53 +227,45 @@
     },
     {
       "id": 5,
-      "type": "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
-      "title": "4. Official TAEHV Wide encode",
+      "type": "VAEEncode",
+      "title": "4. Full LTX-2.5 Video VAE encode (required)",
       "pos": [
         1440,
         0
       ],
       "size": [
         380,
-        110
+        132
       ],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [
         {
-          "name": "frames",
+          "name": "pixels",
           "type": "IMAGE",
           "link": 4
         },
         {
-          "name": "taehv",
-          "type": "T8_SOL_ENGINE_TAEHV",
+          "name": "vae",
+          "type": "VAE",
           "link": 5
         }
       ],
       "outputs": [
         {
-          "name": "latent",
+          "name": "LATENT",
           "type": "LATENT",
           "links": [
             6
           ]
-        },
-        {
-          "name": "report_json",
-          "type": "STRING",
-          "links": null
         }
       ],
       "properties": {
-        "cnr_id": "comfyui-minimax-h3-audio-T8",
-        "Node name for S&R": "MiniMaxH3SolEngineTAEHVEncodeT8Advanced"
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAEEncode"
       },
-      "widgets_values": [
-        "auto_official",
-        "bf16_official"
-      ]
+      "widgets_values": []
     },
     {
       "id": 6,
@@ -1034,7 +1027,6 @@
           "name": "taehv",
           "type": "T8_SOL_ENGINE_TAEHV",
           "links": [
-            5,
             22
           ]
         }
@@ -1154,7 +1146,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Do not change these for the parity route\n\n- H3 draft: 896×512, 4 steps, 24 fps (the published demo later center-crops 864×480).\n- Stage 2 target: 1920×1088; input is encoded at 960×544 then latent-upscaled ×2.\n- LTX sigmas: `0.909375 → 0.725 → 0.421875 → 0`.\n- Euler, CFG 1, refiner LoRA strength 0.8.\n- Self-attention layer 0 dense; layers 1–47 use tau 1.0 / 1.25 / 1.5.\n- H3 audio bypasses LTX Stage 2 and is only trimmed/muxed."
+        "## Do not change these for the parity route\n\n- H3 draft: 896×512, 4 steps, 24 fps (the published demo later center-crops 864×480).\n- Stage 2 target: 1920×1088; input is encoded at 960×544 with the **full LTX-2.5 Video VAE**, then latent-upscaled ×2.\n- TAEHV is used only for the final fast decode; never feed a TAEHV-encoded latent into the Refiner.\n- LTX sigmas: `0.909375 → 0.725 → 0.421875 → 0`.\n- Euler, CFG 1, refiner LoRA strength 0.8.\n- Self-attention layer 0 dense; layers 1–47 use tau 1.0 / 1.25 / 1.5.\n- H3 audio bypasses LTX Stage 2 and is only trimmed/muxed."
       ],
       "color": "#243",
       "bgcolor": "#354"
@@ -1181,7 +1173,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## Required LTX-2.5 assets\n\n1. `ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors`\n2. `ltx-2.5-22b-distilled-lora-450-bf16.safetensors`\n3. `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors`\n4. `ltx-2.5-video-vae-conv-bf16.safetensors` (channel statistics for x2 upscaler)\n5. `ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors`\n6. `taeltx2_3_wide.pth` (TAEHV encode/decode; put in `models/taehv`)\n\nOptional acceleration: Kijai `ComfyUI-SolAttn_triton`. If it is absent or not eligible, the node keeps dense attention and does not block execution. Model names, hashes, byte sizes and output pixel area are never used as execution gates. The default Transformer and text encoder are official Comfy INT8 releases for local feasibility; selecting BF16 recreates the unquantized NVIDIA model policy but requires substantially more disk and memory."
+        "## Required LTX-2.5 assets\n\n1. `ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors`\n2. `ltx-2.5-22b-distilled-lora-450-bf16.safetensors`\n3. `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors`\n4. `ltx-2.5-video-vae-conv-bf16.safetensors` (**required encoder and upscaler statistics**)\n5. `ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors`\n6. `taeltx2_3_wide.pth` (**final decode only**; put in `models/taehv`)\n\nOptional acceleration: Kijai `ComfyUI-SolAttn_triton`. If it is absent or not eligible, the node keeps dense attention and does not block execution. Model names, hashes, byte sizes and output pixel area are never used as execution gates. The default Transformer and text encoder are official Comfy INT8 releases for local feasibility; selecting BF16 recreates the unquantized NVIDIA model policy but requires substantially more disk and memory."
       ],
       "color": "#243",
       "bgcolor": "#354"
@@ -1249,11 +1241,11 @@
     ],
     [
       5,
-      25,
+      4,
       0,
       5,
       1,
-      "T8_SOL_ENGINE_TAEHV"
+      "VAE"
     ],
     [
       6,

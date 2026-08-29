@@ -34,10 +34,10 @@ class MiniMaxH3SolEngineDraftToLTXT8Advanced(io.ComfyNode):
             description=(
                 "Prepares decoded H3 RGB frames for NVIDIA's H3 Super Acceleration Stage 2: "
                 "trim to the LTX 8n+1 frame grid, aspect-preserving center-crop to half the "
-                "requested output size, then encode it with the TAEHV Wide node and pass that "
-                "normalized latent through the official x2 latent upsampler. The full LTX-2.5 "
-                "video VAE is used only by that upsampler for per-channel statistics. H3 audio "
-                "must bypass Stage 2 on a separate wire."
+                "requested output size, then encode it with ComfyUI's full LTX-2.5 video VAE "
+                "before the official x2 latent upsampler. The refiner was trained on the full "
+                "VAE latent distribution; TAEHV is only used for the final fast decode. H3 "
+                "audio must bypass Stage 2 on a separate wire."
             ),
             category=CATEGORY,
             is_experimental=True,
@@ -191,8 +191,12 @@ class MiniMaxH3SolEngineTAEHVEncodeT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
-            display_name="H3 Super: TAEHV Encode / TAEHV编码 (Advanced/T8)",
-            description="Encodes the prepared H3 RGB draft into normalized LTX video latents.",
+            display_name="TAEHV Encode (Legacy/Diagnostic) / TAEHV编码（旧兼容/诊断）",
+            description=(
+                "Legacy-compatible TAEHV round-trip encoder. Do not connect this output to "
+                "the H3 Super LTX-2.5 refiner: NVIDIA keeps the original full LTX video VAE "
+                "encoder because the refiner was trained on that latent distribution."
+            ),
             category=CATEGORY,
             is_experimental=True,
             inputs=[

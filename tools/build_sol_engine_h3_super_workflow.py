@@ -100,7 +100,7 @@ def build_workflow():
         [2, 2, 0, 3, 0, "IMAGE"],
         [3, 2, 2, 3, 1, "FLOAT"],
         [4, 3, 0, 5, 0, "IMAGE"],
-        [5, 25, 0, 5, 1, "T8_SOL_ENGINE_TAEHV"],
+        [5, 4, 0, 5, 1, "VAE"],
         [6, 5, 0, 7, 0, "LATENT"],
         [7, 6, 0, 7, 1, "LATENT_UPSCALE_MODEL"],
         [8, 4, 0, 7, 2, "VAE"],
@@ -191,7 +191,7 @@ def build_workflow():
             (920, 330),
             (460, 70),
             3,
-            outputs=[output("VAE", "VAE", [8])],
+            outputs=[output("VAE", "VAE", [5, 8])],
             widgets=["ltx-2.5-video-vae-conv-bf16.safetensors"],
             properties={
                 "cnr_id": "comfy-core",
@@ -205,22 +205,17 @@ def build_workflow():
         ),
         node(
             5,
-            "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
-            "4. Official TAEHV Wide encode",
+            "VAEEncode",
+            "4. Full LTX-2.5 Video VAE encode (required)",
             (1440, 0),
-            (380, 110),
+            (380, 132),
             4,
             inputs=[
-                socket("frames", "IMAGE", 4),
-                socket("taehv", "T8_SOL_ENGINE_TAEHV", 5),
-                socket("execution_mode", "COMBO", None, widget=True),
-                socket("precision", "COMBO", None, widget=True),
+                socket("pixels", "IMAGE", 4),
+                socket("vae", "VAE", 5),
             ],
-            outputs=[
-                output("latent", "LATENT", [6]),
-                output("report_json", "STRING", None),
-            ],
-            widgets=["auto_official", "bf16_official"],
+            outputs=[output("LATENT", "LATENT", [6])],
+            properties={"cnr_id": "comfy-core", "Node name for S&R": "VAEEncode"},
         ),
         node(
             6,
@@ -489,7 +484,7 @@ def build_workflow():
             (430, 90),
             20,
             inputs=[socket("model_name", "COMBO", None, widget=True)],
-            outputs=[output("taehv", "T8_SOL_ENGINE_TAEHV", [5, 22])],
+            outputs=[output("taehv", "T8_SOL_ENGINE_TAEHV", [22])],
             widgets=["taeltx2_3_wide.pth"],
             properties={
                 "cnr_id": "comfyui-minimax-h3-audio-T8",
@@ -536,7 +531,8 @@ def build_workflow():
             "Official fixed settings / 官方固定设置",
             "## Do not change these for the parity route\n\n"
             "- H3 draft: 896×512, 4 steps, 24 fps (the published demo later center-crops 864×480).\n"
-            "- Stage 2 target: 1920×1088; input is encoded at 960×544 then latent-upscaled ×2.\n"
+            "- Stage 2 target: 1920×1088; input is encoded at 960×544 with the **full LTX-2.5 Video VAE**, then latent-upscaled ×2.\n"
+            "- TAEHV is used only for the final fast decode; never feed a TAEHV-encoded latent into the Refiner.\n"
             "- LTX sigmas: `0.909375 → 0.725 → 0.421875 → 0`.\n"
             "- Euler, CFG 1, refiner LoRA strength 0.8.\n"
             "- Self-attention layer 0 dense; layers 1–47 use tau 1.0 / 1.25 / 1.5.\n"
@@ -551,9 +547,9 @@ def build_workflow():
             "1. `ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors`\n"
             "2. `ltx-2.5-22b-distilled-lora-450-bf16.safetensors`\n"
             "3. `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors`\n"
-            "4. `ltx-2.5-video-vae-conv-bf16.safetensors` (channel statistics for x2 upscaler)\n"
+            "4. `ltx-2.5-video-vae-conv-bf16.safetensors` (**required encoder and upscaler statistics**)\n"
             "5. `ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors`\n"
-            "6. `taeltx2_3_wide.pth` (TAEHV encode/decode; put in `models/taehv`)\n\n"
+            "6. `taeltx2_3_wide.pth` (**final decode only**; put in `models/taehv`)\n\n"
             "Optional acceleration: Kijai `ComfyUI-SolAttn_triton`. If it is absent or not eligible, "
             "the node keeps dense attention and does not block execution. Model names, hashes, byte "
             "sizes and output pixel area are never used as execution gates. The default Transformer and "

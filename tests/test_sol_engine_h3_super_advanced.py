@@ -156,6 +156,20 @@ def test_missing_sol_backend_is_dense_passthrough_not_a_hard_error():
     )
 
 
+def test_sol_backend_discovery_ignores_hostile_optional_module_proxy(monkeypatch):
+    class _UnavailableOptionalExtension:
+        def __getattr__(self, _name):
+            raise ImportError("_C_flashattention unavailable")
+
+    monkeypatch.setattr(
+        super_h3.sys,
+        "modules",
+        {"unavailable_optional_extension": _UnavailableOptionalExtension()},
+    )
+
+    assert super_h3.find_loaded_sol_attn_backend() is None
+
+
 class _FakeTAEHV:
     def __init__(self):
         self.encode_input = None
@@ -252,8 +266,8 @@ def test_frontend_workflow_is_complete_official_stage2_and_keeps_audio_external(
         "GetVideoComponents",
         "MiniMaxH3SolEngineDraftToLTXT8Advanced",
         "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
-        "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
         "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+        "VAEEncode",
         "LTXVLatentUpsampler",
         "LTXVConditioning",
         "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
@@ -287,7 +301,6 @@ def test_frontend_workflow_is_complete_official_stage2_and_keeps_audio_external(
     assert clip["widgets_values"][0] == (
         "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors"
     )
-    assert "VAEEncode" not in types
     assert "VAEDecodeTiled" not in types
     ltx_conditioning = next(
         node for node in workflow["nodes"] if node["type"] == "LTXVConditioning"
@@ -299,9 +312,32 @@ def test_frontend_workflow_is_complete_official_stage2_and_keeps_audio_external(
     sampler = next(node for node in workflow["nodes"] if node["type"] == "SamplerCustomAdvanced")
     trim = next(node for node in workflow["nodes"] if node["type"] == "MiniMaxH3OutputTrimT8")
     vae = next(node for node in workflow["nodes"] if node["type"] == "VAELoader")
+    vae_encode = next(node for node in workflow["nodes"] if node["type"] == "VAEEncode")
     upsampler = next(node for node in workflow["nodes"] if node["type"] == "LTXVLatentUpsampler")
     vae_targets = {link[3] for link in links if link[1] == vae["id"]}
-    assert vae_targets == {upsampler["id"]}
+    assert vae_targets == {vae_encode["id"], upsampler["id"]}
+    assert any(
+        link[1] == vae_encode["id"]
+        and link[2] == 0
+        and link[3] == upsampler["id"]
+        and link[4] == 0
+        and link[5] == "LATENT"
+        for link in links
+    )
+    assert not any(
+        node["type"] == "MiniMaxH3SolEngineTAEHVEncodeT8Advanced"
+        for node in workflow["nodes"]
+    )
+    taehv_loader = next(
+        node for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SolEngineTAEHVLoaderT8Advanced"
+    )
+    taehv_targets = {link[3] for link in links if link[1] == taehv_loader["id"]}
+    taehv_decode = next(
+        node for node in workflow["nodes"]
+        if node["type"] == "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
+    )
+    assert taehv_targets == {taehv_decode["id"]}
     assert not any(link[1] == get_video["id"] and link[4] < 5 and link[3] == sampler["id"] for link in links)
     assert any(
         link[1] == get_video["id"]
