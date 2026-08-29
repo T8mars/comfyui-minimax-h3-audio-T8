@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.56.2** · GPL-3.0-or-later
+当前版本：**1.57.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -14,6 +14,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
+- NVIDIA H3 Super Acceleration：H3 4步草稿接 TAEHV + LTX-2.5 3步 Refiner（可选 Sol-Attn）
 - RAFT运动审计、轨迹控制、RealBasicVSR、FreeNoise、AYS校准契约、CADS视觉参考退火
 
 带 `Advanced` 或 `EXP` 的节点属于高级/实验功能，建议直接使用配套工作流。
@@ -85,6 +86,12 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 ## 官方核心兼容
 
 [`20-core-compatibility`](examples/workflows/20-core-compatibility) 提供 AV latent、H3 Attention Hook 和每步 host sync 的按需兼容节点。Tiled VAE 全局坐标候选在当前 fp16 VAE 实测中反而加重规则网格，因此只保留默认旁路的实验审计，不作为修复推荐。旧工作流不需要修改。
+
+## NVIDIA H3 Super Acceleration
+
+这是两阶段方案，不是 H3 Attention 开关：H3 先跑 4 步草稿，TAEHV Wide 编码后经官方 x2 latent upscaler 放大，LTX-2.5 再做 3 步 Refiner，最后由 TAEHV Wide 解码。共提供 5 个 `H3 Super` 节点；H3 音频直接旁路并在最终保存时复用。
+
+第二阶段需要 LTX-2.5 dev Transformer、distilled LoRA（强度 `0.8`）、Gemma4 投影文本编码器、`ltx-2.5-video-vae-conv`（仅供 x2 upscaler 使用通道统计）、官方 x2 latent upscaler，以及放在 `models/taehv` 的 `taeltx2_3_wide.pth`。示例默认使用 Lightricks 官方 Comfy INT8 Dev Transformer/Text Encoder；LoRA 文件名为 `ltx-2.5-22b-distilled-lora-450-bf16.safetensors`。Sol-Attn 是可选依赖，未安装时自动用 Dense。NVIDIA 的固定多卡结果不代表本机速度。
 
 ## 社区创作增强
 

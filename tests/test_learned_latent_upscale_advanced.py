@@ -542,7 +542,7 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 248
+    assert len(ids) == 259
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",

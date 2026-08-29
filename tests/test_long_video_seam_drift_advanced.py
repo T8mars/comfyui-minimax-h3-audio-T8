@@ -88,3 +88,20 @@ def test_roi_is_reported_without_hard_mask_paste_boundary():
     seam = json.loads(report)["boundaries"][0]
     assert seam["roi_luma_before"] is not None
     assert seam["roi_luma_after"] is not None
+
+
+def test_bounded_tone_candidate_fades_out_instead_of_regrading_full_target():
+    frames = torch.cat([_textured(0.40, 4), _textured(0.43, 12)])
+    output, status, report_json = process_long_video_seam_drift(
+        frames,
+        "[4]",
+        mode="bounded_candidate_exp",
+        transition_frames=4,
+        maximum_frame_change=0.08,
+    )
+    assert status == "candidate_applied"
+    assert not torch.equal(output[4:8], frames[4:8])
+    assert torch.equal(output[8:], frames[8:])
+    report = json.loads(report_json)
+    assert report["audio_touched"] is False
+    assert report["detail_generation"] is False

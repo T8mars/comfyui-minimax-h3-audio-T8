@@ -1840,3 +1840,31 @@ FreeInit and PAG are deliberately not exposed: the current H3 joint audio/video 
 attention layout do not yet provide a validated joint re-noising or isolated perturbed-attention
 contract. A same-name approximation would have undefined audio behavior or conflicting attention
 ownership.
+
+## Community compatibility additions (2026-08-29)
+
+These six append-only Advanced/EXP nodes leave existing node IDs, widgets and workflows unchanged:
+
+- `MiniMaxH3LoRACompatibilityLoaderT8Advanced` adds the direct MiniMax H3 LoRA module aliases from
+  ComfyUI PR #15662, allowing DiffSynth-Studio/ModelScope-style adapters to use ComfyUI's native patch
+  loader. Filename and size are informational only; there is no hash, filename or size execution gate.
+- `MiniMaxH3TimedImageReferenceT8Advanced` and `MiniMaxH3TimedVideoReferenceT8Advanced` add tagged,
+  time-indexed Qwen semantic references without consuming native `minimax_refs` slots. They are semantic
+  prompt guidance, not identity or pixel control. Timed Video consumes a decoded CFR `IMAGE` batch and
+  explicit source FPS; it does not claim native VFR-container support.
+- `MiniMaxH3ChunkedTwoPassPlanT8Advanced` and `MiniMaxH3ChunkedTwoPassUpscaleT8Advanced` divide the
+  learned-latent second pass into serial temporal chunks. The default `full_frame_safe` route preserves
+  H3's global spatial context inside each chunk, crossfades temporal overlaps, and returns the exact input
+  audio latent. `independent_tiles_exp` is retained only for research: a real render showed persistent
+  tile-specific texture divergence, so it is not a recommended quality route. No project pixel-area
+  ceiling is added; full-frame memory and runtime remain user-owned.
+- `MiniMaxH3FastH34StepSetupT8Advanced` configures the published FastH3 Preview v1 **T2VA-only** dense
+  route at four Euler NFE, CFG 1 and video/audio shifts 12/3. Apply its matching Dense/Data-Free LoRA with
+  the compatibility loader. The old `t2va_fl2va` value remains accepted so saved workflows still load,
+  but FL2VA and Ref2VA were not trained in Preview v1 and are reported as experimental collapse risks.
+  VSA requires a real external FastVideo backend and is never emulated with Sage, SLA or dense attention.
+
+The existing `MiniMaxH3LongVideoSeamDriftT8Advanced` remains the recommended conservative tone route.
+Unlike a full-frame `frame_shift/gain_bias/lut` correction, it only proposes bounded RGB gain/offset in
+same-shot transition frames, fades the correction out, abstains on cuts/flash/black/HDR-like inputs and
+does not touch audio. Use report-only first and accept only after reviewing the seam.

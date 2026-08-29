@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.56.2** · GPL-3.0-or-later
+Current version: **1.57.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,6 +14,7 @@ Current version: **1.56.2** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
+- NVIDIA H3 Super Acceleration: H3 4-step draft followed by a TAEHV + LTX-2.5 3-step refiner
 - RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
 
 Nodes marked `Advanced` or `EXP` are advanced or experimental. Start with their bundled workflows.
@@ -53,6 +54,7 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | Video/audio VAE | `models/vae` |
 | Turbo, SLA, PDD, and other LoRAs | `models/loras` |
 | Latent upscaler | `models/latent_upscale_models` |
+| TAEHV Wide for H3 Super | `models/taehv` |
 | H3 Fun ControlNet | `models/controlnet` |
 | TAEH3 preview model | `models/vae_approx` |
 | RAFT optical-flow weights | `models/optical_flow` |
@@ -84,6 +86,12 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 ## Official Core Compatibility
 
 [`20-core-compatibility`](examples/workflows/20-core-compatibility) provides optional AV-latent, H3 Attention Hook, and per-step host-sync compatibility nodes. The tiled-VAE global-coordinate proposal produced stronger grid artifacts in the current fp16 VAE validation, so it remains a report-only, bypass-by-default audit and is not recommended as a fix. Existing workflows do not need changes.
+
+## NVIDIA H3 Super Acceleration
+
+[`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) implements NVIDIA's two-stage route: an H3 4-step draft is encoded by TAEHV Wide, enlarged with the official x2 LTX latent upscaler, refined by LTX-2.5 for three Euler updates, and decoded by TAEHV Wide. H3 audio bypasses Stage 2 and is muxed back unchanged.
+
+The bundled workflow uses the official Lightricks Comfy INT8 Dev Transformer and text encoder as a practical local default. It also needs the LTX-2.5 distilled LoRA at strength `0.8`, conv VAE, x2 latent upscaler, and `taeltx2_3_wide.pth`. Exact filenames and download links are in the folder README. Sol-Attn is optional; the route falls back to dense attention when it is unavailable.
 
 ## Community Creation Tools
 

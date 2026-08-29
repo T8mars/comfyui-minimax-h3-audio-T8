@@ -263,3 +263,36 @@ MMagic's RealBasicVSR, BasicVSR and SPyNet architectures under Apache License 2.
 notice is in [`THIRD_PARTY_NOTICES/RealBasicVSR.md`](THIRD_PARTY_NOTICES/RealBasicVSR.md). Model
 weights are not bundled or downloaded at runtime, and filename, size or hash is never an execution
 allowlist.
+
+## NVIDIA Sol-Engine H3 Super Acceleration reference
+
+The append-only H3 Super Stage-2 nodes implement the public pipeline contract documented by
+[NVIDIA Sol-Engine H3 Super Acceleration](https://nvlabs.github.io/Sana/Sol-Engine/H3-Super-Acceleration/)
+and audited against the `sol-engine` branch of [`NVlabs/Sana`](https://github.com/NVlabs/Sana) at
+commit `d0c0a4685ab5dc2336d18b7213d85f13def92418`. No NVIDIA model weights, LTX model weights,
+Sol-Engine runtime, or CUDA kernel source is copied into this repository.
+
+`sol_engine_taehv.py` is a reduced adaptation of [`madebyollin/taehv`](https://github.com/madebyollin/taehv)
+commit `32ac0146b11007cda5a57b60a3b35653361fb8a4`, used by NVIDIA's published Stage-2 path.
+It is distributed under the MIT License:
+
+> Copyright (c) 2025 Ollin Boer Bohan
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+> and associated documentation files (the "Software"), to deal in the Software without restriction,
+> including without limitation the rights to use, copy, modify, merge, publish, distribute,
+> sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions: The above copyright notice and this
+> permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+> BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+> DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+The optional sparse-attention route interoperates at runtime with a separately installed
+[`kijai/ComfyUI-SolAttn_triton`](https://github.com/kijai/ComfyUI-SolAttn_triton). T8 discovers only
+an already-loaded module and does not install, download, reload, or redistribute it. When it is not
+available, the LTX refiner stays dense and the node reports that fallback. Users are responsible for
+the licenses and terms of all separately installed code and model assets.

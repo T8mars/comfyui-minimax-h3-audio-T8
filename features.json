@@ -1,4 +1,23 @@
 {
+  "nvidia_sol_engine_h3_super_acceleration_advanced": {
+    "status": "implemented as five append-only Advanced/EXP nodes; no existing H3, LTX, sampler, attention or workflow schema changed",
+    "date": "2026-08-29",
+    "nodes": [
+      "MiniMaxH3SolEngineDraftToLTXT8Advanced",
+      "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
+      "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+      "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
+      "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
+    ],
+    "upstream": "NVIDIA Sol-Engine H3 Super Acceleration, NVlabs/Sana sol-engine commit d0c0a4685ab5dc2336d18b7213d85f13def92418",
+    "pipeline": "decoded H3 4-step RGB draft -> aspect-preserving half-resolution TAEHV Wide encode -> official x2 LTX latent upsampler using the full conv VAE only for per-channel statistics -> LTX-2.5 dev plus distilled LoRA 0.8 -> Euler sigmas 0.909375/0.725/0.421875/0 with dense self-attention layer 0 and Sol-Attn layers 1-47 -> TAEHV Wide decode",
+    "audio": "H3 audio bypasses LTX Stage 2 and is reused unchanged",
+    "fallback": "missing optional ComfyUI-SolAttn_triton keeps the exact 3-step refiner schedule but falls back to dense attention without blocking",
+    "constraints": "no model filename, hash, byte-size, or pixel-area execution allowlist; non-reference shapes are reported as adaptations rather than rejected",
+    "local_default": "official Lightricks Comfy INT8 ConvRot Dev Transformer and projected Gemma4 text encoder; BF16 remains selectable, and kernel_precision controls attention activations rather than checkpoint storage dtype",
+    "real_validation": "one serial low-VRAM 320x192x22 to 640x384x17 run completed in 41.29 seconds on 2026-08-29; exactly three refiner updates executed, H.264 plus original 32kHz stereo AAC passed strict decode, and first/middle/last frames were visually coherent",
+    "scientific_boundary": "NVIDIA's published 22.2x result is a fixed 4xGB200 resident benchmark and is not claimed for ComfyUI or consumer GPUs"
+  },
   "cads_visual_reference_advanced": {
     "status": "implemented as one append-only Advanced/EXP MODEL wrapper; no existing conditioning or sampler schema changed",
     "date": "2026-08-28",
@@ -1157,6 +1176,44 @@
     "reference_only": "examples/workflows/02-audio-control/2026-08-06_H3_Audio_Reference_Only_Stable_4V4A.json"
   },
   "task_modes": ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA", "Hybrid"],
+  "h3_lora_compatibility_advanced": {
+    "date": "2026-08-29",
+    "node": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "position": 248,
+    "formats": ["native ComfyUI", "DiffSynth-Studio direct", "ModelScope direct"],
+    "implementation": "ComfyUI native adapter parser plus direct MiniMaxH3 aliases from official PR #15662",
+    "identity_policy": "filename and size are display-only; no SHA scan, filename allowlist or byte-size execution gate"
+  },
+  "timed_references_advanced": {
+    "date": "2026-08-29",
+    "nodes": [
+      "MiniMaxH3TimedImageReferenceT8Advanced",
+      "MiniMaxH3TimedVideoReferenceT8Advanced"
+    ],
+    "positions": [249, 250],
+    "transport": "Qwen-only semantic video blocks with precise generated-timeline timestamps",
+    "boundary": "does not VAE encode, does not write minimax_refs, does not consume native H3 reference slots and does not promise identity or pixel lock"
+  },
+  "chunked_two_pass_upscale_advanced": {
+    "date": "2026-08-29",
+    "nodes": [
+      "MiniMaxH3ChunkedTwoPassPlanT8Advanced",
+      "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced"
+    ],
+    "positions": [251, 252],
+    "pipeline": "17k+5 temporal chunks -> existing learned 3D latent upscale -> full-frame second-pass sampling -> temporal crossfade; independent 32px-grid spatial canvases remain explicit EXP",
+    "audio": "exact input audio latent tensor is restored after video-only second pass",
+    "pixel_policy": "no project pixel-area ceiling; geometry, memory and runtime remain user-owned",
+    "real_validation": "320x224x39, two temporal chunks, strict H264/AAC decode and exact audio tensor passthrough passed; independent spatial tiles produced visible divergent texture and are not the default"
+  },
+  "fast_h3_4step_advanced": {
+    "date": "2026-08-29",
+    "node": "MiniMaxH3FastH34StepSetupT8Advanced",
+    "position": 253,
+    "contract": "T2VA-only Preview v1 DMD2 student, 4 NFE, Euler, base ladder [1,.75,.5,.25,0], CFG 1, shifts 12/3; legacy FL2VA/Ref2VA choices remain load-compatible but are explicitly untrained EXP",
+    "vsa": "only reported available when a real external FastVideo runtime and Triton kernel exist; dense attention remains the fallback and Sage/SLA are never relabeled as VSA",
+    "identity_policy": "user-selected model and LoRA; no filename, byte-size or hash gate"
+  },
   "nodes": [
     "MiniMaxH3AudioConditioningT8",
     "MiniMaxH3AudioLatentControlT8",
@@ -1405,7 +1462,18 @@
     "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
     "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
     "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
-    "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced"
+    "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
+    "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "MiniMaxH3TimedImageReferenceT8Advanced",
+    "MiniMaxH3TimedVideoReferenceT8Advanced",
+    "MiniMaxH3ChunkedTwoPassPlanT8Advanced",
+    "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced",
+    "MiniMaxH3FastH34StepSetupT8Advanced",
+    "MiniMaxH3SolEngineDraftToLTXT8Advanced",
+    "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
+    "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+    "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
+    "MiniMaxH3SolEngineTAEHVDecodeT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

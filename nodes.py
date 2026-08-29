@@ -71,6 +71,15 @@ from .nodes_audio_refine_advanced import (
     AUDIO_REFINE_ADVANCED_NODE_CLASSES,
     AUDIO_REFINE_COMPAT_ADVANCED_NODE_CLASSES,
 )
+from .nodes_h3_lora_compat_advanced import H3_LORA_COMPAT_ADVANCED_NODE_CLASSES
+from .nodes_timed_references_advanced import TIMED_REFERENCES_ADVANCED_NODE_CLASSES
+from .nodes_chunked_two_pass_upscale_advanced import (
+    CHUNKED_TWO_PASS_UPSCALE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_fast_h3_advanced import FAST_H3_ADVANCED_NODE_CLASSES
+from .nodes_sol_engine_h3_super_advanced import (
+    SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
+)
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
 )
@@ -657,6 +666,13 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *AYS_SCHEDULE_ADVANCED_NODE_CLASSES,
                 *CADS_VISUAL_ADVANCED_NODE_CLASSES,
                 *AUDIO_REFINE_COMPAT_ADVANCED_NODE_CLASSES,
+                # 2026-08-29 community-update batch. Keep these at the tail so
+                # every previously released registration position remains stable.
+                *H3_LORA_COMPAT_ADVANCED_NODE_CLASSES,
+                *TIMED_REFERENCES_ADVANCED_NODE_CLASSES,
+                *CHUNKED_TWO_PASS_UPSCALE_ADVANCED_NODE_CLASSES,
+                *FAST_H3_ADVANCED_NODE_CLASSES,
+                *SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
             ]
 
 

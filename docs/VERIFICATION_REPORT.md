@@ -5,6 +5,21 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-29 — NVIDIA H3 Super Acceleration Stage-2 validation
+
+The five append-only H3 Super nodes were audited against `NVlabs/Sana` sol-engine commit
+`d0c0a4685ab5dc2336d18b7213d85f13def92418`. The implemented Stage-2 route uses TAEHV Wide,
+the official x2 LTX latent upscaler, LTX-2.5 Dev with distilled LoRA strength 0.8, CFG 1, and
+the three Euler updates `0.909375 -> 0.725 -> 0.421875 -> 0`. H3 audio bypasses LTX and is
+trimmed only to the kept video duration.
+
+One serial low-VRAM real run used a 320x192, 22-frame H3 draft and the official Lightricks
+Comfy INT8 ConvRot Dev Transformer/text encoder. The 8n+1 policy kept 17 frames; Stage 2
+completed all three updates in a 41.29-second prompt and emitted 640x384 H.264 plus the
+original 32kHz stereo AAC. Strict decoding passed for both streams, and the first, middle,
+and final frames were visually coherent. This is a small mechanical validation only, not a
+1080p benchmark or a claim that INT8 reproduces NVIDIA's fixed 4xGB200 BF16 result.
+
 ## 2026-08-29 — Official ComfyUI native PDD FinalLayer compatibility
 
 ComfyUI PR #15908 was validated against official core commit
