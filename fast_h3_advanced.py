@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 from typing import Any
 
 import torch
 
 from .sampling import native_flow_sigmas, setup_dual_clock_sampling
+from .fast_h3_vsa_advanced import apply_fast_h3_vsa, probe_comfy_kitchen_vsa
 
 
 FAST_H3_STEPS = 4
@@ -19,18 +19,13 @@ def _json(value: object) -> str:
 
 
 def probe_fast_h3_vsa() -> dict[str, Any]:
-    fastvideo = importlib.util.find_spec("fastvideo") is not None
-    triton = importlib.util.find_spec("triton") is not None
-    return {
-        "fastvideo_python_available": fastvideo,
-        "triton_available": triton,
-        "external_vsa_executor_available": fastvideo and triton,
-        "policy": (
-            "VSA is available only through an installed FastVideo sparse-attention "
-            "executor and matching kernels. Sage, SLA and dense PyTorch attention are "
-            "not relabeled as VSA."
-        ),
-    }
+    capability = probe_comfy_kitchen_vsa()
+    # Retain these two legacy report keys so archived tooling keeps parsing.
+    capability["fastvideo_python_available"] = False
+    capability["triton_available"] = capability[
+        "external_vsa_executor_available"
+    ]
+    return capability
 
 
 def build_fast_h3_4step_setup(
@@ -51,11 +46,8 @@ def build_fast_h3_4step_setup(
 
     vsa = probe_fast_h3_vsa()
     requested_vsa = attention_profile == "external_vsa_if_available"
-    effective_attention = (
-        "external_vsa_capability_present_not_owned_by_this_node"
-        if requested_vsa and vsa["external_vsa_executor_available"]
-        else "dense_comfyui"
-    )
+    effective_attention = "dense_comfyui"
+    vsa_runtime = None
     warnings: list[str] = []
     if task_family != "t2va_only":
         warnings.append(
@@ -63,13 +55,19 @@ def build_fast_h3_4step_setup(
             "untrained experimental routes and can collapse; this legacy choice is "
             "retained only so existing workflows still load."
         )
-    if requested_vsa and effective_attention == "dense_comfyui":
-        warnings.append(
-            "FastVideo VSA runtime was not detected; using the valid dense 4-step route."
-        )
+    working_model = model
+    if requested_vsa:
+        working_model, vsa_runtime, fallback_reason = apply_fast_h3_vsa(model)
+        if vsa_runtime is None:
+            warnings.append(
+                "FastH3 VSA was not applied; using the valid dense 4-step route: "
+                f"{fallback_reason}."
+            )
+        else:
+            effective_attention = "comfy_kitchen_vsa_h3_90pct_tile64"
 
     patched, sampler, sigmas = setup_dual_clock_sampling(
-        model,
+        working_model,
         av_latent,
         FAST_H3_STEPS,
         FAST_H3_SHIFT_VIDEO,
@@ -103,13 +101,16 @@ def build_fast_h3_4step_setup(
         "attention_profile_requested": attention_profile,
         "attention_profile_effective": effective_attention,
         "vsa_capability": vsa,
+        "vsa_runtime": vsa_runtime,
         "native_flow_schedule_max_abs_error": max_error,
         "warnings": warnings,
         "model_identity_policy": "user_selected_no_filename_size_or_hash_gate",
         "boundary": (
             "This node configures the published T2VA-only joint AV 4-step schedule. "
             "Apply the matching FastH3 LoRA with the H3 LoRA Compatibility Loader "
-            "before this node. It does not install, emulate or own a VSA attention backend."
+            "before this node. external_vsa_if_available owns the learned-gate, "
+            "90%-sparse tile-64 Comfy Kitchen VSA route when every structural "
+            "capability is present; otherwise it preserves the dense route."
         ),
     }
     return patched, sampler, sigmas, _json(report)

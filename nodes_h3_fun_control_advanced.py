@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from comfy_api.latest import io
-import folder_paths
 
 from .h3_fun_control_advanced import (
     CONTROL_TYPE,
+    _available_fun_control_names,
     apply_h3_fun_control,
     load_h3_fun_control,
 )
@@ -29,7 +29,7 @@ class MiniMaxH3FunControlLoaderT8Advanced(io.ComfyNode):
             inputs=[
                 io.Combo.Input(
                     "control_net_name",
-                    options=folder_paths.get_filename_list("controlnet"),
+                    options=_available_fun_control_names(),
                 )
             ],
             outputs=[

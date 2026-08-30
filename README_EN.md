@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.59.0** · GPL-3.0-or-later
+Current version: **1.60.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,6 +14,7 @@ Current version: **1.59.0** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
+- FastH3 Preview: T2VA four-step inference with optional real learned-gate 90% VSA execution
 - NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
 - FlashVSR v1.1: 2x/4x decoded-video restoration with fixed LCSA, an opt-in dynamic budget, memory-safe tiling, and untouched audio
 - RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
@@ -44,6 +45,8 @@ For one-queue serial long-video generation, use an `In_Node_Long_Video_Loop` wor
 
 For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Video_Prompt_Relay_EAV_Stock20_Advanced` from the same folder. It uses the native 20-step route and does not use a Turbo LoRA.
 
+For tail subdivision or a separate low-sigma second pass, use the long-video workflow containing `Long_Video_Sampling_Plan`. Disconnecting that node restores the old route.
+
 [Browse all workflow categories](examples/workflows/README.md)
 
 ## Model Folders
@@ -56,7 +59,7 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | Turbo, SLA, PDD, and other LoRAs | `models/loras` |
 | Latent upscaler | `models/latent_upscale_models` |
 | TAEHV Wide for H3 Super | `models/taehv` |
-| H3 Fun ControlNet | `models/controlnet` |
+| H3 Fun Control (new Model Patch / old ControlNet) | `models/model_patches` / `models/controlnet` |
 | TAEH3 preview model | `models/vae_approx` |
 | RAFT optical-flow weights | `models/optical_flow` |
 | RealBasicVSR weights | `models/upscale_models` |
@@ -85,9 +88,17 @@ Recent ComfyUI builds automatically use the official PDD FinalLayer; older build
 
 The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA. They split the same PDD trajectory into LOW 4 steps and HIGH 4 steps, so total NFE remains 8. The validated Ref2VA preset uses 864×480×22 with 1.5× upscale; the FL2VA two-pass route remains experimental.
 
+## FastH3 VSA 4-Step
+
+Use the `FastH3_VSA_T2VA_4Step` workflow under [`10-speed`](examples/workflows/10-speed). Download the official
+[VSA Data-Free adapter](https://huggingface.co/FastVideo/FastVideo-FastH3-4-step-Preview-v1-LoRA/blob/main/vsa-datafree/adapter_model.safetensors) to
+`models/loras/FastH3-VSA/vsa-datafree/adapter_model.safetensors`.
+
+This route is limited to plain T2VA, four NFE, and shifts `12 / 3`. Real VSA additionally requires a Comfy Kitchen build exposing `topk_ratio`, `block_len`, and `coarse_gate`. If the kernel or all 50 learned gates are unavailable, the node reports the reason and falls back to valid dense four-step inference; it never labels dense attention as VSA. See [`10-speed/README.md`](examples/workflows/10-speed/README.md) for build details.
+
 ## Official Core Compatibility
 
-[`20-core-compatibility`](examples/workflows/20-core-compatibility) provides optional AV-latent, H3 Attention Hook, and per-step host-sync compatibility nodes. The tiled-VAE global-coordinate proposal produced stronger grid artifacts in the current fp16 VAE validation, so it remains a report-only, bypass-by-default audit and is not recommended as a fix. Existing workflows do not need changes.
+[`20-core-compatibility`](examples/workflows/20-core-compatibility) provides optional AV-latent, H3 Attention Hook, and per-step host-sync compatibility nodes. H3 Audio VAE encoding now disables the legacy aligned-length tail crop, preserving the final latent step for non-aligned audio; recent cores and non-H3 VAEs are unchanged. The tiled-VAE global-coordinate proposal remains a bypass-by-default audit. Existing workflows do not need changes.
 
 ## NVIDIA H3 Super Acceleration
 
@@ -105,7 +116,7 @@ Start with `Quality Locked`, which keeps the fixed `2.0 / 3.0 / 11` LCSA budget.
 
 ## Community Creation Tools
 
-[`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, native TAEH3 preview inspection, and read-only diagnostics. Download the Fun Control model from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet) and place it in `models/controlnet`. Download `taeh3.safetensors` from [madebyollin/taehv](https://github.com/madebyollin/taehv), place it in `models/vae_approx`, and start ComfyUI with TAESD preview selected. The other nodes are report/plan-only by default: they do not delete cache files, unload models, change preview settings, or enable the still-draft official Generic Loops backend.
+[`21-community-advanced`](examples/workflows/21-community-advanced) contains Fun Control, long-video character/voice and sentence-boundary planning, seam-drift auditing, residency policies, Creator semantic-cache planning, native TAEH3 preview inspection, and read-only diagnostics. Fun Control supports both the recent official `MODEL_PATCH` contract and the old ControlNet contract: place recent weights in `models/model_patches` and old weights in `models/controlnet`. Runtime capability, not a version string or model hash, selects the route. Models are available from [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet). Download `taeh3.safetensors` from [madebyollin/taehv](https://github.com/madebyollin/taehv) into `models/vae_approx`.
 
 For a Qwen reference-prefix cache plus the separately installed [T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8), use the Ref2VA Stock20 template under [`12-system-memory`](examples/workflows/12-system-memory). It is a performance-first EXP route, not a bit-exact, VRAM-saving, or universal 16GB-safety claim.
 

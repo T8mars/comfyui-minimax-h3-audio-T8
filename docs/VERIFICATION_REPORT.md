@@ -5,6 +5,33 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-30 — H3 compatibility batch and real FastH3 VSA route
+
+Four compatibility-first changes were added without reordering prior node IDs or changing old workflow
+defaults. H3 Audio VAE encoding disables the legacy aligned-length tail crop only for the H3 audio VAE;
+Fun Control resolves the new official `MODEL_PATCH` contract and the old ControlNet contract structurally;
+and an append-only long-video Sampling Plan supplies disabled, tail-subdivision and independent manual
+second-pass modes while preserving Prompt Relay, EAV ownership and the bounded preview cache. Focused
+source, schema and frontend regression checks passed before the real render.
+
+FastH3 VSA now consumes the official VSA/Data-Free adapter's 340 applicable patches and all 50 learned
+compression gates. A first short real attempt exposed that Comfy Kitchen returns `(B,T,H,D)` and H3's
+output projection needs `(T,H*D)`; that run stopped at the first forward and produced no candidate. After
+adding the explicit fusion and a regression test, exactly one serial isolated render was run at
+832×480×124 (399,360 pixels, 5.1667 seconds), four Euler NFE and shifts 12/3. The runtime receipt reported
+`comfy_kitchen_vsa_h3_90pct_tile64`, 50/50 gates, 90% sparsity and no filename/hash/byte-size gate.
+
+The final file contains exactly 124 H.264 frames at 24fps and finite 32kHz stereo AAC. Strict video-only,
+audio-only and combined FFmpeg decode all passed. End-to-end execution was 111.641 seconds; observed peak
+GPU use was 15,494MiB with 616MiB minimum free on the local RTX 4060 Ti 16GiB. Sampled frames showed no
+black screen, corruption or tail collapse. This is one mechanical/media pass, not a universal speed,
+quality or 16GiB safety claim; complete motion and listening review remain human gates.
+
+Evidence is retained locally under
+`artifacts/community-update-real-validation-20260829/20260830-170521-fast_h3_vsa` and is excluded from Git.
+The generated MP4 SHA-256 is
+`CB143B873D0B085F301657326D635BE1D6A4A327E2C0E5718F3DBCFE69E042C8`.
+
 ## 2026-08-30 — LTX-2.5 low-Sigma identity-preserve Stage 2
 
 An independent append-only setup node and frontend workflow now expose the exact schedule

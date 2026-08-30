@@ -10,10 +10,12 @@ import comfy.lora_convert
 import comfy.model_base
 import comfy.utils
 import torch
+from torch import nn
 
 
 LOG = logging.getLogger(__name__)
 SCHEMA = "t8.minimax_h3.lora_compat.v1"
+FAST_H3_VSA_GATE_ATTACHMENT_KEY = "t8_fast_h3_vsa_gate_contract_v1"
 
 
 def _json(value: object) -> str:
@@ -70,6 +72,99 @@ def _fastvideo_h3_layout(state: dict[str, torch.Tensor]) -> bool:
         "transformer_blocks.0.attn.to_v.lora_A.weight",
     }
     return required.issubset(state)
+
+
+def _extract_fastvideo_vsa_gate_weights(
+    state: dict[str, torch.Tensor],
+) -> tuple[dict[int, torch.Tensor], dict[str, torch.Tensor]]:
+    """Separate FastVideo's whole-parameter VSA gates from LoRA/diff payloads."""
+
+    suffix = ".attn.to_gate_compress.set_weight"
+    gates: dict[int, torch.Tensor] = {}
+    remaining: dict[str, torch.Tensor] = {}
+    for key, value in state.items():
+        if not (key.startswith("transformer_blocks.") and key.endswith(suffix)):
+            remaining[key] = value
+            continue
+        block_text = key[len("transformer_blocks.") : -len(suffix)]
+        try:
+            block_index = int(block_text)
+        except ValueError as exc:
+            raise ValueError(f"invalid FastVideo H3 VSA gate key: {key}") from exc
+        if value.ndim != 2:
+            raise ValueError(
+                f"FastVideo H3 VSA gate must be a matrix, got {key} {tuple(value.shape)}"
+            )
+        if block_index in gates:
+            raise ValueError(f"duplicate FastVideo H3 VSA gate for block {block_index}")
+        gates[block_index] = value
+    return gates, remaining
+
+
+def _attach_fastvideo_vsa_gates(model, gates: dict[int, torch.Tensor], strength: float):
+    if not gates:
+        return model, {
+            "present": False,
+            "attached_gate_count": 0,
+            "requires_vsa_attention": False,
+        }
+
+    diffusion = model.get_model_object("diffusion_model")
+    blocks = list(getattr(diffusion, "blocks", ()))
+    expected = set(range(len(blocks)))
+    actual = set(gates)
+    if not blocks or actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise ValueError(
+            "FastVideo H3 VSA adapter must provide exactly one compression gate "
+            f"for every H3 block; blocks={len(blocks)}, gates={len(gates)}, "
+            f"missing={missing[:8]}, extra={extra[:8]}"
+        )
+
+    patched = model.clone()
+    existing_patches = set(getattr(patched, "object_patches", {}))
+    shapes: set[tuple[int, int]] = set()
+    for index, block in enumerate(blocks):
+        weight = gates[index]
+        out_features, in_features = map(int, weight.shape)
+        hidden = int(getattr(block.attn.qkv_proj, "in_features", in_features))
+        inner = int(getattr(block.attn, "heads", 0)) * int(
+            getattr(block.attn, "head_dim", 0)
+        )
+        if in_features != hidden or out_features != inner:
+            raise ValueError(
+                "FastVideo H3 VSA gate shape does not match the selected base: "
+                f"block={index}, gate={tuple(weight.shape)}, expected=({inner}, {hidden})"
+            )
+        path = f"diffusion_model.blocks.{index}.attn.to_gate_compress"
+        if path in existing_patches:
+            raise ValueError(f"a model object patch already owns {path}")
+        gate = nn.Linear(
+            in_features,
+            out_features,
+            bias=False,
+            device=weight.device,
+            dtype=weight.dtype,
+        )
+        gate.weight = nn.Parameter(
+            (weight * float(strength)).contiguous(), requires_grad=False
+        )
+        gate.eval()
+        patched.add_object_patch(path, gate)
+        shapes.add((out_features, in_features))
+
+    receipt = {
+        "present": True,
+        "attached_gate_count": len(gates),
+        "requires_vsa_attention": True,
+        "application": "whole_parameter_replacement_scaled_by_strength",
+        "gate_shapes": [list(shape) for shape in sorted(shapes)],
+        "identity_policy": "structural_payload_only_no_filename_size_or_hash_gate",
+    }
+    if hasattr(patched, "set_attachments"):
+        patched.set_attachments(FAST_H3_VSA_GATE_ATTACHMENT_KEY, receipt)
+    return patched, receipt
 
 
 def _fastvideo_scope_target(scope: str) -> str:
@@ -241,7 +336,8 @@ def load_minimax_h3_lora_model(
     raw, metadata = comfy.utils.load_torch_file(
         str(path), safe_load=True, return_metadata=True
     )
-    converted, conversion = convert_fastvideo_h3_adapter(raw)
+    vsa_gates, adapter_state = _extract_fastvideo_vsa_gate_weights(raw)
+    converted, conversion = convert_fastvideo_h3_adapter(adapter_state)
     converted = comfy.lora_convert.convert_lora(converted)
     source_keys = sorted(str(key) for key in raw.keys())
     key_map, direct_alias_count = build_minimax_h3_lora_key_map(model.model)
@@ -249,14 +345,18 @@ def load_minimax_h3_lora_model(
 
     patched = model.clone()
     applied = set(patched.add_patches(patches, strength))
+    patched, vsa_gate_receipt = _attach_fastvideo_vsa_gates(
+        patched, vsa_gates, strength
+    )
     if metadata and hasattr(patched, "set_attachments"):
         patched.set_attachments("t8_h3_lora_metadata", dict(metadata))
 
     patch_targets = sorted(str(key) for key in patches)
     applied_targets = sorted(str(key) for key in applied)
     missed_targets = sorted(set(patch_targets) - applied)
-    status = "applied" if applied_targets else "no_compatible_patches"
-    if not applied_targets:
+    gate_count = int(vsa_gate_receipt.get("attached_gate_count", 0))
+    status = "applied" if applied_targets or gate_count else "no_compatible_patches"
+    if not applied_targets and not gate_count:
         LOG.warning(
             "MiniMax H3 LoRA compatibility loader found no applicable patches in %s; "
             "the MODEL is returned unchanged.",
@@ -283,6 +383,7 @@ def load_minimax_h3_lora_model(
         "missed_patch_target_count": len(missed_targets),
         "applied_patch_targets_preview": applied_targets[:16],
         "missed_patch_targets_preview": missed_targets[:16],
+        "vsa_compression_gates": vsa_gate_receipt,
         "model_class": model.model.__class__.__name__,
         "contract": (
             "Uses ComfyUI's native LoRA adapter parser plus the direct MiniMaxH3 "

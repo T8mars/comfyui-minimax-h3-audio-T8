@@ -40,6 +40,7 @@ CLIP = "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
 FL_BASE = "minimax_h3_fl2va_int8_convrot.safetensors"
 REF_BASE = "minimax_h3_ref2va_int8_convrot.safetensors"
 FAST_LORA = r"dense-datafree\adapter_model.safetensors"
+FAST_VSA_LORA = r"FastH3-VSA\vsa-datafree\adapter_model.safetensors"
 PDD_FL = "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors"
 PDD_REF = "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors"
 UPSCALER = "minimax_h3_latent_upscaler_3d_fp16.safetensors"
@@ -139,6 +140,10 @@ def _save_nodes(
 
 
 def _fast_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any], dict[str, str]]:
+    use_vsa = args.mode == "fast_h3_vsa"
+    selected_lora = FAST_VSA_LORA if use_vsa else FAST_LORA
+    attention_profile = "external_vsa_if_available" if use_vsa else "dense_comfyui"
+    output_mode = "fast_h3_vsa" if use_vsa else "fast_h3"
     prompt = _loaders(FL_BASE)
     prompt.update(
         {
@@ -146,7 +151,7 @@ def _fast_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any],
                 "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
                 "inputs": {
                     "model": ["4", 0],
-                    "lora_name": FAST_LORA,
+                    "lora_name": selected_lora,
                     "strength_model": 1.0,
                 },
             },
@@ -174,7 +179,7 @@ def _fast_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any],
                     "model": ["6", 0],
                     "av_latent": ["7", 1],
                     "task_family": "t2va_only",
-                    "attention_profile": "dense_comfyui",
+                    "attention_profile": attention_profile,
                 },
             },
             "9": {"class_type": "RandomNoise", "inputs": {"noise_seed": SEED}},
@@ -198,7 +203,7 @@ def _fast_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any],
     )
     prompt.update(
         _save_nodes(
-            sampled=["11", 0], run_id=run_id, mode="fast_h3", decode_id="14", save_id="15"
+            sampled=["11", 0], run_id=run_id, mode=output_mode, decode_id="14", save_id="15"
         )
     )
     return prompt, {"lora": "12", "fast": "13"}
@@ -415,7 +420,11 @@ def _phase_text(phase: Mapping[str, Any], node_id: str) -> str:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("fast_h3", "timed_reference", "chunked_two_pass"), required=True)
+    parser.add_argument(
+        "--mode",
+        choices=("fast_h3", "fast_h3_vsa", "timed_reference", "chunked_two_pass"),
+        required=True,
+    )
     parser.add_argument("--width", type=int, default=1088)
     parser.add_argument("--height", type=int, default=640)
     parser.add_argument("--frame-count", type=int, default=124)
@@ -462,11 +471,13 @@ def _required(args: argparse.Namespace) -> dict[str, Path]:
         "audio_vae": models / "vae" / AUDIO_VAE,
         "reference": args.comfy_root / "input" / REFERENCE_IMAGE,
     }
-    if args.mode == "fast_h3":
+    if args.mode in {"fast_h3", "fast_h3_vsa"}:
         paths.update(
             {
                 "base": models / "diffusion_models" / FL_BASE,
-                "fast_lora": models / "loras" / FAST_LORA,
+                "fast_lora": models
+                / "loras"
+                / (FAST_VSA_LORA if args.mode == "fast_h3_vsa" else FAST_LORA),
             }
         )
     elif args.mode == "timed_reference":
@@ -589,6 +600,7 @@ def main(argv: list[str] | None = None) -> int:
     run_root.mkdir(parents=True, exist_ok=False)
     builders = {
         "fast_h3": _fast_prompt,
+        "fast_h3_vsa": _fast_prompt,
         "timed_reference": _timed_prompt,
         "chunked_two_pass": _chunked_prompt,
     }
@@ -667,9 +679,14 @@ def main(argv: list[str] | None = None) -> int:
         height=expected_height,
         frame_count=expected_frames,
     )
-    if args.mode == "fast_h3":
+    if args.mode in {"fast_h3", "fast_h3_vsa"}:
         lora = node_reports["lora"]
         fast = node_reports["fast"]
+        expected_attention = (
+            "comfy_kitchen_vsa_h3_90pct_tile64"
+            if args.mode == "fast_h3_vsa"
+            else "dense_comfyui"
+        )
         feature_checks = {
             "lora_applied": lora.get("status") == "applied" and int(lora.get("applied_patch_count") or 0) > 0,
             "direct_h3_aliases_used": int(lora.get("added_h3_direct_alias_count") or 0) > 0,
@@ -677,8 +694,24 @@ def main(argv: list[str] | None = None) -> int:
             and lora.get("file", {}).get("identity_policy")
             == "display_only_not_a_load_gate_no_hash_scan",
             "fast_h3_four_nfe": fast.get("trained_contract", {}).get("steps_nfe") == 4,
-            "fast_h3_dense": fast.get("attention_profile_effective") == "dense_comfyui",
+            "attention_profile_effective": fast.get("attention_profile_effective")
+            == expected_attention,
         }
+        if args.mode == "fast_h3_vsa":
+            feature_checks.update(
+                {
+                    "vsa_gate_count": int(
+                        lora.get("vsa_compression_gates", {}).get(
+                            "attached_gate_count", 0
+                        )
+                    )
+                    == 50,
+                    "vsa_runtime_configured": fast.get("vsa_runtime", {}).get(
+                        "status"
+                    )
+                    == "configured",
+                }
+            )
     elif args.mode == "timed_reference":
         activity = [
             event

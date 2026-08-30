@@ -137,11 +137,32 @@ def validate_audio(audio: Mapping, name: str = "audio") -> tuple[torch.Tensor, i
     return waveform, int(sample_rate)
 
 
+def ensure_h3_audio_vae_non_aligned_crop_compat(audio_vae) -> bool:
+    """Disable the generic VAE input crop for MiniMax H3 audio encodes.
+
+    Older ComfyUI builds default every VAE wrapper to ``crop_input=True``.  That
+    generic image-oriented crop removes valid tail samples when an H3 waveform is
+    not aligned to the audio VAE's internal block size.  Newer ComfyUI builds set
+    this flag to ``False`` in the H3 audio branch themselves.  Keeping the shim at
+    the encode boundary makes old and new cores behave alike without changing any
+    non-H3 VAE.
+
+    Returns ``True`` only when this call changed the wrapper.
+    """
+    if classify_h3_vae(audio_vae) != "audio":
+        return False
+    if getattr(audio_vae, "crop_input", None) is False:
+        return False
+    audio_vae.crop_input = False
+    return True
+
+
 def encode_audio_once(audio_vae, audio: Mapping) -> torch.Tensor:
     waveform, sample_rate = validate_audio(audio)
     vae_sample_rate = int(getattr(audio_vae, "audio_sample_rate", 32000))
     if sample_rate != vae_sample_rate:
         waveform = torchaudio.functional.resample(waveform, sample_rate, vae_sample_rate)
+    ensure_h3_audio_vae_non_aligned_crop_compat(audio_vae)
     latent = audio_vae.encode(waveform[:1].movedim(1, -1))
     if not isinstance(latent, torch.Tensor) or latent.ndim != 4:
         raise ValueError("The audio VAE did not return [B,C,stereo,T] latent data")

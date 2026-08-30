@@ -6,6 +6,7 @@ import folder_paths
 from comfy_api.latest import InputImpl, io, ui
 
 from .long_video_in_node_loop_advanced import run_long_video_in_node_loop
+from .nodes_long_video_sampling_plan_advanced import LongVideoSamplingPlanIO
 from .sampling import (
     DEFAULT_SAMPLER_NAME,
     DEFAULT_SCHEDULER_NAME,
@@ -249,6 +250,14 @@ class MiniMaxH3LongVideoInNodeLoopT8Advanced(io.ComfyNode):
                         input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3
                     ),
                 ),
+                LongVideoSamplingPlanIO.Input(
+                    "long_video_sampling_plan",
+                    optional=True,
+                    tooltip=(
+                        "Optional Tail/manual second-pass plan. Disconnect to preserve the "
+                        "original loop sampler and cache contract."
+                    ),
+                ),
             ],
             outputs=[
                 io.Video.Output("video"),
@@ -312,6 +321,7 @@ class MiniMaxH3LongVideoInNodeLoopT8Advanced(io.ComfyNode):
         ref_videos=None,
         ref_video_audios=None,
         ref_audios=None,
+        long_video_sampling_plan=None,
     ):
         video_path, manifest_path, completed, status, report = (
             run_long_video_in_node_loop(
@@ -362,6 +372,7 @@ class MiniMaxH3LongVideoInNodeLoopT8Advanced(io.ComfyNode):
                 ref_videos=ref_videos,
                 ref_video_audios=ref_video_audios,
                 ref_audios=ref_audios,
+                long_video_sampling_plan=long_video_sampling_plan,
             )
         )
         video, preview = _preview_video(video_path)

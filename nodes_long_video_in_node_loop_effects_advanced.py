@@ -9,6 +9,7 @@ from .long_video_in_node_loop_effects_advanced import (
     PROMPT_RELAY_MODES,
     run_long_video_in_node_loop_effects,
 )
+from .nodes_long_video_sampling_plan_advanced import LongVideoSamplingPlanIO
 from .prompt_relay_advanced import PROMPT_RELAY_PLAN_TYPE
 from .sampling import (
     DEFAULT_SAMPLER_NAME,
@@ -313,6 +314,14 @@ class MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced(io.ComfyNode):
                     optional=True,
                     template=io.Autogrow.TemplatePrefix(
                         input=io.Audio.Input("ref_audio"), prefix="ref_audio_", min=0, max=3
+                    ),
+                ),
+                LongVideoSamplingPlanIO.Input(
+                    "long_video_sampling_plan",
+                    optional=True,
+                    tooltip=(
+                        "Optional Tail/manual second-pass plan. Prompt Relay remains scoped; "
+                        "EAV audits pass 1 only for manual second-pass mode."
                     ),
                 ),
             ],

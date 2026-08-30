@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 263
+    assert len(ids) == 264
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -210,7 +210,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
     assert ids[211] == "MiniMaxH3TurboSLAProfileRouterT8Advanced"
     assert ids[212] == "MiniMaxH3PDD8StepSetupT8Advanced"
-    assert ids[-9:-3] == [
+    assert ids[-10:-4] == [
         "MiniMaxH3SolEngineDraftToLTXT8Advanced",
         "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
         "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
@@ -218,11 +218,12 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
         "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
     ]
-    assert ids[-3:] == [
+    assert ids[-4:-1] == [
         "MiniMaxH3FlashVSRModelT8Advanced",
         "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
         "MiniMaxH3FlashVSRRestoreT8Advanced",
     ]
+    assert ids[-1] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
 
     speech_ids = {
         "MiniMaxH3VoiceProfileT8",

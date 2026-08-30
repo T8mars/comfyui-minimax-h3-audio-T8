@@ -33,6 +33,11 @@ from .long_video_delivery import (
 )
 from .long_video_orchestration import resolve_long_video_orchestration
 from .sampling import setup_dual_clock_sampling
+from .long_video_sampling_plan_advanced import (
+    LongVideoSamplingPlan,
+    resolve_long_video_sample_schedules,
+    validate_long_video_sampling_plan,
+)
 from .freenoise_advanced import free_noise_config, reschedule_h3_noise
 
 
@@ -187,6 +192,7 @@ def _job_contract(
     ref_videos,
     ref_video_audios,
     ref_audios,
+    sampling_plan_contract=None,
 ) -> dict:
     return {
         "chain_id": str(chain_id),
@@ -216,6 +222,7 @@ def _job_contract(
         "first_frame_reuse": str(first_frame_reuse),
         "persistent_identity_strategy": str(persistent_identity_strategy),
         "persistent_identity_interval": int(persistent_identity_interval),
+        "sampling_plan": sampling_plan_contract or {"mode": "disabled"},
         "model_id": str(model_id or "unknown"),
         "media": {
             "drive_audio": _media_signature(drive_audio),
@@ -291,8 +298,9 @@ def _sample_one_segment(
     sampler_name: str,
     scheduler: str,
     segment_index: int = 0,
+    sampling_plan: LongVideoSamplingPlan | None = None,
 ) -> dict:
-    sampled_model, sampler, sigmas = setup_dual_clock_sampling(
+    sampled_model, sampler, base_sigmas = setup_dual_clock_sampling(
         model,
         av_latent,
         steps,
@@ -301,51 +309,77 @@ def _sample_one_segment(
         sampler_name,
         scheduler,
     )
-    latent = dict(av_latent)
-    latent_image = comfy.sample.fix_empty_latent_channels(
-        sampled_model,
-        latent["samples"],
-        latent.get("downscale_ratio_spacial"),
-        latent.get("downscale_ratio_temporal"),
+    sigmas, second_sigmas, sampling_report = resolve_long_video_sample_schedules(
+        base_sigmas,
+        sampling_plan,
+        shift_video=shift_video,
+        shift_audio=shift_audio,
     )
-    latent["samples"] = latent_image
-    noise = comfy.sample.prepare_noise(
-        latent_image,
-        int(seed),
-        latent.get("batch_index"),
-    )
-    noise_config = free_noise_config(sampled_model)
-    if noise_config is not None:
-        noise, _noise_report = reschedule_h3_noise(
-            noise, config=noise_config, segment_index=int(segment_index)
+    preview_state: dict = {}
+
+    def run_once(run_model, run_sampler, run_sigmas, input_latent):
+        latent = dict(input_latent)
+        latent_image = comfy.sample.fix_empty_latent_channels(
+            run_model,
+            latent["samples"],
+            latent.get("downscale_ratio_spacial"),
+            latent.get("downscale_ratio_temporal"),
         )
-    guider = _SingleConditionGuider(sampled_model)
-    guider.set_conditioning(positive)
-    preview_callback = latent_preview.prepare_callback(
-        sampled_model, sigmas.shape[-1] - 1, {}
-    )
+        latent["samples"] = latent_image
+        noise = comfy.sample.prepare_noise(
+            latent_image,
+            int(seed),
+            latent.get("batch_index"),
+        )
+        noise_config = free_noise_config(run_model)
+        if noise_config is not None:
+            noise, _noise_report = reschedule_h3_noise(
+                noise, config=noise_config, segment_index=int(segment_index)
+            )
+        guider = _SingleConditionGuider(run_model)
+        guider.set_conditioning(positive)
+        preview_callback = latent_preview.prepare_callback(
+            run_model, run_sigmas.shape[-1] - 1, preview_state
+        )
 
-    def callback(_step, _x0, _x, _total_steps):
-        _check_interrupted()
-        preview_callback(_step, _x0, _x, _total_steps)
+        def callback(_step, _x0, _x, _total_steps):
+            _check_interrupted()
+            preview_callback(_step, _x0, _x, _total_steps)
 
-    samples = guider.sample(
-        noise,
-        latent_image,
-        sampler,
-        sigmas,
-        denoise_mask=latent.get("noise_mask"),
-        callback=callback,
-        disable_pbar=not comfy.utils.PROGRESS_BAR_ENABLED,
-        seed=int(seed),
-    )
-    # Match ComfyUI SamplerCustomAdvanced exactly: move to the intermediate device
-    # without an additional dtype conversion that could change accepted segment bytes.
-    samples = samples.to(device=comfy.model_management.intermediate_device())
-    output = dict(latent)
-    output.pop("downscale_ratio_spacial", None)
-    output.pop("downscale_ratio_temporal", None)
-    output["samples"] = samples
+        samples = guider.sample(
+            noise,
+            latent_image,
+            run_sampler,
+            run_sigmas,
+            denoise_mask=latent.get("noise_mask"),
+            callback=callback,
+            disable_pbar=not comfy.utils.PROGRESS_BAR_ENABLED,
+            seed=int(seed),
+        )
+        samples = samples.to(device=comfy.model_management.intermediate_device())
+        output = dict(latent)
+        output.pop("downscale_ratio_spacial", None)
+        output.pop("downscale_ratio_temporal", None)
+        output["samples"] = samples
+        return output
+
+    output = run_once(sampled_model, sampler, sigmas, av_latent)
+    if second_sigmas is not None:
+        second_model, second_sampler, _unused = setup_dual_clock_sampling(
+            model,
+            output,
+            int(second_sigmas.numel() - 1),
+            shift_video,
+            shift_audio,
+            sampler_name,
+            scheduler,
+        )
+        output = run_once(second_model, second_sampler, second_sigmas, output)
+    output["_h3_t8_long_video_sampling_report"] = {
+        **sampling_report,
+        "preview_cache_compatible": True,
+        "preview_x0_cached": "x0" in preview_state,
+    }
     return output
 
 
@@ -573,6 +607,7 @@ def run_long_video_in_node_loop(
     ref_videos=None,
     ref_video_audios=None,
     ref_audios=None,
+    long_video_sampling_plan=None,
 ) -> tuple[str, str, int, str, str]:
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 in-node long-video width and height must be divisible by 32")
@@ -584,6 +619,10 @@ def run_long_video_in_node_loop(
         raise ValueError("audio_seam_policy must be cosine_bridge or none")
     if not math.isfinite(float(bridge_ms)) or not 0 <= float(bridge_ms) <= 50:
         raise ValueError("bridge_ms must be between 0 and 50")
+    sampling_plan = validate_long_video_sampling_plan(long_video_sampling_plan)
+    sampling_plan_contract = (
+        sampling_plan.contract() if sampling_plan is not None else {"mode": "disabled"}
+    )
 
     orchestration, manifest = resolve_long_video_orchestration(
         chain_id,
@@ -641,12 +680,17 @@ def run_long_video_in_node_loop(
         ref_videos=ref_videos,
         ref_video_audios=ref_video_audios,
         ref_audios=ref_audios,
+        sampling_plan_contract=sampling_plan_contract,
     )
     noise_config = free_noise_config(model)
     if noise_config is not None:
         contract["free_noise"] = noise_config
     contract_sha256 = _sha256_json(contract)
     segment_count = len(orchestration.segments)
+    sampling_summary = (
+        f"{orchestration.sampling_summary} | long_video_sampling="
+        f"{sampling_plan_contract['mode']}"
+    )
 
     with _exclusive_loop_lock(root):
         state = _load_loop_state(state_path)
@@ -729,7 +773,7 @@ def run_long_video_in_node_loop(
                     "timeline_end_frame": round(plan.timeline_end_seconds * 24),
                     "is_final_segment": plan.is_final_segment,
                     "model_id": str(model_id or "unknown"),
-                    "sampling_summary": orchestration.sampling_summary,
+                    "sampling_summary": sampling_summary,
                     "prompt": segment.prompt,
                     "seed": segment.seed,
                     "width": int(width),
@@ -801,6 +845,11 @@ def run_long_video_in_node_loop(
                             sampler_name=orchestration.sampler_name,
                             scheduler=orchestration.scheduler,
                             segment_index=segment.index,
+                            sampling_plan=sampling_plan,
+                        )
+                        _segment_sampling_report = sampled.pop(
+                            "_h3_t8_long_video_sampling_report",
+                            {"mode": "disabled"},
                         )
                         frames, generated_audio, _video_latent, _audio_latent = (
                             decode_av_latent(sampled, video_vae, audio_vae)
@@ -830,7 +879,7 @@ def run_long_video_in_node_loop(
                                 parent_revision,
                                 candidate_id,
                                 model_id,
-                                orchestration.sampling_summary,
+                                sampling_summary,
                                 conditioned_prompt,
                                 segment.seed,
                                 24,
@@ -906,7 +955,8 @@ def run_long_video_in_node_loop(
                 **state,
                 "state_path": str(state_path),
                 "manifest_path": str(root / "manifest.json"),
-                "sampling_summary": orchestration.sampling_summary,
+                "sampling_summary": sampling_summary,
+                "sampling_plan": sampling_plan_contract,
                 "free_noise": noise_config or {"status": "disabled"},
                 "resume_action": (
                     "adopted_existing_then_completed"

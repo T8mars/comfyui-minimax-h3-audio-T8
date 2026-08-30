@@ -16,9 +16,10 @@ class MiniMaxH3FastH34StepSetupT8Advanced(io.ComfyNode):
             display_name="MiniMax H3 FastH3 4-Step Setup (Advanced EXP/T8)",
             description=(
                 "Configures the published T2VA-only FastH3 4-step DMD2 joint-AV sampling "
-                "contract. Apply the matching LoRA first. Dense ComfyUI attention is "
-                "always usable; VSA is reported only when a real external FastVideo "
-                "runtime and kernel are installed."
+                "contract. Apply the matching FastH3 LoRA first. Dense ComfyUI attention "
+                "remains the default; the opt-in VSA profile applies the learned 90%-sparse "
+                "tile-64 route only when the LoRA gate payload and current Comfy Kitchen "
+                "VSA kernel contract are both available, otherwise it falls back to dense."
             ),
             category=CATEGORY,
             is_experimental=True,

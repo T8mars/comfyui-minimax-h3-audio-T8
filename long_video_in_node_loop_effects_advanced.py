@@ -47,6 +47,10 @@ from .long_video_in_node_loop_advanced import (
     _window_segment_audio,
 )
 from .long_video_orchestration import resolve_long_video_orchestration
+from .long_video_sampling_plan_advanced import (
+    resolve_long_video_sample_schedules,
+    validate_long_video_sampling_plan,
+)
 from .prompt_relay_advanced import (
     EXECUTION_MODES as PROMPT_RELAY_EXECUTION_MODES,
     _validate_plan as validate_prompt_relay_plan,
@@ -206,6 +210,7 @@ def _sample_prepared_segment(
     sigmas: torch.Tensor,
     seed: int,
     segment_index: int = 0,
+    preview_state: dict | None = None,
 ) -> dict:
     latent = dict(av_latent)
     latent_image = comfy.sample.fix_empty_latent_channels(
@@ -228,8 +233,9 @@ def _sample_prepared_segment(
         )
     guider = _SingleConditionGuider(model)
     guider.set_conditioning(positive)
+    preview_state = {} if preview_state is None else preview_state
     preview_callback = latent_preview.prepare_callback(
-        model, sigmas.shape[-1] - 1, {}
+        model, sigmas.shape[-1] - 1, preview_state
     )
 
     def callback(_step, _x0, _x, _total_steps):
@@ -421,6 +427,7 @@ def run_long_video_in_node_loop_effects(
     ref_videos=None,
     ref_video_audios=None,
     ref_audios=None,
+    long_video_sampling_plan=None,
 ) -> tuple[str, str, int, str, str]:
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 in-node effects width and height must be divisible by 32")
@@ -436,6 +443,10 @@ def run_long_video_in_node_loop_effects(
         raise ValueError("minimum_free_vram_mib must be between 0 and 65536")
     if not 32 <= int(query_chunk_rows) <= 2048:
         raise ValueError("query_chunk_rows must be between 32 and 2048")
+    sampling_plan = validate_long_video_sampling_plan(long_video_sampling_plan)
+    sampling_plan_contract = (
+        sampling_plan.contract() if sampling_plan is not None else {"mode": "disabled"}
+    )
 
     relay_plan, resolved_global_prompt = _validate_effect_modes(
         prompt_relay_mode=prompt_relay_mode,
@@ -514,6 +525,7 @@ def run_long_video_in_node_loop_effects(
         ref_videos=ref_videos,
         ref_video_audios=ref_video_audios,
         ref_audios=ref_audios,
+        sampling_plan_contract=sampling_plan_contract,
     )
     noise_config = free_noise_config(model)
     if noise_config is not None:
@@ -535,6 +547,7 @@ def run_long_video_in_node_loop_effects(
             "eav_max_workspace_mib": int(eav_max_workspace_mib),
             "eav_g_hard_limit": float(eav_g_hard_limit),
             "minimum_free_vram_mib": int(minimum_free_vram_mib),
+            "sampling_plan": sampling_plan_contract,
         },
     }
     contract_sha256 = _sha256_json(contract)
@@ -544,6 +557,7 @@ def run_long_video_in_node_loop_effects(
         prompt_relay_mode=prompt_relay_mode,
         eav_mode=eav_mode,
     )
+    sampling_summary += f" | long_video_sampling={sampling_plan_contract['mode']}"
 
     with _exclusive_loop_lock(root):
         state = _load_effects_state(state_path)
@@ -788,7 +802,7 @@ def run_long_video_in_node_loop_effects(
                             # sampling still needs the scoped continuation layout repair.
                             segment_model = patch_long_video_model(segment_model)
 
-                        sampled_model, sampler, sigmas = setup_dual_clock_sampling(
+                        sampled_model, sampler, base_sigmas = setup_dual_clock_sampling(
                             segment_model,
                             av_latent,
                             orchestration.steps,
@@ -796,6 +810,14 @@ def run_long_video_in_node_loop_effects(
                             orchestration.shift_audio,
                             orchestration.sampler_name,
                             orchestration.scheduler,
+                        )
+                        sigmas, second_sigmas, segment_sampling_report = (
+                            resolve_long_video_sample_schedules(
+                                base_sigmas,
+                                sampling_plan,
+                                shift_video=orchestration.shift_video,
+                                shift_audio=orchestration.shift_audio,
+                            )
                         )
                         eav_runtime = None
                         eav_setup_report = {"status": "disabled"}
@@ -832,6 +854,7 @@ def run_long_video_in_node_loop_effects(
                                     )
                                 )
                             eav_setup_report = json.loads(eav_setup_json)
+                        preview_state: dict = {}
                         sampled = _sample_prepared_segment(
                             sampled_model,
                             positive,
@@ -840,6 +863,7 @@ def run_long_video_in_node_loop_effects(
                             sigmas=sigmas,
                             seed=segment.seed,
                             segment_index=segment.index,
+                            preview_state=preview_state,
                         )
                         noise_report = sampled.pop(
                             "_h3_t8_free_noise_report", {"status": "disabled"}
@@ -850,6 +874,44 @@ def run_long_video_in_node_loop_effects(
                                 sampled, eav_runtime
                             )
                             eav_audit_report = json.loads(eav_audit_json)
+                        second_noise_report = {"status": "disabled"}
+                        if second_sigmas is not None:
+                            # Build a fresh sampler from the Relay/long-video base model.
+                            # EAV is intentionally scoped to pass 1 so its Stock20 runtime
+                            # counter and FETA audit are not silently reused by a partial pass.
+                            second_model, second_sampler, _unused = setup_dual_clock_sampling(
+                                segment_model,
+                                sampled,
+                                int(second_sigmas.numel() - 1),
+                                orchestration.shift_video,
+                                orchestration.shift_audio,
+                                orchestration.sampler_name,
+                                orchestration.scheduler,
+                            )
+                            sampled = _sample_prepared_segment(
+                                second_model,
+                                positive,
+                                sampled,
+                                sampler=second_sampler,
+                                sigmas=second_sigmas,
+                                seed=segment.seed,
+                                segment_index=segment.index,
+                                preview_state=preview_state,
+                            )
+                            second_noise_report = sampled.pop(
+                                "_h3_t8_free_noise_report", {"status": "disabled"}
+                            )
+                        segment_sampling_report.update(
+                            {
+                                "preview_cache_compatible": True,
+                                "preview_x0_cached": "x0" in preview_state,
+                                "eav_scope": (
+                                    "first_pass_only_second_pass_uses_relay_long_video_model"
+                                    if second_sigmas is not None and eav_mode != "disabled"
+                                    else "primary_schedule"
+                                ),
+                            }
+                        )
                         frames, generated_audio, _video_latent, _audio_latent = (
                             decode_av_latent(sampled, video_vae, audio_vae)
                         )
@@ -912,6 +974,8 @@ def run_long_video_in_node_loop_effects(
                                 "trim": _json_object(trim_report_json),
                                 "resource_preflight": preflight,
                                 "free_noise": noise_report,
+                                "second_pass_free_noise": second_noise_report,
+                                "sampling_plan": segment_sampling_report,
                             },
                         )
                     finally:

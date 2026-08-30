@@ -1,5 +1,14 @@
 # Third-party notices
 
+## FastVideo FastH3 Preview VSA and Comfy Kitchen
+
+The optional FastH3 VSA route is a ComfyUI integration informed by the Apache-2.0
+[`hao-ai-lab/FastVideo`](https://github.com/hao-ai-lab/FastVideo) MiniMax H3 VSA implementation and
+the Apache-2.0 [`Comfy-Org/comfy-kitchen`](https://github.com/Comfy-Org/comfy-kitchen) VSA API proposed
+in PR #117. This repository does not copy or redistribute their source, compiled wheels, or model weights.
+Users install a compatible Comfy Kitchen build and the official FastVideo VSA/Data-Free adapter separately.
+The dense fallback does not import or claim this sparse route.
+
 ## FlashVSR / TE-Speed public core
 
 The optional FlashVSR nodes include a modified copy of the public Apache-2.0 FlashVSR inference core.

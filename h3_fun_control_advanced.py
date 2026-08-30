@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import importlib
 import json
 from pathlib import Path
 from typing import Any, Mapping
@@ -30,6 +31,47 @@ def _native_fun_control_available() -> bool:
         hasattr(comfy.controlnet, "MiniMaxH3ControlNet")
         and callable(getattr(comfy.controlnet, "load_controlnet_minimax_h3", None))
     )
+
+
+def _official_model_patch_fun_control_modules():
+    """Return the new official Fun-Control classes when the running core has them.
+
+    ComfyUI first shipped H3 Fun Control as a classic ControlNet, then moved it
+    to the generic MODEL_PATCH contract.  Import lazily so this extension keeps
+    importing on both generations of the core.
+    """
+    try:
+        controlnet_module = importlib.import_module("comfy.ldm.minimax.controlnet")
+        node_module = importlib.import_module("comfy_extras.nodes_minimax_h3")
+    except (ImportError, AttributeError):
+        return None
+    detector = getattr(controlnet_module, "is_minimax_h3_fun_state_dict", None)
+    control_class = getattr(controlnet_module, "MiniMaxH3FunControl", None)
+    patch_class = getattr(node_module, "MiniMaxH3FunControlPatch", None)
+    if not callable(detector) or control_class is None or patch_class is None:
+        return None
+    return controlnet_module, control_class, patch_class
+
+
+def _available_fun_control_names() -> list[str]:
+    names = list(folder_paths.get_filename_list("controlnet"))
+    try:
+        names.extend(folder_paths.get_filename_list("model_patches"))
+    except (KeyError, RuntimeError):
+        pass
+    return sorted(dict.fromkeys(names))
+
+
+def _resolve_fun_control_path(name: str) -> tuple[str, str]:
+    for folder_name in ("controlnet", "model_patches"):
+        try:
+            path = folder_paths.get_full_path(folder_name, name)
+        except (KeyError, RuntimeError):
+            path = None
+        if path:
+            return path, folder_name
+    # Preserve the familiar ComfyUI error for old installations.
+    return folder_paths.get_full_path_or_raise("controlnet", name), "controlnet"
 
 
 def _convert_diffusers_state_dict(state_dict: Mapping[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -254,9 +296,108 @@ def _load_compatibility_control(path: str):
     }
 
 
+def _load_official_model_patch_control(path: str):
+    modules = _official_model_patch_fun_control_modules()
+    if modules is None:
+        return None
+    controlnet_module, control_class, _patch_class = modules
+    state_dict, metadata = comfy.utils.load_torch_file(
+        path, safe_load=True, return_metadata=True
+    )
+    if not controlnet_module.is_minimax_h3_fun_state_dict(state_dict):
+        return None
+
+    load_device = comfy.model_management.get_torch_device()
+    quantization = comfy.utils.detect_layer_quantization(state_dict, "")
+    if quantization is not None:
+        compute_dtype = torch.bfloat16
+        operations = comfy.ops.mixed_precision_ops(quantization, compute_dtype)
+    else:
+        compute_dtype = comfy.model_management.unet_dtype(
+            model_params=-1,
+            supported_dtypes=[torch.bfloat16, torch.float32],
+            weight_dtype=comfy.utils.weight_dtype(state_dict),
+        )
+        manual_cast = comfy.model_management.unet_manual_cast(
+            compute_dtype,
+            load_device,
+            supported_dtypes=[torch.bfloat16, torch.float32],
+        )
+        operations = comfy.ops.pick_operations(compute_dtype, manual_cast)
+
+    block_count = 0
+    while f"control_blocks.{block_count}.after_proj.weight" in state_dict:
+        block_count += 1
+    if block_count <= 0:
+        raise RuntimeError("MiniMax H3 Fun MODEL_PATCH contains no control blocks")
+    injection_layers = tuple(range(0, block_count * 10, 10))
+    if metadata is not None and "control_blocks_places" in metadata:
+        injection_layers = tuple(json.loads(metadata["control_blocks_places"]))
+        if len(injection_layers) != block_count:
+            raise ValueError(
+                "MiniMax H3 Fun control_blocks_places metadata does not match the checkpoint"
+            )
+    qkv = state_dict["control_blocks.0.attn.qkv_proj.weight"]
+    head_dim = int(state_dict["control_blocks.0.attn.q_norm.weight"].shape[0])
+    use_adaln_curves = bool(
+        metadata is not None
+        and metadata.get("minimax_h3_fun_controlnet") == "adaln_basis"
+    )
+    control = control_class(
+        control_in_dim=49,
+        injection_layers=injection_layers,
+        hidden_size=int(state_dict["control_proj_in.weight"].shape[0]),
+        num_attention_heads=int(qkv.shape[0] // (3 * head_dim)),
+        attention_head_dim=head_dim,
+        ffn_hidden_size=int(
+            state_dict["control_blocks.0.mlp.fc1.weight"].shape[0] // 2
+        ),
+        time_embed_dim=8 if use_adaln_curves else 2688,
+        use_adaln_curves=use_adaln_curves,
+        operations=operations,
+        device=comfy.model_management.unet_offload_device(),
+        dtype=compute_dtype,
+    )
+    control.requires_grad_(False)
+    patcher_class = getattr(
+        comfy.model_patcher, "CoreModelPatcher", comfy.model_patcher.ModelPatcher
+    )
+    patcher = patcher_class(
+        control,
+        load_device=load_device,
+        offload_device=comfy.model_management.unet_offload_device(),
+    )
+    control.load_state_dict(state_dict, assign=patcher.is_dynamic())
+    return patcher, {
+        "block_count": block_count,
+        "injection_layers": injection_layers,
+        "compute_dtype": str(compute_dtype),
+        "quantization": type(quantization).__name__ if quantization is not None else None,
+        "adaln_curves": use_adaln_curves,
+    }
+
+
 def load_h3_fun_control(control_net_name: str) -> tuple[H3FunControlBundle, str]:
-    path = folder_paths.get_full_path_or_raise("controlnet", control_net_name)
+    path, source_folder = _resolve_fun_control_path(control_net_name)
     file_path = Path(path)
+    official_model_patch = _load_official_model_patch_control(path)
+    if official_model_patch is not None:
+        patcher, structure = official_model_patch
+        details = {
+            "schema": "t8_minimax_h3_fun_control_loader_v1",
+            "status": "official_model_patch",
+            "backend": "official_model_patch",
+            "filename": control_net_name,
+            "source_folder": source_folder,
+            "file_bytes_diagnostic": file_path.stat().st_size,
+            "structure": structure,
+            "fingerprint_policy": "diagnostic_only_framework_loader_is_authoritative",
+            "source_pr": "https://github.com/Comfy-Org/ComfyUI/pull/15975",
+        }
+        bundle = H3FunControlBundle(
+            "official_model_patch", patcher, control_net_name, str(file_path), details
+        )
+        return bundle, json.dumps(details, ensure_ascii=False, sort_keys=True)
     if _native_fun_control_available():
         native = comfy.controlnet.load_controlnet(path)
         native_class = getattr(comfy.controlnet, "MiniMaxH3ControlNet")
@@ -270,6 +411,7 @@ def load_h3_fun_control(control_net_name: str) -> tuple[H3FunControlBundle, str]
             "status": "native_core",
             "backend": "native_core_controlnet",
             "filename": control_net_name,
+            "source_folder": source_folder,
             "file_bytes_diagnostic": file_path.stat().st_size,
             "fingerprint_policy": "diagnostic_only_framework_loader_is_authoritative",
             "source_pr": "https://github.com/Comfy-Org/ComfyUI/pull/15860",
@@ -286,6 +428,7 @@ def load_h3_fun_control(control_net_name: str) -> tuple[H3FunControlBundle, str]
         "status": "compatibility_fallback",
         "backend": "clone_scoped_dit_replacement",
         "filename": control_net_name,
+        "source_folder": source_folder,
         "file_bytes_diagnostic": file_path.stat().st_size,
         "structure": structure,
         "fingerprint_policy": "diagnostic_only_framework_loader_is_authoritative",
@@ -405,11 +548,14 @@ def _assert_compatible_adaln_pair(model, bundle: H3FunControlBundle) -> None:
     weights, so compare the live module contracts instead of filenames, hashes,
     or byte sizes.
     """
-    if bundle.backend != "compatibility":
+    if bundle.backend == "native":
         return
     base = getattr(getattr(model, "model", None), "diffusion_model", None)
-    holder = bundle.control if isinstance(bundle.control, Mapping) else {}
-    control = holder.get("model")
+    if bundle.backend == "official_model_patch":
+        control = getattr(bundle.control, "model", None)
+    else:
+        holder = bundle.control if isinstance(bundle.control, Mapping) else {}
+        control = holder.get("model")
     base_dim = _adaln_input_dim(base) if base is not None else None
     control_dim = _adaln_input_dim(control) if control is not None else None
     if base_dim is None or control_dim is None or base_dim == control_dim:
@@ -474,6 +620,39 @@ def _apply_native(
         copied["control_apply_to_uncond"] = True
         output.append([conditioning, copied])
     return output
+
+
+def _apply_official_model_patch(
+    model,
+    bundle: H3FunControlBundle,
+    vae,
+    frames: torch.Tensor,
+    strength: float,
+    start_percent: float,
+    end_percent: float,
+):
+    modules = _official_model_patch_fun_control_modules()
+    if modules is None:
+        raise RuntimeError(
+            "The Fun Control checkpoint was loaded through ComfyUI's MODEL_PATCH "
+            "contract, but this running core no longer exposes its apply patch. Restart "
+            "ComfyUI after updating the core."
+        )
+    _controlnet_module, _control_class, patch_class = modules
+    patched = model.clone()
+    model_sampling = model.get_model_object("model_sampling")
+    patch = patch_class(
+        bundle.control,
+        vae,
+        frames[..., :3].movedim(-1, 1),
+        None,
+        None,
+        float(strength),
+        float(model_sampling.percent_to_sigma(start_percent)),
+        float(model_sampling.percent_to_sigma(end_percent)),
+    )
+    patch.register(patched)
+    return patched
 
 
 def _apply_compatibility(
@@ -639,6 +818,17 @@ def apply_h3_fun_control(
         # mutate the user's upstream MODEL object. Conditioning already owns
         # the native ControlNet chain; the clone exists for isolation/reporting.
         patched = model.clone()
+    elif control_bundle.backend == "official_model_patch":
+        patched = _apply_official_model_patch(
+            model,
+            control_bundle,
+            vae,
+            frames,
+            strength,
+            start_percent,
+            end_percent,
+        )
+        conditioned = positive
     else:
         latent = vae.encode(frames)
         patched = _apply_compatibility(

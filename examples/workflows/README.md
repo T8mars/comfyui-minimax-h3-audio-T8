@@ -7,13 +7,13 @@
 | `01-basic-generation` | 稳定双时钟与不同音频步数组合的基础生成 |
 | `02-audio-control` | 音频锁定、重混、只参考及计划式音频注入 |
 | `03-image-video-edit` | 单帧语义编辑、源视频重绘、参考强度实验与 LanPaint 局部AV修复 |
-| `04-long-video` | 分段长视频、节点内一键串行、accepted manifest、后台续跑、完成态latent检查点、双时钟Euler逐NFE恢复，以及全局Prompt Relay事件时间线 |
+| `04-long-video` | 分段长视频、节点内一键串行、断点恢复、Prompt Relay/EAV，以及可选尾段细分或低Sigma二次采样 |
 | `05-speech-dialogue` | 单人语音、参考音色、对白、长文本和音色库实验 |
 | `06-face-refine` | 单人/动漫/多人脸部五官修复与追踪回贴 |
 | `07-motion-detail` | 动态引导、尾段细化、Restart、STG与组合采样 |
 | `08-multi-keyframe` | 首尾帧之外的中间关键帧时间线 |
 | `09-hybrid-model` | FL2VA/Ref2VA混合权重补丁、兼容审计和显存策略 |
-| `10-speed` | SPEED空间渐进采样、频谱标定与多任务研究路线 |
+| `10-speed` | SPEED空间渐进采样、频谱标定，以及FastH3 T2VA 4步 learned-gate VSA研究路线 |
 | `11-studio-production` | 时间线、上下文、选择性修复、解码安全和交付工具 |
 | `12-system-memory` | 环境审计、激活分块、Qwen前缀缓存、外部BlockCache组合、轨迹诊断和外部BlockSwap桥接 |
 | `13-latent-upscale` | 普通32整除放大、学习型3D latent放大与二阶段H3生成 |

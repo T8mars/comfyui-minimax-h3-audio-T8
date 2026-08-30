@@ -1,4 +1,16 @@
 {
+  "h3_2026_08_30_compatibility_and_vsa": {
+    "status": "implemented as compatibility-first updates plus one append-only long-video sampling-plan node; one serial 0.4MP FastH3 VSA real render passed mechanical and media gates",
+    "date": "2026-08-30",
+    "audio_vae": "H3 audio VAE encode disables legacy aligned cropping so current ComfyUI preserves the final non-aligned audio latent step; non-H3 VAEs are unchanged",
+    "fast_h3_vsa": "FastH3 VSA adapters now load their low-rank, exact-delta and 50 learned compression-gate tensors together. The execution route requires the merged Comfy Kitchen sol_attn VSA contract and otherwise reports a dense fallback instead of claiming sparse execution",
+    "fun_control": "Fun Control accepts both the current official MODEL_PATCH contract and the older official ControlNet conditioning contract without filename, hash or byte-size allowlists",
+    "long_video": "The optional long-video sampling plan adds disabled, tail subdivision and manual second-pass schedules. Disabled is backward-identical; the same bounded preview cache state is shared across passes and joint AV sampling remains delegated to the existing dual-clock sampler",
+    "node": "MiniMaxH3LongVideoSamplingPlanT8Advanced",
+    "position": 263,
+    "real_validation": "one serial isolated 832x480x124 T2VA render completed in 111.641 seconds with four NFE, 50 learned gates, 90% tile-64 Comfy Kitchen VSA, 340/340 adapter patches and no filename/hash/size gate; H.264 124 frames at 24fps plus finite 32kHz stereo AAC passed strict video/audio/combined decode; peak GPU use was 15494MiB and minimum free was 616MiB",
+    "boundaries": "FastH3 Preview VSA is currently a T2VA four-forward research route. Sampled frames had no black screen, corruption or tail collapse, but full-motion and listening review remain human gates. FL2VA, Ref2VA and unsupported layouts fall back to dense attention; no universal speed, quality or memory claim is made"
+  },
   "flashvsr_video_restoration_advanced": {
     "status": "implemented as three append-only Advanced EXP nodes and three dated frontend workflows; no prior H3, sampler, post-processing node or workflow schema changed",
     "date": "2026-08-30",
@@ -1499,7 +1511,8 @@
     "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
     "MiniMaxH3FlashVSRModelT8Advanced",
     "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
-    "MiniMaxH3FlashVSRRestoreT8Advanced"
+    "MiniMaxH3FlashVSRRestoreT8Advanced",
+    "MiniMaxH3LongVideoSamplingPlanT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

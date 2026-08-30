@@ -202,6 +202,95 @@ def test_loader_uses_framework_structure_not_filename_size_or_hash(monkeypatch, 
     assert report["fingerprint_policy"].startswith("diagnostic_only")
 
 
+def test_loader_prefers_new_official_model_patch_contract(monkeypatch, tmp_path):
+    path = tmp_path / "new-official-contract.safetensors"
+    path.write_bytes(b"placeholder")
+    patcher = SimpleNamespace(model=object())
+    monkeypatch.setattr(
+        fun, "_resolve_fun_control_path", lambda _name: (str(path), "model_patches")
+    )
+    monkeypatch.setattr(
+        fun,
+        "_load_official_model_patch_control",
+        lambda _path: (patcher, {"block_count": 5}),
+    )
+    monkeypatch.setattr(
+        fun,
+        "_native_fun_control_available",
+        lambda: (_ for _ in ()).throw(AssertionError("old loader must not run")),
+    )
+    bundle, report_json = fun.load_h3_fun_control(path.name)
+    report = json.loads(report_json)
+    assert bundle.backend == "official_model_patch"
+    assert bundle.control is patcher
+    assert report["source_folder"] == "model_patches"
+
+
+def test_new_official_model_patch_apply_preserves_conditioning(monkeypatch):
+    registrations = []
+
+    class _Patch:
+        def __init__(self, *args):
+            self.args = args
+
+        def register(self, model):
+            registrations.append((self, model))
+
+    class _Sampling:
+        def percent_to_sigma(self, value):
+            return 1.0 - value
+
+    class _Model:
+        model_options = {"transformer_options": {}}
+
+        def __init__(self):
+            self.attachments = {}
+
+        def clone(self):
+            return _Model()
+
+        def get_model_object(self, name):
+            assert name == "model_sampling"
+            return _Sampling()
+
+        def get_attachment(self, key):
+            return self.attachments.get(key)
+
+        def set_attachments(self, key, value):
+            self.attachments[key] = value
+
+    monkeypatch.setattr(
+        fun,
+        "_official_model_patch_fun_control_modules",
+        lambda: (object(), object(), _Patch),
+    )
+    monkeypatch.setattr(fun, "_assert_compatible_adaln_pair", lambda *_: None)
+    positive = [[torch.zeros(1), {}]]
+    patcher = SimpleNamespace(model=object())
+    bundle = fun.H3FunControlBundle(
+        "official_model_patch", patcher, "official.safetensors", "", {}
+    )
+    result_model, result_positive, report_json = fun.apply_h3_fun_control(
+        _Model(),
+        positive,
+        bundle,
+        object(),
+        torch.zeros(5, 32, 32, 3),
+        32,
+        32,
+        5,
+        "depth",
+        "exact",
+        0.7,
+        0.0,
+        0.75,
+    )
+    assert result_positive is positive
+    assert len(registrations) == 1
+    assert registrations[0][1] is result_model
+    assert json.loads(report_json)["backend"] == "official_model_patch"
+
+
 def test_curve_control_rejects_full_width_base_before_vae_encode():
     class _VAE:
         def encode(self, _frames):

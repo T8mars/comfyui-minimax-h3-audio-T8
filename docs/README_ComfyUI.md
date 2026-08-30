@@ -1858,6 +1858,24 @@ attention layout do not yet provide a validated joint re-noising or isolated per
 contract. A same-name approximation would have undefined audio behavior or conflicting attention
 ownership.
 
+## 1.60.0 compatibility and FastH3 VSA additions (2026-08-30)
+
+- H3 Audio VAE encoding now disables the legacy aligned-length tail crop only for the H3 audio VAE,
+  preserving the final non-aligned latent step. Recent cores and non-H3 VAEs remain unchanged.
+- FastH3 Preview v1 can now use its 50 learned compression gates with the tile-64, 90% sparse
+  Comfy Kitchen VSA API. Plain T2VA is the only supported packed layout; missing capabilities and other
+  layouts fall back to dense four-step inference with an explicit report.
+- H3 Fun Control resolves the recent official `MODEL_PATCH` contract first and the former ControlNet
+  conditioning contract second. Selection is structural and never gated by a filename, hash or byte size.
+- `MiniMaxH3LongVideoSamplingPlanT8Advanced` appends an optional tail-subdivision or independent
+  low-sigma second pass to both in-node long-video runners. Disabled/disconnected preserves the old route;
+  Prompt Relay remains global, EAV remains owned by the main pass, and preview-cache state is shared.
+
+The dated frontend examples are
+`10-speed/2026-08-30_H3_FastH3_VSA_T2VA_4Step_0p4MP_Advanced_EXP.json` and
+`04-long-video/2026-08-30_H3_In_Node_Long_Video_Prompt_Relay_EAV_Manual_Second_Pass_Advanced_EXP.json`.
+These changes make no universal quality, speed, memory or 16 GiB claim.
+
 ## Community compatibility additions (2026-08-29)
 
 These six append-only Advanced/EXP nodes leave existing node IDs, widgets and workflows unchanged:
@@ -1875,11 +1893,11 @@ These six append-only Advanced/EXP nodes leave existing node IDs, widgets and wo
   audio latent. `independent_tiles_exp` is retained only for research: a real render showed persistent
   tile-specific texture divergence, so it is not a recommended quality route. No project pixel-area
   ceiling is added; full-frame memory and runtime remain user-owned.
-- `MiniMaxH3FastH34StepSetupT8Advanced` configures the published FastH3 Preview v1 **T2VA-only** dense
-  route at four Euler NFE, CFG 1 and video/audio shifts 12/3. Apply its matching Dense/Data-Free LoRA with
-  the compatibility loader. The old `t2va_fl2va` value remains accepted so saved workflows still load,
-  but FL2VA and Ref2VA were not trained in Preview v1 and are reported as experimental collapse risks.
-  VSA requires a real external FastVideo backend and is never emulated with Sage, SLA or dense attention.
+- `MiniMaxH3FastH34StepSetupT8Advanced` configures the published FastH3 Preview v1 **T2VA-only** route at
+  four Euler NFE, CFG 1 and video/audio shifts 12/3. Its VSA profile uses the official VSA/Data-Free adapter's
+  50 learned compression gates through a compatible Comfy Kitchen `sol_attn`; missing capability falls back
+  to dense and is reported. The old `t2va_fl2va` value remains load-compatible but unsupported layouts are
+  never presented as validated VSA.
 
 The existing `MiniMaxH3LongVideoSeamDriftT8Advanced` remains the recommended conservative tone route.
 Unlike a full-frame `frame_shift/gain_bias/lut` correction, it only proposes bounded RGB gain/offset in

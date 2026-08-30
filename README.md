@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.59.0** · GPL-3.0-or-later
+当前版本：**1.60.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -14,6 +14,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
+- FastH3 Preview：T2VA 4步，可选真实 learned-gate VSA 90% 稀疏执行
 - NVIDIA H3 Super Acceleration：H3 4步草稿经完整 LTX VAE 编码后接 LTX-2.5 3步 Refiner（TAEHV仅最终解码）
 - FlashVSR v1.1：成片2×/4×超分、固定LCSA、动态预算候选和低显存分块，原音频不处理
 - RAFT运动审计、轨迹控制、RealBasicVSR、FreeNoise、AYS校准契约、CADS视觉参考退火
@@ -44,6 +45,8 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 `In_Node_Long_Video_Loop`工作流；需要逐段人工挑片时继续使用原有Background/Accepted路线。
 需要同时使用Prompt Relay和Enhance-A-Video时，使用同目录的
 `In_Node_Long_Video_Prompt_Relay_EAV_Stock20_Advanced`工作流（原生20步，不接Turbo LoRA）。
+需要尾段细分或独立低 Sigma 二次采样时，使用同目录带
+`Long_Video_Sampling_Plan`的工作流；断开该节点即恢复旧路径。
 
 [查看全部工作流分类](examples/workflows/README.md)
 
@@ -56,7 +59,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | 视频/音频 VAE | `models/vae` |
 | Turbo、SLA、PDD 等 LoRA | `models/loras` |
 | Latent 放大模型 | `models/latent_upscale_models` |
-| H3 Fun ControlNet | `models/controlnet` |
+| H3 Fun Control（新版 Model Patch / 旧版 ControlNet） | `models/model_patches` / `models/controlnet` |
 | TAEH3 快速预览模型 | `models/vae_approx` |
 | RAFT 光流模型 | `models/optical_flow` |
 | RealBasicVSR | `models/upscale_models` |
@@ -85,9 +88,19 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 目录中同时提供 FL2VA / Ref2VA 的学习型 latent 双采工作流：严格把同一条 PDD 轨迹分成 LOW 4 步和 HIGH 4 步，总 NFE 仍为 8。正式 Ref2VA 预设为 864×480×22、1.5×；FL2VA 双采暂保留实验标记。
 
+## FastH3 VSA 4 步
+
+工作流在 [`10-speed`](examples/workflows/10-speed)，文件名含 `FastH3_VSA_T2VA_4Step`。下载官方
+[VSA Data-Free 适配器](https://huggingface.co/FastVideo/FastVideo-FastH3-4-step-Preview-v1-LoRA/blob/main/vsa-datafree/adapter_model.safetensors)，放到
+`models/loras/FastH3-VSA/vsa-datafree/adapter_model.safetensors`。
+
+该路线只支持普通 T2VA、4 NFE、shift `12 / 3`。真正 VSA 还需要带
+`topk_ratio / block_len / coarse_gate`接口的 Comfy Kitchen；缺少内核或50层 learned gate 时会明确回退
+Dense 4步，不会冒充稀疏执行。安装与源码构建说明见[`10-speed/README.md`](examples/workflows/10-speed/README.md)。
+
 ## 官方核心兼容
 
-[`20-core-compatibility`](examples/workflows/20-core-compatibility) 提供 AV latent、H3 Attention Hook 和每步 host sync 的按需兼容节点。Tiled VAE 全局坐标候选在当前 fp16 VAE 实测中反而加重规则网格，因此只保留默认旁路的实验审计，不作为修复推荐。旧工作流不需要修改。
+[`20-core-compatibility`](examples/workflows/20-core-compatibility) 提供 AV latent、H3 Attention Hook 和每步 host sync 的按需兼容节点。H3 Audio VAE 会自动关闭旧版按对齐长度裁尾，非整倍数音频不再少掉最后一个 latent step；新版核心和非 H3 VAE 不受影响。Tiled VAE 全局坐标候选仍只保留默认旁路审计。旧工作流不需要修改。
 
 ## NVIDIA H3 Super Acceleration
 
@@ -105,7 +118,7 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
 ## 社区创作增强
 
-[`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存、TAEH3原生快速预览检查和只读诊断。Fun Control 模型下载自 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)，放入`models/controlnet`；从[madebyollin/taehv](https://github.com/madebyollin/taehv)下载`taeh3.safetensors`放入`models/vae_approx`，并在ComfyUI启动参数中选择TAESD预览。其余节点默认只生成计划或报告，不会自动删缓存、卸载模型、修改预览设置或启用尚在草案中的官方 Generic Loops。
+[`21-community-advanced`](examples/workflows/21-community-advanced) 提供 Fun Control、长视频人物音色/句界、接缝漂移审计、低显存策略、Creator语义缓存、TAEH3原生快速预览检查和只读诊断。Fun Control 同时兼容新版官方 `MODEL_PATCH` 合同和旧版 ControlNet：新版模型放`models/model_patches`，旧模型放`models/controlnet`，运行时按能力选择，不按版本号或模型哈希拦截。模型可从 [Kijai/MiniMax-H3-experimental](https://huggingface.co/Kijai/MiniMax-H3-experimental/tree/main/controlnet)取得。从[madebyollin/taehv](https://github.com/madebyollin/taehv)下载`taeh3.safetensors`放入`models/vae_approx`。
 
 需要把Qwen参考前缀缓存与外部[T8 BlockCache](https://github.com/T8mars/comfyui-minimax-h3-blockcache-T8)组合时，使用[`12-system-memory`](examples/workflows/12-system-memory)中的Ref2VA Stock20模板。它是性能优先EXP，不保证bit-exact、省显存或16GB安全。
 
