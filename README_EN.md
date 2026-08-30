@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.58.0** · GPL-3.0-or-later
+Current version: **1.59.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -15,6 +15,7 @@ Current version: **1.58.0** · GPL-3.0-or-later
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
 - NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
+- FlashVSR v1.1: 2x/4x decoded-video restoration with fixed LCSA, an opt-in dynamic budget, memory-safe tiling, and untouched audio
 - RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
 
 Nodes marked `Advanced` or `EXP` are advanced or experimental. Start with their bundled workflows.
@@ -59,6 +60,7 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 | TAEH3 preview model | `models/vae_approx` |
 | RAFT optical-flow weights | `models/optical_flow` |
 | RealBasicVSR weights | `models/upscale_models` |
+| Complete FlashVSR v1.1 folder | `models/FlashVSR-v1.1` |
 
 Do not mix FL2VA, Ref2VA, pruned, and full base-model variants.
 
@@ -94,6 +96,12 @@ The folder also includes learned-latent two-pass workflows for FL2VA and Ref2VA.
 The same folder also includes an experimental low-sigma identity-preserving Stage 2 using `0.5 → 0.412 → 0.350 → 0` (three Euler updates). It defaults to Dense Attention so the sigma schedule is the only changed variable. Use it for A/B review when the official full-denoise route changes faces too much; it is not NVIDIA's parity schedule and is not a universal identity guarantee.
 
 Download the complete model bundle from [t8star/Minimax-H3-Super-Acceleration-Comfy](https://huggingface.co/t8star/Minimax-H3-Super-Acceleration-Comfy). Preserve its folder structure and copy the folders into `ComfyUI/models`. Exact filenames and paths are listed in the [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super) README. Sol-Attn is optional; the route falls back to dense attention when it is unavailable.
+
+## FlashVSR Video Restoration
+
+Workflows are under [`23-flashvsr`](examples/workflows/23-flashvsr). Download the official [FlashVSR-v1.1](https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1) folder into `ComfyUI/models/FlashVSR-v1.1`. The model repository does not include `posi_prompt.pth`; copy it from the [official FlashVSR repository](https://github.com/OpenImagingLab/FlashVSR/tree/main/examples/WanVSR/prompt_tensor) into the same folder. Then install a `spas_sage_attn` build compatible with the active Torch/CUDA runtime from [SpargeAttn](https://github.com/thu-ml/SpargeAttn) or the [Windows wheel releases](https://github.com/woct0rdho/SpargeAttn/releases).
+
+Start with `Quality Locked`, which keeps the fixed `2.0 / 3.0 / 11` LCSA budget. `Balanced Dynamic` changes low-motion chunk budgets and requires visual review. `Memory Safe` trades speed for spatial tiling and staged offload. Official FlashVSR primarily targets 4x restoration; the included 2x route remains conservative EXP use. The nodes impose no model-hash, file-size, or pixel ceiling, and return the original audio object unchanged.
 
 ## Community Creation Tools
 

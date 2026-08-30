@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 175
+    assert len(paths) == 178
     assert [path.name for path in categories] == [
         "01-basic-generation",
         "02-audio-control",
@@ -40,6 +40,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
         "20-core-compatibility",
         "21-community-advanced",
         "22-sol-engine-h3-super",
+        "23-flashvsr",
     ]
     assert (root / "README.md").is_file()
     assert all((category / "README.md").is_file() for category in categories)
@@ -569,7 +570,7 @@ def test_frontend_workflow_links_are_reciprocal_and_target_current_slots():
             continue
         nodes = {node["id"]: node for node in workflow["nodes"]}
         for link in workflow.get("links", []):
-            link_id, source_id, source_slot, target_id, target_slot, _link_type = link
+            link_id, source_id, source_slot, target_id, target_slot, link_type = link
             source = nodes[source_id]
             target = nodes[target_id]
             if source_slot >= len(source.get("outputs", [])):
@@ -582,4 +583,13 @@ def test_frontend_workflow_links_are_reciprocal_and_target_current_slots():
                 continue
             if target["inputs"][target_slot].get("link") != link_id:
                 failures.append(f"{path.relative_to(root)}:link{link_id}:target backlink")
+            source_type = source["outputs"][source_slot].get("type")
+            target_type = target["inputs"][target_slot].get("type")
+            if "*" not in {source_type, target_type, link_type} and not (
+                source_type == target_type == link_type
+            ):
+                failures.append(
+                    f"{path.relative_to(root)}:link{link_id}:type "
+                    f"{source_type}->{target_type} saved={link_type}"
+                )
     assert failures == []

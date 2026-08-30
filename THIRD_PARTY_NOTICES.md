@@ -1,5 +1,12 @@
 # Third-party notices
 
+## FlashVSR / TE-Speed public core
+
+The optional FlashVSR nodes include a modified copy of the public Apache-2.0 FlashVSR inference core.
+Source revisions, local modifications and the separately installed Sparse Sage dependency are documented
+in [`THIRD_PARTY_NOTICES/FlashVSR.md`](THIRD_PARTY_NOTICES/FlashVSR.md). No model weight or compiled
+`spas_sage_attn` wheel is redistributed by this repository.
+
 ## Alibaba PAI MiniMax-H3 PDD acceleration adapters
 
 The optional `MiniMax H3 PDD 8-Step Setup (T8 Advanced EXP)` node implements a clean-room ComfyUI

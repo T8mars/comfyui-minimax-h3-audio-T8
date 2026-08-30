@@ -80,6 +80,7 @@ from .nodes_fast_h3_advanced import FAST_H3_ADVANCED_NODE_CLASSES
 from .nodes_sol_engine_h3_super_advanced import (
     SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
 )
+from .nodes_flashvsr_advanced import FLASHVSR_ADVANCED_NODE_CLASSES
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
 )
@@ -278,7 +279,7 @@ class MiniMaxH3AudioConditioningT8(io.ComfyNode):
                 audio_denoise_strength, add_source_as_reference, prompt_primary_audio_ordinal,
                 strict_prompt_tags, ref_image_size, reference_video_policy, drive_audio=None,
                 final_audio=None, first_frame=None, last_frame=None, ref_images=None, ref_videos=None,
-                ref_video_audios=None, ref_audios=None, allow_above_reference_area=False):
+                ref_video_audios=None, ref_audios=None, allow_above_reference_area=True):
         return io.NodeOutput(*build_conditioning(
             clip, video_vae, audio_vae, prompt, width, height, length, task_type, audio_mode,
             audio_denoise_strength, add_source_as_reference, prompt_primary_audio_ordinal,
@@ -673,6 +674,7 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *CHUNKED_TWO_PASS_UPSCALE_ADVANCED_NODE_CLASSES,
                 *FAST_H3_ADVANCED_NODE_CLASSES,
                 *SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
+                *FLASHVSR_ADVANCED_NODE_CLASSES,
             ]
 
 

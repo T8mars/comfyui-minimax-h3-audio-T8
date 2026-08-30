@@ -1,6 +1,6 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.58.0",
+  "version": "1.59.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-08-30",
@@ -14,6 +14,7 @@
     "FFmpeg available on PATH for crash-isolated AAC encoding and atomic MP4 mux in Long Video candidate save/final composition, plus strict pre-publication decode for opt-in Skin Finish file outputs"
   ],
   "optional_runtime_dependencies": [
+    "spas-sage-attn with a Torch/CUDA/GPU-compatible wheel for the opt-in FlashVSR v1.1 post-processing nodes; the package is imported only when FlashVSR executes and no compiled wheel is bundled",
     "spas-sage-attn 0.1.0 with a Torch/CUDA-compatible wheel for the opt-in LightX2V SLA Advanced EXP node; stable, dense-control and disabled workflows do not import its CUDA kernel",
     "ComfyUI-KJNodes with the complete MiniMax H3 memory-efficient Sage 50-block forward patch for the opt-in SLA + KJ Sage Composer; no KJ source is bundled",
     "transformers 4.x, accelerate 1.x, peft 0.18-0.20, safetensors 0.x and Pillow 10.x plus local Qwen3-VL-8B/LightX2V adapter weights for the opt-in Prompt Rewriter 8B nodes",

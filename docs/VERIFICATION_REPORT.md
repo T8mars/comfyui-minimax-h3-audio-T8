@@ -6355,3 +6355,26 @@ Ignored machine-readable reports and local comparison media are under
 `artifacts/recent-feature-effect-audit-20260828/`. They are intentionally not packaged in Git. The
 source-controlled workflow notes contain the model-pairing and audio-review boundaries established by
 these checks.
+
+## FlashVSR v1.1 low-load validation (2026-08-30)
+
+The official `JunhaoZhuang/FlashVSR-v1.1` model folder was loaded in tiny, tiny-long and full modes
+with the local ComfyUI Python, Torch 2.10/CUDA 13 runtime and a compatible `spas_sage_attn` wheel.
+Only tiny mode performed real generation so the structural checks did not become a stress run. A direct CUDA probe exercised
+`block_sparse_sage2_attn_cuda` with the generated split-K LCSA mask and returned a finite tensor with
+the expected shape and dtype.
+
+Three serial 2x restoration routes were then run at 192x128 input without concurrency or stress tests:
+
+- `quality_locked`: 21 frames, full-frame/resident, fixed `2.0/3.0/11` budget;
+- `balanced_dynamic_exp`: 45 frames, full-frame/resident, with an actual interior low-motion chunk
+  reduced to `1.7/2.0/9` while boundary guards remained fixed;
+- `memory_safe`: 21 frames, two same-seed feathered tiles and staged offload.
+
+All final outputs contained 384x256 H.264 video and source audio, and strict FFmpeg joint decode
+completed without errors. Core-node audio tests proved exact Python object identity; the validation
+mux encoded source audio to AAC, so the files are not presented as PCM-bit-exact evidence. A same-seed
+45-frame fixed/dynamic diagnostic measured SSIM `0.984505` and node-core elapsed time of `5.834` versus
+`5.439` seconds. This is one tiny fixture only and is not a general speed, quality, VRAM or hardware
+claim. The square-input diagnostic was discarded after the same distortion reproduced in the fixed
+control, proving it was a validation resize error rather than a dynamic-budget effect.

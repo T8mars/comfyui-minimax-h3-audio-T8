@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 260
+    assert len(ids) == 263
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -210,13 +210,18 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
     assert ids[211] == "MiniMaxH3TurboSLAProfileRouterT8Advanced"
     assert ids[212] == "MiniMaxH3PDD8StepSetupT8Advanced"
-    assert ids[-6:] == [
+    assert ids[-9:-3] == [
         "MiniMaxH3SolEngineDraftToLTXT8Advanced",
         "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
         "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
         "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
         "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
         "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+    ]
+    assert ids[-3:] == [
+        "MiniMaxH3FlashVSRModelT8Advanced",
+        "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
+        "MiniMaxH3FlashVSRRestoreT8Advanced",
     ]
 
     speech_ids = {
@@ -717,6 +722,12 @@ def test_task_type_frontend_labels_preserve_canonical_backend_values():
     assert highres_opt_in.default is True
     assert highres_opt_in.optional is True
     assert conditioning.define_schema().inputs[-1].id == "allow_above_reference_area"
+    assert (
+        inspect.signature(conditioning.execute)
+        .parameters["allow_above_reference_area"]
+        .default
+        is True
+    )
 
     package_root = Path(__file__).resolve().parents[1]
     assert h3_audio_t8_pkg.WEB_DIRECTORY == "./web"

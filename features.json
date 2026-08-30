@@ -1,4 +1,23 @@
 {
+  "flashvsr_video_restoration_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes and three dated frontend workflows; no prior H3, sampler, post-processing node or workflow schema changed",
+    "date": "2026-08-30",
+    "nodes": [
+      "MiniMaxH3FlashVSRModelT8Advanced",
+      "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
+      "MiniMaxH3FlashVSRRestoreT8Advanced"
+    ],
+    "positions": [260, 261, 262],
+    "upstream": "public Apache-2.0 FlashVSR core reviewed at OpenImagingLab/FlashVSR commit 0ef95713cd336ee89a921fc2fbc2933aaf9e5f4a and TE-Speed public core commit 912f1ad5829ab7c9d442ac4ffb912ea1fe3c7f42",
+    "model": "JunhaoZhuang/FlashVSR-v1.1; tiny, tiny_long and full loaders are available, with tiny as the documented default",
+    "profiles": ["quality_locked", "balanced_dynamic_exp", "memory_safe"],
+    "quality_contract": "quality_locked preserves the public LCSA 2.0/3.0/11 budget. balanced_dynamic_exp is opt-in and only reduces eligible interior low-motion chunks. memory_safe preserves the fixed budget while using deterministic same-seed spatial tiles and staged offload",
+    "attention": "LCSA constructs the exact local plus draft top-k mask and dispatches it to a separately installed spas_sage_attn block_sparse_sage2_attn_cuda kernel. Missing or incompatible wheels raise an actionable error rather than silently switching to dense attention",
+    "compatibility": "models are accepted by required-file structure and loadable architecture; there is no filename, SHA-256, byte-size or pixel-area execution allowlist",
+    "audio": "the exact input AUDIO object is returned unchanged; FlashVSR does not resample, denoise or normalize it",
+    "real_validation": "the official v1.1 tiny, tiny_long and full checkpoint structures all loaded in BF16; real generation remained tiny-only to avoid a stress run. Serial low-resolution tests completed for fixed full-frame quality, opt-in dynamic budget and two-tile staged memory-safe paths at 192x128 input and 2x output. All final 384x256 H.264/AAC files strictly decoded. A same-seed 45-frame diagnostic measured SSIM 0.984505 between fixed and dynamic candidates and 5.834 versus 5.439 seconds of node-core elapsed time, which is one tiny fixture rather than a general speed or quality claim",
+    "scientific_boundary": "this is decoded-video restoration, not H3 Transformer acceleration. Official FlashVSR is primarily a 4x VSR method; the included 2x route is conservative EXP use. It cannot reconstruct missing identity, lip sync or source detail, and every candidate still requires visual review"
+  },
   "nvidia_sol_engine_h3_super_acceleration_advanced": {
     "status": "implemented as six append-only Advanced/EXP nodes; the sixth is an independent low-sigma identity-preserve setup and no prior H3, LTX, sampler, attention or workflow schema changed",
     "date": "2026-08-29",
@@ -1477,7 +1496,10 @@
     "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
     "MiniMaxH3SolEngineTAEHVEncodeT8Advanced",
     "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
-    "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced"
+    "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+    "MiniMaxH3FlashVSRModelT8Advanced",
+    "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
+    "MiniMaxH3FlashVSRRestoreT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import builtins
 import json
 from pathlib import Path
+import runpy
 import struct
 
 import torch
@@ -75,6 +77,30 @@ def test_plugin_version_parser_accepts_upstream_markdown_bold_headers(tmp_path):
     (plugin / "README.md").unlink()
     (plugin / "README_ZH.md").write_text("**版本: v0.6.2**\n", encoding="utf-8")
     assert _read_plugin_version(plugin) == "0.6.2"
+
+
+def test_module_import_and_readme_version_fallback_without_python311_tomllib(
+    monkeypatch, tmp_path
+):
+    module_path = Path(compatibility.__file__)
+    real_import = builtins.__import__
+
+    def import_without_tomllib(name, *args, **kwargs):
+        if name == "tomllib":
+            raise ModuleNotFoundError("simulated Python 3.10")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", import_without_tomllib)
+    namespace = runpy.run_path(str(module_path))
+    assert namespace["tomllib"] is None
+
+    plugin = tmp_path / "plugin"
+    plugin.mkdir()
+    (plugin / "pyproject.toml").write_text(
+        '[project]\nversion="9.9.9"\n', encoding="utf-8"
+    )
+    (plugin / "README.md").write_text("Version: v1.2.3\n", encoding="utf-8")
+    assert namespace["_read_plugin_version"](plugin) == "1.2.3"
 
 
 def test_release_metadata_declares_optional_external_plugin_boundaries():

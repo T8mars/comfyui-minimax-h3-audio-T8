@@ -19,7 +19,7 @@ PRECISIONS = ("auto", "fp16", "fp32")
 RELEASE_POLICIES = ("offload_after", "clear_after", "keep_loaded")
 CHECKPOINT_BRANCHES = ("prefer_ema", "prefer_generator")
 
-_MODEL_CACHE: dict[tuple[str, str], RealBasicVSRNet] = {}
+_MODEL_CACHE: dict[tuple[str, str, str, int, int], RealBasicVSRNet] = {}
 
 
 def _canonical_json(value: Any) -> str:
@@ -45,6 +45,22 @@ def _device_and_dtype(precision: str) -> tuple[torch.device, torch.dtype]:
     if precision == "fp32" or device.type != "cuda":
         return device, torch.float32
     return device, torch.float16
+
+
+def _model_cache_key(
+    model_path: Path,
+    dtype: torch.dtype,
+    checkpoint_branch: str,
+) -> tuple[str, str, str, int, int]:
+    resolved = model_path.resolve()
+    stat = resolved.stat()
+    return (
+        str(resolved),
+        str(dtype),
+        str(checkpoint_branch),
+        int(stat.st_size),
+        int(stat.st_mtime_ns),
+    )
 
 
 def _unwrap_state_dict(payload: Any, branch: str) -> dict[str, torch.Tensor]:
@@ -87,7 +103,12 @@ def _load_model(
     import comfy.utils
 
     device, dtype = _device_and_dtype(precision)
-    cache_key = (str(model_path.resolve()), str(dtype))
+    cache_key = _model_cache_key(model_path, dtype, checkpoint_branch)
+    cache_identity = cache_key[:3]
+    for stale_key, stale_model in list(_MODEL_CACHE.items()):
+        if stale_key[:3] == cache_identity and stale_key != cache_key:
+            stale_model.to(device="cpu")
+            _MODEL_CACHE.pop(stale_key, None)
     cached = _MODEL_CACHE.get(cache_key)
     if cached is not None:
         cached.to(device=device, dtype=dtype)
@@ -116,12 +137,17 @@ def _release_model(
 ) -> dict[str, Any]:
     import comfy.model_management as model_management
 
-    cache_key = (str(model_path.resolve()), str(dtype))
     if release_policy == "keep_loaded":
-        return {"policy": release_policy, "cache_retained": True, "device": str(next(model.parameters()).device)}
+        return {
+            "policy": release_policy,
+            "cache_retained": True,
+            "device": str(next(model.parameters()).device),
+        }
     model.to(device="cpu")
     if release_policy == "clear_after":
-        _MODEL_CACHE.pop(cache_key, None)
+        for cache_key, cached_model in list(_MODEL_CACHE.items()):
+            if cached_model is model:
+                _MODEL_CACHE.pop(cache_key, None)
     gc.collect()
     model_management.soft_empty_cache()
     return {
@@ -164,7 +190,7 @@ def _blend_weights(length: int, overlap: int, *, first: bool, last: bool) -> tor
 
 def restore_realbasicvsr(
     frames: torch.Tensor,
-    audio: Any,
+    audio: Any = None,
     *,
     model_path: Path,
     model_name: str,

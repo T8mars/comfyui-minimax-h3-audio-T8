@@ -71,6 +71,7 @@ class MiniMaxH3RealBasicVSRRestoreT8Advanced(io.ComfyNode):
 
     @classmethod
     def execute(cls, model_name, **kwargs):
+        kwargs.setdefault("audio", None)
         return io.NodeOutput(
             *restore_realbasicvsr(
                 model_path=_model_path(model_name), model_name=model_name, **kwargs

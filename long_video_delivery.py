@@ -44,6 +44,10 @@ MANIFEST_BACKUP_NAME = "manifest.json.bak"
 LOCK_NAME = "manifest.lock"
 ADVISORY_LOCK_NAME = "manifest.lock.v2"
 ADVISORY_LOCK_KIND = "t8_os_advisory_v2"
+_RETRYABLE_FFMPEG_NATIVE_EXIT_CODES = {
+    0xC0000005,  # Windows access violation.
+    0xC0000093,  # Windows floating-point underflow observed in FFmpeg/libavcodec.
+}
 
 
 class UnsupportedManifestSchemaError(ValueError):
@@ -87,30 +91,41 @@ def _cleanup_temporary(path: Path, active_error: BaseException | None = None) ->
 
 def _run_isolated_ffmpeg(args: list[str], log_path: Path) -> None:
     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    with log_path.open("wb") as log:
-        process = subprocess.Popen(
-            args,
-            stdin=subprocess.DEVNULL,
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            creationflags=creation_flags,
-        )
-        try:
-            while process.poll() is None:
-                _interruption_check()
-                time.sleep(0.1)
-        except BaseException:
-            process.terminate()
+    for attempt in range(2):
+        with log_path.open("ab" if attempt else "wb") as log:
+            if attempt:
+                log.write(b"\n--- retry after transient native FFmpeg crash ---\n")
+                log.flush()
+            process = subprocess.Popen(
+                args,
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                creationflags=creation_flags,
+            )
             try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=5)
-            raise
-    if process.returncode:
+                while process.poll() is None:
+                    _interruption_check()
+                    time.sleep(0.1)
+            except BaseException:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+                raise
+        returncode = int(process.returncode or 0)
+        if returncode == 0:
+            return
+        normalized_returncode = returncode & 0xFFFFFFFF
+        if attempt == 0 and normalized_returncode in _RETRYABLE_FFMPEG_NATIVE_EXIT_CODES:
+            _interruption_check()
+            continue
         tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
         raise RuntimeError(
-            f"FFmpeg AAC mux failed with exit code {process.returncode}:\n{tail}"
+            "FFmpeg AAC mux failed with exit code "
+            f"{returncode} after {attempt + 1} attempt(s):\n{tail}"
         )
 
 

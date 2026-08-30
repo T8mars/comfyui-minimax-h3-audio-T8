@@ -5,8 +5,12 @@ import json
 from pathlib import Path
 import re
 import struct
-import tomllib
 from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10: fall back to README version discovery.
+    tomllib = None
 
 import torch
 
@@ -40,7 +44,7 @@ def _custom_nodes_root() -> Path:
 
 def _read_plugin_version(path: Path) -> str | None:
     pyproject = path / "pyproject.toml"
-    if pyproject.is_file():
+    if pyproject.is_file() and tomllib is not None:
         try:
             data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
             value = data.get("project", {}).get("version")

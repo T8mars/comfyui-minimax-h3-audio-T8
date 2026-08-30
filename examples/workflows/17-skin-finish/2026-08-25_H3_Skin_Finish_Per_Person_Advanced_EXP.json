@@ -636,17 +636,9 @@
           "link": 15
         },
         {
-          "name": "minimum_ready_frame_fraction",
-          "type": "FLOAT",
-          "widget": {
-            "name": "minimum_ready_frame_fraction"
-          },
-          "link": 16
-        },
-        {
           "name": "identity_assignment",
           "type": "H3_T8_MULTIFACE_IDENTITY_ASSIGNMENT",
-          "link": null
+          "link": 16
         }
       ],
       "outputs": [

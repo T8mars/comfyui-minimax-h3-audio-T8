@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.58.0** · GPL-3.0-or-later
+当前版本：**1.59.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -15,6 +15,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
 - NVIDIA H3 Super Acceleration：H3 4步草稿经完整 LTX VAE 编码后接 LTX-2.5 3步 Refiner（TAEHV仅最终解码）
+- FlashVSR v1.1：成片2×/4×超分、固定LCSA、动态预算候选和低显存分块，原音频不处理
 - RAFT运动审计、轨迹控制、RealBasicVSR、FreeNoise、AYS校准契约、CADS视觉参考退火
 
 带 `Advanced` 或 `EXP` 的节点属于高级/实验功能，建议直接使用配套工作流。
@@ -59,6 +60,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | TAEH3 快速预览模型 | `models/vae_approx` |
 | RAFT 光流模型 | `models/optical_flow` |
 | RealBasicVSR | `models/upscale_models` |
+| FlashVSR v1.1 整套目录 | `models/FlashVSR-v1.1` |
 
 FL2VA、Ref2VA、pruned 和完整基模不要混用。
 
@@ -94,6 +96,12 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 目录内同时提供低 Sigma 保脸实验版：`0.5 → 0.412 → 0.350 → 0`，仍是3次 Euler 更新，默认 Dense Attention。它保留更多放大后的原 latent，适合官方完全降噪版导致人脸变化过大时做 A/B；不是官方 Sigma 对齐路线，也不保证所有素材都更好。
 
 配套模型整包：[t8star/Minimax-H3-Super-Acceleration-Comfy](https://huggingface.co/t8star/Minimax-H3-Super-Acceleration-Comfy)。下载时保留仓库中的目录结构，把各目录复制到 `ComfyUI/models` 即可。完整文件名和路径见 [`22-sol-engine-h3-super`](examples/workflows/22-sol-engine-h3-super)。Sol-Attn 是可选依赖，未安装时自动使用 Dense Attention。
+
+## FlashVSR 视频超分
+
+工作流在 [`23-flashvsr`](examples/workflows/23-flashvsr)。下载官方 [FlashVSR-v1.1](https://huggingface.co/JunhaoZhuang/FlashVSR-v1.1)，把整个目录放到 `ComfyUI/models/FlashVSR-v1.1`；模型仓库未包含的 `posi_prompt.pth` 从[官方 FlashVSR 仓库](https://github.com/OpenImagingLab/FlashVSR/tree/main/examples/WanVSR/prompt_tensor)补到同一目录。再从 [SpargeAttn](https://github.com/thu-ml/SpargeAttn) 或其 [Windows wheels](https://github.com/woct0rdho/SpargeAttn/releases)安装与当前 Torch/CUDA 匹配的 `spas_sage_attn`。
+
+先用 `Quality Locked`：固定 `2.0 / 3.0 / 11` LCSA。`Balanced Dynamic` 会改低运动块预算，必须人工看成片；`Memory Safe` 用分块和卸载换显存，通常更慢。官方主要面向4×，项目也提供保守2×实验路线。节点不设模型哈希、文件大小或像素上限，音频原对象直通。
 
 ## 社区创作增强
 

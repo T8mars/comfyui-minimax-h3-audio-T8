@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import torch
 
 from h3_audio_t8_pkg import realbasicvsr_advanced as module
+from h3_audio_t8_pkg import nodes_realbasicvsr_advanced as node_module
 
 
 class _FakeRealBasicVSR(torch.nn.Module):
@@ -97,6 +99,65 @@ def test_unwrap_prefers_ema_without_filename_hash_or_size_gate():
     state = module._unwrap_state_dict(payload, "prefer_ema")
     assert torch.equal(state["conv.weight"], torch.tensor([2.0]))
     assert "step_counter" not in state
+
+
+def test_optional_audio_is_forwarded_as_none_by_node_adapter(monkeypatch):
+    frames = torch.zeros(1, 8, 8, 3)
+    observed = {}
+
+    def fake_restore(frames, audio, **kwargs):
+        observed["audio"] = audio
+        return frames, frames, audio, "{}"
+
+    monkeypatch.setattr(node_module, "_model_path", lambda _name: Path("fake.pth"))
+    monkeypatch.setattr(node_module, "restore_realbasicvsr", fake_restore)
+    node_module.MiniMaxH3RealBasicVSRRestoreT8Advanced.execute(
+        "fake.pth", frames=frames
+    )
+    assert observed["audio"] is None
+
+
+def test_model_cache_key_separates_branch_and_file_revision(monkeypatch, tmp_path):
+    import comfy.utils
+
+    model_path = tmp_path / "realbasicvsr.pth"
+    model_path.write_bytes(b"first")
+    dtype = torch.float32
+    model = _FakeRealBasicVSR()
+    ema_key = module._model_cache_key(model_path, dtype, "prefer_ema")
+    generator_key = module._model_cache_key(model_path, dtype, "prefer_generator")
+    assert ema_key != generator_key
+
+    module._MODEL_CACHE.clear()
+    module._MODEL_CACHE[ema_key] = model
+    monkeypatch.setattr(
+        module, "_device_and_dtype", lambda _precision: (torch.device("cpu"), dtype)
+    )
+    monkeypatch.setattr(
+        comfy.utils,
+        "load_torch_file",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("cache miss reached model loader")
+        ),
+    )
+    loaded, _device, _dtype, cache_hit = module._load_model(
+        model_path, precision="fp32", checkpoint_branch="prefer_ema"
+    )
+    assert loaded is model and cache_hit is True
+    with pytest.raises(RuntimeError, match="cache miss reached model loader"):
+        module._load_model(
+            model_path, precision="fp32", checkpoint_branch="prefer_generator"
+        )
+
+    model_path.write_bytes(b"second revision")
+    revised_key = module._model_cache_key(model_path, dtype, "prefer_ema")
+    assert revised_key != ema_key
+    with pytest.raises(RuntimeError, match="cache miss reached model loader"):
+        module._load_model(
+            model_path, precision="fp32", checkpoint_branch="prefer_ema"
+        )
+    assert ema_key not in module._MODEL_CACHE
+    module._MODEL_CACHE.clear()
 
 
 def test_feature_manifest_registers_realbasicvsr():

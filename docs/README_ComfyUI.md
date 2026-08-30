@@ -1,5 +1,17 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-08-30 FlashVSR v1.1 post-processing: three append-only Advanced EXP nodes load the
+> official model folder, compile an explicit quality/memory plan, and restore decoded H3 frames
+> at 2x or 4x while returning the exact original AUDIO object. `quality_locked` keeps the public
+> LCSA `2.0/3.0/11` budget. `balanced_dynamic_exp` changes only eligible interior low-motion
+> chunks and always protects the first, last and high-motion chunks. `memory_safe` keeps the fixed
+> budget and uses same-seed feathered tiles plus staged offload. The LCSA mask is dispatched to a
+> separately installed `spas_sage_attn` block-sparse Sage2 kernel; absence or incompatibility is an
+> actionable error, never a silent dense fallback. Models are checked by required structure and
+> loadability, not filename hash, byte size or pixel area. Official FlashVSR primarily targets 4x;
+> the bundled 2x workflows remain conservative experiments and cannot recover missing identity,
+> lip sync or source detail.
+
 > 2026-08-27 v1.52.2 canvas policy: `1920x1088` is a warning/reference area, not a hard
 > execution cap. Conditioning, Source AV, Long Video, Multi-Keyframe, Still Image, SPEED,
 > Prompt Relay resource estimation and Environment Audit allow larger 32-aligned canvases and

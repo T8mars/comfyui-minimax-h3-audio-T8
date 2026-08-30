@@ -146,6 +146,53 @@ def test_candidate_ffmpeg_failure_is_atomic_and_cleans_temporaries(monkeypatch, 
     assert not list(candidate_dir.glob(".*.tmp"))
 
 
+def test_isolated_ffmpeg_retries_one_observed_native_crash(monkeypatch, tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    returncodes = iter([0xC0000005, 0])
+    processes = []
+
+    class FakeProcess:
+        def __init__(self, returncode):
+            self.returncode = returncode
+
+        def poll(self):
+            return self.returncode
+
+    def fake_popen(*_args, **_kwargs):
+        process = FakeProcess(next(returncodes))
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(delivery.subprocess, "Popen", fake_popen)
+    delivery._run_isolated_ffmpeg(["ffmpeg", "-version"], tmp_path / "ffmpeg.log")
+    assert [process.returncode for process in processes] == [0xC0000005, 0]
+
+
+def test_isolated_ffmpeg_does_not_retry_regular_cli_failure(monkeypatch, tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    calls = 0
+
+    class FakeProcess:
+        returncode = 1
+
+        def poll(self):
+            return self.returncode
+
+    def fake_popen(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        return FakeProcess()
+
+    monkeypatch.setattr(delivery.subprocess, "Popen", fake_popen)
+    with pytest.raises(RuntimeError, match=r"exit code 1 after 1 attempt"):
+        delivery._run_isolated_ffmpeg(
+            ["ffmpeg", "-invalid"], tmp_path / "ffmpeg.log"
+        )
+    assert calls == 1
+
+
 def test_planar_audio_raw_is_interleaved_little_endian(tmp_path):
     import h3_audio_t8_pkg.long_video_delivery as delivery
 
