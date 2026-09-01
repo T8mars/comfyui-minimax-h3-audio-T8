@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 import time
@@ -51,9 +52,12 @@ from .prompt_relay_events_advanced import (
 
 MV_SCENE_PLAN_TYPE = "H3_T8_MV_SCENE_PLAN"
 MV_PROMPT_PLAN_TYPE = "H3_T8_MV_PROMPT_PLAN"
+MV_VOCAL_LOCK_PROMPT_PLAN_TYPE = "H3_T8_MV_VOCAL_LOCK_PROMPT_PLAN"
 MV_SCENE_SCHEMA = "t8.minimax_h3.mv_scene_plan.v1"
 MV_PROMPT_SCHEMA = "t8.minimax_h3.mv_prompt_plan.v1"
+MV_VOCAL_LOCK_PROMPT_SCHEMA = "t8.minimax_h3.mv_vocal_lock_prompt_plan.v2"
 MV_LOOP_STATE_NAME = "mv_in_node_loop_state.json"
+MV_VOCAL_LOCK_LOOP_STATE_NAME = "mv_vocal_lock_in_node_loop_state.json"
 
 
 def _canonical_json(value: object, *, indent: int | None = None) -> str:
@@ -386,6 +390,91 @@ def build_mv_scene_plan(
     )
 
 
+def build_mv_vocal_lock_scene_plan(
+    full_song,
+    vocal_lock_audio,
+    min_scene_seconds: float = 5.0,
+    target_scene_seconds: float = 7.0,
+    max_scene_seconds: float = 10.0,
+    analysis_hop_ms: int = 50,
+    vocal_active_ratio: float = 0.12,
+    manual_boundaries_json: str = "",
+) -> tuple[dict, int, float, str, str]:
+    if not math.isfinite(float(vocal_active_ratio)) or not 0.0 <= float(vocal_active_ratio) <= 1.0:
+        raise ValueError("vocal_active_ratio must be finite and between 0 and 1")
+    base = build_mv_scene_plan(
+        full_song,
+        min_scene_seconds=min_scene_seconds,
+        target_scene_seconds=target_scene_seconds,
+        max_scene_seconds=max_scene_seconds,
+        analysis_hop_ms=analysis_hop_ms,
+        vocal_policy="vocal_stem_required",
+        manual_boundaries_json=manual_boundaries_json,
+        vocal_stem=vocal_lock_audio,
+    )[0]
+    audio_contract = _validate_vocal_lock_audio_contract(
+        full_song, vocal_lock_audio, int(base["total_frames"])
+    )
+    waveform, sample_rate = validate_audio(vocal_lock_audio, "vocal_lock_audio")
+    rms = _block_rms(waveform, sample_rate, int(analysis_hop_ms))
+    global_peak = float(rms.max()) if int(rms.numel()) else 0.0
+    active_threshold = max(1e-5, global_peak * 0.08)
+    plan = json.loads(_canonical_json(base))
+    plan.pop("plan_hash", None)
+    for scene in plan["scenes"]:
+        start = max(0, math.floor(scene["start_frame"] / FPS * 1000 / analysis_hop_ms))
+        end = min(
+            int(rms.numel()),
+            math.ceil(scene["end_frame"] / FPS * 1000 / analysis_hop_ms),
+        )
+        window = rms[start:end]
+        ratio = (
+            float((window >= active_threshold).float().mean())
+            if int(window.numel())
+            else 0.0
+        )
+        scene["vocal_activity_ratio"] = round(ratio, 6)
+        scene["vocal_activity_threshold_rms"] = round(active_threshold, 8)
+        scene["performance_state"] = (
+            "vocal_active" if ratio >= float(vocal_active_ratio) else "non_vocal"
+        )
+    plan.update(
+        {
+            "analysis_source": "required_vocal_lock_audio",
+            "vocal_policy": "vocal_lock_v2",
+            "vocal_active_ratio": float(vocal_active_ratio),
+            "audio_timeline_contract": audio_contract,
+            "external_api_used": False,
+        }
+    )
+    plan["plan_hash"] = _hash(plan)
+    validate_mv_scene_plan(plan)
+    report = {
+        "status": "ready",
+        "plan_hash": plan["plan_hash"],
+        "scene_count": int(plan["scene_count"]),
+        "duration_seconds": float(plan["duration_seconds"]),
+        "boundary_source": plan["boundary_source"],
+        "analysis_source": plan["analysis_source"],
+        "vocal_active_scene_count": sum(
+            scene["performance_state"] == "vocal_active" for scene in plan["scenes"]
+        ),
+        "audio_timeline_contract": audio_contract,
+        "notes": [
+            "scene boundaries and vocal activity are derived locally from the required vocal_lock_audio",
+            "both audio inputs must resolve to the same exact 24fps scene-plan duration",
+            "this planner detects vocal energy intervals; it does not infer or transcribe words",
+        ],
+    }
+    return (
+        plan,
+        int(plan["scene_count"]),
+        float(plan["duration_seconds"]),
+        _canonical_json({"scenes": plan["scenes"]}, indent=2),
+        _canonical_json(report, indent=2),
+    )
+
+
 def validate_mv_prompt_plan(value: Mapping) -> dict:
     if not isinstance(value, Mapping):
         raise ValueError("MV Prompt Plan must come from the local Ref2VA Prompt Compiler node")
@@ -536,6 +625,278 @@ def build_mv_prompt_plan(
     )
 
 
+_OFFICIAL_REF2VA_SECTIONS = (
+    "subject_definitions:",
+    "summary:",
+    "retention_analysis:",
+    "detailed_description:",
+    "overall_soundscape:",
+    "non_diegetic_music:",
+)
+
+
+def _validate_official_ref2va_prompt(prompt: str, *, vocal_active: bool) -> None:
+    positions = [prompt.find(section) for section in _OFFICIAL_REF2VA_SECTIONS]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise ValueError("Vocal Lock prompt must contain the official six Ref2VA sections in order")
+    if any(prompt.count(section) != 1 for section in _OFFICIAL_REF2VA_SECTIONS):
+        raise ValueError("Vocal Lock prompt must contain each official Ref2VA section exactly once")
+    required = (
+        "<Subject 1>",
+        "<Picture 1>",
+        "<Audio 1>",
+        "[reference generation + audio reuse]",
+        "fully_preserved",
+        "fully_copy",
+        "[Shot 1]",
+    )
+    if any(token not in prompt for token in required):
+        raise ValueError("Vocal Lock prompt is missing a required Ref2VA reference relationship")
+    if vocal_active and (
+        "unobstructed" not in prompt.lower() or "phoneme" not in prompt.lower()
+    ):
+        raise ValueError("Vocal Lock prompt must keep the mouth visible and request phoneme articulation")
+
+
+def validate_mv_vocal_lock_prompt_plan(value: Mapping) -> dict:
+    if not isinstance(value, Mapping):
+        raise ValueError(
+            "MV Vocal Lock Prompt Plan must come from the V2 Ref2VA Prompt Compiler node"
+        )
+    plan = dict(value)
+    claimed = plan.pop("prompt_plan_hash", None)
+    if (
+        plan.get("type") != MV_VOCAL_LOCK_PROMPT_PLAN_TYPE
+        or plan.get("schema") != MV_VOCAL_LOCK_PROMPT_SCHEMA
+    ):
+        raise ValueError("MV Vocal Lock Prompt Plan has an unsupported type/schema")
+    if not isinstance(claimed, str) or claimed != _hash(plan):
+        raise ValueError("MV Vocal Lock Prompt Plan hash mismatch; rebuild the V2 prompt plan")
+    scene_plan = validate_mv_scene_plan(plan.get("scene_plan"))
+    prompts = plan.get("segments")
+    if not isinstance(prompts, list) or len(prompts) != scene_plan["scene_count"]:
+        raise ValueError("MV Vocal Lock Prompt Plan segment count does not match its scene plan")
+    for index, item in enumerate(prompts):
+        if not isinstance(item, Mapping) or int(item.get("index", -1)) != index:
+            raise ValueError("MV Vocal Lock Prompt Plan segment indices must be contiguous")
+        _validate_official_ref2va_prompt(
+            str(item.get("prompt", "")),
+            vocal_active=item.get("performance_state") == "vocal_active",
+        )
+    audio_contract = plan.get("audio_contract")
+    if not isinstance(audio_contract, Mapping) or audio_contract.get("drive") != "vocal_lock_audio":
+        raise ValueError("MV Vocal Lock Prompt Plan is missing the isolated-audio drive contract")
+    if audio_contract.get("delivery") != "full_song_muxed_once":
+        raise ValueError("MV Vocal Lock Prompt Plan is missing the one-time full-song delivery contract")
+    plan["prompt_plan_hash"] = claimed
+    return plan
+
+
+def _safe_vocal_camera_direction(value: str) -> str:
+    direction = _single_line(value) or (
+        "locked-off static camera with stable framing, no camera movement, and continuous "
+        "mouth visibility"
+    )
+    replacements = (
+        (r"\b(?:extreme )?wide shot\b", "stable performance framing"),
+        (r"\b(?:full-body|full body|long) shot\b", "stable performance framing"),
+        (r"\bover-the-shoulder shot\b", "front three-quarter framing"),
+        (r"\bfrom behind\b", "from a front three-quarter angle"),
+        (r"\bprofile(?: shot)?\b", "three-quarter face view"),
+        (r"\beye-only shot\b", "face-visible performance framing"),
+    )
+    for pattern, replacement in replacements:
+        direction = re.sub(pattern, replacement, direction, flags=re.IGNORECASE)
+    return direction
+
+
+def build_mv_vocal_lock_prompt_plan(
+    scene_plan: Mapping,
+    global_creative_prompt: str,
+    performer_description: str,
+    visual_style: str,
+    camera_pattern: str,
+    vocal_content_type: str = "singing",
+    vocal_language: str = "English",
+    exact_vocal_text_json: str = "",
+    non_vocal_action: str = "keeps the mouth naturally closed and breathes with the rhythm",
+) -> tuple[dict, str, dict, str, str]:
+    scene_plan = validate_mv_scene_plan(scene_plan)
+    if vocal_content_type not in {"singing", "spoken_dialogue"}:
+        raise ValueError("vocal_content_type must be singing or spoken_dialogue")
+    text_payload = _load_json(exact_vocal_text_json, "exact_vocal_text_json")
+    if text_payload and not isinstance(text_payload, list):
+        raise ValueError("exact_vocal_text_json must be a list of scene text strings")
+    if any(not isinstance(item, str) for item in text_payload):
+        raise ValueError("exact_vocal_text_json must contain only scene text strings")
+    if len(text_payload) > int(scene_plan["scene_count"]):
+        raise ValueError("exact_vocal_text_json contains more entries than the scene plan")
+
+    global_prompt = _single_line(global_creative_prompt) or "A coherent cinematic performance."
+    performer = _single_line(performer_description) or "the same lead performer"
+    style = _single_line(visual_style) or "cinematic, realistic light and natural skin texture"
+    language = _single_line(vocal_language) or "Unknown"
+    cameras = [
+        _safe_vocal_camera_direction(item)
+        for item in str(camera_pattern or "").replace("|", "\n").splitlines()
+        if item.strip()
+    ] or [
+        "locked-off static camera with stable framing, no camera movement, and continuous "
+        "mouth visibility"
+    ]
+    non_vocal = _single_line(non_vocal_action) or "keeps the mouth naturally closed"
+    segments = []
+    relay_events = []
+    segment_json = []
+    for scene in scene_plan["scenes"]:
+        index = int(scene["index"])
+        exact_text = _single_line(text_payload[index]) if index < len(text_payload) else ""
+        vocal_active = scene["performance_state"] == "vocal_active"
+        camera = cameras[index % len(cameras)]
+        if vocal_active:
+            action = "sings the supplied isolated vocal" if vocal_content_type == "singing" else "speaks the supplied isolated dialogue"
+            summary_action = "performs the supplied vocal with clearly visible synchronized mouth movement"
+            vocal_detail = (
+                f"<Subject 1> (S1) {action} naturally. The full face and unobstructed mouth remain "
+                "visible for the entire shot; lips, jaw, tongue visibility, cheeks, and facial muscles "
+                "articulate every audible phoneme in synchronization with <Audio 1>."
+            )
+            if exact_text:
+                vocal_detail += f" The exact supplied words are <d>[{language}] {exact_text}</d>"
+            else:
+                vocal_detail += (
+                    " No words or lyrics are added, removed, guessed, paraphrased, printed, or subtitled."
+                )
+        else:
+            summary_action = "remains visible with a relaxed closed mouth during the non-vocal interval"
+            vocal_detail = (
+                f"<Audio 1> remains the synchronized timing signal while <Subject 1> (S1) {non_vocal}. "
+                "No unrelated speaking or singing mouth shapes are introduced."
+            )
+        prompt = "\n".join(
+            (
+                "subject_definitions:",
+                (
+                    f"<Subject 1> is the exact performer shown in <Picture 1>: {performer}. The same "
+                    "identity, facial structure, hair, clothing, and visual style remain unchanged."
+                ),
+                (
+                    "<Audio 1> is the supplied isolated vocal-lock signal for this entire target clip "
+                    "and is reused as the synchronized vocal track for <Subject 1> (S1)."
+                ),
+                "summary:",
+                (
+                    "[reference generation + audio reuse] The target video is one continuous "
+                    f"performance shot in which <Subject 1> {summary_action}; <Audio 1> supplies the "
+                    "complete synchronized vocal timing."
+                ),
+                "retention_analysis:",
+                (
+                    "<Subject 1> (appears in [Shot 1]): fully_preserved - identity, face, hair, "
+                    "clothing, and visual style from <Picture 1> are retained."
+                ),
+                (
+                    "<Audio 1>: fully_copy - the isolated vocal-lock signal is reused 1:1 across the "
+                    "complete generated scene timeline."
+                ),
+                "detailed_description:",
+                (
+                    f"The target video uses {style}. {global_prompt} It contains one continuous shot "
+                    "with no internal cut and no visible text."
+                ),
+                (
+                    "[Shot 1] Medium close-up performance shot, front-facing or three-quarter face "
+                    f"view, with {camera}. <Subject 1> stays clearly identifiable and the full mouth "
+                    f"region is never cropped, covered, turned away, or motion-blurred. {vocal_detail}"
+                ),
+                (
+                    "The complete performer stays in optical focus. Hair strands, face contour, "
+                    "shoulders, clothing edges, and the subject silhouette remain sharply resolved "
+                    "and temporally stable, without haloing, edge smearing, double contours, "
+                    "synthetic depth haze, or motion blur. Natural depth of field may soften only "
+                    "the distant background."
+                ),
+                "overall_soundscape:",
+                (
+                    "No additional dialogue, crowd voices, ambience, or sound effects are invented; "
+                    "the synchronized vocal content comes only from <Audio 1>."
+                ),
+                "non_diegetic_music:",
+                "N/A",
+            )
+        )
+        _validate_official_ref2va_prompt(prompt, vocal_active=vocal_active)
+        item = {
+            "index": index,
+            "prompt": prompt,
+            "start_frame": int(scene["start_frame"]),
+            "end_frame": int(scene["end_frame"]),
+            "performance_state": scene["performance_state"],
+            "exact_vocal_text_supplied": bool(exact_text),
+        }
+        segments.append(item)
+        segment_json.append({"prompt": prompt, "note": f"MV Vocal Lock scene {index + 1}"})
+        relay_events.append(
+            {
+                "event_index": index + 1,
+                "prompt": _single_line(prompt),
+                "start": float(scene["start_seconds"]),
+                "end": float(scene["end_seconds"]),
+            }
+        )
+    relay_available = len(relay_events) <= MAX_RELAY_EVENTS
+    events = {
+        "type": PROMPT_RELAY_EVENTS_TYPE,
+        "schema": PROMPT_RELAY_EVENTS_SCHEMA,
+        "events": relay_events if relay_available else [],
+    }
+    events["events_hash"] = json_hash(events)
+    prompt_plan = {
+        "type": MV_VOCAL_LOCK_PROMPT_PLAN_TYPE,
+        "schema": MV_VOCAL_LOCK_PROMPT_SCHEMA,
+        "scene_plan": scene_plan,
+        "segments": segments,
+        "audio_contract": {
+            "drive": "vocal_lock_audio",
+            "conditioning_mode": "lock_source",
+            "delivery": "full_song_muxed_once",
+        },
+        "prompt_relay_events_hash": events["events_hash"],
+        "prompt_relay_events_available": relay_available,
+        "external_api_used": False,
+        "compiler": "deterministic_local_official_ref2va_six_section_v2",
+    }
+    prompt_plan["prompt_plan_hash"] = _hash(prompt_plan)
+    report = {
+        "status": "ready",
+        "prompt_plan_hash": prompt_plan["prompt_plan_hash"],
+        "scene_count": len(segments),
+        "exact_vocal_text_scene_count": sum(
+            item["exact_vocal_text_supplied"] for item in segments
+        ),
+        "official_ref2va_sections": list(_OFFICIAL_REF2VA_SECTIONS),
+        "audio_contract": prompt_plan["audio_contract"],
+        "external_api_used": False,
+        "prompt_relay_events_available": relay_available,
+        "notes": [
+            "the six Ref2VA sections and reference markers follow the official MiniMax H3 format",
+            "only exact_vocal_text_json is emitted inside <d>; missing words are never guessed",
+            "vocal_lock_audio drives H3 while full_song is reserved for the final delivery mux",
+        ],
+    }
+    if not relay_available:
+        report["notes"].append(
+            f"typed Prompt Relay events are empty above {MAX_RELAY_EVENTS} scenes; rendering remains available"
+        )
+    return (
+        prompt_plan,
+        json.dumps(segment_json, ensure_ascii=False, indent=2),
+        events,
+        "\n\n--- SCENE ---\n\n".join(item["prompt"] for item in segments),
+        _canonical_json(report, indent=2),
+    )
+
+
 def _audio_window(audio, start_frame: int, frame_count: int, *, name: str) -> dict:
     waveform, sample_rate = validate_audio(audio, name)
     start_sample = round(int(start_frame) * sample_rate / FPS)
@@ -546,6 +907,48 @@ def _audio_window(audio, start_frame: int, frame_count: int, *, name: str) -> di
     if available:
         output[..., :available] = waveform[..., start_sample : start_sample + available]
     return {"waveform": output, "sample_rate": sample_rate}
+
+
+def _validate_vocal_lock_audio_contract(full_song, vocal_lock_audio, total_frames: int) -> dict:
+    result = {}
+    for name, audio in (("full_song", full_song), ("vocal_lock_audio", vocal_lock_audio)):
+        waveform, sample_rate = validate_audio(audio, name)
+        duration_seconds = int(waveform.shape[-1]) / int(sample_rate)
+        resolved_frames = round(duration_seconds * FPS)
+        if resolved_frames != int(total_frames):
+            raise ValueError(
+                f"{name} resolves to {resolved_frames} frames at {FPS}fps but the MV scene plan "
+                f"requires {int(total_frames)}; align both audio inputs before Vocal Lock rendering"
+            )
+        rms = float(waveform.detach().float().square().mean().sqrt().cpu())
+        peak = float(waveform.detach().float().abs().max().cpu())
+        if name == "vocal_lock_audio" and (rms < 1e-5 or peak < 1e-4):
+            raise ValueError("vocal_lock_audio is effectively silent and cannot drive assessable lip sync")
+        result[name] = {
+            "sample_rate": int(sample_rate),
+            "samples": int(waveform.shape[-1]),
+            "duration_seconds": duration_seconds,
+            "resolved_frames": resolved_frames,
+            "rms": rms,
+            "peak": peak,
+        }
+    return result
+
+
+def _mv_audio_sources(full_song, vocal_lock_audio=None) -> dict:
+    if vocal_lock_audio is None:
+        return {
+            "conditioning": full_song,
+            "candidate_preview": full_song,
+            "final_delivery": full_song,
+            "policy": "v1_full_song_conditioning_and_final_mux",
+        }
+    return {
+        "conditioning": vocal_lock_audio,
+        "candidate_preview": vocal_lock_audio,
+        "final_delivery": full_song,
+        "policy": "v2_isolated_vocal_conditioning_full_song_final_mux",
+    }
 
 
 def _mux_master_audio(
@@ -625,8 +1028,10 @@ def _contract(
     model_id: str,
     reference_image,
     full_song,
+    vocal_lock_audio=None,
+    route_revision: str = "v1",
 ) -> dict:
-    return {
+    contract = {
         "schema": 1,
         "prompt_plan_hash": prompt_plan["prompt_plan_hash"],
         "width": int(width),
@@ -642,6 +1047,17 @@ def _contract(
         "full_song": _media_signature(full_song),
         "external_api_used": False,
     }
+    if route_revision != "v1":
+        contract.update(
+            {
+                "schema": 2,
+                "route_revision": str(route_revision),
+                "vocal_lock_audio": _media_signature(vocal_lock_audio),
+                "conditioning_audio_policy": "isolated_vocal_lock_audio",
+                "delivery_audio_policy": "full_song_muxed_once",
+            }
+        )
+    return contract
 
 
 def _accepted_matches_plan(
@@ -707,6 +1123,11 @@ def run_local_mv_in_node_loop(
     bit_depth: int,
     crf: int,
     model_id: str,
+    vocal_lock_audio=None,
+    prompt_plan_validator=validate_mv_prompt_plan,
+    route_revision: str = "v1",
+    loop_state_name: str = MV_LOOP_STATE_NAME,
+    state_schema: str = "t8.minimax_h3.mv_in_node_loop.v1",
 ) -> tuple[str, str, int, str, str]:
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("MiniMax H3 MV width and height must be positive and divisible by 32")
@@ -720,15 +1141,16 @@ def run_local_mv_in_node_loop(
         raise ValueError("MiniMax H3 MV base_seed must be an unsigned 64-bit integer")
     if bit_depth not in {8, 10} or not 0 <= int(crf) <= 51:
         raise ValueError("bit_depth must be 8/10 and crf must be between 0 and 51")
-    prompt_plan = validate_mv_prompt_plan(mv_prompt_plan)
+    prompt_plan = prompt_plan_validator(mv_prompt_plan)
     scene_plan = prompt_plan["scene_plan"]
     scenes = scene_plan["scenes"]
     prompts = prompt_plan["segments"]
+    audio_sources = _mv_audio_sources(full_song, vocal_lock_audio)
     safe_chain = sanitize_chain_id(chain_id)
     root = long_video_chain_root(safe_chain)
-    state_path = root / MV_LOOP_STATE_NAME
+    state_path = root / loop_state_name
     sampling_summary = (
-        f"local_mv_v1 {int(steps)}-step {sampler_name}/{scheduler} "
+        f"local_mv_{route_revision} {int(steps)}-step {sampler_name}/{scheduler} "
         f"shift{float(shift_video):g}/{float(shift_audio):g}"
     )
     contract = _contract(
@@ -744,6 +1166,8 @@ def run_local_mv_in_node_loop(
         model_id=model_id,
         reference_image=reference_image,
         full_song=full_song,
+        vocal_lock_audio=vocal_lock_audio,
+        route_revision=route_revision,
     )
     contract_sha256 = _hash(contract)
 
@@ -761,7 +1185,7 @@ def run_local_mv_in_node_loop(
             if not isinstance(saved_state, Mapping):
                 raise ValueError("this MV chain_id has an invalid local state document")
             if (
-                saved_state.get("schema") != "t8.minimax_h3.mv_in_node_loop.v1"
+                saved_state.get("schema") != state_schema
                 or saved_state.get("chain_id") != safe_chain
             ):
                 raise ValueError("this MV chain_id has an incompatible local state document")
@@ -808,6 +1232,7 @@ def run_local_mv_in_node_loop(
             )
 
         state = _state_payload(
+            schema=state_schema,
             chain_id=safe_chain,
             contract_sha256=contract_sha256,
             status="running",
@@ -853,17 +1278,26 @@ def run_local_mv_in_node_loop(
                 if candidate_json is None:
                     candidate_id = _available_candidate_id(root, index, base_candidate_id)
                     try:
+                        drive_audio = audio_sources["conditioning"]
                         render_audio = _audio_window(
-                            full_song,
+                            drive_audio,
                             int(scene["start_frame"]),
                             int(scene["render_frame_count"]),
-                            name="full_song",
+                            name=(
+                                "vocal_lock_audio"
+                                if vocal_lock_audio is not None
+                                else "full_song"
+                            ),
                         )
                         delivery_audio = _audio_window(
-                            full_song,
+                            audio_sources["candidate_preview"],
                             int(scene["start_frame"]),
                             int(scene["frame_count"]),
-                            name="full_song",
+                            name=(
+                                "vocal_lock_audio"
+                                if vocal_lock_audio is not None
+                                else "full_song"
+                            ),
                         )
                         (
                             positive,
@@ -949,6 +1383,7 @@ def run_local_mv_in_node_loop(
                     raise RuntimeError(f"local MV scene {index} was not accepted")
                 manifest, _source = load_delivery_manifest(safe_chain)
                 state = _state_payload(
+                    schema=state_schema,
                     chain_id=safe_chain,
                     contract_sha256=contract_sha256,
                     status="composing" if len(manifest["segments"]) == len(scenes) else "running",
@@ -971,12 +1406,13 @@ def run_local_mv_in_node_loop(
             )
             final_path, master_report = _mux_master_audio(
                 assembled_path,
-                full_song,
+                audio_sources["final_delivery"],
                 int(scene_plan["total_frames"]),
                 filename_prefix,
             )
             manifest, _source = load_delivery_manifest(safe_chain)
             state = _state_payload(
+                schema=state_schema,
                 chain_id=safe_chain,
                 contract_sha256=contract_sha256,
                 status="complete",
@@ -987,7 +1423,11 @@ def run_local_mv_in_node_loop(
                 final_video_sha256=master_report["output_sha256"],
                 manifest_revision=int(manifest["revision"]),
                 external_api_used=False,
-                source_audio_policy="full_original_song_muxed_once",
+                source_audio_policy=(
+                    "isolated_vocal_lock_conditioning_full_song_muxed_once"
+                    if vocal_lock_audio is not None
+                    else "full_original_song_muxed_once"
+                ),
             )
             _atomic_write_json(state_path, state)
             report = {
@@ -1000,7 +1440,12 @@ def run_local_mv_in_node_loop(
                 "notes": [
                     "all H3 scenes were sampled locally through the connected ComfyUI MODEL",
                     "no HTTP prompt queue, remote H3 gateway, remote LLM, TTS or external video API was used",
-                    "the full original song replaced segment AAC in one final mux",
+                    (
+                        "isolated vocal_lock_audio drove H3 lock_source conditioning; the full "
+                        "original song was used only by the final delivery mux"
+                        if vocal_lock_audio is not None
+                        else "the full original song replaced segment AAC in one final mux"
+                    ),
                 ],
             }
             return (
@@ -1017,6 +1462,7 @@ def run_local_mv_in_node_loop(
             except BaseException:
                 accepted_count = 0
             state = _state_payload(
+                schema=state_schema,
                 chain_id=safe_chain,
                 contract_sha256=contract_sha256,
                 status=(
@@ -1039,3 +1485,78 @@ def run_local_mv_in_node_loop(
             raise
         finally:
             _release_segment_memory()
+
+
+def run_local_mv_vocal_lock_in_node_loop(
+    model,
+    clip,
+    video_vae,
+    audio_vae,
+    reference_image,
+    full_song,
+    vocal_lock_audio,
+    mv_vocal_lock_prompt_plan: Mapping,
+    *,
+    chain_id: str,
+    width: int,
+    height: int,
+    base_seed: int,
+    steps: int,
+    shift_video: float,
+    shift_audio: float,
+    sampler_name: str,
+    scheduler: str,
+    resume_existing: bool,
+    filename_prefix: str,
+    bit_depth: int,
+    crf: int,
+    model_id: str,
+) -> tuple[str, str, int, str, str]:
+    prompt_plan = validate_mv_vocal_lock_prompt_plan(mv_vocal_lock_prompt_plan)
+    audio_contract = _validate_vocal_lock_audio_contract(
+        full_song,
+        vocal_lock_audio,
+        int(prompt_plan["scene_plan"]["total_frames"]),
+    )
+    result = run_local_mv_in_node_loop(
+        model,
+        clip,
+        video_vae,
+        audio_vae,
+        reference_image,
+        full_song,
+        prompt_plan,
+        chain_id=chain_id,
+        width=width,
+        height=height,
+        base_seed=base_seed,
+        steps=steps,
+        shift_video=shift_video,
+        shift_audio=shift_audio,
+        sampler_name=sampler_name,
+        scheduler=scheduler,
+        resume_existing=resume_existing,
+        filename_prefix=filename_prefix,
+        bit_depth=bit_depth,
+        crf=crf,
+        model_id=model_id,
+        vocal_lock_audio=vocal_lock_audio,
+        prompt_plan_validator=validate_mv_vocal_lock_prompt_plan,
+        route_revision="vocal_lock_v2",
+        loop_state_name=MV_VOCAL_LOCK_LOOP_STATE_NAME,
+        state_schema="t8.minimax_h3.mv_vocal_lock_in_node_loop.v2",
+    )
+    report = json.loads(result[4])
+    report.update(
+        {
+            "route": "local_mv_vocal_lock_v2",
+            "vocal_lock_audio_validation": audio_contract,
+            "conditioning_audio": "vocal_lock_audio",
+            "delivery_audio": "full_song_muxed_once",
+            "lipsync_claim": (
+                "audio-conditioned Vocal Lock candidate; visual synchronization still requires "
+                "objective offset review and normal-speed human review"
+            ),
+        }
+    )
+    return (*result[:4], _canonical_json(report, indent=2))

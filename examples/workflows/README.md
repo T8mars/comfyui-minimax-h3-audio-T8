@@ -27,6 +27,6 @@
 | `21-community-advanced` | Fun Control、长视频人物音色/句界、接缝漂移、低显存驻留、Creator语义缓存、TAEH3原生预览检查与只读诊断 |
 | `22-sol-engine-h3-super` | NVIDIA H3 Super Acceleration：H3草稿经TAEHV、LTX-2.5 x2 latent放大与三步Refiner处理，H3原音频旁路回帖（实验） |
 | `23-flashvsr` | FlashVSR v1.1 解码后视频超分：固定质量、动态预算候选和低显存分块，原音频完全旁路（实验） |
-| `24-mv-lipsync` | 全本地歌曲分镜、Ref2VA口型提示词、串行H3生成、断点续跑与完整原曲单次混入（实验） |
+| `24-mv-lipsync` | 全本地 MV Vocal Lock V2：独立人声分镜与H3驱动、官方六段式Ref2VA提示词、串行续跑及完整原曲最终单次混入；保留旧V1兼容工作流（实验） |
 
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。

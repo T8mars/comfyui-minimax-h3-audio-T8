@@ -1,5 +1,20 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-09-01 MV Vocal Lock V2: three more append-only Advanced EXP nodes require a timeline-aligned
+> `full_song` and isolated `vocal_lock_audio`, derive vocal-active scenes locally, emit the official
+> six-section Ref2VA prompt format, and drive every serial local H3 scene through `lock_source` with
+> the isolated track. `full_song` stays out of H3 and candidate segments and is muxed once only after
+> accepted video assembly. The V2 resume contract binds both audio signatures independently. One
+> 736x416x124, 8-step, 5.152-second clear-English-speech run strictly decoded; official SyncNet
+> measured a zero-frame candidate offset and exactly ten frames after a fixed 0.400-second visual
+> delay. The user then reviewed the clip at normal speed and explicitly passed the lip sync. The same
+> feedback noted soft/blurred subject boundaries; this is not an intentional effect and no blur filter
+> exists in the route. The fixture forced a sharp side-profile reference toward a front/three-quarter
+> face with a slow push-in at 736x416. The recommended V2 workflow now defaults to a locked-off camera,
+> requests sharp temporally stable subject edges, and recommends a reference with a matching face angle.
+> This reduces risk but does not establish universal phoneme, identity, or image-quality correctness.
+> No product node calls `/prompt` or any remote API.
+
 > 2026-09-01 fully local MV / lip-scene route: three append-only Advanced EXP nodes analyze a
 > complete local song on CPU, compile deterministic Ref2VA prompts, render scenes strictly serially
 > through the connected local H3 `MODEL`, resume accepted scenes, and mux the complete original song

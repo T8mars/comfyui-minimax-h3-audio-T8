@@ -14,8 +14,12 @@ import h3_audio_t8_pkg.mv_lipsync_advanced as mv
 from h3_audio_t8_pkg import comfy_entrypoint
 from h3_audio_t8_pkg.nodes_mv_lipsync_advanced import (
     MV_LIPSYNC_ADVANCED_NODE_CLASSES,
+    MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES,
     MiniMaxH3LocalMVInNodeRendererT8Advanced,
+    MiniMaxH3LocalMVVocalLockRendererV2T8Advanced,
     MiniMaxH3MVRef2VAPromptCompilerT8Advanced,
+    MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced,
+    MiniMaxH3MVVocalLockScenePlannerV2T8Advanced,
     MiniMaxH3MVVocalScenePlannerT8Advanced,
 )
 from helpers import plugin_widget_map
@@ -25,6 +29,11 @@ WORKFLOW_PATH = (
     Path(__file__).resolve().parents[1]
     / "examples/workflows/24-mv-lipsync/"
     "2026-09-01_H3_Local_MV_LipSync_Ref2VA_Turbo4_Advanced_EXP.json"
+)
+VOCAL_LOCK_V2_WORKFLOW_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "examples/workflows/24-mv-lipsync/"
+    "2026-09-01_H3_Local_MV_VocalLock_V2_Ref2VA_8Step_Advanced_EXP.json"
 )
 
 
@@ -57,6 +66,30 @@ def _plans(seconds: float = 18.0):
         "stable medium shot\nsmooth tracking shot",
         "keeps her mouth closed",
         "",
+    )[0]
+    return scene_plan, prompt_plan
+
+
+def _vocal_lock_plans(seconds: float = 5.152, *, exact_text: str = ""):
+    scene_plan = mv.build_mv_vocal_lock_scene_plan(
+        _audio(seconds),
+        _audio(seconds),
+        min_scene_seconds=5.0,
+        target_scene_seconds=7.0,
+        max_scene_seconds=10.0,
+        analysis_hop_ms=50,
+        vocal_active_ratio=0.12,
+        manual_boundaries_json="",
+    )[0]
+    prompt_plan = mv.build_mv_vocal_lock_prompt_plan(
+        scene_plan,
+        "A woman delivers a clear test sentence directly to camera.",
+        "the same woman shown in the reference picture",
+        "cinematic realism and natural skin texture",
+        "extreme wide shot from behind with a gentle push-in",
+        "spoken_dialogue",
+        "English",
+        json.dumps([exact_text]) if exact_text else "",
     )[0]
     return scene_plan, prompt_plan
 
@@ -129,6 +162,119 @@ def test_prompt_compiler_rejects_non_string_exact_lyrics():
         )
 
 
+def test_vocal_lock_v2_prompt_uses_official_sections_and_visible_mouth_contract():
+    transcript = "All the time he was talking to me."
+    _scene_plan, prompt_plan = _vocal_lock_plans(exact_text=transcript)
+    prompt = prompt_plan["segments"][0]["prompt"]
+    sections = [
+        "subject_definitions:",
+        "summary:",
+        "retention_analysis:",
+        "detailed_description:",
+        "overall_soundscape:",
+        "non_diegetic_music:",
+    ]
+    positions = [prompt.index(section) for section in sections]
+    assert positions == sorted(positions)
+    assert all(prompt.count(section) == 1 for section in sections)
+    assert "<Subject 1>" in prompt and "<Picture 1>" in prompt
+    assert "<Audio 1>" in prompt and "fully_copy" in prompt
+    assert "fully_preserved" in prompt
+    assert "Medium close-up" in prompt
+    assert "unobstructed mouth" in prompt
+    assert "every audible phoneme" in prompt
+    assert "subject silhouette remain sharply resolved" in prompt
+    assert "without haloing, edge smearing, double contours" in prompt
+    assert "Natural depth of field may soften only the distant background" in prompt
+    assert "extreme wide shot" not in prompt.lower()
+    assert "from behind" not in prompt.lower()
+    assert f"<d>[English] {transcript}</d>" in prompt
+    assert prompt_plan["audio_contract"] == {
+        "drive": "vocal_lock_audio",
+        "conditioning_mode": "lock_source",
+        "delivery": "full_song_muxed_once",
+    }
+    assert mv.validate_mv_vocal_lock_prompt_plan(prompt_plan) == prompt_plan
+
+
+def test_vocal_lock_v2_prompt_never_guesses_missing_words():
+    _scene_plan, prompt_plan = _vocal_lock_plans()
+    prompt = prompt_plan["segments"][0]["prompt"]
+    assert "<d>" not in prompt
+    assert "No words or lyrics are added" in prompt
+
+
+def test_vocal_lock_audio_contract_rejects_timeline_mismatch_and_silence():
+    scene_plan, _prompt_plan = _vocal_lock_plans()
+    total_frames = scene_plan["total_frames"]
+    with pytest.raises(ValueError, match="align both audio inputs"):
+        mv._validate_vocal_lock_audio_contract(
+            _audio(5.152), _audio(4.0), total_frames
+        )
+    silent = _audio(5.152)
+    silent["waveform"].zero_()
+    with pytest.raises(ValueError, match="effectively silent"):
+        mv._validate_vocal_lock_audio_contract(
+            _audio(5.152), silent, total_frames
+        )
+
+
+def test_vocal_lock_audio_sources_keep_full_song_out_of_h3_and_candidate_segments():
+    full_song = _audio(5.152)
+    vocal_lock_audio = _audio(5.152)
+    sources = mv._mv_audio_sources(full_song, vocal_lock_audio)
+    assert sources["conditioning"] is vocal_lock_audio
+    assert sources["candidate_preview"] is vocal_lock_audio
+    assert sources["final_delivery"] is full_song
+    assert sources["policy"] == "v2_isolated_vocal_conditioning_full_song_final_mux"
+
+
+def test_vocal_lock_wrapper_binds_isolated_drive_and_v2_contract(monkeypatch):
+    _scene_plan, prompt_plan = _vocal_lock_plans()
+    full_song = _audio(5.152)
+    vocal_lock_audio = _audio(5.152)
+    vocal_lock_audio["waveform"] *= 0.5
+    captured = {}
+
+    def run(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return "video.mp4", "manifest.json", 1, "complete", json.dumps({"status": "complete"})
+
+    monkeypatch.setattr(mv, "run_local_mv_in_node_loop", run)
+    result = mv.run_local_mv_vocal_lock_in_node_loop(
+        object(),
+        object(),
+        object(),
+        object(),
+        torch.zeros((1, 32, 32, 3)),
+        full_song,
+        vocal_lock_audio,
+        prompt_plan,
+        chain_id="v2-contract",
+        width=736,
+        height=416,
+        base_seed=1,
+        steps=8,
+        shift_video=6.0,
+        shift_audio=3.0,
+        sampler_name="dual_clock_euler",
+        scheduler="native_flow",
+        resume_existing=True,
+        filename_prefix="test",
+        bit_depth=8,
+        crf=18,
+        model_id="test-model",
+    )
+    assert captured["args"][5] is full_song
+    assert captured["kwargs"]["vocal_lock_audio"] is vocal_lock_audio
+    assert captured["kwargs"]["route_revision"] == "vocal_lock_v2"
+    assert captured["kwargs"]["loop_state_name"] == mv.MV_VOCAL_LOCK_LOOP_STATE_NAME
+    report = json.loads(result[4])
+    assert report["conditioning_audio"] == "vocal_lock_audio"
+    assert report["delivery_audio"] == "full_song_muxed_once"
+
+
 def test_long_mv_keeps_renderer_plan_but_returns_valid_empty_relay_collection():
     scene_plan, _prompt_plan = _plans(240.0)
     assert scene_plan["scene_count"] > 32
@@ -153,14 +299,25 @@ def test_nodes_are_append_only_local_and_have_no_external_api_inputs():
         MiniMaxH3MVRef2VAPromptCompilerT8Advanced,
         MiniMaxH3LocalMVInNodeRendererT8Advanced,
     ]
+    assert MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES == [
+        MiniMaxH3MVVocalLockScenePlannerV2T8Advanced,
+        MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced,
+        MiniMaxH3LocalMVVocalLockRendererV2T8Advanced,
+    ]
     registered = asyncio.run(comfy_entrypoint().get_node_list())
-    assert registered[-3:] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
+    assert registered[-6:-3] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
+    assert registered[-3:] == MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES
     renderer = MiniMaxH3LocalMVInNodeRendererT8Advanced.define_schema()
     assert renderer.is_output_node is True
     assert renderer.is_experimental is True
     ids = {item.id for item in renderer.inputs}
     assert {"model", "clip", "video_vae", "audio_vae", "full_song"} <= ids
     assert not ({"api_url", "api_key", "endpoint", "server_url"} & ids)
+
+    vocal_lock_renderer = MiniMaxH3LocalMVVocalLockRendererV2T8Advanced.define_schema()
+    vocal_lock_ids = {item.id for item in vocal_lock_renderer.inputs}
+    assert {"full_song", "vocal_lock_audio", "mv_vocal_lock_prompt_plan"} <= vocal_lock_ids
+    assert not ({"api_url", "api_key", "endpoint", "server_url"} & vocal_lock_ids)
 
 
 def test_frontend_workflow_is_importable_local_and_safe_by_default():
@@ -193,6 +350,55 @@ def test_frontend_workflow_is_importable_local_and_safe_by_default():
     )
     assert "不会提交 HTTP" in note_text
     assert "完整原曲只混入一次" in note_text
+
+
+def test_vocal_lock_v2_frontend_workflow_has_two_audio_roles_and_eight_steps():
+    workflow = json.loads(VOCAL_LOCK_V2_WORKFLOW_PATH.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    assert len([node for node in nodes.values() if node["type"] == "LoadAudio"]) == 2
+    planner = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced"
+    )
+    renderer = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced"
+    )
+    compiler = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced"
+    )
+    planner_values = plugin_widget_map(
+        planner, MiniMaxH3MVVocalLockScenePlannerV2T8Advanced
+    )
+    renderer_values = plugin_widget_map(
+        renderer, MiniMaxH3LocalMVVocalLockRendererV2T8Advanced
+    )
+    compiler_values = plugin_widget_map(
+        compiler, MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced
+    )
+    assert planner_values["vocal_active_ratio"] == 0.12
+    assert renderer_values["steps"] == 8
+    assert renderer_values["width"] == 736
+    assert renderer_values["height"] == 416
+    assert renderer_values["resume_existing"] is True
+    assert compiler_values["camera_pattern"].startswith("locked-off static camera")
+    assert "slow push-in" not in compiler_values["camera_pattern"]
+    assert "handheld" not in compiler_values["camera_pattern"]
+    note_text = "\n".join(
+        str(node["widgets_values"][0])
+        for node in nodes.values()
+        if node["type"] == "MarkdownNote"
+    )
+    assert "vocal_lock_audio" in note_text
+    assert "full_song" in note_text
+    assert "不进入 H3" in note_text
+    assert "不会提交HTTP `/prompt`" in note_text
 
 
 def test_renderer_runs_scenes_serially_resumes_and_muxes_master_song_once(

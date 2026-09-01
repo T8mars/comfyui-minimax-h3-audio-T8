@@ -6523,3 +6523,67 @@ identity and append-only registration. Registration and all dated frontend-workf
 checks passed with 268 node schemas and 183 workflows. No H3 model or GPU render was run for this
 packaging change; the quality boundary remains the two previously reviewed single-person samples,
 both non-inferior ties without blockers.
+
+## 2026-09-01 — MV Vocal Lock V2 clear-speech synchronization validation
+
+The released v1.62.0 MV route was reopened because its only real sample contained music without
+assessable speech or singing. Visual review of that file could not close the lip-sync gate. V2 is
+append-only and leaves all three v1 nodes and their workflow unchanged.
+
+V2 adds a required, timeline-aligned `vocal_lock_audio` input alongside `full_song`. The isolated
+track owns H3 `lock_source` conditioning and candidate-preview audio; `full_song` owns only the one
+final delivery mux. Both media signatures are included in the V2 resume contract. The V2 prompt
+compiler follows the official Ref2VA section order (`subject_definitions`, `summary`,
+`retention_analysis`, `detailed_description`, `overall_soundscape`, `non_diegetic_music`), defines
+`<Subject 1>` from `<Picture 1>`, binds isolated `<Audio 1>` to `<Subject 1> (S1)`, and emits
+`fully_preserved` / `fully_copy`. Vocal-active shots force a front or three-quarter medium close-up
+with a fully visible, unobstructed mouth. Exact words appear only when explicitly supplied.
+
+One bounded serial local run used
+`h3_twopass_voice_5683_5p152s.flac`, whose exact English transcript was supplied to the compiler,
+and `03_Blonde清晰人物参考图.png`. The graph used local Ref2VA INT8 plus the local Turbo4 LoRA,
+eight sampling steps, `dual_clock_euler/native_flow`, shifts 6/3, seed 5683, 736x416 and 124 frames.
+Exactly one local ComfyUI validation prompt was submitted by the external test harness; the product
+nodes themselves called neither HTTP `/prompt` nor any remote service. It completed in 149.031
+seconds with one accepted scene and state policy
+`isolated_vocal_lock_conditioning_full_song_muxed_once`.
+
+The final file is
+`F:\AI-T8-video-onekey\ComfyUI\output\minimax_h3_t8_long_video\mv_vocal_lock_v2_clear_speech_5p152_20260901_r1\assembled\MiniMaxH3_MV_VocalLock_V2_ClearSpeech_master_audio.mp4`,
+SHA-256 `68bdc57312d6e8d4211490d394a8be29353d15af7179b56badc99c6c6c3c4533`.
+It contains 124/124 H.264 frames at 736x416 and 24fps (5.166667 seconds) plus finite 32kHz stereo
+AAC. Strict video-only, audio-only, and combined FFmpeg `-xerror` decode all passed. Aligned source
+versus final-audio APSNR was 161.084/161.086dB.
+
+Temporal synchronization was evaluated with the MIT-licensed official
+[`joonson/syncnet_python`](https://github.com/joonson/syncnet_python) implementation and its official
+`syncnet_v2.model` (local SHA-256
+`961e8696f888fce4f3f3a6c3d5b3267cf5b343100b238e79b2659bff2c605442`). The face-visible center crop
+was converted to 224x224 at 25fps. The unmodified candidate measured AV offset 0 frames, minimum
+distance 8.016, confidence 5.844. A predeclared negative control delayed the video by exactly 0.400
+seconds (ten cloned 25fps opening frames) while preserving the audio; SyncNet measured exactly +10
+frames, minimum distance 8.209, confidence 5.911. Therefore the tested candidate passes the
+zero-offset plus shifted-control mechanical gate. The user then reviewed the normal-speed original
+plus mouth-zoom aid and explicitly reported `口型通过`, closing the bounded lip-sync human gate for
+candidate SHA-256 `68bdc57312d6e8d4211490d394a8be29353d15af7179b56badc99c6c6c3c4533`.
+
+The same feedback asked why the area around the performer looked soft. This was not an intentional
+Vocal Lock effect: the route contains no blur filter. The clear fixture reference is a side-profile
+portrait with glasses, while the validation prompt requested a front/three-quarter performance plus
+a restrained slow push-in at 736x416. The observed soft subject boundary is recorded as generated
+reprojection/motion softness, separate from the lip-sync pass. Before release, the unreleased V2
+recommended default was changed to a locked-off camera and its prompt now asks for sharp, temporally
+stable hair, face, shoulder, clothing and silhouette edges without haloing, smearing or double
+contours. Users are also advised to choose a sharp reference whose face direction matches the target
+shot. This prompt/default refinement was not rerendered and is not claimed to guarantee sharpness.
+The result does not prove that every generated mouth shape is linguistically correct, nor does it
+establish universal H3 identity or visual quality.
+
+After that unreleased prompt/default refinement, the five-file MV/registration/frontend scope passed
+107 tests. The complete repository passed 1,937 tests with the same five existing Triton/PyTorch
+warnings. Full Ruff, 598 Git-scope Python compilation checks, 253 JSON parses, `git diff --check`, a
+zero-match credential scan, Comfy configuration/security validation, CPU whitelist import, and the
+185/185 source-to-user workflow mirror gate passed. An isolated `1.63.0` package contained 492 entries,
+included every required V2 runtime/workflow file, and contained no model weights, media, nested archive,
+development tools/tests/docs, `artifacts`, `SKILL.md`, or `roadmap.md`. No H3/GPU sample was rerun for
+the locked-camera prompt refinement.

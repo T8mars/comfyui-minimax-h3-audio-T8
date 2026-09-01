@@ -699,18 +699,18 @@ def test_v2_node_is_append_only_and_reuses_existing_plan_socket():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert node_ids[-7] == schema.node_id
-    assert node_ids[-6] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
-    assert node_ids[-5] == (
+    assert node_ids[-10] == schema.node_id
+    assert node_ids[-9] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
+    assert node_ids[-8] == (
         "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
     )
-    assert node_ids[-4] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
+    assert node_ids[-7] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
     v3_schema = MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced.define_schema()
     assert v3_schema.is_experimental is True
-    assert v3_schema.node_id == node_ids[-6]
+    assert v3_schema.node_id == node_ids[-9]
     v4_schema = MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced.define_schema()
     assert v4_schema.is_experimental is True
-    assert v4_schema.node_id == node_ids[-5]
+    assert v4_schema.node_id == node_ids[-8]
     assert [item.id for item in v4_schema.inputs][-2:] == [
         "second_pass_audio_policy",
         "video_mask_policy",

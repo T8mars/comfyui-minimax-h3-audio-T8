@@ -1,4 +1,23 @@
 {
+  "local_mv_vocal_lock_v2_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes and one importable frontend workflow; one clear-speech real H3 run passed the calibrated SyncNet offset gate and normal-speed user lip-sync review",
+    "date": "2026-09-01",
+    "nodes": [
+      "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
+      "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
+      "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced"
+    ],
+    "workflow": "examples/workflows/24-mv-lipsync/2026-09-01_H3_Local_MV_VocalLock_V2_Ref2VA_8Step_Advanced_EXP.json",
+    "audio_contract": "required timeline-aligned vocal_lock_audio drives every H3 scene through Ref2VA lock_source and is used for candidate previews; full_song stays out of H3 and candidate segments and is muxed once only after accepted video assembly",
+    "prompt_contract": "deterministic official Ref2VA section order: subject_definitions, summary, retention_analysis, detailed_description, overall_soundscape, non_diegetic_music; <Subject 1> comes from <Picture 1>, <Audio 1> is the isolated vocal signal, and retention uses fully_preserved plus fully_copy",
+    "framing_contract": "vocal-active scenes force one continuous medium close-up, front or three-quarter face, full unobstructed mouth visibility and audible-phoneme articulation; unsafe wide/rear/profile directions are rewritten. The unreleased V2 recommended default now uses a locked-off camera and explicitly requests stable sharp subject boundaries without temporal haloing, smearing or double contours",
+    "resume_safety": "the V2 contract independently binds prompt plan, reference image, full_song, vocal_lock_audio, model_id, sampling, seed, geometry and timeline; it uses a V2 state schema and fails closed on mismatch",
+    "privacy": "all planning and prompt compilation are deterministic local CPU work; H3 scenes directly use the connected local ComfyUI MODEL in one serial in-node loop, with no HTTP /prompt, remote H3, LLM, TTS, separation, music or video API",
+    "verification": "CPU tests cover official prompt structure, no guessed words, vocal energy planning, dual-audio alignment/silence rejection, audio-role ownership, V2 wrapper/contract, schema registration and frontend workflow wiring. One serial 736x416x124 clear-English-speech H3 run strictly decoded; official SyncNet measured offset 0 frames, while a fixed +0.400s visual-delay control measured exactly +10 frames at 25fps. The user then reviewed the normal-speed original plus mouth-zoom aid and explicitly reported that lip sync passed. The same feedback noted softness around the performer; this is recorded separately as a generated-image quality artifact, not an intentional Vocal Lock effect or a lip-sync failure. After the locked-camera prompt refinement, the related scope passed 107 tests and the full repository gate passed 1937 tests with five existing warnings. Full Ruff, 598 Git-scope Python compile, 253 JSON parse, git diff, secret scan, Comfy configuration/security validation, CPU whitelist import, 185/185 workflow mirror and a 492-entry isolated 1.63.0 package audit passed",
+    "human_review": "PASS_LIPSYNC_NORMAL_SPEED bound to candidate SHA-256 68bdc57312d6e8d4211490d394a8be29353d15af7179b56badc99c6c6c3c4533; verbatim feedback: 口型通过，但是人物咋感觉周围都是虚的，是故意的还是如何",
+    "visual_quality_note": "the reference fixture is a sharp side-profile portrait with glasses, while the validation prompt requested a front or three-quarter performance plus a slow push-in. The generated soft/blurred performer boundary is therefore treated as model-side reprojection/motion softness at 736x416 with Turbo conditioning, not an intended post-process. No blur filter exists in the route. The recommended V2 workflow now defaults to a locked-off camera and advises a sharp reference whose face direction matches the requested shot; this reduces risk but is not claimed to guarantee sharpness without a new render",
+    "boundary": "the implementation creates an audio-conditioned H3 Vocal Lock route, not a deterministic phoneme solver. The tested clear-speech clip passed objective AV-offset comparison and normal-speed human lip-sync review. That bounded pass does not establish universal phoneme correctness, subject sharpness, identity preservation or quality for all H3 scenes"
+  },
   "local_mv_lipsync_advanced": {
     "status": "implemented as three append-only Advanced EXP nodes and one importable frontend workflow; no released node, default, widget order or workflow was changed",
     "date": "2026-09-01",
@@ -1580,7 +1599,10 @@
     "MiniMaxH3SubjectSafeRGBCompositeT8Advanced",
     "MiniMaxH3MVVocalScenePlannerT8Advanced",
     "MiniMaxH3MVRef2VAPromptCompilerT8Advanced",
-    "MiniMaxH3LocalMVInNodeRendererT8Advanced"
+    "MiniMaxH3LocalMVInNodeRendererT8Advanced",
+    "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
+    "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
+    "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

@@ -1,0 +1,110 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Local MiniMax H3 Ref2VA"}
+  },
+  "2": {
+    "inputs": {
+      "lora_name": "minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+      "strength_model": 1.0,
+      "model": ["1", 0]
+    },
+    "class_type": "LoraLoaderBypassModelOnly",
+    "_meta": {"title": "Local Turbo4 LoRA with 8 sampling steps"}
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Local H3 Qwen3-VL CLIP"}
+  },
+  "4": {
+    "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "H3 video VAE"}
+  },
+  "5": {
+    "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "H3 audio VAE"}
+  },
+  "6": {
+    "inputs": {"image": "03_Blonde清晰人物参考图.png"},
+    "class_type": "LoadImage",
+    "_meta": {"title": "Clear performer reference"}
+  },
+  "7": {
+    "inputs": {"audio": "h3_twopass_voice_5683_5p152s.flac"},
+    "class_type": "LoadAudio",
+    "_meta": {"title": "Clear speech as final master for assessable validation"}
+  },
+  "8": {
+    "inputs": {"audio": "h3_twopass_voice_5683_5p152s.flac"},
+    "class_type": "LoadAudio",
+    "_meta": {"title": "The same clear isolated speech as Vocal Lock drive"}
+  },
+  "9": {
+    "inputs": {
+      "full_song": ["7", 0],
+      "vocal_lock_audio": ["8", 0],
+      "min_scene_seconds": 5.0,
+      "target_scene_seconds": 7.0,
+      "max_scene_seconds": 10.0,
+      "analysis_hop_ms": 50,
+      "vocal_active_ratio": 0.12,
+      "manual_boundaries_json": ""
+    },
+    "class_type": "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
+    "_meta": {"title": "Required isolated-vocal scene plan"}
+  },
+  "10": {
+    "inputs": {
+      "scene_plan": ["9", 0],
+      "global_creative_prompt": "A woman delivers one clear English sentence directly to camera in a calm studio portrait. Her expression follows the natural cadence of the speech while identity, background, lighting, and framing stay stable.",
+      "performer_description": "the exact same blonde woman shown in the reference picture",
+      "visual_style": "cinematic realistic portrait, natural skin texture, soft stable studio light",
+      "camera_pattern": "restrained slow push-in with a stable background and no cut",
+      "vocal_content_type": "spoken_dialogue",
+      "vocal_language": "English",
+      "exact_vocal_text_json": "[\"All the time he was talking to me, his angry little eyes were following Lake.\"]",
+      "non_vocal_action": "keeps the lips naturally closed and breathes softly"
+    },
+    "class_type": "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
+    "_meta": {"title": "Official six-section Ref2VA clear-speech prompt"}
+  },
+  "11": {
+    "inputs": {
+      "model": ["2", 0],
+      "clip": ["3", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0],
+      "reference_image": ["6", 0],
+      "full_song": ["7", 0],
+      "vocal_lock_audio": ["8", 0],
+      "mv_vocal_lock_prompt_plan": ["10", 0],
+      "chain_id": "mv_vocal_lock_v2_clear_speech_5p152_20260901",
+      "width": 736,
+      "height": 416,
+      "base_seed": 5683,
+      "steps": 8,
+      "shift_video": 6.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "resume_existing": true,
+      "filename_prefix": "MiniMaxH3_MV_VocalLock_V2_ClearSpeech",
+      "bit_depth": 8,
+      "crf": 18,
+      "model_id": "minimax_h3_ref2va_int8_convrot+turbo4-vocal-lock-v2"
+    },
+    "class_type": "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced",
+    "_meta": {"title": "One serial local H3 Vocal Lock validation"}
+  }
+}
