@@ -1,18 +1,24 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
-> 2026-09-01 MV Vocal Lock V2: three more append-only Advanced EXP nodes require a timeline-aligned
-> `full_song` and isolated `vocal_lock_audio`, derive vocal-active scenes locally, emit the official
-> six-section Ref2VA prompt format, and drive every serial local H3 scene through `lock_source` with
-> the isolated track. `full_song` stays out of H3 and candidate segments and is muxed once only after
-> accepted video assembly. The V2 resume contract binds both audio signatures independently. One
-> 736x416x124, 8-step, 5.152-second clear-English-speech run strictly decoded; official SyncNet
-> measured a zero-frame candidate offset and exactly ten frames after a fixed 0.400-second visual
-> delay. The user then reviewed the clip at normal speed and explicitly passed the lip sync. The same
-> feedback noted soft/blurred subject boundaries; this is not an intentional effect and no blur filter
-> exists in the route. The fixture forced a sharp side-profile reference toward a front/three-quarter
-> face with a slow push-in at 736x416. The recommended V2 workflow now defaults to a locked-off camera,
-> requests sharp temporally stable subject edges, and recommends a reference with a matching face angle.
-> This reduces risk but does not establish universal phoneme, identity, or image-quality correctness.
+> 2026-09-02 v1.64.0 MV Vocal Lock V3 official Ref2V correction: the current recommended workflow uses the
+> official `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` at strength 1.0 with four
+> Euler/simple steps, shifts 12/3, and 1024x768 output. A same-image, same-audio, same-failing-seed
+> comparison removed the persistent double-face ghosting. This supersedes the earlier attribution to
+> seed choice or unavoidable base-model reprojection: the failed r1-r3 route had combined a generic
+> LarryVrh EMA Turbo LoRA with a non-official eight-step/shift-6:3 Ref2VA schedule.
+>
+> A real 32-second/five-scene r4 run then completed 5/5 scenes and 768/768 frames at 24fps. The complete
+> song remained outside H3 and was muxed once after assembly. Strict video-only, audio-only, and combined
+> decode passed; default multithreaded video decode repeated 20 times with zero anomalies after the final
+> all-intra baseline packaging correction. Agent review of all scenes at 2fps found no duplicate face,
+> background face, persistent halo, or obvious subject-edge smear. Official SyncNet measured isolated-
+> vocal offsets `0/-1/0/-1/0` frames at 25fps, while a 400ms delayed-video control measured nine frames.
+> The 32-second mechanical and proxy-visual gates pass. The user then completed review, reported that
+> the 32-second result had no problem and was perfect, and explicitly removed the approximately
+> 90-second requirement. Final human acceptance is bound to master SHA-256
+> `e833277844e6980fdeacf9bdfd5c61ffe48aefdb3e1eba6869c363777b7dd75f`. Manifest `accepted` still
+> means mechanically saved and contract-bound for future material; this specific master additionally
+> has explicit human approval.
 > No product node calls `/prompt` or any remote API.
 
 > 2026-09-01 fully local MV / lip-scene route: three append-only Advanced EXP nodes analyze a

@@ -15,12 +15,18 @@ from h3_audio_t8_pkg import comfy_entrypoint
 from h3_audio_t8_pkg.nodes_mv_lipsync_advanced import (
     MV_LIPSYNC_ADVANCED_NODE_CLASSES,
     MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES,
+    MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES,
     MiniMaxH3LocalMVInNodeRendererT8Advanced,
     MiniMaxH3LocalMVVocalLockRendererV2T8Advanced,
+    MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced,
     MiniMaxH3MVRef2VAPromptCompilerT8Advanced,
     MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced,
     MiniMaxH3MVVocalLockScenePlannerV2T8Advanced,
+    MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced,
     MiniMaxH3MVVocalScenePlannerT8Advanced,
+)
+from h3_audio_t8_pkg.nodes_qwen_prefix_cache_advanced import (
+    MiniMaxH3QwenReferencePrefixCacheT8Advanced,
 )
 from helpers import plugin_widget_map
 
@@ -34,6 +40,16 @@ VOCAL_LOCK_V2_WORKFLOW_PATH = (
     Path(__file__).resolve().parents[1]
     / "examples/workflows/24-mv-lipsync/"
     "2026-09-01_H3_Local_MV_VocalLock_V2_Ref2VA_8Step_Advanced_EXP.json"
+)
+VOCAL_LOCK_V3_WORKFLOW_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "examples/workflows/24-mv-lipsync/"
+    "2026-09-01_H3_Local_MV_VocalLock_V3_Official_Ref2V_Turbo4_Advanced_EXP.json"
+)
+VOCAL_LOCK_V3_USER_WORKFLOW_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "user/default/workflows/MiniMax H3 T8/24-mv-lipsync/"
+    "2026-09-01_H3_Local_MV_VocalLock_V3_Official_Ref2V_Turbo4_Advanced_EXP.json"
 )
 
 
@@ -204,6 +220,82 @@ def test_vocal_lock_v2_prompt_never_guesses_missing_words():
     assert "No words or lyrics are added" in prompt
 
 
+def test_vocal_lock_v3_visual_director_enforces_one_person_one_face_per_scene():
+    scene_plan, _prompt_plan = _vocal_lock_plans(12.0)
+    directions = [
+        {
+            "camera": "locked frontal medium close-up",
+            "lighting": "soft blue-gray studio light",
+            "performance": "keeps direct eye-line and restrained movement",
+            "emotion": "calm",
+        }
+        for _scene in scene_plan["scenes"]
+    ]
+    prompt_plan, _segments, _events, preview, report_json = (
+        mv.build_mv_vocal_lock_visual_prompt_plan(
+            scene_plan,
+            "A coherent studio performance.",
+            "the same woman shown in the reference picture",
+            "cinematic realism and natural skin texture",
+            json.dumps(directions),
+            "spoken_dialogue",
+            "English",
+            "",
+        )
+    )
+    assert prompt_plan["schema"] == mv.MV_VOCAL_LOCK_VISUAL_PROMPT_SCHEMA
+    assert prompt_plan["scene_direction_source"] == "user_supplied_exact_scene_directions"
+    assert prompt_plan["visual_contract"] == (
+        "one_person_one_face_no_reflective_or_figurative_background"
+    )
+    assert "Exactly one visible person and exactly one visible human face" in preview
+    assert "No mirrors, reflections, projections, screens, posters" in preview
+    assert "background people, or visible props" in preview
+    assert all("scene_direction" in item for item in prompt_plan["segments"])
+    assert json.loads(report_json)["visual_contract"] == prompt_plan["visual_contract"]
+    assert mv.validate_mv_vocal_lock_visual_prompt_plan(prompt_plan) == prompt_plan
+
+
+def test_vocal_lock_v3_visual_director_rejects_incomplete_or_conflicting_directions():
+    scene_plan, _prompt_plan = _vocal_lock_plans(12.0)
+    with pytest.raises(ValueError, match="exactly one object per planned scene"):
+        mv.build_mv_vocal_lock_visual_prompt_plan(
+            scene_plan,
+            "performance",
+            "same performer",
+            "cinematic",
+            '[{"camera":"front"}]',
+        )
+    unsafe = [
+        {
+            "camera": "front medium close-up",
+            "lighting": "a giant portrait projection behind the performer",
+        }
+        for _scene in scene_plan["scenes"]
+    ]
+    with pytest.raises(ValueError, match="single-subject visual contract"):
+        mv.build_mv_vocal_lock_visual_prompt_plan(
+            scene_plan,
+            "performance",
+            "same performer",
+            "cinematic",
+            json.dumps(unsafe),
+        )
+
+
+def test_vocal_lock_v3_visual_director_has_safe_deterministic_fallback_arc():
+    scene_plan, _prompt_plan = _vocal_lock_plans(12.0)
+    first = mv.build_mv_vocal_lock_visual_prompt_plan(
+        scene_plan, "performance", "same performer", "cinematic"
+    )[0]
+    second = mv.build_mv_vocal_lock_visual_prompt_plan(
+        scene_plan, "performance", "same performer", "cinematic"
+    )[0]
+    assert first == second
+    assert first["scene_direction_source"] == "deterministic_safe_studio_arc"
+    assert first["segments"][0]["scene_direction"]["camera"].startswith("locked frontal")
+
+
 def test_vocal_lock_audio_contract_rejects_timeline_mismatch_and_silence():
     scene_plan, _prompt_plan = _vocal_lock_plans()
     total_frames = scene_plan["total_frames"]
@@ -304,9 +396,14 @@ def test_nodes_are_append_only_local_and_have_no_external_api_inputs():
         MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced,
         MiniMaxH3LocalMVVocalLockRendererV2T8Advanced,
     ]
+    assert MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES == [
+        MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced,
+        MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced,
+    ]
     registered = asyncio.run(comfy_entrypoint().get_node_list())
-    assert registered[-6:-3] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
-    assert registered[-3:] == MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES
+    assert registered[-8:-5] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
+    assert registered[-5:-2] == MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES
+    assert registered[-2:] == MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES
     renderer = MiniMaxH3LocalMVInNodeRendererT8Advanced.define_schema()
     assert renderer.is_output_node is True
     assert renderer.is_experimental is True
@@ -318,6 +415,10 @@ def test_nodes_are_append_only_local_and_have_no_external_api_inputs():
     vocal_lock_ids = {item.id for item in vocal_lock_renderer.inputs}
     assert {"full_song", "vocal_lock_audio", "mv_vocal_lock_prompt_plan"} <= vocal_lock_ids
     assert not ({"api_url", "api_key", "endpoint", "server_url"} & vocal_lock_ids)
+    visual_renderer = MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced.define_schema()
+    visual_ids = {item.id for item in visual_renderer.inputs}
+    assert {"full_song", "vocal_lock_audio", "mv_vocal_lock_prompt_plan"} <= visual_ids
+    assert not ({"api_url", "api_key", "endpoint", "server_url"} & visual_ids)
 
 
 def test_frontend_workflow_is_importable_local_and_safe_by_default():
@@ -399,6 +500,69 @@ def test_vocal_lock_v2_frontend_workflow_has_two_audio_roles_and_eight_steps():
     assert "full_song" in note_text
     assert "不进入 H3" in note_text
     assert "不会提交HTTP `/prompt`" in note_text
+
+
+def test_vocal_lock_v3_workflow_adds_visual_contract_and_same_reference_prefix_cache():
+    workflow = json.loads(VOCAL_LOCK_V3_WORKFLOW_PATH.read_text(encoding="utf-8"))
+    nodes = {node["id"]: node for node in workflow["nodes"]}
+    assert workflow["last_node_id"] == max(nodes)
+    assert workflow["last_link_id"] == max(link[0] for link in workflow["links"])
+    director = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced"
+    )
+    renderer = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced"
+    )
+    cache = next(
+        node
+        for node in nodes.values()
+        if node["type"] == "MiniMaxH3QwenReferencePrefixCacheT8Advanced"
+    )
+    director_values = plugin_widget_map(
+        director, MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced
+    )
+    renderer_values = plugin_widget_map(
+        renderer, MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced
+    )
+    cache_values = plugin_widget_map(
+        cache, MiniMaxH3QwenReferencePrefixCacheT8Advanced
+    )
+    assert director_values["scene_directions_json"] == ""
+    assert renderer_values["width"] == 1024
+    assert renderer_values["height"] == 768
+    assert renderer_values["steps"] == 4
+    assert renderer_values["shift_video"] == 12.0
+    assert renderer_values["shift_audio"] == 3.0
+    assert renderer_values["sampler_name"] == "euler"
+    assert renderer_values["scheduler"] == "simple"
+    assert renderer_values["chain_id"].endswith("v3_visual")
+    lora = nodes[2]
+    assert lora["type"] == "LoraLoaderBypassModelOnly"
+    assert lora["widgets_values"] == [
+        "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        1.0,
+    ]
+    assert cache_values == {
+        "mode": "memory_lru_exp",
+        "max_entries": 1,
+        "maximum_cache_mib": 1024.0,
+        "cache_epoch": 0,
+    }
+    clip_link = next(link for link in workflow["links"] if link[3] == renderer["id"] and link[4] == 1)
+    assert nodes[clip_link[1]]["type"] == "MiniMaxH3QwenReferencePrefixCacheT8Advanced"
+    note_text = "\n".join(
+        str(node["widgets_values"][0])
+        for node in nodes.values()
+        if node["type"] == "MarkdownNote"
+    )
+    assert "恰好一名人物和一张人脸" in note_text
+    assert "accepted只表示文件和合同已落盘" in note_text
+    assert "32秒/5镜通过后才允许约90秒终验" in note_text
+    assert VOCAL_LOCK_V3_USER_WORKFLOW_PATH.read_bytes() == VOCAL_LOCK_V3_WORKFLOW_PATH.read_bytes()
 
 
 def test_renderer_runs_scenes_serially_resumes_and_muxes_master_song_once(

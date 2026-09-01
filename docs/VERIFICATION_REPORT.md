@@ -5,6 +5,77 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-02 — v1.64.0 MV Vocal Lock V3 official Ref2V 32-second validation
+
+The earlier V2 and V3 r1-r3 long-MV attempts used a generic LarryVrh EMA Turbo adapter with an
+eight-step, shift-6/3 Ref2VA schedule. That combination was not the official Ref2V Turbo recipe. The
+official ModelTC Ref2V adapter was installed as
+`minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors`, SHA-256
+`5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c`. Structural validation consumed
+all 624 state-dict keys, matched all 208 current H3 adapter targets, and reported no unused or missing
+adapter target. The corrected route uses strength 1.0, four Euler/simple steps, shifts 12/3, and
+1024x768 output. The official workflow's `LoraLoaderBypassModelOnly` is ComfyUI forward-injection mode
+for the quantized/offloaded model; it does not mean that the LoRA is skipped.
+
+A controlled scene-2 probe reused the same sharp reference, isolated vocal, full mix, and failing seed
+2609013202. Changing only the configuration bundle removed the persistent translucent double face.
+This falsifies seed choice and the H3 base model as the primary explanation for the recorded r3 defect;
+the wrong adapter/schedule bundle was the actionable root cause. The comparison image is
+`artifacts/mv-vocal-lock-v3-long32-official-ref2v-live-20260901/scene02_old_vs_official_ref2v.png`.
+
+One local ComfyUI prompt (`851558cb-f56a-4b3c-b3ba-1d046d074c1e`) then executed the V2 planner, V3
+director, and V3 renderer serially for chain
+`mv_vocal_lock_v3_long32_5scene_20260901_r4_official_ref2v`. It completed in 1964.157 seconds with
+`external_api_used=false`, five planned scenes, and five accepted real H3 segments. All five segment
+files passed strict decode. Review at two samples per second, with additional face crops, found one
+performer/face, continuously visible mouth motion, stable identity, and no duplicate face, background
+face, persistent halo, or obvious subject-edge smear in any scene.
+
+The final master is
+`artifacts/mv-vocal-lock-v3-long32-official-ref2v-live-20260901/output/minimax_h3_t8_long_video/mv_vocal_lock_v3_long32_5scene_20260901_r4_official_ref2v/assembled/MiniMaxH3_MV_VocalLock_V3_Long32_5Scene_master_audio.mp4`,
+SHA-256 `e833277844e6980fdeacf9bdfd5c61ffe48aefdb3e1eba6869c363777b7dd75f`. It contains 768/768 H.264
+frames at 1024x768 and 24fps (32.000 seconds) plus 32kHz stereo AAC (32.032 seconds). The source
+full mix contributed exactly 1,024,000 samples with no trim or pad and was muxed once. Video-only,
+audio-only, and combined FFmpeg `-xerror -threads 1` decode passed.
+
+The first long assembly exposed a separate packaging defect: its complex H.264 inter-frame reference
+stream decoded successfully in the strict single-thread validator but failed nondeterministically in
+the local default multithreaded decoder. Every original H3 segment decoded repeatedly, so this was an
+assembly-encoder problem rather than an H3 generation problem. Final assembly now uses constrained-
+baseline all-intra H.264 with one x264 worker, one reference, no B-frames, `keyint=1`, and CABAC disabled.
+The corrected master repeated default multithreaded video decode 20 times with zero anomalies.
+
+Official `joonson/syncnet_python` commit `907c0b579c2e2d83f0eae1b2ac9e720cde4e5623` and official
+`syncnet_v2.model` SHA-256
+`961e8696f888fce4f3f3a6c3d5b3267cf5b343100b238e79b2659bff2c605442` evaluated each accepted scene
+with its isolated vocal audio, a verified 224x224 face crop at 25fps, and 16kHz mono PCM. Scene offsets
+were `0, -1, 0, -1, 0` frames; the maximum absolute offset was one 25fps frame (40ms). A negative
+control delayed scene 2 video by 400ms and measured +9 frames (360ms), demonstrating sensitivity to
+the injected shift. SyncNet establishes temporal AV alignment, not phoneme-by-phoneme linguistic
+correctness. The immutable audit is
+`artifacts/mv-vocal-lock-v3-long32-official-ref2v-live-20260901/media_audit.json`.
+
+Changed-scope Ruff and `git diff --check` pass. The MV, delivery, registration, and frontend focused
+scope passes 109 tests with four existing Triton warnings. The first full run exposed ten historical
+registration tests that hard-coded 274 nodes or tail-relative offsets; after changing them to verify
+the unchanged absolute positions of the old nodes and the two append-only V3 entries, the complete
+repository passes 1,950 tests with five existing Triton/PyTorch warnings. This closes the 32-second
+mechanical and agent visual/synchronization proxy gate. The user then completed review and reported
+`不需要90秒了，32秒这个已经没问题了，完美`. That pass is bound to master SHA-256
+`e833277844e6980fdeacf9bdfd5c61ffe48aefdb3e1eba6869c363777b7dd75f`. The user explicitly removed
+the approximately 90-second requirement, so this 32-second five-scene master is the accepted final
+long-MV scope. Interactive per-scene rejection/retry and a real interrupted-resume run remain
+non-blocking product enhancements rather than acceptance requirements for this result.
+
+The v1.64.0 pre-publication Registry candidate contains 493 entries and 186 frontend workflows. It is
+2,143,319 bytes with SHA-256
+`be03e7c8412504f7cb10293c77808234a4d1be237fa10cd7a08bcd892bdbc544`. Every archive member matches the
+current source bytes, the official V3 workflow and all required runtime modules are present, and there
+are no duplicate, unsafe, or excluded paths. Tests, tools, docs, artifacts, model weights, generated
+media, nested archives, `SKILL.md`, and `roadmap.md` are absent. An isolated extraction imports 276
+registered and unique node IDs matching `features.json`; the two V3 IDs are append-only at positions
+274 and 275. The root worktree contains no accidental `node.zip`.
+
 ## 2026-09-01 — Fully local MV / lip-scene route
 
 Three append-only Advanced EXP nodes now perform local CPU song-boundary analysis, deterministic
@@ -6587,3 +6658,66 @@ zero-match credential scan, Comfy configuration/security validation, CPU whiteli
 included every required V2 runtime/workflow file, and contained no model weights, media, nested archive,
 development tools/tests/docs, `artifacts`, `SKILL.md`, or `roadmap.md`. No H3/GPU sample was rerun for
 the locked-camera prompt refinement.
+
+Acceptance correction after user review: this evidence contains 5.152 seconds and exactly one
+independently sampled scene. It validates the bounded short-clip Vocal Lock path only and does not
+validate a long MV. CPU tests that simulate multiple serial scenes, resume, assembly, and one final
+master-audio mux remain implementation evidence rather than real-media evidence. Long-MV acceptance is
+reopened. A 32-second, five-scene run is the first real multi-scene stage gate. The fixed upstream
+repository publishes an approximately 90-second sample, so final parity acceptance targets a similar
+duration after the stage gate passes. Both gates require per-scene lip sync, cross-scene
+identity/sharpness, cuts/seams, full-timeline audio alignment, resume/manifest checks, strict decode,
+and normal-speed review of the complete result.
+
+The first stage-gate attempt used a sharp 3027x1531 front-facing reference (`10A.jpg`), an exactly
+32.000-second timeline-aligned isolated Chinese speech track and a separate 32.000-second full mix,
+five manual 6.4-second scenes, 1056x608 output, eight steps, Ref2VA INT8 plus Turbo4, and seeds
+2609013201 through 2609013205. One local prompt began the serial run. Scenes 1-4 were sampled and
+accepted without OOM or NaN; scene 5 reached only step 1/8 before deliberate interruption. Durable
+state records `status=interrupted`, `scene_count=5`, `accepted_count=4`, `current_scene_index=4`,
+contract `ddddd2bae3e44fb7ca0b40153dc5e0264a4f0d800931c4432dfea34c7d4b4c1d`, and
+`external_api_used=false`.
+
+This attempt fails the visual stage gate. Scenes 1 and 3 retained a sharp stable subject, while scene
+2 introduced an unauthored microphone and scene 3 did not follow the requested frontal camera change.
+Most decisively, scene 4 contains a large persistent duplicate/ghost face behind the performer in all
+sampled contact-sheet positions. The prompt's existing anti-halo and anti-double-contour wording did
+not forbid mirrors, projections, portraits, screens, or other secondary faces, and the deterministic
+camera-cycle compiler did not supply a whole-song visual scenario. Scene 5 was therefore stopped rather
+than spending more GPU time on an already failed gate. No assembled 32-second film exists and no lip-sync,
+resume, final-mux, or user-review gate is claimed from this attempt.
+
+The external validation harness also exposed a reporting defect: `execution_interrupted` was previously
+treated as success whenever no `execution_error` message existed. The harness now recognizes interruption,
+requires completed-success history plus renderer output, returns a non-zero exit code for incomplete runs,
+and passed its focused regression together with the MV suite (`20 passed`). The immutable local audit is
+`artifacts/mv-vocal-lock-v2-long32-validation-20260901/stage_gate_audit.json`.
+
+An append-only V3 visual director and renderer then added an exact one-person/one-face frame contract,
+forbade mirrors, projections, screens, portraits, duplicate faces, ghosts, double exposure, background
+people and visible props, and accepted an exact per-scene camera/lighting/performance/emotion plan. The V3
+frontend workflow also wraps the shared Qwen reference prefix with the existing bounded one-entry cache.
+The first V3 real run (`mv_vocal_lock_v3_long32_5scene_20260901_r2`, prompt
+`44fd2d98-e213-4e96-9ec0-51fda41002b2`) produced a visually clean first scene, but strict FFmpeg decode
+rejected scene 2 after sampling because its H.264 stream contained a corrupt CABAC macroblock. Only scene
+1 was published; scenes 3-5 and the 32-second assembly did not run.
+
+Long-video candidate and assembly encoding was therefore moved from in-process PyAV/libx264 to an isolated
+FFmpeg raw-video pipe. Publishing now requires strict single-threaded decode of the video-only temporary,
+then AAC mux, then a second strict decode of both streams. A second V3 run showed that the default x264
+worker pool could still emit a corrupt stream, so the encoder policy was fixed to one x264 thread with one
+lookahead thread. The candidate, compose and MV-focused CPU range then passed 106 tests with four existing
+warnings; Ruff and `git diff --check` passed.
+
+The `r3` run (`mv_vocal_lock_v3_long32_5scene_20260901_r3`, prompt
+`fd77d43c-8c81-4c3f-9208-f40029ecfe61`) verified the repaired media path for its first two scenes: both
+passed the pre-mux video-only decode and final AV decode. Scene 2 nevertheless failed visual review. Its
+requested left-three-quarter shot visibly dissolved from the frontal reference into the new pose, leaving
+persistent translucent double-face ghosting across multiple one-second samples. Scene 3 was deliberately
+interrupted during model initialization. Durable state is `status=interrupted`, `scene_count=5`,
+`accepted_count=2`, `current_scene_index=2`, and `external_api_used=false`; quality acceptance is only one
+scene. Manifest `accepted` means mechanically saved and contract-bound, not human visual-quality approval.
+No 32-second film exists, no long-MV lip-sync/assembly/master-audio/user-review gate passed, and the
+approximately 90-second final gate remains denied. Immutable local audits are
+`artifacts/mv-vocal-lock-v3-long32-validation-20260901/stage_gate_audit_r2.json` and
+`stage_gate_audit_r3.json`.

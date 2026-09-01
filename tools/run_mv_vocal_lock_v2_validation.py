@@ -12,6 +12,19 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKFLOW = ROOT / "tests/fixtures/api/mv_vocal_lock_v2_clear_speech_api.json"
+VALIDATION_NODE_ROLES = {
+    "9": {
+        "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
+    },
+    "10": {
+        "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
+        "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced",
+    },
+    "11": {
+        "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced",
+        "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced",
+    },
+}
 
 
 def _json_request(method: str, url: str, payload: dict | None = None, timeout: int = 30):
@@ -43,12 +56,29 @@ def _wait_history(server: str, prompt_id: str, timeout_seconds: float) -> dict:
     raise TimeoutError(f"prompt {prompt_id} did not finish within {timeout_seconds:g}s")
 
 
-def _execution_error(record: dict) -> str:
+def _execution_outcome(record: dict) -> tuple[str, str, str]:
     messages = ((record.get("status") or {}).get("messages") or [])
     for event, payload in messages:
+        if event == "execution_interrupted":
+            return "interrupted", event, json.dumps(payload, ensure_ascii=False)
         if event == "execution_error":
-            return json.dumps(payload, ensure_ascii=False)
-    return ""
+            return "failed", event, json.dumps(payload, ensure_ascii=False)
+
+    status = record.get("status") or {}
+    if status.get("completed") is True and status.get("status_str") == "success":
+        return "completed_waiting_media_audit", "execution_success", ""
+
+    return (
+        "failed",
+        "history_incomplete",
+        json.dumps(
+            {
+                "status_str": status.get("status_str"),
+                "completed": status.get("completed"),
+            },
+            ensure_ascii=False,
+        ),
+    )
 
 
 def _renderer_output(record: dict) -> dict:
@@ -57,10 +87,23 @@ def _renderer_output(record: dict) -> dict:
     return value if isinstance(value, dict) else {"raw": value}
 
 
+def _required_node_contracts(workflow: dict) -> tuple[str, ...]:
+    required = []
+    for node_id, allowed in VALIDATION_NODE_ROLES.items():
+        node = workflow.get(node_id)
+        node_type = str((node or {}).get("class_type") or "")
+        if node_type not in allowed:
+            raise ValueError(
+                f"validation workflow node {node_id} must be one of {sorted(allowed)}, got {node_type!r}"
+            )
+        required.append(node_type)
+    return tuple(required)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Submit exactly one local ComfyUI prompt for the MV Vocal Lock V2 clear-speech "
+            "Submit exactly one local ComfyUI prompt for an MV Vocal Lock V2/V3 "
             "validation fixture. This is an external test harness; the product node itself "
             "never calls /prompt."
         )
@@ -78,11 +121,7 @@ def main() -> int:
         "mv_vocal_lock_v2_clear_speech_" + time.strftime("%Y%m%d_%H%M%S")
     )
     workflow["11"]["inputs"]["chain_id"] = chain_id
-    required_nodes = (
-        "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
-        "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
-        "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced",
-    )
+    required_nodes = _required_node_contracts(workflow)
     schemas = {}
     for node_id in required_nodes:
         payload = _json_request("GET", f"{server}/object_info/{node_id}", timeout=30)
@@ -109,11 +148,15 @@ def main() -> int:
         )
     record = _wait_history(server, prompt_id, args.timeout_seconds)
     elapsed = time.time() - started
-    error = _execution_error(record)
+    outcome, execution_event, failure_detail = _execution_outcome(record)
     renderer = _renderer_output(record)
+    if outcome == "completed_waiting_media_audit" and not renderer:
+        outcome = "failed"
+        execution_event = "missing_renderer_output"
+        failure_detail = "completed history did not contain output for renderer node 11"
     report = {
         "schema": "t8.minimax_h3.mv_vocal_lock_v2_real_validation.v1",
-        "status": "failed" if error else "completed_waiting_media_audit",
+        "status": outcome,
         "server": server,
         "workflow": str(args.workflow.resolve()),
         "chain_id": chain_id,
@@ -123,7 +166,8 @@ def main() -> int:
         "required_node_contracts_loaded": list(schemas),
         "external_api_used": False,
         "node_internal_prompt_http_used": False,
-        "execution_error": error,
+        "execution_event": execution_event,
+        "execution_error": failure_detail,
         "renderer_output": renderer,
         "history_status": record.get("status"),
     }
@@ -132,7 +176,7 @@ def main() -> int:
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 1 if error else 0
+    return 0 if outcome == "completed_waiting_media_audit" else 1
 
 
 if __name__ == "__main__":

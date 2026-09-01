@@ -120,7 +120,7 @@ def test_node_is_registered_at_append_only_tail():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert node_ids[-7] == schema.node_id
+    assert node_ids[267] == schema.node_id
 
 
 def test_frontend_workflow_is_comfyui_graph_and_explains_manual_alpha():

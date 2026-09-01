@@ -83,6 +83,7 @@ from .nodes_sol_engine_h3_super_advanced import (
 from .nodes_mv_lipsync_advanced import (
     MV_LIPSYNC_ADVANCED_NODE_CLASSES,
     MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES,
+    MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES,
 )
 from .nodes_flashvsr_advanced import FLASHVSR_ADVANCED_NODE_CLASSES
 from .nodes_creator_artifact_quarantine_advanced import (
@@ -697,6 +698,9 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 # Vocal Lock V2 fixes the assessability gap without changing the
                 # released V1 node schemas or registration positions.
                 *MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES,
+                # V3 is append-only after the released V2 positions. It adds a
+                # strict single-subject visual contract and an independent resume schema.
+                *MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES,
             ]
 
 

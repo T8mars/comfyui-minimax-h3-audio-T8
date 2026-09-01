@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.63.0** · GPL-3.0-or-later
+当前版本：**1.64.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -14,7 +14,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大；双采可用v8人物安全RGB后处理，仅在人工逐帧alpha内采用T2、其余画面与音频保留D0
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
-- 全本地 MV Vocal Lock V2：独立人声驱动、官方六段式 Ref2VA 提示词、串行生成、断点续跑、原曲最终单次混入
+- 全本地 MV Vocal Lock V3：官方 Ref2V Turbo4 配置、独立人声驱动、逐镜头视觉合同、串行生成、断点续跑、原曲最终单次混入
 - FastH3 Preview：T2VA 4步，可选真实 learned-gate VSA 90% 稀疏执行
 - NVIDIA H3 Super Acceleration：H3 4步草稿经完整 LTX VAE 编码后接 LTX-2.5 3步 Refiner（TAEHV仅最终解码）
 - FlashVSR v1.1：成片2×/4×超分、固定LCSA、动态预算候选和低显存分块，原音频不处理
@@ -53,11 +53,13 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 
 ## 全本地 MV / 口型分镜
 
-优先使用 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync) 中带 `VocalLock_V2` 的工作流：同时加载人物参考图、完整原曲 `full_song` 和同时间线的隔离人声/清晰对白 `vocal_lock_audio`。V2 只让独立人声逐段进入本地 H3 `lock_source`，完整原曲不进入 H3 或分段候选，只在画面合成后一次性混入最终成片。
+优先使用 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync) 中的 `VocalLock_V3_Official_Ref2V_Turbo4` 工作流：同时加载人物参考图、完整原曲 `full_song` 和同时间线的隔离人声/清晰对白 `vocal_lock_audio`。它沿用 V2 本地分镜，只让独立人声逐段进入本地 H3 `lock_source`，完整原曲不进入 H3 或分段候选，只在画面合成后一次性混入最终成片。
 
-V2 提示词使用官方 Ref2VA 六段顺序和 `<Subject 1>` / `<Picture 1>` / `<Audio 1>: fully_copy` 关系，人声场景强制中近景、正面或 3/4 脸及无遮挡嘴部。旧工作流保留用于兼容，但不能替代独立人声口型验收。整个路线不调用远程 H3、LLM、TTS、分离或视频 API，也不在节点内部提交 HTTP `/prompt`。
+V3 提示词使用官方 Ref2VA 六段顺序和 `<Subject 1>` / `<Picture 1>` / `<Audio 1>: fully_copy` 关系，增加唯一人物/人脸和逐镜头视觉合同；人声场景强制中近景、正面或 3/4 脸及无遮挡嘴部。旧工作流保留用于兼容，但不能替代独立人声口型验收。整个路线不调用远程 H3、LLM、TTS、分离或视频 API，也不在节点内部提交 HTTP `/prompt`。
 
-一条 5.152 秒清晰英语对白的本地串行样例已通过严格媒体解码；官方 SyncNet 测得原片偏移 0 帧，固定延后画面 0.400 秒的负对照测得 10 帧。用户随后按正常速度观看并明确反馈“口型通过”。同一次反馈指出人物周围发虚：这不是路线故意添加的效果，也没有模糊后处理；受测侧脸参考被要求转成正面/3/4脸并带慢推镜，导致 H3 在 736×416 下产生人物轮廓柔化。推荐工作流现默认锁定机位，并建议使用与目标脸向一致的清晰参考图，但仍不保证所有场景的音素、身份和画质。
+早期一条 5.152 秒清晰英语对白样例通过了 SyncNet 与用户正常速度口型审核，但其人物周围发虚。后续同图、同音频、同失败 Seed 对照证明，主要问题不是 Seed 或 H3 基模本身，而是把通用 LarryVrh EMA Turbo LoRA 和非官方 8 步/shift 6:3 组合用于 Ref2VA。当前推荐路线固定为官方 Ref2V Turbo v0.1 LoRA（strength 1.0）、4 步、Euler/simple、shift 12/3、1024×768；同 Seed 重测已消除持续双脸/拖影。
+
+官方 Ref2V 配置下的 32 秒 / 5 镜真实成片现已完成：5/5 镜头、768/768 帧、1024×768、24fps，完整原曲只混入一次；严格视频/音频/联合解码通过，默认多线程视频解码重复 20 次为 0 异常。逐镜抽查未见重复脸、背景人脸或持续人物边缘拖影。官方 SyncNet 对 5 镜隔离人声测得 `0/-1/0/-1/0` 帧偏移，400ms 画面延迟负对照测得 9 帧。用户完整观看后明确反馈“32秒这个已经没问题了，完美”，并取消约 90 秒要求；该结论绑定最终主片 SHA-256 `E833277844E6980FDEACF9BDFD5C61FFE48AEFDB3E1EBA6869C363777B7DD75F`，本轮长 MV / Lip Sync 验收完成。
 
 ## 模型目录
 

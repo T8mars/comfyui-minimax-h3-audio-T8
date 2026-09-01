@@ -201,13 +201,13 @@ def test_three_flashvsr_frontend_workflows_are_importable_and_profile_pinned():
 def test_flashvsr_nodes_are_append_only_at_the_registration_tail():
     node_classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in node_classes]
-    assert ids[-14:-11] == [
+    assert ids[260:263] == [
         "MiniMaxH3FlashVSRModelT8Advanced",
         "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
         "MiniMaxH3FlashVSRRestoreT8Advanced",
     ]
-    assert ids[-11] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
-    assert ids[-10] == "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
-    assert ids[-9] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
-    assert ids[-8] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
-    assert ids[-7] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
+    assert ids[263] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
+    assert ids[264] == "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
+    assert ids[265] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
+    assert ids[266] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
+    assert ids[267] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"

@@ -1,0 +1,834 @@
+{
+  "id": "796b561b-8b75-4dc4-9ca0-da4d531865ae",
+  "revision": 0,
+  "last_node_id": 15,
+  "last_link_id": 13,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        360,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ],
+      "title": "1. Load local MiniMax H3 Ref2VA model"
+    },
+    {
+      "id": 2,
+      "type": "LoraLoaderBypassModelOnly",
+      "pos": [
+        400,
+        0
+      ],
+      "size": [
+        430,
+        105
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        1.0
+      ],
+      "title": "2. Official Ref2V Turbo v0.1 · 4 NFE · strength 1.0"
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        150
+      ],
+      "size": [
+        360,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "title": "3. Local H3 Qwen3-VL CLIP · cached by exact reference prefix"
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        310
+      ],
+      "size": [
+        360,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "title": "4. H3 video VAE"
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        360,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "title": "5. H3 audio VAE"
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        560
+      ],
+      "size": [
+        360,
+        310
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_performer_reference.png",
+        "image"
+      ],
+      "title": "6. Replace with performer reference image"
+    },
+    {
+      "id": 7,
+      "type": "LoadAudio",
+      "pos": [
+        0,
+        930
+      ],
+      "size": [
+        360,
+        120
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            7,
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_complete_song.wav"
+      ],
+      "title": "7. Complete original song · final mux only"
+    },
+    {
+      "id": 8,
+      "type": "LoadAudio",
+      "pos": [
+        400,
+        930
+      ],
+      "size": [
+        430,
+        120
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            9,
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_timeline_aligned_isolated_vocal.wav"
+      ],
+      "title": "8. Required isolated vocal / clear speech · Vocal Lock"
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
+      "pos": [
+        930,
+        0
+      ],
+      "size": [
+        600,
+        470
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "full_song",
+          "type": "AUDIO",
+          "link": 7
+        },
+        {
+          "name": "vocal_lock_audio",
+          "type": "AUDIO",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "scene_plan",
+          "type": "H3_T8_MV_SCENE_PLAN",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "scene_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced"
+      },
+      "widgets_values": [
+        5.0,
+        7.0,
+        10.0,
+        50,
+        0.12,
+        ""
+      ],
+      "title": "9. V2 local isolated-vocal scene plan · no API",
+      "color": "#325f6d",
+      "bgcolor": "#19333a"
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced",
+      "pos": [
+        930,
+        540
+      ],
+      "size": [
+        720,
+        720
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "scene_plan",
+          "type": "H3_T8_MV_SCENE_PLAN",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mv_vocal_lock_prompt_plan",
+          "type": "H3_T8_MV_VOCAL_LOCK_PROMPT_PLAN",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "segment_prompts_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "links": []
+        },
+        {
+          "name": "prompt_preview",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced"
+      },
+      "widgets_values": [
+        "A coherent cinematic performance focused on the same lead performer, with natural expression and restrained motion.",
+        "the same lead performer shown in the reference picture",
+        "cinematic realism, natural skin, realistic light and texture",
+        "",
+        "singing",
+        "English",
+        "",
+        "keeps the mouth naturally closed and breathes with the rhythm"
+      ],
+      "title": "10. V3 explicit shot plan · one person / one face",
+      "color": "#5d4d79",
+      "bgcolor": "#30283f"
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced",
+      "pos": [
+        1740,
+        0
+      ],
+      "size": [
+        780,
+        960
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "reference_image",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "full_song",
+          "type": "AUDIO",
+          "link": 8
+        },
+        {
+          "name": "vocal_lock_audio",
+          "type": "AUDIO",
+          "link": 10
+        },
+        {
+          "name": "mv_vocal_lock_prompt_plan",
+          "type": "H3_T8_MV_VOCAL_LOCK_PROMPT_PLAN",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "completed_scenes",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced"
+      },
+      "widgets_values": [
+        "h3_local_mv_vocal_lock_v3_visual",
+        1024,
+        768,
+        123456789,
+        4,
+        12.0,
+        3.0,
+        "euler",
+        "simple",
+        true,
+        "H3_Local_MV_VocalLock_V3",
+        8,
+        18,
+        "minimax_h3_ref2va_int8_convrot+official-ref2v-turbo4-v0.1-vocal-lock-v3"
+      ],
+      "title": "11. V3 local serial render · independent visual resume contract",
+      "color": "#6d3f71",
+      "bgcolor": "#381f3b"
+    },
+    {
+      "id": 12,
+      "type": "MarkdownNote",
+      "pos": [
+        2600,
+        0
+      ],
+      "size": [
+        650,
+        330
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 官方 Ref2V Turbo4 合同\n必须使用 `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors`、strength 1.0、Euler/simple、4 NFE、shift 12/3。`vocal_lock_audio`逐场景进入H3 `lock_source`；`full_song`只在所有画面通过并合成后混入一次。"
+      ],
+      "title": "NOTE 1 · 两条音频职责不同",
+      "color": "#604b1d",
+      "bgcolor": "#332810"
+    },
+    {
+      "id": 13,
+      "type": "MarkdownNote",
+      "pos": [
+        2600,
+        390
+      ],
+      "size": [
+        650,
+        330
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 每一镜都不是只换camera pattern\nV3为每个scene保存camera / lighting / performance / emotion。留空使用确定性安全棚拍弧线；也可填与scene_count等长的JSON对象列表。整幅画面强制恰好一名人物和一张人脸，并禁止镜像、反射、投影、屏幕、海报、肖像、重影、双重曝光、背景人物和可见道具。"
+      ],
+      "title": "NOTE 2 · V3单人物空间合同",
+      "color": "#214d35",
+      "bgcolor": "#12281d"
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "pos": [
+        2600,
+        780
+      ],
+      "size": [
+        650,
+        360
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## accepted只表示文件和合同已落盘，不表示画质通过\n首次32秒阶段门的第4镜出现巨幅重复脸，已判失败并停止第5镜。V3只能降低已知风险，不能自动证明画面正确。每镜必须检查全程单人物、身份、背景、轮廓和口型；失败后换新chain，不能续用旧accepted片段。32秒/5镜通过后才允许约90秒终验。"
+      ],
+      "title": "NOTE 3 · 失败镜头不能靠accepted计数通过",
+      "color": "#6b3030",
+      "bgcolor": "#371919"
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3QwenReferencePrefixCacheT8Advanced",
+      "pos": [
+        430,
+        150
+      ],
+      "size": [
+        430,
+        190
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "cache_handle",
+          "type": "H3_T8_QWEN_PREFIX_CACHE",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3QwenReferencePrefixCacheT8Advanced"
+      },
+      "widgets_values": [
+        "memory_lru_exp",
+        1,
+        1024.0,
+        0
+      ],
+      "title": "3b. Same-reference Qwen prefix cache · bounded CPU LRU",
+      "color": "#315b55",
+      "bgcolor": "#19302d"
+    }
+  ],
+  "links": [
+    [
+      13,
+      3,
+      0,
+      15,
+      0,
+      "CLIP"
+    ],
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      15,
+      0,
+      11,
+      1,
+      "CLIP"
+    ],
+    [
+      4,
+      4,
+      0,
+      11,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      11,
+      3,
+      "VAE"
+    ],
+    [
+      6,
+      6,
+      0,
+      11,
+      4,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      0,
+      "AUDIO"
+    ],
+    [
+      8,
+      7,
+      0,
+      11,
+      5,
+      "AUDIO"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      1,
+      "AUDIO"
+    ],
+    [
+      10,
+      8,
+      0,
+      11,
+      6,
+      "AUDIO"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
+      0,
+      "H3_T8_MV_SCENE_PLAN"
+    ],
+    [
+      12,
+      10,
+      0,
+      11,
+      7,
+      "H3_T8_MV_VOCAL_LOCK_PROMPT_PLAN"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Local H3 models + reference + two local audio tracks",
+      "bounding": [
+        -40,
+        -70,
+        900,
+        1210
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "V2 isolated-vocal planning + official Ref2VA compiler",
+      "bounding": [
+        890,
+        -70,
+        800,
+        1390
+      ],
+      "color": "#397382",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Strictly serial local H3 Vocal Lock generation",
+      "bounding": [
+        1700,
+        -70,
+        860,
+        1090
+      ],
+      "color": "#704c91",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Read before running",
+      "bounding": [
+        2560,
+        -70,
+        730,
+        1280
+      ],
+      "color": "#8b6b32",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.52,
+      "offset": [
+        70,
+        130
+      ]
+    },
+    "ue_links": [],
+    "t8_mv_state": "all_local_mv_vocal_lock_v3_visual_director"
+  },
+  "version": 0.4
+}

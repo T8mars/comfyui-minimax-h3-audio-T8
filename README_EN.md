@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.63.0** · GPL-3.0-or-later
+Current version: **1.64.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,7 +14,7 @@ Current version: **1.63.0** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling; the optional v8 subject-safe RGB post-process takes T2 only inside a reviewed per-frame alpha and preserves D0 elsewhere, including D0 audio
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
-- Fully local MV Vocal Lock V2 with an isolated-vocal drive, official six-section Ref2VA prompts, serial rendering, resume, and final one-time original-song mux
+- Fully local MV Vocal Lock V3 with the official Ref2V Turbo4 recipe, isolated-vocal drive, per-scene visual contracts, serial rendering, resume, and final one-time original-song mux
 - FastH3 Preview: T2VA four-step inference with optional real learned-gate 90% VSA execution
 - NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
 - FlashVSR v1.1: 2x/4x decoded-video restoration with fixed LCSA, an opt-in dynamic budget, memory-safe tiling, and untouched audio
@@ -52,11 +52,13 @@ For tail subdivision or a separate low-sigma second pass, use the long-video wor
 
 ## Fully Local MV / Lip Scenes
 
-Prefer the `VocalLock_V2` workflow under [`24-mv-lipsync`](examples/workflows/24-mv-lipsync). Load a performer reference image, the complete `full_song`, and a timeline-aligned isolated vocal or clear-dialogue `vocal_lock_audio`. Only the isolated track enters each local H3 `lock_source` window; the complete song stays out of H3 and segment candidates and is muxed once after video assembly.
+Prefer the `VocalLock_V3_Official_Ref2V_Turbo4` workflow under [`24-mv-lipsync`](examples/workflows/24-mv-lipsync). Load a performer reference image, the complete `full_song`, and a timeline-aligned isolated vocal or clear-dialogue `vocal_lock_audio`. V3 reuses the local V2 scene planner; only the isolated track enters each local H3 `lock_source` window, while the complete song stays out of H3 and segment candidates and is muxed once after video assembly.
 
-V2 emits the official six-section Ref2VA structure with `<Subject 1>`, `<Picture 1>`, and `<Audio 1>: fully_copy`, and forces a front or three-quarter medium close-up with an unobstructed mouth for vocal scenes. The old workflow remains for compatibility but does not replace an isolated-vocal lip-sync test. The route calls no remote H3, LLM, TTS, separation, or video API and never submits HTTP `/prompt` from inside the node.
+V3 emits the official six-section Ref2VA structure with `<Subject 1>`, `<Picture 1>`, and `<Audio 1>: fully_copy`, adds one-person/one-face and per-scene visual contracts, and forces a front or three-quarter medium close-up with an unobstructed mouth for vocal scenes. The old workflows remain for compatibility but do not replace an isolated-vocal lip-sync test. The route calls no remote H3, LLM, TTS, separation, or video API and never submits HTTP `/prompt` from inside the node.
 
-One serial 5.152-second clear-English-speech sample passed strict media decoding. Official SyncNet measured a zero-frame offset for the candidate and exactly ten frames after a fixed 0.400-second visual delay. The user then reviewed it at normal speed and explicitly passed the lip sync. The same review noticed softness around the performer: the route applies no blur effect, and the artifact is attributed to asking H3 to turn a sharp side-profile reference into a front/three-quarter performance while using a slow push-in at 736x416. The recommended workflow now defaults to a locked-off camera and asks for sharp, temporally stable subject edges; use a clear reference whose face direction matches the requested shot. This remains a bounded clip result, not a universal phoneme, identity, or image-quality guarantee.
+An early 5.152-second clear-English-speech sample passed SyncNet and normal-speed user lip-sync review, but showed softness around the performer. A later same-image, same-audio, same-failing-seed comparison showed that the main fault was not the seed or H3 base model: a generic LarryVrh EMA Turbo LoRA and a non-official eight-step/shift-6:3 schedule had been applied to Ref2VA. The recommended route now pins the official Ref2V Turbo v0.1 LoRA at strength 1.0, four steps, Euler/simple, shifts 12/3, and 1024x768. The same seed no longer shows persistent double-face ghosting.
+
+The official Ref2V configuration has now produced an accepted 32-second/five-shot film: 5/5 scenes, 768/768 frames, 1024x768 at 24fps, with the complete song muxed once. Strict video, audio, and combined decoding pass, and default multithreaded video decode reports zero anomalies in 20 repeats. Scene sampling found no duplicate face, background face, or persistent subject-edge ghosting. Official SyncNet measured `0/-1/0/-1/0` frames across the five isolated-vocal scenes; a 400ms delayed-video control measured nine frames. After complete viewing, the user reported that the 32-second result had no problem and was perfect, and explicitly removed the approximately 90-second requirement. The acceptance is bound to master SHA-256 `e833277844e6980fdeacf9bdfd5c61ffe48aefdb3e1eba6869c363777b7dd75f`.
 
 ## Model Folders
 

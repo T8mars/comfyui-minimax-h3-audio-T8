@@ -75,6 +75,15 @@ def test_candidate_accept_context_and_streaming_compose(monkeypatch, tmp_path):
     assert Path(candidate0).is_file()
     assert Path(video0).is_file()
     assert json.loads(report0)["accepted"] is False
+    assert json.loads(report0)["strict_decode_validated"] is True
+    assert json.loads(report0)["strict_decode_policy"] == (
+        "ffmpeg_xerror_threads1_before_atomic_publish_v1"
+    )
+    assert json.loads(report0)["video_encoder_process"] == "isolated_ffmpeg_subprocess"
+    assert json.loads(report0)["video_encoder_policy"] == (
+        "ffmpeg_rawvideo_pipe_libx264_all_intra_baseline_threads1_subprocess_v3"
+    )
+    assert json.loads(report0)["video_only_strict_decode_validated"] is True
 
     preview, accepted, manifest_path, accept_report = accept_long_video_candidate(
         candidate0, True
@@ -118,6 +127,8 @@ def test_candidate_accept_context_and_streaming_compose(monkeypatch, tmp_path):
     assert report["audio_samples"] == round(10 / 24 * 32000)
     assert report["absolute_sample_accounting"] is True
     assert report["audio_encoder_process"] == "isolated_ffmpeg_subprocess"
+    assert report["video_encoder_process"] == "isolated_ffmpeg_subprocess"
+    assert report["strict_decode_validated"] is True
     assert report["seams"][0]["jump_after"] <= report["seams"][0]["jump_before"]
 
     with av.open(output_path) as container:
@@ -128,13 +139,43 @@ def test_candidate_accept_context_and_streaming_compose(monkeypatch, tmp_path):
         assert decoded_audio_samples >= round(10 / 24 * 32000)
 
 
+def test_isolated_video_encoder_uses_decoder_safe_all_intra_baseline(monkeypatch, tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    captured = {}
+
+    def capture(args, _log_path, _chunks_factory, **kwargs):
+        captured["args"] = list(args)
+        captured["kwargs"] = kwargs
+
+    monkeypatch.setattr(delivery.shutil, "which", lambda _name: "ffmpeg")
+    monkeypatch.setattr(delivery, "_run_isolated_ffmpeg_with_input", capture)
+    delivery._encode_rgb_frames_isolated(
+        tmp_path / "probe.mp4",
+        lambda: iter([bytes(32 * 32 * 3)]),
+        frame_count=1,
+        width=32,
+        height=32,
+        fps=24,
+        bit_depth=8,
+        crf=18,
+    )
+
+    args = captured["args"]
+    assert args[args.index("-profile:v") + 1] == "baseline"
+    x264_params = args[args.index("-x264-params") + 1]
+    for required in ("threads=1", "ref=1", "bframes=0", "keyint=1", "cabac=0"):
+        assert required in x264_params
+    assert captured["kwargs"]["expected_chunks"] == 1
+
+
 def test_candidate_ffmpeg_failure_is_atomic_and_cleans_temporaries(monkeypatch, tmp_path):
     import h3_audio_t8_pkg.long_video_delivery as delivery
 
     monkeypatch.setattr(delivery.folder_paths, "get_output_directory", lambda: str(tmp_path))
     monkeypatch.setattr(delivery.shutil, "which", lambda _name: "ffmpeg")
 
-    def fail_child(_args, _log_path):
+    def fail_child(_args, _log_path, **_kwargs):
         raise RuntimeError("simulated isolated AAC encoder failure")
 
     monkeypatch.setattr(delivery, "_run_isolated_ffmpeg", fail_child)
@@ -144,6 +185,61 @@ def test_candidate_ffmpeg_failure_is_atomic_and_cleans_temporaries(monkeypatch, 
     candidate_dir = tmp_path / "minimax_h3_t8_long_video" / "ffmpeg-failure-chain" / "candidates"
     assert not list(candidate_dir.glob("*.mp4"))
     assert not list(candidate_dir.glob(".*.tmp"))
+
+
+def test_candidate_strict_decode_failure_is_atomic_and_never_becomes_accepted(
+    monkeypatch, tmp_path
+):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    monkeypatch.setattr(delivery.folder_paths, "get_output_directory", lambda: str(tmp_path))
+
+    def fail_decode(_path, **_kwargs):
+        raise RuntimeError("simulated damaged H.264 packet")
+
+    monkeypatch.setattr(delivery, "_strict_validate_mp4", fail_decode)
+    with pytest.raises(RuntimeError, match="damaged H.264"):
+        _candidate("strict-decode-failure-chain", 0, 0, "failed-take")
+
+    root = tmp_path / "minimax_h3_t8_long_video" / "strict-decode-failure-chain"
+    assert not list(root.rglob("candidate.mp4"))
+    assert not list(root.rglob("candidate.json"))
+    assert not list(root.rglob(".*.tmp"))
+    with pytest.raises(FileNotFoundError):
+        load_delivery_manifest("strict-decode-failure-chain")
+
+
+def test_composed_video_strict_decode_failure_is_atomic(monkeypatch, tmp_path):
+    import h3_audio_t8_pkg.long_video_delivery as delivery
+
+    monkeypatch.setattr(delivery.folder_paths, "get_output_directory", lambda: str(tmp_path))
+    candidate0, _, _ = _candidate("compose-decode-failure", 0, 0, "take-a")
+    accept_long_video_candidate(candidate0, True)
+    candidate1, _, _ = _candidate(
+        "compose-decode-failure",
+        1,
+        5,
+        "take-b",
+        parent_id="take-a",
+        parent_revision=1,
+        final=True,
+    )
+    accept_long_video_candidate(candidate1, True)
+
+    def fail_decode(_path, **_kwargs):
+        raise RuntimeError("simulated damaged composed H.264 packet")
+
+    monkeypatch.setattr(delivery, "_strict_validate_mp4", fail_decode)
+    with pytest.raises(RuntimeError, match="damaged composed H.264"):
+        compose_accepted_long_video(
+            "compose-decode-failure", "test", True, "none", 0.0, 28
+        )
+
+    assembled = (
+        tmp_path / "minimax_h3_t8_long_video" / "compose-decode-failure" / "assembled"
+    )
+    assert not list(assembled.glob("*.mp4"))
+    assert not list(assembled.glob(".*.tmp"))
 
 
 def test_isolated_ffmpeg_retries_one_observed_native_crash(monkeypatch, tmp_path):

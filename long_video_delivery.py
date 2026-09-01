@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from contextlib import contextmanager
-from fractions import Fraction
 import hashlib
 import json
 import math
@@ -48,6 +47,10 @@ _RETRYABLE_FFMPEG_NATIVE_EXIT_CODES = {
     0xC0000005,  # Windows access violation.
     0xC0000093,  # Windows floating-point underflow observed in FFmpeg/libavcodec.
 }
+STRICT_AV_DECODE_POLICY = "ffmpeg_xerror_threads1_before_atomic_publish_v1"
+ISOLATED_VIDEO_ENCODER_POLICY = (
+    "ffmpeg_rawvideo_pipe_libx264_all_intra_baseline_threads1_subprocess_v3"
+)
 
 
 class UnsupportedManifestSchemaError(ValueError):
@@ -89,7 +92,9 @@ def _cleanup_temporary(path: Path, active_error: BaseException | None = None) ->
         raise
 
 
-def _run_isolated_ffmpeg(args: list[str], log_path: Path) -> None:
+def _run_isolated_ffmpeg(
+    args: list[str], log_path: Path, operation: str = "AAC mux"
+) -> None:
     creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     for attempt in range(2):
         with log_path.open("ab" if attempt else "wb") as log:
@@ -124,9 +129,206 @@ def _run_isolated_ffmpeg(args: list[str], log_path: Path) -> None:
             continue
         tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
         raise RuntimeError(
-            "FFmpeg AAC mux failed with exit code "
+            f"FFmpeg {operation} failed with exit code "
             f"{returncode} after {attempt + 1} attempt(s):\n{tail}"
         )
+
+
+def _run_isolated_ffmpeg_with_input(
+    args: list[str],
+    log_path: Path,
+    chunks_factory,
+    *,
+    expected_chunks: int,
+    expected_chunk_bytes: int,
+    operation: str,
+) -> None:
+    """Run FFmpeg with bounded raw input while keeping native encoder faults isolated."""
+    creation_flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    for attempt in range(2):
+        pipe_error: BrokenPipeError | None = None
+        with log_path.open("ab" if attempt else "wb") as log:
+            if attempt:
+                log.write(b"\n--- retry after transient native FFmpeg crash ---\n")
+                log.flush()
+            process = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                creationflags=creation_flags,
+            )
+            try:
+                if process.stdin is None:
+                    raise RuntimeError("FFmpeg raw-video stdin pipe was not created")
+                written_chunks = 0
+                try:
+                    for chunk in chunks_factory():
+                        _interruption_check()
+                        payload = memoryview(chunk)
+                        if payload.nbytes != int(expected_chunk_bytes):
+                            raise ValueError(
+                                "raw-video frame byte size does not match the declared geometry: "
+                                f"{payload.nbytes} != {expected_chunk_bytes}"
+                            )
+                        written = process.stdin.write(payload)
+                        if written != payload.nbytes:
+                            raise BrokenPipeError(
+                                f"FFmpeg raw-video pipe accepted {written} of {payload.nbytes} bytes"
+                            )
+                        written_chunks += 1
+                except BrokenPipeError as error:
+                    pipe_error = error
+                finally:
+                    try:
+                        process.stdin.close()
+                    except BrokenPipeError as error:
+                        pipe_error = pipe_error or error
+                if pipe_error is None and written_chunks != int(expected_chunks):
+                    raise ValueError(
+                        f"raw-video source yielded {written_chunks} frames; "
+                        f"expected {expected_chunks}"
+                    )
+                while process.poll() is None:
+                    _interruption_check()
+                    time.sleep(0.1)
+            except BaseException:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=5)
+                raise
+        returncode = int(process.returncode or 0)
+        if returncode == 0 and pipe_error is None:
+            return
+        normalized_returncode = returncode & 0xFFFFFFFF
+        if attempt == 0 and normalized_returncode in _RETRYABLE_FFMPEG_NATIVE_EXIT_CODES:
+            _interruption_check()
+            continue
+        tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        pipe_detail = f"\nraw-video pipe error: {pipe_error}" if pipe_error else ""
+        raise RuntimeError(
+            f"FFmpeg {operation} failed with exit code "
+            f"{returncode} after {attempt + 1} attempt(s):\n{tail}{pipe_detail}"
+        )
+
+
+def _encode_rgb_frames_isolated(
+    output_path: Path,
+    chunks_factory,
+    *,
+    frame_count: int,
+    width: int,
+    height: int,
+    fps: int,
+    bit_depth: int,
+    crf: int,
+) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for isolated H.264 long-video encoding")
+    if int(bit_depth) not in {8, 10}:
+        raise ValueError("bit_depth must be 8 or 10")
+    input_pixel_format = "rgb48le" if int(bit_depth) == 10 else "rgb24"
+    output_pixel_format = "yuv420p10le" if int(bit_depth) == 10 else "yuv420p"
+    bytes_per_frame = int(width) * int(height) * (6 if int(bit_depth) == 10 else 3)
+    descriptor, log_name = tempfile.mkstemp(
+        prefix=f".{output_path.stem}.", suffix=".video-encode.log.tmp", dir=output_path.parent
+    )
+    os.close(descriptor)
+    log_path = Path(log_name)
+    try:
+        _run_isolated_ffmpeg_with_input(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-nostdin",
+                "-y",
+                "-f",
+                "rawvideo",
+                "-pixel_format",
+                input_pixel_format,
+                "-video_size",
+                f"{int(width)}x{int(height)}",
+                "-framerate",
+                str(int(fps)),
+                "-i",
+                "pipe:0",
+                "-frames:v",
+                str(int(frame_count)),
+                "-an",
+                "-c:v",
+                "libx264",
+                "-threads",
+                "1",
+                "-x264-params",
+                (
+                    "threads=1:lookahead_threads=1:sliced_threads=0:ref=1:bframes=0:"
+                    "keyint=1:min-keyint=1:scenecut=0:cabac=0"
+                ),
+                "-profile:v",
+                "baseline",
+                "-preset",
+                "medium",
+                "-crf",
+                str(int(crf)),
+                "-pix_fmt",
+                output_pixel_format,
+                "-movflags",
+                "+faststart",
+                "-f",
+                "mp4",
+                str(output_path),
+            ],
+            log_path,
+            chunks_factory,
+            expected_chunks=int(frame_count),
+            expected_chunk_bytes=bytes_per_frame,
+            operation="isolated H.264 encode",
+        )
+    finally:
+        _cleanup_temporary(log_path, sys.exc_info()[1])
+
+
+def _strict_validate_mp4(path: Path, *, require_audio: bool = True) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for strict long-video candidate validation")
+    descriptor, log_name = tempfile.mkstemp(
+        prefix=f".{path.stem}.", suffix=".strict-decode.log.tmp", dir=path.parent
+    )
+    os.close(descriptor)
+    log_path = Path(log_name)
+    try:
+        args = [
+            ffmpeg,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-xerror",
+            "-threads",
+            "1",
+            "-nostdin",
+            "-i",
+            str(path),
+            "-map",
+            "0:v:0",
+        ]
+        if require_audio:
+            args.extend(["-map", "0:a:0"])
+        args.extend(["-f", "null", "-"])
+        _run_isolated_ffmpeg(
+            args,
+            log_path,
+            operation="strict AV decode" if require_audio else "strict video decode",
+        )
+    finally:
+        _cleanup_temporary(log_path, sys.exc_info()[1])
 
 
 def _write_planar_audio_raw(path: Path, audio_array: np.ndarray) -> None:
@@ -777,8 +979,6 @@ def _write_mp4_atomic(
     audio_array, audio_report = _normalize_audio(audio, int(target_audio_samples))
     sample_rate = int(audio_report["sample_rate"])
 
-    import av
-
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{path.stem}.", suffix=".mp4.tmp", dir=path.parent
@@ -796,26 +996,32 @@ def _write_mp4_atomic(
     os.close(descriptor)
     audio_temporary = Path(audio_name)
     try:
-        # Keep PyAV/libx264 video encoding in-process, but isolate AAC in FFmpeg. Repeated
-        # in-process PyAV AAC encoder creation has triggered an uncatchable Windows native
-        # floating-point exception during long test/queue sessions.
-        with av.open(str(video_temporary), mode="w", format="mp4") as output:
-            video_stream = output.add_stream("libx264", rate=Fraction(fps, 1))
-            video_stream.width = int(frames.shape[2])
-            video_stream.height = int(frames.shape[1])
-            video_stream.pix_fmt = "yuv420p10le" if bit_depth == 10 else "yuv420p"
-            video_stream.options = {"crf": str(int(crf)), "preset": "medium"}
-
+        def frame_chunks():
             for image in frames:
                 image = image[..., :3].detach().float().clamp(0.0, 1.0).cpu()
                 if bit_depth == 10:
-                    array = (image * 65535.0).round().numpy().astype(np.uint16)
-                    frame = av.VideoFrame.from_ndarray(array, format="rgb48le")
+                    array = (image * 65535.0).round().numpy().astype("<u2", copy=False)
                 else:
-                    array = (image * 255.0).round().numpy().astype(np.uint8)
-                    frame = av.VideoFrame.from_ndarray(array, format="rgb24")
-                output.mux(video_stream.encode(frame))
-            output.mux(video_stream.encode(None))
+                    array = (image * 255.0).round().numpy().astype(np.uint8, copy=False)
+                yield np.ascontiguousarray(array).tobytes()
+
+        # Both native encoders run outside the long-lived ComfyUI process. The raw RGB pipe
+        # bounds memory to one generated frame and avoids the damaged in-process PyAV/libx264
+        # packet observed during the real 32-second MV stage gate.
+        _encode_rgb_frames_isolated(
+            video_temporary,
+            frame_chunks,
+            frame_count=int(frames.shape[0]),
+            width=int(frames.shape[2]),
+            height=int(frames.shape[1]),
+            fps=int(fps),
+            bit_depth=int(bit_depth),
+            crf=int(crf),
+        )
+        # Localize corruption before AAC mux/stream-copy so an encoder fault and a mux fault
+        # cannot collapse into the same report. Single-threaded strict decode is independent
+        # from the isolated single-threaded libx264 process that produced this file.
+        _strict_validate_mp4(video_temporary, require_audio=False)
         _write_planar_audio_raw(audio_temporary, audio_array)
         _mux_video_with_raw_audio(
             video_temporary,
@@ -823,6 +1029,10 @@ def _write_mp4_atomic(
             temporary,
             sample_rate=sample_rate,
         )
+        # A successfully muxed MP4 can still contain a damaged H.264 packet. Do not publish
+        # or accept it based on container metadata and hashes alone: decode every AV packet
+        # in an isolated single-threaded FFmpeg process while the file is still temporary.
+        _strict_validate_mp4(temporary)
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
@@ -841,7 +1051,12 @@ def _write_mp4_atomic(
         "fps": int(fps),
         "bit_depth": int(bit_depth),
         "crf": int(crf),
+        "video_encoder_process": "isolated_ffmpeg_subprocess",
+        "video_encoder_policy": ISOLATED_VIDEO_ENCODER_POLICY,
+        "video_only_strict_decode_validated": True,
         "audio_encoder_process": "isolated_ffmpeg_subprocess",
+        "strict_decode_validated": True,
+        "strict_decode_policy": STRICT_AV_DECODE_POLICY,
     }
 
 
@@ -960,6 +1175,13 @@ def save_long_video_candidate(
             "seed": int(seed),
             "bit_depth": int(bit_depth),
             "crf": int(crf),
+            "video_encoder_process": str(video_report["video_encoder_process"]),
+            "video_encoder_policy": str(video_report["video_encoder_policy"]),
+            "video_only_strict_decode_validated": bool(
+                video_report["video_only_strict_decode_validated"]
+            ),
+            "strict_decode_validated": bool(video_report["strict_decode_validated"]),
+            "strict_decode_policy": str(video_report["strict_decode_policy"]),
             "created_unix": time.time(),
             "audio_adjustment": {
                 key: video_report[key]
@@ -1004,10 +1226,15 @@ def _load_candidate(candidate_json_path: str) -> tuple[dict, Path, Path]:
         "context_sha256", "frame_count", "fps", "width", "height", "sample_rate",
         "audio_samples", "audio_start_sample", "audio_end_sample", "timeline_start_frame",
         "timeline_end_frame", "is_final_segment", "model_id", "sampling_summary",
+        "strict_decode_validated", "strict_decode_policy",
     }
     missing = sorted(required - set(candidate))
     if missing:
         raise ValueError("Long-video candidate descriptor is missing: " + ", ".join(missing))
+    if candidate["strict_decode_validated"] is not True:
+        raise ValueError("Long-video candidate did not pass strict AV decode validation")
+    if candidate["strict_decode_policy"] != STRICT_AV_DECODE_POLICY:
+        raise ValueError("Long-video candidate strict AV decode policy is unsupported")
     if int(candidate["index"]) < 0:
         raise ValueError("Long-video candidate index cannot be negative")
     if int(candidate["timeline_end_frame"]) - int(candidate["timeline_start_frame"]) != int(
@@ -1266,13 +1493,23 @@ def accept_long_video_candidate(
                 "width", "height", "sample_rate", "audio_samples", "audio_start_sample",
                 "audio_end_sample", "timeline_start_frame", "timeline_end_frame",
                 "is_final_segment", "model_id", "sampling_summary", "prompt", "seed",
-                "bit_depth", "crf", "created_unix",
+                "bit_depth", "crf", "strict_decode_validated", "strict_decode_policy",
+                "created_unix",
             )
         }
         accepted_entry.update(
             {
                 "video_path": _relative_path(accepted_video, root),
                 "video_sha256": video_hash,
+                "video_encoder_process": str(
+                    candidate.get("video_encoder_process", "legacy_unknown")
+                ),
+                "video_encoder_policy": str(
+                    candidate.get("video_encoder_policy", "legacy_unknown")
+                ),
+                "video_only_strict_decode_validated": bool(
+                    candidate.get("video_only_strict_decode_validated", False)
+                ),
                 "context_path": (
                     _relative_path(accepted_context, root) if accepted_context is not None else ""
                 ),
@@ -1497,8 +1734,6 @@ def compose_accepted_long_video(
     )
     assembled_dir.mkdir(parents=True, exist_ok=True)
 
-    import av
-
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{output_path.stem}.", suffix=".mp4.tmp", dir=assembled_dir
     )
@@ -1520,16 +1755,11 @@ def compose_accepted_long_video(
     encoded_audio_samples = 0
     previous_last = None
     try:
-        with av.open(str(video_temporary), mode="w", format="mp4") as output:
-            video_stream = output.add_stream("libx264", rate=Fraction(fps, 1))
-            video_stream.width = width
-            video_stream.height = height
-            video_stream.pix_fmt = "yuv420p"
-            video_stream.options = {"crf": str(int(crf)), "preset": "medium"}
-
-            # Video is decoded and encoded one frame at a time; no full-chain IMAGE tensor exists.
+        def frame_chunks():
             for segment, path in verified:
                 local_frames = 0
+                import av
+
                 with av.open(str(path), mode="r") as source:
                     if not source.streams.video:
                         raise ValueError(f"Accepted segment has no video stream: {path}")
@@ -1540,16 +1770,28 @@ def compose_accepted_long_video(
                                 f"than the manifest declares ({segment['frame_count']})"
                             )
                         rgb = decoded_frame.to_ndarray(format="rgb24")
-                        frame = av.VideoFrame.from_ndarray(rgb, format="rgb24")
-                        output.mux(video_stream.encode(frame))
                         local_frames += 1
-                        encoded_frames += 1
+                        yield np.ascontiguousarray(rgb).tobytes()
                 if local_frames != int(segment["frame_count"]):
                     raise ValueError(
                         f"Accepted segment {segment['index']} decoded {local_frames} video frames; "
                         f"manifest requires {segment['frame_count']}"
                     )
-            output.mux(video_stream.encode(None))
+
+        # Decode one accepted frame at a time and pipe it to an isolated libx264 process. No
+        # full-chain IMAGE tensor or multi-gigabyte raw-video staging file is created.
+        _encode_rgb_frames_isolated(
+            video_temporary,
+            frame_chunks,
+            frame_count=total_frames,
+            width=width,
+            height=height,
+            fps=fps,
+            bit_depth=8,
+            crf=int(crf),
+        )
+        _strict_validate_mp4(video_temporary, require_audio=False)
+        encoded_frames = total_frames
 
         # Audio is held one accepted segment at a time and streamed to a small raw temporary
         # file. Absolute manifest boundaries keep the total sample count invariant even when
@@ -1609,6 +1851,7 @@ def compose_accepted_long_video(
             temporary,
             sample_rate=sample_rate,
         )
+        _strict_validate_mp4(temporary)
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
@@ -1639,10 +1882,15 @@ def compose_accepted_long_video(
         "bridge_ms": float(bridge_ms) if audio_seam_policy == "cosine_bridge" else 0.0,
         "video_reencoded_h264": True,
         "audio_reencoded_aac": True,
+        "video_encoder_process": "isolated_ffmpeg_subprocess",
+        "video_encoder_policy": ISOLATED_VIDEO_ENCODER_POLICY,
+        "video_only_strict_decode_validated": True,
         "audio_encoder_process": "isolated_ffmpeg_subprocess",
+        "strict_decode_validated": True,
+        "strict_decode_policy": STRICT_AV_DECODE_POLICY,
         "streaming_memory_scope": (
-            "one decoded video frame plus one segment PCM buffer; interleaved audio is staged "
-            "on disk before isolated AAC mux"
+            "one decoded video frame piped to isolated libx264 plus one segment PCM buffer; "
+            "interleaved audio is staged on disk before isolated AAC mux"
         ),
         "segments": segment_reports,
         "seams": seam_reports,

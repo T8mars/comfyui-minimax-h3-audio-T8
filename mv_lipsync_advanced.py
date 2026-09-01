@@ -23,7 +23,9 @@ from .long_video_delivery import (
     _mux_video_with_raw_audio,
     _normalize_audio,
     _sha256_file,
+    _strict_validate_mp4,
     _write_planar_audio_raw,
+    STRICT_AV_DECODE_POLICY,
     accept_long_video_candidate,
     compose_accepted_long_video,
     load_delivery_manifest,
@@ -56,8 +58,10 @@ MV_VOCAL_LOCK_PROMPT_PLAN_TYPE = "H3_T8_MV_VOCAL_LOCK_PROMPT_PLAN"
 MV_SCENE_SCHEMA = "t8.minimax_h3.mv_scene_plan.v1"
 MV_PROMPT_SCHEMA = "t8.minimax_h3.mv_prompt_plan.v1"
 MV_VOCAL_LOCK_PROMPT_SCHEMA = "t8.minimax_h3.mv_vocal_lock_prompt_plan.v2"
+MV_VOCAL_LOCK_VISUAL_PROMPT_SCHEMA = "t8.minimax_h3.mv_vocal_lock_prompt_plan.v3"
 MV_LOOP_STATE_NAME = "mv_in_node_loop_state.json"
 MV_VOCAL_LOCK_LOOP_STATE_NAME = "mv_vocal_lock_in_node_loop_state.json"
+MV_VOCAL_LOCK_VISUAL_LOOP_STATE_NAME = "mv_vocal_lock_visual_in_node_loop_state.json"
 
 
 def _canonical_json(value: object, *, indent: int | None = None) -> str:
@@ -897,6 +901,324 @@ def build_mv_vocal_lock_prompt_plan(
     )
 
 
+_SINGLE_SUBJECT_VISUAL_CONTRACT = (
+    "Exactly one visible person and exactly one visible human face exist in the entire frame. "
+    "The only person is <Subject 1>. No mirrors, reflections, projections, screens, posters, "
+    "portraits, face-shaped shadows, duplicate faces, ghost images, double exposure, overlays, "
+    "picture-in-picture, background people, or visible props appear. The background contains only "
+    "simple non-figurative studio surfaces and lights."
+)
+
+_UNSAFE_SCENE_DIRECTION = re.compile(
+    r"\b(?:mirror|reflection|projection|screen|poster|portrait|crowd|background people|"
+    r"double exposure|picture-in-picture|clone|duplicate|ghost|microphone|\bmic\b|television|"
+    r"phone|tablet|painting|photo|photograph)\b",
+    flags=re.IGNORECASE,
+)
+
+_SAFE_STUDIO_SCENE_ARC = (
+    {
+        "camera": "locked frontal medium close-up at eye level",
+        "lighting": "soft cool key light with a restrained neutral rim",
+        "performance": "maintains direct eye-line and restrained natural head movement",
+        "emotion": "calm and attentive",
+    },
+    {
+        "camera": "locked left three-quarter medium close-up at eye level",
+        "lighting": "soft neutral key light with a faint cool background gradient",
+        "performance": "turns only slightly while keeping both lips continuously visible",
+        "emotion": "focused and sincere",
+    },
+    {
+        "camera": "locked tighter frontal medium close-up at eye level",
+        "lighting": "clean soft frontal light with a simple dark blue-gray background",
+        "performance": "keeps shoulders steady and uses subtle facial expression",
+        "emotion": "clear and engaged",
+    },
+    {
+        "camera": "locked right three-quarter medium close-up at eye level",
+        "lighting": "soft warm-neutral key light over a plain non-figurative background",
+        "performance": "keeps the complete mouth visible with minimal head rotation",
+        "emotion": "confident and composed",
+    },
+    {
+        "camera": "locked frontal medium close-up at eye level",
+        "lighting": "balanced soft key and fill over a plain blue-gray studio background",
+        "performance": "returns to direct eye-line with restrained natural expression",
+        "emotion": "resolved and present",
+    },
+)
+
+
+def _visual_scene_directions(scene_plan: Mapping, value: str) -> tuple[list[dict], str]:
+    payload = _load_json(value, "scene_directions_json")
+    count = int(scene_plan["scene_count"])
+    if not payload:
+        return (
+            [dict(_SAFE_STUDIO_SCENE_ARC[index % len(_SAFE_STUDIO_SCENE_ARC)]) for index in range(count)],
+            "deterministic_safe_studio_arc",
+        )
+    if not isinstance(payload, list) or len(payload) != count:
+        raise ValueError("scene_directions_json must contain exactly one object per planned scene")
+
+    directions = []
+    for index, item in enumerate(payload):
+        if not isinstance(item, Mapping):
+            raise ValueError(f"scene direction {index} must be a JSON object")
+        direction = {
+            "camera": _safe_vocal_camera_direction(str(item.get("camera") or "")),
+            "lighting": _single_line(str(item.get("lighting") or "soft neutral studio light")),
+            "performance": _single_line(
+                str(item.get("performance") or "uses restrained natural expression")
+            ),
+            "emotion": _single_line(str(item.get("emotion") or "focused and composed")),
+        }
+        joined = " ".join(direction.values())
+        if _UNSAFE_SCENE_DIRECTION.search(joined):
+            raise ValueError(
+                f"scene direction {index} conflicts with the single-subject visual contract"
+            )
+        if any(len(text) > 500 for text in direction.values()):
+            raise ValueError(f"scene direction {index} fields must stay within 500 characters")
+        directions.append(direction)
+    return directions, "user_supplied_exact_scene_directions"
+
+
+def _vocal_lock_performance_detail(
+    *,
+    vocal_active: bool,
+    vocal_content_type: str,
+    language: str,
+    exact_text: str,
+    non_vocal: str,
+) -> tuple[str, str]:
+    if vocal_active:
+        action = (
+            "sings the supplied isolated vocal"
+            if vocal_content_type == "singing"
+            else "speaks the supplied isolated dialogue"
+        )
+        summary_action = "performs the supplied vocal with clearly visible synchronized mouth movement"
+        detail = (
+            f"<Subject 1> (S1) {action} naturally. The full face and unobstructed mouth remain "
+            "visible for the entire shot; lips, jaw, tongue visibility, cheeks, and facial muscles "
+            "articulate every audible phoneme in synchronization with <Audio 1>."
+        )
+        if exact_text:
+            detail += f" The exact supplied words are <d>[{language}] {exact_text}</d>"
+        else:
+            detail += " No words or lyrics are added, removed, guessed, paraphrased, printed, or subtitled."
+        return summary_action, detail
+    return (
+        "remains visible with a relaxed closed mouth during the non-vocal interval",
+        (
+            f"<Audio 1> remains the synchronized timing signal while <Subject 1> (S1) {non_vocal}. "
+            "No unrelated speaking or singing mouth shapes are introduced."
+        ),
+    )
+
+
+def validate_mv_vocal_lock_visual_prompt_plan(value: Mapping) -> dict:
+    if not isinstance(value, Mapping):
+        raise ValueError("MV Vocal Lock Visual Prompt Plan must come from the V3 Visual Director node")
+    plan = dict(value)
+    claimed = plan.pop("prompt_plan_hash", None)
+    if (
+        plan.get("type") != MV_VOCAL_LOCK_PROMPT_PLAN_TYPE
+        or plan.get("schema") != MV_VOCAL_LOCK_VISUAL_PROMPT_SCHEMA
+    ):
+        raise ValueError("MV Vocal Lock Visual Prompt Plan has an unsupported type/schema")
+    if not isinstance(claimed, str) or claimed != _hash(plan):
+        raise ValueError("MV Vocal Lock Visual Prompt Plan hash mismatch; rebuild the V3 prompt plan")
+    scene_plan = validate_mv_scene_plan(plan.get("scene_plan"))
+    prompts = plan.get("segments")
+    if not isinstance(prompts, list) or len(prompts) != scene_plan["scene_count"]:
+        raise ValueError("MV Vocal Lock Visual Prompt Plan segment count mismatch")
+    for index, item in enumerate(prompts):
+        if not isinstance(item, Mapping) or int(item.get("index", -1)) != index:
+            raise ValueError("MV Vocal Lock Visual Prompt Plan indices must be contiguous")
+        prompt = str(item.get("prompt", ""))
+        _validate_official_ref2va_prompt(
+            prompt,
+            vocal_active=item.get("performance_state") == "vocal_active",
+        )
+        if _SINGLE_SUBJECT_VISUAL_CONTRACT not in prompt:
+            raise ValueError("V3 prompt lost the exact single-subject visual contract")
+    if plan.get("visual_contract") != "one_person_one_face_no_reflective_or_figurative_background":
+        raise ValueError("V3 prompt plan lost its single-subject visual contract marker")
+    audio_contract = plan.get("audio_contract")
+    if not isinstance(audio_contract, Mapping) or audio_contract.get("drive") != "vocal_lock_audio":
+        raise ValueError("V3 prompt plan is missing the isolated-audio drive contract")
+    if audio_contract.get("delivery") != "full_song_muxed_once":
+        raise ValueError("V3 prompt plan is missing the one-time full-song delivery contract")
+    plan["prompt_plan_hash"] = claimed
+    return plan
+
+
+def build_mv_vocal_lock_visual_prompt_plan(
+    scene_plan: Mapping,
+    global_creative_prompt: str,
+    performer_description: str,
+    visual_style: str,
+    scene_directions_json: str = "",
+    vocal_content_type: str = "singing",
+    vocal_language: str = "English",
+    exact_vocal_text_json: str = "",
+    non_vocal_action: str = "keeps the mouth naturally closed and breathes with the rhythm",
+) -> tuple[dict, str, dict, str, str]:
+    scene_plan = validate_mv_scene_plan(scene_plan)
+    if vocal_content_type not in {"singing", "spoken_dialogue"}:
+        raise ValueError("vocal_content_type must be singing or spoken_dialogue")
+    text_payload = _load_json(exact_vocal_text_json, "exact_vocal_text_json")
+    if text_payload and not isinstance(text_payload, list):
+        raise ValueError("exact_vocal_text_json must be a list of scene text strings")
+    if any(not isinstance(item, str) for item in text_payload):
+        raise ValueError("exact_vocal_text_json must contain only scene text strings")
+    if len(text_payload) > int(scene_plan["scene_count"]):
+        raise ValueError("exact_vocal_text_json contains more entries than the scene plan")
+
+    directions, direction_source = _visual_scene_directions(scene_plan, scene_directions_json)
+    global_prompt = _single_line(global_creative_prompt) or "A coherent cinematic performance."
+    performer = _single_line(performer_description) or "the same lead performer"
+    style = _single_line(visual_style) or "cinematic, realistic light and natural skin texture"
+    language = _single_line(vocal_language) or "Unknown"
+    non_vocal = _single_line(non_vocal_action) or "keeps the mouth naturally closed"
+    segments = []
+    relay_events = []
+    segment_json = []
+    for scene, direction in zip(scene_plan["scenes"], directions):
+        index = int(scene["index"])
+        exact_text = _single_line(text_payload[index]) if index < len(text_payload) else ""
+        vocal_active = scene["performance_state"] == "vocal_active"
+        summary_action, vocal_detail = _vocal_lock_performance_detail(
+            vocal_active=vocal_active,
+            vocal_content_type=vocal_content_type,
+            language=language,
+            exact_text=exact_text,
+            non_vocal=non_vocal,
+        )
+        prompt = "\n".join(
+            (
+                "subject_definitions:",
+                (
+                    f"<Subject 1> is the exact performer shown in <Picture 1>: {performer}. The same "
+                    "identity, facial structure, hair, clothing, and visual style remain unchanged."
+                ),
+                (
+                    "<Audio 1> is the supplied isolated vocal-lock signal for this entire target clip "
+                    "and is reused as the synchronized vocal track for <Subject 1> (S1)."
+                ),
+                "summary:",
+                (
+                    "[reference generation + audio reuse] The target video is one continuous "
+                    f"single-performer shot in which <Subject 1> {summary_action}; <Audio 1> supplies "
+                    "the complete synchronized vocal timing."
+                ),
+                "retention_analysis:",
+                (
+                    "<Subject 1> (appears in [Shot 1]): fully_preserved - identity, face, hair, "
+                    "clothing, and visual style from <Picture 1> are retained."
+                ),
+                (
+                    "<Audio 1>: fully_copy - the isolated vocal-lock signal is reused 1:1 across the "
+                    "complete generated scene timeline."
+                ),
+                "detailed_description:",
+                (
+                    f"The target video uses {style}. {global_prompt} It contains one continuous shot "
+                    "with no internal cut and no visible text."
+                ),
+                (
+                    f"[Shot 1] {direction['camera']}. Lighting: {direction['lighting']}. "
+                    f"Performance: {direction['performance']}. Emotion: {direction['emotion']}. "
+                    "<Subject 1> stays in a medium close-up, front-facing or three-quarter face view; "
+                    f"the full mouth is never cropped, covered, turned away, or motion-blurred. {vocal_detail}"
+                ),
+                _SINGLE_SUBJECT_VISUAL_CONTRACT,
+                (
+                    "The complete performer stays in optical focus. Hair strands, face contour, "
+                    "shoulders, clothing edges, and the subject silhouette remain sharply resolved "
+                    "and temporally stable, without haloing, edge smearing, double contours, "
+                    "synthetic depth haze, or motion blur."
+                ),
+                "overall_soundscape:",
+                (
+                    "No additional dialogue, crowd voices, ambience, or sound effects are invented; "
+                    "the synchronized vocal content comes only from <Audio 1>."
+                ),
+                "non_diegetic_music:",
+                "N/A",
+            )
+        )
+        _validate_official_ref2va_prompt(prompt, vocal_active=vocal_active)
+        item = {
+            "index": index,
+            "prompt": prompt,
+            "start_frame": int(scene["start_frame"]),
+            "end_frame": int(scene["end_frame"]),
+            "performance_state": scene["performance_state"],
+            "exact_vocal_text_supplied": bool(exact_text),
+            "scene_direction": direction,
+        }
+        segments.append(item)
+        segment_json.append({"prompt": prompt, "note": f"MV Vocal Lock V3 scene {index + 1}"})
+        relay_events.append(
+            {
+                "event_index": index + 1,
+                "prompt": _single_line(prompt),
+                "start": float(scene["start_seconds"]),
+                "end": float(scene["end_seconds"]),
+            }
+        )
+    relay_available = len(relay_events) <= MAX_RELAY_EVENTS
+    events = {
+        "type": PROMPT_RELAY_EVENTS_TYPE,
+        "schema": PROMPT_RELAY_EVENTS_SCHEMA,
+        "events": relay_events if relay_available else [],
+    }
+    events["events_hash"] = json_hash(events)
+    prompt_plan = {
+        "type": MV_VOCAL_LOCK_PROMPT_PLAN_TYPE,
+        "schema": MV_VOCAL_LOCK_VISUAL_PROMPT_SCHEMA,
+        "scene_plan": scene_plan,
+        "segments": segments,
+        "audio_contract": {
+            "drive": "vocal_lock_audio",
+            "conditioning_mode": "lock_source",
+            "delivery": "full_song_muxed_once",
+        },
+        "visual_contract": "one_person_one_face_no_reflective_or_figurative_background",
+        "scene_direction_source": direction_source,
+        "prompt_relay_events_hash": events["events_hash"],
+        "prompt_relay_events_available": relay_available,
+        "external_api_used": False,
+        "compiler": "deterministic_local_visual_director_official_ref2va_v3",
+    }
+    prompt_plan["prompt_plan_hash"] = _hash(prompt_plan)
+    report = {
+        "status": "ready",
+        "prompt_plan_hash": prompt_plan["prompt_plan_hash"],
+        "scene_count": len(segments),
+        "scene_direction_source": direction_source,
+        "visual_contract": prompt_plan["visual_contract"],
+        "audio_contract": prompt_plan["audio_contract"],
+        "external_api_used": False,
+        "notes": [
+            "every scene has an explicit shot direction rather than a camera-only cycle",
+            "the exact prompt contract permits one visible person and one visible face only",
+            "reflective, figurative, duplicate-face, background-person and visible-prop staging is forbidden",
+            "this reduces a known failure mode but still requires real visual review",
+        ],
+    }
+    return (
+        prompt_plan,
+        _canonical_json(segment_json, indent=2),
+        events,
+        segments[0]["prompt"] if segments else "",
+        _canonical_json(report, indent=2),
+    )
+
+
 def _audio_window(audio, start_frame: int, frame_count: int, *, name: str) -> dict:
     waveform, sample_rate = validate_audio(audio, name)
     start_sample = round(int(start_frame) * sample_rate / FPS)
@@ -986,6 +1308,7 @@ def _mux_master_audio(
             temporary,
             sample_rate=sample_rate,
         )
+        _strict_validate_mp4(temporary)
         with temporary.open("r+b") as handle:
             handle.flush()
             os.fsync(handle.fileno())
@@ -1002,6 +1325,8 @@ def _mux_master_audio(
         "full_song_muxed_once": True,
         "video_stream_copied": True,
         "audio_encoder_process": "isolated_ffmpeg_subprocess",
+        "strict_decode_validated": True,
+        "strict_decode_policy": STRICT_AV_DECODE_POLICY,
         "audio_adjustment": audio_report,
     }
 
@@ -1553,6 +1878,86 @@ def run_local_mv_vocal_lock_in_node_loop(
             "vocal_lock_audio_validation": audio_contract,
             "conditioning_audio": "vocal_lock_audio",
             "delivery_audio": "full_song_muxed_once",
+            "lipsync_claim": (
+                "audio-conditioned Vocal Lock candidate; visual synchronization still requires "
+                "objective offset review and normal-speed human review"
+            ),
+        }
+    )
+    return (*result[:4], _canonical_json(report, indent=2))
+
+
+def run_local_mv_vocal_lock_visual_in_node_loop(
+    model,
+    clip,
+    video_vae,
+    audio_vae,
+    reference_image,
+    full_song,
+    vocal_lock_audio,
+    mv_vocal_lock_prompt_plan: Mapping,
+    *,
+    chain_id: str,
+    width: int,
+    height: int,
+    base_seed: int,
+    steps: int,
+    shift_video: float,
+    shift_audio: float,
+    sampler_name: str,
+    scheduler: str,
+    resume_existing: bool,
+    filename_prefix: str,
+    bit_depth: int,
+    crf: int,
+    model_id: str,
+) -> tuple[str, str, int, str, str]:
+    prompt_plan = validate_mv_vocal_lock_visual_prompt_plan(mv_vocal_lock_prompt_plan)
+    audio_contract = _validate_vocal_lock_audio_contract(
+        full_song,
+        vocal_lock_audio,
+        int(prompt_plan["scene_plan"]["total_frames"]),
+    )
+    result = run_local_mv_in_node_loop(
+        model,
+        clip,
+        video_vae,
+        audio_vae,
+        reference_image,
+        full_song,
+        prompt_plan,
+        chain_id=chain_id,
+        width=width,
+        height=height,
+        base_seed=base_seed,
+        steps=steps,
+        shift_video=shift_video,
+        shift_audio=shift_audio,
+        sampler_name=sampler_name,
+        scheduler=scheduler,
+        resume_existing=resume_existing,
+        filename_prefix=filename_prefix,
+        bit_depth=bit_depth,
+        crf=crf,
+        model_id=model_id,
+        vocal_lock_audio=vocal_lock_audio,
+        prompt_plan_validator=validate_mv_vocal_lock_visual_prompt_plan,
+        route_revision="vocal_lock_v3_visual_director",
+        loop_state_name=MV_VOCAL_LOCK_VISUAL_LOOP_STATE_NAME,
+        state_schema="t8.minimax_h3.mv_vocal_lock_visual_in_node_loop.v3",
+    )
+    report = json.loads(result[4])
+    report.update(
+        {
+            "route": "local_mv_vocal_lock_v3_visual_director",
+            "vocal_lock_audio_validation": audio_contract,
+            "conditioning_audio": "vocal_lock_audio",
+            "delivery_audio": "full_song_muxed_once",
+            "visual_contract": prompt_plan["visual_contract"],
+            "visual_claim": (
+                "the prompt contract forbids the observed duplicate-face staging; every rendered "
+                "scene still requires visual review before acceptance"
+            ),
             "lipsync_claim": (
                 "audio-conditioned Vocal Lock candidate; visual synchronization still requires "
                 "objective offset review and normal-speed human review"
