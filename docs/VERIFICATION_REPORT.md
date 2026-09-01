@@ -5,6 +5,68 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-02 — SLA Precision V2 quality-correction candidate
+
+The reported persistent SLA generation defect was investigated against
+`PlagueKind/ComfyUI-PlagueKind-Nodes` v1.4.3 at fixed commit
+`066ada9eb2378f392cc815663f63c4eef1060b4a` (MIT). The historical T8 route used a pooled-BF16 router,
+quantized `spas-sage-attn` Sage2 Q/K, 128x64 tiles, invocation-count step tracking, coarse prefix
+protection and an all-sparse exact path. The current upstream route instead keeps pooling and routing
+scores in FP32, calls a direct Triton sparse kernel with FP32 online softmax, derives logical sampler
+steps from ComfyUI sigma metadata, protects exact language and audio spans, and keeps the first and last
+sampling steps dense. Those differences are causal code-path differences, not seed tuning.
+
+`sla_precision_v2_vendor/block_map.py` and `kernel.py` preserve the pinned upstream logic. The vendored
+`patch.py` changes observability only: callers may receive the runtime state, and T8 records sparse/dense
+counts per recovered logical step. Those counters never feed routing, block selection, or attention
+math. The three append-only nodes occupy positions 276-278 and use a new runtime type. The matching
+workflow is
+`examples/workflows/15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json`.
+Every v1.64.0 node position, old SLA schema, default and workflow remains unchanged.
+
+A low-load RTX 4060 Ti sm89 BF16 probe used B1/L513/H2/D128 with a tail block. Against dense attention,
+the direct kernel measured relative MAE `0.000434825`, RMSE `0.000412`, cosine `0.99999988`; the FP32
+router top-k exactly matched an independent FP32 calculation and the repeat was bit-exact. The report is
+`artifacts/sla-precision-v2-kernel-probe-20260902/report.json`. This is a numerical kernel check, not a
+perceptual quality result.
+
+The real validation uses the FP8 FL2VA base, the SLA LoRA as a dynamic model-only residual, the same first
+and last image, seed `2608224201`, the Mandarin sentence “你在干嘛呢，我在这里呀，看看效果如何。”,
+736x416x124, eight NFE, native-flow shifts 12/3, 32x32 blocks, requested 90% sparsity, dense logical steps
+0 and 7, sparse steps 1-6, full language/audio protection, Comfy Kitchen dense boundaries, and disabled
+reduced-precision accumulation. Run `20260902-015939` completed in 126.438 seconds. The fail-closed audit
+recorded one wrapper forward per logical step, exactly 50 dense calls on step 0, exactly 50 sparse calls
+on each of steps 1-6, exactly 50 dense calls on step 7, 12,785 tokens, 400 total key blocks, 59 selected
+key blocks including 20 protected blocks, and zero kernel failure/fallback. Its decoded video and audio
+SHA-256 values exactly match the earlier same-seed run made before per-step counters were added, proving
+the observability extension did not alter decoded output.
+
+The same-input/same-seed dense XFormers control completed in 157.297 seconds. The initial paired Precision
+V2 run took 137.828 seconds, for 12.38% lower end-to-end time; sampler windows were approximately 107.188
+versus 131.922 seconds, a reduction of 18.75%. This is one local pair, not a distribution or cross-GPU
+benchmark. Both H.264/AAC files pass strict video, audio and combined decode. Local multilingual ASR
+recognized “你在干嘛呢 我在这里啊 看看效果如何” in both. Official SyncNet measured -1 frame at 25fps for
+both; delaying video by 400ms while preserving audio measured +9 frames for both, establishing evaluator
+sensitivity on this material. Thirty-two-frame contact review found no old post-one-second face,
+identity or motion collapse in Precision V2. The user then watched the anonymous normal-speed A/B pair
+under `artifacts/sla-precision-v2-pair-review-20260902` and reported “两个差不多，都还行”. After that
+decision was recorded, the private mapping was revealed: A was the dense control and B was Precision V2.
+This closes the bounded perceptual non-inferiority gate for this one material, seed and reviewer; it does
+not establish a general Precision V2 quality advantage. The hash-bound local record is
+`artifacts/sla-precision-v2-pair-review-20260902/human_review_result.json`.
+
+The latest Precision V2 run observed 236MiB minimum free VRAM; the earlier identical decoded run observed
+211MiB, and the dense control observed 245MiB. All are below the project's 512MiB safety gate. Execution,
+kernel routing, media integrity, ASR and calibrated temporal AV alignment pass, but universal 16GB safety
+does not. The feature therefore remains Advanced EXP and must not be presented as a stable default.
+
+The v1.65.0 pre-publication gate completed 1,960 project tests with five existing Triton/PyTorch warnings,
+Ruff, 612 release-scope Python compilations, 255 JSON parses, Comfy configuration/security validation,
+CPU whitelist import, zero secret-scan hits, and exact parity for all 212 project/user workflow files. The
+Registry candidate contains 500 files and 187 frontend workflow JSON files; isolated extraction imports
+279 registered/279 unique nodes in exact `features.json` order. It contains no model weights, generated
+media, nested archive, development tests/tools/docs, artifacts, `SKILL.md`, or `roadmap.md`.
+
 ## 2026-09-02 — v1.64.0 MV Vocal Lock V3 official Ref2V 32-second validation
 
 The earlier V2 and V3 r1-r3 long-MV attempts used a generic LarryVrh EMA Turbo adapter with an

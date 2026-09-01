@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.64.0** · GPL-3.0-or-later
+Current version: **1.65.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -49,6 +49,16 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 For tail subdivision or a separate low-sigma second pass, use the long-video workflow containing `Long_Video_Sampling_Plan`. Disconnecting that node restores the old route.
 
 [Browse all workflow categories](examples/workflows/README.md)
+
+## SLA Precision V2 quality-correction route
+
+Use [`15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json`](examples/workflows/15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json) for the new SLA quality-correction path. It appends a dynamic model-only SLA LoRA loader, Precision V2 Attention, and a fail-closed post-sampler Runtime Audit. Every old SLA node and workflow remains unchanged.
+
+The recorded problem was not a seed issue. The historical route used pooled-BF16 routing, quantized `spas-sage-attn` Sage2 Q/K, 128x64 tiles, model-invocation step counting, coarse prefix protection, and an all-sparse exact route. Precision V2 pins the PlagueKind v1.4.3 implementation at commit `066ada9`: FP32 routing, a direct Triton sparse kernel with FP32 online softmax, sigma-derived logical steps, exact language/audio protection, and dense first and last steps. The SLA LoRA is applied as a dynamic residual over the FP8 base, without merging and re-quantizing base weights.
+
+The workflow fixes 736x416x124, eight NFE, shifts 12/3, 32x32 blocks, requested 90% sparsity, dense steps 0/7, and sparse steps 1-6. A real audit observed exactly 50 dense H3 calls on each boundary step and 50 sparse calls on each middle step (300 total), 20 protected blocks, and no kernel fallback. The decoded video and audio are byte-identical to the same-seed render made before per-step observability was added. Against the same-input, same-seed dense XFormers control, this one environment measured about 12.38% lower end-to-end time and 18.75% lower sampler time.
+
+Both dialogue clips strictly decode. Local ASR recovered the intended Mandarin sentence with an equivalent 呀/啊 substitution; official SyncNet measured -1 frame at 25fps for both, while a fixed 400ms delayed-video control measured +9 frames. A 32-frame review found no old post-one-second face/motion collapse. The user then watched the anonymous pair at normal speed and judged that both were about the same and acceptable. After reveal, A was Dense and B was Precision V2, so this material passes the perceptual non-inferiority gate without establishing a general Precision V2 quality advantage. Minimum free VRAM was 236MiB on the latest Precision V2 run (211MiB previously) and 245MiB for dense, below this project's 512MiB gate. The route therefore remains Advanced EXP and is not advertised as universally safe on 16GB GPUs.
 
 ## Fully Local MV / Lip Scenes
 

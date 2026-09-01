@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.64.0"
+version = "1.65.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"

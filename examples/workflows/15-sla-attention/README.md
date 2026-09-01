@@ -2,14 +2,16 @@
 
 本目录提供 MiniMax H3 FL2VA 的 LightX2V Turbo-SLA 实验工作流：基础版由SLA节点独占attention；组合版允许保留KJNodes的MiniMax H3 Sage完整forward，并由专用Composer逐调用选择唯一后端。普通SLA节点仍不接受KJ、Sol-Attn、FETA、Prompt Relay、BlockCache、STG或其他attention/block patch。
 
-## 三份入口
+## 四份入口
 
+- `2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json`：新画质修复入口。固定PlagueKind v1.4.3提交`066ada9`的FP32路由、直接Triton稀疏核、首尾Dense、精确语言/音频保护和动态LoRA旁路；运行后必须通过逐逻辑步Audit。当前仍为Advanced EXP。
 - `2026-08-26_H3_Turbo_SLA_Profile_Router_FL2VA_Advanced_EXP.json`：推荐入口。默认使用普通修正Alpha8 Turbo8；只有明确选择实验Profile时才进入SLA精确路线。
 - `2026-08-22_H3_LightX2V_SLA_FL2VA_4Step_Advanced_EXP.json`：基础严格版，Dual-Clock后直接接SLA。
 - `2026-08-22_H3_LightX2V_SLA_KJ_Sage_Composer_FL2VA_4Step_Advanced_EXP.json`：KJ组合版，连接顺序为 `Dual-Clock → KJ MiniMax H3 Sage → SLA + KJ Composer`。`ModelAttentionBackend`不是必需；若已有且属于ComfyUI内置PyTorch/Comfy Kitchen后端，Composer会明确记录并替换它。Sol-Attn和未知Attention仍拒绝。
 
 ## 使用方法
 
+0. 新的Precision V2是一条独立路线：使用FP8 FL2VA基座、8 NFE、shift 12/3，并按工作流固定顺序连接`Dual-Clock → SLA Dynamic LoRA Bypass V2 → SLA Precision V2 Attention → BasicGuider`。不要与下面三条旧LightX2V/Sage2路线混接；旧节点只为兼容和历史诊断保留。
 1. 默认可准备 `minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors`，放入 `ComfyUI/models/loras`。节点不再把所有SLA能力绑定到这一个文件SHA；其他H3 SLA safetensors必须具有完整A/B LoRA对，并在加载时全部映射到当前H3基座，否则仍会拒绝。
 2. 使用 FL2VA 基座，同时接入首帧与尾帧。推荐模板默认重复同一张近景图，避免把首尾条件冲突误判成SLA失效；替换尾帧时应保持人物占比、视角和场景尺度接近。近景人物直接跳到航拍小点属于高风险镜头，应延长时长、拆分镜头/加入中间关键帧，或改为只接首帧。上游发布证据覆盖 BF16 checkpoint 和 LightX2V FP8 配方；没有证据覆盖本地 INT8 ConvRot + SLA。Profile Router 的SLA精确档因此会拒绝INT8；仅研究旁路档允许INT8动态LoRA，默认在采样进度15%～90%启用SLA。
 3. SLA发布路线使用 `native_flow`、4 NFE、视频 shift 6、音频 shift 3。官方配置的`infer_steps=5`是5个sigma网格点，调度器实际执行4次模型前向。旧节点仍可记录其他NFE实验；Profile Router不会把它们称为上游精确路线。
@@ -22,6 +24,11 @@
 
 ## 已完成验证
 
+- Precision V2固定上游为`PlagueKind/ComfyUI-PlagueKind-Nodes` v1.4.3提交`066ada9eb2378f392cc815663f63c4eef1060b4a`（MIT）。`block_map.py`和`kernel.py`保持上游逻辑；`patch.py`只增加返回运行状态和逐逻辑步计数，不参与Attention数学或路由选择。
+- RTX 4060 Ti / sm89 BF16尾块微探针相对Dense参考的relative MAE为`0.000434825`、cosine为`0.99999988`，FP32 Router top-k精确匹配独立参考且重复运行bit-exact。
+- 736×416×124真实复跑逐步记录：步骤0/7各50次Dense，步骤1–6各50次Sparse，总Sparse 300次；序列12,785 token、400个key block、选中59个（含20个语言/音频保护块），kernel failure/fallback为0。新增计数前后decoded video/audio哈希完全相同。
+- 同输入、同Seed、同FP8底模、同SLA LoRA、同8 NFE/12:3的Dense XFormers对照也已完成。Precision V2首轮137.828秒、Dense 157.297秒；采样约107.188秒对131.922秒。两条严格解码、ASR对白可辨、SyncNet均-1帧，400ms画面延迟负对照均+9帧。正常速度匿名A/B人审仍待用户完成。
+- 最新Precision V2最低空闲236MiB（此前211MiB），Dense为245MiB，均未过512MiB门；不得写成通用16GB安全或正式稳定默认。
 - 固定 LightX2V 代码 revision：`f8aee98b5462cca8d7288888146ebd95592bf266`。
 - 固定模型 revision：`10ade67cd15ff7a135fa35c2a0673ea96c839247`。
 - 当时机械验证使用的参考LoRA SHA-256为`5CAE6DF40A06EA825F85FC8876C9EA1C9692C833A9AF07BB8B3BAC9CE2A71BAC`，208个LoRA patch全部映射并加载；这只是历史证据，不再是运行时唯一白名单。

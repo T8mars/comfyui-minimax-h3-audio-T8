@@ -18,7 +18,7 @@
 | `12-system-memory` | 环境审计、激活分块、Qwen前缀缓存、外部BlockCache组合、轨迹诊断和外部BlockSwap桥接 |
 | `13-latent-upscale` | 普通32整除放大、学习型3D latent放大与二阶段H3生成 |
 | `14-prompt-relay` | 全局提示词常驻、局部事件按时间接力、可选联合AV路由与8B提示词重写 |
-| `15-sla-attention` | LightX2V Turbo-SLA LoRA、动态块稀疏 Sage2、KJ Sage单入口组合器与强制运行审计（实验） |
+| `15-sla-attention` | SLA Precision V2 FP32路由/直接Triton修复路线，以及旧LightX2V Sage2/KJ兼容诊断与强制运行审计（实验） |
 | `16-raven-streaming` | 外部RAVEN因果分块T2VA、统一参数、加载前资源保护与请求合同审计（实验） |
 | `17-skin-finish` | 最终解码后的肤色/油光候选、专用Oil Control低内存文件流、Studio镜头内参数关键帧、候选低频与来源高频解耦、单轨及SAM3.1逐镜多人五点ParseNet语义皮肤MASK、可续跑状态、YuNet代理两遍流和ParseNet语义Quality Stream，以及源片相对的曝光/纹理/裁切P2硬门（实验） |
 | `18-audio-refine` | Turbo4/8、最终双采、PDD、EAV、Prompt Relay与长视频8步的可选音频精修；保留原视频、人工试听、默认回退（实验） |

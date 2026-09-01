@@ -209,6 +209,9 @@ from .nodes_sla_attention_advanced import SLA_ATTENTION_ADVANCED_NODE_CLASSES
 from .nodes_sla_profile_router_advanced import (
     SLA_PROFILE_ROUTER_ADVANCED_NODE_CLASSES,
 )
+from .nodes_sla_precision_v2_advanced import (
+    SLA_PRECISION_V2_ADVANCED_NODE_CLASSES,
+)
 from .nodes_pdd_advanced import PDD_ADVANCED_NODE_CLASSES
 from .nodes_visual_reference_exp import MiniMaxH3VisualReferenceStrengthEXPT8
 from .nodes_vram_policy_advanced import VRAM_POLICY_ADVANCED_NODE_CLASSES
@@ -701,6 +704,9 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 # V3 is append-only after the released V2 positions. It adds a
                 # strict single-subject visual contract and an independent resume schema.
                 *MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES,
+                # SLA Precision V2 is append-only after every v1.64.0 node. It
+                # never changes the three legacy SLA nodes or Profile Router.
+                *SLA_PRECISION_V2_ADVANCED_NODE_CLASSES,
             ]
 
 

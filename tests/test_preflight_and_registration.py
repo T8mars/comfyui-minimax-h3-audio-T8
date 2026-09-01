@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 276
+    assert len(ids) == 279
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -210,7 +210,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"
     assert ids[211] == "MiniMaxH3TurboSLAProfileRouterT8Advanced"
     assert ids[212] == "MiniMaxH3PDD8StepSetupT8Advanced"
-    assert ids[-22:-16] == [
+    assert ids[254:260] == [
         "MiniMaxH3SolEngineDraftToLTXT8Advanced",
         "MiniMaxH3SolEngineLTXRefinerSetupT8Advanced",
         "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
@@ -218,27 +218,27 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
         "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
     ]
-    assert ids[-16:-13] == [
+    assert ids[260:263] == [
         "MiniMaxH3FlashVSRModelT8Advanced",
         "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
         "MiniMaxH3FlashVSRRestoreT8Advanced",
     ]
-    assert ids[-13] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
-    assert ids[-12] == "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
-    assert ids[-11] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
-    assert ids[-10] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
-    assert ids[-9] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
-    assert ids[-8:-5] == [
+    assert ids[263] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
+    assert ids[264] == "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
+    assert ids[265] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
+    assert ids[266] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
+    assert ids[267] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
+    assert ids[268:271] == [
         "MiniMaxH3MVVocalScenePlannerT8Advanced",
         "MiniMaxH3MVRef2VAPromptCompilerT8Advanced",
         "MiniMaxH3LocalMVInNodeRendererT8Advanced",
     ]
-    assert ids[-5:-2] == [
+    assert ids[271:274] == [
         "MiniMaxH3MVVocalLockScenePlannerV2T8Advanced",
         "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
         "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced",
     ]
-    assert ids[-2:] == [
+    assert ids[274:276] == [
         "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced",
         "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced",
     ]

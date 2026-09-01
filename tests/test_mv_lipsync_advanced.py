@@ -401,9 +401,9 @@ def test_nodes_are_append_only_local_and_have_no_external_api_inputs():
         MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced,
     ]
     registered = asyncio.run(comfy_entrypoint().get_node_list())
-    assert registered[-8:-5] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
-    assert registered[-5:-2] == MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES
-    assert registered[-2:] == MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES
+    assert registered[268:271] == MV_LIPSYNC_ADVANCED_NODE_CLASSES
+    assert registered[271:274] == MV_LIPSYNC_V2_ADVANCED_NODE_CLASSES
+    assert registered[274:276] == MV_LIPSYNC_V3_ADVANCED_NODE_CLASSES
     renderer = MiniMaxH3LocalMVInNodeRendererT8Advanced.define_schema()
     assert renderer.is_output_node is True
     assert renderer.is_experimental is True

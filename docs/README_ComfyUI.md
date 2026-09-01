@@ -1,5 +1,22 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-09-02 SLA Precision V2 quality correction: three append-only Advanced EXP nodes pin the current
+> PlagueKind v1.4.3 implementation at commit `066ada9eb2378f392cc815663f63c4eef1060b4a` under MIT.
+> The repaired route uses FP32 pooled routing/scores, a direct Triton sparse kernel with FP32 online
+> softmax, sigma-derived logical step tracking, exact language/audio protection, and dense first/last
+> steps. The SLA LoRA is injected as a dynamic model-only residual over the FP8 base; it is never merged
+> and re-quantized. Old SLA nodes and workflows remain unchanged.
+>
+> The dated workflow fixes eight NFE, shifts 12/3, 32x32 blocks and 90% requested sparsity. A real
+> 736x416x124 rerun observed exactly `50 Dense / 6 x 50 Sparse / 50 Dense`, 20 protected blocks, and no
+> kernel fallback. Its decoded video/audio hashes exactly match the pre-observability same-seed run.
+> The same-input/same-seed dense XFormers control also strictly decoded; both clips recovered the intended
+> Mandarin dialogue through ASR, measured -1 SyncNet frame at 25fps, and measured +9 frames after a fixed
+> 400ms delayed-video control. This pair measured about 12.38% end-to-end and 18.75% sampler savings for
+> Precision V2. Full-speed user blind review is still pending. Minimum free VRAM was 236MiB on the latest
+> Precision V2 run (211MiB previously) and 245MiB on dense, so both fail the 512MiB project gate and no
+> universal 16GB safety claim is made.
+
 > 2026-09-02 v1.64.0 MV Vocal Lock V3 official Ref2V correction: the current recommended workflow uses the
 > official `minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors` at strength 1.0 with four
 > Euler/simple steps, shifts 12/3, and 1024x768 output. A same-image, same-audio, same-failing-seed

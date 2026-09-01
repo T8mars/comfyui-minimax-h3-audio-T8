@@ -1,4 +1,51 @@
 {
+  "sla_precision_v2_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes and one dated frontend workflow; pinned-kernel numerics, one same-input/same-seed real AV pair, and normal-speed user blind non-inferiority pass, while the 512MiB 16GB safety gate remains open",
+    "date": "2026-09-02",
+    "release": "1.65.0",
+    "nodes": [
+      "MiniMaxH3SLADynamicLoRABypassV2T8Advanced",
+      "MiniMaxH3SLAPrecisionV2T8Advanced",
+      "MiniMaxH3SLAPrecisionV2AuditT8Advanced"
+    ],
+    "positions": [276, 277, 278],
+    "workflow": "examples/workflows/15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json",
+    "upstream": {
+      "repository": "https://github.com/PlagueKind/ComfyUI-PlagueKind-Nodes",
+      "release": "v1.4.3",
+      "commit": "066ada9eb2378f392cc815663f63c4eef1060b4a",
+      "license": "MIT",
+      "vendored_scope": "sla/block_map.py, sla/kernel.py and sla/patch.py; T8 changes to patch.py are observability-only runtime state return and per-logical-step counters"
+    },
+    "root_cause": "the historical T8 route used a pooled BF16 router plus spas-sage-attn Sage2 Q/K quantization and 128x64 tiles, invocation-count step tracking, coarse prefix protection and all-sparse exact routing. The current PlagueKind route instead keeps pooled routing and scores in FP32, calls the direct Triton FP32-online-softmax sparse kernel, derives logical steps from sigma metadata, protects exact language/audio ranges, and keeps first plus last sampling steps dense",
+    "recommended_contract": {
+      "base": "minimax_h3_fl2va_pruned_fp8_scaled.safetensors",
+      "lora": "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors",
+      "lora_application": "dynamic model-only residual; no base merge or re-quantization",
+      "sampling": "eight NFE, dual_clock_euler/native_flow, shifts 12/3",
+      "attention": "90% requested sparsity, 32x32 blocks, minimum sequence 8192, logical steps 0 and 7 dense, steps 1-6 sparse, language/audio protection enabled, Comfy Kitchen dense boundaries, reduced-precision accumulation disabled"
+    },
+    "kernel_probe": {
+      "environment": "RTX 4060 Ti sm89, BF16, B1/L513/H2/D128 with tail block",
+      "relative_mae": 0.000434825,
+      "cosine_similarity": 0.99999988,
+      "router_topk_exact_match": true,
+      "repeat_bit_exact": true,
+      "report": "artifacts/sla-precision-v2-kernel-probe-20260902/report.json"
+    },
+    "real_pair": {
+      "contract": "same input image, same Mandarin prompt, same seed 2608224201, same FP8 base, same SLA LoRA dynamic bypass, 736x416x124, eight NFE and shifts 12/3; only attention routing differs",
+      "precision_v2": "137.828s end-to-end, approximately 107.188s sampler, strict H264/AAC decode pass, ASR recognized the intended sentence with 呀/啊 substitution, SyncNet -1 frame at 25fps, 400ms delayed-video control measured +9 frames",
+      "dense_control": "157.297s end-to-end, approximately 131.922s sampler, strict H264/AAC decode pass, same ASR sentence, SyncNet -1 frame, 400ms delayed-video control measured +9 frames",
+      "performance": "Precision V2 reduced end-to-end time by 12.38% and sampler time by 18.75% for this one pair",
+      "agent_visual_review": "32-frame contact review found no post-one-second face, identity or motion collapse in Precision V2",
+      "pair_audit": "artifacts/sla-precision-v2-pair-review-20260902/pair_audit.json",
+      "human_review": "PASS_NON_INFERIORITY_TIE: the user watched the anonymous normal-speed pair and reported 两个差不多，都还行; after the decision was recorded, A was revealed as dense_control and B as precision_v2. This supports bounded non-inferiority for this material, not a general quality advantage",
+      "human_review_result": "artifacts/sla-precision-v2-pair-review-20260902/human_review_result.json"
+    },
+    "memory_boundary": "the Precision V2 run completed but observed only 211MiB minimum free VRAM; the same dense control observed 245MiB. Both fail this project's 512MiB gate, so the route remains Advanced EXP and is not advertised as universally safe on 16GB GPUs",
+    "compatibility": "all 276 v1.64.0 node IDs and every old SLA node/schema/workflow remain unchanged; Precision V2 is appended at positions 276-278 and uses a distinct runtime type"
+  },
   "local_mv_vocal_lock_v3_official_ref2v_advanced": {
     "status": "accepted: 32-second five-scene mechanical, agent visual/synchronization proxy, and complete user review pass; user explicitly removed the approximately 90-second requirement",
     "date": "2026-09-02",
@@ -1703,7 +1750,10 @@
     "MiniMaxH3MVVocalLockPromptCompilerV2T8Advanced",
     "MiniMaxH3LocalMVVocalLockRendererV2T8Advanced",
     "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced",
-    "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced"
+    "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced",
+    "MiniMaxH3SLADynamicLoRABypassV2T8Advanced",
+    "MiniMaxH3SLAPrecisionV2T8Advanced",
+    "MiniMaxH3SLAPrecisionV2AuditT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

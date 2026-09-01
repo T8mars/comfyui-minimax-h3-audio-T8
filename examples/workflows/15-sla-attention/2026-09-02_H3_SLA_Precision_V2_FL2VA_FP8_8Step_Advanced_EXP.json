@@ -1,0 +1,1120 @@
+{
+  "id": "bb642f15-cfea-4df2-8fe0-638ec42a417f",
+  "revision": 0,
+  "last_node_id": 19,
+  "last_link_id": 24,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "Load CLIP",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_pruned_fp8_scaled.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "title": "Load Image",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "codex_prompt_relay_fl2va_first.png"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "title": "Replace with a same-scale final frame (demo repeats first)",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "codex_prompt_relay_fl2va_first.png"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            7,
+            17
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "One continuous cinematic night shot on a rain-wet neon street. Keep the adult woman in the long red coat at approximately the same portrait scale while she turns naturally toward the camera and takes one small step. She clearly says in Mandarin: \"你在干嘛呢，我在这里呀，看看效果如何。\" Stable identity and anatomy, restrained camera motion, synchronized speech and city ambience, no cuts, aerial pullback or sudden scale change.",
+        736,
+        416,
+        124,
+        "FL2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        false
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            10,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3SLADynamicLoRABypassV2T8Advanced",
+      "title": "SLA LoRA · dynamic model-only bypass (no base re-quantization)",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SLADynamicLoRABypassV2T8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_768p_sla_comfyui_bf16.safetensors"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608224201,
+        "fixed"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 11
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 13
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 14
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 15
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 16
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3SLAPrecisionV2AuditT8Advanced",
+      "title": "SLA Precision V2 Runtime Audit · fail closed",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 18
+        },
+        {
+          "name": "runtime",
+          "type": "MINIMAX_H3_SLA_PRECISION_V2_RUNTIME",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SLAPrecisionV2AuditT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 21
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "VHS_VideoCombine",
+      "title": "Video Combine 🎥🅥🅗🅢",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        396
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 23
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 24,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        24,
+        0,
+        "MiniMaxH3_SLA/precision_v2_fp8_8nfe_12v3a_736x416_124f",
+        "video/h264-mp4",
+        false,
+        true
+      ]
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "① 正确连接与硬约束",
+      "pos": [
+        0,
+        1150
+      ],
+      "size": [
+        930,
+        430
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## Precision V2 推荐连接\n\n`FP8 FL2VA → Dual-Clock(8 NFE / native_flow / 12V / 3A) → SLA Dynamic LoRA Bypass V2 → SLA Precision V2 Attention → BasicGuider`。同一组`sigmas`必须同时接入Precision V2，采样后必须通过它自己的Runtime Audit。不要再叠加旧SLA、KJ/Sage、Sol-Attn、FETA、BlockCache、STG或其他Attention owner。"
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "② 模式、模型与参数",
+      "pos": [
+        1050,
+        1150
+      ],
+      "size": [
+        930,
+        430
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## 已固定的质量修复参数\n\n该模板使用当前PlagueKind v1.4.3固定提交`066ada9`的精度路线：FP32块路由、直接Triton FP32 online-softmax稀疏核、32×32块、请求90%稀疏、首步与末步Dense、中间6步Sparse、语言与音频块全保护，并关闭reduced-precision accumulation。LoRA以动态model-only residual注入，避免把FP8底模合并后再次量化。旧节点保持兼容，但不再是此模板的推荐实现。"
+    },
+    {
+      "id": 18,
+      "type": "MarkdownNote",
+      "title": "③ 审计结果与科学边界",
+      "pos": [
+        2100,
+        1150
+      ],
+      "size": [
+        930,
+        430
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": "## 必须看Audit与真实成片\n\n推荐档应逐逻辑步报告`0/7 Dense`、`1-6 Sparse`，每个主步骤50个H3 attention块，总计300次Sparse、至少100次Dense、保护块大于0、kernel fallback为0。同输入同Seed的736×416×124对白实测通过严格解码、ASR与带400ms负对照的SyncNet，但RTX 4060 Ti 16GB最低空闲仅211MiB，未过项目512MiB安全门，因此仍标Advanced EXP，不宣称所有16GB环境安全。运行审计也不能替代正常速度的人脸、运动、音频与口型人审。"
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3SLAPrecisionV2T8Advanced",
+      "title": "SLA Precision V2 · PlagueKind v1.4.3 precision route",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        492
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "MINIMAX_H3_SLA_PRECISION_V2_RUNTIME",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SLAPrecisionV2T8Advanced"
+      },
+      "widgets_values": [
+        "recommended_8nfe_12v_3a",
+        0.9,
+        "32",
+        8192,
+        1,
+        true,
+        "0",
+        "comfy_kitchen",
+        true,
+        false,
+        false
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      1,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      5,
+      0,
+      7,
+      5,
+      "IMAGE"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      6,
+      "IMAGE"
+    ],
+    [
+      6,
+      4,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      7,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      8,
+      8,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      9,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      8,
+      2,
+      19,
+      1,
+      "SIGMAS"
+    ],
+    [
+      11,
+      19,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      12,
+      7,
+      0,
+      11,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      10,
+      0,
+      12,
+      0,
+      "NOISE"
+    ],
+    [
+      14,
+      11,
+      0,
+      12,
+      1,
+      "GUIDER"
+    ],
+    [
+      15,
+      8,
+      1,
+      12,
+      2,
+      "SAMPLER"
+    ],
+    [
+      16,
+      8,
+      2,
+      12,
+      3,
+      "SIGMAS"
+    ],
+    [
+      17,
+      7,
+      1,
+      12,
+      4,
+      "LATENT"
+    ],
+    [
+      18,
+      12,
+      0,
+      13,
+      0,
+      "LATENT"
+    ],
+    [
+      19,
+      19,
+      1,
+      13,
+      1,
+      "MINIMAX_H3_SLA_PRECISION_V2_RUNTIME"
+    ],
+    [
+      20,
+      13,
+      0,
+      14,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      1,
+      0,
+      14,
+      1,
+      "VAE"
+    ],
+    [
+      22,
+      2,
+      0,
+      14,
+      2,
+      "VAE"
+    ],
+    [
+      23,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      14,
+      1,
+      15,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "MiniMax H3 SLA Precision V2 · FP8 FL2VA · 8 NFE · 12V/3A",
+      "bounding": [
+        -80,
+        -80,
+        4180,
+        1050
+      ],
+      "color": "#6b4fa1",
+      "font_size": 28,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "使用说明 / 参数 / 科学边界",
+      "bounding": [
+        -80,
+        1070,
+        3300,
+        560
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3 Turbo8 Default / SLA Exact EXP Profile Router",
+    "workflow_name": "MiniMax H3 SLA Precision V2 FL2VA FP8 8-Step (Advanced EXP)"
+  },
+  "version": 0.4
+}

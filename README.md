@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.64.0** · GPL-3.0-or-later
+当前版本：**1.65.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -50,6 +50,16 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 `Long_Video_Sampling_Plan`的工作流；断开该节点即恢复旧路径。
 
 [查看全部工作流分类](examples/workflows/README.md)
+
+## SLA Precision V2（画质修复路线）
+
+新的 [`15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json`](examples/workflows/15-sla-attention/2026-09-02_H3_SLA_Precision_V2_FL2VA_FP8_8Step_Advanced_EXP.json) 是本轮 SLA 画质修复入口。它不会修改或删除旧 SLA 节点，而是追加三个 V2 节点：动态 model-only LoRA 旁路、Precision V2 Attention 和采样后 fail-closed Runtime Audit。
+
+根因不是简单换 Seed。旧路线使用 pooled BF16 路由、`spas-sage-attn` Sage2 Q/K 量化、128×64块、按模型调用次数判断步骤、粗前缀保护和全程稀疏；Precision V2 固定到 PlagueKind v1.4.3 提交 `066ada9` 的 FP32 路由与直接 Triton FP32 online-softmax 稀疏核，并使用真实 sigma 逻辑步骤、精确语言/音频段保护、首步与末步 Dense。FP8 底模上的 SLA LoRA 作为动态残差注入，不合并回底模，也不触发二次量化。
+
+推荐模板固定 736×416×124、8 NFE、shift 12/3、32×32块、请求90%稀疏、步骤0/7 Dense、步骤1–6 Sparse。真实复跑逐步审计精确记录到两端各50次 Dense、中间每步50次 Sparse（总计300）、20个保护块、0次 kernel fallback；生成的 decoded video/audio 与修改审计计数前的同 Seed 成片逐字节一致。同输入、同 Seed、同 SLA LoRA 的 Dense XFormers 对照中，Precision V2 本轮端到端用时126.438秒，对照157.297秒；按首轮成对计时分别约快12.38%和18.75%（端到端/采样），只代表这一个环境和素材。
+
+两条对白成片均严格解码，ASR识别为“你在干嘛呢，我在这里啊，看看效果如何”，官方 SyncNet 均为-1帧（25fps），把画面延后400ms后均测得+9帧。32帧接触表未见旧问题中的一秒后人脸/运动崩坏；用户随后正常速度匿名观看并判定“两个差不多，都还行”。揭盲后A为Dense、B为Precision V2，因此本素材通过感知非劣门，但不建立Precision V2普遍更优结论。RTX 4060 Ti 16GB 上 Precision V2 最低空闲236MiB（此前同画面211MiB），Dense 对照245MiB，均未达到项目512MiB安全门，因此本路线保持 Advanced EXP，不宣称所有16GB环境安全。
 
 ## 全本地 MV / 口型分镜
 
