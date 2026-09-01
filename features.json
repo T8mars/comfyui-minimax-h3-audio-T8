@@ -1,4 +1,31 @@
 {
+  "local_mv_lipsync_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes and one importable frontend workflow; no released node, default, widget order or workflow was changed",
+    "date": "2026-09-01",
+    "nodes": [
+      "MiniMaxH3MVVocalScenePlannerT8Advanced",
+      "MiniMaxH3MVRef2VAPromptCompilerT8Advanced",
+      "MiniMaxH3LocalMVInNodeRendererT8Advanced"
+    ],
+    "workflow": "examples/workflows/24-mv-lipsync/2026-09-01_H3_Local_MV_LipSync_Ref2VA_Turbo4_Advanced_EXP.json",
+    "contract": "local CPU song-boundary analysis -> deterministic six-section Ref2VA prompts -> strictly serial local H3 sampling through the connected MODEL -> atomic accepted-scene resume -> bounded-memory assembly -> one final mux of the complete original song",
+    "resume_safety": "accepted scenes are bound to the local state contract plus prompt, model_id, seed, width, height, timeline and sampling summary. Missing contract state, changed accepted fields, non-resume reuse, or a changed contract fails closed and requires restoration or a new chain_id",
+    "prompt_relay": "the compiler emits the existing typed Prompt Relay Event contract with exact absolute-second boundaries; the local MV renderer itself uses one prompt per generated scene and does not claim attention-level Prompt Relay execution",
+    "audio": "the connected song conditions every scene through <Audio 1>, but generated segment audio is never final; the complete original song is muxed exactly once after video assembly, so Audio Refine and per-segment AAC seams are outside the final-audio path",
+    "privacy": "no remote H3 gateway, HTTP /prompt queue, remote LLM, TTS, music provider or external video API is used",
+    "compatibility": "Ref2VA model choice is user-owned and is not blocked by filename, SHA-256, byte size or canvas area; width/height still follow the native H3 multiple-of-32 tensor contract",
+    "verification": "deterministic planning, manual boundaries, legal 17n+5 pre-generation quantization, prompt/media tags, typed Relay events, append-only registration, serial render/resume and one-time master-song mux are covered by local tests; one bounded serial local H3 media run also completed and is recorded below",
+    "real_h3_verification": {
+      "status": "single_serial_local_media_pass_visual_human_no_obvious_problem_lipsync_abstain_no_assessable_vocal",
+      "prompt_id": "a4a9aa2d-1092-4a2e-820f-1e255c34ee09",
+      "contract": "local Ref2VA INT8 plus local Turbo4 EMA LoRA, dual_clock_euler/native_flow, 12 video shift, 3 audio shift, 736x416, 124 frames at 24fps, one scene and no concurrent generation",
+      "media": "strict FFmpeg -xerror decode passed for the 5.166667-second H.264 video and 32kHz stereo AAC master; the complete source song was muxed once and the accepted state records external_api_used=false",
+      "output_sha256": "5d9b7f6b7884bef1bff582b20080382c76b0286acc238fa4f1cbbcad48453fe4",
+      "mechanical_review": "the five-timepoint contact sheet contains a visible performer, face and stable background without black frames or an obvious structural collapse",
+      "human_review": "the user reported no obvious visual problem. Lip sync is ABSTAIN_NO_ASSESSABLE_VOCAL because the validation source contained music without spoken or clearly assessable vocal content; this is not evidence of exact lip synchronization"
+    },
+    "boundary": "this is audio-conditioned H3 performance orchestration, not a phoneme-level lip model. Exact lip sync, identity, scene quality and long-song behavior still require a real serial render and human review"
+  },
   "subject_safe_rgb_composite_v8_advanced": {
     "status": "implemented as one append-only Advanced EXP RGB compositor and one importable frontend workflow; old nodes, defaults and workflows are unchanged",
     "date": "2026-09-01",
@@ -1550,7 +1577,10 @@
     "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced",
     "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced",
     "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced",
-    "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
+    "MiniMaxH3SubjectSafeRGBCompositeT8Advanced",
+    "MiniMaxH3MVVocalScenePlannerT8Advanced",
+    "MiniMaxH3MVRef2VAPromptCompilerT8Advanced",
+    "MiniMaxH3LocalMVInNodeRendererT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

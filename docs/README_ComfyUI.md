@@ -1,5 +1,13 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-09-01 fully local MV / lip-scene route: three append-only Advanced EXP nodes analyze a
+> complete local song on CPU, compile deterministic Ref2VA prompts, render scenes strictly serially
+> through the connected local H3 `MODEL`, resume accepted scenes, and mux the complete original song
+> once after video assembly. The implementation does not submit `/prompt` or call remote H3, LLM,
+> TTS, music, or video APIs. This is audio-conditioned H3 performance orchestration rather than a
+> phoneme-level lip solver; final lip motion, identity, acting and image quality require full-speed
+> human review. Use the dated workflow under `examples/workflows/24-mv-lipsync`.
+
 > 2026-08-30 FlashVSR v1.1 post-processing: three append-only Advanced EXP nodes load the
 > official model folder, compile an explicit quality/memory plan, and restore decoded H3 frames
 > at 2x or 4x while returning the exact original AUDIO object. `quality_locked` keeps the public

@@ -80,6 +80,7 @@ from .nodes_fast_h3_advanced import FAST_H3_ADVANCED_NODE_CLASSES
 from .nodes_sol_engine_h3_super_advanced import (
     SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
 )
+from .nodes_mv_lipsync_advanced import MV_LIPSYNC_ADVANCED_NODE_CLASSES
 from .nodes_flashvsr_advanced import FLASHVSR_ADVANCED_NODE_CLASSES
 from .nodes_creator_artifact_quarantine_advanced import (
     CREATOR_ARTIFACT_QUARANTINE_ADVANCED_NODE_CLASSES,
@@ -687,6 +688,9 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *LONG_VIDEO_SAMPLING_PLAN_ADVANCED_NODE_CLASSES,
                 *CHUNKED_TWO_PASS_GLOBAL_NOISE_ADVANCED_NODE_CLASSES,
                 *SUBJECT_SAFE_RGB_COMPOSITE_ADVANCED_NODE_CLASSES,
+                # 2026-09-01 all-local MV/lip-sync batch. Append-only: never move
+                # any previously released node registration above this point.
+                *MV_LIPSYNC_ADVANCED_NODE_CLASSES,
             ]
 
 

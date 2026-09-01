@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.61.0** · GPL-3.0-or-later
+Current version: **1.62.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -14,6 +14,7 @@ Current version: **1.61.0** · GPL-3.0-or-later
 - Multi-keyframes, long-video continuation, one-queue serial generation, resume support, and latent upscaling; the optional v8 subject-safe RGB post-process takes T2 only inside a reviewed per-frame alpha and preserves D0 elsewhere, including D0 audio
 - Single- and multi-person face refinement, SAM3.1 tracking, and Skin Finish
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
+- Fully local MV/lip-scene planning, serial Ref2VA rendering, resume, and one-time original-song mux
 - FastH3 Preview: T2VA four-step inference with optional real learned-gate 90% VSA execution
 - NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
 - FlashVSR v1.1: 2x/4x decoded-video restoration with fixed LCSA, an opt-in dynamic budget, memory-safe tiling, and untouched audio
@@ -48,6 +49,12 @@ For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Vid
 For tail subdivision or a separate low-sigma second pass, use the long-video workflow containing `Long_Video_Sampling_Plan`. Disconnecting that node restores the old route.
 
 [Browse all workflow categories](examples/workflows/README.md)
+
+## Fully Local MV / Lip Scenes
+
+Use [`24-mv-lipsync`](examples/workflows/24-mv-lipsync): load a performer reference image and the complete song. The nodes analyze scene boundaries locally, render every scene through the connected H3 MODEL in strict sequence, then mux the complete original song once. No remote H3, LLM, TTS, or video API is called.
+
+The default `assume_vocal` policy works with an ordinary song; connect a local `vocal_stem` when available. This is audio-conditioned H3 orchestration, not a separate phoneme-level lip model, so the final lip motion, identity, and image quality still require human review.
 
 ## Model Folders
 

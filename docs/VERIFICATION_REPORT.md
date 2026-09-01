@@ -5,6 +5,39 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-01 — Fully local MV / lip-scene route
+
+Three append-only Advanced EXP nodes now perform local CPU song-boundary analysis, deterministic
+six-section Ref2VA prompt compilation, and strictly serial H3 scene rendering through the connected
+ComfyUI `MODEL`. The implementation does not import a network client, submit `/prompt`, or call a
+remote H3, LLM, TTS, music, or video service. Each scene uses `<Picture 1>` and `<Audio 1>`; generated
+segment audio is discarded from delivery and the complete original song is muxed exactly once after
+accepted video assembly. The accepted-manifest and contract hashes support resume without changing
+the model, media, prompt, geometry, sampler, or seed contract.
+
+One bounded real run used the local Ref2VA INT8 model plus the local Turbo4 EMA LoRA,
+`dual_clock_euler/native_flow`, shifts `12/3`, 736×416, 124 frames at 24fps, and one scene. The local
+ComfyUI prompt `a4a9aa2d-1092-4a2e-820f-1e255c34ee09` completed in about 94 seconds without concurrent
+generation. The accepted state is `complete`, contains one accepted scene, records
+`external_api_used=false`, and records `source_audio_policy=full_original_song_muxed_once`. The final
+H.264/AAC file passes FFmpeg `-xerror` strict decode and has SHA-256
+`5d9b7f6b7884bef1bff582b20080382c76b0286acc238fa4f1cbbcad48453fe4`.
+
+After updating append-only registration expectations, the focused affected scope passed 230 tests.
+A final resume audit then bound accepted scenes to the state contract, prompt, model ID, seed and
+geometry; missing contract state and changed accepted fields now fail closed. Three new CPU tests cover
+that boundary and non-string exact-lyrics input. The corrected five-file scope passed 101 tests and the
+full main-worktree suite passed 1,931 tests with five existing Triton/PyTorch warnings. Ruff,
+596 publishable Python syntax checks, 251 publishable JSON parses, `git diff --check`, Comfy node
+configuration/security validation, and the CPU whitelist import gate passed. All 184 frontend
+workflow JSON files are byte-identical in the project source and user workflow mirror. No additional
+H3 generation or stress test was run for this closeout.
+
+The five-timepoint contact sheet is mechanically normal. In full-speed user review, the user reported
+no obvious visual problem. Lip sync is recorded separately as `ABSTAIN_NO_ASSESSABLE_VOCAL`: this
+validation source contained music without spoken or clearly assessable vocal content, so it cannot
+support an exact-lip-sync statement. The route remains Advanced EXP and is not a phoneme-level lip model.
+
 ## 2026-08-30 — Mask-preserving low-Sigma two-pass v4
 
 The old low-Sigma route could start pass one with a valid nested H3 video `noise_mask`, then lose that

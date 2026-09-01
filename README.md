@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.61.0** · GPL-3.0-or-later
+当前版本：**1.62.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -14,6 +14,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - 多关键帧、长视频续写、节点内一键串行、断点恢复、Latent 放大；双采可用v8人物安全RGB后处理，仅在人工逐帧alpha内采用T2、其余画面与音频保留D0
 - 单人/多人脸部修复、SAM3.1 追踪、Skin Finish
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
+- 全本地 MV/口型分镜：歌曲分析、Ref2VA 提示词、串行生成、断点续跑、原曲一次性混入
 - FastH3 Preview：T2VA 4步，可选真实 learned-gate VSA 90% 稀疏执行
 - NVIDIA H3 Super Acceleration：H3 4步草稿经完整 LTX VAE 编码后接 LTX-2.5 3步 Refiner（TAEHV仅最终解码）
 - FlashVSR v1.1：成片2×/4×超分、固定LCSA、动态预算候选和低显存分块，原音频不处理
@@ -49,6 +50,12 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 `Long_Video_Sampling_Plan`的工作流；断开该节点即恢复旧路径。
 
 [查看全部工作流分类](examples/workflows/README.md)
+
+## 全本地 MV / 口型分镜
+
+使用 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync)：加载人物参考图和完整歌曲，节点会本地分析分镜、逐段调用已连接的 H3 MODEL，再把完整原曲一次性混入成片。整个流程不调用远程 H3、LLM、TTS 或视频 API。
+
+默认 `assume_vocal` 适合普通歌曲；有人声干声时可接 `vocal_stem`。这不是独立的音素级口型模型，最终口型、身份和画面仍需人工看成片。
 
 ## 模型目录
 

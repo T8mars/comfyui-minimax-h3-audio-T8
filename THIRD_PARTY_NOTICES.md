@@ -312,3 +312,17 @@ The optional sparse-attention route interoperates at runtime with a separately i
 an already-loaded module and does not install, download, reload, or redistribute it. When it is not
 available, the LTX refiner stays dense and the node reports that fallback. Users are responsible for
 the licenses and terms of all separately installed code and model assets.
+
+## MiniMax-H3-lipsync-mv orchestration reference
+
+The all-local MV/lip-scene workflow was designed after reviewing the public interaction and
+audio-scene planning ideas in
+[`animede/Minimax-H3-lipsync-mv@7941091`](https://github.com/animede/Minimax-H3-lipsync-mv/tree/7941091cdf11497df7e8ebf4404f45c7a37099d4),
+published under Apache-2.0. The T8 implementation is independently written for this repository's
+native ComfyUI H3 conditioning, dual-clock sampler, accepted-segment resume and file delivery
+contracts. It does not copy or vendor the FastAPI application, remote H3 gateway, local 31B LLM,
+Demucs or AivisSpeech runtime.
+
+Unlike that reference application, the T8 renderer never submits remote or local HTTP generation
+jobs: every scene is sampled directly through the connected ComfyUI MODEL. The complete original
+song is muxed once after video assembly. No upstream model weights or example media are included.

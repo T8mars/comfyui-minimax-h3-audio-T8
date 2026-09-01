@@ -1,0 +1,718 @@
+{
+  "id": "cf51de44-4850-4fa5-b876-9d0e9c689bd8",
+  "revision": 0,
+  "last_node_id": 13,
+  "last_link_id": 10,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        360,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ],
+      "title": "1. Load local MiniMax H3 Ref2VA model"
+    },
+    {
+      "id": 2,
+      "type": "LoraLoaderBypassModelOnly",
+      "pos": [
+        400,
+        0
+      ],
+      "size": [
+        430,
+        105
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_turbo_4步加速ema_comfyui.safetensors",
+        1.0
+      ],
+      "title": "2. Turbo4 LoRA · local model only"
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        150
+      ],
+      "size": [
+        360,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "title": "3. Local H3 Qwen3-VL CLIP"
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        310
+      ],
+      "size": [
+        360,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "title": "4. H3 video VAE"
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        360,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "title": "5. H3 audio VAE"
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        560
+      ],
+      "size": [
+        360,
+        310
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_performer_reference.png",
+        "image"
+      ],
+      "title": "6. Replace with performer reference image"
+    },
+    {
+      "id": 7,
+      "type": "LoadAudio",
+      "pos": [
+        0,
+        930
+      ],
+      "size": [
+        360,
+        120
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            7,
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "replace_with_complete_song.wav"
+      ],
+      "title": "7. Replace with the complete original song"
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3MVVocalScenePlannerT8Advanced",
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        560,
+        430
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "full_song",
+          "type": "AUDIO",
+          "link": 7
+        },
+        {
+          "name": "vocal_stem",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "scene_plan",
+          "type": "H3_T8_MV_SCENE_PLAN",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "scene_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MVVocalScenePlannerT8Advanced"
+      },
+      "widgets_values": [
+        5.0,
+        7.0,
+        10.0,
+        100,
+        "assume_vocal",
+        ""
+      ],
+      "title": "8. Local song analysis · no API",
+      "color": "#325f6d",
+      "bgcolor": "#19333a"
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3MVRef2VAPromptCompilerT8Advanced",
+      "pos": [
+        900,
+        500
+      ],
+      "size": [
+        660,
+        640
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "scene_plan",
+          "type": "H3_T8_MV_SCENE_PLAN",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "mv_prompt_plan",
+          "type": "H3_T8_MV_PROMPT_PLAN",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "segment_prompts_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "links": []
+        },
+        {
+          "name": "prompt_preview",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MVRef2VAPromptCompilerT8Advanced"
+      },
+      "widgets_values": [
+        "A singer performs through a coherent cinematic music video with natural expression and intentional scene changes.",
+        "the same lead performer shown in the reference picture",
+        "cinematic music video, natural skin, realistic light and texture",
+        "stable medium close-up with subtle handheld movement\nsmooth lateral tracking medium shot\nrestrained slow push-in with a stable background",
+        "keeps the mouth naturally closed and moves with the rhythm",
+        ""
+      ],
+      "title": "9. Deterministic Ref2VA scene prompts · no LLM",
+      "color": "#5d4d79",
+      "bgcolor": "#30283f"
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3LocalMVInNodeRendererT8Advanced",
+      "pos": [
+        1650,
+        0
+      ],
+      "size": [
+        720,
+        900
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "reference_image",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "full_song",
+          "type": "AUDIO",
+          "link": 8
+        },
+        {
+          "name": "mv_prompt_plan",
+          "type": "H3_T8_MV_PROMPT_PLAN",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "completed_scenes",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LocalMVInNodeRendererT8Advanced"
+      },
+      "widgets_values": [
+        "h3_local_mv_demo",
+        1056,
+        608,
+        123456789,
+        4,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow",
+        true,
+        "H3_Local_MV",
+        8,
+        18,
+        "minimax_h3_ref2va_int8_convrot+turbo4"
+      ],
+      "title": "10. All-local serial H3 MV render + original song",
+      "color": "#6d3f71",
+      "bgcolor": "#381f3b"
+    },
+    {
+      "id": 11,
+      "type": "MarkdownNote",
+      "pos": [
+        2450,
+        0
+      ],
+      "size": [
+        600,
+        300
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 所有 H3 视频都由本工作流生成\n分镜只做本地 CPU 音频分析；提示词是确定性模板；Renderer 直接调用已连接的本地 H3 MODEL。不会提交 HTTP `/prompt`，也不会调用在线 H3、LLM、TTS、音乐或视频 API。"
+      ],
+      "title": "NOTE 1 · 完全本地，不使用外部API",
+      "color": "#214d35",
+      "bgcolor": "#12281d"
+    },
+    {
+      "id": 12,
+      "type": "MarkdownNote",
+      "pos": [
+        2450,
+        350
+      ],
+      "size": [
+        600,
+        330
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 完整原曲只混入一次\n每段生成时歌曲作为 `<Audio 1>` 驱动表演，但分段生成音频不会进入最终成片。视频合成后一次性混入完整原曲。中断后保持全部参数不变再次运行；更换模型、素材、提示词或尺寸时使用新的 `chain_id`。"
+      ],
+      "title": "NOTE 2 · 原曲与断点续跑",
+      "color": "#604b1d",
+      "bgcolor": "#332810"
+    },
+    {
+      "id": 13,
+      "type": "MarkdownNote",
+      "pos": [
+        2450,
+        730
+      ],
+      "size": [
+        600,
+        350
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 串行运行，不要并发\n默认 Ref2VA + Turbo4，1056×608。显存不足先降到 832×480 或 736×416。`assume_vocal` 适合普通歌曲；有本地人声干声时再连接 Planner 的 `vocal_stem`。这不是音素级口型模型，最终要人工检查口型、脸、手、背景和切镜。"
+      ],
+      "title": "NOTE 3 · 质量与显存",
+      "color": "#6b3030",
+      "bgcolor": "#371919"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      3,
+      0,
+      10,
+      1,
+      "CLIP"
+    ],
+    [
+      4,
+      4,
+      0,
+      10,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      5,
+      0,
+      10,
+      3,
+      "VAE"
+    ],
+    [
+      6,
+      6,
+      0,
+      10,
+      4,
+      "IMAGE"
+    ],
+    [
+      7,
+      7,
+      0,
+      8,
+      0,
+      "AUDIO"
+    ],
+    [
+      8,
+      7,
+      0,
+      10,
+      5,
+      "AUDIO"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      0,
+      "H3_T8_MV_SCENE_PLAN"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      6,
+      "H3_T8_MV_PROMPT_PLAN"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Local H3 models + local media",
+      "bounding": [
+        -40,
+        -70,
+        900,
+        1190
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Local audio planning + deterministic prompts",
+      "bounding": [
+        860,
+        -70,
+        740,
+        1260
+      ],
+      "color": "#397382",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Strictly serial local H3 generation",
+      "bounding": [
+        1610,
+        -70,
+        800,
+        1040
+      ],
+      "color": "#704c91",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Read before running",
+      "bounding": [
+        2410,
+        -70,
+        680,
+        1220
+      ],
+      "color": "#8b6b32",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.55,
+      "offset": [
+        70,
+        130
+      ]
+    },
+    "ue_links": [],
+    "t8_mv_state": "all_local_mv_v1"
+  },
+  "version": 0.4
+}
