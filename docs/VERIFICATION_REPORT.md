@@ -5,6 +5,76 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-08-30 — Mask-preserving low-Sigma two-pass v4
+
+The old low-Sigma route could start pass one with a valid nested H3 video `noise_mask`, then lose that
+mask after learned spatial upscale and reopen the protected background during pass two. The new v4 plan
+is append-only: v1, v2 and v3 IDs, schemas, widgets, defaults and workflows remain unchanged. Its effective
+video mask is the inherited mask multiplied by spatial and temporal ownership. A one-frame static mask may
+expand through latent time; mismatched dynamic masks are rejected rather than temporally interpolated.
+
+One serial real run used 576×320 pass one, 1152×640 pass two, 124 frames, eight first-pass NFE and three
+Euler updates at denoise 0.30. Strict H.264 video, AAC audio and combined decode passed. The final returned
+audio tensor and decoded PCM matched the draft first pass. Against the same masked-first-pass v3 route,
+mean adjacent protected-background MAD fell from 0.00169030 to 0.00080846 (52.2%); mean drift from frame
+zero fell from 0.02095937 to 0.00620405 (70.4%). Minimum free GPU memory was only about 201MiB, below the
+512MiB gate. These metrics support the mask-loss diagnosis but do not establish visual acceptance. Unknown
+floating objects, mask edges, subject motion and generated subtitles remain full-video human-review gates.
+
+## 2026-08-30 — Chunked two-pass global noise v2
+
+An opt-in plan creates one full target-resolution H3 video-noise tensor. The released v1 plan and all
+old workflows remain unchanged. Per-piece audio noise is zero and the executor returns the original
+audio tensor. The v2 default is now explicitly `full_frame_safe + full_clip_safe`: one spatial canvas
+and one complete H3 Transformer trajectory, with no final-latent spatial or temporal stitching.
+
+The final single isolated FL2VA PDD8 run rendered 416×256 to 832×512 for 124 frames (5.1667 seconds).
+It used three overlapping temporal segments and two 512×512 spatial tiles per segment. Runtime evidence
+recorded one `[1,24,37,32,52]` global-noise generation, exact coordinate slicing on every piece, zero
+per-piece audio noise and exact audio tensor passthrough. The 124-frame H.264 and finite 32kHz stereo AAC
+passed strict video, audio and combined decode in 184.860 seconds. Peak GPU use was 15,541MiB with 569MiB
+minimum free. Static samples showed no black frame or hard seam, but full-motion human review failed: the
+person and background both exhibit visible low-amplitude non-rigid warping. The test face also crosses the
+384–512-pixel overlap between two independently denoised spatial canvases; shared initial noise does not
+make their Transformer predictions or temporal trajectories identical. This route therefore passes only
+mechanical/media gates and is not quality-accepted. Ancestral/SDE internal step noise remains outside this
+feature; Euler is the documented validation sampler.
+
+The first same-seed 416×256→832×512×124 full-canvas/full-timeline run completed in 170.703 seconds,
+generated the global `[1,24,37,32,52]` noise once, preserved the exact audio tensor and passed strict
+H.264/AAC decode. Human review nevertheless rejected it because the person and scene widened over time.
+The 736×416 source (aspect 1.76923) had been connected directly to a 416×256 canvas (aspect 1.625).
+Native H3 preprocesses the first endpoint with direct resize and the last with center crop, so the graph
+encoded two different geometries from one image. Their ratio predicts 8.8757% horizontal expansion;
+background affine measurement found 8.719% in LOW-4 and 8.861% in the final. This proved that the
+deformation already existed in pass 1 and was not caused by the learned upscaler, pass-2 tiling or MP4.
+
+The corrected append-only workflow first center-crops the source once to 832×512, then reuses that exact
+IMAGE for both endpoints of both Conditioning nodes. One serial rerun completed in 169.735 seconds and
+again produced 124-frame H.264 plus finite 32kHz stereo AAC with strict combined decode and exact audio
+passthrough. Tail background expansion fell to 0.0206% in LOW-4 and 0.0027% in the final; vertical change
+stayed within 0.05%. Peak GPU use was 15,811MiB with only 299MiB minimum free, so the 512MiB headroom
+gate and any general 16GB claim fail. The widening defect is mechanically removed; full-motion person
+quality remains pending explicit human review.
+
+A repository-wide endpoint audit found the same resize-policy risk in the dated PDD FL2VA learned-latent
+4+4 workflow: its bundled 3027×1531 images were connected directly to 512×288 LOW and 1024×576 HIGH
+Conditioning. First and last inputs now pass through separate center-crop `ImageScale` nodes at 1024×576
+before reuse by both passes, preserving independent user-replaceable endpoints while giving both native
+resize policies one shared aspect. The PDD workflow builder was updated to reproduce the committed graph
+exactly, and a regression test compares the builder output with the dated frontend workflow.
+
+Two temporal-only candidates were then run serially with a full spatial canvas and the same seed. A
+fully locked overlap produced hard publication jumps about 2.8× and 4.4× its own frame-difference P95.
+A guarded smoothstep takeover reduced the first hard seam but the short final segment still reached
+2.84× P95. Both media files decoded cleanly, but both fail the temporal quality gate. Current ComfyUI H3
+does not expose global time coordinates or a per-sigma consensus interface, so merging independent final
+latent trajectories is not presented as a solved long-video method. `guarded_overlap_exp` remains an
+explicit diagnostic option only; the dated workflow uses `full_clip_safe`.
+
+Final prealignment regression: 1,890 full-project tests pass. Changed-scope Ruff, compileall and JSON
+parsing pass, and the dated source/user workflow copies are byte-identical.
+
 ## 2026-08-30 — H3 compatibility batch and real FastH3 VSA route
 
 Four compatibility-first changes were added without reordering prior node IDs or changing old workflow
@@ -6405,3 +6475,18 @@ mux encoded source audio to AAC, so the files are not presented as PCM-bit-exact
 `5.439` seconds. This is one tiny fixture only and is not a general speed, quality, VRAM or hardware
 claim. The square-input diagnostic was discarded after the same distortion reproduced in the fixed
 control, proving it was a validation resize error rather than a dynamic-budget effect.
+
+## Subject-safe RGB composite v8 packaging (2026-09-01)
+
+One append-only Advanced EXP node and one dated ComfyUI frontend workflow package the previously
+reviewed `D0 + alpha * (T2 - D0)` post-process. The implementation requires matching D0/T2 frame
+geometry and a reviewed per-frame alpha, preserves zero-alpha RGB exactly from D0, supports an
+optional explicit protection mask, returns the same D0 audio object, and falls back to the complete
+source on contract failure. It performs no automatic subject, face, text, camera or quality decision
+and does not gate models by filename, hash, file size or pixel area.
+
+Focused CPU tests covered exact ownership, protection, fallback, explicit mask broadcasting, audio
+identity and append-only registration. Registration and all dated frontend-workflow compatibility
+checks passed with 268 node schemas and 183 workflows. No H3 model or GPU render was run for this
+packaging change; the quality boundary remains the two previously reviewed single-person samples,
+both non-inferior ties without blockers.

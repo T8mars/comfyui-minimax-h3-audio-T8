@@ -482,6 +482,23 @@ def _memory_snapshot(device: torch.device) -> dict[str, float | str | None]:
     return snapshot
 
 
+def _nested_mask_parts(value) -> tuple[torch.Tensor, torch.Tensor]:
+    """Read native H3 mask metadata without imposing sample-latent ranks.
+
+    ComfyUI's SetLatentNoiseMask stores a video mask as pixel-space
+    ``[frames,1,H,W]`` while already-normalized H3 routes may store
+    ``[B,1,T,H,W]``.  Both are valid noise-mask metadata; only ``samples`` must
+    satisfy the strict native H3 video/audio latent shapes.
+    """
+
+    if not getattr(value, "is_nested", False):
+        raise ValueError("noise_mask must be a nested H3 video/audio tensor")
+    parts = tuple(value.unbind())
+    if len(parts) != 2 or not all(isinstance(part, torch.Tensor) for part in parts):
+        raise ValueError("noise_mask must contain exactly video and audio tensors")
+    return parts
+
+
 def learned_upscale_h3_av_latent(
     latent: dict,
     model_name: str,
@@ -587,7 +604,7 @@ def learned_upscale_h3_av_latent(
         output["samples"] = comfy.nested_tensor.NestedTensor((output_video, audio))
         mask_status = "absent"
         if latent.get("noise_mask") is not None:
-            video_mask, audio_mask = _nested_parts(latent["noise_mask"], "noise_mask")
+            video_mask, audio_mask = _nested_mask_parts(latent["noise_mask"])
             resized_mask, mask_status = _resize_mask_tensor(
                 video_mask,
                 int(video.shape[-1]),

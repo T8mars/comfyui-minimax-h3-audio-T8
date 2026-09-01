@@ -1,0 +1,886 @@
+{
+  "id": "77a1b339-945c-5c03-bc07-3795d1413050",
+  "revision": 0,
+  "last_node_id": 17,
+  "last_link_id": 16,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "1 · 先看说明",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        900,
+        330
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## v8人物安全RGB合成（后处理）\n\n1. `D0`是学习型latent放大后、不做二次降噪的基底，负责全部背景。\n2. `T2`是二次低Sigma细化结果，只允许进入人物alpha。\n3. alpha必须是与视频同帧数、同尺寸的逐帧灰度无损视频；黑色保留D0，白色使用T2。\n4. 输出始终使用D0音频；节点不对音频加噪、重采样或降噪。\n5. 本模板已把accept_candidate打开以便生成候选，但仍必须完整人工观看。"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadVideo",
+      "title": "载入D0基底（背景所有者）",
+      "pos": [
+        0,
+        390
+      ],
+      "size": [
+        360,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_D0_base.mp4"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "GetVideoComponents",
+      "title": "D0帧、音频和帧率",
+      "pos": [
+        410,
+        390
+      ],
+      "size": [
+        380,
+        126
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            4,
+            10
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "LoadVideo",
+      "title": "载入T2低Sigma细化候选",
+      "pos": [
+        0,
+        580
+      ],
+      "size": [
+        360,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_T2_refined.mp4"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "GetVideoComponents",
+      "title": "T2帧",
+      "pos": [
+        410,
+        580
+      ],
+      "size": [
+        380,
+        126
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "LoadVideo",
+      "title": "载入逐帧无损subject alpha",
+      "pos": [
+        0,
+        770
+      ],
+      "size": [
+        360,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_lossless_subject_alpha.mkv"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "GetVideoComponents",
+      "title": "取alpha帧",
+      "pos": [
+        410,
+        770
+      ],
+      "size": [
+        380,
+        126
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "ImageToMask",
+      "title": "红通道转最终alpha",
+      "pos": [
+        840,
+        770
+      ],
+      "size": [
+        330,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "ImageToMask"
+      },
+      "widgets_values": [
+        "red"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3SubjectSafeRGBCompositeT8Advanced",
+      "title": "v8 · D0背景 + T2人物",
+      "pos": [
+        1240,
+        390
+      ],
+      "size": [
+        520,
+        590
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "refined_frames",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "subject_alpha",
+          "type": "MASK",
+          "link": 8
+        },
+        {
+          "name": "protect_mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 7,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selected",
+          "type": "IMAGE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "used_alpha",
+          "type": "MASK",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
+      },
+      "widgets_values": [
+        true,
+        "input_alpha_exact",
+        "strict_exact",
+        0.002,
+        0.45,
+        0.08,
+        "fallback_on_contract_failure",
+        4
+      ]
+    },
+    {
+      "id": 10,
+      "type": "PreviewImage",
+      "title": "D0原版",
+      "pos": [
+        1830,
+        120
+      ],
+      "size": [
+        340,
+        150
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "PreviewImage",
+      "title": "v8候选",
+      "pos": [
+        1830,
+        320
+      ],
+      "size": [
+        340,
+        150
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "MaskToImage",
+      "title": "最终使用alpha",
+      "pos": [
+        1830,
+        520
+      ],
+      "size": [
+        340,
+        110
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MaskToImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "PreviewImage",
+      "title": "alpha预览",
+      "pos": [
+        2220,
+        500
+      ],
+      "size": [
+        340,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "CreateVideo",
+      "title": "24fps接回D0原音频",
+      "pos": [
+        1830,
+        710
+      ],
+      "size": [
+        380,
+        264
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 15,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8,
+        "sRGB"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "SaveVideo",
+      "title": "保存v8候选",
+      "pos": [
+        2270,
+        710
+      ],
+      "size": [
+        380,
+        238
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 14
+        },
+        {
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/SubjectSafe/v8_candidate"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "PreviewAny",
+      "title": "合同报告",
+      "pos": [
+        1830,
+        1020
+      ],
+      "size": [
+        820,
+        190
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "MarkdownNote",
+      "title": "2 · 边界与回退",
+      "pos": [
+        0,
+        980
+      ],
+      "size": [
+        1170,
+        330
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## 使用边界\n\n节点不会自动识别人、脸、字幕、遮挡或相机运动，也不会自动判断质量。alpha不完整、串人或覆盖背景，就会把错误带入结果。推荐先用SAM/RAFT获得轨迹，再人工检查alpha；脸、文字和身份保护区域应在输入alpha中预先清零，或连接节点的可选protect_mask。当前证据只有单人物固定镜头和一条自然跟拍平局，无多人交叉、甩镜、烟雾、玻璃或半透明衣物的通用保证。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      3,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      4,
+      0,
+      5,
+      0,
+      "VIDEO"
+    ],
+    [
+      3,
+      6,
+      0,
+      7,
+      0,
+      "VIDEO"
+    ],
+    [
+      4,
+      3,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      5,
+      0,
+      9,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      3,
+      1,
+      9,
+      4,
+      "AUDIO"
+    ],
+    [
+      8,
+      8,
+      0,
+      9,
+      2,
+      "MASK"
+    ],
+    [
+      9,
+      9,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      3,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      9,
+      1,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      9,
+      3,
+      12,
+      0,
+      "MASK"
+    ],
+    [
+      13,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      14,
+      0,
+      15,
+      0,
+      "VIDEO"
+    ],
+    [
+      15,
+      9,
+      4,
+      14,
+      1,
+      "AUDIO"
+    ],
+    [
+      16,
+      9,
+      5,
+      16,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        110,
+        80
+      ]
+    },
+    "frontendVersion": "1.24.3"
+  },
+  "version": 0.4
+}

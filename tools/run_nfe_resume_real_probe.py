@@ -425,6 +425,12 @@ def preflight(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
+    whitelist = [
+        "minimax-h3-audio-T8",
+        "ComfyUI-ClipProj",
+        "ComfyUI-VideoHelperSuite",
+        *list(getattr(args, "extra_whitelist_custom_nodes", ())),
+    ]
     command = [
         str(args.python.resolve()),
         "main.py",
@@ -440,9 +446,7 @@ def _server_command(args: argparse.Namespace, run_root: Path) -> list[str]:
         str(getattr(args, "reserve_vram_gib", 1.0)),
         "--disable-all-custom-nodes",
         "--whitelist-custom-nodes",
-        "minimax-h3-audio-T8",
-        "ComfyUI-ClipProj",
-        "ComfyUI-VideoHelperSuite",
+        *whitelist,
         "--input-directory",
         str((args.comfy_root / "input").resolve()),
         "--output-directory",

@@ -256,3 +256,23 @@ def test_isolated_server_command_uses_private_in_memory_database(tmp_path):
     assert command[database_index + 1] == "sqlite:///:memory:"
     assert "--disable-all-custom-nodes" in command
     assert "--reserve-vram" in command
+
+
+def test_isolated_server_command_can_append_a_scoped_audit_node_whitelist(tmp_path):
+    tool = _load_tool()
+    args = tool.parse_args(
+        [
+            "--comfy-root",
+            str(tmp_path / "ComfyUI"),
+            "--python",
+            str(tmp_path / "python.exe"),
+        ]
+    )
+    args.extra_whitelist_custom_nodes = ["H3TiledLoopSpaceTime_Audit"]
+
+    command = tool._server_command(args, tmp_path / "run")
+
+    assert command.count("H3TiledLoopSpaceTime_Audit") == 1
+    whitelist = command.index("--whitelist-custom-nodes")
+    input_directory = command.index("--input-directory")
+    assert "H3TiledLoopSpaceTime_Audit" in command[whitelist + 1 : input_directory]

@@ -18,6 +18,7 @@ from h3_audio_t8_pkg.sampling import (
     SCHEDULER_OPTIONS,
     model_uses_raw_audio_velocity,
     native_flow_sigmas,
+    rebind_dual_clock_sampler,
     sample_minimax_h3_dual_clock_euler,
     setup_dual_clock_sampling,
     time_shift_sigma,
@@ -273,6 +274,44 @@ def test_setup_keeps_model_sampler_and_schedule_shifts_coherent():
     assert len(sigmas) == 5
     assert DEFAULT_SAMPLER_NAME == "dual_clock_euler"
     assert DEFAULT_SCHEDULER_NAME == "native_flow"
+
+
+def test_custom_dual_clock_sampler_rebinds_to_upscaled_packed_geometry():
+    low_video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    low = {"samples": comfy.nested_tensor.NestedTensor((low_video, audio))}
+    model, sampler, _sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(), low, 4, 12.0, 3.0
+    )
+    high_video = torch.zeros((1, 24, 2, 4, 4))
+    high = {"samples": comfy.nested_tensor.NestedTensor((high_video, audio))}
+
+    rebound = rebind_dual_clock_sampler(model, high, sampler)
+
+    assert rebound is not sampler
+    assert rebound.sampler_function._minimax_h3_video_values == high_video[0].numel()
+    assert rebound.sampler_function._minimax_h3_packed_values == (
+        high_video[0].numel() + audio[0].numel()
+    )
+    assert rebound.sampler_function._minimax_h3_shift_video == 12.0
+    assert rebound.sampler_function._minimax_h3_shift_audio == 3.0
+
+
+def test_native_sampler_does_not_require_shape_rebinding():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+    model, sampler, _sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(FakeCurrentBaseModel()),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "euler",
+        "native_flow",
+    )
+
+    assert rebind_dual_clock_sampler(model, latent, sampler) is sampler
 
 
 def test_explicit_defaults_are_identical_to_the_legacy_five_argument_call():

@@ -43,12 +43,36 @@ FAST_LORA = r"dense-datafree\adapter_model.safetensors"
 FAST_VSA_LORA = r"FastH3-VSA\vsa-datafree\adapter_model.safetensors"
 PDD_FL = "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors"
 PDD_REF = "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors"
+TURBO_ALPHA8 = "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors"
 UPSCALER = "minimax_h3_latent_upscaler_3d_fp16.safetensors"
 REFERENCE_IMAGE = "codex_prompt_relay_fl2va_first.png"
+STATIC_BACKGROUND_MASK = "codex_h3_static_background_subject_mask_576x320.png"
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _video_mask_name(args: argparse.Namespace) -> str:
+    """Return a ComfyUI input-relative mask name without changing old defaults."""
+
+    value = Path(getattr(args, "video_mask", STATIC_BACKGROUND_MASK))
+    if value.is_absolute():
+        input_root = (args.comfy_root / "input").resolve()
+        try:
+            value = value.resolve().relative_to(input_root)
+        except ValueError as error:
+            raise ValueError(
+                "--video-mask must be inside the selected ComfyUI input directory"
+            ) from error
+    return value.as_posix()
+
+
+def _video_mask_path(args: argparse.Namespace) -> Path:
+    value = Path(getattr(args, "video_mask", STATIC_BACKGROUND_MASK))
+    if value.is_absolute():
+        return value.resolve()
+    return (args.comfy_root / "input" / value).resolve()
 
 
 def _conditioning(
@@ -303,8 +327,28 @@ def _timed_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any]
 
 
 def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, Any], dict[str, str]]:
+    global_noise_v2 = args.mode == "chunked_two_pass_global_noise"
+    spatial_strategy = (
+        args.spatial_strategy if global_noise_v2 else "full_frame_safe"
+    )
     prompt = _loaders(FL_BASE)
-    prompt["6"] = {"class_type": "LoadImage", "inputs": {"image": REFERENCE_IMAGE}}
+    # ComfyUI's native H3 FL2VA node intentionally keeps upstream parity:
+    # ``first_frame`` is resized directly while ``last_frame`` is center-cropped.
+    # Feeding the same off-aspect source to both sockets therefore creates two
+    # different keyframe geometries and the model interpolates the mismatch over
+    # time.  Normalize once at the final target canvas, then reuse that exact IMAGE
+    # for both passes and both endpoint sockets.  This changes only this validation
+    # graph; the stable Conditioning node and old workflows keep their contract.
+    prompt["6"] = {
+        "class_type": "ImageScale",
+        "inputs": {
+            "image": ["5", 0],
+            "upscale_method": "lanczos",
+            "width": args.target_width,
+            "height": args.target_height,
+            "crop": "center",
+        },
+    }
     prompt.update(
         {
             "7": {
@@ -315,7 +359,7 @@ def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, An
                     width=args.width,
                     height=args.height,
                     frames=args.frame_count,
-                    reference_node="5",
+                    reference_node="6",
                     prompt=(
                         "One continuous medium close-up of exactly the same adult woman from the first "
                         "and last frames. She remains nearly still, makes one very small natural head "
@@ -359,7 +403,7 @@ def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, An
                     width=args.target_width,
                     height=args.target_height,
                     frames=args.frame_count,
-                    reference_node="5",
+                    reference_node="6",
                     prompt=(
                         "One continuous medium close-up of exactly the same adult woman from the first "
                         "and last frames. She remains nearly still, makes one very small natural head "
@@ -370,7 +414,11 @@ def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, An
                 ),
             },
             "14": {
-                "class_type": "MiniMaxH3ChunkedTwoPassPlanT8Advanced",
+                "class_type": (
+                    "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
+                    if global_noise_v2
+                    else "MiniMaxH3ChunkedTwoPassPlanT8Advanced"
+                ),
                 "inputs": {
                     "model_name": UPSCALER,
                     "target_width": args.target_width,
@@ -378,15 +426,31 @@ def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, An
                     "temporal_chunk_frames": args.temporal_chunk_frames,
                     "temporal_overlap_frames": args.temporal_overlap_frames,
                     "anchor_strength": 0.999,
-                    "tile_width": args.target_width,
-                    "tile_height": args.target_height,
-                    "spatial_overlap": 32,
-                    "spatial_fade": 32,
+                    "tile_width": (
+                        args.tile_width
+                        if spatial_strategy == "independent_tiles_exp"
+                        else args.target_width
+                    ),
+                    "tile_height": (
+                        args.tile_height
+                        if spatial_strategy == "independent_tiles_exp"
+                        else args.target_height
+                    ),
+                    "spatial_overlap": (
+                        args.spatial_overlap
+                        if spatial_strategy == "independent_tiles_exp"
+                        else 0
+                    ),
+                    "spatial_fade": (
+                        args.spatial_fade
+                        if spatial_strategy == "independent_tiles_exp"
+                        else 0
+                    ),
                     "minimum_tile_size": 128,
                     "overlap_blend": "smoothstep",
                     "precision": "fp16",
                     "release_policy": "offload_after",
-                    "spatial_strategy": "full_frame_safe",
+                    "spatial_strategy": spatial_strategy,
                 },
             },
             "15": {
@@ -406,12 +470,604 @@ def _chunked_prompt(args: argparse.Namespace, run_id: str) -> tuple[dict[str, An
             "17": {"class_type": "PreviewAny", "inputs": {"source": ["15", 1]}},
         }
     )
+    if global_noise_v2:
+        prompt["14"]["inputs"]["temporal_strategy"] = args.temporal_strategy
     prompt.update(
         _save_nodes(
-            sampled=["15", 0], run_id=run_id, mode="chunked_two_pass", decode_id="18", save_id="19"
+            sampled=["15", 0], run_id=run_id, mode=args.mode, decode_id="18", save_id="19"
         )
     )
+    if args.save_draft:
+        prompt.update(
+            _save_nodes(
+                sampled=["12", 1],
+                run_id=run_id,
+                mode=f"{args.mode}_draft_low4",
+                decode_id="20",
+                save_id="21",
+            )
+        )
     return prompt, {"plan": "16", "execution": "17"}
+
+
+def _chunked_low_sigma_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Complete pass 1, then apply the upstream-style 3-step/0.30 refine.
+
+    This is deliberately separate from the diagnosed PDD 4+4 prompt.  PDD output
+    heads are bound to the official eight-step grid and cannot be repurposed as a
+    low-noise refiner.
+    """
+
+    generation_prompt = (
+        "One continuous medium close-up of exactly the same adult woman from the "
+        "first and last frames. She remains nearly still, makes one very small natural "
+        "head movement and blinks once. Her lips stay closed and relaxed; no speech and "
+        "no mouth movement. Preserve facial geometry, eyes, skin and anatomy across "
+        "every frame. Keep the street, signs, parked cars, pedestrians, lighting and all "
+        "background objects fixed in place with no drifting, morphing, floating objects, "
+        "cuts or subtitles."
+    )
+    prompt = _loaders(FL_BASE)
+    prompt.update(
+        {
+            "6": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["5", 0],
+                    "upscale_method": "lanczos",
+                    "width": args.target_width,
+                    "height": args.target_height,
+                    "crop": "center",
+                },
+            },
+            "7": {
+                "class_type": "LoraLoaderBypassModelOnly",
+                "inputs": {
+                    "model": ["4", 0],
+                    "lora_name": TURBO_ALPHA8,
+                    "strength_model": 1.0,
+                },
+            },
+            "8": {
+                "class_type": "MiniMaxH3AudioConditioningT8",
+                "inputs": _conditioning(
+                    task="FL2VA",
+                    clip_node="3",
+                    width=args.width,
+                    height=args.height,
+                    frames=args.frame_count,
+                    reference_node="6",
+                    prompt=generation_prompt,
+                ),
+            },
+            "9": {
+                "class_type": "MiniMaxH3DualClockSamplerT8",
+                "inputs": {
+                    "model": ["7", 0],
+                    "av_latent": ["8", 1],
+                    "steps": 8,
+                    "shift_video": 12.0,
+                    "shift_audio": 3.0,
+                    "sampler_name": "dual_clock_euler",
+                    "scheduler": "native_flow",
+                },
+            },
+            "10": {
+                "class_type": "BasicGuider",
+                "inputs": {"model": ["9", 0], "conditioning": ["8", 0]},
+            },
+            "11": {"class_type": "RandomNoise", "inputs": {"noise_seed": SEED + 2}},
+            "12": {
+                "class_type": "SamplerCustomAdvanced",
+                "inputs": {
+                    "noise": ["11", 0],
+                    "guider": ["10", 0],
+                    "sampler": ["9", 1],
+                    "sigmas": ["9", 2],
+                    "latent_image": ["8", 1],
+                },
+            },
+            "13": {
+                "class_type": "MiniMaxH3AudioConditioningT8",
+                "inputs": _conditioning(
+                    task="FL2VA",
+                    clip_node="3",
+                    width=args.target_width,
+                    height=args.target_height,
+                    frames=args.frame_count,
+                    reference_node="6",
+                    prompt=generation_prompt,
+                ),
+            },
+            "14": {
+                "class_type": "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced",
+                "inputs": {
+                    "model_name": UPSCALER,
+                    "target_width": args.target_width,
+                    "target_height": args.target_height,
+                    "temporal_chunk_frames": args.temporal_chunk_frames,
+                    "temporal_overlap_frames": args.temporal_overlap_frames,
+                    "anchor_strength": 0.999,
+                    "tile_width": args.target_width,
+                    "tile_height": args.target_height,
+                    "spatial_overlap": 0,
+                    "spatial_fade": 0,
+                    "minimum_tile_size": 128,
+                    "overlap_blend": "smoothstep",
+                    "precision": "fp16",
+                    "release_policy": "offload_after",
+                    "spatial_strategy": "full_frame_safe",
+                    "temporal_strategy": "full_clip_safe",
+                    "second_pass_audio_policy": "joint_av_preserve_input",
+                },
+            },
+            "15": {
+                "class_type": "BasicScheduler",
+                "inputs": {
+                    "model": ["9", 0],
+                    "scheduler": "simple",
+                    "steps": 3,
+                    "denoise": 0.30,
+                },
+            },
+            "16": {"class_type": "RandomNoise", "inputs": {"noise_seed": SEED + 3}},
+            "17": {
+                "class_type": "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced",
+                "inputs": {
+                    "model": ["9", 0],
+                    "conditioning": ["13", 0],
+                    "latent": ["12", 1],
+                    "noise": ["16", 0],
+                    "sampler": ["9", 1],
+                    "sigmas": ["15", 0],
+                    "plan": ["14", 0],
+                    "cfg": 1.0,
+                },
+            },
+            "18": {"class_type": "PreviewAny", "inputs": {"source": ["14", 1]}},
+            "19": {"class_type": "PreviewAny", "inputs": {"source": ["17", 1]}},
+        }
+    )
+    prompt.update(
+        _save_nodes(
+            sampled=["17", 0], run_id=run_id, mode=args.mode, decode_id="20", save_id="21"
+        )
+    )
+    if args.save_draft:
+        prompt.update(
+            _save_nodes(
+                sampled=["12", 1],
+                run_id=run_id,
+                mode=f"{args.mode}_draft_first_pass",
+                decode_id="22",
+                save_id="23",
+            )
+        )
+    return prompt, {"plan": "18", "execution": "19"}
+
+
+def _chunked_masked_low_sigma_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Run the v4 route with one static subject-edit mask inherited by both passes."""
+
+    prompt, reports = _chunked_low_sigma_prompt(args, run_id)
+    prompt["14"] = {
+        "class_type": "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced",
+        "inputs": {
+            **prompt["14"]["inputs"],
+            "video_mask_policy": "inherit_required",
+        },
+    }
+    prompt["9"]["inputs"]["av_latent"] = ["29", 0]
+    prompt["12"]["inputs"]["latent_image"] = ["29", 0]
+    prompt.update(
+        {
+            "24": {
+                "class_type": "RepeatImageBatch",
+                "inputs": {"image": ["30", 0], "amount": args.frame_count},
+            },
+            "25": {
+                "class_type": "VAEEncode",
+                "inputs": {"pixels": ["24", 0], "vae": ["1", 0]},
+            },
+            "26": {
+                "class_type": "LoadImageMask",
+                "inputs": {"image": _video_mask_name(args), "channel": "red"},
+            },
+            "27": {
+                "class_type": "SetLatentNoiseMask",
+                "inputs": {"samples": ["25", 0], "mask": ["26", 0]},
+            },
+            "28": {
+                "class_type": "LTXVSeparateAVLatent",
+                "inputs": {"av_latent": ["8", 1]},
+            },
+            "29": {
+                "class_type": "LTXVConcatAVLatent",
+                "inputs": {
+                    "video_latent": ["27", 0],
+                    "audio_latent": ["28", 1],
+                },
+            },
+            "30": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["5", 0],
+                    "upscale_method": "lanczos",
+                    "width": args.width,
+                    "height": args.height,
+                    "crop": "center",
+                },
+            },
+        }
+    )
+    return prompt, reports
+
+
+def _chunked_upscale_only_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Decode the learned-upscaled masked first pass without any second sampling."""
+
+    prompt, _reports = _chunked_masked_low_sigma_prompt(args, run_id)
+    for node_id in range(13, 24):
+        prompt.pop(str(node_id), None)
+    prompt.update(
+        {
+            "31": {
+                "class_type": "LTXVSeparateAVLatent",
+                "inputs": {"av_latent": ["12", 1]},
+            },
+            "32": {
+                "class_type": "LTXVConcatAVLatent",
+                "inputs": {
+                    "video_latent": ["31", 0],
+                    "audio_latent": ["31", 1],
+                },
+            },
+            "33": {
+                "class_type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+                "inputs": {
+                    "av_latent": ["32", 0],
+                    "model_name": UPSCALER,
+                    "size_mode": "target_dimensions",
+                    "scale_by": 2.0,
+                    "target_megapixels": 1.0,
+                    "target_width": args.target_width,
+                    "target_height": args.target_height,
+                    "aspect_policy": "honor_dimensions_exp",
+                    "max_anisotropy": 2.0,
+                    "precision": "fp16",
+                    "release_policy": "offload_after",
+                },
+            },
+            "34": {"class_type": "PreviewAny", "inputs": {"source": ["33", 3]}},
+        }
+    )
+    prompt.update(
+        _save_nodes(
+            sampled=["33", 0],
+            run_id=run_id,
+            mode=args.mode,
+            decode_id="35",
+            save_id="36",
+        )
+    )
+    if args.save_draft:
+        prompt.update(
+            _save_nodes(
+                sampled=["12", 1],
+                run_id=run_id,
+                mode=f"{args.mode}_draft_first_pass",
+                decode_id="37",
+                save_id="38",
+            )
+        )
+    return prompt, {"upscale": "34"}
+
+
+def _chunked_upstream_exact_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Run the audited upstream H3LoopingSampler as a 1x1/full-clip control.
+
+    The source node remains external and is never vendored by this project.  With
+    124 pixel frames the H3 latent has 37 video tokens, so the upstream temporal
+    tile clamps to the full clip and performs one trajectory without a merge.
+    """
+
+    generation_prompt = (
+        "One continuous medium close-up of exactly the same adult woman from the "
+        "first and last frames. She remains nearly still, makes one very small natural "
+        "head movement and blinks once. Her lips stay closed and relaxed; no speech and "
+        "no mouth movement. Preserve facial geometry, eyes, skin and anatomy across "
+        "every frame. Keep the street, signs, parked cars, pedestrians, lighting and all "
+        "background objects fixed in place with no drifting, morphing, floating objects, "
+        "cuts or subtitles."
+    )
+    prompt = _loaders(FL_BASE)
+    prompt.update(
+        {
+            "6": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["5", 0],
+                    "upscale_method": "lanczos",
+                    "width": args.target_width,
+                    "height": args.target_height,
+                    "crop": "center",
+                },
+            },
+            "7": {
+                "class_type": "LoraLoaderBypassModelOnly",
+                "inputs": {
+                    "model": ["4", 0],
+                    "lora_name": TURBO_ALPHA8,
+                    "strength_model": 1.0,
+                },
+            },
+            "8": {
+                "class_type": "MiniMaxH3AudioConditioningT8",
+                "inputs": _conditioning(
+                    task="FL2VA",
+                    clip_node="3",
+                    width=args.width,
+                    height=args.height,
+                    frames=args.frame_count,
+                    reference_node="6",
+                    prompt=generation_prompt,
+                ),
+            },
+            "9": {
+                "class_type": "MiniMaxH3DualClockSamplerT8",
+                "inputs": {
+                    "model": ["7", 0],
+                    "av_latent": ["8", 1],
+                    "steps": 8,
+                    "shift_video": 12.0,
+                    "shift_audio": 3.0,
+                    "sampler_name": "dual_clock_euler",
+                    "scheduler": "native_flow",
+                },
+            },
+            "10": {
+                "class_type": "BasicGuider",
+                "inputs": {"model": ["9", 0], "conditioning": ["8", 0]},
+            },
+            "11": {"class_type": "RandomNoise", "inputs": {"noise_seed": SEED + 2}},
+            "12": {
+                "class_type": "SamplerCustomAdvanced",
+                "inputs": {
+                    "noise": ["11", 0],
+                    "guider": ["10", 0],
+                    "sampler": ["9", 1],
+                    "sigmas": ["9", 2],
+                    "latent_image": ["8", 1],
+                },
+            },
+            "13": {
+                "class_type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+                "inputs": {
+                    "av_latent": ["12", 1],
+                    "model_name": UPSCALER,
+                    "size_mode": "target_dimensions",
+                    "scale_by": 2.0,
+                    "target_megapixels": 1.0,
+                    "target_width": args.target_width,
+                    "target_height": args.target_height,
+                    "aspect_policy": "honor_dimensions_exp",
+                    "max_anisotropy": 2.0,
+                    "precision": "fp16",
+                    "release_policy": "offload_after",
+                },
+            },
+            "14": {
+                "class_type": "MiniMaxH3AudioConditioningT8",
+                "inputs": _conditioning(
+                    task="FL2VA",
+                    clip_node="3",
+                    width=args.target_width,
+                    height=args.target_height,
+                    frames=args.frame_count,
+                    reference_node="6",
+                    prompt=generation_prompt,
+                ),
+            },
+            "15": {
+                "class_type": "MiniMaxH3DualClockSamplerT8",
+                "inputs": {
+                    "model": ["7", 0],
+                    "av_latent": ["13", 0],
+                    "steps": 3,
+                    "shift_video": 12.0,
+                    "shift_audio": 3.0,
+                    "sampler_name": "dual_clock_euler",
+                    "scheduler": "native_flow",
+                },
+            },
+            "16": {
+                "class_type": "BasicScheduler",
+                "inputs": {
+                    "model": ["15", 0],
+                    "scheduler": "simple",
+                    "steps": 3,
+                    "denoise": 0.30,
+                },
+            },
+            "17": {
+                "class_type": "BasicGuider",
+                "inputs": {"model": ["15", 0], "conditioning": ["14", 0]},
+            },
+            "18": {"class_type": "RandomNoise", "inputs": {"noise_seed": SEED + 3}},
+            "24": {
+                "class_type": "KSamplerSelect",
+                "inputs": {"sampler_name": "euler"},
+            },
+            "19": {
+                "class_type": "H3LoopingSampler",
+                "inputs": {
+                    "noise": ["18", 0],
+                    "guider": ["17", 0],
+                    "sampler": ["24", 0],
+                    "sigmas": ["16", 0],
+                    "latent_image": ["13", 0],
+                    "temporal_tile_size": 101,
+                    "temporal_overlap": 49,
+                    "temporal_overlap_strength": 0.99,
+                    "horizontal_tiles": 1,
+                    "vertical_tiles": 1,
+                    "spatial_overlap": 0,
+                    "adain_factor": 0.0,
+                },
+            },
+        }
+    )
+    prompt.update(
+        _save_nodes(
+            sampled=["19", 1], run_id=run_id, mode=args.mode, decode_id="20", save_id="21"
+        )
+    )
+    if args.save_draft:
+        prompt.update(
+            _save_nodes(
+                sampled=["12", 1],
+                run_id=run_id,
+                mode=f"{args.mode}_draft_first_pass",
+                decode_id="22",
+                save_id="23",
+            )
+        )
+    return prompt, {}
+
+
+def _chunked_full_frame_euler_control_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Match O1 exactly but use ComfyUI's direct full-frame sampler.
+
+    This validation-only control keeps the complete first pass, learned high-resolution
+    latent, conditioning, plain Euler sampler, sigma schedule and seed identical to O1.
+    Replacing only the upstream wrapper isolates wrapper behavior without adding a mask,
+    a spatial tile, a temporal window or a T8 sampling algorithm.
+    """
+
+    prompt, reports = _chunked_upstream_exact_prompt(args, run_id)
+    prompt["19"] = {
+        "class_type": "SamplerCustomAdvanced",
+        "inputs": {
+            "noise": ["18", 0],
+            "guider": ["17", 0],
+            "sampler": ["24", 0],
+            "sigmas": ["16", 0],
+            "latent_image": ["13", 0],
+        },
+    }
+    return prompt, reports
+
+
+def _chunked_upstream_example_prompt(
+    args: argparse.Namespace, run_id: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Run the author's checked-in 3x3 example from the same masked first pass.
+
+    The upstream node forwards one full noise mask to every spatial tile instead of
+    slicing it.  A semantic subject mask would therefore be resized independently in
+    each tile and cease to describe the same image coordinates.  Keep the first-pass
+    subject mask identical to the T8 control, then replace only the second-pass video
+    mask with an explicit all-one mask.  This preserves the exact source trajectory
+    while testing the author's 3x3/24-latent-overlap behavior without pretending that
+    its tiled mask handling is equivalent to T8's coordinate-aware mask slicing.
+    """
+
+    prompt, reports = _chunked_upstream_exact_prompt(args, run_id)
+    prompt["9"]["inputs"]["av_latent"] = ["29", 0]
+    prompt["12"]["inputs"]["latent_image"] = ["29", 0]
+    prompt["15"]["inputs"]["av_latent"] = ["34", 0]
+    prompt["19"]["inputs"].update(
+        {
+            "sampler": ["35", 0],
+            "latent_image": ["34", 0],
+            "temporal_tile_size": 101,
+            "temporal_overlap": 49,
+            "temporal_overlap_strength": 0.99,
+            "horizontal_tiles": 3,
+            "vertical_tiles": 3,
+            "spatial_overlap": 24,
+            "adain_factor": 0.0,
+        }
+    )
+    prompt.update(
+        {
+            "24": {
+                "class_type": "RepeatImageBatch",
+                "inputs": {"image": ["30", 0], "amount": args.frame_count},
+            },
+            "25": {
+                "class_type": "VAEEncode",
+                "inputs": {"pixels": ["24", 0], "vae": ["1", 0]},
+            },
+            "26": {
+                "class_type": "LoadImageMask",
+                "inputs": {"image": _video_mask_name(args), "channel": "red"},
+            },
+            "27": {
+                "class_type": "SetLatentNoiseMask",
+                "inputs": {"samples": ["25", 0], "mask": ["26", 0]},
+            },
+            "28": {
+                "class_type": "LTXVSeparateAVLatent",
+                "inputs": {"av_latent": ["8", 1]},
+            },
+            "29": {
+                "class_type": "LTXVConcatAVLatent",
+                "inputs": {
+                    "video_latent": ["27", 0],
+                    "audio_latent": ["28", 1],
+                },
+            },
+            "30": {
+                "class_type": "ImageScale",
+                "inputs": {
+                    "image": ["5", 0],
+                    "upscale_method": "lanczos",
+                    "width": args.width,
+                    "height": args.height,
+                    "crop": "center",
+                },
+            },
+            "31": {
+                "class_type": "LTXVSeparateAVLatent",
+                "inputs": {"av_latent": ["13", 0]},
+            },
+            "32": {
+                "class_type": "SolidMask",
+                "inputs": {
+                    "value": 1.0,
+                    "width": args.target_width,
+                    "height": args.target_height,
+                },
+            },
+            "33": {
+                "class_type": "SetLatentNoiseMask",
+                "inputs": {"samples": ["31", 0], "mask": ["32", 0]},
+            },
+            "34": {
+                "class_type": "LTXVConcatAVLatent",
+                "inputs": {
+                    "video_latent": ["33", 0],
+                    "audio_latent": ["31", 1],
+                },
+            },
+            "35": {
+                "class_type": "KSamplerSelect",
+                "inputs": {"sampler_name": "euler"},
+            },
+        }
+    )
+    return prompt, reports
 
 
 def _phase_text(phase: Mapping[str, Any], node_id: str) -> str:
@@ -422,7 +1078,19 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("fast_h3", "fast_h3_vsa", "timed_reference", "chunked_two_pass"),
+        choices=(
+            "fast_h3",
+            "fast_h3_vsa",
+            "timed_reference",
+            "chunked_two_pass",
+            "chunked_two_pass_global_noise",
+            "chunked_two_pass_low_sigma",
+            "chunked_two_pass_masked_low_sigma",
+            "chunked_two_pass_upscale_only_control",
+            "chunked_two_pass_full_frame_euler_control",
+            "chunked_two_pass_upstream_exact",
+            "chunked_two_pass_upstream_example",
+        ),
         required=True,
     )
     parser.add_argument("--width", type=int, default=1088)
@@ -432,6 +1100,34 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--target-height", type=int, default=640)
     parser.add_argument("--temporal-chunk-frames", type=int, default=68)
     parser.add_argument("--temporal-overlap-frames", type=int, default=17)
+    parser.add_argument("--tile-width", type=int, default=512)
+    parser.add_argument("--tile-height", type=int, default=512)
+    parser.add_argument("--spatial-overlap", type=int, default=128)
+    parser.add_argument("--spatial-fade", type=int, default=32)
+    parser.add_argument(
+        "--spatial-strategy",
+        choices=("full_frame_safe", "independent_tiles_exp"),
+        default="full_frame_safe",
+    )
+    parser.add_argument(
+        "--temporal-strategy",
+        choices=("full_clip_safe", "guarded_overlap_exp"),
+        default="full_clip_safe",
+    )
+    parser.add_argument(
+        "--save-draft",
+        action="store_true",
+        help="also decode and save the shared LOW-4 first-pass latent",
+    )
+    parser.add_argument(
+        "--video-mask",
+        type=Path,
+        default=Path(STATIC_BACKGROUND_MASK),
+        help=(
+            "ComfyUI input-relative path (or an absolute path inside ComfyUI/input) "
+            "for masked low-Sigma and upscale-only controls"
+        ),
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8197)
     parser.add_argument("--server-start-timeout", type=float, default=240.0)
@@ -488,6 +1184,37 @@ def _required(args: argparse.Namespace) -> dict[str, Path]:
                 "source_video": args.timed_source_video,
             }
         )
+    elif args.mode in {
+        "chunked_two_pass_low_sigma",
+        "chunked_two_pass_masked_low_sigma",
+        "chunked_two_pass_upscale_only_control",
+        "chunked_two_pass_full_frame_euler_control",
+        "chunked_two_pass_upstream_exact",
+        "chunked_two_pass_upstream_example",
+    }:
+        paths.update(
+            {
+                "base": models / "diffusion_models" / FL_BASE,
+                "turbo": models / "loras" / TURBO_ALPHA8,
+                "upscaler": models / "latent_upscale_models" / UPSCALER,
+            }
+        )
+        if args.mode in {
+            "chunked_two_pass_upstream_exact",
+            "chunked_two_pass_upstream_example",
+        }:
+            paths["upstream_external_node"] = (
+                args.comfy_root
+                / "custom_nodes"
+                / "H3TiledLoopSpaceTime_Audit"
+                / "H3Loopsampler.py"
+            )
+        if args.mode in {
+            "chunked_two_pass_masked_low_sigma",
+            "chunked_two_pass_upscale_only_control",
+            "chunked_two_pass_upstream_example",
+        }:
+            paths["video_mask"] = _video_mask_path(args)
     else:
         paths.update(
             {
@@ -565,6 +1292,14 @@ def main(argv: list[str] | None = None) -> int:
         else args.project_root / args.timed_source_video
     ).resolve()
     args.lowvram = True
+    args.extra_whitelist_custom_nodes = (
+        ["H3TiledLoopSpaceTime_Audit"]
+        if args.mode in {
+            "chunked_two_pass_upstream_exact",
+            "chunked_two_pass_upstream_example",
+        }
+        else []
+    )
     paths = _required(args)
     gpu = shared.gpu_memory_mib()
     free_ram_gib = psutil.virtual_memory().available / 1024**3
@@ -603,6 +1338,15 @@ def main(argv: list[str] | None = None) -> int:
         "fast_h3_vsa": _fast_prompt,
         "timed_reference": _timed_prompt,
         "chunked_two_pass": _chunked_prompt,
+        "chunked_two_pass_global_noise": _chunked_prompt,
+        "chunked_two_pass_low_sigma": _chunked_low_sigma_prompt,
+        "chunked_two_pass_masked_low_sigma": _chunked_masked_low_sigma_prompt,
+        "chunked_two_pass_upscale_only_control": _chunked_upscale_only_prompt,
+        "chunked_two_pass_full_frame_euler_control": (
+            _chunked_full_frame_euler_control_prompt
+        ),
+        "chunked_two_pass_upstream_exact": _chunked_upstream_exact_prompt,
+        "chunked_two_pass_upstream_example": _chunked_upstream_example_prompt,
     }
     prompt, report_nodes = builders[args.mode](args, run_id)
     (run_root / "prompt.json").write_text(
@@ -618,13 +1362,18 @@ def main(argv: list[str] | None = None) -> int:
             "real_model_inference": True,
             "serial_single_render": True,
             "lowvram": True,
-            "width": args.target_width if args.mode == "chunked_two_pass" else args.width,
-            "height": args.target_height if args.mode == "chunked_two_pass" else args.height,
+            "width": (
+                args.target_width if args.mode.startswith("chunked_two_pass") else args.width
+            ),
+            "height": (
+                args.target_height if args.mode.startswith("chunked_two_pass") else args.height
+            ),
             "frame_count": args.frame_count,
         },
     }
     phase = None
     video: Path | None = None
+    draft_video: Path | None = None
     monitor = clipprobe.GpuPeakMonitor(interval_seconds=0.25)
     try:
         with shared.IsolatedServer(args, run_root, f"community_{args.mode}"):
@@ -640,9 +1389,15 @@ def main(argv: list[str] | None = None) -> int:
                 output_dir = run_root / "output" / "MiniMaxH3_Community_Real"
                 video = _wait_for_mux_finalize(
                     output_dir,
-                    f"{run_id}_{args.mode}*audio.mp4",
+                    f"{run_id}_{args.mode}_[0-9]*-audio.mp4",
                     str(ffmpeg),
                 )
+                if args.save_draft and args.mode.startswith("chunked_two_pass"):
+                    draft_video = _wait_for_mux_finalize(
+                        output_dir,
+                        f"{run_id}_{args.mode}_draft_*audio.mp4",
+                        str(ffmpeg),
+                    )
     finally:
         report["gpu_monitor"] = monitor.stop()
     report["phase"] = phase
@@ -666,11 +1421,21 @@ def main(argv: list[str] | None = None) -> int:
             node_reports[name] = text
     output_dir = run_root / "output" / "MiniMaxH3_Community_Real"
     if video is None:
-        video = shared._latest_file(output_dir, f"{run_id}_{args.mode}*audio.mp4")
+        video = shared._latest_file(
+            output_dir, f"{run_id}_{args.mode}_[0-9]*-audio.mp4"
+        )
+    if args.save_draft and args.mode.startswith("chunked_two_pass") and draft_video is None:
+        draft_video = shared._latest_file(
+            output_dir, f"{run_id}_{args.mode}_draft_*audio.mp4"
+        )
     media = shared.media_report(video, ffmpeg=str(ffmpeg), ffprobe=str(ffprobe))
     audio = pdd._audio_numeric(video, str(ffmpeg))
-    expected_width = args.target_width if args.mode == "chunked_two_pass" else args.width
-    expected_height = args.target_height if args.mode == "chunked_two_pass" else args.height
+    expected_width = (
+        args.target_width if args.mode.startswith("chunked_two_pass") else args.width
+    )
+    expected_height = (
+        args.target_height if args.mode.startswith("chunked_two_pass") else args.height
+    )
     expected_frames = args.frame_count
     media_checks = pdd._media_checks(
         media,
@@ -679,6 +1444,47 @@ def main(argv: list[str] | None = None) -> int:
         height=expected_height,
         frame_count=expected_frames,
     )
+    draft_report = None
+    if args.save_draft and args.mode.startswith("chunked_two_pass"):
+        draft_media = shared.media_report(
+            draft_video, ffmpeg=str(ffmpeg), ffprobe=str(ffprobe)
+        )
+        draft_audio = pdd._audio_numeric(draft_video, str(ffmpeg))
+        draft_checks = pdd._media_checks(
+            draft_media,
+            draft_audio,
+            width=args.width,
+            height=args.height,
+            frame_count=expected_frames,
+        )
+        draft_stage = (
+            "complete_first_pass"
+            if args.mode in {
+                "chunked_two_pass_low_sigma",
+                "chunked_two_pass_masked_low_sigma",
+                "chunked_two_pass_upscale_only_control",
+                "chunked_two_pass_full_frame_euler_control",
+                "chunked_two_pass_upstream_exact",
+            }
+            else "low4_partial_pass"
+        )
+        draft_contact = run_root / f"draft_{draft_stage}_contact_0s_to_end.png"
+        pdd._contact_sheet(
+            draft_video,
+            draft_contact,
+            str(ffmpeg),
+            width=args.width,
+            height=args.height,
+            frame_count=expected_frames,
+        )
+        draft_report = {
+            "stage": draft_stage,
+            "media": draft_media,
+            "audio_numeric": draft_audio,
+            "media_checks": draft_checks,
+            "output_video": str(draft_video.resolve()),
+            "contact_sheet": str(draft_contact.resolve()),
+        }
     if args.mode in {"fast_h3", "fast_h3_vsa"}:
         lora = node_reports["lora"]
         fast = node_reports["fast"]
@@ -734,18 +1540,394 @@ def main(argv: list[str] | None = None) -> int:
             ),
         }
     else:
-        execution = node_reports["execution"]
-        feature_checks = {
-            "multiple_temporal_segments": int(execution.get("segment_count") or 0) >= 2,
-            "full_frame_spatial_context": execution.get("spatial_strategy")
-            == "full_frame_safe"
-            and all(
-                len(item.get("rows", [])) == 1 and len(item.get("cols", [])) == 1
-                for item in execution.get("tiles", [])
-            ),
-            "audio_exact_tensor_passthrough": bool(execution.get("audio_preserved_by_identity")),
-            "no_project_pixel_ceiling": execution.get("pixel_limit_policy") == "no_project_pixel_area_limit",
-        }
+        execution = node_reports.get("execution", {})
+        if args.mode == "chunked_two_pass_upscale_only_control":
+            upscale = node_reports.get("upscale", {})
+            feature_checks = {
+                "complete_first_pass_not_split": prompt["12"]["inputs"].get(
+                    "sigmas"
+                )
+                == ["9", 2]
+                and not any(
+                    node.get("class_type") == "SplitSigmas"
+                    for node in prompt.values()
+                ),
+                "one_sampler_only": sum(
+                    node.get("class_type") == "SamplerCustomAdvanced"
+                    for node in prompt.values()
+                )
+                == 1,
+                "no_second_pass_plan_or_executor": not any(
+                    node.get("class_type")
+                    in {
+                        "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced",
+                        "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced",
+                        "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced",
+                        "H3LoopingSampler",
+                    }
+                    for node in prompt.values()
+                ),
+                "learned_upscale_completed": upscale.get("status") == "ok",
+                "learned_upscale_audio_preserved": upscale.get("audio_preserved")
+                is True,
+                "learned_upscale_target_geometry": upscale.get("geometry", {}).get(
+                    "output_width"
+                )
+                == args.target_width
+                and upscale.get("geometry", {}).get("output_height")
+                == args.target_height,
+                "precise_mask_loaded": prompt["26"]["inputs"].get("image")
+                == _video_mask_name(args),
+            }
+        else:
+            feature_checks = {
+                "audio_exact_tensor_passthrough": bool(
+                    execution.get("audio_preserved_by_identity")
+                ),
+                "no_project_pixel_ceiling": execution.get("pixel_limit_policy")
+                == "no_project_pixel_area_limit",
+            }
+        if args.mode == "chunked_two_pass_upstream_exact":
+            feature_checks = {
+                "complete_first_pass_not_split": prompt["12"]["inputs"].get(
+                    "sigmas"
+                )
+                == ["9", 2]
+                and not any(
+                    node.get("class_type") == "SplitSigmas"
+                    for node in prompt.values()
+                ),
+                "upstream_external_node_used": prompt["19"]["class_type"]
+                == "H3LoopingSampler",
+                "upstream_full_context_control": prompt["19"]["inputs"].get(
+                    "horizontal_tiles"
+                )
+                == 1
+                and prompt["19"]["inputs"].get("vertical_tiles") == 1
+                and prompt["19"]["inputs"].get("adain_factor") == 0.0
+                and prompt["19"]["inputs"].get("temporal_tile_size")
+                >= 37,
+                "upstream_style_refine_schedule": prompt["16"]["inputs"]
+                == {
+                    "model": ["15", 0],
+                    "scheduler": "simple",
+                    "steps": 3,
+                    "denoise": 0.30,
+                },
+                "upstream_checked_in_plain_euler_sampler": prompt["24"]
+                == {
+                    "class_type": "KSamplerSelect",
+                    "inputs": {"sampler_name": "euler"},
+                }
+                and prompt["19"]["inputs"].get("sampler") == ["24", 0],
+                "high_geometry_sampler_bound": prompt["15"]["inputs"].get(
+                    "av_latent"
+                )
+                == ["13", 0],
+                "draft_saved_when_requested": (
+                    not args.save_draft
+                    or (
+                        draft_report is not None
+                        and draft_report.get("stage") == "complete_first_pass"
+                        and all(draft_report["media_checks"].values())
+                    )
+                ),
+            }
+        elif args.mode == "chunked_two_pass_full_frame_euler_control":
+            feature_checks = {
+                "complete_first_pass_not_split": prompt["12"]["inputs"].get(
+                    "sigmas"
+                )
+                == ["9", 2]
+                and not any(
+                    node.get("class_type") == "SplitSigmas"
+                    for node in prompt.values()
+                ),
+                "direct_full_frame_sampler_used": prompt["19"]["class_type"]
+                == "SamplerCustomAdvanced",
+                "plain_euler_sampler_matches_o1": prompt["24"]
+                == {
+                    "class_type": "KSamplerSelect",
+                    "inputs": {"sampler_name": "euler"},
+                }
+                and prompt["19"]["inputs"].get("sampler") == ["24", 0],
+                "same_high_resolution_latent_schedule_and_seed": prompt["19"][
+                    "inputs"
+                ]
+                == {
+                    "noise": ["18", 0],
+                    "guider": ["17", 0],
+                    "sampler": ["24", 0],
+                    "sigmas": ["16", 0],
+                    "latent_image": ["13", 0],
+                }
+                and prompt["18"]["inputs"].get("noise_seed") == SEED + 3,
+                "same_upstream_style_refine_schedule": prompt["16"]["inputs"]
+                == {
+                    "model": ["15", 0],
+                    "scheduler": "simple",
+                    "steps": 3,
+                    "denoise": 0.30,
+                },
+                "denoised_output_selected": prompt["20"]["inputs"].get(
+                    "av_latent"
+                )
+                == ["19", 1],
+                "no_spatial_or_temporal_wrapper": not any(
+                    node.get("class_type") == "H3LoopingSampler"
+                    for node in prompt.values()
+                ),
+                "draft_saved_when_requested": (
+                    not args.save_draft
+                    or (
+                        draft_report is not None
+                        and draft_report.get("stage") == "complete_first_pass"
+                        and all(draft_report["media_checks"].values())
+                    )
+                ),
+            }
+        elif args.mode == "chunked_two_pass_upstream_example":
+            upstream = prompt["19"]["inputs"]
+            feature_checks = {
+                "complete_first_pass_not_split": prompt["12"]["inputs"].get(
+                    "sigmas"
+                )
+                == ["9", 2]
+                and not any(
+                    node.get("class_type") == "SplitSigmas"
+                    for node in prompt.values()
+                ),
+                "same_precise_masked_first_pass": prompt["26"]["inputs"].get(
+                    "image"
+                )
+                == _video_mask_name(args)
+                and prompt["9"]["inputs"].get("av_latent") == ["29", 0]
+                and prompt["12"]["inputs"].get("latent_image") == ["29", 0],
+                "upstream_external_node_used": prompt["19"]["class_type"]
+                == "H3LoopingSampler",
+                "upstream_checked_in_example_parameters": all(
+                    (
+                        upstream.get("temporal_tile_size") == 101,
+                        upstream.get("temporal_overlap") == 49,
+                        upstream.get("temporal_overlap_strength") == 0.99,
+                        upstream.get("horizontal_tiles") == 3,
+                        upstream.get("vertical_tiles") == 3,
+                        upstream.get("spatial_overlap") == 24,
+                        upstream.get("adain_factor") == 0.0,
+                    )
+                ),
+                "upstream_checked_in_plain_euler_sampler": prompt["35"]
+                == {
+                    "class_type": "KSamplerSelect",
+                    "inputs": {"sampler_name": "euler"},
+                }
+                and upstream.get("sampler") == ["35", 0],
+                "second_pass_mask_is_explicit_full_edit": prompt["32"]
+                == {
+                    "class_type": "SolidMask",
+                    "inputs": {
+                        "value": 1.0,
+                        "width": args.target_width,
+                        "height": args.target_height,
+                    },
+                }
+                and prompt["19"]["inputs"].get("latent_image") == ["34", 0],
+                "author_denoised_output_selected": prompt["20"]["inputs"].get(
+                    "av_latent"
+                )
+                == ["19", 1],
+                "upstream_style_refine_schedule": prompt["16"]["inputs"]
+                == {
+                    "model": ["15", 0],
+                    "scheduler": "simple",
+                    "steps": 3,
+                    "denoise": 0.30,
+                },
+                "draft_saved_when_requested": (
+                    not args.save_draft
+                    or (
+                        draft_report is not None
+                        and draft_report.get("stage") == "complete_first_pass"
+                        and all(draft_report["media_checks"].values())
+                    )
+                ),
+            }
+        elif args.mode == "chunked_two_pass_global_noise":
+            full_frame = execution.get("spatial_strategy") == "full_frame_safe"
+            keyframe_canvas = prompt.get("6", {}).get("inputs", {})
+            feature_checks.update(
+                {
+                    "keyframe_canvas_prealigned_once": keyframe_canvas
+                    == {
+                        "image": ["5", 0],
+                        "upscale_method": "lanczos",
+                        "width": args.target_width,
+                        "height": args.target_height,
+                        "crop": "center",
+                    }
+                    and prompt["7"]["inputs"].get("first_frame") == ["6", 0]
+                    and prompt["7"]["inputs"].get("last_frame") == ["6", 0]
+                    and prompt["13"]["inputs"].get("first_frame") == ["6", 0]
+                    and prompt["13"]["inputs"].get("last_frame") == ["6", 0],
+                    "global_noise_generated_once": execution.get("global_noise", {}).get(
+                        "generate_noise_calls"
+                    )
+                    == 1,
+                    "global_noise_policy": execution.get("noise_policy")
+                    == "one_full_target_video_noise_then_exact_coordinate_slices",
+                    "requested_spatial_strategy": execution.get("spatial_strategy")
+                    == args.spatial_strategy,
+                    "requested_temporal_strategy": execution.get(
+                        "temporal_strategy"
+                    )
+                    == args.temporal_strategy,
+                    "temporal_policy_matches_strategy": execution.get(
+                        "temporal_merge_policy"
+                    )
+                    == (
+                        "one_full_clip_no_temporal_stitching"
+                        if args.temporal_strategy == "full_clip_safe"
+                        else "previous_overlap_guarded_progressive_takeover"
+                    ),
+                    "spatial_grid_matches_strategy": all(
+                        (
+                            len(item.get("rows", [])) == 1
+                            and len(item.get("cols", [])) == 1
+                        )
+                        if full_frame
+                        else (
+                            len(item.get("rows", []))
+                            * len(item.get("cols", []))
+                            >= 2
+                        )
+                        for item in execution.get("tiles", [])
+                    ),
+                    "zero_audio_noise": execution.get("global_noise", {}).get(
+                        "audio_noise"
+                    )
+                    == "zero_per_piece",
+                    "draft_saved_when_requested": (
+                        not args.save_draft
+                        or (
+                            draft_report is not None
+                            and all(draft_report["media_checks"].values())
+                        )
+                    ),
+                }
+            )
+        elif args.mode in {
+            "chunked_two_pass_low_sigma",
+            "chunked_two_pass_masked_low_sigma",
+        }:
+            keyframe_canvas = prompt.get("6", {}).get("inputs", {})
+            full_frame = execution.get("spatial_strategy") == "full_frame_safe"
+            feature_checks.update(
+                {
+                    "keyframe_canvas_prealigned_once": keyframe_canvas
+                    == {
+                        "image": ["5", 0],
+                        "upscale_method": "lanczos",
+                        "width": args.target_width,
+                        "height": args.target_height,
+                        "crop": "center",
+                    }
+                    and prompt["8"]["inputs"].get("first_frame") == ["6", 0]
+                    and prompt["8"]["inputs"].get("last_frame") == ["6", 0]
+                    and prompt["13"]["inputs"].get("first_frame") == ["6", 0]
+                    and prompt["13"]["inputs"].get("last_frame") == ["6", 0],
+                    "complete_first_pass_not_split": prompt["12"]["inputs"].get(
+                        "sigmas"
+                    )
+                    == ["9", 2]
+                    and not any(
+                        node.get("class_type") == "SplitSigmas"
+                        for node in prompt.values()
+                    ),
+                    "upstream_style_refine_schedule": prompt["15"]["class_type"]
+                    == "BasicScheduler"
+                    and prompt["15"]["inputs"]
+                    == {
+                        "model": ["9", 0],
+                        "scheduler": "simple",
+                        "steps": 3,
+                        "denoise": 0.30,
+                    }
+                    and execution.get("refine_nfe") == 3,
+                    "first_pass_contract_reported": execution.get(
+                        "first_pass_contract"
+                    )
+                    == "complete_trajectory_to_zero_before_upscale",
+                    "joint_av_context_then_original_audio": execution.get(
+                        "second_pass_audio_policy"
+                    )
+                    == "joint_av_preserve_input"
+                    and execution.get("global_noise", {}).get("audio_noise")
+                    == "generated_once_full_timeline",
+                    "global_noise_generated_once": execution.get(
+                        "global_noise", {}
+                    ).get("generate_noise_calls")
+                    == 1,
+                    "one_full_context_trajectory": full_frame
+                    and execution.get("temporal_strategy") == "full_clip_safe"
+                    and int(execution.get("segment_count") or 0) == 1
+                    and all(
+                        len(item.get("rows", [])) == 1
+                        and len(item.get("cols", [])) == 1
+                        for item in execution.get("tiles", [])
+                    ),
+                    "draft_saved_when_requested": (
+                        not args.save_draft
+                        or (
+                            draft_report is not None
+                            and draft_report.get("stage") == "complete_first_pass"
+                            and all(draft_report["media_checks"].values())
+                        )
+                    ),
+                }
+            )
+            if args.mode == "chunked_two_pass_masked_low_sigma":
+                inherited = execution.get("inherited_video_mask") or {}
+                feature_checks.update(
+                    {
+                        "first_pass_uses_masked_video_latent": prompt["9"][
+                            "inputs"
+                        ].get("av_latent")
+                        == ["29", 0]
+                        and prompt["12"]["inputs"].get("latent_image")
+                        == ["29", 0],
+                        "mask_is_inherited_by_second_pass": inherited.get("status")
+                        == "normalized"
+                        and inherited.get("policy") == "inherit_required"
+                        and all(
+                            item.get("inherited_video_mask_applied") is True
+                            for item in execution.get("tiles", [])
+                        ),
+                        "mask_resize_is_spatial_only": inherited.get(
+                            "target_spatial_policy"
+                        )
+                        == "nearest_exact_spatial_only"
+                        and inherited.get("temporal_policy")
+                        in {
+                            "exact_latent_tokens",
+                            "single_frame_expanded",
+                            "verified_static_then_expanded",
+                        },
+                    }
+                )
+        elif args.mode == "chunked_two_pass":
+            feature_checks.update(
+                {
+                    "multiple_temporal_segments": int(execution.get("segment_count") or 0)
+                    >= 2,
+                    "full_frame_spatial_context": execution.get("spatial_strategy")
+                    == "full_frame_safe"
+                    and all(
+                        len(item.get("rows", [])) == 1
+                        and len(item.get("cols", [])) == 1
+                        for item in execution.get("tiles", [])
+                    ),
+                }
+            )
     passed = all(media_checks.values()) and all(feature_checks.values())
     contact = run_root / "contact_0s_to_end.png"
     pdd._contact_sheet(
@@ -765,6 +1947,17 @@ def main(argv: list[str] | None = None) -> int:
             "media_checks": media_checks,
             "output_video": str(video.resolve()),
             "contact_sheet": str(contact.resolve()),
+            (
+                "draft_first_pass"
+                if args.mode in {
+                    "chunked_two_pass_low_sigma",
+                    "chunked_two_pass_masked_low_sigma",
+                    "chunked_two_pass_upscale_only_control",
+                    "chunked_two_pass_full_frame_euler_control",
+                    "chunked_two_pass_upstream_exact",
+                }
+                else "draft_low4"
+            ): draft_report,
             "status": (
                 "MECHANICAL_RENDER_PASS_REVIEW_REQUIRED"
                 if passed

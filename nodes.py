@@ -186,6 +186,12 @@ from .nodes_long_video_in_node_loop_effects_advanced import (
 from .nodes_long_video_sampling_plan_advanced import (
     LONG_VIDEO_SAMPLING_PLAN_ADVANCED_NODE_CLASSES,
 )
+from .nodes_chunked_two_pass_global_noise_advanced import (
+    CHUNKED_TWO_PASS_GLOBAL_NOISE_ADVANCED_NODE_CLASSES,
+)
+from .nodes_subject_safe_rgb_composite_advanced import (
+    SUBJECT_SAFE_RGB_COMPOSITE_ADVANCED_NODE_CLASSES,
+)
 from .long_video_routes import register_long_video_background_routes
 from .nodes_still_exp import (
     MiniMaxH3StillConditioningT8,
@@ -679,6 +685,8 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 *SOL_ENGINE_H3_SUPER_ADVANCED_NODE_CLASSES,
                 *FLASHVSR_ADVANCED_NODE_CLASSES,
                 *LONG_VIDEO_SAMPLING_PLAN_ADVANCED_NODE_CLASSES,
+                *CHUNKED_TWO_PASS_GLOBAL_NOISE_ADVANCED_NODE_CLASSES,
+                *SUBJECT_SAFE_RGB_COMPOSITE_ADVANCED_NODE_CLASSES,
             ]
 
 

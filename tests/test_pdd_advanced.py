@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 import json
 
@@ -10,6 +11,16 @@ from torch import nn
 from h3_audio_t8_pkg import pdd_advanced as pdd
 from h3_audio_t8_pkg import nodes_pdd_advanced as pdd_nodes
 from h3_audio_t8_pkg.nodes_pdd_advanced import PDD_ADVANCED_NODE_CLASSES
+
+
+def _load_pdd_workflow_builder():
+    root = Path(__file__).resolve().parents[1]
+    path = root / "tools" / "build_pdd_workflows.py"
+    spec = importlib.util.spec_from_file_location("build_pdd_workflows", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_native_pdd_core_probe_is_semantic_and_reports_current_capabilities(monkeypatch):
@@ -623,6 +634,43 @@ def test_pdd_examples_are_frontend_workflows_with_local_notes():
         assert (split_id, 1, pass2["id"], 3) in links
         assert (pass1["id"], 1, upscaler["id"], 0) in links
         assert (pdd_id, 0, high_sampler["id"], 0) in links
+        if variant == "FL2VA":
+            prealign_nodes = [
+                item for item in workflow["nodes"] if item["type"] == "ImageScale"
+            ]
+            assert len(prealign_nodes) == 2
+            assert all(
+                item["widgets_values"] == ["lanczos", 1024, 576, "center"]
+                for item in prealign_nodes
+            )
+            first_load = next(
+                item
+                for item in workflow["nodes"]
+                if item.get("title", "").startswith("First frame")
+            )
+            last_load = next(
+                item
+                for item in workflow["nodes"]
+                if item.get("title", "").startswith("Last frame")
+            )
+            first_scale = next(
+                item
+                for item in prealign_nodes
+                if item.get("title", "").startswith("Pre-align first")
+            )
+            last_scale = next(
+                item
+                for item in prealign_nodes
+                if item.get("title", "").startswith("Pre-align last")
+            )
+            low_conditioning = next(item for item in workflow["nodes"] if item["id"] == 7)
+            high_conditioning = next(item for item in workflow["nodes"] if item["id"] == 14)
+            assert (first_load["id"], 0, first_scale["id"], 0) in links
+            assert (last_load["id"], 0, last_scale["id"], 0) in links
+            assert (first_scale["id"], 0, low_conditioning["id"], 5) in links
+            assert (last_scale["id"], 0, low_conditioning["id"], 6) in links
+            assert (first_scale["id"], 0, high_conditioning["id"], 7) in links
+            assert (last_scale["id"], 0, high_conditioning["id"], 8) in links
         if variant == "Ref2VA":
             low_conditioning = next(item for item in workflow["nodes"] if item["id"] == 7)
             high_conditioning = next(item for item in workflow["nodes"] if item["id"] == 14)
@@ -630,3 +678,17 @@ def test_pdd_examples_are_frontend_workflows_with_local_notes():
             assert high_conditioning["widgets_values"][1:4] == [1312, 736, 22]
             assert upscaler["widgets_values"][2] == 1.5
             assert workflow["extra"]["workflow_title"].endswith("Stable")
+
+
+def test_pdd_builder_reproduces_committed_fl2va_two_pass_geometry_contract():
+    root = Path(__file__).resolve().parents[1]
+    path = (
+        root
+        / "examples"
+        / "workflows"
+        / "19-pdd-acceleration"
+        / "2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json"
+    )
+    committed = json.loads(path.read_text(encoding="utf-8"))
+    builder = _load_pdd_workflow_builder()
+    assert builder.build_two_pass("FL2VA") == committed

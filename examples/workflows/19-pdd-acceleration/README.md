@@ -6,7 +6,7 @@
 
 - `2026-08-27_H3_PDD_FL2VA_8Step_Advanced_EXP.json`：完整FL2VA基模、首帧+尾帧、联合音视频8步PDD。
 - `2026-08-27_H3_PDD_Ref2VA_8Step_Advanced_EXP.json`：完整Ref2VA基模、单张参考图、联合音视频8步PDD。
-- `2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json`：FL2VA学习型latent放大双采，LOW 4步 + HIGH 4步。
+- `2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json`：FL2VA学习型latent放大双采，LOW 4步 + HIGH 4步；首尾图会分别居中预对齐到同一 16:9 画布，避免两次 Conditioning 产生渐进拉宽。
 - `2026-08-27_H3_PDD_Ref2VA_Learned_Latent_TwoPass_4Plus4_Stable.json`：正式Ref2VA学习型latent双采；默认864×480×22、1.5×，实际HIGH为1312×736×22。
 
 四个文件都是可直接拖入ComfyUI的前端工作流，不是API格式。双采工作流带五个NOTE，解释4+4切分、尺寸交接、音频继续采样和显存边界。Ref2VA双采已经实测并作为正式工作流；FL2VA双采仍保留Advanced EXP，等待同等真实验证。

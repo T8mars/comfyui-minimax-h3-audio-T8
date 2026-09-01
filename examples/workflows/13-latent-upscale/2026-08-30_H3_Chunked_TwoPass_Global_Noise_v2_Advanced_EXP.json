@@ -1,0 +1,1384 @@
+{
+  "id": "4774c78f-b93b-4c68-9dcc-f810ef85aff7",
+  "revision": 0,
+  "last_node_id": 22,
+  "last_link_id": 35,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            17,
+            31
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            18,
+            32
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "Load CLIP",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "title": "Load Image",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "10A.jpg"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "ImageScale",
+      "title": "Pre-align FL2VA keyframes / 首尾统一画布",
+      "pos": [
+        0,
+        1400
+      ],
+      "size": [
+        390,
+        270
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4,
+            5,
+            19,
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "ImageScale"
+      },
+      "widgets_values": [
+        "lanczos",
+        832,
+        512,
+        "center"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            7,
+            15
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "One continuous medium close-up of exactly the same adult woman from the first and last frames. She remains nearly still, makes one very small natural head movement and blinks once. Her lips stay closed and relaxed; no speech and no mouth movement. Preserve facial geometry, eyes, skin and anatomy across every frame, quiet room ambience, no cuts or subtitles.",
+        416,
+        256,
+        22,
+        "FL2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3PDD8StepSetupT8Advanced",
+      "title": "MiniMax H3 PDD 8-Step Setup (T8 Advanced EXP)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9,
+            21
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            13,
+            25
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PDD8StepSetupT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMax-H3-FL2VA-Acc-8Step_comfyui_pdd.safetensors",
+        "FL2VA",
+        1.0
+      ]
+    },
+    {
+      "id": 9,
+      "type": "SplitSigmas",
+      "title": null,
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "low_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SplitSigmas"
+      },
+      "widgets_values": [
+        4
+      ]
+    },
+    {
+      "id": 10,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            11,
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608291003,
+        "fixed"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 11
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 12
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 13
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 14
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 16
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 17
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 18
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 19,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 20,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "One continuous medium close-up of exactly the same adult woman from the first and last frames. She remains nearly still, makes one very small natural head movement and blinks once. Her lips stay closed and relaxed; no speech and no mouth movement. Preserve facial geometry, eyes, skin and anatomy across every frame, quiet room ambience, no cuts or subtitles.",
+        832,
+        512,
+        22,
+        "FL2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced",
+      "title": "MiniMax H3 Chunked Two-Pass Global Noise Plan (v2 Advanced EXP/T8)",
+      "pos": [
+        0,
+        2100
+      ],
+      "size": [
+        390,
+        740
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        832,
+        512,
+        136,
+        17,
+        0.999,
+        832,
+        512,
+        0,
+        0,
+        128,
+        "smoothstep",
+        "fp16",
+        "offload_after",
+        "full_frame_safe",
+        "full_clip_safe"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced",
+      "title": "MiniMax H3 Chunked Two-Pass Upscale (Advanced EXP/T8)",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        306
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 21
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 22
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 23
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 24
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 25
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 26
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 27
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced"
+      },
+      "widgets_values": [
+        1.0
+      ]
+    },
+    {
+      "id": 16,
+      "type": "PreviewAny",
+      "title": "Preview as Text",
+      "pos": [
+        440,
+        600
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PreviewAny",
+      "title": "Preview as Text",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        2640,
+        300
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 30
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 31
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "VHS_VideoCombine",
+      "title": "Video Combine 🎥🅥🅗🅢",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        572
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 33
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 34,
+          "shape": 7
+        },
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        24,
+        0,
+        "MiniMaxH3_Chunked_Global_Noise_v2/output",
+        "video/h264-mp4",
+        "yuv420p",
+        19,
+        true,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "id": 20,
+      "type": "MarkdownNote",
+      "title": "1 · Global noise v2 / 全局噪声 v2",
+      "pos": [0, -440],
+      "size": [520, 250],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": [
+        "## 一次生成完整目标噪声\n新 v2 Plan 只调用一次 RandomNoise，按真实时间和空间坐标把同一噪声场切给各分块，避免每块从局部坐标重新造噪声。旧 v1 节点和旧工作流完全不变。"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MarkdownNote",
+      "title": "2 · Full-context starting values / 完整上下文起点",
+      "pos": [560, -440],
+      "size": [520, 250],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": [
+        "## 完整上下文起点（仍需人审）\n先用 ImageScale 把首尾关键帧统一中心裁剪到 832×512，再由首采和二采共同复用，避免同一张非等比图片在首尾端采用不同几何。416×256 首采 → 832×512 二采；空间保持整帧，时间保持 full_clip_safe 整段采样，不拼接独立 H3 Transformer 轨迹。136/17 仅在手动切到 guarded_overlap_exp 后生效。Euler 外部初始噪声可被精确协调；这不是通用画质或显存安全保证。"
+      ]
+    },
+    {
+      "id": 22,
+      "type": "MarkdownNote",
+      "title": "3 · Audio and boundary / 音频与边界",
+      "pos": [1120, -440],
+      "size": [520, 250],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {"Node name for S&R": "MarkdownNote"},
+      "widgets_values": [
+        "## 音频不加噪，默认不做时空拼接\n二采音频噪声与 mask 固定为零，最终返回首采的原始音频 Tensor。默认 full_clip_safe 不产生时间接缝。guarded_overlap_exp 才使用前半只读、后半 smoothstep 接管；它和独立空间分块都仅保留为诊断 EXP，不用于本工作流。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      1,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      6,
+      0,
+      7,
+      5,
+      "IMAGE"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      6,
+      "IMAGE"
+    ],
+    [
+      6,
+      4,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      7,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      8,
+      8,
+      2,
+      9,
+      0,
+      "SIGMAS"
+    ],
+    [
+      9,
+      8,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      7,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      11,
+      11,
+      0,
+      12,
+      0,
+      "NOISE"
+    ],
+    [
+      12,
+      10,
+      0,
+      12,
+      1,
+      "GUIDER"
+    ],
+    [
+      13,
+      8,
+      1,
+      12,
+      2,
+      "SAMPLER"
+    ],
+    [
+      14,
+      9,
+      0,
+      12,
+      3,
+      "SIGMAS"
+    ],
+    [
+      15,
+      7,
+      1,
+      12,
+      4,
+      "LATENT"
+    ],
+    [
+      16,
+      3,
+      0,
+      13,
+      0,
+      "CLIP"
+    ],
+    [
+      17,
+      1,
+      0,
+      13,
+      1,
+      "VAE"
+    ],
+    [
+      18,
+      2,
+      0,
+      13,
+      2,
+      "VAE"
+    ],
+    [
+      19,
+      6,
+      0,
+      13,
+      5,
+      "IMAGE"
+    ],
+    [
+      20,
+      6,
+      0,
+      13,
+      6,
+      "IMAGE"
+    ],
+    [
+      21,
+      8,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      22,
+      13,
+      0,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      23,
+      12,
+      1,
+      15,
+      2,
+      "LATENT"
+    ],
+    [
+      24,
+      11,
+      0,
+      15,
+      3,
+      "NOISE"
+    ],
+    [
+      25,
+      8,
+      1,
+      15,
+      4,
+      "SAMPLER"
+    ],
+    [
+      26,
+      9,
+      1,
+      15,
+      5,
+      "SIGMAS"
+    ],
+    [
+      27,
+      14,
+      0,
+      15,
+      6,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      28,
+      14,
+      1,
+      16,
+      0,
+      "*"
+    ],
+    [
+      29,
+      15,
+      1,
+      17,
+      0,
+      "*"
+    ],
+    [
+      30,
+      15,
+      0,
+      18,
+      0,
+      "LATENT"
+    ],
+    [
+      31,
+      1,
+      0,
+      18,
+      1,
+      "VAE"
+    ],
+    [
+      32,
+      2,
+      0,
+      18,
+      2,
+      "VAE"
+    ],
+    [
+      33,
+      18,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      34,
+      18,
+      1,
+      19,
+      1,
+      "AUDIO"
+    ],
+    [
+      35,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Chunked Two-Pass Global Noise v2 / 全局噪声精确切片双采"
+  },
+  "version": 0.4
+}

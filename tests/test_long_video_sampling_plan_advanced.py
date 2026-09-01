@@ -64,7 +64,11 @@ def test_sampling_plan_node_is_appended_without_moving_old_registration_ids():
 
     nodes = asyncio.run(MiniMaxH3AudioT8Extension().get_node_list())
     ids = [node.define_schema().node_id for node in nodes]
-    assert ids[-1] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
+    assert ids[-5] == "MiniMaxH3LongVideoSamplingPlanT8Advanced"
+    assert ids[-4] == "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced"
+    assert ids[-3] == "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced"
+    assert ids[-2] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
+    assert ids[-1] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
     assert ids[226:228] == [
         "MiniMaxH3FunControlLoaderT8Advanced",
         "MiniMaxH3FunControlApplyT8Advanced",

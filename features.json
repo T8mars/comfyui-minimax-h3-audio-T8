@@ -1,4 +1,38 @@
 {
+  "subject_safe_rgb_composite_v8_advanced": {
+    "status": "implemented as one append-only Advanced EXP RGB compositor and one importable frontend workflow; old nodes, defaults and workflows are unchanged",
+    "date": "2026-09-01",
+    "node": "MiniMaxH3SubjectSafeRGBCompositeT8Advanced",
+    "workflow": "examples/workflows/13-latent-upscale/2026-09-01_H3_Subject_Safe_RGB_Composite_v8_Advanced_EXP.json",
+    "contract": "loads matched D0/base frames, T2/refined frames and a reviewed per-frame alpha; zero-alpha RGB and all auxiliary channels remain D0 by construction, optional protect_mask removes T2 ownership, and the D0 audio object passes through unchanged",
+    "safety": "strict frame/geometry matching, configurable alpha area and centroid-jump audit, full-source fallback on contract failure, source-by-default node selection and no model hash, file-size or pixel-area whitelist",
+    "evidence": "small CPU tensor tests cover exact zero-alpha pixels, exact protect regions, audio identity, fallback, explicit single-mask broadcast and append-only registration. The workflow is a ComfyUI frontend graph; no new GPU generation was run for this packaging change",
+    "human_result": "one fixed-camera sample and one licensed natural tracking-shot sample were non-inferior ties without blockers; the natural sample had a local bag-detail note for v8 but no formal overall win",
+    "boundary": "manual post-process only. It does not detect or track people, faces, text, occlusion or camera motion and does not auto-select quality. Multi-person crossings, whip pans, smoke, glass and semi-transparent materials remain unvalidated"
+  },
+  "chunked_two_pass_masked_low_sigma_v4": {
+    "status": "implemented locally as one append-only Advanced EXP plan route; real media and mask propagation passed, while full human quality review and the fixed 512MiB GPU-margin gate remain pending",
+    "date": "2026-08-30",
+    "node": "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced",
+    "position": 266,
+    "contract": "the first-pass nested H3 video noise_mask is normalized at its native latent time, spatially resized only once for the learned-upscale target, and multiplied by spatial and temporal ownership. A static single-frame mask may expand across time; a dynamic mask with a mismatched latent time is rejected instead of interpolated",
+    "audio": "joint AV context remains available to the second pass, but the executor returns the exact first-pass audio tensor; decoded draft and final PCM SHA-256 matched in the single real run",
+    "compatibility": "v1, v2 and v3 node IDs, schemas, widget order, defaults and workflows are unchanged; v4 is append-only and defaults to inherit_required rather than silently reopening the entire video canvas",
+    "real_validation": "one serial 576x320 to 1152x640 by 124-frame 8+3 NFE run completed with strict H.264/AAC decode. Against the same masked-first-pass v3 route, mean adjacent protected-background MAD fell from 0.00169030 to 0.00080846 (52.2%) and mean drift from frame zero fell from 0.02095937 to 0.00620405 (70.4%). Minimum free GPU memory was about 201MiB, so the 512MiB gate fails",
+    "boundary": "the result is not promoted as visually solved: generated subtitles, mask-edge quality, subject motion and unknown floating objects still require full human review. The route cannot remove drift already present in pass one and does not provide automatic segmentation"
+  },
+  "chunked_two_pass_global_noise_v2": {
+    "status": "implemented as one append-only Advanced EXP plan node with a full-frame/full-clip complete-context default; the bundled workflow prealigns endpoint images once, while independent spatial tiles and guarded temporal overlap remain explicit diagnostics after real quality failures",
+    "date": "2026-08-30",
+    "node": "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced",
+    "position": 264,
+    "contract": "the connected NOISE source is invoked exactly once for the full target-resolution H3 video latent. The default full_frame_safe plus full_clip_safe route samples one complete H3 Transformer trajectory; optional diagnostic pieces receive exact coordinate slices from that single field",
+    "audio": "per-piece audio noise is explicitly zero, the existing audio noise mask remains zero, and the executor returns the exact original audio tensor",
+    "compatibility": "the released v1 plan schema, node, executor inputs, defaults and all existing workflows are unchanged; v2 is opt-in and reuses the existing executor socket",
+    "real_validation": "human review rejected the first same-seed full-frame/full-clip result because its 736x416 source was fed directly into a 416x256 canvas: native H3 uses direct resize for the first endpoint and center crop for the last, predicting 8.8757% horizontal expansion; measured background expansion was 8.719% in LOW-4 and 8.861% in the final. The corrected graph center-cropped once to 832x512 and reused that exact IMAGE for both endpoints and passes. Its single 416x256 to 832x512 by 124-frame run completed in 169.735 seconds; strict H.264/AAC decode and exact audio passthrough passed. Tail background expansion fell to 0.0206% in LOW-4 and 0.0027% in the final. Peak GPU use was 15811MiB with only 299MiB minimum free, so 16GB safety fails and full-motion person quality remains pending human review",
+    "verification": "Historical v2 checkpoint: 1890 full-project tests, 181 dated frontend workflows and 265 ComfyUI node schemas passed. The newer low-Sigma v3 route is tracked separately and does not inherit that quality claim",
+    "boundary": "this coordinates external initial noise only. Ancestral or SDE samplers may still generate independent internal per-step noise, so Euler is recommended. independent_tiles_exp changes the local H3 spatial coordinate system and failed full-motion review. guarded_overlap_exp still merges separate temporal trajectories and produced boundary spikes up to 2.84 times its own frame-difference P95. Both remain diagnostic only; the bundled workflow uses full_frame_safe plus full_clip_safe and one shared prealigned endpoint canvas, but still requires full-motion human review"
+  },
   "h3_2026_08_30_compatibility_and_vsa": {
     "status": "implemented as compatibility-first updates plus one append-only long-video sampling-plan node; one serial 0.4MP FastH3 VSA real render passed mechanical and media gates",
     "date": "2026-08-30",
@@ -1512,7 +1546,11 @@
     "MiniMaxH3FlashVSRModelT8Advanced",
     "MiniMaxH3FlashVSRExecutionPlanT8Advanced",
     "MiniMaxH3FlashVSRRestoreT8Advanced",
-    "MiniMaxH3LongVideoSamplingPlanT8Advanced"
+    "MiniMaxH3LongVideoSamplingPlanT8Advanced",
+    "MiniMaxH3ChunkedTwoPassGlobalNoisePlanT8Advanced",
+    "MiniMaxH3ChunkedTwoPassLowSigmaPlanT8Advanced",
+    "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced",
+    "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

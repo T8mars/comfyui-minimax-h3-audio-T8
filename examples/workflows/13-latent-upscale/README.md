@@ -4,6 +4,9 @@
 
 ## 工作流
 
+- `2026-09-01_H3_Subject_Safe_RGB_Composite_v8_Advanced_EXP.json`：人物安全RGB后处理。分别载入D0基底、T2细化结果和同帧同尺寸的无损逐帧alpha，只在alpha内混入T2，alpha外逐像素保留D0，并接回D0音频。节点不自动识别人、脸、字幕、遮挡或相机运动；工作流用于生成待人工审核候选，不改变任何现有二采工作流。
+- `2026-08-30_H3_Mask_Preserving_Low_Sigma_TwoPass_v4_Advanced_EXP.json`：背景保护 v4。首遍和二遍使用同一视频掩码，第二遍只做空间尺寸对齐，不对动态时间掩码插值；黑色背景保持，白色人物区域允许生成。默认完整画面、完整时间轴、8步首采和3步/0.30低Sigma二采，最终仍返回首遍音频。单条576×320→1152×640×124串行验证严格解码通过，背景相对首帧累计变化比v3下降约70%，但完整人工质量与普遍16GB安全仍未通过，因此只保留Advanced EXP。
+- `2026-08-30_H3_Chunked_TwoPass_Global_Noise_v2_Advanced_EXP.json`：全局噪声 v2。完整上下文起点固定`full_frame_safe + full_clip_safe`，只跑一个空间画布和一条完整H3时间轨迹；旧 v1 工作流不变。工作流先把首尾关键帧统一中心裁剪到同一目标画布再复用，避免非等比输入在首尾端产生不同几何。独立空间块与时间重叠方案的实跑均失败，只保留为显式诊断EXP；完整上下文仍需逐片人审，不称“画质安全”。
 - `2026-08-21_H3_Learned_Latent_TwoPass_I2VA_Standard_Advanced_EXP.json`：标准I2VA二次采样；默认执行低分辨率4步、学习型latent放大、高分辨率4步，共8次联合AV前向。新增的是高噪声`0.8`落点，不是尾段步骤。二采专用Mixer默认旁路。
 - `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Lock_Source_Advanced_EXP.json`：清晰语音`lock_source`，LOW/HIGH均连接同一drive audio，最终保存必须接HIGH Conditioning的`mux_audio`。
 - `2026-08-21_H3_Learned_Latent_TwoPass_Hybrid_Remix_Source_020_Advanced_EXP.json`：清晰语音`remix_source=0.20`，保留源节奏并由模型重混，最终保存AV Decode生成音频。
@@ -41,6 +44,12 @@ Conditioning宽高，无需维护第二套尺寸。任务626.969秒完成，输�
 这只证明该单条音频内容可辨，听感是否较旧4+3改善仍需人耳评审。
 
 ## 使用方法
+
+人物安全v8是后处理模板：D0和T2必须使用同一来源、帧数、尺寸、时间轴和色彩路径；alpha建议使用无损灰度视频，黑色为D0、白色为T2。默认`strict_exact`拒绝单帧掩码误广播，面积或轨迹跳变越界时整段回D0。需要保护脸、字幕或其他区域时，应在最终alpha中预先清零，或连接节点的`protect_mask`。模板只证明输入合同和单样本人审不劣，不会自动判断成片优劣。
+
+背景保护 v4 需要用户提供与低分辨率首采画布对齐的掩码：黑色`0`表示保留背景，白色`1`表示允许人物区域生成，灰色只用于边缘过渡。`inherit_required`缺少掩码会在采样前明确报错；静态单帧掩码可沿时间展开，动态掩码必须精确匹配latent时间长度。该路线不会自动识别人或自动生成可靠掩码，也不能修复首遍已经产生的背景漂移。
+
+全局噪声 v2 继续使用原来的 `Chunked Two-Pass Upscale` 执行节点，只把 Plan 换成新 v2 节点。普通使用保持`full_frame_safe + full_clip_safe`：tile和时间chunk数值在完整上下文档不触发切片。首尾图片应先用同一中心裁剪统一到目标宽高，再同时连接两套Conditioning；不要把同一张非等比原图直接分别接到首尾端。`independent_tiles_exp`会改变H3局部空间坐标，`guarded_overlap_exp`仍会合并多条时间轨迹，两者都不是质量通过方案。推荐Euler；ancestral/SDE采样器内部追加的逐步噪声不受本节点控制。音频始终不加噪，最终音频Tensor按原值返回。
 
 1. 第一套 Conditioning 使用低分辨率；第一采样器必须把 `denoised_output` 接到 Learned Latent Upscale，不能使用仍处在中间噪声状态的 `output`。
 2. 第二套 Conditioning 必须用相同提示词、首帧、参考媒体和时长；其宽高直接连接Learned Latent Upscale的`width/height`输出。用户只改`scale_by`，不要再手填第二套高分尺寸。Reconcile会拒绝低分辨率旧keyframe，避免 `cond_video_rows` 错配。

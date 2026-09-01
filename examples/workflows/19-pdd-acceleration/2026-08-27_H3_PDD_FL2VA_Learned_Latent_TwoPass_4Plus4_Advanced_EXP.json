@@ -1,8 +1,8 @@
 {
   "id": "452afd62-5475-437a-bcca-7168b42282ea",
   "revision": 0,
-  "last_node_id": 27,
-  "last_link_id": 40,
+  "last_node_id": 29,
+  "last_link_id": 42,
   "nodes": [
     {
       "id": 1,
@@ -165,8 +165,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            37,
-            39
+            41
           ]
         },
         {
@@ -1000,7 +999,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 2 · Why HIGH has another sampler setup\nPass 1 must send `denoised_output` into Learned Latent Upscale. The upscaler changes packed video geometry, so HIGH creates a new dual-clock sampler from the already-patched PDD MODEL and the reconciled HIGH latent. Its generated full sigmas are intentionally unused; PASS 2 receives the lower half from the original PDD schedule."
+        "## 2 · Why HIGH has another sampler setup\nPass 1 must send `denoised_output` into Learned Latent Upscale. The upscaler changes packed video geometry, so HIGH creates a new dual-clock sampler from the already-patched PDD MODEL and the reconciled HIGH latent. Its generated full sigmas are intentionally unused; PASS 2 receives the lower half from the original PDD schedule. Each FL2VA endpoint is center-cropped once to the shared 1024x576 aspect before both LOW and HIGH Conditioning, preventing first/last resize-policy drift."
       ]
     },
     {
@@ -1048,7 +1047,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## 4 · Conservative FL2VA experiment\nThe FL2VA example starts at `512x288x124` and learned-upscales to `1024x576x124`. Its actual width/height already feed HIGH Conditioning. FL2VA has static contract coverage but no equivalent real two-pass render yet, so keep one job at a time."
+        "## 4 · Conservative FL2VA experiment\nThe FL2VA example starts at `512x288x124` and learned-upscales to `1024x576x124`. Its actual width/height already feed HIGH Conditioning. The first and last images remain separate user inputs, but both are pre-aligned to 1024x576 before reuse across the two passes. FL2VA has static contract coverage but no equivalent real two-pass render yet, so keep one job at a time."
       ]
     },
     {
@@ -1268,8 +1267,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            38,
-            40
+            42
           ]
         },
         {
@@ -1284,6 +1282,92 @@
       },
       "widgets_values": [
         "10A.jpg"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "ImageScale",
+      "title": "Pre-align first frame · shared 16:9 canvas",
+      "pos": [
+        440,
+        1160
+      ],
+      "size": [
+        390,
+        154
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 41
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            37,
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "ImageScale"
+      },
+      "widgets_values": [
+        "lanczos",
+        1024,
+        576,
+        "center"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "ImageScale",
+      "title": "Pre-align last frame · shared 16:9 canvas",
+      "pos": [
+        880,
+        1400
+      ],
+      "size": [
+        390,
+        154
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            38,
+            40
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "ImageScale"
+      },
+      "widgets_values": [
+        "lanczos",
+        1024,
+        576,
+        "center"
       ]
     }
   ],
@@ -1578,7 +1662,7 @@
     ],
     [
       37,
-      6,
+      28,
       0,
       7,
       5,
@@ -1586,7 +1670,7 @@
     ],
     [
       38,
-      27,
+      29,
       0,
       7,
       6,
@@ -1594,7 +1678,7 @@
     ],
     [
       39,
-      6,
+      28,
       0,
       14,
       7,
@@ -1602,10 +1686,26 @@
     ],
     [
       40,
-      27,
+      29,
       0,
       14,
       8,
+      "IMAGE"
+    ],
+    [
+      41,
+      6,
+      0,
+      28,
+      0,
+      "IMAGE"
+    ],
+    [
+      42,
+      27,
+      0,
+      29,
+      0,
       "IMAGE"
     ]
   ],

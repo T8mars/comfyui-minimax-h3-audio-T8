@@ -187,6 +187,40 @@ def test_learned_upscale_preserves_joint_audio_and_resizes_only_video(monkeypatc
     assert unloads == [patcher]
 
 
+def test_learned_upscale_accepts_native_pixel_space_set_latent_noise_mask(monkeypatch):
+    patcher, unloads = _patch_model_manager(monkeypatch, _ResizeNetwork())
+    latent = _av_latent(height=20, width=36)
+    _video, audio = tuple(latent["samples"].unbind())
+    pixel_mask = torch.zeros((1, 1, 320, 576), dtype=torch.float32)
+    pixel_mask[..., 64:288, 192:384] = 1.0
+    audio_mask = torch.ones_like(audio)
+    latent["noise_mask"] = comfy.nested_tensor.NestedTensor(
+        (pixel_mask, audio_mask)
+    )
+
+    output, width, height, report_text = learned.learned_upscale_h3_av_latent(
+        latent,
+        "fixture.safetensors",
+        "target_dimensions",
+        2.0,
+        1.0,
+        1152,
+        640,
+        "honor_dimensions_exp",
+        2.0,
+        "fp16",
+        "offload_after",
+    )
+
+    output_video_mask, output_audio_mask = tuple(output["noise_mask"].unbind())
+    report = json.loads(report_text)
+    assert (width, height) == (1152, 640)
+    assert output_video_mask is pixel_mask
+    assert output_audio_mask is audio_mask
+    assert report["noise_mask"] == "preserved_nonmatching_spatial_shape"
+    assert unloads == [patcher]
+
+
 def test_learned_upscale_always_releases_on_inference_error(monkeypatch):
     patcher, unloads = _patch_model_manager(monkeypatch, _FailNetwork())
     with pytest.raises(RuntimeError, match="synthetic inference failure"):
@@ -542,7 +576,9 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 264
+    assert len(ids) == 268
+    assert ids[-2] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
+    assert ids[-1] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
     assert ids[125:130] == [
         "MiniMaxH3LearnedLatentUpscaleT8Advanced",
         "MiniMaxH3TwoPassLatentReconcileT8Advanced",

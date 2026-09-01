@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 180
+    assert len(paths) == 183
     assert [path.name for path in categories] == [
         "01-basic-generation",
         "02-audio-control",
@@ -457,6 +457,63 @@ def test_api_converter_keeps_full_slots_before_a_later_optional_link():
     assert [item["name"] for item in target["inputs"]] == ["early_mask", "late_image"]
     assert target["inputs"][1]["link"] == 1
     assert workflow["links"] == [[1, 1, 0, 2, 1, "IMAGE"]]
+
+
+def test_api_converter_serializes_format_selected_dynamic_widgets():
+    prompt = {
+        "1": {
+            "class_type": "DynamicFormatNode",
+            "inputs": {
+                "images": ["2", 0],
+                "format": "video/h264-mp4",
+                "pix_fmt": "yuv420p",
+                "crf": 19,
+                "save_metadata": True,
+                "trim_to_audio": False,
+            },
+        },
+        "2": {"class_type": "ImageSource", "inputs": {}},
+    }
+    object_info = {
+        "DynamicFormatNode": {
+            "input": {
+                "required": {
+                    "images": ["IMAGE"],
+                    "format": [
+                        ["video/h264-mp4"],
+                        {
+                            "formats": {
+                                "video/h264-mp4": [
+                                    ["pix_fmt", ["yuv420p", "yuv420p10le"]],
+                                    ["crf", "INT", {"default": 19}],
+                                    ["save_metadata", "BOOLEAN", {"default": True}],
+                                    ["trim_to_audio", "BOOLEAN", {"default": False}],
+                                ]
+                            }
+                        },
+                    ],
+                }
+            },
+            "output": [],
+            "output_name": [],
+        },
+        "ImageSource": {
+            "input": {"required": {}},
+            "output": ["IMAGE"],
+            "output_name": ["image"],
+        },
+    }
+
+    workflow = convert(prompt, object_info, "dynamic format")
+    node = next(item for item in workflow["nodes"] if item["type"] == "DynamicFormatNode")
+    assert [item["name"] for item in node["inputs"]] == ["images"]
+    assert node["widgets_values"] == [
+        "video/h264-mp4",
+        "yuv420p",
+        19,
+        True,
+        False,
+    ]
 
 
 def test_autogrow_repair_does_not_cross_match_overlapping_prefixes():

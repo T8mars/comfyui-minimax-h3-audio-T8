@@ -248,6 +248,100 @@ def sample_minimax_h3_dual_clock_euler(
     return x
 
 
+def _build_dual_clock_sampler(
+    *,
+    video_values: int,
+    packed_values: int,
+    shift_video: float,
+    shift_audio: float,
+    audio_velocity_is_raw: bool,
+    extra_options=None,
+    inpaint_options=None,
+):
+    """Build the shape-bound T8 dual-clock sampler."""
+
+    def sampler_function(model_wrap, x, sigmas, extra_args=None, callback=None, disable=None):
+        return sample_minimax_h3_dual_clock_euler(
+            model_wrap,
+            x,
+            sigmas,
+            extra_args=extra_args,
+            callback=callback,
+            disable=disable,
+            video_values=video_values,
+            packed_values=packed_values,
+            shift_video=shift_video,
+            shift_audio=shift_audio,
+            audio_velocity_is_raw=audio_velocity_is_raw,
+        )
+
+    sampler_function.__name__ = "sample_minimax_h3_dual_clock_euler"
+    sampler_function._minimax_h3_video_values = int(video_values)
+    sampler_function._minimax_h3_packed_values = int(packed_values)
+    sampler_function._minimax_h3_shift_video = float(shift_video)
+    sampler_function._minimax_h3_shift_audio = float(shift_audio)
+    sampler_function._minimax_h3_audio_velocity_is_raw = bool(
+        audio_velocity_is_raw
+    )
+    return comfy.samplers.KSAMPLER(
+        sampler_function,
+        extra_options={} if extra_options is None else dict(extra_options),
+        inpaint_options={} if inpaint_options is None else dict(inpaint_options),
+    )
+
+
+def rebind_dual_clock_sampler(model, av_latent: dict, sampler):
+    """Rebind only the custom Euler sampler to a new packed AV geometry.
+
+    Native ComfyUI samplers do not carry a packed-length closure and are returned
+    unchanged. Learned-latent upscaling changes the video geometry, so the custom
+    second-pass closure must be rebuilt for each upscaled piece.
+    """
+
+    sampler_function = getattr(sampler, "sampler_function", None)
+    if getattr(sampler_function, "__name__", None) != (
+        "sample_minimax_h3_dual_clock_euler"
+    ):
+        return sampler
+    video, audio = nested_av_parts(av_latent)
+    if video.shape[1] != 24 or audio.shape[1] != 32 or audio.shape[2] != 2:
+        raise ValueError(
+            "Unexpected MiniMax H3 AV channels while rebinding the second-pass "
+            f"sampler: video={tuple(video.shape)}, audio={tuple(audio.shape)}"
+        )
+    options = getattr(model, "model_options", {}).get("transformer_options", {})
+    shift_video = getattr(
+        sampler_function,
+        "_minimax_h3_shift_video",
+        options.get("minimax_h3_sigma_shift_video"),
+    )
+    shift_audio = getattr(
+        sampler_function,
+        "_minimax_h3_shift_audio",
+        options.get("minimax_h3_sigma_shift_audio"),
+    )
+    if shift_video is None or shift_audio is None:
+        raise ValueError(
+            "The T8 dual-clock sampler is missing its video/audio shift metadata; "
+            "recreate it with MiniMax H3 Dual-Clock Sampler before second-pass use"
+        )
+    return _build_dual_clock_sampler(
+        video_values=math.prod(video.shape[1:]),
+        packed_values=math.prod(video.shape[1:]) + math.prod(audio.shape[1:]),
+        shift_video=float(shift_video),
+        shift_audio=float(shift_audio),
+        audio_velocity_is_raw=bool(
+            getattr(
+                sampler_function,
+                "_minimax_h3_audio_velocity_is_raw",
+                model_uses_raw_audio_velocity(model),
+            )
+        ),
+        extra_options=getattr(sampler, "extra_options", None),
+        inpaint_options=getattr(sampler, "inpaint_options", None),
+    )
+
+
 def setup_dual_clock_sampling(
     model,
     av_latent: dict,
@@ -294,23 +388,13 @@ def setup_dual_clock_sampling(
         video_values = math.prod(video.shape[1:])
         packed_values = video_values + math.prod(audio.shape[1:])
 
-        def sampler_function(model_wrap, x, sigmas, extra_args=None, callback=None, disable=None):
-            return sample_minimax_h3_dual_clock_euler(
-                model_wrap,
-                x,
-                sigmas,
-                extra_args=extra_args,
-                callback=callback,
-                disable=disable,
-                video_values=video_values,
-                packed_values=packed_values,
-                shift_video=shift_video,
-                shift_audio=shift_audio,
-                audio_velocity_is_raw=audio_velocity_is_raw,
-            )
-
-        sampler_function.__name__ = "sample_minimax_h3_dual_clock_euler"
-        sampler = comfy.samplers.KSAMPLER(sampler_function)
+        sampler = _build_dual_clock_sampler(
+            video_values=video_values,
+            packed_values=packed_values,
+            shift_video=shift_video,
+            shift_audio=shift_audio,
+            audio_velocity_is_raw=audio_velocity_is_raw,
+        )
 
     sigmas = _scheduler_sigmas(model_sampling, scheduler, steps, shift_video)
     return patched_model, sampler, sigmas

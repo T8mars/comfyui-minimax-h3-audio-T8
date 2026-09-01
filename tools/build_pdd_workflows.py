@@ -103,6 +103,34 @@ def split_sigmas_node(node_id: int, pos: list[int]) -> dict:
     }
 
 
+def image_scale_node(
+    node_id: int,
+    *,
+    title: str,
+    pos: list[int],
+    order: int,
+    width: int,
+    height: int,
+) -> dict:
+    return {
+        "id": node_id,
+        "type": "ImageScale",
+        "title": title,
+        "pos": pos,
+        "size": [390, 154],
+        "flags": {},
+        "order": order,
+        "mode": 0,
+        "inputs": [{"name": "image", "type": "IMAGE", "link": None}],
+        "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": None}],
+        "properties": {
+            "cnr_id": "comfy-core",
+            "Node name for S&R": "ImageScale",
+        },
+        "widgets_values": ["lanczos", width, height, "center"],
+    }
+
+
 def high_geometry_sampler_node(source: dict) -> dict:
     node = copy.deepcopy(source)
     node["id"] = 16
@@ -237,7 +265,27 @@ def build_two_pass(variant: str) -> dict:
         last_frame["title"] = "Last frame · replace with your image"
         last_frame["pos"] = [0, 1440]
         last_frame["order"] = 26
-        workflow["nodes"].append(last_frame)
+        workflow["nodes"].extend(
+            [
+                last_frame,
+                image_scale_node(
+                    28,
+                    title="Pre-align first frame · shared 16:9 canvas",
+                    pos=[440, 1160],
+                    order=27,
+                    width=high_width,
+                    height=high_height,
+                ),
+                image_scale_node(
+                    29,
+                    title="Pre-align last frame · shared 16:9 canvas",
+                    pos=[880, 1400],
+                    order=28,
+                    width=high_width,
+                    height=high_height,
+                ),
+            ]
+        )
 
     notes = {
         22: (
@@ -246,7 +294,7 @@ def build_two_pass(variant: str) -> dict:
         ),
         23: (
             "2 · Geometry handoff / 几何交接",
-            "## 2 · Why HIGH has another sampler setup\nPass 1 must send `denoised_output` into Learned Latent Upscale. The upscaler changes packed video geometry, so HIGH creates a new dual-clock sampler from the already-patched PDD MODEL and the reconciled HIGH latent. Its generated full sigmas are intentionally unused; PASS 2 receives the lower half from the original PDD schedule.",
+            "## 2 · Why HIGH has another sampler setup\nPass 1 must send `denoised_output` into Learned Latent Upscale. The upscaler changes packed video geometry, so HIGH creates a new dual-clock sampler from the already-patched PDD MODEL and the reconciled HIGH latent. Its generated full sigmas are intentionally unused; PASS 2 receives the lower half from the original PDD schedule. Each FL2VA endpoint is center-cropped once to the shared 1024x576 aspect before both LOW and HIGH Conditioning, preventing first/last resize-policy drift.",
         ),
         24: (
             "3 · Audio continuation / 音频继续采样",
@@ -257,7 +305,7 @@ def build_two_pass(variant: str) -> dict:
             (
                 "## 4 · Tested Ref2VA default\nThe formal Ref2VA workflow starts at `864x480x22` (about 0.4MP) with `scale_by=1.5`; 32-pixel alignment produces `1312x736x22`. One serial 16GB run passed with only 634MiB minimum free VRAM, so keep one job at a time. The upscaler's actual width/height already feed HIGH Conditioning."
                 if ref2va_stable
-                else "## 4 · Conservative FL2VA experiment\nThe FL2VA example starts at `512x288x124` and learned-upscales to `1024x576x124`. Its actual width/height already feed HIGH Conditioning. FL2VA has static contract coverage but no equivalent real two-pass render yet, so keep one job at a time."
+                else "## 4 · Conservative FL2VA experiment\nThe FL2VA example starts at `512x288x124` and learned-upscales to `1024x576x124`. Its actual width/height already feed HIGH Conditioning. The first and last images remain separate user inputs, but both are pre-aligned to 1024x576 before reuse across the two passes. FL2VA has static contract coverage but no equivalent real two-pass render yet, so keep one job at a time."
             ),
         ),
         26: (
@@ -314,10 +362,12 @@ def build_two_pass(variant: str) -> dict:
     if variant == "FL2VA":
         endpoints.extend(
             [
-                (6, 0, 7, 5, "IMAGE"),
-                (27, 0, 7, 6, "IMAGE"),
-                (6, 0, 14, 7, "IMAGE"),
-                (27, 0, 14, 8, "IMAGE"),
+                (28, 0, 7, 5, "IMAGE"),
+                (29, 0, 7, 6, "IMAGE"),
+                (28, 0, 14, 7, "IMAGE"),
+                (29, 0, 14, 8, "IMAGE"),
+                (6, 0, 28, 0, "IMAGE"),
+                (27, 0, 29, 0, "IMAGE"),
             ]
         )
     else:
