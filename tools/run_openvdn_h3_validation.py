@@ -26,7 +26,7 @@ import run_pdd_real_validation as pdd  # noqa: E402
 SCHEMA = "t8.minimax_h3.openvdn.real_validation.v1"
 FPS = 24
 SEED = 2609032101
-BASE_MODEL = "minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+BASE_MODEL = "minimax_h3_fl2va_int8_convrot.safetensors"
 CLIP_MODEL = "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
 VIDEO_VAE = "minimax_h3_video_vae_fp16.safetensors"
 AUDIO_VAE = "minimax_h3_audio_vae_fp32.safetensors"
@@ -43,6 +43,38 @@ PROMPT = (
     "continuous shot. No additional words, repeated speech, singing, subtitles, cuts, camera "
     "movement, hiss, static, crackle, clipping, distortion, duplicate person or reflection."
 )
+
+
+def adapter_integrity_checks(
+    composition: dict[str, Any], stderr_text: str
+) -> dict[str, bool]:
+    """Prove every OpenVDN adapter target was shape-compatible at runtime."""
+
+    adapters = {
+        str(item.get("name")): item
+        for item in composition.get("adapters", [])
+        if isinstance(item, dict)
+    }
+    default = adapters.get("default", {})
+    turbo = adapters.get("turbo", {})
+    default_shapes = default.get("shape_validation", {})
+    turbo_shapes = turbo.get("shape_validation", {})
+    return {
+        "default_104_shapes_exact": (
+            default.get("patch_targets") == 104
+            and default.get("applied_targets") == 104
+            and default_shapes.get("checked_targets") == 104
+            and default_shapes.get("all_shapes_exact") is True
+        ),
+        "turbo_259_shapes_exact": (
+            turbo.get("patch_targets") == 259
+            and turbo.get("applied_targets") == 259
+            and turbo_shapes.get("checked_targets") == 259
+            and turbo_shapes.get("all_shapes_exact") is True
+        ),
+        "turbo_51_adaln_shapes_exact": turbo_shapes.get("adaln_targets") == 51,
+        "runtime_lora_errors_absent": "ERROR lora" not in stderr_text,
+    }
 
 
 def stable_media_report(
@@ -386,6 +418,8 @@ def main(argv: list[str] | None = None) -> int:
 
     composition = json.loads(pdd._phase_text(phase, "14"))
     execution = json.loads(pdd._phase_text(phase, "15"))
+    stderr_path = run_root / "logs" / "openvdn_h3.stderr.log"
+    stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
     output_dir = run_root / "output" / "MiniMaxH3_OpenVDN"
     video = shared._latest_file(output_dir, f"{run_id}_*audio.mp4")
     media = stable_media_report(
@@ -423,6 +457,7 @@ def main(argv: list[str] | None = None) -> int:
         "execution_nfe_8": execution.get("nfe") == 8,
         "execution_shifts": execution.get("video_shift") == 12.0
         and execution.get("audio_shift") == 3.0,
+        **adapter_integrity_checks(composition, stderr_text),
     }
     minimum_free = report["gpu_monitor"].get("minimum_free_mib")
     resource_checks = {

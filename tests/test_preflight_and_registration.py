@@ -102,8 +102,8 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3VDNExecutionPlanT8Advanced",
     ]
     for schema in schemas[281:]:
-        assert schema.is_experimental is True
-        assert schema.category == "T8/MiniMax H3/Performance/Experimental"
+        assert schema.is_experimental is False
+        assert schema.category == "T8/MiniMax H3/Performance/Advanced"
     assert ids[248:254] == [
         "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
         "MiniMaxH3TimedImageReferenceT8Advanced",

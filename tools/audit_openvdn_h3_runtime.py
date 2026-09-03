@@ -27,7 +27,7 @@ def _parser() -> argparse.ArgumentParser:
         "--comfy-root", type=Path, default=Path(r"F:\AI-T8-video-onekey\ComfyUI")
     )
     parser.add_argument(
-        "--base-model", default="minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+        "--base-model", default="minimax_h3_fl2va_int8_convrot.safetensors"
     )
     parser.add_argument("--vdn-root", default="OpenVDN/vdn-minimax-h3")
     parser.add_argument(
@@ -129,13 +129,16 @@ def main(argv: list[str] | None = None) -> int:
                 == 800,
                 "all_adapters_fully_applied": all(
                     item["patch_targets"] == item["applied_targets"]
+                    and item["shape_validation"]["all_shapes_exact"]
+                    and item["shape_validation"]["checked_targets"]
+                    == item["patch_targets"]
                     for item in receipt["adapters"]
                 ),
                 "all_50_blocks_replaced": receipt["main_block_count"] == 50,
                 "additional_model_lifecycle": receipt["additional_model_lifecycle"]
                 is True,
-                "plain_t2va_fail_closed": receipt["task_scope"]
-                == "plain_t2va_only_fail_closed",
+                "native_h3_multimodal_layout_scope": receipt["task_scope"]
+                == "all_native_h3_packed_layouts",
             }
             if not all(report["checks"].values()):
                 raise RuntimeError("one or more composition checks failed")

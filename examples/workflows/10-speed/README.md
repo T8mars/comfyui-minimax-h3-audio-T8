@@ -5,7 +5,7 @@
 ## 当前入口
 
 - `2026-08-30_H3_FastH3_VSA_T2VA_4Step_0p4MP_Advanced_EXP.json`：FastH3 Preview v1 的普通T2VA 4步工作流；优先使用真实learned-gate VSA，能力不完整时明确回退Dense。
-- `2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json`：OpenVDN MiniMax H3独立混合注意力路线；默认DMD 8步、960×512×73，只支持普通T2VA。
+- `2026-09-03_H3_OpenVDN_DMD8_*_Advanced.json`：OpenVDN MiniMax H3正式Advanced套件；默认DMD 8步，覆盖T2VA、I2VA、L2VA、FL2VA、单/多参考图、参考视频+音轨、独立参考音频和混合参考。
 - `2026-08-18_H3_SPEED_T2VA_Stock20_Advanced_EXP.json`：绑定正式100条T2VA标定数据与profile的最新前端工作流。
 - `2026-08-19_H3_SPEED_Spectrum_Dataset_Calibration_Advanced_EXP.json`：加载、累积、定稿和验证频谱数据集。
 - 其他T2VA/FL2VA/L2VA/Ref2VA/Hybrid/Turbo8文件是历史机械示例，不代表已通过各任务质量门。
@@ -25,6 +25,13 @@ VSA运行时要求Comfy Kitchen的`sol_attn`同时提供`topk_ratio`、`tail`、
 
 ## OpenVDN MiniMax H3
 
+完整ComfyUI模型包位于[`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)。仓库根目录已经对应`ComfyUI/models`，获批访问后可直接运行：
+
+```powershell
+hf auth login
+hf download t8star/Vdn-Minimax-H3-Comfy --local-dir ComfyUI/models
+```
+
 从[OpenVDN/vdn-minimax-h3](https://huggingface.co/OpenVDN/vdn-minimax-h3/tree/main)固定revision `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`下载以下内容到`ComfyUI/models/diffusion_models/OpenVDN/vdn-minimax-h3/`：
 
 - `stage-dmd-step-250/linear_branch/model.safetensors`：4,279,428,112字节，SHA-256 `DEC6981C7874F5B3BC92D1A02E256B673A3B3499DC1A124714BB3B19DA602855`
@@ -33,4 +40,8 @@ VSA运行时要求Comfy Kitchen的`sol_attn`同时提供`topk_ratio`、`tail`、
 - 两个stage的`model_spec.json`、`metadata.json`以及对应adapter/branch config。Stage B发布的branch/default与DMD相同，本地可复用DMD的单份大文件。
 - 模型仓库顶层`README.md`、`NOTICE`、`LICENSE`和`licenses/MiniMax-H3-Community-License-Agreement.txt`。权重许可的Applicable Territory排除欧盟、英国、韩国和美国；下载或运行前必须自行确认许可适用。
 
-推荐工作流使用`MiniMaxH3VDNModelComposerT8Advanced → MiniMaxH3VDNExecutionPlanT8Advanced`。DMD会自动应用104个default和259个turbo patch target并固定8 NFE；切到`stage_b_50nfe`时自动只用default并固定50 NFE。不要在它前后叠加任何LoRA或Attention接管节点。v1只接受`[text|audio|video]`普通T2VA布局，其他参考任务全部fail closed。
+推荐工作流使用`MiniMaxH3VDNModelComposerT8Advanced → MiniMaxH3VDNExecutionPlanT8Advanced`。DMD会自动应用104个default和259个turbo patch target并固定8 NFE；切到`stage_b_50nfe`时自动只用default并固定50 NFE。DMD底模必须是完整非pruned且AdaLN输入宽度为2688的`minimax_h3_fl2va_int8_convrot.safetensors`；带`adaln_t_table`的8列curve-basis/pruned底模无法承载turbo中的51个AdaLN目标，节点会直接拒绝。不要在它前后叠加任何LoRA或Attention接管节点。
+
+正式套件包含9份工作流：T2VA、I2VA、尾帧L2VA、首尾帧FL2VA、单图Ref2VA、多图Ref2VA、参考视频连同其音轨、独立参考音频、首帧+音频混合参考。v2接受原生H3的`[text | 可选cond/cond_audio/ref_img/ref_audio | audio | video]`布局，且继续对空段、非连续段和错误几何fail closed。OpenVDN上游只声明T2VA，其余路线是T8真实生成验证后的扩展。
+
+纠正后的本机真实测试使用完整2688列AdaLN底模，以512×288×39逐条串行覆盖8种多模态入口。全部形状精确应用104+259个adapter目标（含51个AdaLN），运行日志`ERROR lora=0`，并通过原生H.264/AAC严格联合解码；最低空闲显存535–890MiB。旧pruned底模测试实际跳过51个AdaLN补丁，只保留为布局/媒体探针。不要并发生成，也不要把这组结果理解成所有16GB显卡都稳定；机械通过不代替逐素材的人眼画质、听感或口型判断。

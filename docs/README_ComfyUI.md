@@ -1,17 +1,23 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
-> 2026-09-03 OpenVDN MiniMax H3：新增三个尾部Advanced EXP节点，按固定revision加载50层
+> 2026-09-03 OpenVDN MiniMax H3：三个尾部节点现为正式Advanced，按固定revision加载50层
 > 混合注意力分支与DMD/Stage B adapter，并通过Comfy ModelPatcher管理额外模型。DMD路线固定8 NFE，
-> Stage B固定50 NFE，均固定Euler/native_flow与12/3 shift。v1严格只接受普通T2VA，拒绝所有图片、
-> 视频、音频参考和混合任务，也拒绝旧EMA_B、SLA、VSA、Sol-Attn、BlockCache或其他Attention owner。
+> Stage B固定50 NFE，均固定Euler/native_flow与12/3 shift。v2接受原生H3的普通T2VA、I2VA、
+> 尾帧L2VA、首尾帧FL2VA、单/多参考图、参考视频+原音轨、独立参考音频和混合任务，同时拒绝
+> 旧EMA_B、SLA、VSA、Sol-Attn、BlockCache或其他Attention owner。
 > Windows RTX实现使用等价分组原生SDPA，不要求FA4/Triton/Diffusers补丁。
 >
 > 权重目录为`models/diffusion_models/OpenVDN/vdn-minimax-h3`，固定HF revision
-> `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`；节点运行时不下载。配套工作流位于
-> `10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json`。本机960×512×73
-> DMD8真实运行应用800个branch tensor及104+259个adapter target，严格音画解码通过，最低空闲显存
-> 612MiB。当前结构匹配INT8/ConvRot底模通过显式`allow_structural_base`使用，报告保持
-> `base_provenance_exact=false`；在人审前不宣称画质、音频或口型通过。
+> `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`；节点运行时不下载。`10-speed`内提供9份正式工作流。
+> 完整ComfyUI目录包发布在`https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy`，仓库根目录可直接
+> 下载到`ComfyUI/models`；模型访问与使用继续受下述MiniMax H3协议和地区限制约束。
+> 上游只声明T2VA；其他模式是T8在Comfy原生条件链上的真实验证扩展。I2VA/L2VA/FL2VA、多参考图、
+> 视频+音轨、独立音频和首帧+音频已在完整非pruned、2688列AdaLN的本地INT8/ConvRot底模上逐条
+> 串行复跑。8/8条均形状精确应用104个default与259个turbo目标（含51个AdaLN），运行日志无
+> `ERROR lora`，并通过原生H.264/AAC严格联合解码；最低空闲显存535–890MiB。DMD不得使用
+> `adaln_t_table`的8列curve-basis/pruned底模。旧pruned成片只证明条件布局/媒体链可运行，因为其
+> 51个AdaLN补丁实际被运行时跳过。当前结构匹配底模通过显式`allow_structural_base`使用，报告保持
+> `base_provenance_exact=false`；不作通用16GB安全承诺，机械通过也不替代逐素材画质、音频或口型人审。
 > OpenVDN源码是Apache-2.0，权重则遵循MiniMax H3 Community License；其Applicable Territory排除
 > 欧盟、英国、韩国和美国。完整协议已下载到模型目录，用户必须在运行前自行确认许可适用。
 

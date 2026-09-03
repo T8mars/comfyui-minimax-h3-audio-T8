@@ -13,7 +13,7 @@ from .vdn_h3_advanced import (
 )
 
 
-CATEGORY = "T8/MiniMax H3/Performance/Experimental"
+CATEGORY = "T8/MiniMax H3/Performance/Advanced"
 
 
 class MiniMaxH3VDNRuntimeAuditT8Advanced(io.ComfyNode):
@@ -21,7 +21,7 @@ class MiniMaxH3VDNRuntimeAuditT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3VDNRuntimeAuditT8Advanced",
-            display_name="MiniMax H3 OpenVDN Runtime Audit (Advanced EXP/T8)",
+            display_name="MiniMax H3 OpenVDN Runtime Audit (Advanced/T8)",
             description=(
                 "Read-only audit for the pinned OpenVDN MiniMax H3 branch and adapters. "
                 "Checks exact asset identity, native H3 structure, attention ownership and "
@@ -29,7 +29,7 @@ class MiniMaxH3VDNRuntimeAuditT8Advanced(io.ComfyNode):
                 "The report also exposes the separately governed weight-license boundary."
             ),
             category=CATEGORY,
-            is_experimental=True,
+            is_experimental=False,
             inputs=[
                 io.Model.Input("model"),
                 io.Combo.Input(
@@ -44,8 +44,8 @@ class MiniMaxH3VDNRuntimeAuditT8Advanced(io.ComfyNode):
                     default=False,
                     advanced=True,
                     tooltip=(
-                        "Explicit EXP exception for a structurally matching Comfy H3 base "
-                        "whose exact official BF16 revision provenance is unavailable."
+                        "Explicit provenance exception for a structurally matching Comfy H3 "
+                        "base whose exact official BF16 revision is unavailable."
                     ),
                 ),
             ],
@@ -84,15 +84,16 @@ class MiniMaxH3VDNModelComposerT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3VDNModelComposerT8Advanced",
-            display_name="MiniMax H3 OpenVDN Model Composer (Advanced EXP/T8)",
+            display_name="MiniMax H3 OpenVDN Model Composer (Advanced/T8)",
             description=(
                 "Clones a clean native H3 MODEL, applies the pinned OpenVDN default/turbo "
                 "adapters, and attaches the 50-layer VDN branch through Comfy ModelPatcher. "
-                "v1 is strict T2VA only and rejects every competing attention owner. Users "
+                "Supports native H3 text, first/last-frame, image/video/audio-reference and "
+                "hybrid PackedLayouts while rejecting every competing attention owner. Users "
                 "must review the MiniMax H3 Community License before running the weights."
             ),
             category=CATEGORY,
-            is_experimental=True,
+            is_experimental=False,
             inputs=[
                 io.Model.Input("model"),
                 io.Combo.Input(
@@ -108,7 +109,7 @@ class MiniMaxH3VDNModelComposerT8Advanced(io.ComfyNode):
                     advanced=True,
                     tooltip=(
                         "Required for the current local INT8/ConvRot H3 base. This records "
-                        "an explicit unproven-base EXP exception; it does not relabel it exact."
+                        "an explicit unproven-base exception; it does not relabel it exact."
                     ),
                 ),
             ],
@@ -143,14 +144,14 @@ class MiniMaxH3VDNExecutionPlanT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3VDNExecutionPlanT8Advanced",
-            display_name="MiniMax H3 OpenVDN Execution Plan (Advanced EXP/T8)",
+            display_name="MiniMax H3 OpenVDN Execution Plan (Advanced/T8)",
             description=(
                 "Builds the exact OpenVDN sampling contract from the connected MODEL: "
                 "DMD uses 8 NFE, Stage B uses 50 NFE, both use native AV Euler and "
                 "video/audio shifts 12/3. No user-overridable mismatched step count."
             ),
             category=CATEGORY,
-            is_experimental=True,
+            is_experimental=False,
             inputs=[io.Model.Input("model"), io.Latent.Input("av_latent")],
             outputs=[
                 io.Model.Output("model"),

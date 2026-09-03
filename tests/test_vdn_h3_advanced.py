@@ -77,7 +77,7 @@ def test_grouped_sdpa_is_exactly_the_both_anchor_reference(frames, per_frame):
     torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-12)
 
 
-def test_plain_t2va_layout_is_accepted_and_every_reference_layout_fails_closed():
+def test_plain_t2va_layout_is_accepted():
     packed = SimpleNamespace(
         segments=[(0, 2, "text"), (2, 8, "audio"), (8, 20, "video")],
         signature=(2, 3, 4, 4, 3),
@@ -87,15 +87,57 @@ def test_plain_t2va_layout_is_accepted_and_every_reference_layout_fails_closed()
     assert layout.num_frames == 3
     assert layout.tokens_per_frame == 4
     assert layout.global_index("cpu").tolist() == list(range(8))
+    assert layout.condition_kinds == ()
 
-    for kind in ("cond", "ref_img", "ref_audio", "cond_audio"):
-        rejected = SimpleNamespace(
-            segments=[(0, 2, "text"), (2, 3, kind), (3, 9, "audio"), (9, 21, "video")],
-            signature=(2, 3, 4, 4, 3),
-            seq_len=21,
-        )
-        with pytest.raises(RuntimeError, match="plain T2VA"):
-            vdn.layout_from_packed(rejected)
+
+@pytest.mark.parametrize(
+    "middle_kinds",
+    [
+        ("cond",),
+        ("cond", "cond"),
+        ("ref_img",),
+        ("ref_img", "ref_img"),
+        ("ref_audio",),
+        ("ref_audio", "ref_img"),
+        ("cond", "ref_img", "ref_audio"),
+        ("cond_audio", "ref_img", "ref_audio"),
+    ],
+)
+def test_every_native_h3_condition_and_reference_layout_is_accepted(middle_kinds):
+    segments = []
+    offset = 0
+    for kind in ("text", *middle_kinds, "audio", "video"):
+        length = {"text": 2, "audio": 6, "video": 12}.get(kind, 1)
+        segments.append((offset, offset + length, kind))
+        offset += length
+    packed = SimpleNamespace(
+        segments=segments,
+        signature=(2, 3, 4, 4, 3),
+        seq_len=offset,
+    )
+    layout = vdn.layout_from_packed(packed)
+    assert layout.condition_kinds == middle_kinds
+    assert layout.global_index("cpu").numel() == offset - 12
+
+
+@pytest.mark.parametrize(
+    "segments",
+    [
+        [(0, 2, "text"), (2, 8, "audio"), (8, 20, "unknown"), (20, 32, "video")],
+        [(0, 2, "text"), (2, 14, "video"), (14, 20, "audio")],
+        [(0, 2, "cond"), (2, 8, "audio"), (8, 20, "video")],
+        [(0, 2, "text"), (2, 2, "ref_img"), (2, 8, "audio"), (8, 20, "video")],
+        [(0, 2, "text"), (3, 9, "audio"), (9, 21, "video")],
+    ],
+)
+def test_non_native_or_malformed_packed_layouts_fail_closed(segments):
+    packed = SimpleNamespace(
+        segments=segments,
+        signature=(2, 3, 4, 4, 3),
+        seq_len=segments[-1][1],
+    )
+    with pytest.raises(RuntimeError, match="OpenVDN"):
+        vdn.layout_from_packed(packed)
 
 
 def test_branch_manifest_shape_and_published_key_mapping_are_exact():
@@ -137,6 +179,31 @@ def test_named_openvdn_adapter_normalizes_and_converts_root_norm_and_fused_qkv()
     assert converted["blocks.0.attn.qkv_proj.lora_A.weight"].shape == (6, 4)
     assert converted["blocks.0.attn.qkv_proj.lora_B.weight"].shape == (12, 6)
     assert "final_layer.adaln_proj.linear.lora_A.weight" in converted
+
+
+def test_openvdn_adapter_shapes_fail_closed_for_curve_basis_adaln():
+    converted = {
+        "blocks.0.adaln_proj.linear.lora_A.weight": torch.randn(2, 4),
+        "blocks.0.adaln_proj.linear.lora_B.weight": torch.randn(8, 2),
+    }
+    key_map = {
+        "blocks.0.adaln_proj.linear": (
+            "diffusion_model.blocks.0.adaln_proj.linear.weight"
+        )
+    }
+    target = {
+        "diffusion_model.blocks.0.adaln_proj.linear.weight": torch.empty(8, 4)
+    }
+    report = vdn._validate_adapter_target_shapes(converted, key_map, target)
+    assert report == {
+        "checked_targets": 1,
+        "adaln_targets": 1,
+        "all_shapes_exact": True,
+    }
+
+    target["diffusion_model.blocks.0.adaln_proj.linear.weight"] = torch.empty(8, 1)
+    with pytest.raises(ValueError, match="curve-basis/pruned"):
+        vdn._validate_adapter_target_shapes(converted, key_map, target)
 
 
 def test_small_bidirectional_branch_runs_finite_and_keeps_anchor_rows_zero():
@@ -228,7 +295,7 @@ def test_execution_plan_owns_exact_stage_nfe_and_dual_clock(monkeypatch):
     assert report["scheduler"] == "native_flow"
 
 
-def test_vdn_node_schemas_are_append_only_experimental_contracts():
+def test_vdn_node_schemas_are_append_only_advanced_contracts():
     classes = nodes_vdn.VDN_H3_ADVANCED_NODE_CLASSES
     schemas = [node.define_schema() for node in classes]
     assert [schema.node_id for schema in schemas] == [
@@ -236,7 +303,7 @@ def test_vdn_node_schemas_are_append_only_experimental_contracts():
         "MiniMaxH3VDNModelComposerT8Advanced",
         "MiniMaxH3VDNExecutionPlanT8Advanced",
     ]
-    assert all(schema.is_experimental for schema in schemas)
+    assert all(not schema.is_experimental for schema in schemas)
     assert all(schema.category == nodes_vdn.CATEGORY for schema in schemas)
     composer = {item.id: item for item in schemas[1].inputs}
     assert composer["stage"].default == "stage_dmd_8nfe"
@@ -280,7 +347,7 @@ def test_openvdn_frontend_workflow_is_pinned_wired_and_reproducible():
     execution = by_type["MiniMaxH3VDNExecutionPlanT8Advanced"]
     conditioning = by_type["MiniMaxH3AudioConditioningT8"]
     assert by_type["UNETLoader"]["widgets_values"] == [
-        "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "minimax_h3_fl2va_int8_convrot.safetensors",
         "default",
     ]
     assert composer["widgets_values"] == [
@@ -301,6 +368,7 @@ def test_openvdn_frontend_workflow_is_pinned_wired_and_reproducible():
         "不要再接 EMA_B",
         "v1 只允许普通 T2VA",
         "allow_structural_base",
+        "adaln_t_table",
         "50 NFE",
         "512MiB",
     ):

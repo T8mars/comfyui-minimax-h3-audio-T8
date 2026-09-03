@@ -48,11 +48,15 @@ WEIGHT_TERRITORY_NOTICE = (
     "Republic of Korea, and United States of America"
 )
 
-SCHEMA = "t8.minimax_h3.openvdn.v1"
-ATTACHMENT_KEY = "t8_minimax_h3_openvdn_contract_v1"
+SCHEMA = "t8.minimax_h3.openvdn.v2"
+ATTACHMENT_KEY = "t8_minimax_h3_openvdn_contract_v2"
 ADDITIONAL_MODEL_KEY = "t8_minimax_h3_openvdn_branch_v1"
-LAYOUT_KEY = "t8_minimax_h3_openvdn_layout_v1"
-WRAPPER_KEY = "t8_minimax_h3_openvdn_layout_wrapper_v1"
+LAYOUT_KEY = "t8_minimax_h3_openvdn_layout_v2"
+WRAPPER_KEY = "t8_minimax_h3_openvdn_layout_wrapper_v2"
+
+CONDITION_SEGMENT_KINDS = frozenset(
+    {"cond", "cond_audio", "ref_img", "ref_audio"}
+)
 
 EXPECTED_ASSETS = {
     "linear_branch/model.safetensors": {
@@ -268,6 +272,16 @@ def _model_structure(model) -> tuple[dict[str, Any], list[str]]:
         "video_latent_channels": int(getattr(diffusion, "latents_dim", 0)),
         "audio_latent_channels": int(getattr(diffusion, "audio_latents_dim", 0)),
         "patch_size": list(getattr(diffusion, "patch_size", ())),
+        "adaln_curve_basis": bool(getattr(diffusion, "use_adaln_curves", False)),
+        "adaln_input_dim": int(
+            getattr(
+                getattr(getattr(blocks[0], "adaln_proj", None), "linear", None),
+                "in_features",
+                0,
+            )
+        )
+        if blocks
+        else 0,
     }
     expected = {
         "class": "MiniMaxH3Model",
@@ -296,6 +310,16 @@ def audit_vdn_runtime(
     assets, errors = _asset_report(root, stage, bool(verify_hashes))
     structure, structure_errors = _model_structure(model)
     errors.extend(structure_errors)
+    if stage == "stage_dmd_8nfe" and (
+        structure.get("adaln_curve_basis")
+        or structure.get("adaln_input_dim") != 2688
+    ):
+        errors.append(
+            "OpenVDN DMD turbo owns 51 full-width AdaLN LoRA targets and requires "
+            "a native H3 base with adaln_input_dim=2688; compressed adaln_t_table "
+            "curve-basis/pruned checkpoints are incompatible and would silently skip "
+            "those patches"
+        )
     conflicts = _attention_conflicts(model)
     errors.extend(f"composition conflict: {item}" for item in conflicts)
 
@@ -329,7 +353,8 @@ def audit_vdn_runtime(
         else:
             errors.append(
                 message
-                + "; enable allow_structural_base only for isolated EXP validation"
+                + "; enable allow_structural_base only after accepting the reported "
+                "provenance boundary"
             )
 
     license_paths = {
@@ -374,7 +399,17 @@ def audit_vdn_runtime(
             "resolved_backend": backend,
             "global_dependency_upgrade": False,
         },
-        "scope": "plain_t2va_only",
+        "scope": "all_native_h3_packed_layouts",
+        "supported_tasks": [
+            "T2VA",
+            "I2VA",
+            "FL2VA",
+            "L2VA",
+            "Ref2VA",
+            "Hybrid",
+        ],
+        "upstream_declared_scope": "T2VA",
+        "t8_extension_validation": "real multimodal validation required per route",
         "license": {
             "source": SOURCE_LICENSE,
             "weights": WEIGHT_LICENSE,
@@ -401,6 +436,7 @@ class VDNSequenceLayout:
     frame_width: int
     text_start: int
     text_len: int
+    condition_kinds: tuple[str, ...] = ()
 
     @property
     def video_end(self) -> int:
@@ -414,9 +450,16 @@ class VDNSequenceLayout:
 def layout_from_packed(layout) -> VDNSequenceLayout:
     segments = list(getattr(layout, "segments", ()))
     kinds = [str(segment[2]) for segment in segments]
-    if kinds != ["text", "audio", "video"]:
+    middle_kinds = kinds[1:-2]
+    if (
+        len(kinds) < 3
+        or kinds[0] != "text"
+        or kinds[-2:] != ["audio", "video"]
+        or any(kind not in CONDITION_SEGMENT_KINDS for kind in middle_kinds)
+    ):
         raise RuntimeError(
-            "OpenVDN v1 supports plain T2VA PackedLayout only; received "
+            "OpenVDN T8 requires native H3 [text | optional cond/ref rows | "
+            "audio | video] PackedLayout; received "
             + ",".join(kinds)
         )
     signature = tuple(getattr(layout, "signature", ()))
@@ -426,17 +469,22 @@ def layout_from_packed(layout) -> VDNSequenceLayout:
         )
     text_len, latent_t, latent_h, latent_w, _audio_t = map(int, signature)
     text_start, text_end, _ = segments[0]
+    for index, (start, stop, _kind) in enumerate(segments):
+        if stop <= start:
+            raise RuntimeError("OpenVDN PackedLayout contains an empty segment")
+        if index and start != segments[index - 1][1]:
+            raise RuntimeError("OpenVDN PackedLayout segments are not contiguous")
     video_start, video_end, _ = segments[-1]
     frame_height, frame_width = latent_h // 2, latent_w // 2
     tokens_per_frame = frame_height * frame_width
     if text_start != 0 or text_end - text_start != text_len:
         raise RuntimeError(
-            "OpenVDN T2VA text rows are not the expected contiguous prefix"
+            "OpenVDN H3 text rows are not the expected contiguous prefix"
         )
     if video_end - video_start != latent_t * tokens_per_frame:
-        raise RuntimeError("OpenVDN T2VA video rows do not match PackedLayout geometry")
+        raise RuntimeError("OpenVDN H3 video rows do not match PackedLayout geometry")
     if int(getattr(layout, "seq_len", -1)) != video_end:
-        raise RuntimeError("OpenVDN T2VA target video must be the final packed segment")
+        raise RuntimeError("OpenVDN H3 target video must be the final packed segment")
     return VDNSequenceLayout(
         seq_len=video_end,
         video_start=video_start,
@@ -446,6 +494,7 @@ def layout_from_packed(layout) -> VDNSequenceLayout:
         frame_width=frame_width,
         text_start=text_start,
         text_len=text_len,
+        condition_kinds=tuple(middle_kinds),
     )
 
 
@@ -1007,10 +1056,69 @@ def _load_adapter_patches(model, path: Path, adapter_name: str):
     raw = comfy.utils.load_torch_file(str(path), safe_load=True)
     normalized = _normalize_adapter_state(raw, adapter_name)
     converted, conversion = convert_fastvideo_h3_adapter(normalized)
-    converted = comfy.lora_convert.convert_lora(converted)
     key_map, _aliases = build_minimax_h3_lora_key_map(model.model)
+    shape_report = _validate_adapter_target_shapes(
+        converted, key_map, model.model.state_dict()
+    )
+    converted = comfy.lora_convert.convert_lora(converted)
     patches = comfy.lora.load_lora(converted, key_map, log_missing=False)
-    return raw, converted, patches, conversion
+    return raw, converted, patches, conversion, shape_report
+
+
+def _validate_adapter_target_shapes(
+    converted: dict[str, torch.Tensor],
+    key_map: dict[str, str],
+    target_state: dict[str, torch.Tensor],
+) -> dict[str, Any]:
+    """Fail before sampling when a converted LoRA cannot fit the selected base.
+
+    Comfy registers a patch by key even when its dense delta cannot be reshaped onto
+    that parameter.  Curve-basis MiniMax H3 checkpoints expose 8-column AdaLN
+    weights, while OpenVDN's DMD turbo adapter was trained against the original
+    2688-column time embedding.  Without this check Comfy logs one error per AdaLN
+    target per denoising step and continues with those 51 patches omitted.
+    """
+
+    checked: list[dict[str, Any]] = []
+    for a_key in sorted(converted):
+        suffix = ".lora_A.weight"
+        if not a_key.endswith(suffix):
+            continue
+        module = a_key[: -len(suffix)]
+        b_key = f"{module}.lora_B.weight"
+        if b_key not in converted:
+            raise ValueError(f"OpenVDN converted LoRA has no B tensor: {a_key}")
+        target_key = key_map.get(module)
+        if target_key is None or target_key not in target_state:
+            raise ValueError(f"OpenVDN converted LoRA target is unavailable: {module}")
+        a = converted[a_key]
+        b = converted[b_key]
+        if a.ndim != 2 or b.ndim != 2 or int(b.shape[1]) != int(a.shape[0]):
+            raise ValueError(
+                f"OpenVDN converted LoRA factors are invalid for {module}: "
+                f"A={tuple(a.shape)}, B={tuple(b.shape)}"
+            )
+        target_shape = tuple(int(value) for value in target_state[target_key].shape)
+        delta_shape = (int(b.shape[0]), int(a.shape[1]))
+        if len(target_shape) != 2 or delta_shape != target_shape:
+            raise ValueError(
+                f"OpenVDN LoRA shape mismatch for {target_key}: "
+                f"delta={delta_shape}, selected base={target_shape}. "
+                "DMD requires a full-width 2688-column H3 AdaLN base; do not use "
+                "an adaln_t_table curve-basis/pruned checkpoint."
+            )
+        checked.append(
+            {
+                "module": module,
+                "target": target_key,
+                "shape": list(target_shape),
+            }
+        )
+    return {
+        "checked_targets": len(checked),
+        "adaln_targets": sum("adaln_proj.linear" in item["module"] for item in checked),
+        "all_shapes_exact": True,
+    }
 
 
 def _qkv(
@@ -1094,7 +1202,7 @@ def _vdn_attention(
 def _vdn_block(block, branch: VDNBlockBranch, args, original):
     layout = args["transformer_options"].get(LAYOUT_KEY)
     if not isinstance(layout, VDNSequenceLayout):
-        raise RuntimeError("OpenVDN execution has no validated plain-T2VA PackedLayout")
+        raise RuntimeError("OpenVDN execution has no validated native H3 PackedLayout")
     shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = block.adaln_proj(
         args["t_emb"]
     )
@@ -1164,7 +1272,7 @@ def compose_vdn_model(
     adapter_reports: list[dict[str, Any]] = []
     for adapter_name in STAGES[stage]["adapters"]:
         path = assets[f"{adapter_name}_adapter"]
-        raw, converted, patches, conversion = _load_adapter_patches(
+        raw, converted, patches, conversion, shape_report = _load_adapter_patches(
             patched, path, adapter_name
         )
         applied = set(patched.add_patches(patches, 1.0))
@@ -1182,6 +1290,7 @@ def compose_vdn_model(
                 "patch_targets": len(patches),
                 "applied_targets": len(applied),
                 "conversion": conversion,
+                "shape_validation": shape_report,
                 "strength": 1.0,
             }
         )
@@ -1207,7 +1316,17 @@ def compose_vdn_model(
         "video_shift": 12.0,
         "audio_shift": 3.0,
         "backend": "sdpa_grouped",
-        "task_scope": "plain_t2va_only_fail_closed",
+        "task_scope": "all_native_h3_packed_layouts",
+        "supported_tasks": [
+            "T2VA",
+            "I2VA",
+            "FL2VA",
+            "L2VA",
+            "Ref2VA",
+            "Hybrid",
+        ],
+        "upstream_declared_scope": "T2VA",
+        "multimodal_support_owner": "T8 real-validation extension",
         "hf_revision": HF_REVISION,
         "source_revision": SOURCE_REVISION,
         "base_revision": BASE_REVISION,

@@ -1,6 +1,6 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.67.0",
+  "version": "1.68.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-09-03",
@@ -14,7 +14,7 @@
     "FFmpeg available on PATH for crash-isolated AAC encoding and atomic MP4 mux in Long Video candidate save/final composition, plus strict pre-publication decode for opt-in Skin Finish file outputs"
   ],
   "optional_runtime_dependencies": [
-    "OpenVDN/vdn-minimax-h3 revision 18be6bcc4ee72585eee322ba28b5ccac2cf85ef0 branch and adapter weights installed under models/diffusion_models/OpenVDN/vdn-minimax-h3 for the opt-in strict-T2VA hybrid-attention route; weights use the MiniMax H3 Community License with an Applicable Territory excluding the EU, UK, Republic of Korea and USA; no runtime download or weight redistribution",
+    "OpenVDN/vdn-minimax-h3 revision 18be6bcc4ee72585eee322ba28b5ccac2cf85ef0 branch and adapters plus a full non-pruned 2688-column AdaLN MiniMax H3 base for the formal T2VA/I2VA/L2VA/FL2VA/reference workflows; an install-ready gated model bundle is maintained at https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy, and the node never downloads weights at runtime; MiniMax H3 license territory restrictions apply",
     "Triton from the active Torch/CUDA-compatible ComfyUI runtime for the opt-in SLA Precision V2 direct sparse kernel; pinned MIT source is vendored and no package is installed or downloaded at runtime",
     "spas-sage-attn with a Torch/CUDA/GPU-compatible wheel for the opt-in FlashVSR v1.1 post-processing nodes; the package is imported only when FlashVSR executes and no compiled wheel is bundled",
     "spas-sage-attn 0.1.0 with a Torch/CUDA-compatible wheel for the opt-in LightX2V SLA Advanced EXP node; stable, dense-control and disabled workflows do not import its CUDA kernel",

@@ -1,8 +1,8 @@
 {
-  "id": "94462fd1-0d4e-4b94-a5c7-0cb44db12de8",
+  "id": "8823999d-9583-48bc-8110-902e8e14ed95",
   "revision": 0,
-  "last_node_id": 13,
-  "last_link_id": 18,
+  "last_node_id": 16,
+  "last_link_id": 21,
   "nodes": [
     {
       "id": 1,
@@ -48,7 +48,7 @@
         166
       ],
       "flags": {},
-      "order": 4,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -192,7 +192,7 @@
         520
       ],
       "flags": {},
-      "order": 5,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -232,6 +232,18 @@
           "name": "last_frame",
           "type": "IMAGE",
           "link": null,
+          "shape": 7
+        },
+        {
+          "name": "ref_images.ref_image_0",
+          "type": "IMAGE",
+          "link": 20,
+          "shape": 7
+        },
+        {
+          "name": "ref_images.ref_image_1",
+          "type": "IMAGE",
+          "link": 21,
           "shape": 7
         }
       ],
@@ -276,11 +288,11 @@
         "Node name for S&R": "MiniMaxH3AudioConditioningT8"
       },
       "widgets_values": [
-        "One continuous locked-off cinematic medium close-up of one adult East Asian woman facing the camera in a quiet, softly lit concert room. She remains the only visible and audible person. She says exactly once, clearly and naturally in Mandarin Chinese: <d>[Chinese] 你在哪里</d>. Her mouth movement precisely matches this one short sentence, then her lips relax. Clean classical chamber music plays continuously underneath: warm solo cello and soft acoustic piano performing a slow adagio, with the voice clear in the foreground and music at a lower level. Stable face, eyes and anatomy, realistic skin, one continuous shot. No additional words, repeated speech, singing, subtitles, cuts, camera movement, hiss, static, crackle, clipping, distortion, duplicate person or reflection.",
-        960,
-        512,
-        73,
-        "T2VA",
+        "Use <Picture 1> and <Picture 2> as two separate identity references. Show both adult women together in one stable cinematic two-shot inside a quiet modern gallery: the curly dark-haired woman on the left and the blonde woman with black glasses on the right. Preserve each face, hair and eyewear without merging identities. They glance toward one another naturally. Clean room ambience only; no speech, music, cuts, extra people, face fusion, identity swap, blur, hiss, static or distortion.",
+        736,
+        416,
+        39,
+        "Ref2VA",
         "native",
         1.0,
         false,
@@ -289,7 +301,7 @@
         "match",
         "official_2_to_15s"
       ],
-      "title": "3. Plain T2VA only · 960x512 · 73 frames · speech + classical music"
+      "title": "3. OpenVDN Ref2VA · 736x416 · 39 frames"
     },
     {
       "id": 7,
@@ -304,7 +316,7 @@
         142
       ],
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -364,7 +376,7 @@
         70
       ],
       "flags": {},
-      "order": 7,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -404,7 +416,7 @@
         82
       ],
       "flags": {},
-      "order": 8,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -436,7 +448,7 @@
         170
       ],
       "flags": {},
-      "order": 9,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -496,7 +508,7 @@
         120
       ],
       "flags": {},
-      "order": 10,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -548,17 +560,17 @@
     },
     {
       "id": 12,
-      "type": "VHS_VideoCombine",
+      "type": "CreateVideo",
       "pos": [
-        2280,
-        0
+        2160,
+        420
       ],
       "size": [
-        430,
-        500
+        380,
+        264
       ],
       "flags": {},
-      "order": 11,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
@@ -571,67 +583,179 @@
           "type": "AUDIO",
           "link": 18,
           "shape": 7
-        },
-        {
-          "name": "meta_batch",
-          "type": "VHS_BatchManager",
-          "link": null,
-          "shape": 7
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": null,
-          "shape": 7
         }
       ],
       "outputs": [
         {
-          "name": "Filenames",
-          "type": "VHS_FILENAMES",
-          "links": null
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            19
+          ]
         }
       ],
       "properties": {
-        "Node name for S&R": "VHS_VideoCombine"
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
       },
-      "widgets_values": {
-        "frame_rate": 24,
-        "loop_count": 0,
-        "filename_prefix": "MiniMaxH3/OpenVDN_DMD8_T2VA/openvdn_dmd8_0p5mp_73f",
-        "format": "video/h264-mp4",
-        "pix_fmt": "yuv420p",
-        "crf": 19,
-        "save_metadata": true,
-        "trim_to_audio": false,
-        "pingpong": false,
-        "save_output": true
-      },
-      "title": "Save OpenVDN DMD8 T2VA candidate"
+      "widgets_values": [
+        24.0,
+        8,
+        "sRGB"
+      ],
+      "title": "Create exact 24fps OpenVDN audio/video"
     },
     {
       "id": 13,
       "type": "MarkdownNote",
-      "title": "OpenVDN MiniMax H3 v1 使用边界",
+      "title": "OpenVDN MiniMax H3 multimodal support boundary",
       "pos": [
-        820,
-        -620
+        360,
+        1440
       ],
       "size": [
         650,
         340
       ],
       "flags": {},
-      "order": 12,
+      "order": 15,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {
         "Node name for S&R": "MarkdownNote"
       },
-      "widgets_values": "## OpenVDN MiniMax H3 · 独立 Advanced EXP 路线\n\n权重固定到 `OpenVDN/vdn-minimax-h3` revision `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`，放在 `models/diffusion_models/OpenVDN/vdn-minimax-h3/`。默认 DMD 路线内部已经组合 default + turbo adapter，**不要再接 EMA_B、Turbo、SLA、VSA、Sol-Attn、BlockCache 或其他 MODEL/Attention 补丁**。\n\nv1 只允许普通 T2VA；任何首尾帧、图片、视频、音频参考或混合参考都会 fail closed。DMD必须使用保留2688维AdaLN输入的完整 INT8/ConvRot H3 底模；不能使用带 `adaln_t_table` 的curve-basis/pruned文件，否则turbo的51个AdaLN LoRA target无法生效。Composer 明确开启 `allow_structural_base`，报告不会把它冒充上游精确 BF16 base。若切换 Stage B，只改 Composer 的 stage 为 `stage_b_50nfe`；Execution Plan 会自动改为 50 NFE，不能手工套用 8 步。\n\n权重遵循 MiniMax H3 Community License，其Applicable Territory排除欧盟、英国、韩国和美国；下载或运行前必须自行阅读模型目录中的 `NOTICE` 与完整许可。\n\n本机 960×512×73、DMD 8 NFE 已真实生成并通过 50 层分支、800个分支张量、104+259个 adapter target、音画解码及 512MiB 显存余量机械门。画质、声音和口型仍要看实际成片，不能从运行报告直接推断。",
+      "widgets_values": [
+        "## OpenVDN H3 · formal T8 multimodal route\n\nThis workflow uses the pinned OpenVDN branch/adapters with native H3 PackedLayout conditioning. T8 has real-validated T2VA, first frame, last frame, first+last, single/multiple reference images, reference video with matching audio, standalone reference audio, and first-frame+audio Hybrid. Upstream OpenVDN itself declares T2VA; the other modes are T8-validated extensions.\n\nDo not stack EMA_B/Turbo LoRA, SLA, VSA, Sol-Attn, BlockCache or another MODEL/attention patch. DMD requires the full-width 2688-column AdaLN INT8/ConvRot base; do not use an adaln_t_table curve-basis/pruned checkpoint because its 8-column AdaLN cannot accept the published turbo adapter's 51 AdaLN LoRA targets. The supplied base is not claimed byte-identical to the upstream BF16 base. OpenVDN weights use the MiniMax H3 Community License and its territory restrictions must be reviewed before use.\n\nThe 16GB validation profiles run close to the VRAM limit. Close other GPU applications or reduce canvas size if necessary."
+      ],
       "color": "#3f3a1f",
       "bgcolor": "#242112"
+    },
+    {
+      "id": 14,
+      "type": "SaveVideo",
+      "title": "Save OpenVDN MULTI_REF_IMAGES result",
+      "pos": [
+        2590,
+        420
+      ],
+      "size": [
+        380,
+        238
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 19
+        },
+        {
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/OpenVDN/multi_ref_images"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "LoadImage",
+      "title": "Replace with identity reference 1",
+      "pos": [
+        -120,
+        730
+      ],
+      "size": [
+        390,
+        310
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_reference_image_1.png",
+        "image"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "LoadImage",
+      "title": "Replace with identity reference 2",
+      "pos": [
+        -120,
+        1060
+      ],
+      "size": [
+        390,
+        310
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_reference_image_2.png",
+        "image"
+      ]
     }
   ],
   "links": [
@@ -778,6 +902,30 @@
       12,
       1,
       "AUDIO"
+    ],
+    [
+      19,
+      12,
+      0,
+      14,
+      0,
+      "VIDEO"
+    ],
+    [
+      20,
+      15,
+      0,
+      6,
+      7,
+      "IMAGE"
+    ],
+    [
+      21,
+      16,
+      0,
+      6,
+      8,
+      "IMAGE"
     ]
   ],
   "groups": [
@@ -831,7 +979,7 @@
       ]
     },
     "ue_links": [],
-    "workflow_name": "MiniMax H3 OpenVDN DMD8 T2VA 0.5MP (Advanced EXP)"
+    "workflow_name": "MiniMax H3 OpenVDN DMD8 multi_ref_images (Advanced)"
   },
   "version": 0.4
 }

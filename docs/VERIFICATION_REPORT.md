@@ -10,7 +10,7 @@ Ref2VA still-image status, also read the project-root `README.md` and
 The implementation is pinned to Hugging Face revision
 `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`, source revision
 `b8cb28fbfca0266d1c7742a9f25ab8b58191de97`, and declared H3 base revision
-`939557dc319dd91227e30195a763f272ba7f8765`. It appends three Advanced EXP nodes at positions
+`939557dc319dd91227e30195a763f272ba7f8765`. It appends three formal Advanced nodes at positions
 281-283 and leaves all prior node IDs, schemas, defaults, workflows, and stable sampling code unchanged.
 The source algorithm is Apache-2.0; weights remain separately installed under the MiniMax H3 Community
 License and are not redistributed by this repository. Its Applicable Territory excludes the European
@@ -26,14 +26,22 @@ This backend is the supported Windows/Ada path and does not claim the performanc
 H200/B200 measurements.
 
 The local asset audit validates an 800-tensor 4,279,428,112-byte branch, a 416-tensor default adapter,
-and a 726-tensor turbo adapter against pinned SHA-256 values. Real Comfy composition on the local
-INT8/ConvRot H3 base loaded all 800 branch tensors, applied all 104 default and 259 turbo patch targets,
-installed 50 block replacements, and registered the branch through Comfy's additional-model lifecycle.
-The current base is structurally compatible but lacks proof of exact upstream BF16 revision identity;
-the workflow therefore sets `allow_structural_base=true` explicitly and every report retains
-`base_provenance_exact=false`.
+and a 726-tensor turbo adapter against pinned SHA-256 values. A post-run audit found that the originally
+shipped pruned INT8/ConvRot base was not valid for DMD turbo: its `adaln_t_table` reduces each AdaLN input
+to 8 columns, whereas 51 published turbo LoRA targets require the full 2688-column input. Comfy registered
+259 target names but then emitted 51 `ERROR lora` shape failures on every sampler step. The old receipt was
+therefore insufficient and those renders are retained only as conditioning-layout and media-path probes.
 
-The representative DMD run is
+Formal workflows now pin the full, non-pruned local `minimax_h3_fl2va_int8_convrot.safetensors`. The runtime
+audit rejects curve-basis/pruned bases for DMD and validates every converted A/B factor against its selected
+target before sampling. Corrected CPU composition at
+`artifacts/openvdn-h3-runtime-audit-20260903/dmd_fullwidth_report.json` loads all 800 branch tensors,
+shape-validates and applies all 104 default plus 259 turbo targets including all 51 AdaLN targets, installs
+50 block replacements, and registers the branch through Comfy's additional-model lifecycle. The base remains
+only structurally compatible because exact upstream BF16 revision identity is unproven; workflows therefore
+set `allow_structural_base=true` and reports retain `base_provenance_exact=false`.
+
+The original v1 representative DMD run is
 `artifacts/openvdn-h3-real-validation-20260903/20260903-142055/validation_report.json`: 960x512,
 73 frames at 24 fps, seed 2609032101, exactly 8 NFE, Euler/native_flow, and video/audio shifts 12/3.
 It completed in 170.359 seconds with 612 MiB minimum free VRAM. The final SHA-256 is
@@ -41,20 +49,38 @@ It completed in 170.359 seconds with 612 MiB minimum free VRAM. The final SHA-25
 audio, and combined transport strictly decode. One immediate decoder invocation reported a transient
 CABAC error even though exact decoded bytes were complete; repeated strict single-thread reads passed,
 and the validator now records bounded retry history instead of misclassifying that post-write race.
-PCM is finite, peak absolute amplitude is 0.20078665, and no sample reaches the clipping threshold.
+PCM is finite, peak absolute amplitude is 0.20078665, and no sample reaches the clipping threshold. Because
+that run used the pruned base and its stderr contains 408 `ERROR lora` events (51 incompatible AdaLN targets
+across 8 steps), it no longer counts as complete OpenVDN DMD adapter validation.
 
-The contact sheet shows stable subject, background, exposure, and distinct mouth states, but this is
-not a perceptual AV or lip-sync acceptance. Status is `MECHANICAL_PASS_HUMAN_REVIEW_PENDING`. Version 1
-is fail-closed plain T2VA only; all reference/hybrid layouts and every competing MODEL/attention owner
-are rejected. Stage B's separate real composition report at
+The original T2VA contact sheet shows stable subject, background, exposure, and distinct mouth states,
+but this is not a perceptual AV or lip-sync acceptance. Version 2 now accepts all validated native H3
+`[text | optional cond/cond_audio/ref_img/ref_audio rows | audio | video]` layouts while rejecting malformed
+geometry and every competing MODEL/attention owner. OpenVDN upstream declares T2VA; the multimodal routes
+below are T8 integration extensions rather than an attributed upstream claim. Stage B's separate real
+composition report at
 `artifacts/openvdn-h3-runtime-audit-20260903/stage_b_report.json` passes pinned hashes, all 800 branch
 tensors, all 104 default-adapter targets, 50 block replacements, and the 50-NFE contract; no separate
 50-step quality/performance render has been claimed.
 
-The final source gates are 15 OpenVDN-focused tests, 194 changed-scope tests, and 2,022 full-project
-tests, plus full Ruff, 629 Python compile checks, 258 non-artifact JSON parses, Comfy Registry
-validation, four-file version consistency at 1.67.0, `git diff --check`, and exact 190/190
-source/user workflow mirror parity. The DMD asset-only hash report is
+Corrected multimodal DMD8 validation used the full 2688-column AdaLN base and ran one route at a time at
+512x288x39. It covered I2VA, last-frame L2VA, first/last-frame FL2VA, single-image Ref2VA, two-image Ref2VA,
+reference video plus its matching audio, standalone reference audio, and first-frame plus audio Hybrid. Runtime
+conditioning receipts respectively prove the intended picture/video/audio counts. All 8/8 runs loaded the
+800-tensor branch, shape-validated and applied 104 default plus 259 turbo targets including 51 AdaLN targets,
+installed 50 block replacements, completed the exact 8-NFE 12/3 contract, logged zero `ERROR lora` events,
+and passed strict native H.264/AAC video, audio, and joint decoding.
+
+Minimum free VRAM for I2VA/L2VA/FL2VA/single-image/multi-image/video+audio/audio-only/Hybrid was
+540/890/774/535/575/612/611/611 MiB respectively on the local 16 GB RTX 4060 Ti. Every corrected route clears
+the project 512 MiB gate for this exact short test, but margins remain small and do not establish universal
+16 GB stability. Formal capability support also does not imply route-independent perceptual quality. The user
+accepted the earlier I2VA output as a capability check; route-specific visual, audio, identity adherence, and
+lip-sync judgments remain separate from mechanical validation.
+
+The original v1 release gates were 15 OpenVDN-focused tests, 194 changed-scope tests, and 2,022 full-project
+tests. The v2 implementation adds layout, validator, and nine-workflow coverage; its current serial regression
+results are recorded in `features.json`. The DMD asset-only hash report is
 `artifacts/openvdn-h3-runtime-audit-20260903/dmd_asset_hash_report.json`. No commit, push, package, or
 Registry publication is implied by these local gates.
 
