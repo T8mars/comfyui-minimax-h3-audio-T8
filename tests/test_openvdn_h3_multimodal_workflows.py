@@ -41,7 +41,9 @@ def test_builder_covers_formal_openvdn_native_task_matrix():
             "default",
         ]
         note = _by_type(workflow, "MarkdownNote")[0]["widgets_values"][0]
-        assert "adaln_t_table curve-basis/pruned" in note
+        assert "curve-projected Turbo" in note
+        assert "310 applied patches" in note
+        assert "unknown curve signature fails" in note
 
 
 def test_keyframe_and_multi_image_workflows_wire_native_slots():

@@ -76,6 +76,15 @@ EXPECTED_ASSETS = {
     },
 }
 
+CURVE_TURBO_REL = "adapters/turbo_pruned_curve_fl2va/adapter_model.safetensors"
+CURVE_TURBO_EXPECTED = {
+    "bytes": 1_152_715_456,
+    "sha256": "364ae4b94659d30ec3aa6b37a139973b55b300061305bf7821502497d66438a4",
+    "tensors": 569,
+    "adaln_t_table_sha256": "ac8727cdec52137c73878d004de5bd2a0e19227e8311e29ab3b68f328310e34e",
+    "variant": "fl2va_pruned_curve_v1",
+}
+
 STAGES = {
     "stage_dmd_8nfe": {
         "directory": "stage-dmd-step-250",
@@ -176,6 +185,10 @@ def _stage_assets(root: Path, stage: str) -> dict[str, Path]:
         "linear_branch": branch,
         "default_adapter": default,
         "turbo_adapter": dmd_dir / "adapters" / "turbo" / "adapter_model.safetensors",
+        "turbo_curve_adapter": dmd_dir
+        / "adapters"
+        / "turbo_pruned_curve_fl2va"
+        / "adapter_model.safetensors",
     }
 
 
@@ -184,6 +197,85 @@ def _safetensor_manifest(path: Path) -> dict[str, Any]:
         keys = list(handle.keys())
         dtypes = sorted({str(handle.get_slice(key).get_dtype()) for key in keys})
     return {"tensor_count": len(keys), "dtypes": dtypes}
+
+
+def _tensor_raw_sha256(tensor: torch.Tensor) -> str:
+    value = tensor.detach().to(device="cpu").contiguous()
+    return hashlib.sha256(value.view(torch.uint8).numpy().tobytes()).hexdigest()
+
+
+def _curve_adapter_report(
+    root: Path,
+    curve_table_sha256: str | None,
+    verify_hashes: bool,
+) -> tuple[dict[str, Any], list[str]]:
+    path = _stage_assets(root, "stage_dmd_8nfe")["turbo_curve_adapter"]
+    expected = CURVE_TURBO_EXPECTED
+    errors: list[str] = []
+    item: dict[str, Any] = {"path": str(path), "exists": path.is_file()}
+    if curve_table_sha256 != expected["adaln_t_table_sha256"]:
+        errors.append(
+            "OpenVDN has no curve-projected Turbo adapter for selected "
+            f"adaln_t_table SHA-256 {curve_table_sha256!r}; supported curve is "
+            f"{expected['adaln_t_table_sha256']}"
+        )
+    if not path.is_file():
+        errors.append(f"missing {CURVE_TURBO_REL}: {path}")
+        return item, errors
+    item["bytes"] = path.stat().st_size
+    if item["bytes"] != expected["bytes"]:
+        errors.append(
+            f"{CURVE_TURBO_REL} size {item['bytes']} != pinned {expected['bytes']}"
+        )
+    try:
+        with safe_open(path, framework="pt", device="cpu") as handle:
+            keys = list(handle.keys())
+            metadata = dict(handle.metadata() or {})
+            item["tensor_count"] = len(keys)
+            item["dtypes"] = sorted(
+                {str(handle.get_slice(key).get_dtype()) for key in keys}
+            )
+        item["metadata"] = {
+            "adapter_owner": metadata.get("adapter_owner"),
+            "adapter_revision": metadata.get("adapter_revision"),
+            "adapter_stage": metadata.get("adapter_stage"),
+            "sampler_steps": metadata.get("sampler_steps"),
+            "compatibility_scope": metadata.get("compatibility_scope"),
+            "adaln_t_table_raw_sha256": metadata.get("adaln_t_table_raw_sha256"),
+            "application": metadata.get("application"),
+        }
+        required_metadata = {
+            "adapter_owner": HF_REPOSITORY,
+            "adapter_revision": HF_REVISION,
+            "adapter_stage": "stage-dmd-step-250",
+            "sampler_steps": "8",
+            "compatibility_scope": "exact_adaln_t_table_sha256",
+            "adaln_t_table_raw_sha256": expected["adaln_t_table_sha256"],
+            "application": "W_eff = W + lora_B @ lora_A; bias_eff = bias + diff_b",
+        }
+        for key, required in required_metadata.items():
+            if metadata.get(key) != required:
+                errors.append(
+                    f"{CURVE_TURBO_REL} metadata {key}={metadata.get(key)!r}, "
+                    f"expected {required!r}"
+                )
+    except Exception as exc:  # noqa: BLE001 - audit must report corrupt headers
+        errors.append(
+            f"{CURVE_TURBO_REL} safetensors header failed: "
+            f"{type(exc).__name__}: {exc}"
+        )
+    if item.get("tensor_count") != expected["tensors"]:
+        errors.append(
+            f"{CURVE_TURBO_REL} tensors {item.get('tensor_count')} != "
+            f"pinned {expected['tensors']}"
+        )
+    if verify_hashes:
+        item["sha256"] = file_sha256(path)
+        item["sha256_match"] = item["sha256"] == expected["sha256"]
+        if not item["sha256_match"]:
+            errors.append(f"{CURVE_TURBO_REL} SHA-256 does not match T8 projection")
+    item["variant"] = expected["variant"]
+    return item, errors
 
 
 def _asset_report(
@@ -263,6 +355,19 @@ def _model_structure(model) -> tuple[dict[str, Any], list[str]]:
         return {}, [f"MODEL does not expose diffusion_model: {exc}"]
     blocks = list(getattr(diffusion, "blocks", ()))
     first = getattr(blocks[0], "attn", None) if blocks else None
+    uses_curves = bool(getattr(diffusion, "use_adaln_curves", False))
+    curve_table = getattr(diffusion, "adaln_t_table", None)
+    curve_sha256 = None
+    if uses_curves:
+        if not isinstance(curve_table, torch.Tensor) or curve_table.is_meta:
+            errors.append("MODEL declares AdaLN curves but adaln_t_table is unavailable")
+        elif tuple(curve_table.shape) != (1025, 8) or curve_table.dtype != torch.float32:
+            errors.append(
+                "MODEL adaln_t_table must be float32 [1025, 8], found "
+                f"{curve_table.dtype} {tuple(curve_table.shape)}"
+            )
+        else:
+            curve_sha256 = _tensor_raw_sha256(curve_table)
     report = {
         "class": diffusion.__class__.__name__,
         "blocks": len(blocks),
@@ -272,7 +377,8 @@ def _model_structure(model) -> tuple[dict[str, Any], list[str]]:
         "video_latent_channels": int(getattr(diffusion, "latents_dim", 0)),
         "audio_latent_channels": int(getattr(diffusion, "audio_latents_dim", 0)),
         "patch_size": list(getattr(diffusion, "patch_size", ())),
-        "adaln_curve_basis": bool(getattr(diffusion, "use_adaln_curves", False)),
+        "adaln_curve_basis": uses_curves,
+        "adaln_curve_table_sha256": curve_sha256,
         "adaln_input_dim": int(
             getattr(
                 getattr(getattr(blocks[0], "adaln_proj", None), "linear", None),
@@ -310,16 +416,32 @@ def audit_vdn_runtime(
     assets, errors = _asset_report(root, stage, bool(verify_hashes))
     structure, structure_errors = _model_structure(model)
     errors.extend(structure_errors)
-    if stage == "stage_dmd_8nfe" and (
-        structure.get("adaln_curve_basis")
-        or structure.get("adaln_input_dim") != 2688
-    ):
-        errors.append(
-            "OpenVDN DMD turbo owns 51 full-width AdaLN LoRA targets and requires "
-            "a native H3 base with adaln_input_dim=2688; compressed adaln_t_table "
-            "curve-basis/pruned checkpoints are incompatible and would silently skip "
-            "those patches"
-        )
+    curve_basis = structure.get("adaln_curve_basis") is True
+    adaln_input_dim = structure.get("adaln_input_dim")
+    base_variant = "curve_pruned" if curve_basis else "full_width"
+    adapter_strategy = "native_full_width"
+    if stage == "stage_dmd_8nfe":
+        if curve_basis:
+            adapter_strategy = "t8_curve_projected"
+            if adaln_input_dim != 8:
+                errors.append(
+                    "OpenVDN curve-pruned compatibility requires adaln_input_dim=8, "
+                    f"found {adaln_input_dim!r}"
+                )
+            curve_report, curve_errors = _curve_adapter_report(
+                root,
+                structure.get("adaln_curve_table_sha256"),
+                bool(verify_hashes),
+            )
+            assets[CURVE_TURBO_REL] = curve_report
+            errors.extend(curve_errors)
+        elif adaln_input_dim != 2688:
+            errors.append(
+                "OpenVDN DMD full-width compatibility requires adaln_input_dim=2688, "
+                f"found {adaln_input_dim!r}"
+            )
+    elif curve_basis:
+        adapter_strategy = "default_only_native_curve"
     conflicts = _attention_conflicts(model)
     errors.extend(f"composition conflict: {item}" for item in conflicts)
 
@@ -388,6 +510,8 @@ def audit_vdn_runtime(
         "base_revision": BASE_REVISION,
         "assets": assets,
         "model": structure,
+        "base_variant": base_variant,
+        "adapter_strategy": adapter_strategy,
         "base_provenance_exact": exact_base,
         "allow_structural_base": bool(allow_structural_base),
         "runtime": {
@@ -1070,16 +1194,16 @@ def _validate_adapter_target_shapes(
     key_map: dict[str, str],
     target_state: dict[str, torch.Tensor],
 ) -> dict[str, Any]:
-    """Fail before sampling when a converted LoRA cannot fit the selected base.
+    """Fail before sampling when a converted adapter cannot fit the selected base.
 
     Comfy registers a patch by key even when its dense delta cannot be reshaped onto
-    that parameter.  Curve-basis MiniMax H3 checkpoints expose 8-column AdaLN
-    weights, while OpenVDN's DMD turbo adapter was trained against the original
-    2688-column time embedding.  Without this check Comfy logs one error per AdaLN
-    target per denoising step and continues with those 51 patches omitted.
+    that parameter.  Full-width OpenVDN uses 2688-column AdaLN LoRA factors.  The
+    T8 curve adapter instead carries 8-column factors plus ``diff_b`` bias residuals;
+    both the weight and bias targets must match before sampling.
     """
 
     checked: list[dict[str, Any]] = []
+    recognized: set[str] = set()
     for a_key in sorted(converted):
         suffix = ".lora_A.weight"
         if not a_key.endswith(suffix):
@@ -1114,9 +1238,43 @@ def _validate_adapter_target_shapes(
                 "shape": list(target_shape),
             }
         )
+        recognized.update((a_key, b_key))
+    checked_biases: list[dict[str, Any]] = []
+    for diff_key in sorted(converted):
+        suffix = ".diff_b"
+        if not diff_key.endswith(suffix):
+            continue
+        module = diff_key[: -len(suffix)]
+        target_key = key_map.get(module)
+        if target_key is None or not target_key.endswith(".weight"):
+            raise ValueError(
+                f"OpenVDN converted bias target is unavailable: {module}"
+            )
+        bias_key = target_key[: -len(".weight")] + ".bias"
+        if bias_key not in target_state:
+            raise ValueError(f"OpenVDN converted bias target is unavailable: {bias_key}")
+        diff = converted[diff_key]
+        target_shape = tuple(int(value) for value in target_state[bias_key].shape)
+        if diff.ndim != 1 or tuple(int(value) for value in diff.shape) != target_shape:
+            raise ValueError(
+                f"OpenVDN bias residual shape mismatch for {bias_key}: "
+                f"diff_b={tuple(diff.shape)}, selected base={target_shape}"
+            )
+        checked_biases.append(
+            {"module": module, "target": bias_key, "shape": list(target_shape)}
+        )
+        recognized.add(diff_key)
+    unexpected = sorted(set(converted) - recognized)
+    if unexpected:
+        raise ValueError(
+            "OpenVDN converted adapter contains unsupported tensors: "
+            + ", ".join(unexpected[:8])
+        )
     return {
         "checked_targets": len(checked),
         "adaln_targets": sum("adaln_proj.linear" in item["module"] for item in checked),
+        "bias_diff_targets": len(checked_biases),
+        "total_patch_targets": len(checked) + len(checked_biases),
         "all_shapes_exact": True,
     }
 
@@ -1271,7 +1429,15 @@ def compose_vdn_model(
     patched = model.clone()
     adapter_reports: list[dict[str, Any]] = []
     for adapter_name in STAGES[stage]["adapters"]:
-        path = assets[f"{adapter_name}_adapter"]
+        curve_projected = (
+            adapter_name == "turbo"
+            and audit.get("adapter_strategy") == "t8_curve_projected"
+        )
+        path = (
+            assets["turbo_curve_adapter"]
+            if curve_projected
+            else assets[f"{adapter_name}_adapter"]
+        )
         raw, converted, patches, conversion, shape_report = _load_adapter_patches(
             patched, path, adapter_name
         )
@@ -1284,10 +1450,13 @@ def compose_vdn_model(
         adapter_reports.append(
             {
                 "name": adapter_name,
+                "variant": "curve_projected" if curve_projected else "native_full_width",
                 "path": str(path),
                 "input_tensors": len(raw),
                 "converted_tensors": len(converted),
                 "patch_targets": len(patches),
+                "logical_adapter_targets": shape_report["checked_targets"],
+                "bias_diff_targets": shape_report["bias_diff_targets"],
                 "applied_targets": len(applied),
                 "conversion": conversion,
                 "shape_validation": shape_report,
@@ -1332,6 +1501,8 @@ def compose_vdn_model(
         "base_revision": BASE_REVISION,
         "base_provenance_exact": audit["base_provenance_exact"],
         "allow_structural_base": bool(allow_structural_base),
+        "base_variant": audit["base_variant"],
+        "adapter_strategy": audit["adapter_strategy"],
         "branch": branch_report,
         "adapters": adapter_reports,
         "main_block_count": len(blocks),

@@ -4,7 +4,7 @@
 
 这是一个面向 MiniMax H3 的 ComfyUI 节点包。它不只做文生视频，还把图生视频、首尾帧、参考图、参考音频、长视频、口型、加速和成片修复整理成可以直接使用的工作流。
 
-当前版本：**1.68.0** · 284 个节点 · GPL-3.0-or-later
+当前版本：**1.69.0** · 284 个节点 · GPL-3.0-or-later
 
 ## 先从哪里开始
 
@@ -110,30 +110,36 @@ hf download t8star/Vdn-Minimax-H3-Comfy --local-dir ComfyUI/models
 
 OpenVDN 上游公开说明的是 T2VA；其他模式是本项目利用 ComfyUI 原生 H3 条件布局实现并真实跑通的扩展。
 
-### 不要使用 pruned 底模
+### 完整底模和 pruned 底模都可以用
 
-OpenVDN DMD 工作流必须使用：
+正式工作流默认使用：
 
 ```text
 models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors
 ```
 
-这是完整、非 pruned、AdaLN 输入宽度为 2688 的底模。不要换成带 `pruned` 或 `adaln_t_table` 的模型。pruned 模型把 AdaLN 压成 8 列，而 OpenVDN turbo adapter 有 51 个 2688 列 AdaLN LoRA，维度不匹配。
+这是完整、非 pruned、AdaLN 输入宽度为 2688 的底模。安装新版模型包后，也可以在同一工作流里改用：
 
-1.68.0 会在采样前逐个检查 LoRA 形状，发现错误就停止，不再让 ComfyUI 跳过补丁后继续生成。
+```text
+models/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+```
+
+Composer 会读取底模里的 `adaln_t_table`，按内容 SHA 自动选择配套的 curve-projected Turbo adapter；用户不需要再接一个 LoRA 节点。该适配器保留 208 个原样可用的目标，并把 51 个 AdaLN 目标转换成 8 维 LoRA 加 51 个偏置残差，共实际应用 310 个补丁。完整底模仍走原生 2688 维 adapter。
+
+兼容是按曲线表内容识别，不是只看文件名。目前支持模型包中的 FL2VA pruned INT8/ConvRot（同曲线表的 FL2VA pruned FP8 也通过静态签名门）；未知 pruned/curve-basis 模型仍会在采样前给出明确错误，避免套错适配器后静默生成。
 
 ### 已完成的验证
 
-使用上述完整底模，项目在同一台 RTX 4060 Ti 16GB 上严格串行测试了 I2VA、L2VA、FL2VA、单图、双图、视频加音频、独立音频和首帧加音频共八条路线。每条都完成：
+使用完整底模，项目在同一台 RTX 4060 Ti 16GB 上严格串行测试了 I2VA、L2VA、FL2VA、单图、双图、视频加音频、独立音频和首帧加音频共八条路线。随后又用 pruned INT8 底模在 320×192×39 下串行复跑了 T2VA 和同样八条多模态路线。每条 pruned 测试都完成：
 
 - 800 个 OpenVDN 分支张量
 - 104 个 default adapter 目标
-- 259 个 turbo adapter 目标，其中包括 51 个 AdaLN 目标
+- 259 个逻辑 turbo adapter 目标，其中 51 个 AdaLN 目标带独立偏置残差，共 310 个实际补丁
 - 8 个 Euler/native-flow 步骤，video/audio shift 为 12/3
 - 原生 H.264 视频、AAC 音频和联合严格解码
 - 运行日志中 `ERROR lora = 0`
 
-这些结果证明工作流和模型能正确组合，不等于所有提示词、参考图、声音或显卡都已经通过画质验收。八条短测试最低剩余显存为 535–890MiB，16GB 显卡仍应一次只跑一个任务。
+这些结果证明工作流和两类底模都能正确组合，不等于所有提示词、参考图、声音或显卡都已经通过画质验收。完整底模八条短测试最低剩余显存为 535–890MiB；pruned 九条短测试中最低只有 290MiB，仅 T2VA 和 I2VA 超过本项目的 512MiB 余量门。16GB 显卡仍应一次只跑一个任务，并根据实际占用降低分辨率或帧数。
 
 ## 常见问题
 
@@ -151,7 +157,7 @@ models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors
 
 ### OpenVDN 提示 AdaLN 不兼容
 
-你选中了 pruned/curve-basis 底模。换回模型包中的完整 `minimax_h3_fl2va_int8_convrot.safetensors`。
+先确认新版模型包中存在 `stage-dmd-step-250/adapters/turbo_pruned_curve_fl2va/adapter_model.safetensors`。如果文件存在仍报错，说明所选 pruned 底模的曲线表与已支持版本不同；换用模型包中的 FL2VA pruned INT8，或暂时换回完整 `minimax_h3_fl2va_int8_convrot.safetensors`。不要靠改文件名绕过签名检查。
 
 ### 能不能叠加 SLA、VSA、Sol-Attn 或 BlockCache
 

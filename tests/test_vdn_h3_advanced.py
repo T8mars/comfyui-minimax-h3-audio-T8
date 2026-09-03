@@ -181,7 +181,7 @@ def test_named_openvdn_adapter_normalizes_and_converts_root_norm_and_fused_qkv()
     assert "final_layer.adaln_proj.linear.lora_A.weight" in converted
 
 
-def test_openvdn_adapter_shapes_fail_closed_for_curve_basis_adaln():
+def test_openvdn_adapter_shapes_validate_full_width_and_curve_bias_residuals():
     converted = {
         "blocks.0.adaln_proj.linear.lora_A.weight": torch.randn(2, 4),
         "blocks.0.adaln_proj.linear.lora_B.weight": torch.randn(8, 2),
@@ -198,11 +198,26 @@ def test_openvdn_adapter_shapes_fail_closed_for_curve_basis_adaln():
     assert report == {
         "checked_targets": 1,
         "adaln_targets": 1,
+        "bias_diff_targets": 0,
+        "total_patch_targets": 1,
         "all_shapes_exact": True,
     }
 
     target["diffusion_model.blocks.0.adaln_proj.linear.weight"] = torch.empty(8, 1)
-    with pytest.raises(ValueError, match="curve-basis/pruned"):
+    with pytest.raises(ValueError, match="shape mismatch"):
+        vdn._validate_adapter_target_shapes(converted, key_map, target)
+
+    converted["blocks.0.adaln_proj.linear.lora_A.weight"] = torch.randn(2, 1)
+    converted["blocks.0.adaln_proj.linear.diff_b"] = torch.randn(8)
+    target["diffusion_model.blocks.0.adaln_proj.linear.bias"] = torch.empty(8)
+    report = vdn._validate_adapter_target_shapes(converted, key_map, target)
+    assert report["checked_targets"] == 1
+    assert report["adaln_targets"] == 1
+    assert report["bias_diff_targets"] == 1
+    assert report["total_patch_targets"] == 2
+
+    converted["blocks.0.adaln_proj.linear.diff_b"] = torch.randn(7)
+    with pytest.raises(ValueError, match="bias residual shape mismatch"):
         vdn._validate_adapter_target_shapes(converted, key_map, target)
 
 
@@ -323,6 +338,22 @@ def test_downloaded_dmd_headers_match_when_assets_are_present():
     assert report["adapters/default/adapter_model.safetensors"]["tensor_count"] == 416
     assert report["adapters/turbo/adapter_model.safetensors"]["tensor_count"] == 726
 
+    curve, curve_errors = vdn._curve_adapter_report(
+        root,
+        vdn.CURVE_TURBO_EXPECTED["adaln_t_table_sha256"],
+        verify_hashes=False,
+    )
+    assert curve_errors == []
+    assert curve["tensor_count"] == 569
+    assert curve["variant"] == "fl2va_pruned_curve_v1"
+
+    _curve, wrong_errors = vdn._curve_adapter_report(
+        root,
+        "0" * 64,
+        verify_hashes=False,
+    )
+    assert any("no curve-projected Turbo adapter" in item for item in wrong_errors)
+
 
 def test_openvdn_frontend_workflow_is_pinned_wired_and_reproducible():
     from tools.build_openvdn_h3_workflow import build
@@ -366,9 +397,10 @@ def test_openvdn_frontend_workflow_is_pinned_wired_and_reproducible():
     for required in (
         "18be6bcc4ee72585eee322ba28b5ccac2cf85ef0",
         "不要再接 EMA_B",
-        "v1 只允许普通 T2VA",
+        "历史v1样例只允许普通 T2VA",
         "allow_structural_base",
         "adaln_t_table",
+        "310个实际补丁",
         "50 NFE",
         "512MiB",
     ):

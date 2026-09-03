@@ -4,7 +4,7 @@
 
 MiniMax H3 Audio T8 is a ComfyUI node pack for joint video and audio generation. It includes practical workflows for text and image animation, first/last-frame control, image/video/audio references, long video, lip sync, acceleration, and final-video restoration.
 
-Current version: **1.68.0** · 284 nodes · GPL-3.0-or-later
+Current version: **1.69.0** · 284 nodes · GPL-3.0-or-later
 
 ## Where to start
 
@@ -108,30 +108,36 @@ Then load a formal OpenVDN workflow from [`examples/workflows/10-speed`](example
 
 OpenVDN upstream documents T2VA. The other modes are T8 extensions implemented and real-tested through ComfyUI's native MiniMax H3 conditioning layout.
 
-### Do not use a pruned base
+### Full and supported pruned bases both work
 
-OpenVDN DMD workflows require:
+The formal workflows default to:
 
 ```text
 models/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors
 ```
 
-This is the full, non-pruned base with a 2688-column AdaLN input. Do not substitute a model named `pruned` or containing `adaln_t_table`. A curve-basis/pruned base reduces the AdaLN input to eight columns, while 51 targets in the published OpenVDN turbo adapter require 2688 columns.
+This is the full, non-pruned base with a 2688-column AdaLN input. After installing the updated model bundle, the same workflow can also use:
 
-Version 1.68.0 validates every LoRA target before sampling and stops with a clear error. It no longer allows ComfyUI to skip incompatible patches and continue rendering.
+```text
+models/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+```
+
+The Composer hashes the base checkpoint's `adaln_t_table` and automatically selects the matching curve-projected Turbo adapter; no extra LoRA node is required. The adapter keeps 208 directly compatible targets and converts the 51 AdaLN targets into eight-column LoRA factors plus 51 bias residuals, for 310 applied patches. Full-width bases continue to use the native 2688-column adapter.
+
+Compatibility is bound to the curve-table content, not merely to a filename. The model bundle's FL2VA pruned INT8/ConvRot base is supported, and the FL2VA pruned FP8 base shares the same statically verified curve signature. An unknown pruned/curve-basis checkpoint still fails before sampling with a specific diagnostic instead of silently using the wrong adapter.
 
 ### Validation performed
 
-Using the full base above, the project ran I2VA, L2VA, FL2VA, single-image, two-image, video-plus-audio, audio-only, and first-frame-plus-audio routes one at a time on the same RTX 4060 Ti 16 GB. Every route completed:
+Using the full base above, the project ran I2VA, L2VA, FL2VA, single-image, two-image, video-plus-audio, audio-only, and first-frame-plus-audio routes one at a time on the same RTX 4060 Ti 16 GB. It then repeated T2VA and the same eight multimodal routes with the pruned INT8 base at 320x192x39. Every pruned route completed:
 
 - 800 OpenVDN branch tensors
 - 104 default-adapter targets
-- 259 turbo-adapter targets, including all 51 AdaLN targets
+- 259 logical turbo-adapter targets, with bias residuals for all 51 AdaLN targets and 310 applied patches in total
 - eight Euler/native-flow steps with video/audio shifts 12/3
 - strict H.264 video, AAC audio, and combined decoding
 - zero `ERROR lora` events in the runtime log
 
-This proves that the tested workflows and models compose correctly. It does not promise identical quality or memory use for every prompt, reference, GPU, or driver. Minimum free VRAM in the eight short tests was 535–890 MiB, so 16 GB users should still run one H3 generation at a time.
+This proves that the tested workflows compose correctly with both base types. It does not promise identical quality or memory use for every prompt, reference, GPU, or driver. The full-base matrix retained 535–890 MiB; the nine short pruned runs fell as low as 290 MiB, and only T2VA and I2VA cleared this project's 512 MiB margin. On 16 GB GPUs, run one H3 generation at a time and reduce the canvas or frame count when needed.
 
 ## Common problems
 
@@ -149,7 +155,7 @@ Check the sampler, scheduler, step count, video/audio shifts, and exact LoRA nam
 
 ### OpenVDN reports an AdaLN mismatch
 
-The selected base is pruned or curve-based. Switch to the full `minimax_h3_fl2va_int8_convrot.safetensors` included in the model bundle.
+Confirm that the updated model bundle contains `stage-dmd-step-250/adapters/turbo_pruned_curve_fl2va/adapter_model.safetensors`. If it does and the error remains, the selected pruned base has an unsupported curve signature. Use the bundle's FL2VA pruned INT8 base or fall back to the full `minimax_h3_fl2va_int8_convrot.safetensors`; do not rename files to bypass the signature check.
 
 ### Can OpenVDN be combined with SLA, VSA, Sol-Attn, or BlockCache?
 

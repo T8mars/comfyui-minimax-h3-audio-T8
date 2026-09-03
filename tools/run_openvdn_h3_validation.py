@@ -59,6 +59,9 @@ def adapter_integrity_checks(
     turbo = adapters.get("turbo", {})
     default_shapes = default.get("shape_validation", {})
     turbo_shapes = turbo.get("shape_validation", {})
+    turbo_patch_targets = turbo_shapes.get("total_patch_targets")
+    turbo_variant = turbo.get("variant", "native_full_width")
+    expected_bias_targets = 51 if turbo_variant == "curve_projected" else 0
     return {
         "default_104_shapes_exact": (
             default.get("patch_targets") == 104
@@ -67,12 +70,15 @@ def adapter_integrity_checks(
             and default_shapes.get("all_shapes_exact") is True
         ),
         "turbo_259_shapes_exact": (
-            turbo.get("patch_targets") == 259
-            and turbo.get("applied_targets") == 259
+            turbo.get("patch_targets") == turbo_patch_targets
+            and turbo.get("applied_targets") == turbo_patch_targets
             and turbo_shapes.get("checked_targets") == 259
             and turbo_shapes.get("all_shapes_exact") is True
         ),
         "turbo_51_adaln_shapes_exact": turbo_shapes.get("adaln_targets") == 51,
+        "turbo_bias_residuals_exact": (
+            turbo_shapes.get("bias_diff_targets") == expected_bias_targets
+        ),
         "runtime_lora_errors_absent": "ERROR lora" not in stderr_text,
     }
 
@@ -105,6 +111,7 @@ def stable_media_report(
 
 
 def build_prompt(args: argparse.Namespace, run_id: str) -> dict[str, Any]:
+    base_model = getattr(args, "base_model", BASE_MODEL)
     return {
         "1": {
             "class_type": "VAELoader",
@@ -124,7 +131,7 @@ def build_prompt(args: argparse.Namespace, run_id: str) -> dict[str, Any]:
         },
         "4": {
             "class_type": "UNETLoader",
-            "inputs": {"unet_name": BASE_MODEL, "weight_dtype": "default"},
+            "inputs": {"unet_name": base_model, "weight_dtype": "default"},
         },
         "5": {
             "class_type": "MiniMaxH3VDNModelComposerT8Advanced",
@@ -238,6 +245,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--width", type=int, default=320)
     parser.add_argument("--height", type=int, default=192)
     parser.add_argument("--frame-count", type=int, default=73)
+    parser.add_argument("--base-model", default=BASE_MODEL)
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--server-start-timeout", type=float, default=180.0)
     parser.add_argument("--timeout-seconds", type=float, default=2400.0)
@@ -267,7 +275,7 @@ def _asset_paths(args: argparse.Namespace) -> list[Path]:
     vdn = models / "diffusion_models" / VDN_ROOT / "stage-dmd-step-250"
     return [
         args.comfy_root / "main.py",
-        models / "diffusion_models" / BASE_MODEL,
+        models / "diffusion_models" / args.base_model,
         models / "text_encoders" / CLIP_MODEL,
         models / "vae" / VIDEO_VAE,
         models / "vae" / AUDIO_VAE,
@@ -388,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
             "audio_shift": 3.0,
             "sampler": "euler",
             "scheduler": "native_flow",
-            "base": BASE_MODEL,
+            "base": args.base_model,
             "external_ema_b_stacked": False,
         },
         "preflight": preflight,
@@ -448,10 +456,11 @@ def main(argv: list[str] | None = None) -> int:
         "configured": composition.get("status") == "configured",
         "stage": composition.get("stage") == "stage_dmd_8nfe",
         "branch_800": composition.get("branch", {}).get("tensor_count") == 800,
-        "adapter_targets": [
-            item.get("applied_targets") for item in composition.get("adapters", [])
-        ]
-        == [104, 259],
+        "adapter_targets": all(
+            item.get("applied_targets")
+            == item.get("shape_validation", {}).get("total_patch_targets")
+            for item in composition.get("adapters", [])
+        ),
         "blocks_50": composition.get("main_block_count") == 50,
         "no_external_ema_b": report["contract"]["external_ema_b_stacked"] is False,
         "execution_nfe_8": execution.get("nfe") == 8,

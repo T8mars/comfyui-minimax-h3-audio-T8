@@ -235,6 +235,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--width", type=int, default=736)
     parser.add_argument("--height", type=int, default=416)
     parser.add_argument("--frame-count", type=int, default=39)
+    parser.add_argument("--base-model", default=base.BASE_MODEL)
     parser.add_argument("--seed", type=int, default=2609032401)
     parser.add_argument("--server-start-timeout", type=float, default=180.0)
     parser.add_argument("--timeout-seconds", type=float, default=2400.0)
@@ -305,6 +306,8 @@ def main(argv: list[str] | None = None) -> int:
         str(args.height),
         "--frame-count",
         str(args.frame_count),
+        "--base-model",
+        args.base_model,
         "--seed",
         str(args.seed),
         "--server-start-timeout",

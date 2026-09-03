@@ -35,12 +35,12 @@
     },
     "model_bundle": {
       "repository": "https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy",
-      "revision": "0cf835b90a2ad63757650a3fd0de32fdf93df32f",
+      "revision": "cd12496110d197f4640209897d2bd8328474afc7",
       "access": "manual gated",
       "layout": "repository root maps directly to ComfyUI/models",
-      "uploaded_files": 26,
-      "weight_bytes": 61004005909,
-      "verification": "all seven remote LFS object sizes match the local SHA-256 manifest; README, NOTICE, MiniMax H3 Community License, upstream attribution, model manifest, branch, adapters, full non-pruned base, Qwen3-VL encoder, and both VAEs are present"
+      "uploaded_files": 30,
+      "weight_bytes": 83127100981,
+      "verification": "all nine weight entries have local size/SHA-256 verification; the remote revision exposes the added 20.97GB pruned INT8 base, 1.15GB curve adapter and portable conversion manifest at the expected ComfyUI paths. README, NOTICE, MiniMax H3 Community License, upstream attribution, branch, native adapters, full base, Qwen3-VL encoder, and both VAEs remain present"
     },
     "architecture_contract": "50 native H3 blocks; chunk-5 radius-1 window softmax; both anchors; softmax gate; bidirectional linear attention with K/V 5x5 spatial and 5-tap temporal separable convolution, text state, alpha bridge and vdn_solve; exact grouped native PyTorch SDPA backend",
     "stage_contracts": {
@@ -55,15 +55,18 @@
       "linear_branch": "4279428112 bytes; SHA-256 DEC6981C7874F5B3BC92D1A02E256B673A3B3499DC1A124714BB3B19DA602855; 800 tensors",
       "default_adapter": "334026912 bytes; SHA-256 58558FEF506F88BB41649242DE9B9B3A365DA806B51B2E96AFBBE1625222058A; 416 tensors; 104 Comfy patch targets",
       "turbo_adapter": "851452696 bytes; SHA-256 24FC93C82FE84DC45D0627F4E72C637BC387D282BA18F60ED3B7F8C81089392C; 726 tensors; 259 Comfy patch targets",
+      "turbo_pruned_curve_fl2va_adapter": "1152715456 bytes; SHA-256 364AE4B94659D30EC3AA6B37A139973B55B300061305BF7821502497D66438A4; 569 tensors; exact adaln_t_table SHA AC8727CDEC52137C73878D004DE5BD2A0E19227E8311E29AB3B68F328310E34E; 259 logical LoRA targets plus 51 bias residuals; 310 applied Comfy patches",
       "runtime_downloads": false,
       "weights_redistributed": true
     },
-    "base_boundary": "formal DMD workflows require the full non-pruned local minimax_h3_fl2va_int8_convrot.safetensors with a 2688-column AdaLN input and explicitly use allow_structural_base=true. A curve-basis/pruned base with adaln_t_table is rejected because 51 published turbo AdaLN targets require 2688 columns. Reports remain base_provenance_exact=false and do not claim exact upstream BF16-base parity",
+    "base_boundary": "formal DMD workflows default to the full non-pruned minimax_h3_fl2va_int8_convrot.safetensors and also accept the model-bundle FL2VA pruned INT8/ConvRot base. Composer hashes the in-memory float32 [1025,8] adaln_t_table and, only for the pinned AC8727... curve signature, selects the T8 affine-projected Turbo adapter with 51 bias residuals. Unknown curve signatures, malformed tables and shape mismatches fail before sampling. The FL2VA pruned FP8 file shares the same statically verified curve-table SHA but has not received a real generation matrix. Ref2VA pruned uses a different curve SHA and remains unsupported by this adapter. Reports retain base_provenance_exact=false and do not claim exact upstream BF16-base parity",
     "real_validation": {
       "runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/report.json",
       "dmd_fullwidth_runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/dmd_fullwidth_report.json",
       "stage_b_runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/stage_b_report.json",
       "dmd_asset_hash_audit": "artifacts/openvdn-h3-runtime-audit-20260903/dmd_asset_hash_report.json",
+      "pruned_curve_runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/dmd_pruned_curve_report.json; real FL2VA pruned INT8 model; 800 branch tensors, 104 default patches, 259 logical Turbo targets plus 51 bias residuals, 310/310 Turbo patches applied, 50 blocks and additional-model lifecycle passed",
+      "pruned_curve_projection": "1025-point affine least-squares projection with intercept; stored dense aggregate relative error 4.979791675952394e-05; native-four-step aggregate 8.438083730183116e-05; maximum per-module native-four-step error 0.00047864947072197804",
       "historical_pruned_render": {
         "report": "artifacts/openvdn-h3-real-validation-20260903/20260903-142055/validation_report.json",
         "status": "INVALID_AS_COMPLETE_DMD_ADAPTER_EVIDENCE_LAYOUT_AND_MEDIA_PROBE_ONLY",
@@ -83,10 +86,22 @@
         "standalone_reference_audio": "artifacts/openvdn-h3-ref-audio-fullwidth-validation-20260903/20260903-174916/validation_report.json; 512x288x39; videos=0 and audios=1; strict native H.264/AAC decode; 611MiB minimum free VRAM",
         "hybrid_first_frame_audio": "artifacts/openvdn-h3-hybrid-first-audio-fullwidth-validation-20260903/20260903-175110/validation_report.json; 512x288x39; pictures=1 and audios=1; strict native H.264/AAC decode; 611MiB minimum free VRAM"
       },
+      "pruned_curve_multimodal_matrix": {
+        "scope": "FL2VA pruned INT8, 320x192x39, strict serial execution; all nine routes applied 310/310 Turbo patches including 51 bias residuals, logged zero ERROR lora events, and passed strict H.264/AAC joint decode with finite non-clipped audio",
+        "t2va": "artifacts/openvdn-h3-pruned-curve-real-validation-20260903/20260903-193020/validation_report.json; 547MiB minimum free VRAM",
+        "i2va": "artifacts/openvdn-h3-pruned-curve-i2va-validation-20260903/20260903-195334/validation_report.json; pictures=1; 541MiB minimum free VRAM",
+        "l2va": "artifacts/openvdn-h3-pruned-curve-l2va-validation-20260903/20260903-195526/validation_report.json; pictures=1 last frame; 292MiB minimum free VRAM",
+        "fl2va": "artifacts/openvdn-h3-pruned-curve-fl2va-validation-20260903/20260903-195623/validation_report.json; pictures=2 endpoints; 342MiB minimum free VRAM",
+        "single_reference_image": "artifacts/openvdn-h3-pruned-curve-ref2va-validation-20260903/20260903-195722/validation_report.json; pictures=1; 433MiB minimum free VRAM",
+        "multi_reference_images": "artifacts/openvdn-h3-pruned-curve-multi_ref_images-validation-20260903/20260903-195820/validation_report.json; pictures=2; 290MiB minimum free VRAM",
+        "reference_video_with_audio": "artifacts/openvdn-h3-pruned-curve-ref_video_audio-validation-20260903/20260903-195919/validation_report.json; videos=1 and audios=1; 484MiB minimum free VRAM",
+        "standalone_reference_audio": "artifacts/openvdn-h3-pruned-curve-ref_audio-validation-20260903/20260903-200020/validation_report.json; audios=1; 466MiB minimum free VRAM",
+        "hybrid_first_frame_audio": "artifacts/openvdn-h3-pruned-curve-hybrid_first_audio-validation-20260903/20260903-200116/validation_report.json; pictures=1 and audios=1; 492MiB minimum free VRAM"
+      },
       "resource_boundary": "all eight corrected full-width-base runs passed the conservative 512MiB exact-run headroom gate on this 16GB RTX 4060 Ti, with 535-890MiB minimum free. The margin is still small and does not establish universal 16GB safety. Every generation was strictly serial",
-      "quality_boundary": "mechanical validation does not substitute for route-specific human perceptual review; the user already accepted the earlier I2VA output, while remaining multimodal outputs are not claimed as universal visual, audio, or lip-sync quality guarantees"
+      "quality_boundary": "mechanical validation does not substitute for route-specific human perceptual review; the user already accepted the earlier I2VA output, while remaining multimodal outputs and the new pruned curve-projected matrix are not claimed as universal visual, audio, or lip-sync quality guarantees"
     },
-    "regression": "all checks ran serially: 40 OpenVDN multimodal focused tests pass; the complete project suite passes 2047 tests with 6 existing dependency warnings; full Ruff passes; 12 changed or new Python files compile; 267 project non-artifact JSON files parse; git diff check passes; and 199/199 source-user workflow SHA mirror parity passes"
+    "regression": "all checks ran serially: 45 OpenVDN focused tests pass; the complete project suite passes 2052 tests with 6 dependency warnings; full Ruff and comfy node validate pass; changed Python files compile; 267 project non-artifact JSON files parse; git diff check passes; and all 10 changed OpenVDN source/user workflow mirrors are byte-identical"
   },
   "long_video_color_match_advanced": {
     "status": "implemented as a new append-only Advanced EXP node and integrated into the isolated Native Masked Plan B starter/continuation workflows; default enabled and explicitly optional. The RGB-mean-only v1 was human-rejected because both routes retained color jumps, with Plan B less severe. V2 combines pooled Reinhard Lab distribution matching with an 8x5 local RGB residual field; its final 0.492MP real pair passes strict mechanical and exact-run resource gates, and the hash-bound human blind review accepts the Plan B seam-color result while reporting a slight residual on soft context",

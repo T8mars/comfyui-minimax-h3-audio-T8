@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                 "all_adapters_fully_applied": all(
                     item["patch_targets"] == item["applied_targets"]
                     and item["shape_validation"]["all_shapes_exact"]
-                    and item["shape_validation"]["checked_targets"]
+                    and item["shape_validation"]["total_patch_targets"]
                     == item["patch_targets"]
                     for item in receipt["adapters"]
                 ),

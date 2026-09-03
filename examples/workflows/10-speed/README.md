@@ -40,8 +40,8 @@ hf download t8star/Vdn-Minimax-H3-Comfy --local-dir ComfyUI/models
 - 两个stage的`model_spec.json`、`metadata.json`以及对应adapter/branch config。Stage B发布的branch/default与DMD相同，本地可复用DMD的单份大文件。
 - 模型仓库顶层`README.md`、`NOTICE`、`LICENSE`和`licenses/MiniMax-H3-Community-License-Agreement.txt`。权重许可的Applicable Territory排除欧盟、英国、韩国和美国；下载或运行前必须自行确认许可适用。
 
-推荐工作流使用`MiniMaxH3VDNModelComposerT8Advanced → MiniMaxH3VDNExecutionPlanT8Advanced`。DMD会自动应用104个default和259个turbo patch target并固定8 NFE；切到`stage_b_50nfe`时自动只用default并固定50 NFE。DMD底模必须是完整非pruned且AdaLN输入宽度为2688的`minimax_h3_fl2va_int8_convrot.safetensors`；带`adaln_t_table`的8列curve-basis/pruned底模无法承载turbo中的51个AdaLN目标，节点会直接拒绝。不要在它前后叠加任何LoRA或Attention接管节点。
+推荐工作流使用`MiniMaxH3VDNModelComposerT8Advanced → MiniMaxH3VDNExecutionPlanT8Advanced`。DMD固定8 NFE；切到`stage_b_50nfe`时自动只用default并固定50 NFE。完整`minimax_h3_fl2va_int8_convrot.safetensors`继续原样支持；新版也支持模型包内的`minimax_h3_fl2va_pruned_int8_convrot.safetensors`，Composer会按`adaln_t_table`内容SHA自动选择curve-projected Turbo，不需要另接LoRA。未知curve-basis签名仍会在采样前停止，防止错误适配。不要在它前后叠加任何LoRA或Attention接管节点。
 
 正式套件包含9份工作流：T2VA、I2VA、尾帧L2VA、首尾帧FL2VA、单图Ref2VA、多图Ref2VA、参考视频连同其音轨、独立参考音频、首帧+音频混合参考。v2接受原生H3的`[text | 可选cond/cond_audio/ref_img/ref_audio | audio | video]`布局，且继续对空段、非连续段和错误几何fail closed。OpenVDN上游只声明T2VA，其余路线是T8真实生成验证后的扩展。
 
-纠正后的本机真实测试使用完整2688列AdaLN底模，以512×288×39逐条串行覆盖8种多模态入口。全部形状精确应用104+259个adapter目标（含51个AdaLN），运行日志`ERROR lora=0`，并通过原生H.264/AAC严格联合解码；最低空闲显存535–890MiB。旧pruned底模测试实际跳过51个AdaLN补丁，只保留为布局/媒体探针。不要并发生成，也不要把这组结果理解成所有16GB显卡都稳定；机械通过不代替逐素材的人眼画质、听感或口型判断。
+完整2688列AdaLN底模已在512×288×39逐条串行覆盖8种多模态入口。随后FL2VA pruned INT8底模又在320×192×39串行覆盖T2VA和相同8种入口；九条均形状精确应用104个default、259个逻辑Turbo目标及51个偏置残差（310个实际Turbo补丁），运行日志`ERROR lora=0`并通过原生H.264/AAC严格联合解码。pruned矩阵最低空闲显存290MiB，仅T2VA/I2VA超过512MiB项目余量门。不要并发生成，也不要把机械通过理解成普遍16GB安全或逐素材的人眼画质、听感和口型验收。

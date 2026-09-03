@@ -75,6 +75,17 @@ def test_real_validation_also_uses_native_create_and_save_video():
     assert graph["18"]["inputs"]["video"] == ["17", 0]
 
 
+def test_multimodal_validation_can_select_pruned_base_explicitly():
+    args = _args()
+    args.width = 320
+    args.height = 192
+    args.frame_count = 39
+    args.seed = 1
+    args.base_model = "minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+    graph = tool.build_variant_prompt(args, "test", variant_name="i2va")
+    assert graph["4"]["inputs"]["unet_name"] == args.base_model
+
+
 def test_standalone_audio_and_hybrid_use_reference_audio_slot():
     _graph, inputs = _conditioning("ref_audio")
     assert inputs["task_type"] == "Ref2VA"
@@ -96,6 +107,8 @@ def test_adapter_integrity_requires_exact_shapes_and_clean_runtime_log():
                 "shape_validation": {
                     "checked_targets": 104,
                     "adaln_targets": 0,
+                    "bias_diff_targets": 0,
+                    "total_patch_targets": 104,
                     "all_shapes_exact": True,
                 },
             },
@@ -106,6 +119,8 @@ def test_adapter_integrity_requires_exact_shapes_and_clean_runtime_log():
                 "shape_validation": {
                     "checked_targets": 259,
                     "adaln_targets": 51,
+                    "bias_diff_targets": 0,
+                    "total_patch_targets": 259,
                     "all_shapes_exact": True,
                 },
             },
@@ -129,3 +144,40 @@ def test_adapter_integrity_rejects_old_receipt_without_shape_proof():
     assert checks["default_104_shapes_exact"] is False
     assert checks["turbo_259_shapes_exact"] is False
     assert checks["turbo_51_adaln_shapes_exact"] is False
+
+
+def test_curve_projected_adapter_requires_all_51_bias_residuals():
+    composition = {
+        "adapters": [
+            {
+                "name": "default",
+                "variant": "native_full_width",
+                "patch_targets": 104,
+                "applied_targets": 104,
+                "shape_validation": {
+                    "checked_targets": 104,
+                    "adaln_targets": 0,
+                    "bias_diff_targets": 0,
+                    "total_patch_targets": 104,
+                    "all_shapes_exact": True,
+                },
+            },
+            {
+                "name": "turbo",
+                "variant": "curve_projected",
+                "patch_targets": 310,
+                "applied_targets": 310,
+                "shape_validation": {
+                    "checked_targets": 259,
+                    "adaln_targets": 51,
+                    "bias_diff_targets": 51,
+                    "total_patch_targets": 310,
+                    "all_shapes_exact": True,
+                },
+            },
+        ]
+    }
+    assert all(tool.base.adapter_integrity_checks(composition, "clean log").values())
+    composition["adapters"][1]["shape_validation"]["bias_diff_targets"] = 50
+    checks = tool.base.adapter_integrity_checks(composition, "clean log")
+    assert checks["turbo_bias_residuals_exact"] is False

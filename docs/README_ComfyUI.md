@@ -11,12 +11,12 @@
 > `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`；节点运行时不下载。`10-speed`内提供9份正式工作流。
 > 完整ComfyUI目录包发布在`https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy`，仓库根目录可直接
 > 下载到`ComfyUI/models`；模型访问与使用继续受下述MiniMax H3协议和地区限制约束。
-> 上游只声明T2VA；其他模式是T8在Comfy原生条件链上的真实验证扩展。I2VA/L2VA/FL2VA、多参考图、
-> 视频+音轨、独立音频和首帧+音频已在完整非pruned、2688列AdaLN的本地INT8/ConvRot底模上逐条
-> 串行复跑。8/8条均形状精确应用104个default与259个turbo目标（含51个AdaLN），运行日志无
-> `ERROR lora`，并通过原生H.264/AAC严格联合解码；最低空闲显存535–890MiB。DMD不得使用
-> `adaln_t_table`的8列curve-basis/pruned底模。旧pruned成片只证明条件布局/媒体链可运行，因为其
-> 51个AdaLN补丁实际被运行时跳过。当前结构匹配底模通过显式`allow_structural_base`使用，报告保持
+> 上游只声明T2VA；其他模式是T8在Comfy原生条件链上的真实验证扩展。完整2688列AdaLN底模的8条
+> 多模态路线已逐条复跑；新版又用FL2VA pruned INT8在320×192×39串行覆盖T2VA和相同8种入口。
+> Composer按`adaln_t_table`内容SHA自动选择curve-projected Turbo；每条pruned实测均精确应用
+> 104个default、259个逻辑Turbo目标和51个偏置残差（310个实际Turbo补丁），日志无`ERROR lora`，
+> 且通过原生H.264/AAC严格联合解码。未知curve-basis签名仍fail closed。当前结构匹配底模通过显式
+> `allow_structural_base`使用，报告保持
 > `base_provenance_exact=false`；不作通用16GB安全承诺，机械通过也不替代逐素材画质、音频或口型人审。
 > OpenVDN源码是Apache-2.0，权重则遵循MiniMax H3 Community License；其Applicable Territory排除
 > 欧盟、英国、韩国和美国。完整协议已下载到模型目录，用户必须在运行前自行确认许可适用。

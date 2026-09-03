@@ -5,6 +5,45 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-03 — OpenVDN curve-pruned base compatibility
+
+The previous blanket rejection of curve-basis H3 checkpoints has been replaced by an exact-signature
+compatibility route. The published OpenVDN Turbo adapter contains 51 AdaLN LoRA modules trained against
+the full 2688-column time embedding. `tools/convert_openvdn_h3_turbo_for_pruned_curve.py` first performs
+the exact FastVideo-to-Comfy fused-QKV conversion, keeps the 208 directly compatible attention/MLP
+adapters, and projects the 51 AdaLN modules onto the target checkpoint's 1025-point, eight-column curve
+basis with an affine least-squares fit. The intercept is retained as 51 FP32 `diff_b` bias residuals; it
+is not discarded or hidden in a filename convention.
+
+The resulting adapter contains 569 tensors and is 1,152,715,456 bytes with SHA-256
+`364ae4b94659d30ec3aa6b37a139973b55b300061305bf7821502497d66438a4`. Its stored dense aggregate relative
+error is `4.979791675952394e-05`; the native-four-step aggregate is `8.438083730183116e-05`, and the
+largest native-four-step per-module error is `0.00047864947072197804`. Runtime selection is bound to the
+raw in-memory `adaln_t_table` SHA-256
+`ac8727cdec52137c73878d004de5bd2a0e19227e8311e29ab3b68f328310e34e`, not to a checkpoint filename.
+The installed FL2VA pruned INT8 and FP8 files share this exact curve signature. INT8 received the real
+matrix below; FP8 has static signature compatibility only. The installed pruned Ref2VA table has a
+different SHA and remains deliberately unsupported by this adapter.
+
+Runtime Audit verifies the table shape/dtype/signature and the curve adapter's pinned size, hash, tensor
+count, and embedded provenance before sampling. Model Composer automatically keeps the native adapter for
+a 2688-column base or selects the curve adapter for the supported eight-column table. It validates every
+LoRA A/B target and every bias residual against the selected base. A real FL2VA pruned INT8 composition
+audit at `artifacts/openvdn-h3-runtime-audit-20260903/dmd_pruned_curve_report.json` applied all 800 branch
+tensors, 104 default patches, 259 logical Turbo targets plus 51 bias residuals (310/310 actual Turbo
+patches), installed all 50 blocks, and retained the additional-model lifecycle.
+
+Real 320x192x39 DMD8 renders then ran strictly one at a time for T2VA, I2VA, L2VA, FL2VA, single-image
+Ref2VA, two-image Ref2VA, reference video with its audio, standalone reference audio, and first-frame plus
+reference-audio Hybrid. All 9/9 runs selected `base_variant=curve_pruned` and
+`adapter_strategy=t8_curve_projected`, applied 310/310 Turbo patches including all 51 bias residuals,
+logged zero `ERROR lora` events, strictly decoded H.264 video/AAC audio/the combined transport, and produced
+finite non-clipped PCM. Their minimum free VRAM values were respectively
+547/541/292/342/433/290/484/466/492 MiB. Only T2VA and I2VA clear this project's 512 MiB exact-run margin;
+the other seven are recorded as mechanical passes with low headroom, not as general 16 GB safety evidence.
+These checks establish runtime and media-path compatibility, not perceptual quality, reference fidelity,
+audio quality, or lip-sync acceptance.
+
 ## 2026-09-03 — OpenVDN MiniMax H3 native Comfy integration
 
 The implementation is pinned to Hugging Face revision
@@ -32,9 +71,12 @@ to 8 columns, whereas 51 published turbo LoRA targets require the full 2688-colu
 259 target names but then emitted 51 `ERROR lora` shape failures on every sampler step. The old receipt was
 therefore insufficient and those renders are retained only as conditioning-layout and media-path probes.
 
-Formal workflows now pin the full, non-pruned local `minimax_h3_fl2va_int8_convrot.safetensors`. The runtime
-audit rejects curve-basis/pruned bases for DMD and validates every converted A/B factor against its selected
-target before sampling. Corrected CPU composition at
+Version 1.68.0 formal workflows pin the full, non-pruned local
+`minimax_h3_fl2va_int8_convrot.safetensors`. At that release checkpoint the runtime audit rejected
+curve-basis/pruned bases rather than allowing Comfy to skip incompatible targets. The compatibility section
+above supersedes that blanket rejection for the exact supported curve signature. Every route still validates
+each converted A/B factor and bias residual against its selected target before sampling. Corrected CPU
+full-width composition at
 `artifacts/openvdn-h3-runtime-audit-20260903/dmd_fullwidth_report.json` loads all 800 branch tensors,
 shape-validates and applies all 104 default plus 259 turbo targets including all 51 AdaLN targets, installs
 50 block replacements, and registers the branch through Comfy's additional-model lifecycle. The base remains
