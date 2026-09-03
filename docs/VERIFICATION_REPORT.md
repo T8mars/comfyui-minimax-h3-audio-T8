@@ -5,6 +5,346 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-03 — Native Masked Plan B optional Color Match
+
+The preceding 960x544 blind pair received a human tie: A was soft context and B was Plan B. The user nevertheless
+reported a shared visible color jump at the segment seam, so route non-inferiority did not close seam quality.
+`wuwukaka/ComfyUI-WanAnimatePlus` was audited at commit
+`4327a9fceda22dae545969603e91bc7d7adb0bdc` under Apache-2.0. Its `auto_drift` five-frame RGB-mean comparison
+was a useful reference; no upstream code was vendored. The first implementation used only a bounded global RGB
+mean offset. The user found B less discontinuous but both still changed, with the left side of A obvious. After
+reveal A was soft context and B was Plan B, so this RGB-mean-only V1 is rejected despite its mechanical metrics.
+
+V2 also follows the current ComfyUI built-in ColorTransfer pooled `reinhard_lab` mean/std behavior, then adds an
+8x5 local RGB residual field to address spatially varying drift. The final total per-pixel/channel delta is bounded
+at 0.02 and fades over 24 frames. Schema-v2 state stores per-frame RGB means, pooled Lab mean/std and the 8x5 RGB
+thumbnail with per-tensor checksums. Suspected cuts, legacy state, checksum mismatch and chain/segment/canvas
+conflicts fail closed.
+
+`MiniMaxH3LongVideoColorMatchT8Advanced` is append-only at position 280 and is enabled by default but optional in
+both isolated Plan B workflows. It receives decoded IMAGE only after the existing Output Trim and before CreateVideo.
+It does not receive or mutate native AV latent or audio. Segment zero is exact identity and writes its actual tail;
+disabled continuations return the same IMAGE tensor object and exact pixels while still recording their actual tail.
+Missing/mismatched state, invalid SDR values, geometry conflicts and suspected cuts fail closed without correction.
+
+The final V2 real pair is under
+`artifacts/native-masked-context-color-match-v2-final-0p5mp-real-ab-20260903/20260903-122721`. It fixes a
+960x512 (0.49152MP), 124/102/102-frame, native-AV Euler, four-NFE, shift-12/3, step600 EMA_B and
+one-utterance/classical-music contract. All three source clips, both 226-frame full reviews and all anonymous review
+transports pass strict decode. The shared latent-context SHA stayed `9BDE0127…62F85D`, and the segment-zero Color
+Match state stayed `7A4D6459…BE2CB` across both continuations. Maximum local RGB jump was reduced from
+`0.0144917369` to `0.0017139316` for soft context and from `0.0081841946` to `0.0012377203` for Plan B. Maximum
+global RGB-mean jump fell to `0.0000210702` and `0.0000036657`. Both reports explicitly record
+`audio_touched=false` and `latent_touched=false`.
+
+The segment-zero/soft/Plan-B phases completed in 109.968/118.219/117.282 seconds with minimum free VRAM
+612/532/515MiB, so this exact run passes the 512MiB project margin; it does not establish general 16GB safety.
+The anonymous review pack is
+`artifacts/native-masked-context-color-match-v2-final-0p5mp-pair-review-20260903`. Its five media elements,
+HTTP Range 206 support, looping face crop, exact 123/124-frame controls, 0.5x/1x controls and A/B/tie verdict
+controls passed in-app-browser transport testing without route leakage. The user completed the blind review and
+reported `左边还是能看到一点点跳变，右边就好很多`. Reveal maps left-hand A to `soft_context` and right-hand B to
+`hard_mask_plan_b`. The right-hand Plan B route therefore passes seam-color visual acceptance for these exact
+hash-bound videos, while the soft route retains a slight visible residual. The result is stored in
+`human_review_result.json`; it does not validate identity or audio, complete pair-wide jump elimination, general
+16GB safety, or universal Plan B superiority.
+
+Post-change source gates pass 96 related focused tests and all 2,007 project tests with six pre-existing or
+dependency warnings; full Ruff, 623 delivery-scope Python compile checks, `comfy node validate`, the ComfyUI CPU
+whitelist quick start, 257 delivery-JSON parses, `git diff --check`, exact project/user workflow mirrors and stable
+`sampling.py` SHA-256 pass. Release metadata is synchronized at `1.66.0`, whose Registry endpoint returned 404 before
+publication. The staged official package contains 506 files, includes both new nodes and both workflows, excludes
+artifacts/tests/tools/docs, model weights and media, and matches its local source files byte for byte. Live 8189
+service PID 23712 returns the V2 Lab-plus-8x5-local description, `enabled=true` and the three-output contract.
+Together with the completed human review, these gates close the exact-sample Plan B seam-color check only; the
+broader claim boundaries above remain in force.
+
+## 2026-09-02 — Native Masked Video Context Plan B implementation candidate
+
+`wjc573/ComfyUI-H3-Native-Masked-Context` was audited at commit `0713c848` as a useful demonstration
+that current ComfyUI's MiniMax H3 backend can consume separate native video and audio denoise masks.
+Because that project is GPL-3.0-only and its four tests are static contract checks, this project did not
+copy or vendor its implementation. Instead it adds one clean-room, append-only Advanced EXP node tailored
+to the existing Long Video Planner, Conditioning and checksum-validated Previous Context contracts.
+
+The node accepts continuation segments only. It directly copies the saved native video-latent tail into
+the target prefix, makes that video prefix non-denoising, and refuses a target prefix already owned by
+another full or partial visual mask. There is no video VAE decode/re-encode and no ComfyUI monkey patch.
+The route requires `context_audio=video_only`: previous audio is not injected, the current target audio
+tensor is reused by object identity, and an existing audio noise mask—including a Vocal Lock mask—is also
+reused by object identity. A missing audio mask becomes an all-generate native mask, which is semantically
+the unmasked path in the current H3 backend.
+
+CPU tests cover all legal 5/22/39-frame windows, Planner/Conditioning/context mismatch rejection, geometry,
+mask ownership, exact audio identity, current sampler mask reshape/pack, current H3 token-grid pooling,
+append-only registration, and deterministic frontend wiring. The independent route now ships as a pair: a
+segment-zero starter and a segment-one-or-later continuation workflow. Both pin current-core native AV
+`euler + native_flow`; users must not seed this chain with the legacy dual-clock workflow. Every old workflow
+and default remains untouched. No general visual, audio, performance, memory, or universal quality claim is
+made.
+
+The initial source-only gate passed `comfy node validate`, 1,987 project tests, full Ruff, `git diff --check`,
+and exact source/user-workflow mirror comparison. The stable `sampling.py` SHA-256 remains
+`44DCD07FF8160FF92149E04221C206E3A37EC2188EF6164EE8CE84BBE849B105`. These checks validate the
+implementation boundary and regression safety only. At that pre-render checkpoint they did not yet replace a real
+H3 A/B; the controlled runs and human-review states below supersede that historical pending action.
+
+A controlled real pair was then run on the already-loaded local 8189 service with the INT8 FL2VA base,
+generic EMA Turbo 4-step LoRA, 32B NVFP4 text encoder, 736x416 canvas, native audio and 12/3 shifts. One
+124-frame segment 0 was saved once. The old video-only soft-context route and Plan B each generated the same
+102-frame continuation with prompt and seed `2609024101` held fixed; only the Plan B node and its latent wiring
+differed. The shared context SHA-256 remained
+`641DCAC05BC5EB7AEFF029DB21A59FBADEAB66E6F538ABBEA0238EA069614E03` before and after both continuations.
+All three source clips and both 226-frame joined review clips pass strict video, audio and combined decode.
+
+The run and pair evidence are under `artifacts/native-masked-context-real-ab-20260902/20260902-133832` and
+`artifacts/native-masked-context-pair-review-20260902`. Plan B had slightly lower boundary-frame MAE and a
+smaller incoming flow-vector jump, while the soft route had higher boundary SFace cosine and audio spectral
+cosine. The user then judged the pictures about the same and visually fine, but heard noise in both. After
+that decision was recorded, A was revealed as Plan B and B as soft context. This closes only bounded visual
+non-inferiority for one sample; audio quality did not pass. The hash-bound result is in
+`artifacts/native-masked-context-pair-review-20260902/human_review_result.json`. Minimum observed free VRAM
+was 324 MiB for soft context and 312 MiB for Plan B, below the project's 512 MiB margin gate.
+
+The requested raw native instrumental-music retest first produced a mechanically sampled Plan B file with
+one corrupt H.264 macroblock. That attempt is retained under
+`artifacts/native-masked-context-music-real-ab-20260902/20260902-143810` and is not reviewable evidence. It
+also exposed a runner defect: ComfyUI execution success had been accepted before checking strict media decode.
+The runner now requires strict video, audio, and combined decode for every phase, and a CPU regression proves
+that execution success cannot hide a decode failure.
+
+The unchanged prompt, seed, model, LoRA, 736x416x124 canvas, four-NFE and 12/3 contract was then rerun under
+`artifacts/native-masked-context-music-real-ab-20260902/20260902-144505`. Segment 0, soft context and Plan B
+completed in 74.578, 75.000 and 72.547 seconds. All three source clips and both 226-frame joined clips strictly
+decode; the shared context SHA-256 stayed
+`56801950EE33584857631BDB2BF95B9EDDCE42F549DB2A00FCCE9B65B2908431`. Neither continuation reached the
++/-0.999 clipping threshold. Descriptive audio analysis still records a large shared-segment DC offset and a
+level/spectral restart at the 5.167-second boundary because `context_audio=video_only` deliberately supplies
+no previous audio tail. These measurements do not determine whether the music has audible noise. The blind
+pack is `artifacts/native-masked-context-music-pair-review-20260902/blind_review.html`. The user listened and
+rejected both tracks as severe noise. Minimum free VRAM was 364 MiB for soft context and 431 MiB for Plan B,
+again below 512 MiB.
+
+A sampler-only diagnostic then held the model, EMA LoRA, prompt, seed, four NFE, shifts, 124-frame duration and
+416x224 canvas fixed. Legacy `dual_clock_euler` produced decoded PCM DC offset `0.213126`; current ComfyUI
+native-AV `euler + native_flow` produced `0.000598`, with no clipping in either file. This directly isolates the
+active sampler/core AV protocol rather than the model, seed, Audio VAE, codec, or Plan B mask. The stable
+`sampling.py` and all old workflow defaults remain unchanged; only the independent Plan B workflow and its real
+A/B runner now pin native AV Euler.
+
+The fixed full run is
+`artifacts/native-masked-context-native-euler-music-real-ab-20260902/20260902-163650`. Segment zero, soft
+context and Plan B finished in 33.359, 34.219 and 28.390 seconds; all source and joined A/V strictly decode, no
+track clips, and DC offsets are `0.000598/-0.001495/-0.001050`. The shared context SHA-256 stayed unchanged.
+Its review pack is `artifacts/native-masked-context-native-euler-music-pair-review-20260902/blind_review.html`.
+The user judged it better than the legacy samples but still felt the audio might be wrong and remained uncertain.
+That result is hash-bound in the pack's `human_review_result.json`; it is not an audio pass and does not choose a
+route winner. Plan B left 369 MiB free, so human audio non-inferiority, seamless music continuation, lower VRAM
+and general 16GB safety remain unvalidated.
+
+A follow-up low-resolution audio diagnostic used a 416x224x124 locked-off shot and requested clean cello-and-piano
+classical chamber music plus exactly one Mandarin utterance, `你在哪里`. Model, EMA LoRA, seed, prompt, native AV
+Euler and 12/3 shifts were held fixed; only four versus eight model evaluations changed. Both 5.167-second files
+strictly decode for video, audio and combined playback, neither clips, their DC offsets are `0.000012653` and
+`0.000018872`. Rechecked with a Unicode-safe target, eight NFE transcribes exactly as `你在哪里`, while four
+NFE is transcribed as `你在那里`; the earlier double-exact record was corrected. The anonymous pack is
+`artifacts/native-audio-classical-speech-pair-review-20260902/blind_review.html`. Human listening is still required:
+ASR and signal checks do not establish natural voice, music fidelity, lip sync or freedom from audible artifacts.
+The eight-evaluation sample also left only 199 MiB free, below the 512 MiB resource-margin gate.
+
+A further four-NFE single-variable pair holds the FL2VA INT8 base, seed, classical-plus-dialogue prompt,
+416x224x124 canvas, native AV Euler, 12/3 shifts and LoRA strength 1.0 fixed; only generic EMA versus the
+corrected official FL2V Alpha8 Turbo LoRA changes. Both files strictly decode and do not clip. Before reveal,
+one track matches `你在哪里` and is 16.64 dB louder in RMS, while the other is transcribed as `你在那里`.
+Mixed-music SyncNet offsets are -3/-4 frames at 25fps, outside the one-frame gate; 400ms delayed-video controls
+move by 10/9 frames, but low confidence and background music limit interpretation. The anonymous pack is
+`artifacts/native-audio-lora-single-variable-pair-review-20260902/blind_review.html`. The user judged A's audio
+normal and B very quiet and wrong. After that verdict A was revealed as Alpha8 and B as the old generic EMA; the
+result is hash-bound in `human_review_result.json`. The statement did not explicitly assess lip sync.
+
+The user then supplied and selected `minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors` for subsequent work.
+It is 779,858,911 bytes, has 518 tensor keys, SHA-256
+`80FCC655689BB52081C8506BA70301833C3DCC77900330CE69353681D290DFAE`, and declares four-step step600 EMA
+compatibility with the current non-pruned INT8 ConvRot base. Both isolated Plan B workflows now pin this file;
+legacy Long Video workflows remain unchanged. A real 416x224 full chain is under
+`artifacts/native-masked-context-new-ema-b-classical-speech-real-ab-20260902/20260902-180152`, with its blind
+pair under `artifacts/native-masked-context-new-ema-b-classical-speech-pair-review-20260902`. Segment zero,
+soft continuation and Plan B continuation all strictly decode without clipping or material DC and shared context
+is unchanged. However, the same dialogue prompt was applied again to the continuation, so the joined files request
+the sentence twice and violate the one-utterance whole-video contract. The pack is explicitly invalidated for
+human acceptance and retained only for mechanical diagnostics. The runner now uses a dialogue-only segment-zero
+prompt and a silent same-music continuation prompt shared identically by both continuation routes. A corrected
+real run remains pending. The user nevertheless listened to the invalidated pair and reported “A和B都没问题声音”.
+The hash-bound reveal is A=`soft_context`, B=`hard_mask_plan_b`; both exact joined videos pass this limited audio
+diagnostic with no route preference. That result is stored in `human_audio_diagnostic_result.json` and does not
+validate the repeated-dialogue contract, lip sync, or seam-specific quality. The invalidated run left
+457/339/435 MiB free; that invalidated run does not establish corrected full-chain acceptance or general 16GB safety.
+
+The corrected one-utterance run is
+`artifacts/native-masked-context-new-ema-b-classical-single-utterance-real-ab-20260902/20260902-231310`,
+with its review pack under
+`artifacts/native-masked-context-new-ema-b-classical-single-utterance-pair-review-20260902`. Segment zero requests
+exactly one `你在哪里`; both continuation routes share the same prompt requiring the woman to stay silent while the
+same classical music continues. Segment zero, soft continuation and Plan B continuation completed in
+53.203/31.094/26.531 seconds and left 490/475/527 MiB free. All three source files and both 226-frame joined files
+pass strict video, audio and combined decode; the shared context SHA-256 remained
+`4244CD9C6C1960B787C3107EA867C0686329F9CD7AE1B322FEB98BEA26CC3429`.
+
+VAD-enabled faster-whisper recognizes segment zero as `你在哪里` and detects zero speech segments in both
+continuations. On the joined AAC files it recognizes `你在那里`; VAD-disabled decoding also produces possible lyric
+hallucinations over the music, so ASR is retained as an advisory screen rather than an exact lexical or lip-sync
+oracle. The user listened to the corrected blind pair and reported “A和B都没问题声音”. Hash-bound reveal maps A to
+`hard_mask_plan_b` and B to `soft_context`; audio therefore passes and ties for this exact pair. That statement did
+not explicitly assess visual seam quality, identity continuity, lip sync or exact wording. The pair minimum is
+475 MiB, below the 512 MiB project margin, so general 16GB safety and universal Plan B superiority remain unclaimed.
+The ASR and human-review records are stored beside `pair_audit.json`.
+
+The first face-boundary report for Plan B was itself wrong: YuNet returned both the real performer and a larger
+background false positive in the first two continuation frames, and the analyzer selected by area alone. The
+analyzer now tracks spatial continuity from the checksum-bound segment-zero face. Reanalysis changes Plan B's
+boundary SFace from the false `0.202` to `0.873`, versus `0.875` for soft context; both routes track the main face in
+102/102 continuation frames. This removes the mechanical identity alarm but does not prove subjective seam quality
+or choose a winner. A regression locks the false-positive case.
+
+Official local SyncNet evaluation of the byte-identical shared speech segment measures -3 frames under a center
+square crop and -4 frames under all three YuNet-tracked face crop scales at 25fps. Delaying video by 400ms moves the
+measured offset by +9/+10 frames, so the evaluator responds to the calibrated control. Confidence is only
+1.68-2.20 because classical music is mixed with the voice, and the plus-or-minus-one-frame mechanical gate is not
+passed. This metric alone therefore cannot validate lip sync; the later hash-bound human verdict is recorded below.
+Since speech ends before A/B continuation routing differs, this result cannot rank
+Plan B against soft context or attribute the offset to the hard video mask. Full records are in `lip_sync_audit.json`
+and `visual_identity_recheck.json` beside the review page.
+
+Restricting evaluation to the ASR speech window from 0.50 to 4.20 seconds still measures -4 frames and raises
+confidence to 2.65, so the offset is not driven only by the music-only tail. A diagnostic candidate delays video by
+four native 24fps frames (about 166.7ms); both the dynamic-face speech window and the re-encoded full preview then
+measure zero SyncNet offset. The source and candidate decoded-audio PCM SHA-256 are identical, both have 124 frames,
+and the candidate strictly decodes. This is not yet a product fix: preserving duration requires four cloned opening
+frames and dropping four ending visual frames. `lipsync_review.html` presents full-frame and face-zoom original versus
+candidate videos for human review; the workflow remains unchanged until that tradeoff is accepted.
+
+A second diagnostic avoids frozen/dropped endpoints by ramping delay smoothly from zero to four frames before speech,
+holding it through speech, and returning to zero afterward with monotonic fractional-frame blending. It preserves
+source frames 0 and 123, remains 124 frames, strictly decodes, keeps the same decoded PCM hash, and also measures zero
+SyncNet offset. Its separate risk is changed pre/post-speech motion speed and interpolation blur or ghosting. The review
+page now compares original, fixed hold/trim and smooth endpoint-preserving candidates at full frame and face zoom.
+An existing historical 4/8-NFE pair was also checked without new generation, but confidence is below one for both,
+their 400ms controls move only two/six frames and full/window offsets disagree. That experiment is inconclusive and
+does not justify an eight-NFE rerun or configuration change.
+
+The user then watched the original, fixed-delay and smooth-retime variants and reported `3组差不多，都还行`: all three
+were approximately equal and acceptable. The exact source therefore passes the human lip-sync gate even though its
+SyncNet plus-or-minus-one-frame mechanical gate remains failed. Since the source is acceptable and both zero-offset
+candidates add a known visual cost without a perceived benefit, neither correction is integrated and the original H3
+audio/video timing remains unchanged. `lipsync_human_review_result.json` binds the verdict to all three source candidates,
+both 124-frame triptych deliverables and their common decoded-PCM hash. This does not rank Plan B against soft context,
+because they share the byte-identical speech segment, and does not validate exact wording or the subjective continuation seam.
+
+For the remaining continuation-seam review, a separate silent side-by-side deliverable locks A and B to the same frame
+index instead of relying on two independently started players. It is 832x224, 226 frames at 24fps and 9.416667 seconds,
+strictly decodes, and preserves each source at checked frames 0, 123, 124 and 225 with a minimum column/source PSNR of
+44.84 dB. `seam_side_by_side_audit.json` binds both source hashes and the composite hash. This closes only the review
+transport and alignment contract; subjective identity, lighting, background and motion continuity remain pending human review.
+
+Because the user found 416x224 too blurred for that visual decision, the exact corrected contract was rerun at 960x544,
+or 522,240 pixels (0.52224 decimal megapixels), under
+`artifacts/native-masked-context-new-ema-b-classical-single-utterance-0p5mp-real-ab-20260903/20260903-011628`.
+The segment-zero and continuation seeds remain `2609024100/2609024101`; the FL2VA INT8 ConvRot base, step600 EMA_B,
+four NFE, native-AV Euler plus `native_flow`, 12/3 shifts, one-utterance segment-zero prompt and shared silent
+same-classical-music continuation prompt are unchanged. Only the Plan B node and native video-mask routing differ.
+Segment zero, soft continuation and Plan B continuation strictly decode for video, audio and combined playback at exact
+frame counts 124/102/102. Their elapsed times are 115.875/130.875/128.360 seconds, and the shared context SHA-256 remains
+`6274B3A37D44DA0B08CBADCF5F4B9F53B503836D343399F204DE05F58C262BE5` before and after both routes.
+
+The three phases left 1009/545/1122 MiB free. This exact run therefore passes the project's 512 MiB free-VRAM margin
+for every phase, but one bounded pass does not establish general 16GB safety for other resolutions, models, workflows or
+hosts. Continuity-tracked boundary SFace is 0.939746 for soft context and 0.954631 for Plan B; these descriptive scores
+do not select a visual winner. The blind pack is
+`artifacts/native-masked-context-new-ema-b-classical-single-utterance-0p5mp-pair-review-20260903`. Its all-intra silent
+side-by-side is 1920x544 and strictly decodes to 226 frames; the seam-focus loop covers source frames 108-155 and strictly
+decodes to 48 frames. All-frame left/right alignment against A/B measures 54.924/54.983 dB average PSNR. The associated
+`seam_side_by_side_audit.json` binds those hashes and leaves subjective identity, lighting, background and motion continuity
+pending the blind human verdict.
+
+This run also exposed a report-only analyzer defect: the resource booleans and status correctly passed above 512 MiB,
+while the prose claim was hard-coded to say the margin was below 512 MiB. The claim now branches from the same
+`resource_pass` value, and a regression covers both pass and fail text. Nine focused analyzer tests and related Ruff pass.
+No sampling, node, workflow or model configuration changed for this correction.
+
+The final post-correction gate passes 87 Plan-B-related tests and all 1,998 project tests with five pre-existing
+Triton/PyTorch warnings, full Ruff, changed-file compilation, 257 Git delivery-scope JSON parses, `git diff --check`,
+strict source/joined/review-media decode and the unchanged stable-sampler SHA-256. The existing live-node and workflow
+mirror gates remain applicable because this report-only fix changed neither nodes nor workflows.
+
+The blind page was also exercised in the Codex in-app browser through a temporary read-only server bound only to
+`127.0.0.1`. After the initial four-media transport pass, the page gained a face-region seam loop so the 960x544 source
+would not be visually reduced to a hard-to-judge full-frame pair. Each route is cropped directly to 480x480 without AI
+reconstruction, interpolation, sharpening or spatial scaling, then placed side by side as a 960x480, 48-frame, 24 fps
+loop. Local frames 15 to 16 still map exactly to source frames 123 to 124, and strict decode passes. The updated page's
+five video elements all reached ready state 4 with expected dimensions and durations and no media error; the face loop
+was observed playing and wrapping from 1.266404 seconds to 0.136814 seconds. The temporary tab and loopback server were
+then closed while the user's original local review tab was retained. `face_zoom_transport_audit.json` and the updated
+`browser_review_transport_audit.json` record this delivery-only check; it does not replace the pending human seam verdict.
+
+The page also provides previous-frame, seam-before/source-frame-123, seam-after/source-frame-124, next-frame, 0.5x and
+1x controls. An initial test through a server without HTTP Range was correctly rejected because the status changed but
+the media stayed at time zero. The final loopback-only read-only server returned HTTP 206 for the MP4 range request;
+real clicks then positioned frame 123 at 0.6255 seconds and frame 124 at 0.667166 seconds, stepped forward and backward
+between them, and changed `playbackRate` to 0.5 and 1 while playing. Both temporary servers and the validation script
+were stopped or removed. The v3 browser audit records the failed diagnostic attempt as well as the superseding pass.
+
+To investigate whether the subject or surrounding scene becomes abruptly blurred, all 226 decoded frames were also
+checked with grayscale Laplacian variance over the full frame, a fixed central face region and fixed left/right
+background regions. At the 123-to-124 boundary the face ratios were 1.255/1.054 and the background ratios were
+0.945/0.858 for blind A/B. Across either continuation, no face, background or full-frame sample fell below 70% (or 50%)
+of its matching six-frame pre-boundary mean. `visual_sharpness_stability_audit.json` therefore records no abrupt measured
+sharpness collapse. The metric is affected by motion, texture, compression and noise, so this does not judge natural
+edges, temporal shimmer, subjective quality or route superiority and cannot replace normal-speed human review.
+
+The page finally adds three anonymous verdict controls: A better, B better and tie. They do not contain or reveal the
+route mapping. In-app-browser clicks verified that each choice produces the matching `#verdict=A`, `#verdict=B` or
+`#verdict=tie` hash, anonymous tab title and exactly one `aria-pressed` button; a later click replaces the earlier choice,
+and the tie choice restored correctly after reload. This only provides a low-friction, observable way for the user to
+record a decision. Until the user's actual tab acquires one of those hashes, human seam review remains `PENDING`.
+
+An auxiliary blind selected-frame inspection then checked source frames 121 through 126, including the exact 123-to-124
+segment boundary, plus frames 174 and 225. Both A and B remained visually coherent without an obvious cut or flash,
+identity discontinuity, background/lighting jump, face ghosting or halo, so the blind agent verdict is a tie with both
+routes acceptable. `agent_visual_review_result.json` records the inspected frames and claim boundary. This check does not
+assess audio and does not replace the user's normal-speed/full-speed seam verdict; the route mapping remains undisclosed.
+
+After the continuity-tracked face-selector correction and the contract-specific review-page fix, 37 focused tests
+and the full 1,997-test project suite pass with five pre-existing Triton/PyTorch warnings. Full Ruff, JSON parsing,
+`git diff --check`, strict media/hash checks and the stable sampler hash pass. These gates validate the analyzer
+correction and regression boundary. Human lip-sync review is now passed for the exact source while the SyncNet offset
+gate remains failed; the subjective continuation-seam review remains pending.
+
+After adding the paired segment-zero starter and the classical/speech diagnostic contract, the latest source gate
+passes 46 focused tests and 1,992 full-project tests with five pre-existing Triton/PyTorch warnings, full Ruff,
+`comfy node validate`, `git diff --check`, relevant JSON parsing, strict three-way decode of both diagnostic files,
+and exact SHA parity for all 189 source/user workflow mirrors. The live 8189 schema exposes the new Plan B node;
+the stable sampler node still defaults to legacy `dual_clock_euler + native_flow`, while only this isolated workflow
+pair explicitly selects native AV Euler. Stable `sampling.py` remains byte-unchanged at the SHA-256 above.
+
+After the runner was restricted to the two audited LoRA choices and gained a segment-zero-only diagnostic scope,
+33 focused tests and 1,993 full-project tests pass with the same five pre-existing warnings. Relevant Ruff, JSON,
+strict media decode and diff checks pass. The preceding full Ruff, Comfy validation and 189/189 workflow parity
+remain applicable because this follow-up changed no node or workflow source.
+
+After selecting the new step600 EMA_B and regenerating both isolated Plan B workflows, 34 focused tests pass.
+The first full suite produced 1,993 passes and one unrelated legacy multiprocess ready-file timeout; that exact
+test then passed in isolation, and a complete second run passed all 1,994 tests with the same five pre-existing
+warnings. Full Ruff, changed-file Python compilation, `comfy node validate`, 257 non-artifact JSON parses,
+`git diff --check`, strict source/joined media decode and exact 189/189 source/user workflow SHA parity pass.
+Stable `sampling.py` remains byte-unchanged.
+
+The joined-video contract was subsequently corrected so only segment zero requests `你在哪里`; both continuation
+routes now share the same silent, same-classical-music-in-progress prompt. The prior review page is visibly marked
+invalid and its audits retain only mechanical evidence. The corrected code passes 35 focused tests and all 1,995
+project tests with the same five warnings, plus Ruff and changed-file compilation. The corrected real H3 run was
+later submitted after the fixed 13,500 MiB start gate passed; no user process was closed and the threshold was not
+lowered. Its strict-media, VAD and hash-bound human-audio result is recorded above.
+
 ## 2026-09-02 — SLA Precision V2 quality-correction candidate
 
 The reported persistent SLA generation defect was investigated against

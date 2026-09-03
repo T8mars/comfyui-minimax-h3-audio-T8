@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 279
+    assert len(ids) == 281
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -87,6 +87,15 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
         "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
     ]
+    assert ids[-2:] == [
+        "MiniMaxH3NativeMaskedVideoContextT8Advanced",
+        "MiniMaxH3LongVideoColorMatchT8Advanced",
+    ]
+    color_schema = schemas[-1]
+    color_inputs = {item.id: item for item in color_schema.inputs}
+    assert color_schema.is_experimental is True
+    assert color_schema.category == "T8/MiniMax H3/Long Video/Advanced"
+    assert color_inputs["enabled"].default is True
     assert ids[248:254] == [
         "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
         "MiniMaxH3TimedImageReferenceT8Advanced",
@@ -241,6 +250,26 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     assert ids[274:276] == [
         "MiniMaxH3MVVocalLockVisualDirectorV3T8Advanced",
         "MiniMaxH3LocalMVVocalLockVisualRendererV3T8Advanced",
+    ]
+    assert ids[276:279] == [
+        "MiniMaxH3SLADynamicLoRABypassV2T8Advanced",
+        "MiniMaxH3SLAPrecisionV2T8Advanced",
+        "MiniMaxH3SLAPrecisionV2AuditT8Advanced",
+    ]
+    assert ids[279] == "MiniMaxH3NativeMaskedVideoContextT8Advanced"
+    masked_context_schema = schemas[279]
+    assert masked_context_schema.is_experimental is True
+    assert masked_context_schema.category == "T8/MiniMax H3/Long Video/Experimental"
+    assert [item.id for item in masked_context_schema.inputs] == [
+        "av_latent",
+        "context",
+        "planner_report_json",
+        "conditioning_report_json",
+    ]
+    assert [item.id for item in masked_context_schema.outputs] == [
+        "av_latent",
+        "trim_context_frames",
+        "report_json",
     ]
 
     speech_ids = {

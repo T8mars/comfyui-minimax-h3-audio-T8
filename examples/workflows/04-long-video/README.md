@@ -21,6 +21,8 @@
 - `Prompt_Relay_Long_Video_Turbo8_Advanced`：整条长视频只创建一次全局事件时间线；每段按
   `timeline_start - context_frames`投影到本地渲染窗口，再与既有Long Video上下文补丁隔离组合。
 - `Enhance_A_Video_Long_Video_Accepted_22F_Stock20_Advanced`：原生Stock20逐段EAV；Long Video继续拥有上下文/layout，组合节点为每段创建独立Runtime Audit。
+- `2026-09-02_H3_Native_Masked_Video_Context_Plan_B_Segment0_Starter_Advanced_EXP`：独立Plan B配套第0段启动器；固定当前核心原生AV Euler并保存供续段使用的context，不替换现有默认路线。
+- `2026-09-02_H3_Native_Masked_Video_Context_Plan_B_Advanced_EXP`：独立Plan B续段；续段把上一段原生video latent尾部硬锁到当前段开头，只做画面续接，当前音频与Vocal Lock mask不变。
 
 ## 当前成果
 
@@ -37,6 +39,60 @@ Long Video续接专用拼接已完成CPU结构验证：124帧时间线接一个1
 ## 使用方法与注意事项
 
 首次使用从Accepted或Auto Resume开始，先跑短段并人工验收。不要手工改写accepted文件；更换提示词、模型、参考或种子后应开启新任务目录。长视频降低的是整片一次性生成的峰值，不代表单段可以无限提高分辨率或关键帧数量。
+
+Native Masked Video Context Plan B续段节点不能生成第0段：必须先用配套的
+`Plan_B_Segment0_Starter_Advanced_EXP`以目标`chain_id`完成第0段并保存上下文，再打开Plan B续段工作流，
+填写完全相同的`chain_id`并从默认`segment_index=1`开始。不要用原`Long_Video_22F`旧双时钟工作流生成
+这条链的第0段。其Conditioning必须保持
+`context_audio=video_only`；Planner、Context Load、Conditioning和Plan B节点的报告必须直接连线，不能
+手抄或跨chain复用。它会在采样前复制上一段原生video latent尾部并把对应video mask设为0，随后仍由
+现有Output Trim移除重建头。上一段audio tail不会注入，当前段audio tensor和已有Vocal Lock audio mask
+原样保留。合同冲突会直接报错。该工作流固定当前ComfyUI原生AV `euler + native_flow`；不要改回旧
+`dual_clock_euler`，后者在当前核心下已通过同Seed单变量复测确认会产生异常PCM直流偏置和噪音。
+两份独立Plan B工作流同时固定用户指定的新版step600 EMA_B
+`minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors`；旧通用EMA在匿名人审中声音非常轻且不正常，
+不得回退。旧Long Video工作流仍保持原配置。
+
+当前已有一组736×416、同一segment 0、同prompt、同seed `2609024101`、同模型/LoRA/4 NFE/12:3 shift
+的首轮真实续段对照：旧video-only软上下文和Plan B各输出102帧，三份源片及两份226帧完整审查片的音画
+联合严格解码通过，共同context SHA前后不变。用户盲评画面差不多且均无问题，揭盲后A为Plan B、B为旧路线；
+两路均有可闻杂音。第二轮纯器乐也被用户判定两条都是严重噪音。416×224同模型/LoRA/Seed/提示词/4 NFE/
+12:3只换sampler的复测中，旧双时钟DC为0.21313，原生AV Euler为0.00060。修复配置完整跑通首段和两种续段，
+三路DC接近零且无削波；用户认为比旧版好，但仍感觉音频可能有问题，因此不算PASS。追加的416×224古典音乐+
+“你在哪里”4/8 NFE对照均严格解码、无削波；8 NFE逐字命中，4 NFE被识别为“你在那里”。只更换通用EMA/
+校正FL2V Alpha8 LoRA的4 NFE匿名对照中，用户判定A正常、B声音非常轻且不对；揭盲后A为Alpha8、B为旧
+通用EMA。首个新版EMA_B完整链虽严格解码、无削波且DC接近零，但首段和续段重复请求同一句对白，违反
+全片只说一句的合同，已作废为仅机械诊断。运行器现固定首段说一次、续段人物静默并延续同一古典音乐；
+用户仍试听该作废包并反馈A/B声音都没问题；揭盲A为软上下文、B为Plan B，两条声音诊断通过且无偏好，但
+不关闭重复对白合同、口型或独立接缝评价。修正版随后已用同一新版EMA_B完成：三份源片和两份226帧完整片
+严格解码，共享context不变；VAD在两个续段均检出0段对白，第0段单独识别为“你在哪里”。用户再次判定A/B
+声音都没问题；揭盲后A为Plan B、B为软上下文，本精确样本声音打平。完整AAC上的ASR仍会在“哪里/那里”
+之间波动。旧接缝分析器按面积误选Plan B前两帧背景假脸；连续追踪修正后Plan B/软上下文接缝SFace为
+0.873/0.875，两条续段都102/102帧追踪到主脸。共享对白段SyncNet在多种裁剪下为-3/-4帧（25fps），400ms
+负对照移动+9/+10帧，未过±1帧机械门。另外，仅延后画面
+4个24fps帧的诊断候选回到SyncNet 0帧且音频PCM不变；因其会冻结开头4帧、舍弃末尾4帧，真人对比前不写入
+工作流。另一个平滑建立并追回延迟的候选同样回到0帧且保留首尾，但会改变说话前后的运动速度并混合分数帧。
+用户随后完成原始/固定/平滑三方真人对比并反馈“3组差不多，都还行”，故本哈希原始片真人口型通过；两个校准
+没有可感知优势且各有代价，均不接入工作流。既有旧配置4/8 NFE样本的置信度和400ms负对照响应不足，不能证明
+增加NFE可修口型。共享对白段不能选择Plan B路线，精确用词与续段主观接缝仍未验收。本次第0段/软续段/Plan B最低显存余量为
+490/475/527MiB，整对仍未过512MiB门。不得宣称通用16GB安全或Plan B普遍更优。
+
+因416×224不足以判断画面，随后按完全相同合同补跑960×544（522,240像素，约0.522MP）真实A/B。第0段、
+软续段、Plan B精确为124/102/102帧，全部源片与两份226帧完整片严格音画解码，共享context前后不变；
+最低空闲显存1009/545/1122MiB，本精确三阶段均通过512MiB余量门。用户盲评两条差不多，但两条在接缝处
+都有可见颜色跳变；揭盲后A为软续段、B为Plan B。因此旧接缝质量不通过，也不能归因给某一条路线。
+
+两份工作流现都在`Output Trim`后、`CreateVideo`前接入可选且默认开启的
+`MiniMaxH3LongVideoColorMatchT8Advanced`。只做5帧RGB均值偏移的V1已被人审拒绝：B变化较少但两条仍有，
+A左侧明显。V2先做pooled Reinhard Lab色彩/对比度匹配，再用8x5局部分区RGB残差场处理空间不一致色偏；
+总像素通道改变量不超过0.02并在24帧内渐隐。它只改解码后的SDR画面，不接触原生latent或音频；疑似
+切镜、旧schema、校验和/chain/segment/画布不匹配时不猜测校正，关闭时画面逐像素原样通过。
+最终960×512（0.49152MP）同Seed实跑得到124/102/102帧并全部严格解码，共享latent context和第0段
+颜色参考在两条续段前后不变；软/Plan B最大局部RGB跳变由0.014492降到0.001714、0.008184降到
+0.001238，最低空闲显存532/515MiB。机械与本次512MiB资源门已过。用户盲评反馈左侧A仍有一点跳变、
+右侧B好很多；揭盲A为软路线、B为Plan B。本样本接受Plan B接缝色彩连续性，软路线仍有轻微残差；
+不为追求软路线零残差而放宽0.02幅度上限。一次本机单样本通过不能外推身份/音频、通用16GB安全、
+两条路线完全无跳变或Plan B普遍更优。
 
 In-Node Loop路线适合“不需要逐段人工筛选、希望点一次就跑完整条”的任务。默认`124`帧渲染窗、`22`帧上下文、batch 1，内存只保留当前段；完成段与续接上下文写入磁盘。中断、OOM或ComfyUI重启后，保持模型、提示词、参考、采样参数和`chain_id`不变即可续跑；任一合同参数改变时必须换新的`chain_id`。它会自动接受每个成功片段，因此需要逐段挑片时仍应使用Background/Accepted路线。节点只在片段边界释放自身临时对象，不调用全局模型卸载，也不承诺任意显卡、任意模型封装都不会OOM。
 

@@ -192,6 +192,6 @@ def test_dichromatic_node_is_append_only_and_safe_by_default():
         node.define_schema().node_id
         for node in asyncio.run(comfy_entrypoint().get_node_list())
     ]
-    assert len(ids) == 279
+    assert len(ids) == 281
     assert ids[209] == "MiniMaxH3SkinFinishSurfaceT8Advanced"
     assert ids[210] == "MiniMaxH3SkinFinishDichromaticT8Advanced"

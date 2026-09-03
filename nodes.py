@@ -166,6 +166,12 @@ from .nodes_native_latent_timeline_advanced import (
 from .nodes_native_latent_checkpoint_advanced import (
     NATIVE_LATENT_CHECKPOINT_ADVANCED_NODE_CLASSES,
 )
+from .nodes_native_masked_context_advanced import (
+    NATIVE_MASKED_CONTEXT_ADVANCED_NODE_CLASSES,
+)
+from .nodes_long_video_color_match_advanced import (
+    LONG_VIDEO_COLOR_MATCH_ADVANCED_NODE_CLASSES,
+)
 from .nodes_multikeyframe_advanced import MULTIKEYFRAME_ADVANCED_NODE_CLASSES
 from .nodes_long_video_exp import (
     MiniMaxH3LongVideoConditioningT8,
@@ -707,6 +713,12 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 # SLA Precision V2 is append-only after every v1.64.0 node. It
                 # never changes the three legacy SLA nodes or Profile Router.
                 *SLA_PRECISION_V2_ADVANCED_NODE_CLASSES,
+                # Native Masked Video Context is an isolated Plan B after every
+                # v1.65.0 node. It only overlays a target LATENT when explicitly wired.
+                *NATIVE_MASKED_CONTEXT_ADVANCED_NODE_CLASSES,
+                # Default-on RGB seam matching is append-only after Plan B and
+                # leaves all previously released schemas and positions unchanged.
+                *LONG_VIDEO_COLOR_MATCH_ADVANCED_NODE_CLASSES,
             ]
 
 

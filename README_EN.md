@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.65.0** · GPL-3.0-or-later
+Current version: **1.66.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -47,6 +47,81 @@ For one-queue serial long-video generation, use an `In_Node_Long_Video_Loop` wor
 For long video with both Prompt Relay and Enhance-A-Video, use `In_Node_Long_Video_Prompt_Relay_EAV_Stock20_Advanced` from the same folder. It uses the native 20-step route and does not use a Turbo LoRA.
 
 For tail subdivision or a separate low-sigma second pass, use the long-video workflow containing `Long_Video_Sampling_Plan`. Disconnecting that node restores the old route.
+
+`2026-09-02_H3_Native_Masked_Video_Context_Plan_B_Segment0_Starter_Advanced_EXP.json` and
+`2026-09-02_H3_Native_Masked_Video_Context_Plan_B_Advanced_EXP.json` form an independent long-video Plan B
+without replacing any route above. Run the starter first, then use the exact same `chain_id` in the continuation
+workflow; do not create this chain's segment zero with the legacy dual-clock default workflow. On continuation
+segments, Plan B copies the
+validated previous native video-latent tail into the current head and hard-locks that visual prefix with
+ComfyUI's native mask path. `context_audio` is fixed to `video_only`: no previous audio is injected, and
+the current audio tensor plus any existing Vocal Lock audio mask are retained unchanged. The first controlled
+736x416 rain-ambience pair passed strict media, topology, frame-count and context-immutability checks. In blind
+review the user found both pictures about the same with no visible problem; after reveal A was Plan B and B was
+the soft route. Both had audible noise, and the user also rejected both tracks in the same-contract native
+instrumental retest as severe noise. A single-variable 416x224 diagnostic isolated the active sampler path: with
+model, LoRA, seed, prompt, four NFE and shifts held fixed, changing only legacy `dual_clock_euler` to current
+ComfyUI native-AV `euler + native_flow` reduced decoded PCM DC offset from `0.21313` to `0.00060`. The recommended
+workflow now pins native AV Euler. Its complete segment-zero/soft/Plan-B run strictly decodes with no clipping and
+DC offsets `0.00060/-0.00150/-0.00105`; the shared context is unchanged. The user found it better than the legacy
+pair but still suspected an audio problem, so this is not an audio pass and does not select a route winner. A
+416x224 four/eight-NFE follow-up requesting classical cello-and-piano music plus exactly one `你在哪里` utterance
+strictly decodes and does not clip; eight NFE transcribes exactly, while four NFE is transcribed as `你在那里`.
+A second four-NFE blind pair changes only the old generic EMA versus corrected FL2V Alpha8 LoRA. The user judged
+A's audio normal and B much too quiet and wrong; after reveal A was Alpha8 and B was the old generic EMA. The user
+then selected `minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors` for subsequent work. Both isolated Plan B
+workflows now pin that step600 EMA_B (SHA-256 `80FCC655…90DFAE`) while legacy workflows remain unchanged. Its
+first 416x224 segment-zero/soft/Plan-B chain strictly decodes without clipping or material DC, but review found
+that it requested `你在哪里` again in the continuation and therefore violates the one-utterance whole-video
+contract. That pack is invalidated for human acceptance and retained only as mechanical evidence. The runner now
+requests speech only in segment zero and silent classical-music continuation.
+The user nevertheless listened to the invalidated pair and reported no sound problem in either A or B. Hash-bound
+reveal maps A to soft context and B to Plan B, so both exact videos pass this limited audio diagnostic with no
+preference; repeated-dialogue acceptance, lip sync, and seam-specific listening remain open.
+A corrected one-utterance real pair now strictly decodes all three source clips and both 226-frame joined clips,
+with the shared context unchanged. VAD-enabled ASR finds `你在哪里` in segment zero and zero speech segments in
+both continuations. The user again judged both A and B free of sound problems; after reveal A is Plan B and B is
+soft context, so audio is tied and non-inferior for this exact pair. Joined-file ASR remains unstable between
+`哪里` and `那里` over music. The original largest-area face selector also produced a false low Plan-B identity
+score by choosing a background false positive in the first two continuation frames. Continuity tracking from the
+segment-zero face corrects Plan-B/soft boundary SFace to `0.873/0.875`, with the main face tracked in 102/102 frames
+for both routes. Shared-segment SyncNet is -3 frames under a center crop and -4 frames under all three dynamic-face
+crops at 25fps; a 400ms delayed-video control moves +9/+10 frames. Confidence is low, but the plus-or-minus-one-frame
+gate is not passed. Restricting evaluation to the ASR speech window remains -4 frames at higher confidence. A separate
+diagnostic that delays video by four
+native 24fps frames returns SyncNet to zero with decoded audio PCM unchanged, but freezes four opening frames and
+drops four ending frames. A smooth endpoint-preserving retime also returns zero with PCM unchanged, but changes
+pre/post-speech motion speed and blends fractional frames. The historical four/eight-NFE comparison is inconclusive
+because confidence and delayed-control response are inadequate. The user then completed the original/fixed/smooth
+three-way review at normal speed and reported `3组差不多，都还行` (all three are approximately equal and acceptable).
+The hash-bound original therefore passes human lip-sync review. Neither correction is integrated because it provides
+no perceived advantage while adding a known visual tradeoff. Since A and B share this byte-identical speech segment,
+the verdict does not rank Plan B versus soft context or validate exact wording or the subjective continuation seam.
+Eight NFE left 199 MiB; the corrected segment-zero/soft/Plan-B phases left 490/475/527 MiB, so the pair still fails
+the 512 MiB project margin and this remains Advanced EXP with no general lip-sync-stability, 16GB-safety or universal
+Plan-B claim.
+
+Because 416x224 was too blurred for a seam-quality decision, the identical contract was rerun at 960x544
+(0.52224 decimal megapixels). Segment zero and the two continuations contain exactly 124/102/102 frames; all source
+clips and both 226-frame joined reviews pass strict A/V decode, and the shared context remains unchanged. The
+segment-zero/soft/Plan-B phases left 1009/545/1122 MiB free, so all three pass the 512 MiB project margin in this
+exact run. The user found the two routes approximately equal but reported a visible color jump at the seam in both;
+after reveal A was soft context and B was Plan B. The routes therefore tie, but the old subjective seam-quality gate
+does not pass. This bounded resource pass is not a general 16GB-safety or lower-VRAM claim.
+
+Both isolated Plan B workflows now append an optional, default-on
+`MiniMaxH3LongVideoColorMatchT8Advanced` between Output Trim and CreateVideo. The RGB-mean-only V1 was rejected after
+the user still saw jumps in both routes. V2 combines pooled Reinhard Lab distribution matching with an 8x5 local RGB
+residual field, caps total per-pixel/channel change at 0.02, and fades correction within 24 frames. Suspected cuts,
+invalid SDR input, or mismatched state/checksum/chain/canvas contracts abstain instead of guessing. Disabled mode is
+pixel- and object-identical; neither mode changes native AV latent or audio. The final same-seed 960x512 (0.49152MP)
+pair completed with exact 124/102/102 frames, strict source/full/review-transport decode, and unchanged shared latent
+context and segment-zero color reference. Maximum local RGB jumps fell from 0.014492 to 0.001714 for soft context and
+from 0.008184 to 0.001238 for Plan B; the continuations left 532/515MiB free. In the hash-bound blind review the user
+still saw a slight jump on left-hand A but found right-hand B much better. Reveal mapped A to soft context and B to
+Plan B, so the Plan-B seam-color result is accepted for this exact sample while soft context retains a slight residual.
+This is not complete pair-wide elimination and does not establish identity/audio quality, general 16GB safety, or
+universal Plan-B superiority. The correction bound remains conservative to avoid unnatural grading or slow color return.
 
 [Browse all workflow categories](examples/workflows/README.md)
 
