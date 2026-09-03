@@ -1,0 +1,26 @@
+VDN — Video DeltaNet
+Copyright 2026 the VDN authors.
+
+This repository contains the VDN-H3 training and inference code, licensed under the
+Apache License, Version 2.0 (see LICENSE). It does not contain model weights.
+
+--------------------------------------------------------------------------------
+MiniMax H3
+--------------------------------------------------------------------------------
+
+MiniMax H3 is licensed under the MiniMax H3 Community License Agreement,
+Copyright © 2026 MiniMax. All Rights Reserved.
+
+MiniMax H3 is not distributed in this repository. The VDN-H3 weights, which are a
+derivative of MiniMax H3, are distributed separately at
+https://huggingface.co/OpenVDN/vdn-minimax-h3 under the MiniMax H3
+Community License Agreement. A verbatim copy of that agreement is included here at
+licenses/MiniMax-H3-Community-License-Agreement.txt.
+
+Running the code in this repository means running MiniMax H3 or a derivative of it,
+and is therefore subject to that agreement. The agreement grants rights only within
+its "Applicable Territory", defined as worldwide excluding the European Union, the
+United Kingdom, the Republic of Korea, and the United States of America, and states
+that use outside the Applicable Territory is not authorized. It also incorporates an
+Acceptable Use Policy. Read it in full before downloading or running MiniMax H3 or
+any derivative of it.

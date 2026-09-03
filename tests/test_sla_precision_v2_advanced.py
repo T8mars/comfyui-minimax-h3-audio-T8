@@ -237,13 +237,13 @@ def test_precision_v2_nodes_append_after_complete_v164_prefix():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 281
+    assert len(ids) == 284
     assert ids[276:279] == [
         "MiniMaxH3SLADynamicLoRABypassV2T8Advanced",
         "MiniMaxH3SLAPrecisionV2T8Advanced",
         "MiniMaxH3SLAPrecisionV2AuditT8Advanced",
     ]
-    assert ids[-2:] == [
+    assert ids[279:281] == [
         "MiniMaxH3NativeMaskedVideoContextT8Advanced",
         "MiniMaxH3LongVideoColorMatchT8Advanced",
     ]

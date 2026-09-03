@@ -1,4 +1,57 @@
 {
+  "openvdn_minimax_h3_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes with a pinned DMD8 frontend workflow; real 0.5MP DMD generation passes architecture, adapter, AV decode and exact-run 512MiB headroom gates, while human visual/audio/lip-sync review remains pending",
+    "date": "2026-09-03",
+    "category": "T8/MiniMax H3/Performance/Experimental",
+    "nodes": [
+      "MiniMaxH3VDNRuntimeAuditT8Advanced",
+      "MiniMaxH3VDNModelComposerT8Advanced",
+      "MiniMaxH3VDNExecutionPlanT8Advanced"
+    ],
+    "positions": [281, 282, 283],
+    "workflow": "examples/workflows/10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json",
+    "upstream": {
+      "repository": "https://huggingface.co/OpenVDN/vdn-minimax-h3",
+      "hf_revision": "18be6bcc4ee72585eee322ba28b5ccac2cf85ef0",
+      "source_revision": "b8cb28fbfca0266d1c7742a9f25ab8b58191de97",
+      "base_revision": "939557dc319dd91227e30195a763f272ba7f8765",
+      "source_license": "Apache-2.0",
+      "weight_license": "MiniMax H3 Community License",
+      "weight_license_boundary": "Applicable Territory excludes the European Union, United Kingdom, Republic of Korea, and United States of America; user must read the full downloaded agreement before use"
+    },
+    "architecture_contract": "50 native H3 blocks; chunk-5 radius-1 window softmax; both anchors; softmax gate; bidirectional linear attention with K/V 5x5 spatial and 5-tap temporal separable convolution, text state, alpha bridge and vdn_solve; exact grouped native PyTorch SDPA backend",
+    "stage_contracts": {
+      "stage_dmd_8nfe": "default plus turbo adapters, exactly 8 NFE, Euler/native_flow, shifts 12/3",
+      "stage_b_50nfe": "default adapter only, exactly 50 NFE, Euler/native_flow, shifts 12/3"
+    },
+    "scope": "v1 accepts plain T2VA [text|audio|video] only and rejects FL2VA, I2VA, L2VA, Ref2VA and hybrid/reference layouts before sampling",
+    "conflicts": "rejects pre-existing MODEL LoRA/weight patches and every competing DiT/attention owner; the DMD route already contains its published turbo adapter, so external EMA_B/Turbo must not be stacked",
+    "installed_assets": {
+      "root": "models/diffusion_models/OpenVDN/vdn-minimax-h3",
+      "linear_branch": "4279428112 bytes; SHA-256 DEC6981C7874F5B3BC92D1A02E256B673A3B3499DC1A124714BB3B19DA602855; 800 tensors",
+      "default_adapter": "334026912 bytes; SHA-256 58558FEF506F88BB41649242DE9B9B3A365DA806B51B2E96AFBBE1625222058A; 416 tensors; 104 Comfy patch targets",
+      "turbo_adapter": "851452696 bytes; SHA-256 24FC93C82FE84DC45D0627F4E72C637BC387D282BA18F60ED3B7F8C81089392C; 726 tensors; 259 Comfy patch targets",
+      "runtime_downloads": false,
+      "weights_redistributed": false
+    },
+    "base_boundary": "the supplied workflow explicitly uses allow_structural_base=true with the local structurally matching INT8/ConvRot H3; report remains base_provenance_exact=false and does not claim exact upstream BF16-base parity",
+    "real_validation": {
+      "runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/report.json",
+      "stage_b_runtime_audit": "artifacts/openvdn-h3-runtime-audit-20260903/stage_b_report.json",
+      "dmd_asset_hash_audit": "artifacts/openvdn-h3-runtime-audit-20260903/dmd_asset_hash_report.json",
+      "render": "artifacts/openvdn-h3-real-validation-20260903/20260903-142055/validation_report.json",
+      "canvas_frames": "960x512x73 at 24fps",
+      "seed": 2609032101,
+      "elapsed_seconds": 170.359,
+      "minimum_free_vram_mib": 612,
+      "strict_video_audio_combined_decode": true,
+      "audio_peak_abs": 0.20078665018081665,
+      "clipped_fraction": 0.0,
+      "output_sha256": "E6DD7960CF6B9D1DE5411659746DC62AA124788283B91CF89D37D25166F591DB",
+      "status": "MECHANICAL_PASS_HUMAN_REVIEW_PENDING"
+    },
+    "regression": "15 OpenVDN-focused tests, 194 changed-scope tests and 2022 full-project tests pass; full Ruff, 629 Python compile checks, 258 non-artifact JSON parses, Comfy Registry validation, version consistency and 190/190 source-user workflow mirror parity pass"
+  },
   "long_video_color_match_advanced": {
     "status": "implemented as a new append-only Advanced EXP node and integrated into the isolated Native Masked Plan B starter/continuation workflows; default enabled and explicitly optional. The RGB-mean-only v1 was human-rejected because both routes retained color jumps, with Plan B less severe. V2 combines pooled Reinhard Lab distribution matching with an 8x5 local RGB residual field; its final 0.492MP real pair passes strict mechanical and exact-run resource gates, and the hash-bound human blind review accepts the Plan B seam-color result while reporting a slight residual on soft context",
     "date": "2026-09-03",
@@ -2000,7 +2053,10 @@
     "MiniMaxH3SLAPrecisionV2T8Advanced",
     "MiniMaxH3SLAPrecisionV2AuditT8Advanced",
     "MiniMaxH3NativeMaskedVideoContextT8Advanced",
-    "MiniMaxH3LongVideoColorMatchT8Advanced"
+    "MiniMaxH3LongVideoColorMatchT8Advanced",
+    "MiniMaxH3VDNRuntimeAuditT8Advanced",
+    "MiniMaxH3VDNModelComposerT8Advanced",
+    "MiniMaxH3VDNExecutionPlanT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

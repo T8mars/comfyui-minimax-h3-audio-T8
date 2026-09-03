@@ -4,7 +4,7 @@
 
 A ComfyUI node pack for MiniMax H3 video and audio generation, with reference control, long-video workflows, face refinement, and acceleration tools.
 
-Current version: **1.66.0** · GPL-3.0-or-later
+Current version: **1.67.0** · GPL-3.0-or-later
 
 ## Features
 
@@ -16,6 +16,7 @@ Current version: **1.66.0** · GPL-3.0-or-later
 - Prompt Relay, SPEED, SLA, PDD, and Enhance-A-Video integrations
 - Fully local MV Vocal Lock V3 with the official Ref2V Turbo4 recipe, isolated-vocal drive, per-scene visual contracts, serial rendering, resume, and final one-time original-song mux
 - FastH3 Preview: T2VA four-step inference with optional real learned-gate 90% VSA execution
+- OpenVDN MiniMax H3: isolated T2VA hybrid-attention architecture with DMD 8-NFE and Stage B 50-NFE routes
 - NVIDIA H3 Super Acceleration: H3 4-step draft, full LTX VAE encode, and a 3-step LTX-2.5 refiner; TAEHV is final-decode only
 - FlashVSR v1.1: 2x/4x decoded-video restoration with fixed LCSA, an opt-in dynamic budget, memory-safe tiling, and untouched audio
 - RAFT motion audits, trajectory control, RealBasicVSR, FreeNoise, an AYS calibration contract, and CADS visual-reference annealing
@@ -191,6 +192,14 @@ Use the `FastH3_VSA_T2VA_4Step` workflow under [`10-speed`](examples/workflows/1
 `models/loras/FastH3-VSA/vsa-datafree/adapter_model.safetensors`.
 
 This route is limited to plain T2VA, four NFE, and shifts `12 / 3`. Real VSA additionally requires a Comfy Kitchen build exposing `topk_ratio`, `block_len`, and `coarse_gate`. If the kernel or all 50 learned gates are unavailable, the node reports the reason and falls back to valid dense four-step inference; it never labels dense attention as VSA. See [`10-speed/README.md`](examples/workflows/10-speed/README.md) for build details.
+
+## OpenVDN MiniMax H3 (Advanced EXP)
+
+Use [`10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json`](examples/workflows/10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json). The integration attaches OpenVDN's 50-block hybrid-attention branch to ComfyUI's native H3 model while preserving its chunk-5/radius-1 window, both anchors, bidirectional linear branch, text state, alpha bridge, and VDN solve contract. The Windows RTX backend uses exact grouped native SDPA and does not require FA4, Triton, or a Diffusers runtime patch.
+
+Install [OpenVDN/vdn-minimax-h3](https://huggingface.co/OpenVDN/vdn-minimax-h3/tree/main) revision `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0` under `models/diffusion_models/OpenVDN/vdn-minimax-h3/`. DMD composes the published default and turbo adapters and owns exactly 8 NFE; Stage B composes only the default adapter and owns exactly 50 NFE. Do not stack EMA_B, another Turbo adapter, SLA, VSA, Sol-Attn, BlockCache, or any other MODEL/attention owner. The weights are governed by the MiniMax H3 Community License; its Applicable Territory excludes the European Union, United Kingdom, Republic of Korea, and United States of America. Read the complete model-repository agreement before downloading or running them.
+
+Version 1 is strict plain T2VA only and rejects FL2VA, I2VA, L2VA, Ref2VA, and hybrid references. The supplied workflow explicitly enables the structural-base exception for the local INT8/ConvRot H3 base, and the report keeps that provenance unproven rather than relabeling it as the exact upstream BF16 base. A real 960x512x73 DMD8 run passed branch/adapter application, strict AV decoding, and the machine-specific 512 MiB headroom gate. It remains Advanced EXP and makes no universal visual, audio, lip-sync, or 16 GB safety claim.
 
 ## Official Core Compatibility
 

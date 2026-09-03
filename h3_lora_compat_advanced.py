@@ -279,11 +279,15 @@ def convert_fastvideo_h3_adapter(
         if b_key not in state:
             raise ValueError(f"FastVideo H3 LoRA A tensor has no B pair: {key}")
         module = key[: -len(".lora_A.weight")]
-        matched = next((item for item in direct_suffixes if module.endswith(item)), None)
-        if matched is None:
-            raise ValueError(f"unsupported FastVideo H3 LoRA module: {module}")
-        scope = module[: -len(matched)]
-        target = _fastvideo_scope_target(scope) + direct_suffixes[matched]
+        if module == "norm_out.linear":
+            matched = None
+            target = "final_layer.adaln_proj.linear"
+        else:
+            matched = next((item for item in direct_suffixes if module.endswith(item)), None)
+            if matched is None:
+                raise ValueError(f"unsupported FastVideo H3 LoRA module: {module}")
+            scope = module[: -len(matched)]
+            target = _fastvideo_scope_target(scope) + direct_suffixes[matched]
         a = state[key]
         b = state[b_key]
         if a.ndim != 2 or b.ndim != 2 or b.shape[1] != a.shape[0]:

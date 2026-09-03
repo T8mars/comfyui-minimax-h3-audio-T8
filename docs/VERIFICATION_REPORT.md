@@ -5,6 +5,59 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-03 — OpenVDN MiniMax H3 native Comfy integration
+
+The implementation is pinned to Hugging Face revision
+`18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`, source revision
+`b8cb28fbfca0266d1c7742a9f25ab8b58191de97`, and declared H3 base revision
+`939557dc319dd91227e30195a763f272ba7f8765`. It appends three Advanced EXP nodes at positions
+281-283 and leaves all prior node IDs, schemas, defaults, workflows, and stable sampling code unchanged.
+The source algorithm is Apache-2.0; weights remain separately installed under the MiniMax H3 Community
+License and are not redistributed by this repository. Its Applicable Territory excludes the European
+Union, United Kingdom, Republic of Korea, and United States of America. The upstream README, NOTICE,
+Apache license, and full weight agreement are installed beside the local model; users must review the
+agreement before use.
+
+The native integration preserves all 50 hybrid-attention blocks, chunk-5/radius-1 window softmax,
+both anchor frames, softmax and output gates, bidirectional linear branch, K/V spatial-temporal
+separable convolutions, FP32 frame statistics, text state, alpha bridge, and `vdn_solve`. A dense-mask
+reference test proves the grouped PyTorch SDPA backend exactly matches the intended both-anchor mask.
+This backend is the supported Windows/Ada path and does not claim the performance of upstream FA4/Triton
+H200/B200 measurements.
+
+The local asset audit validates an 800-tensor 4,279,428,112-byte branch, a 416-tensor default adapter,
+and a 726-tensor turbo adapter against pinned SHA-256 values. Real Comfy composition on the local
+INT8/ConvRot H3 base loaded all 800 branch tensors, applied all 104 default and 259 turbo patch targets,
+installed 50 block replacements, and registered the branch through Comfy's additional-model lifecycle.
+The current base is structurally compatible but lacks proof of exact upstream BF16 revision identity;
+the workflow therefore sets `allow_structural_base=true` explicitly and every report retains
+`base_provenance_exact=false`.
+
+The representative DMD run is
+`artifacts/openvdn-h3-real-validation-20260903/20260903-142055/validation_report.json`: 960x512,
+73 frames at 24 fps, seed 2609032101, exactly 8 NFE, Euler/native_flow, and video/audio shifts 12/3.
+It completed in 170.359 seconds with 612 MiB minimum free VRAM. The final SHA-256 is
+`E6DD7960CF6B9D1DE5411659746DC62AA124788283B91CF89D37D25166F591DB`; H.264 video, AAC 32 kHz stereo
+audio, and combined transport strictly decode. One immediate decoder invocation reported a transient
+CABAC error even though exact decoded bytes were complete; repeated strict single-thread reads passed,
+and the validator now records bounded retry history instead of misclassifying that post-write race.
+PCM is finite, peak absolute amplitude is 0.20078665, and no sample reaches the clipping threshold.
+
+The contact sheet shows stable subject, background, exposure, and distinct mouth states, but this is
+not a perceptual AV or lip-sync acceptance. Status is `MECHANICAL_PASS_HUMAN_REVIEW_PENDING`. Version 1
+is fail-closed plain T2VA only; all reference/hybrid layouts and every competing MODEL/attention owner
+are rejected. Stage B's separate real composition report at
+`artifacts/openvdn-h3-runtime-audit-20260903/stage_b_report.json` passes pinned hashes, all 800 branch
+tensors, all 104 default-adapter targets, 50 block replacements, and the 50-NFE contract; no separate
+50-step quality/performance render has been claimed.
+
+The final source gates are 15 OpenVDN-focused tests, 194 changed-scope tests, and 2,022 full-project
+tests, plus full Ruff, 629 Python compile checks, 258 non-artifact JSON parses, Comfy Registry
+validation, four-file version consistency at 1.67.0, `git diff --check`, and exact 190/190
+source/user workflow mirror parity. The DMD asset-only hash report is
+`artifacts/openvdn-h3-runtime-audit-20260903/dmd_asset_hash_report.json`. No commit, push, package, or
+Registry publication is implied by these local gates.
+
 ## 2026-09-03 — Native Masked Plan B optional Color Match
 
 The preceding 960x544 blind pair received a human tie: A was soft context and B was Plan B. The user nevertheless

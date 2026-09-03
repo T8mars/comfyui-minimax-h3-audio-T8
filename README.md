@@ -4,7 +4,7 @@
 
 MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制、长视频、修脸和加速。
 
-当前版本：**1.66.0** · GPL-3.0-or-later
+当前版本：**1.67.0** · GPL-3.0-or-later
 
 ## 主要功能
 
@@ -16,6 +16,7 @@ MiniMax H3 的 ComfyUI 节点包：生成视频和声音，也支持参考控制
 - Prompt Relay、SPEED、SLA、PDD、Enhance-A-Video
 - 全本地 MV Vocal Lock V3：官方 Ref2V Turbo4 配置、独立人声驱动、逐镜头视觉合同、串行生成、断点续跑、原曲最终单次混入
 - FastH3 Preview：T2VA 4步，可选真实 learned-gate VSA 90% 稀疏执行
+- OpenVDN MiniMax H3：独立T2VA混合注意力架构，支持DMD 8步与Stage B 50步
 - NVIDIA H3 Super Acceleration：H3 4步草稿经完整 LTX VAE 编码后接 LTX-2.5 3步 Refiner（TAEHV仅最终解码）
 - FlashVSR v1.1：成片2×/4×超分、固定LCSA、动态预算候选和低显存分块，原音频不处理
 - RAFT运动审计、轨迹控制、RealBasicVSR、FreeNoise、AYS校准契约、CADS视觉参考退火
@@ -175,6 +176,14 @@ FL2VA、Ref2VA、pruned 和完整基模不要混用。
 该路线只支持普通 T2VA、4 NFE、shift `12 / 3`。真正 VSA 还需要带
 `topk_ratio / block_len / coarse_gate`接口的 Comfy Kitchen；缺少内核或50层 learned gate 时会明确回退
 Dense 4步，不会冒充稀疏执行。安装与源码构建说明见[`10-speed/README.md`](examples/workflows/10-speed/README.md)。
+
+## OpenVDN MiniMax H3（Advanced EXP）
+
+工作流在[`10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json`](examples/workflows/10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json)。它用ComfyUI原生H3模型承载OpenVDN发布的50层混合注意力分支，保留`chunk=5 / radius=1 / 首尾锚点 / 双向线性分支 / text state / alpha bridge / VDN solve`合同；Windows RTX默认使用精确分组原生SDPA，不依赖FA4、Triton或Diffusers运行时补丁。
+
+把[OpenVDN/vdn-minimax-h3](https://huggingface.co/OpenVDN/vdn-minimax-h3/tree/main)固定revision `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`的`stage-dmd-step-250`放入`models/diffusion_models/OpenVDN/vdn-minimax-h3/`。DMD默认内部加载default和turbo adapter并固定8 NFE；Stage B内部只加载default adapter并固定50 NFE。不要再叠加EMA_B、Turbo、SLA、VSA、Sol-Attn、BlockCache或其他MODEL/Attention补丁。权重遵循MiniMax H3 Community License，Applicable Territory排除欧盟、英国、韩国和美国；下载或运行前必须阅读模型仓库完整协议。
+
+v1严格只支持普通T2VA；FL2VA、I2VA、L2VA、Ref2VA和任何混合参考都会明确拒绝。当前配套工作流使用结构匹配的本地INT8/ConvRot H3底模并显式开启`allow_structural_base`，报告会保留“未证明等同上游BF16 base”的边界。960×512×73真实DMD8样本已通过分支/adapter完整应用、严格音画解码和本机512MiB余量门，但仍是Advanced EXP，不能据此宣称普遍画质、声音、口型或16GB安全。
 
 ## 官方核心兼容
 

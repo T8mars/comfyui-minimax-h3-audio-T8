@@ -1,5 +1,20 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-09-03 OpenVDN MiniMax H3：新增三个尾部Advanced EXP节点，按固定revision加载50层
+> 混合注意力分支与DMD/Stage B adapter，并通过Comfy ModelPatcher管理额外模型。DMD路线固定8 NFE，
+> Stage B固定50 NFE，均固定Euler/native_flow与12/3 shift。v1严格只接受普通T2VA，拒绝所有图片、
+> 视频、音频参考和混合任务，也拒绝旧EMA_B、SLA、VSA、Sol-Attn、BlockCache或其他Attention owner。
+> Windows RTX实现使用等价分组原生SDPA，不要求FA4/Triton/Diffusers补丁。
+>
+> 权重目录为`models/diffusion_models/OpenVDN/vdn-minimax-h3`，固定HF revision
+> `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0`；节点运行时不下载。配套工作流位于
+> `10-speed/2026-09-03_H3_OpenVDN_DMD8_T2VA_0p5MP_Advanced_EXP.json`。本机960×512×73
+> DMD8真实运行应用800个branch tensor及104+259个adapter target，严格音画解码通过，最低空闲显存
+> 612MiB。当前结构匹配INT8/ConvRot底模通过显式`allow_structural_base`使用，报告保持
+> `base_provenance_exact=false`；在人审前不宣称画质、音频或口型通过。
+> OpenVDN源码是Apache-2.0，权重则遵循MiniMax H3 Community License；其Applicable Territory排除
+> 欧盟、英国、韩国和美国。完整协议已下载到模型目录，用户必须在运行前自行确认许可适用。
+
 > 2026-09-03 Native Masked Plan B Color Match: the two isolated starter/continuation workflows now append
 > `MiniMaxH3LongVideoColorMatchT8Advanced` after Output Trim and before CreateVideo. It is optional and
 > enabled by default. The RGB-mean-only V1 was human-rejected because B changed less but both still changed,

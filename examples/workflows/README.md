@@ -13,7 +13,7 @@
 | `07-motion-detail` | 动态引导、尾段细化、Restart、STG与组合采样 |
 | `08-multi-keyframe` | 首尾帧之外的中间关键帧时间线 |
 | `09-hybrid-model` | FL2VA/Ref2VA混合权重补丁、兼容审计和显存策略 |
-| `10-speed` | SPEED空间渐进采样、频谱标定，以及FastH3 T2VA 4步 learned-gate VSA研究路线 |
+| `10-speed` | SPEED空间渐进采样、频谱标定、FastH3 T2VA 4步VSA，以及OpenVDN H3混合注意力DMD8/Stage B路线 |
 | `11-studio-production` | 时间线、上下文、选择性修复、解码安全和交付工具 |
 | `12-system-memory` | 环境审计、激活分块、Qwen前缀缓存、外部BlockCache组合、轨迹诊断和外部BlockSwap桥接 |
 | `13-latent-upscale` | 普通32整除放大、学习型3D latent放大与二阶段H3生成 |

@@ -1,5 +1,25 @@
 # Third-party notices
 
+## OpenVDN MiniMax H3 hybrid attention
+
+The optional OpenVDN MiniMax H3 Advanced integration adapts the hybrid-attention
+mathematics published by [`OpenVDN/vdn-minimax-h3`](https://huggingface.co/OpenVDN/vdn-minimax-h3)
+at model revision `18be6bcc4ee72585eee322ba28b5ccac2cf85ef0` and source revision
+`b8cb28fbfca0266d1c7742a9f25ab8b58191de97`. The reviewed source is Apache-2.0;
+the separately downloaded model artifacts are governed by the MiniMax H3 Community
+License included in that model repository. The upstream Apache license and NOTICE are
+preserved at [`OpenVDN-LICENSE.txt`](THIRD_PARTY_NOTICES/OpenVDN-LICENSE.txt) and
+[`OpenVDN-NOTICE.txt`](THIRD_PARTY_NOTICES/OpenVDN-NOTICE.txt). The T8 repository does
+not redistribute those weights. Users install them separately and remain responsible
+for their terms. The weight agreement's Applicable Territory excludes the European
+Union, United Kingdom, Republic of Korea, and United States of America; read the full
+agreement in the downloaded model directory before use.
+
+The integration is rewritten for ComfyUI's native fused-QKV H3 model, PackedLayout,
+ModelPatcher lifecycle, and grouped PyTorch SDPA. It does not vendor or import the
+upstream Diffusers transformer patch, FlashAttention-4/Triton kernels, or model weights.
+The runtime never downloads files.
+
 ## FastVideo FastH3 Preview VSA and Comfy Kitchen
 
 The optional FastH3 VSA route is a ComfyUI integration informed by the Apache-2.0

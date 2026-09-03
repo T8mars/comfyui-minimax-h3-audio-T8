@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 281
+    assert len(ids) == 284
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -87,15 +87,23 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
         "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
         "MiniMaxH3AudioRefineLongVideoDeliveryT8Advanced",
     ]
-    assert ids[-2:] == [
+    assert ids[279:281] == [
         "MiniMaxH3NativeMaskedVideoContextT8Advanced",
         "MiniMaxH3LongVideoColorMatchT8Advanced",
     ]
-    color_schema = schemas[-1]
+    color_schema = schemas[280]
     color_inputs = {item.id: item for item in color_schema.inputs}
     assert color_schema.is_experimental is True
     assert color_schema.category == "T8/MiniMax H3/Long Video/Advanced"
     assert color_inputs["enabled"].default is True
+    assert ids[281:] == [
+        "MiniMaxH3VDNRuntimeAuditT8Advanced",
+        "MiniMaxH3VDNModelComposerT8Advanced",
+        "MiniMaxH3VDNExecutionPlanT8Advanced",
+    ]
+    for schema in schemas[281:]:
+        assert schema.is_experimental is True
+        assert schema.category == "T8/MiniMax H3/Performance/Experimental"
     assert ids[248:254] == [
         "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
         "MiniMaxH3TimedImageReferenceT8Advanced",
