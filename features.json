@@ -1,4 +1,28 @@
 {
+  "h3_world_advanced": {
+    "status": "P0-P4 complete; the fixed 50-step forward/still pair passed exact-media, strict-decode, blind human action-control and reveal-analysis gates; four formal Advanced nodes plus the formal workflow passed all v1.71.0 release gates and isolated package import",
+    "date": "2026-09-04",
+    "category": "T8/MiniMax H3/World",
+    "nodes": [
+      "MiniMaxH3WorldActionTimelineT8Advanced",
+      "MiniMaxH3WorldModelComposerT8Advanced",
+      "MiniMaxH3WorldI2VAConditioningT8Advanced",
+      "MiniMaxH3WorldSafeVideoSaveT8Advanced"
+    ],
+    "positions": [288, 289, 290, 291],
+    "upstream": {
+      "project": "https://danzer1xxxxchan.github.io/H3-World/",
+      "repository": "https://github.com/Danzer1xxxxChan/H3-World",
+      "model": "https://huggingface.co/DANNY621/H3-World",
+      "audited_repository_commit": "8174344933fe8b9fcd1cd131db177c30226f1aaf",
+      "model_revision": "8883340a740842b5c40b45383e5b75df34931806"
+    },
+    "model_contract": "step-10000.safetensors is a pure rank-32 LoRA with 104 A/B pairs; all 104 targets are statically shape-compatible with the local full MiniMax H3 FL2VA INT8/ConvRot base, so no model conversion is required",
+    "execution_contract": "v1 is fixed to first-frame I2VA at 832x480, 124 frames, 24fps and 37 action latents; each action sentence is Qwen-encoded independently, scene/action spans are Token-Refiner-isolated, action text uses mirrored video-time positions, and the main 50 blocks use a directed FlexAttention mask binding each action only to its own video latent",
+    "stacking": "isolated formal Advanced route; current v1 rejects other H3 layout patches, DiT replacements, attention hooks and attention overrides",
+    "output_contract": "the H3-World workflow bypasses ComfyUI core's in-process PyAV encoder after both H.264 and AV1 reproduced damaged packets under the loaded 50-step run; RGB frames are piped to an isolated single-thread libx264 process, audio is muxed as AAC, both video-only and final AV files must strictly decode, and only then is the MP4 atomically published",
+    "validation": "CPU contract tests cover all 11 upstream action presets, compound fixed-clause ordering, custom timeline tiling, tamper detection, directed-mask truth table, mirrored positions, refiner span tiling, upstream scale-to-cover center cropping and append-only schemas. The real LoRA attached all 104 targets. Formal forward and still runs used the upstream parking-garage prompt, seed 2, 50 steps, 832x480x124 at 24fps and completed strictly serially. Both isolated H.264/AAC outputs contain exactly 124 frames, 32kHz stereo audio and 5.167-second A/V duration, and passed strict video-only, audio-only and combined decode. Forward SHA-256 is A6AC6B7D03243AE0F8D4E3F6000503F43DE4505F9707BAF7B5B6291CC516BE28; still SHA-256 is BD198D52289FB894FE6D97CDC20BF61383EAE1F0327077ADB6D935F9EA1D59DA. Blind screening found no black/frozen frames, non-finite audio or clipping; forward mean optical-flow magnitude was 0.9250 versus still 0.5579, while adjacent-frame absolute difference was 0.01430 versus 0.00915, so the candidates are not a cached duplicate. The submitted full-length human review SHA-256 is DA0BC93D4DBF5118DC046023030710A88335D824594B89F2E0609640DC2DECD9. The reviewer selected A as forward, accepted stability, rated visual quality as a tie and accepted both audio tracks. Reveal confirmed A was the actual forward run; the independent analyzer returned p3_fixed_material_gate=PASS and promotion_allowed=true. The formal workflow is examples/workflows/26-h3-world/2026-09-04_H3_World_I2VA_832x480_124f_50step_Advanced.json. Final v1.71.0 P4 passed 2163 repository tests with 6 existing dependency warnings, full Ruff, 658 Python compiles, 276 non-artifact JSON parses, 204/204 workflow mirrors, four-file version consistency, Registry validation, security scan, whitelist-only CPU startup and git diff checks. Stable sampling.py SHA-256 remained 44DCD07FF8160FF92149E04221C206E3A37EC2188EF6164EE8CE84BBE849B105. The formal comfy node pack contains no model, A/V or proprietary binary payload, its five H3-World delivery files match source hashes, and isolated extraction imports all 292 node IDs uniquely."
+  },
   "dlss_nr_advanced": {
     "status": "released as four formal Advanced nodes in v1.70.0 after P0-P5; corrected v1.3 real image/video runs and full four-method review passed; all four methods were acceptable with different skin/texture character and no universal winner; four independent workflows and the clean Registry package passed",
     "date": "2026-09-04",
@@ -2158,7 +2182,11 @@
     "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
     "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced",
     "MiniMaxH3DLSSNRVideoFramesT8Advanced",
-    "MiniMaxH3DLSSNRVideoFileT8Advanced"
+    "MiniMaxH3DLSSNRVideoFileT8Advanced",
+    "MiniMaxH3WorldActionTimelineT8Advanced",
+    "MiniMaxH3WorldModelComposerT8Advanced",
+    "MiniMaxH3WorldI2VAConditioningT8Advanced",
+    "MiniMaxH3WorldSafeVideoSaveT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

@@ -4,7 +4,7 @@
 
 MiniMax H3 Audio T8 is a ComfyUI node pack for joint video and audio generation. It includes practical workflows for text and image animation, first/last-frame control, image/video/audio references, long video, lip sync, acceleration, and final-video restoration.
 
-Current version: **1.70.0** · 288 nodes · GPL-3.0-or-later
+Current version: **1.71.0** · 292 nodes · GPL-3.0-or-later
 
 ## Where to start
 
@@ -13,8 +13,9 @@ If this is your first time using the pack:
 1. Run a basic H3 workflow from [`examples/workflows/01-basic-generation`](examples/workflows/01-basic-generation).
 2. For image or audio control, use the workflows under [`02-audio-control`](examples/workflows/02-audio-control) and the matching reference folders.
 3. For OpenVDN eight-step generation, download [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy), then use an `OpenVDN_DMD8_*_Advanced.json` workflow from [`10-speed`](examples/workflows/10-speed).
-4. For long video or music video work, start with [`04-long-video`](examples/workflows/04-long-video) or [`24-mv-lipsync`](examples/workflows/24-mv-lipsync).
-5. For image or finished-video upscaling, use [`25-dlss-nr`](examples/workflows/25-dlss-nr), an optional Windows RTX post-process.
+4. For WASD character and camera control, use [`26-h3-world`](examples/workflows/26-h3-world); the first release is fixed to first-frame I2VA.
+5. For long video or music video work, start with [`04-long-video`](examples/workflows/04-long-video) or [`24-mv-lipsync`](examples/workflows/24-mv-lipsync).
+6. For image or finished-video upscaling, use [`25-dlss-nr`](examples/workflows/25-dlss-nr), an optional Windows RTX post-process.
 
 Advanced workflows include notes on the canvas. Replace the model and input media before running them. Avoid stacking several LoRAs, attention backends, or sampler owners unless the workflow explicitly asks for it.
 
@@ -29,6 +30,7 @@ Advanced workflows include notes on the canvas. Replace the model and input medi
 - Single-image and multi-image Ref2VA
 - Video, audio, and mixed references
 - Native joint video/audio decoding and saving
+- H3-World first-frame I2VA with WASD and IJKL/F character/camera timelines
 
 ### Audio and lip sync
 
@@ -80,6 +82,7 @@ This node pack follows recent native MiniMax H3 APIs in ComfyUI. If every node t
 | Video and audio VAEs | `models/vae` |
 | Turbo, PDD, SLA, and other LoRAs | `models/loras` |
 | Complete OpenVDN model bundle | [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy); already arranged under the correct `models` folders |
+| H3-World action LoRA | `step-10000.safetensors` from [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World) → `models/loras/minimax/H3-World` |
 | FlashVSR / RealBasicVSR | `models/upscale_models` or the workflow's named folder |
 | DLSS-NR v1.3 external runtime (not a model) | `models/DLSS-NR/1.3` (user supplied; never downloaded or redistributed by the node) |
 | Face, optical-flow, and segmentation models | The folder named by the workflow or its documentation |
@@ -127,6 +130,32 @@ All four methods passed the non-regression gate on the three fixed review clips.
 different skin and texture character but no universal winner. Standard is therefore a practical
 starting point, not a claim that DLSS-NR is always best. Upscaling cannot repair identity, lip-sync,
 or real texture information already missing from the source.
+
+## H3-World: WASD character and camera control
+
+Upstream project: [`Danzer1xxxxChan/H3-World`](https://github.com/Danzer1xxxxChan/H3-World) ·
+model: [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World)
+
+The first release has one deliberate contract: a first-frame I2VA at 832x480, 124 frames, and 24 fps.
+Its 37 latent-time controls can move the character forward, backward, or sideways and tilt or pan the
+camera. The `custom` preset accepts a tiled JSON timeline for mixed actions. Other input aspect ratios
+are scaled to cover and center-cropped, never stretched.
+
+Download the LoRA:
+
+```bash
+hf download DANNY621/H3-World step-10000.safetensors --local-dir ComfyUI/models/loras/minimax/H3-World
+```
+
+The released file is already a directly loadable ComfyUI LoRA with 104 A/B pairs; no conversion is
+needed. The workflow also uses the existing full `minimax_h3_fl2va_int8_convrot.safetensors`, Qwen3-VL
+encoder, video VAE, and audio VAE. It adds no pip dependency, but its safe final MP4 writer requires
+`ffmpeg` on `PATH`. Start from [`examples/workflows/26-h3-world`](examples/workflows/26-h3-world) and do
+not stack OpenVDN, SLA, VSA, Sol-Attn, BlockCache, or another model/attention owner on this route.
+
+The fixed parking-garage blind review passed: the reviewer correctly identified the continuously moving
+H3-World candidate, accepted its stability and both audio tracks, and rated visual quality as a tie. This
+promotes the fixed contract to a formal Advanced feature; it is not a universal quality or VRAM claim.
 
 ## OpenVDN: the recommended eight-step route
 

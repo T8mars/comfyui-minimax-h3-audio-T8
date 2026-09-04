@@ -1,0 +1,847 @@
+{
+  "id": "fa2a36ab-c977-4cbe-adaf-321e0c4bf67b",
+  "revision": 0,
+  "last_node_id": 14,
+  "last_link_id": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3WorldModelComposerT8Advanced",
+      "title": "MiniMax H3-World Model Composer / 模型组合 (EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3WorldModelComposerT8Advanced"
+      },
+      "widgets_values": [
+        "minimax\\H3-World\\step-10000.safetensors",
+        1.0,
+        true
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "Load CLIP",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "title": "Load Image",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "h3_world_official_first_frame.png"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3WorldActionTimelineT8Advanced",
+      "title": "MiniMax H3-World Action Timeline / 动作时间线 (EXP/T8)",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "action_plan",
+          "type": "T8_H3_WORLD_ACTION_PLAN",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "action_script_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3WorldActionTimelineT8Advanced"
+      },
+      "widgets_values": [
+        "forward",
+        "[]"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3WorldI2VAConditioningT8Advanced",
+      "title": "MiniMax H3-World I2VA 832×480×124 (EXP/T8)",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        254
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "action_plan",
+          "type": "T8_H3_WORLD_ACTION_PLAN",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            8,
+            15
+          ]
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "action_script_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3WorldI2VAConditioningT8Advanced"
+      },
+      "widgets_values": [
+        "A man in a yellow floral shirt stands in a dim, multi-level concrete parking garage."
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 7
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        50,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2,
+        "fixed"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 11
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 12
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 13
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 14
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 17
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3WorldSafeVideoSaveT8Advanced",
+      "title": "MiniMax H3-World Safe Video Save / 安全视频保存 (EXP/T8)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3WorldSafeVideoSaveT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMaxH3/H3-World/h3_world_i2va_forward_832x480_124f",
+        18
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      3,
+      0,
+      8,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      4,
+      0,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      4,
+      5,
+      0,
+      8,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      6,
+      0,
+      8,
+      3,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      4,
+      "T8_H3_WORLD_ACTION_PLAN"
+    ],
+    [
+      7,
+      2,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      8,
+      8,
+      1,
+      9,
+      1,
+      "LATENT"
+    ],
+    [
+      9,
+      9,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      8,
+      0,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      11,
+      11,
+      0,
+      12,
+      0,
+      "NOISE"
+    ],
+    [
+      12,
+      10,
+      0,
+      12,
+      1,
+      "GUIDER"
+    ],
+    [
+      13,
+      9,
+      1,
+      12,
+      2,
+      "SAMPLER"
+    ],
+    [
+      14,
+      9,
+      2,
+      12,
+      3,
+      "SIGMAS"
+    ],
+    [
+      15,
+      8,
+      1,
+      12,
+      4,
+      "LATENT"
+    ],
+    [
+      16,
+      12,
+      0,
+      13,
+      0,
+      "LATENT"
+    ],
+    [
+      17,
+      4,
+      0,
+      13,
+      1,
+      "VAE"
+    ],
+    [
+      18,
+      5,
+      0,
+      13,
+      2,
+      "VAE"
+    ],
+    [
+      19,
+      13,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      13,
+      1,
+      14,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "MiniMax H3-World I2VA 832x480 124f 50-step Advanced EXP"
+  },
+  "version": 0.4
+}

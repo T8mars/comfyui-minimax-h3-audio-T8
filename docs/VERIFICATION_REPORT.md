@@ -5,6 +5,76 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-04 — H3-World first-frame I2VA P0-P3 verification
+
+The integration is pinned to `Danzer1xxxxChan/H3-World` commit
+`8174344933fe8b9fcd1cd131db177c30226f1aaf` and `DANNY621/H3-World` model revision
+`8883340a740842b5c40b45383e5b75df34931806`. The published
+`step-10000.safetensors` is a pure rank-32 LoRA containing 104 A/B pairs. All 104 targets are
+shape-compatible with the installed full MiniMax H3 FL2VA INT8/ConvRot base, so the public model is
+directly loadable by ComfyUI and no converted checkpoint is required. Its installed path is
+`models/loras/minimax/H3-World/step-10000.safetensors`, its size is 131,227,832 bytes, and its SHA-256 is
+`DDD9187B920B1E52C2D090F4E264FD83D8D433EFC2A5B159E58883AEAF96E526`.
+
+Four append-only formal Advanced nodes occupy positions 288-291: Action Timeline, Model Composer, I2VA
+Conditioning, and Safe Video Save. Version 1 fixes the contract to first-frame I2VA at 832x480, 124
+frames, 24 fps, 50 sampling steps, CFG 1.0, and 37 action latents. Each action sentence is independently
+Qwen-encoded and Token-Refiner-isolated. Action tokens receive mirrored video-time positions, while a
+directed FlexAttention mask connects each action only to its assigned video interval across all 50 main
+blocks. A non-matching first-frame aspect ratio uses scale-to-cover followed by a center crop rather than
+stretching. Competing H3 layout, MODEL, DiT, or attention owners are rejected instead of silently stacked.
+
+The final saver pipes RGB frames to a crash-isolated, single-thread libx264 process, muxes exact-duration
+AAC, requires strict video-only, audio-only, and combined decode, and only then publishes the MP4 by atomic
+replace. FFmpeg is therefore an explicit runtime dependency. This replaced damaged in-process H.264/AV1
+packets reproduced while the 50-step model remained resident.
+
+Two formal runs used the upstream parking-garage prompt, seed 2, and identical model, conditioning,
+sampling, and encoding settings, changing only the action timeline. The forward output is
+`F:/AI-T8-video-onekey/ComfyUI/output/MiniMaxH3/H3-World/official50_forward_h3_world_i2va_832x480_124f_00001_.mp4`
+with SHA-256 `A6AC6B7D03243AE0F8D4E3F6000503F43DE4505F9707BAF7B5B6291CC516BE28`; the still control is
+`F:/AI-T8-video-onekey/ComfyUI/output/MiniMaxH3/H3-World/official50_still_h3_world_i2va_832x480_124f_00001_.mp4`
+with SHA-256 `BD198D52289FB894FE6D97CDC20BF61383EAE1F0327077ADB6D935F9EA1D59DA`. Both contain exactly 124
+832x480 H.264 frames, 32 kHz stereo AAC, and 5.167 seconds of video and audio, and both passed all three
+strict decode paths.
+
+The anonymous screening found no black or frozen frames and no non-finite or clipped audio. Forward mean
+optical-flow magnitude was 0.9250 versus 0.5579 for still; adjacent-frame absolute difference was 0.01430
+versus 0.00915. These measurements prove that the candidates are not a duplicate cache result, but do not
+by themselves prove that the requested action is perceptually correct. The public review export is bound
+to the exact `screening.json` SHA-256, requires confirmation of full-length viewing plus all action,
+stability, visual, and audio votes, and is checked by an independent reveal analyzer. The submitted review
+SHA-256 is `DA0BC93D4DBF5118DC046023030710A88335D824594B89F2E0609640DC2DECD9`. The reviewer selected A as the
+continuous-forward candidate, accepted stability, rated visual quality as a tie, and accepted both audio
+tracks. Reveal confirmed A was the actual forward run; the analyzer returned
+`p3_fixed_material_gate=PASS` with `promotion_allowed=true`. The four nodes and workflow are therefore
+promoted to formal Advanced status for this fixed contract.
+
+At the formal v1.71.0 checkpoint the H3-World and registration-focused scope passed, the full repository
+suite passed 2,163 tests with six existing dependency warnings, and full Ruff, 658 Python compiles, 276
+non-artifact JSON parses, 204/204 source/user workflow mirrors, version consistency, Registry validation,
+security scan, whitelist-only CPU startup, and git diff checks passed. The stable `sampling.py` SHA-256
+remained `44DCD07FF8160FF92149E04221C206E3A37EC2188EF6164EE8CE84BBE849B105`. All real GPU runs were strictly
+serial.
+
+An official `comfy node pack` preflight was also run through a temporary Git index containing the intended
+working-tree additions; the real repository index SHA-256 remained unchanged. The resulting unreleased
+v1.70.0 EXP candidate contains 535 entries and has SHA-256
+`71B592C6CFFD2DB1833A09C244EA59E7BAC474EF50DEEC403AB8FA381BCAD3E5`. It contains both H3-World runtime
+modules plus the workflow, workflow README, and official first-frame asset with byte-for-byte source
+hashes. It has no duplicate or unsafe paths, no model weights or A/V media, and no `.comfyignore`-excluded
+artifacts, tests, tools, docs, or GitHub automation files. This proves intended package coverage only; it
+is not a final release package and must not be published before the P3 human gate and version promotion.
+
+After P3 passed, the formal v1.71.0 package was rebuilt with the same temporary-index isolation. It contains
+535 entries, is 2,794,091 bytes, and has SHA-256
+`DE8A1A68E5774CF9A2B820E79A4BE252136DAC7E37534EF007C05A95EB9658A5`. It contains no model weights, A/V
+media, proprietary EXE/DLL files, or excluded development directories. Both H3-World runtime modules, the
+formal workflow, its README, and the first-frame asset match their source hashes; an isolated extraction
+imports all 292 node IDs uniquely, with the four formal H3-World nodes still occupying positions 288-291.
+The real Git index remained unchanged. This is a verified local release candidate, not a Git commit,
+GitHub push, or Registry publication.
+
 ## 2026-09-03 — OpenVDN curve-pruned base compatibility
 
 The previous blanket rejection of curve-basis H3 checkpoints has been replaced by an exact-signature

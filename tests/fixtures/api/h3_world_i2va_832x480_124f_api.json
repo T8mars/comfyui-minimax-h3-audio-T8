@@ -1,0 +1,114 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3WorldModelComposerT8Advanced",
+    "inputs": {
+      "model": ["1", 0],
+      "lora_name": "minimax\\H3-World\\step-10000.safetensors",
+      "strength_model": 1.0,
+      "compile_flex_attention": true
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "h3_world_official_first_frame.png"
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3WorldActionTimelineT8Advanced",
+    "inputs": {
+      "action_preset": "forward",
+      "custom_timeline_json": "[]"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3WorldI2VAConditioningT8Advanced",
+    "inputs": {
+      "clip": ["3", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0],
+      "first_frame": ["6", 0],
+      "prompt": "A man in a yellow floral shirt stands in a dim, multi-level concrete parking garage.",
+      "action_plan": ["7", 0]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": ["2", 0],
+      "av_latent": ["8", 1],
+      "steps": 50,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": ["9", 0],
+      "conditioning": ["8", 0]
+    }
+  },
+  "11": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 2
+    }
+  },
+  "12": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["11", 0],
+      "guider": ["10", 0],
+      "sampler": ["9", 1],
+      "sigmas": ["9", 2],
+      "latent_image": ["8", 1]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": ["12", 0],
+      "video_vae": ["4", 0],
+      "audio_vae": ["5", 0]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3WorldSafeVideoSaveT8Advanced",
+    "inputs": {
+      "images": ["13", 0],
+      "audio": ["13", 1],
+      "filename_prefix": "MiniMaxH3/H3-World/h3_world_i2va_forward_832x480_124f",
+      "crf": 18
+    }
+  }
+}

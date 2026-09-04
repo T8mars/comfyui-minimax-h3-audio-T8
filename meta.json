@@ -1,6 +1,6 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.70.0",
+  "version": "1.71.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
   "validated_on": "2026-09-04",
@@ -11,11 +11,12 @@
   "validated_legacy_comfyui_commit": "563b98eefbe643a4cd510ee7f0b43e79880d5a3f",
   "python": "3.10+",
   "external_runtime_dependencies": [
-    "FFmpeg available on PATH for crash-isolated AAC encoding and atomic MP4 mux in Long Video candidate save/final composition, plus strict pre-publication decode for opt-in Skin Finish file outputs"
+    "FFmpeg available on PATH for crash-isolated H.264/AAC encoding, exact-duration atomic H3-World MP4 output, Long Video candidate save/final composition, and strict pre-publication decode for opt-in Skin Finish file outputs"
   ],
   "optional_runtime_dependencies": [
     "A user-supplied video2dlssnr v1.3 full Windows runtime under ComfyUI/models/DLSS-NR/1.3 (or v1.2 for 1x NR-only) plus NVIDIA RTX driver 616.56 or newer for the opt-in DLSS-NR post-processing Plan B; the audit checks the allowlisted official archive and installed EXE/DLL identity, requires the executable and all DLLs in one load directory plus a real route-F probe on a uniquely identified GPU, and never downloads or redistributes the unlicensed upstream executable, forwarder, or proprietary NVIDIA DLLs",
     "OpenVDN/vdn-minimax-h3 revision 18be6bcc4ee72585eee322ba28b5ccac2cf85ef0 branch and adapters plus a full non-pruned 2688-column AdaLN MiniMax H3 base for the formal T2VA/I2VA/L2VA/FL2VA/reference workflows; an install-ready gated model bundle is maintained at https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy, and the node never downloads weights at runtime; MiniMax H3 license territory restrictions apply",
+    "DANNY621/H3-World revision 8883340a740842b5c40b45383e5b75df34931806 step-10000.safetensors installed as models/loras/minimax/H3-World/step-10000.safetensors for the isolated 832x480x124 first-frame I2VA route; the released 104-pair LoRA is directly ComfyUI-loadable and no converted checkpoint is required",
     "Triton from the active Torch/CUDA-compatible ComfyUI runtime for the opt-in SLA Precision V2 direct sparse kernel; pinned MIT source is vendored and no package is installed or downloaded at runtime",
     "spas-sage-attn with a Torch/CUDA/GPU-compatible wheel for the opt-in FlashVSR v1.1 post-processing nodes; the package is imported only when FlashVSR executes and no compiled wheel is bundled",
     "spas-sage-attn 0.1.0 with a Torch/CUDA-compatible wheel for the opt-in LightX2V SLA Advanced EXP node; stable, dense-control and disabled workflows do not import its CUDA kernel",

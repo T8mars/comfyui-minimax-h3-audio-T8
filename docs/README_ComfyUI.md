@@ -1,5 +1,30 @@
 # MiniMax-H3 Turbo 4-step LoRA — ComfyUI conversion
 
+> 2026-09-04 H3-World 首帧 I2VA（P0-P3完成并通过人审）：隔离的四个正式 Advanced
+> 节点追加在288-291，不改变旧节点ID、schema、默认值或工作流。实现固定审计
+> `Danzer1xxxxChan/H3-World`提交`8174344933fe8b9fcd1cd131db177c30226f1aaf`和
+> `DANNY621/H3-World`模型revision`8883340a740842b5c40b45383e5b75df34931806`。
+> `step-10000.safetensors`是rank-32纯LoRA，104/104个A/B目标与本地完整FL2VA
+> INT8/ConvRot底模形状兼容，直接放到
+> `models/loras/minimax/H3-World/step-10000.safetensors`，不需要转换。
+>
+> 首版合同固定832×480、124帧、24fps、50步、CFG 1.0和37个动作latent，只做首帧
+> I2VA。每条动作句独立Qwen编码并经Token Refiner隔离；动作文本使用镜像视频时间位置，
+> 50层主干使用定向FlexAttention掩码，使动作只连接自己的视频时间段。非目标比例首帧执行
+> scale-to-cover后居中裁切，不拉伸。当前路线拒绝其他layout/model/attention接管者，不能与
+> SLA、VSA、Sol-Attn、BlockCache或其他DiT替换直接叠加。
+>
+> 示例工作流位于`examples/workflows/26-h3-world`。最后的视频保存不使用模型驻留进程内的
+> PyAV编码器，而是把RGB帧送入隔离的单线程libx264进程、按精确时长混入AAC，并在视频、音频、
+> 联合三路严格解码通过后原子发布，因此FFmpeg必须可用。固定停车场素材的`forward`和`still`
+> 已严格串行完成，均为832×480×124、5.167秒H.264/AAC；SHA-256分别为
+> `A6AC6B7D03243AE0F8D4E3F6000503F43DE4505F9707BAF7B5B6291CC516BE28`和
+> `BD198D52289FB894FE6D97CDC20BF61383EAE1F0327077ADB6D935F9EA1D59DA`。匿名机械筛查无黑帧、
+> 冻结帧、非有限音频或削波，且两条不是缓存重复。用户提交的hash绑定盲测记录SHA-256为
+> `DA0BC93D4DBF5118DC046023030710A88335D824594B89F2E0609640DC2DECD9`：完整观看后选择A为持续前进、
+> 确认稳定、画面持平且两边声音正常；揭盲后A正是`forward`。独立分析器返回
+> `p3_fixed_material_gate=PASS`，因此四节点与工作流已转为正式Advanced。
+
 > 2026-09-03 OpenVDN MiniMax H3：三个尾部节点现为正式Advanced，按固定revision加载50层
 > 混合注意力分支与DMD/Stage B adapter，并通过Comfy ModelPatcher管理额外模型。DMD路线固定8 NFE，
 > Stage B固定50 NFE，均固定Euler/native_flow与12/3 shift。v2接受原生H3的普通T2VA、I2VA、

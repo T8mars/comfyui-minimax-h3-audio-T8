@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 203
+    assert len(paths) == 204
     assert [path.name for path in categories] == [
         "01-basic-generation",
         "02-audio-control",
@@ -43,6 +43,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
         "23-flashvsr",
         "24-mv-lipsync",
         "25-dlss-nr",
+        "26-h3-world",
     ]
     assert (root / "README.md").is_file()
     assert all((category / "README.md").is_file() for category in categories)

@@ -576,7 +576,7 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
-    assert len(ids) == 288
+    assert len(ids) == 292
     assert ids[266] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
     assert ids[267] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"
     assert ids[125:130] == [

@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 288
+    assert len(ids) == 292
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -104,15 +104,24 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for schema in schemas[281:284]:
         assert schema.is_experimental is False
         assert schema.category == "T8/MiniMax H3/Performance/Advanced"
-    assert ids[284:] == [
+    assert ids[284:288] == [
         "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
         "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced",
         "MiniMaxH3DLSSNRVideoFramesT8Advanced",
         "MiniMaxH3DLSSNRVideoFileT8Advanced",
     ]
-    for schema in schemas[284:]:
+    for schema in schemas[284:288]:
         assert schema.is_experimental is False
         assert schema.category == "T8/MiniMax H3/Post FX/DLSS-NR"
+    assert ids[288:] == [
+        "MiniMaxH3WorldActionTimelineT8Advanced",
+        "MiniMaxH3WorldModelComposerT8Advanced",
+        "MiniMaxH3WorldI2VAConditioningT8Advanced",
+        "MiniMaxH3WorldSafeVideoSaveT8Advanced",
+    ]
+    for schema in schemas[288:]:
+        assert schema.is_experimental is False
+        assert schema.category == "T8/MiniMax H3/World"
     assert ids[248:254] == [
         "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
         "MiniMaxH3TimedImageReferenceT8Advanced",
