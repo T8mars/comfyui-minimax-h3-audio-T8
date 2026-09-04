@@ -4,7 +4,7 @@
 
 这是一个面向 MiniMax H3 的 ComfyUI 节点包。它不只做文生视频，还把图生视频、首尾帧、参考图、参考音频、长视频、口型、加速和成片修复整理成可以直接使用的工作流。
 
-当前版本：**1.72.0** · 292 个节点 · GPL-3.0-or-later
+当前版本：**1.73.0** · 298 个节点 · GPL-3.0-or-later
 
 ## 先从哪里开始
 
@@ -16,6 +16,7 @@
 4. 需要 WASD 人物/镜头控制时，下载 [`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy)，再看 [`26-h3-world`](examples/workflows/26-h3-world)；首版固定为首帧 I2VA。
 5. 需要长视频或 MV 时，看 [`04-long-video`](examples/workflows/04-long-video) 和 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync)。
 6. 需要图片或成片超分时，看 [`25-dlss-nr`](examples/workflows/25-dlss-nr)；这是 Windows RTX 专用的可选后处理。
+7. 只想修一小段崩脸、不想重绘整条视频时，看 [`06-face-refine`](examples/workflows/06-face-refine) 中 2026-09-05 的 Window 工作流。
 
 每个高级工作流都带画布说明。先替换模型和输入素材，再运行；不要一开始就把多个 LoRA、Attention 加速器和采样器叠在一起。
 
@@ -55,6 +56,7 @@
 - PDD、SLA、SPEED、FastH3 VSA、Enhance-A-Video
 - 稳定双时钟采样节点内置可选 `beta57` 调度器，无需安装 RES4LYF；默认仍是 `native_flow`
 - DLSS-NR 图片/短视频帧/长视频文件超分，以及 FlashVSR、RealBasicVSR、RAFT、Skin Finish
+- Face Refine Window：只生成选中的连续坏脸时间窗，预览后由人决定接受或拒绝
 - NVIDIA H3 + LTX-2.5 两阶段超分实验路线
 
 带 `Advanced` 或 `EXP` 的功能需要使用对应工作流。不同加速方案通常不能叠加；节点会尽量提前拒绝明显冲突。
@@ -91,6 +93,27 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | 人脸、光流和分割模型 | 工作流或对应文档注明的目录 |
 
 不同 H3 基模和 LoRA 不是随便混用的。文件名相近也不代表结构兼容。
+
+## Face Refine Window：只修选中的时间窗
+
+[`examples/workflows/06-face-refine`](examples/workflows/06-face-refine) 里有三份 2026-09-05 工作流：
+
+- `Window_Manual_Review`：一次处理一个窗口，先预览，再手工接受或拒绝。
+- `Window_Studio_Serial`：把多个窗口的决定写入可恢复清单；仍然一次只跑一个 H3 任务。
+- `Window_Studio_Compose`：所有决定完成后，或提交后在保存前崩溃时，不加载 H3，直接从清单重建成片。
+
+这条路线不会把整段正常人脸一起重画。你先用 0 基、闭区间帧号填写坏脸范围，例如 `0-23`；节点会补足
+H3 所需的连续上下文，但上下文和边缘补帧永远不会自动进入最终接受区。预览和拒绝会逐像素返回原片；接受
+必须显式勾选确认。最终视频始终使用完整原始音轨，窗口生成出来的音频会被丢弃。
+
+Studio 版会把每个窗口的接受/拒绝结果按顺序保存。接受后的窗口不能回退或重复执行；崩溃后会从第一个未决定
+窗口继续。同一项目有进程级锁，避免两个任务同时抢显存。它不会替你判断哪张脸更好，也不会自动接受候选。
+
+实测边界：RTX 4060 Ti 16GB 上，2 GiB 预留配置完成 90 帧、124 帧各 3 次冷启动和 3 次暖启动，再连续
+执行 3 个窗口，共 15/15 次成功；最低空闲显存 678 MiB，最终进程 private 增量分别为 40.74、34.20 和
+35.12 MiB，没有超过预注册的 256 MiB 阶梯门。这个数字只适用于该机器和固定工作流，不代表所有 16GB
+显卡都安全。当前功能仍标为 Advanced EXP；首个真实坏脸样本和音频机械检查已通过，但多素材人脸质量仍需
+用户看完整盲测后决定。
 
 ## DLSS-NR：Windows RTX 可选后处理
 

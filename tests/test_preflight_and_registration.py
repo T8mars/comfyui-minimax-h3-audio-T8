@@ -18,7 +18,7 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     node_classes = asyncio.run(extension.get_node_list())
     schemas = [node.define_schema() for node in node_classes]
     ids = [schema.node_id for schema in schemas]
-    assert len(ids) == 292
+    assert len(ids) == 298
     assert len(ids) == len(set(ids))
     features = json.loads(
         (Path(__file__).resolve().parents[1] / "features.json").read_text(
@@ -113,15 +113,30 @@ def test_all_nodes_register_with_unique_ids_and_valid_schemas():
     for schema in schemas[284:288]:
         assert schema.is_experimental is False
         assert schema.category == "T8/MiniMax H3/Post FX/DLSS-NR"
-    assert ids[288:] == [
+    assert ids[288:292] == [
         "MiniMaxH3WorldActionTimelineT8Advanced",
         "MiniMaxH3WorldModelComposerT8Advanced",
         "MiniMaxH3WorldI2VAConditioningT8Advanced",
         "MiniMaxH3WorldSafeVideoSaveT8Advanced",
     ]
-    for schema in schemas[288:]:
+    assert ids[292:295] == [
+        "MiniMaxH3FaceRefineWindowPlanT8Advanced",
+        "MiniMaxH3FaceRefineWindowExtractT8Advanced",
+        "MiniMaxH3FaceRefineManualReviewT8Advanced",
+    ]
+    assert ids[295:] == [
+        "MiniMaxH3FaceRefineWindowStudioStartT8Advanced",
+        "MiniMaxH3FaceRefineWindowStudioCommitT8Advanced",
+        "MiniMaxH3FaceRefineWindowStudioComposeT8Advanced",
+    ]
+    for schema in schemas[288:292]:
         assert schema.is_experimental is False
         assert schema.category == "T8/MiniMax H3/World"
+    for schema in schemas[292:]:
+        assert schema.is_experimental is True
+        assert schema.category == (
+            "T8/MiniMax H3/Quality/Experimental/Face Refine Window"
+        )
     assert ids[248:254] == [
         "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
         "MiniMaxH3TimedImageReferenceT8Advanced",
@@ -1443,6 +1458,9 @@ def test_background_control_routes_offload_blocking_manager_calls():
     assert "await asyncio.to_thread(BACKGROUND_JOBS.pause, chain_id)" in source
     assert "await asyncio.to_thread(BACKGROUND_JOBS.resume, chain_id)" in source
     assert "await asyncio.to_thread(BACKGROUND_JOBS.cancel, chain_id)" in source
+    assert '@routes.get("/minimax_h3_t8/runtime_memory")' in source
+    assert '@routes.post("/minimax_h3_t8/runtime_memory/reset_peak")' in source
+    assert "Cannot reset CUDA peak counters while a prompt is running" in source
 
 
 def test_multirate_exp_example_is_independent_and_uses_eight_joint_calls():

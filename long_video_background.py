@@ -8,7 +8,7 @@ import json
 import os
 import threading
 import time
-from typing import Protocol
+from typing import Callable, Protocol
 import uuid
 
 from .long_video import sanitize_chain_id
@@ -31,6 +31,28 @@ BACKGROUND_LEASE_KIND = "t8_background_process_lease_v2"
 EXECUTION_MODES = ("review_only", "auto_accept_and_continue")
 RELEASE_POLICIES = ("keep_loaded", "clear_execution_cache", "unload_all_models")
 ACTIVE_STATES = {"running", "pausing", "cancelling", "scheduling", "retry_wait"}
+
+# Background orchestration is shared by long-video delivery and source-bound Studio jobs.
+# Providers only replace the durable-progress lookup; queueing, retry, cancellation, process
+# leasing, and atomic auxiliary state remain one implementation.
+_BACKGROUND_PROGRESS_PROVIDERS: list[
+    tuple[str, Callable[[str], tuple[int, bool]]]
+] = []
+
+
+def register_background_progress_provider(
+    chain_prefix: str,
+    provider: Callable[[str], tuple[int, bool]],
+) -> None:
+    prefix = str(chain_prefix)
+    if not prefix or not callable(provider):
+        raise ValueError("A non-empty background chain prefix and callable provider are required")
+    for existing_prefix, existing_provider in _BACKGROUND_PROGRESS_PROVIDERS:
+        if existing_prefix == prefix:
+            if existing_provider is not provider:
+                raise ValueError(f"Background progress prefix {prefix!r} is already registered")
+            return
+    _BACKGROUND_PROGRESS_PROVIDERS.append((prefix, provider))
 
 
 class BackgroundJobError(RuntimeError):
@@ -451,6 +473,10 @@ class BackgroundJobManager:
 
     @staticmethod
     def _manifest_position(chain_id: str) -> tuple[int, bool]:
+        for prefix, provider in _BACKGROUND_PROGRESS_PROVIDERS:
+            if str(chain_id).startswith(prefix):
+                accepted_count, complete = provider(str(chain_id))
+                return int(accepted_count), bool(complete)
         try:
             manifest, _ = load_delivery_manifest(chain_id)
         except FileNotFoundError:

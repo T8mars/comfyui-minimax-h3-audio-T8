@@ -1,0 +1,396 @@
+{
+  "id": "8c609682-fceb-46e4-a114-4f667b7789e2",
+  "revision": 0,
+  "last_node_id": 30,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "Load the exact source bound to this Studio manifest",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_exact_24fps_17n_plus_5_source.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "Source frames, untouched final soundtrack and FPS",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            2,
+            3
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 26,
+      "type": "MiniMaxH3FaceRefineWindowPlanT8Advanced",
+      "title": "Recreate the exact source-bound plan used by Studio",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        590
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "window_plan",
+          "type": "H3_T8_FACE_REFINE_WINDOW_PLAN",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "repair_mask_preview",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "window_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineWindowPlanT8Advanced"
+      },
+      "widgets_values": [
+        24.0,
+        "0-23",
+        "frames_inclusive",
+        24,
+        42,
+        90,
+        362,
+        0.28,
+        "reject",
+        "edge_hold_exp",
+        true
+      ]
+    },
+    {
+      "id": 30,
+      "type": "MiniMaxH3FaceRefineWindowStudioComposeT8Advanced",
+      "title": "Compose durable accepted overlays without H3 generation",
+      "pos": [
+        1320,
+        260
+      ],
+      "size": [
+        430,
+        270
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "window_plan",
+          "type": "H3_T8_FACE_REFINE_WINDOW_PLAN",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result_frames",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "combined_accepted_mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "complete",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineWindowStudioComposeT8Advanced"
+      },
+      "widgets_values": [
+        "face_refine_project_01"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "CreateVideo",
+      "title": "Mux the complete untouched original soundtrack",
+      "pos": [
+        1760,
+        260
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 22,
+      "type": "SaveVideo",
+      "title": "Save recovered final video; never overwrite source",
+      "pos": [
+        2200,
+        260
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/face_refine_window_studio_composed",
+        "mp4",
+        "h264"
+      ]
+    },
+    {
+      "id": 25,
+      "type": "MarkdownNote",
+      "title": "Face Refine Studio crash-safe composition",
+      "pos": [
+        0,
+        -420
+      ],
+      "size": [
+        2600,
+        300
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 只合成已决定的窗口，不加载H3\n\n当所有窗口已经接受/拒绝，或最后一次提交后在保存前崩溃时，使用本工作流。必须选择与Studio完全相同的源视频、repair_ranges、计划参数和studio_id；任一来源或plan hash不同都会拒绝。\n\nCompose只读取lossless accepted overlay。pending/rejected区域逐像素来自原片，最终CreateVideo仍接完整原音轨。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      0,
+      30,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      26,
+      0,
+      30,
+      1,
+      "H3_T8_FACE_REFINE_WINDOW_PLAN"
+    ],
+    [
+      5,
+      30,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      2,
+      1,
+      21,
+      1,
+      "AUDIO"
+    ],
+    [
+      7,
+      21,
+      0,
+      22,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Face Refine Window Studio Compose"
+  },
+  "version": 0.4
+}

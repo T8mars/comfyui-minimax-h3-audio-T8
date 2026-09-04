@@ -1903,6 +1903,50 @@
     "vsa": "only reported available when a real external FastVideo runtime and Triton kernel exist; dense attention remains the fallback and Sage/SLA are never relabeled as VSA",
     "identity_policy": "user-selected model and LoRA; no filename, byte-size or hash gate"
   },
+  "experimental_face_refine_window_advanced": {
+    "status": "implemented as three append-only Advanced EXP nodes; one real 89-frame serial H3 window passed mechanical, exact-source-audio and positive-direction proxy gates, and the fixed 15-run 16GiB repeat-memory matrix passed; human perceptual promotion remains pending",
+    "date": "2026-09-05",
+    "category": "T8/MiniMax H3/Quality/Experimental/Face Refine Window",
+    "nodes": [
+      "MiniMaxH3FaceRefineWindowPlanT8Advanced",
+      "MiniMaxH3FaceRefineWindowExtractT8Advanced",
+      "MiniMaxH3FaceRefineManualReviewT8Advanced"
+    ],
+    "positions": [292, 293, 294],
+    "contract": "source-bound 24fps inclusive repair ranges become one shot-local legal 17n+5 H3 window at a time; image padding is explicit edge-hold context, matching audio padding is zero, candidate audio is discarded, and only explicitly confirmed source repair subranges may be composited through the supplied changed mask",
+    "safety": "disabled, empty, preview-only, reject, stale-source, stale-mapping, nonfinite and changed-mask-violation paths preserve the complete source tensor; context and padding can never enter the accepted range; no model loading, auto-queue, automatic quality decision or source overwrite is performed by the three nodes. The real output preserved decoded source PCM exactly",
+    "real_validation": "the fixed 89-frame bad-face fixture completed stock20/seed42 strictly serially as 320x320x89 at 24fps with H.264 plus 32kHz stereo AAC and strict video/audio/joint decode. Candidate-to-author full-frame SSIM was 0.78279966 versus source-to-author 0.76074085, positive on 89/89 frames; the first 24 frames scored 0.64873520 versus 0.65033818 for the corrected fixed-upstream rerun, so no quality-superiority claim is made. The blind review id is d17ab080c8fde252 and still needs a human verdict",
+    "memory_validation": "RTX 4060 Ti 16GiB with a 2GiB reserve completed 15/15 serial prompts: 90 and 124 frames each had three cold and three warm runs, followed by three distinct windows from one 362-frame source. Every output passed strict video/audio/joint decode. Telemetry ran at 9.9994-10.0003Hz, minimum free VRAM was 678.265625MiB, maximum PyTorch reserved peak was 2752MiB, and 90/124/consecutive final-private deltas were 40.73828125/34.1953125/35.1171875MiB, all below the preregistered 256MiB staircase limit. This is not a universal 16GiB claim",
+    "workflow": "examples/workflows/06-face-refine/2026-09-05_H3_Face_Refine_Window_Manual_Review_Advanced_EXP.json",
+    "api_example": "tests/fixtures/api/face_refine_window_advanced_api.json",
+    "limits": [
+      "P0 processes one window for one primary person inside one shot; the user changes window_index and runs multiple windows strictly serially",
+      "SSIM, sharpness and detector confidence are diagnostic only and never authorize acceptance",
+      "cross-material identity and perceptual quality are not yet established; the exact local memory profile passed but universal 16GiB safety is not claimed"
+    ]
+  },
+  "experimental_face_refine_window_studio_advanced": {
+    "status": "implemented as three append-only P1 Studio Advanced EXP nodes; source/plan binding, immutable accept-or-reject decisions, exact overlay reconstruction, atomic crash recovery and shared single-prompt background progress are covered by deterministic and real-process kill/recovery tests; the three-window GPU sequence passed the memory/media gate, while human quality review remains pending",
+    "date": "2026-09-05",
+    "category": "T8/MiniMax H3/Quality/Experimental/Face Refine Window",
+    "nodes": [
+      "MiniMaxH3FaceRefineWindowStudioStartT8Advanced",
+      "MiniMaxH3FaceRefineWindowStudioCommitT8Advanced",
+      "MiniMaxH3FaceRefineWindowStudioComposeT8Advanced"
+    ],
+    "positions": [295, 296, 297],
+    "contract": "a source-bound manifest resolves windows strictly in order; review_only never queues, and explicit_accept_and_continue reuses the existing Long Video retry, cancellation, OS process lease and atomic background state while queuing at most one next prompt after a durable human accept or reject",
+    "workflows": [
+      "examples/workflows/06-face-refine/2026-09-05_H3_Face_Refine_Window_Studio_Serial_Advanced_EXP.json",
+      "examples/workflows/06-face-refine/2026-09-05_H3_Face_Refine_Window_Studio_Compose_Advanced_EXP.json"
+    ],
+    "storage": "accepted tensor overlays are stored losslessly as bounded spatiotemporal crops before the manifest pointer is atomically advanced; source media is immutable, rejected windows remain source, stale/tampered overlays fail closed and a crash between overlay and manifest leaves the window pending for safe retry",
+    "limits": [
+      "there is no automatic face-quality decision or automatic acceptance",
+      "the final video must still be muxed with the complete original AUDIO",
+      "real CUDA strong-kill during H3 sampling was not intentionally forced; real-process manifest/lease recovery and the repeated 16GiB GPU sequence are covered separately"
+    ]
+  },
   "nodes": [
     "MiniMaxH3AudioConditioningT8",
     "MiniMaxH3AudioLatentControlT8",
@@ -2195,7 +2239,13 @@
     "MiniMaxH3WorldActionTimelineT8Advanced",
     "MiniMaxH3WorldModelComposerT8Advanced",
     "MiniMaxH3WorldI2VAConditioningT8Advanced",
-    "MiniMaxH3WorldSafeVideoSaveT8Advanced"
+    "MiniMaxH3WorldSafeVideoSaveT8Advanced",
+    "MiniMaxH3FaceRefineWindowPlanT8Advanced",
+    "MiniMaxH3FaceRefineWindowExtractT8Advanced",
+    "MiniMaxH3FaceRefineManualReviewT8Advanced",
+    "MiniMaxH3FaceRefineWindowStudioStartT8Advanced",
+    "MiniMaxH3FaceRefineWindowStudioCommitT8Advanced",
+    "MiniMaxH3FaceRefineWindowStudioComposeT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

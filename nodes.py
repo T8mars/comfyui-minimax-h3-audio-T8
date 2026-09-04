@@ -143,6 +143,10 @@ from .nodes_external_compatibility_advanced import (
 from .nodes_enhance_a_video_advanced import ENHANCE_A_VIDEO_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_advanced import FACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_face_refine_parity_advanced import FACE_REFINE_PARITY_ADVANCED_NODE_CLASSES
+from .nodes_face_refine_window_advanced import FACE_REFINE_WINDOW_ADVANCED_NODE_CLASSES
+from .nodes_face_refine_window_studio_advanced import (
+    FACE_REFINE_WINDOW_STUDIO_ADVANCED_NODE_CLASSES,
+)
 from .nodes_multiface_refine_advanced import MULTIFACE_REFINE_ADVANCED_NODE_CLASSES
 from .nodes_dynamic_guidance_advanced import DYNAMIC_GUIDANCE_ADVANCED_NODE_CLASSES
 from .nodes_detail_sampling_advanced import (
@@ -732,6 +736,14 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 # H3-World is an isolated action-conditioned I2VA route.
                 # Append-only after every v1.70.0 node; no legacy schema moves.
                 *H3_WORLD_ADVANCED_NODE_CLASSES,
+                # Roadmap 29 adds source-bound, shot-local Face Refine windows and
+                # explicit human acceptance after every v1.72.0 node. The GPU branch
+                # remains user-wired and serial; these nodes never auto-queue it.
+                *FACE_REFINE_WINDOW_ADVANCED_NODE_CLASSES,
+                # P1 reuses the existing background queue, retry, cancellation and OS
+                # lease implementation. A next window is queued only after an explicit
+                # durable accept/reject decision; source media is never overwritten.
+                *FACE_REFINE_WINDOW_STUDIO_ADVANCED_NODE_CLASSES,
             ]
 
 

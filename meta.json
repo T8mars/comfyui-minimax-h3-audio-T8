@@ -1,9 +1,9 @@
 {
   "name": "minimax-h3-audio-T8",
-  "version": "1.72.0",
+  "version": "1.73.0",
   "category": "T8/MiniMax H3/Audio",
   "license": "GPL-3.0-or-later",
-  "validated_on": "2026-09-04",
+  "validated_on": "2026-09-05",
   "validated_comfyui_commit": "cf10c5c398ad4297b664e7aa85090daaee529f29",
   "validated_onekey_runtime_commit": "0f1fa67ad8a68b62c65ebc97a7bf485df2459c3a",
   "validated_previous_comfyui_commit": "e7051b03758a1247e3adb84a5b784ffacb9a23bd",

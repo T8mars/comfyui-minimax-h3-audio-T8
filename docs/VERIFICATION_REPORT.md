@@ -7340,3 +7340,46 @@ No 32-second film exists, no long-MV lip-sync/assembly/master-audio/user-review 
 approximately 90-second final gate remains denied. Immutable local audits are
 `artifacts/mv-vocal-lock-v3-long32-validation-20260901/stage_gate_audit_r2.json` and
 `stage_gate_audit_r3.json`.
+
+## 2026-09-05 — Face Refine Window P0/P1 and v1.73.0 release gate
+
+Release v1.73.0 adds six append-only Advanced EXP nodes at positions 292–297: Window Plan,
+Window Extract, Manual Review, Studio Start, Studio Commit and Studio Compose. The three shipped
+workflows cover a manually reviewed single window, the serial durable Studio loop, and a compose-only
+crash-recovery path that does not load H3. Existing node positions 0–291 and existing workflow defaults
+remain unchanged.
+
+The Window contract is fixed to 24 fps, zero-based closed intervals and legal `17n+5` generation
+lengths. Edge-hold and context padding are generation inputs only and cannot expand the accepted frame
+range. Window audio is cut at exact absolute sample boundaries and zero-padded only for generation;
+generated audio is discarded, and final output uses the complete original source audio. Manual Review
+requires an explicit `confirm_accept=true`. Studio decisions are ordered, source/plan bound and
+immutable. Accepted overlays are hash-bound and atomically committed before the manifest advances.
+Composition rejects out-of-bounds boxes, wrong shapes/channels, non-finite values, invalid masks,
+tampered overlays and tampered manifests, and preserves the exact source pixels outside accepted masks.
+
+A serial real 320×320, 89-frame H3 window run completed and passed strict H.264 video, AAC audio and
+joint decoding. Its output SHA-256 is
+`BBC24E095BFFDB10F07B3C111F668A20FF195E78C040C65E7FF272B1B68A7F95`; decoded source and final PCM
+share SHA-256 `10D8CE3CFCDFF65C514699EA99B8C3A2543FEF67F7485B25C58F426229B9C589`. The candidate moved toward
+the author target on the full 89-frame proxy, but was slightly below the fixed-upstream rerun on the
+first 24 frames, so this evidence does not claim superior visual quality. Human review id
+`d17ab080c8fde252` remains the authority for subjective promotion.
+
+The isolated local RTX 4060 Ti 16 GB memory matrix ran strictly serially with a 2 GiB reserve: three
+cold and three warm runs at both 90 and 124 frames, followed by three consecutive windows from a
+362-frame source. All 15 prompts completed, every video/audio/joint strict decode passed, telemetry
+was sampled at 9.9994–10.0003 Hz, minimum free VRAM was 678.27 MiB, maximum PyTorch reserved peak was
+2,752 MiB, and process-private growth was 40.74/34.20/35.12 MiB against the preregistered 256 MiB
+staircase limit. This supports only the exact tested local configuration, not a universal 16 GB claim.
+
+The final repository gate passed 2,204 tests with six existing dependency warnings, full Ruff, 670
+non-artifact/worktree Python compilation checks, 282 non-artifact JSON parses, 207/207 source-to-user
+workflow mirrors, synchronized `1.73.0` version markers, `git diff --check`, and Comfy Registry
+configuration/security validation. The official packer produced a 542-entry, 2,832,278-byte candidate
+with SHA-256 `5E0543D87FD2CB458FC7307BE83A02A89E9E77AC3EF20B6DB650FC12C3333AF3`; it contained all required
+Window runtime/workflow files and no model weights, media, nested archive, executable, tests, tools,
+artifacts, duplicate path or path traversal. An isolated extraction registered 298/298 unique nodes.
+Multi-material human blind review and unavailable author-only
+assets are explicitly outside automated closure, so the new workflows remain Advanced EXP rather than
+being promoted as automatic or author-equivalent face repair.

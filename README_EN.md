@@ -4,7 +4,7 @@
 
 MiniMax H3 Audio T8 is a ComfyUI node pack for joint video and audio generation. It includes practical workflows for text and image animation, first/last-frame control, image/video/audio references, long video, lip sync, acceleration, and final-video restoration.
 
-Current version: **1.72.0** · 292 nodes · GPL-3.0-or-later
+Current version: **1.73.0** · 298 nodes · GPL-3.0-or-later
 
 ## Where to start
 
@@ -16,6 +16,7 @@ If this is your first time using the pack:
 4. For WASD character and camera control, download [`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy), then use [`26-h3-world`](examples/workflows/26-h3-world); the first release is fixed to first-frame I2VA.
 5. For long video or music video work, start with [`04-long-video`](examples/workflows/04-long-video) or [`24-mv-lipsync`](examples/workflows/24-mv-lipsync).
 6. For image or finished-video upscaling, use [`25-dlss-nr`](examples/workflows/25-dlss-nr), an optional Windows RTX post-process.
+7. To repair a short broken-face interval without repainting the whole clip, use a 2026-09-05 Window workflow from [`06-face-refine`](examples/workflows/06-face-refine).
 
 Advanced workflows include notes on the canvas. Replace the model and input media before running them. Avoid stacking several LoRAs, attention backends, or sampler owners unless the workflow explicitly asks for it.
 
@@ -55,6 +56,7 @@ The project's 32-second Vocal Lock V3 sample completed five serial H3 shots, per
 - PDD, SLA, SPEED, FastH3 VSA, and Enhance-A-Video integrations
 - Optional built-in `beta57` schedule in the stable dual-clock node, with no RES4LYF install required; `native_flow` remains the default
 - DLSS-NR image/short-frame/file-video upscaling, plus FlashVSR, RealBasicVSR, RAFT, and Skin Finish
+- Face Refine Window: render only selected continuous bad-face intervals, then accept or reject them manually
 - Experimental two-stage MiniMax H3 plus LTX-2.5 upscaling
 
 Features labeled `Advanced` or `EXP` should be used through their bundled workflows. Acceleration methods are usually alternatives, not add-ons to be stacked together.
@@ -89,6 +91,29 @@ This node pack follows recent native MiniMax H3 APIs in ComfyUI. If every node t
 | Face, optical-flow, and segmentation models | The folder named by the workflow or its documentation |
 
 Similar filenames do not guarantee compatible H3 structures. Use the model and LoRA combination named by the workflow.
+
+## Face Refine Window: repair only selected intervals
+
+[`examples/workflows/06-face-refine`](examples/workflows/06-face-refine) contains three workflows dated 2026-09-05:
+
+- `Window_Manual_Review` processes one window, shows a preview, and waits for a manual accept or reject.
+- `Window_Studio_Serial` records decisions for several windows in a recoverable manifest while still running only one H3 prompt at a time.
+- `Window_Studio_Compose` rebuilds the final clip from the manifest without loading H3, including recovery after a crash between the last commit and save.
+
+Enter bad-face intervals as zero-based inclusive frame ranges, for example `0-23`. The planner adds the continuous context
+required by H3, but context and edge padding can never enter the accepted region. Preview and reject return the exact source
+pixels. Accept requires an explicit confirmation. The final video always receives the complete original audio; generated
+window audio is discarded.
+
+Studio decisions are ordered and durable. An accepted window cannot be rolled back or rendered again, and a restarted job
+continues from the first undecided window. A process-level project lock prevents two jobs from competing for the GPU. The
+nodes never decide that a face is “better” and never auto-accept a candidate.
+
+On the tested RTX 4060 Ti 16 GB, a 2 GiB reserve completed three cold and three warm runs at both 90 and 124 frames, followed
+by three consecutive windows: 15/15 prompts passed. The lowest free VRAM was 678 MiB, and the final process-private deltas
+were 40.74, 34.20, and 35.12 MiB, below the preregistered 256 MiB staircase limit. This is evidence for that exact machine
+and workflow, not a universal 16 GB guarantee. The feature remains Advanced EXP: the first real bad-face sample and audio
+mechanics passed, while broader perceptual face quality still requires full human blind review.
 
 ## DLSS-NR: optional Windows RTX post-processing
 

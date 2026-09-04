@@ -1,18 +1,20 @@
-# 单人、动漫与多人脸部修复
+# Face Refine 工作流
 
-这一组用于修复H3视频中五官崩坏、身份漂移和局部结构问题，包括单人Parity、动漫探针和SAM3.1多人追踪回贴。
+这里的工作流都是实验路线。它们可以生成脸部修复候选，但不会自动证明身份、嘴型或五官已经修好。
 
-## 推荐入口
+## 建议优先使用 Window
 
-- `Face_Refine_Parity_Advanced_EXP`：单人主路线，MANUAL512 + relative_to_clip已在固定样例达到作者目标同等观感。
-- `Face_Refine_Advanced_EXP`：自动检测和高级计划。
-- `Face_Refine_Anime_Advanced_EXP`：动漫隔离后端。
-- `SAM31_2Person/3Person`：多人按镜头追踪、身份绑定、逐角色生成和顺序合成。
+- `2026-09-05_H3_Face_Refine_Window_Manual_Review_Advanced_EXP.json`：一次只修一个连续时间窗。默认只预览，确认满意后再把 `decision` 改为接受并打开确认开关。
+- `2026-09-05_H3_Face_Refine_Window_Studio_Serial_Advanced_EXP.json`：多个时间窗按顺序处理，并保存接受/拒绝清单；崩溃后可继续未完成窗口。
+- `2026-09-05_H3_Face_Refine_Window_Studio_Compose_Advanced_EXP.json`：所有窗口完成后，或最后一次提交后在保存前崩溃时，只读取清单合成，不加载H3。
 
-## 当前成果
+先把源片整理为单镜头、24fps，再填 0 基闭区间帧号，例如 `0-23`。替换源视频提示词、两张清晰身份参考图、模型、LoRA 和 VAE。窗口上下文只帮助 H3 生成，不会自动写回最终片；最终音频始终接完整原始音轨。
 
-固定单人样例中，MANUAL512、crop 2.5、relative_to_clip、0.8/0.35强度达到明显五官修复；多人最终测试证明清晰来源中的崩坏五官可以修复。它不会自动把本来模糊的视频锐化成高清，模糊风格通常会继续保留。
+Studio 默认是 `review_only + preview_only`。只有真人看完候选后，才使用明确的接受或拒绝决定。接受后的窗口不可回退或重复执行；同一项目也不允许两个生成任务并发。
 
-## 使用方法与注意事项
+## 旧工作流
 
-Turbo链使用8步。自动裁切应让H3画布中的脸高接近约300px，过小会缺少可重绘信息。多人工作流给每个角色单独接清晰单人参考图，先检查彩色追踪和身份绑定，再接受候选；镜头切换、遮挡、背脸和重叠mask必须人工复核。推荐逐角色顺序处理，避免同时抢显存。
+- `Face_Refine_Parity`、`Face_Refine_Advanced` 和 `Face_Refine_Anime` 保留用于兼容和诊断。
+- `SAM31_2Person/3Person` 是多人实验工作流。遮挡、背脸、人物交叉或重叠 mask 时必须人工检查；目前不具备自动身份安全承诺。
+
+窗口路线在固定 RTX 4060 Ti 16GB 上完成了 15 次串行显存矩阵和一次真实坏脸样本，但多素材真人盲测尚未结束，因此仍为 Advanced EXP，不要批量自动接受。
