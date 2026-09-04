@@ -329,8 +329,14 @@ runtime-integrity and non-generalization boundaries remain mandatory.
 The final v1.70.0 release gate passed 81 DLSS-specific tests, 130 focused tests and 2,133 full-suite
 tests. Ruff, 652 delivery Python compilation checks, 274 delivery JSON parses, 203 source/user
 workflow mirrors, version synchronization, diff checking and `comfy node validate` also passed.
-The Registry package contains 530 files and is 2,311,484 bytes with SHA-256
-`7BC370FFBE58EC65B7B365CA1F448D3A035D6EF67AA1103E8472714DAA146CF3`. All 530 package files
-match the Git index byte-for-byte; an isolated extraction imports 288 unique nodes with the four
+The official Registry CDN package contains 530 files and is 2,306,804 bytes with SHA-256
+`6770D212A60CCBD9BB3A5586A432A16979FDFBC76EDCA2AD0643CDC8830C66F0`. All 530 extracted files
+match the release commit's Git blobs byte-for-byte; an isolated extraction imports 288 unique nodes with the four
 DLSS-NR nodes at the registration tail. The archive contains the four workflows and no runtime
 binary, model, media, artifact, test, tool, developer document, or GitHub workflow.
+
+The Windows `comfy node pack` container is 2,311,484 bytes with SHA-256
+`7BC370FFBE58EC65B7B365CA1F448D3A035D6EF67AA1103E8472714DAA146CF3`. It preserves CRLF in 207
+historical worktree text files and is therefore retained only as `*-worktree-crlf-audit.zip`; it is
+not presented as the byte-identical CDN container. The four new workflow files themselves are
+generated with fixed LF endings.
