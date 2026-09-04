@@ -7,6 +7,9 @@
 > `step-10000.safetensors`是rank-32纯LoRA，104/104个A/B目标与本地完整FL2VA
 > INT8/ConvRot底模形状兼容，直接放到
 > `models/loras/minimax/H3-World/step-10000.safetensors`，不需要转换。
+> 推荐模型包为[`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy)，
+> 已按`ComfyUI/models`的相对目录整理；其文件与上述固定上游revision逐字节一致，SHA-256为
+> `DDD9187B920B1E52C2D090F4E264FD83D8D433EFC2A5B159E58883AEAF96E526`，没有转换、合并或量化。
 >
 > 首版合同固定832×480、124帧、24fps、50步、CFG 1.0和37个动作latent，只做首帧
 > I2VA。每条动作句独立Qwen编码并经Token Refiner隔离；动作文本使用镜像视频时间位置，

@@ -4,7 +4,7 @@
 
 这是一个面向 MiniMax H3 的 ComfyUI 节点包。它不只做文生视频，还把图生视频、首尾帧、参考图、参考音频、长视频、口型、加速和成片修复整理成可以直接使用的工作流。
 
-当前版本：**1.71.0** · 292 个节点 · GPL-3.0-or-later
+当前版本：**1.71.1** · 292 个节点 · GPL-3.0-or-later
 
 ## 先从哪里开始
 
@@ -13,7 +13,7 @@
 1. 从 [`examples/workflows/01-basic-generation`](examples/workflows/01-basic-generation) 跑一条普通 H3 视频。
 2. 需要参考图、首尾帧或音频控制时，看 [`02-audio-control`](examples/workflows/02-audio-control) 和对应的参考工作流。
 3. 需要 OpenVDN 8 步时，先下载 [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)，再用 [`10-speed`](examples/workflows/10-speed) 里的 `OpenVDN_DMD8_*_Advanced.json`。
-4. 需要 WASD 人物/镜头控制时，看 [`26-h3-world`](examples/workflows/26-h3-world)；首版固定为首帧 I2VA。
+4. 需要 WASD 人物/镜头控制时，下载 [`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy)，再看 [`26-h3-world`](examples/workflows/26-h3-world)；首版固定为首帧 I2VA。
 5. 需要长视频或 MV 时，看 [`04-long-video`](examples/workflows/04-long-video) 和 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync)。
 6. 需要图片或成片超分时，看 [`25-dlss-nr`](examples/workflows/25-dlss-nr)；这是 Windows RTX 专用的可选后处理。
 
@@ -84,7 +84,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | 视频与音频 VAE | `models/vae` |
 | Turbo、PDD、SLA 等 LoRA | `models/loras` |
 | OpenVDN 完整模型包 | [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)；仓库已按 `models` 下的正确目录整理 |
-| H3-World 动作 LoRA | [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World) 的 `step-10000.safetensors` → `models/loras/minimax/H3-World` |
+| H3-World 动作 LoRA | [`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy) 已按 `models/loras/minimax/H3-World` 的相对目录整理；原始来源为 [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World) |
 | FlashVSR / RealBasicVSR | `models/upscale_models` 或工作流注明的专用目录 |
 | DLSS-NR v1.3 外部运行时（不是模型） | `models/DLSS-NR/1.3`（用户自行取得，节点不下载或分发） |
 | 人脸、光流和分割模型 | 工作流或对应文档注明的目录 |
@@ -132,7 +132,8 @@ ComfyUI/models/DLSS-NR/1.3/
 ## H3-World：WASD 人物与镜头控制
 
 上游项目：[`Danzer1xxxxChan/H3-World`](https://github.com/Danzer1xxxxChan/H3-World) ·
-模型：[`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World)
+ComfyUI 模型包：[`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy) ·
+原始模型：[`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World)
 
 首版只做一件明确的事：输入一张首帧图，以 832×480、124 帧、24fps 生成一条约 5.17 秒的 I2VA，
 并让 37 个潜空间时间点分别接收人物与镜头动作。预设包括前进、后退、左右移动、上下倾斜、左右摇镜和
@@ -141,10 +142,14 @@ ComfyUI/models/DLSS-NR/1.3/
 下载 LoRA：
 
 ```powershell
-hf download DANNY621/H3-World step-10000.safetensors --local-dir ComfyUI/models/loras/minimax/H3-World
+hf download t8star/Minimax-H3-World-Comfy --include "loras/**" --local-dir ComfyUI/models
 ```
 
-这个 LoRA 已经是 ComfyUI 可直接加载的 104 对 A/B 权重，不需要另行转换。工作流还需要现有的完整
+下载后的完整路径应为
+`ComfyUI/models/loras/minimax/H3-World/step-10000.safetensors`。模型包中的文件与上游固定 revision
+逐字节一致，SHA-256 为
+`DDD9187B920B1E52C2D090F4E264FD83D8D433EFC2A5B159E58883AEAF96E526`；我们没有转换、合并或量化它。
+这个 LoRA 已经是 ComfyUI 可直接加载的 104 对 A/B 权重。工作流还需要现有的完整
 `minimax_h3_fl2va_int8_convrot.safetensors`、Qwen3-VL 编码器、视频 VAE 和音频 VAE。它不增加新的
 pip 依赖，但最终安全保存要求 `ffmpeg` 可在 `PATH` 中找到。请直接使用
 [`examples/workflows/26-h3-world`](examples/workflows/26-h3-world) 的工作流，不要叠加 OpenVDN、SLA、

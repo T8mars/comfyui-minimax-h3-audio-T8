@@ -17,6 +17,15 @@
       "audited_repository_commit": "8174344933fe8b9fcd1cd131db177c30226f1aaf",
       "model_revision": "8883340a740842b5c40b45383e5b75df34931806"
     },
+    "comfy_model_bundle": {
+      "repository": "https://huggingface.co/t8star/Minimax-H3-World-Comfy",
+      "revision": "a7ce9cc7c0a2810cbfaf04c15c6d915b157bd899",
+      "path_relative_to_comfyui_models": "loras/minimax/H3-World/step-10000.safetensors",
+      "bytes": 131227832,
+      "sha256": "DDD9187B920B1E52C2D090F4E264FD83D8D433EFC2A5B159E58883AEAF96E526",
+      "converted": false,
+      "verification": "remote LFS size and SHA-256 match the pinned upstream and local file byte-for-byte"
+    },
     "model_contract": "step-10000.safetensors is a pure rank-32 LoRA with 104 A/B pairs; all 104 targets are statically shape-compatible with the local full MiniMax H3 FL2VA INT8/ConvRot base, so no model conversion is required",
     "execution_contract": "v1 is fixed to first-frame I2VA at 832x480, 124 frames, 24fps and 37 action latents; each action sentence is Qwen-encoded independently, scene/action spans are Token-Refiner-isolated, action text uses mirrored video-time positions, and the main 50 blocks use a directed FlexAttention mask binding each action only to its own video latent",
     "stacking": "isolated formal Advanced route; current v1 rejects other H3 layout patches, DiT replacements, attention hooks and attention overrides",

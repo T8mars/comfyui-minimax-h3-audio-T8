@@ -15,6 +15,10 @@ shape-compatible with the installed full MiniMax H3 FL2VA INT8/ConvRot base, so 
 directly loadable by ComfyUI and no converted checkpoint is required. Its installed path is
 `models/loras/minimax/H3-World/step-10000.safetensors`, its size is 131,227,832 bytes, and its SHA-256 is
 `DDD9187B920B1E52C2D090F4E264FD83D8D433EFC2A5B159E58883AEAF96E526`.
+The install-ready mirror at `t8star/Minimax-H3-World-Comfy` revision
+`a7ce9cc7c0a2810cbfaf04c15c6d915b157bd899` stores that exact file as
+`loras/minimax/H3-World/step-10000.safetensors`. Its remote LFS size and SHA-256 match the local and
+upstream file; no conversion, merge, or quantization was performed.
 
 Four append-only formal Advanced nodes occupy positions 288-291: Action Timeline, Model Composer, I2VA
 Conditioning, and Safe Video Save. Version 1 fixes the contract to first-frame I2VA at 832x480, 124
@@ -72,8 +76,8 @@ After P3 passed, the formal v1.71.0 package was rebuilt with the same temporary-
 media, proprietary EXE/DLL files, or excluded development directories. Both H3-World runtime modules, the
 formal workflow, its README, and the first-frame asset match their source hashes; an isolated extraction
 imports all 292 node IDs uniquely, with the four formal H3-World nodes still occupying positions 288-291.
-The real Git index remained unchanged. This is a verified local release candidate, not a Git commit,
-GitHub push, or Registry publication.
+The feature was committed and pushed as `8e01d1a3c21d98fc2d68e69214e0e14c54bbdd0b`; GitHub Action
+`33853648156` completed successfully and uploaded Registry version 1.71.0.
 
 ## 2026-09-03 — OpenVDN curve-pruned base compatibility
 

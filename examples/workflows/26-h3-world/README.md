@@ -24,11 +24,13 @@ ComfyUI/models/vae/minimax_h3_video_vae_fp16.safetensors
 ComfyUI/models/vae/minimax_h3_audio_vae_fp32.safetensors
 ```
 
-H3-World LoRA 来自 [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World)，已经是
-ComfyUI 可直接加载的 104 对 A/B 权重，不需要转换：
+推荐从已按 ComfyUI 目录整理的
+[`t8star/Minimax-H3-World-Comfy`](https://huggingface.co/t8star/Minimax-H3-World-Comfy) 下载。
+其中 LoRA 与 [`DANNY621/H3-World`](https://huggingface.co/DANNY621/H3-World) 固定 revision
+逐字节一致，已经是 ComfyUI 可直接加载的 104 对 A/B 权重，没有经过转换、合并或量化：
 
 ```powershell
-hf download DANNY621/H3-World step-10000.safetensors --local-dir ComfyUI/models/loras/minimax/H3-World
+hf download t8star/Minimax-H3-World-Comfy --include "loras/**" --local-dir ComfyUI/models
 ```
 
 还需要 `ffmpeg` 可在 `PATH` 中找到。安全保存节点会把画面交给隔离的单线程 libx264 进程，并在 H.264
@@ -58,6 +60,6 @@ hf download DANNY621/H3-World step-10000.safetensors --local-dir ComfyUI/models/
 
 ## 当前限制
 
-这是独立 EXP 路线。不要叠加 OpenVDN、SLA、VSA、Sol-Attn、BlockCache、其他 DiT 替换或 Attention
+这是独立的正式 Advanced 路线。不要叠加 OpenVDN、SLA、VSA、Sol-Attn、BlockCache、其他 DiT 替换或 Attention
 接管节点。也不要先改分辨率和帧数；这些值与当前动作位置和注意力掩码合同绑定。16GB 显卡一次只运行
 一个 H3 任务。
