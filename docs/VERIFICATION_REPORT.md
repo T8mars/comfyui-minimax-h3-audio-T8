@@ -5,6 +5,28 @@ verification checkpoint. For the current plugin version, node inventory, and
 Ref2VA still-image status, also read the project-root `README.md` and
 `features.json`.
 
+## 2026-09-04 — Beta57 scheduler compatibility
+
+The stable `MiniMax H3 Dual-Clock Sampler (T8)` now offers `beta57` as an optional
+scheduler. The implementation delegates to the installed ComfyUI beta scheduler with
+`alpha=0.5` and `beta=0.7`; it does not vendor RES4LYF code, require RES4LYF, or mutate
+ComfyUI's global scheduler registry. The existing `dual_clock_euler + native_flow`
+default and old workflow/API behavior remain unchanged. Alternative sigma schedules
+are compatibility choices rather than a universal four-step Turbo quality claim.
+
+One isolated serial real run used current ComfyUI FLOW_AV, `euler + beta57`, the full
+INT8/ConvRot FL2VA base, the user-selected step600 EMA_B LoRA, 416x224, 124 frames and
+four steps. It completed in 55.016 seconds. The resulting 124-frame H.264 stream,
+32 kHz stereo AAC stream and combined transport all passed strict decoding; the MP4
+SHA-256 is `DF5C429736DC05F3A801F57AAD4926B7B7FA931D8F5CA0B03C1F557CAE62D2D6`.
+Minimum observed free VRAM was 367 MiB, below the project's 512 MiB safety gate, so
+this closes only bounded scheduler execution/decode compatibility and makes no general
+memory-safety, audio-quality or visual-quality claim.
+
+Release v1.72.0 passed 29 focused stable/EXP sampling tests, the full 2,166-test
+project suite with six existing dependency warnings, full Ruff, 658 Python compile
+checks, 276 non-artifact JSON parses and `git diff --check`.
+
 ## 2026-09-04 — H3-World first-frame I2VA P0-P3 verification
 
 The integration is pinned to `Danzer1xxxxChan/H3-World` commit

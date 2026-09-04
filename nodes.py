@@ -545,6 +545,7 @@ class MiniMaxH3DualClockSamplerT8(io.ComfyNode):
                     display_name="scheduler / 调度器",
                     tooltip=(
                         "native_flow preserves the original shifted uniform H3 flow schedule. "
+                        "beta57 uses ComfyUI's beta scheduler with alpha=0.5 and beta=0.7. "
                         "Other choices use ComfyUI's built-in scheduler implementation."
                     ),
                 ),

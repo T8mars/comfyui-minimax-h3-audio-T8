@@ -4,7 +4,7 @@
 
 这是一个面向 MiniMax H3 的 ComfyUI 节点包。它不只做文生视频，还把图生视频、首尾帧、参考图、参考音频、长视频、口型、加速和成片修复整理成可以直接使用的工作流。
 
-当前版本：**1.71.1** · 292 个节点 · GPL-3.0-or-later
+当前版本：**1.72.0** · 292 个节点 · GPL-3.0-or-later
 
 ## 先从哪里开始
 
@@ -53,6 +53,7 @@
 
 - OpenVDN DMD 8 步 / Stage B 50 步
 - PDD、SLA、SPEED、FastH3 VSA、Enhance-A-Video
+- 稳定双时钟采样节点内置可选 `beta57` 调度器，无需安装 RES4LYF；默认仍是 `native_flow`
 - DLSS-NR 图片/短视频帧/长视频文件超分，以及 FlashVSR、RealBasicVSR、RAFT、Skin Finish
 - NVIDIA H3 + LTX-2.5 两阶段超分实验路线
 

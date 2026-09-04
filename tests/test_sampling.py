@@ -11,6 +11,9 @@ import comfy.nested_tensor
 import comfy.samplers
 
 from h3_audio_t8_pkg.sampling import (
+    BETA57_ALPHA,
+    BETA57_BETA,
+    BETA57_SCHEDULER_NAME,
     DEFAULT_SAMPLER_NAME,
     DEFAULT_SCHEDULER_NAME,
     MiniMaxH3FlowSampling,
@@ -362,6 +365,84 @@ def test_custom_euler_accepts_comfyui_scheduler_without_changing_audio_protocol(
     assert not torch.equal(sigmas, native_flow_sigmas(4, 12.0))
 
 
+def test_beta57_uses_current_comfyui_beta_scheduler_without_global_registration():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    registered_before = tuple(comfy.samplers.SCHEDULER_NAMES)
+    model, sampler, sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        BETA57_SCHEDULER_NAME,
+    )
+    model_sampling = model.get_model_object("model_sampling")
+
+    assert tuple(comfy.samplers.SCHEDULER_NAMES) == registered_before
+    assert SCHEDULER_OPTIONS[:2] == ["native_flow", "beta57"]
+    assert sampler.sampler_function.__name__ == "sample_minimax_h3_dual_clock_euler"
+    assert torch.equal(
+        sigmas,
+        comfy.samplers.beta_scheduler(
+            model_sampling,
+            4,
+            alpha=BETA57_ALPHA,
+            beta=BETA57_BETA,
+        ).cpu(),
+    )
+
+
+def test_native_av_sampler_accepts_beta57_schedule():
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+
+    model, sampler, sigmas = setup_dual_clock_sampling(
+        FakeModelPatcher(FakeCurrentBaseModel()),
+        latent,
+        4,
+        12.0,
+        3.0,
+        "euler",
+        BETA57_SCHEDULER_NAME,
+    )
+    model_sampling = model.get_model_object("model_sampling")
+
+    assert isinstance(model_sampling, comfy.model_sampling.ModelSamplingAV)
+    assert sampler.sampler_function.__name__ == "sample_euler"
+    assert torch.equal(
+        sigmas,
+        comfy.samplers.beta_scheduler(
+            model_sampling,
+            4,
+            alpha=BETA57_ALPHA,
+            beta=BETA57_BETA,
+        ).cpu(),
+    )
+
+
+def test_beta57_fails_clearly_when_comfyui_beta_scheduler_is_unavailable(monkeypatch):
+    video = torch.zeros((1, 24, 2, 2, 2))
+    audio = torch.zeros((1, 32, 2, 8))
+    latent = {"samples": comfy.nested_tensor.NestedTensor((video, audio))}
+    monkeypatch.delattr(comfy.samplers, "beta_scheduler")
+
+    with pytest.raises(RuntimeError, match="update ComfyUI"):
+        setup_dual_clock_sampling(
+            FakeModelPatcher(),
+            latent,
+            4,
+            12.0,
+            3.0,
+            "dual_clock_euler",
+            BETA57_SCHEDULER_NAME,
+        )
+
+
 def test_standard_sampler_uses_current_comfyui_native_flow_av_protocol():
     video = torch.zeros((1, 24, 2, 2, 2))
     audio = torch.zeros((1, 32, 2, 8))
@@ -408,6 +489,7 @@ def test_sampler_and_scheduler_choices_reject_unknown_api_values():
 
     assert SAMPLER_OPTIONS[0] == "dual_clock_euler"
     assert SCHEDULER_OPTIONS[0] == "native_flow"
+    assert SCHEDULER_OPTIONS[1] == "beta57"
     with pytest.raises(ValueError, match="Unknown sampler"):
         setup_dual_clock_sampling(
             FakeModelPatcher(), latent, 4, 12.0, 3.0, "not_a_sampler", "native_flow"

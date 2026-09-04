@@ -14,6 +14,9 @@ from .core import nested_av_parts
 
 DEFAULT_SAMPLER_NAME = "dual_clock_euler"
 DEFAULT_SCHEDULER_NAME = "native_flow"
+BETA57_SCHEDULER_NAME = "beta57"
+BETA57_ALPHA = 0.5
+BETA57_BETA = 0.7
 SAMPLER_OPTIONS = [DEFAULT_SAMPLER_NAME]
 if hasattr(comfy.model_sampling, "ModelSamplingAV"):
     SAMPLER_OPTIONS.extend(
@@ -21,7 +24,12 @@ if hasattr(comfy.model_sampling, "ModelSamplingAV"):
     )
 SCHEDULER_OPTIONS = [
     DEFAULT_SCHEDULER_NAME,
-    *(name for name in comfy.samplers.SCHEDULER_NAMES if name != DEFAULT_SCHEDULER_NAME),
+    BETA57_SCHEDULER_NAME,
+    *(
+        name
+        for name in comfy.samplers.SCHEDULER_NAMES
+        if name not in {DEFAULT_SCHEDULER_NAME, BETA57_SCHEDULER_NAME}
+    ),
 ]
 
 
@@ -64,6 +72,19 @@ def native_flow_sigmas(steps: int, shift_video: float) -> torch.Tensor:
 def _scheduler_sigmas(model_sampling, scheduler: str, steps: int, shift_video: float) -> torch.Tensor:
     if scheduler == DEFAULT_SCHEDULER_NAME:
         return native_flow_sigmas(steps, shift_video)
+    if scheduler == BETA57_SCHEDULER_NAME:
+        beta_scheduler = getattr(comfy.samplers, "beta_scheduler", None)
+        if beta_scheduler is None:
+            raise RuntimeError(
+                "beta57 requires a current ComfyUI build with the built-in beta scheduler; "
+                "update ComfyUI and restart it"
+            )
+        return beta_scheduler(
+            model_sampling,
+            steps,
+            alpha=BETA57_ALPHA,
+            beta=BETA57_BETA,
+        ).cpu()
     if scheduler not in comfy.samplers.SCHEDULER_NAMES:
         raise ValueError(
             f"Unknown scheduler {scheduler!r}; available schedulers: "

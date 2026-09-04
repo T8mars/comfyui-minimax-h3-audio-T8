@@ -1081,6 +1081,10 @@ and are exposed only when the installed ComfyUI has FLOW_AV support; alternative
 schedulers change the sigma grid and are not a quality guarantee for a four-step
 Turbo LoRA. Old workflow/API JSON may omit both new fields and retains the
 original behavior.
+The stable node also exposes `beta57` as a normal optional scheduler. It calls the
+installed ComfyUI beta scheduler with `alpha=0.5` and `beta=0.7` inside this node,
+so RES4LYF is not required and no global ComfyUI scheduler registration is changed.
+`native_flow` remains the default and the previously verified workflow path.
 The same no-extra-scheduler rule applies to the EXP node.
 
 The bypass loader is recommended because it computes the author's intended

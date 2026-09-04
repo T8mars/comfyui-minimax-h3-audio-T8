@@ -4,7 +4,7 @@
 
 MiniMax H3 Audio T8 is a ComfyUI node pack for joint video and audio generation. It includes practical workflows for text and image animation, first/last-frame control, image/video/audio references, long video, lip sync, acceleration, and final-video restoration.
 
-Current version: **1.71.1** · 292 nodes · GPL-3.0-or-later
+Current version: **1.72.0** · 292 nodes · GPL-3.0-or-later
 
 ## Where to start
 
@@ -53,6 +53,7 @@ The project's 32-second Vocal Lock V3 sample completed five serial H3 shots, per
 
 - OpenVDN DMD eight-step and Stage B 50-step execution
 - PDD, SLA, SPEED, FastH3 VSA, and Enhance-A-Video integrations
+- Optional built-in `beta57` schedule in the stable dual-clock node, with no RES4LYF install required; `native_flow` remains the default
 - DLSS-NR image/short-frame/file-video upscaling, plus FlashVSR, RealBasicVSR, RAFT, and Skin Finish
 - Experimental two-stage MiniMax H3 plus LTX-2.5 upscaling
 

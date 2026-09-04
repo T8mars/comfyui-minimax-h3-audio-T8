@@ -3369,7 +3369,18 @@
     "audio_shift": 3.0,
     "sigma_grid": "native shifted uniform flow",
     "sampler_options": "current comfy.samplers.SAMPLER_NAMES when native ModelSamplingAV is available",
-    "scheduler_options": "current comfy.samplers.SCHEDULER_NAMES",
+    "scheduler_options": "native_flow, project-local beta57 (ComfyUI beta scheduler alpha=0.5/beta=0.7), then current comfy.samplers.SCHEDULER_NAMES",
+    "beta57_compatibility": {
+      "status": "released in v1.72.0 as a formal optional stable-node scheduler; native_flow remains the default",
+      "implementation": "delegates to the installed ComfyUI beta_scheduler with alpha=0.5 and beta=0.7 without vendoring RES4LYF code or mutating ComfyUI's global scheduler registry",
+      "sampler_routes": [
+        "dual_clock_euler",
+        "current ComfyUI native FLOW_AV samplers"
+      ],
+      "dependency": "current ComfyUI with comfy.samplers.beta_scheduler; RES4LYF is not required",
+      "real_validation": "one isolated serial 416x224x124 four-step native FLOW_AV euler+beta57 run completed in 55.016 seconds with the step600 EMA_B LoRA; its H.264 124-frame video, 32kHz stereo AAC audio and combined transport all strictly decoded. The observed minimum free VRAM was 367 MiB, so this proves bounded execution compatibility but does not pass the project's 512 MiB memory-safety gate",
+      "quality_scope": "alternative sigma-grid compatibility, not a universal four-step Turbo quality guarantee"
+    },
     "alternate_sampler_protocol": "native FLOW_AV carry/scale; unavailable on legacy ComfyUI",
     "legacy_workflow_compatibility": "new optional widgets are appended after steps/shift_video/shift_audio",
     "comfyui_audio_velocity_compatibility": [
