@@ -4,7 +4,7 @@
 
 这是一个面向 MiniMax H3 的 ComfyUI 节点包。它不只做文生视频，还把图生视频、首尾帧、参考图、参考音频、长视频、口型、加速和成片修复整理成可以直接使用的工作流。
 
-当前版本：**1.69.0** · 284 个节点 · GPL-3.0-or-later
+当前版本：**1.70.0** · 288 个节点 · GPL-3.0-or-later
 
 ## 先从哪里开始
 
@@ -14,6 +14,7 @@
 2. 需要参考图、首尾帧或音频控制时，看 [`02-audio-control`](examples/workflows/02-audio-control) 和对应的参考工作流。
 3. 需要 OpenVDN 8 步时，直接用 [`10-speed`](examples/workflows/10-speed) 里的 `OpenVDN_DMD8_*_Advanced.json`。
 4. 需要长视频或 MV 时，看 [`04-long-video`](examples/workflows/04-long-video) 和 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync)。
+5. 需要图片或成片超分时，看 [`25-dlss-nr`](examples/workflows/25-dlss-nr)；这是 Windows RTX 专用的可选后处理。
 
 每个高级工作流都带画布说明。先替换模型和输入素材，再运行；不要一开始就把多个 LoRA、Attention 加速器和采样器叠在一起。
 
@@ -50,7 +51,7 @@
 
 - OpenVDN DMD 8 步 / Stage B 50 步
 - PDD、SLA、SPEED、FastH3 VSA、Enhance-A-Video
-- FlashVSR、RealBasicVSR、RAFT、Skin Finish
+- DLSS-NR 图片/短视频帧/长视频文件超分，以及 FlashVSR、RealBasicVSR、RAFT、Skin Finish
 - NVIDIA H3 + LTX-2.5 两阶段超分实验路线
 
 带 `Advanced` 或 `EXP` 的功能需要使用对应工作流。不同加速方案通常不能叠加；节点会尽量提前拒绝明显冲突。
@@ -81,9 +82,19 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | 视频与音频 VAE | `models/vae` |
 | Turbo、PDD、SLA 等 LoRA | `models/loras` |
 | FlashVSR / RealBasicVSR | `models/upscale_models` 或工作流注明的专用目录 |
+| DLSS-NR v1.3 外部运行时 | `models/DLSS-NR/1.3`（用户自行取得，节点不下载或分发） |
 | 人脸、光流和分割模型 | 工作流或对应文档注明的目录 |
 
 不同 H3 基模和 LoRA 不是随便混用的。文件名相近也不代表结构兼容。
+
+## DLSS-NR：Windows RTX 可选后处理
+
+[`examples/workflows/25-dlss-nr`](examples/workflows/25-dlss-nr) 提供运行时检查、图片、短视频帧序列和
+文件视频四份独立工作流。默认使用 v1.3 `Standard + 2x`。节点会校验用户自备的完整运行时、驱动、
+GPU映射和真实feature probe；许可开关默认关闭，也不会自动下载EXE或DLL。
+
+三类固定素材的四路盲测均通过非退化门。人审结论是不同高清方法会带来不同皮肤和质感，没有一种在所有
+素材上一定更好。因此这里的Standard只是推荐起点；超分不修复源片已有的身份、口型或真实纹理问题。
 
 ## OpenVDN：推荐的 8 步路线
 

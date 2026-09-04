@@ -1,0 +1,311 @@
+{
+  "id": "08b96799-3bb9-56f4-a9d1-569b7c67e8a2",
+  "revision": 0,
+  "last_node_id": 6,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "使用说明 / Read first",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        1040,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## MiniMax H3 DLSS-NR v1.3 后处理\n\n- 仅支持 Windows + NVIDIA RTX。完整外部运行时由用户自行取得并放到 `ComfyUI/models/DLSS-NR/1.3/`；本节点不下载、不安装，也不分发 EXE/DLL。\n- 先阅读并接受外部许可，再把 Runtime Audit 的许可开关打开。保持关闭时工作流会明确拒绝执行。\n- 默认 Standard + 2x；它是经固定素材盲测通过的保守起点，不代表普遍优于其他超分方法。\n- 只处理 SDR 8-bit。视频不插帧；帧序列路线原样传递 AUDIO，文件路线严格复制并校验源音频。\n- 超分不会修复源片已有的身份、口型或真实纹理问题。请看完整候选，再决定是否采用。\n\n本工作流把每张图片独立处理，不在 batch 图片之间继承时序状态。"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
+      "title": "1. DLSS-NR v1.3 运行时审计（确认许可后开启）",
+      "pos": [
+        0,
+        360
+      ],
+      "size": [
+        500,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "ready",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced"
+      },
+      "widgets_values": [
+        "1.3",
+        false,
+        "feature_probe_1_frame",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "title": "2. 选择要超分的图片",
+      "pos": [
+        0,
+        680
+      ],
+      "size": [
+        500,
+        360
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "replace_with_source_image.png",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced",
+      "title": "3. Standard 2x 图片超分",
+      "pos": [
+        600,
+        390
+      ],
+      "size": [
+        570,
+        720
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "link": 1
+        },
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "source",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced"
+      },
+      "widgets_values": [
+        "sr_nr",
+        "2.0",
+        "standard",
+        "default",
+        "0 Default",
+        "0 Default",
+        1.5,
+        1.0,
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "title": "原图 / Source",
+      "pos": [
+        1260,
+        390
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "title": "DLSS-NR 2x 候选",
+      "pos": [
+        1260,
+        750
+      ],
+      "size": [
+        420,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      4,
+      0,
+      "T8_DLSS_NR_RUNTIME"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      1,
+      5,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.82,
+      "offset": [
+        110,
+        80
+      ]
+    },
+    "frontendVersion": "1.24.3"
+  },
+  "version": 0.4
+}

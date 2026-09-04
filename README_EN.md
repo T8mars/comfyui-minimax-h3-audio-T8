@@ -4,7 +4,7 @@
 
 MiniMax H3 Audio T8 is a ComfyUI node pack for joint video and audio generation. It includes practical workflows for text and image animation, first/last-frame control, image/video/audio references, long video, lip sync, acceleration, and final-video restoration.
 
-Current version: **1.69.0** · 284 nodes · GPL-3.0-or-later
+Current version: **1.70.0** · 288 nodes · GPL-3.0-or-later
 
 ## Where to start
 
@@ -14,6 +14,7 @@ If this is your first time using the pack:
 2. For image or audio control, use the workflows under [`02-audio-control`](examples/workflows/02-audio-control) and the matching reference folders.
 3. For OpenVDN eight-step generation, use an `OpenVDN_DMD8_*_Advanced.json` workflow from [`10-speed`](examples/workflows/10-speed).
 4. For long video or music video work, start with [`04-long-video`](examples/workflows/04-long-video) or [`24-mv-lipsync`](examples/workflows/24-mv-lipsync).
+5. For image or finished-video upscaling, use [`25-dlss-nr`](examples/workflows/25-dlss-nr), an optional Windows RTX post-process.
 
 Advanced workflows include notes on the canvas. Replace the model and input media before running them. Avoid stacking several LoRAs, attention backends, or sampler owners unless the workflow explicitly asks for it.
 
@@ -50,7 +51,7 @@ The project's 32-second Vocal Lock V3 sample completed five serial H3 shots, per
 
 - OpenVDN DMD eight-step and Stage B 50-step execution
 - PDD, SLA, SPEED, FastH3 VSA, and Enhance-A-Video integrations
-- FlashVSR, RealBasicVSR, RAFT, and Skin Finish
+- DLSS-NR image/short-frame/file-video upscaling, plus FlashVSR, RealBasicVSR, RAFT, and Skin Finish
 - Experimental two-stage MiniMax H3 plus LTX-2.5 upscaling
 
 Features labeled `Advanced` or `EXP` should be used through their bundled workflows. Acceleration methods are usually alternatives, not add-ons to be stacked together.
@@ -79,9 +80,22 @@ This node pack follows recent native MiniMax H3 APIs in ComfyUI. If every node t
 | Video and audio VAEs | `models/vae` |
 | Turbo, PDD, SLA, and other LoRAs | `models/loras` |
 | FlashVSR / RealBasicVSR | `models/upscale_models` or the workflow's named folder |
+| DLSS-NR v1.3 external runtime | `models/DLSS-NR/1.3` (user supplied; never downloaded or redistributed by the node) |
 | Face, optical-flow, and segmentation models | The folder named by the workflow or its documentation |
 
 Similar filenames do not guarantee compatible H3 structures. Use the model and LoRA combination named by the workflow.
+
+## DLSS-NR: optional Windows RTX post-processing
+
+[`examples/workflows/25-dlss-nr`](examples/workflows/25-dlss-nr) contains four independent workflows:
+runtime audit, image, short-video frames, and file-backed video. They start from v1.3 `Standard + 2x`.
+The nodes verify the user-supplied full runtime, driver, GPU mapping, and a real feature probe. The
+license acknowledgement remains off by default, and the project never downloads the EXE or DLLs.
+
+All four methods passed the non-regression gate on the three fixed review clips. Human review found
+different skin and texture character but no universal winner. Standard is therefore a practical
+starting point, not a claim that DLSS-NR is always best. Upscaling cannot repair identity, lip-sync,
+or real texture information already missing from the source.
 
 ## OpenVDN: the recommended eight-step route
 

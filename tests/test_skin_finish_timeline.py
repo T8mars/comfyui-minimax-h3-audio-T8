@@ -370,7 +370,7 @@ def test_new_node_defaults_are_safe_and_registration_is_strictly_append_only():
         "MiniMaxH3TurboSLAProfileRouterT8Advanced",
         "MiniMaxH3PDD8StepSetupT8Advanced",
     ]
-    assert len(node_ids) == 284
+    assert len(node_ids) == 288
 
 
 def test_timeline_workflow_is_importable_documented_and_source_safe():

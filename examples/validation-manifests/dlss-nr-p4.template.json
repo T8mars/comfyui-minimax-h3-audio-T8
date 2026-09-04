@@ -1,0 +1,106 @@
+{
+  "schema": "t8.dlss_nr.blind_manifest.v1",
+  "review_id": "replace-with-a-new-review-id",
+  "bitrate_kbps": 12000,
+  "clips": [
+    {
+      "clip_id": "speech-you-are-where",
+      "label": "124-frame H3 character speech source",
+      "clip_type": "speech",
+      "source": "speech/source.mp4",
+      "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+      "methods": {
+        "lanczos": {
+          "path": "speech/lanczos-2x.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "lanczos_2x"
+        },
+        "realbasicvsr": {
+          "path": "speech/realbasicvsr-conservative.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "conservative"
+        },
+        "flashvsr": {
+          "path": "speech/flashvsr-quality-locked.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "quality_locked"
+        },
+        "dlss_nr": {
+          "path": "speech/dlss-nr-standard.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "standard"
+        }
+      }
+    },
+    {
+      "clip_id": "hard-cut",
+      "label": "Hard-cut source",
+      "clip_type": "hard_cut",
+      "source": "hard-cut/source.mp4",
+      "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+      "methods": {
+        "lanczos": {
+          "path": "hard-cut/lanczos-2x.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "lanczos_2x"
+        },
+        "realbasicvsr": {
+          "path": "hard-cut/realbasicvsr-conservative.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "conservative"
+        },
+        "flashvsr": {
+          "path": "hard-cut/flashvsr-quality-locked.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "quality_locked"
+        },
+        "dlss_nr": {
+          "path": "hard-cut/dlss-nr-standard.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "standard"
+        }
+      }
+    },
+    {
+      "clip_id": "subtitle-fine-texture",
+      "label": "Subtitle and fine-texture source",
+      "clip_type": "fine_texture",
+      "source": "fine-texture/source.mp4",
+      "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+      "methods": {
+        "lanczos": {
+          "path": "fine-texture/lanczos-2x.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "lanczos_2x"
+        },
+        "realbasicvsr": {
+          "path": "fine-texture/realbasicvsr-conservative.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "conservative"
+        },
+        "flashvsr": {
+          "path": "fine-texture/flashvsr-quality-locked.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "quality_locked"
+        },
+        "dlss_nr": {
+          "path": "fine-texture/dlss-nr-standard.mp4",
+          "source_sha256": "REPLACE_WITH_SOURCE_SHA256",
+          "candidate_sha256": "REPLACE_WITH_CANDIDATE_SHA256",
+          "profile": "standard"
+        }
+      }
+    }
+  ]
+}

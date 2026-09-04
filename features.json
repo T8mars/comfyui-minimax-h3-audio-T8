@@ -1,4 +1,51 @@
 {
+  "dlss_nr_advanced": {
+    "status": "released as four formal Advanced nodes in v1.70.0 after P0-P5; corrected v1.3 real image/video runs and full four-method review passed; all four methods were acceptable with different skin/texture character and no universal winner; four independent workflows and the clean Registry package passed",
+    "date": "2026-09-04",
+    "category": "T8/MiniMax H3/Post FX/DLSS-NR",
+    "nodes": [
+      "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
+      "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced",
+      "MiniMaxH3DLSSNRVideoFramesT8Advanced",
+      "MiniMaxH3DLSSNRVideoFileT8Advanced"
+    ],
+    "positions": [
+      284,
+      285,
+      286,
+      287
+    ],
+    "workflows": [
+      "examples/workflows/25-dlss-nr/2026-09-04_H3_DLSS_NR_Runtime_Audit_Advanced.json",
+      "examples/workflows/25-dlss-nr/2026-09-04_H3_DLSS_NR_Image_2x_Standard_Advanced.json",
+      "examples/workflows/25-dlss-nr/2026-09-04_H3_DLSS_NR_Video_Frames_2x_Standard_Advanced.json",
+      "examples/workflows/25-dlss-nr/2026-09-04_H3_DLSS_NR_Video_File_2x_Standard_Advanced.json"
+    ],
+    "runtime_contract": "Windows/RTX only; user-supplied under ComfyUI/models/DLSS-NR/<version>; explicit external-license acknowledgement; exact official full v1.2 and v1.3 archive size/SHA allowlists; installed EXE/DLL byte identity checked against members of the verified archive; executable and all three DLLs must resolve to one load directory; READY requires the route-F success marker and a unique DXGI name/memory signature, with the same ambiguity check repeated before execution; v1.3 default with SR preset support; v1.2 limited to 1x NR-only because its scaled SR mode selection is incorrect; no download, install, driver upgrade, global model unload, static-audit media processing or proprietary redistribution",
+    "upstream": {
+      "native_repository": "https://github.com/DaniilSokolyuk/video2dlssnr",
+      "native_source_audit_commit": "55a4ceb588a419b9b56497aa0b563d0c9e2b6c77",
+      "native_source_license_at_audit_commit": "no root LICENSE found",
+      "wrapper_repository": "https://github.com/piscesbody/ComfyUI-DLSS-NR",
+      "wrapper_source_audit_commit": "4d329a864e99267734fffa2ee4b7ddeafc005c4a",
+      "wrapper_source_license": "MIT",
+      "allowlisted_release": "full official video2dlssnr v1.2 and v1.3 archives; v1.3 is the default, while v1.2 scaled SR/SR+NR is rejected"
+    },
+    "execution_contract": "Image runs each batch item independently and polls cancellation while reaping interrupted helpers; Video Frames uses one bounded-pipe persistent temporal helper, returns the exact AUDIO object, and reports both requested and resolved NVOFA/LK backends, rejecting silent fallback for an explicit backend request; Video File strictly accepts untrimmed SDR 8-bit Rec.709 CFR file-backed input, streams without a full IMAGE batch, encodes video-only, packet-copies source audio, and verifies packet payload, normalized packet PTS/DTS timeline, decoded PCM and decoded-frame timeline before joint decode and atomic publish. RGB is explicitly rounded to an 8-bit RGBA bridge and source alpha/extra channels are bilinear-resized and reattached for IMAGE outputs. Standard matches the reference wrapper; max_detail, portrait, night, light and strictly validated custom profiles are optional, with custom detail limited to 0..1. SR-only reports its effective detail=0 composite and the upstream requirement to evaluate NR. v1.3 supports default/E/F/J/K/L/M SR presets. Only 1x NR-only and 1.5x/2x/3x SR-only or SR+NR are accepted, with no 4x/chaining/bilinear RGB fallback.",
+    "validation_tooling": "The CPU-only input preparer atomically creates a hash-bound P2 frame and the required P3 speech, intentional hard-cut, and subtitle/fine-texture sources without starting DLSS. The gated serial runner prepares the exact P2 still matrix and three P3 video classes with per-run runtime revalidation, nvidia-smi timing/VRAM evidence, actual motion-backend reporting, four-way audio payload/timeline checks, black/freeze/cut screens and a normal-speed human review page. The P3 analyzer binds that export to the real validation report and requires every field to be resolved plus each clip's relevant quality checks to pass before P4. The P4 candidate preparer requires that hash-bound P3 PASS, then serially creates Lanczos, RealBasicVSR conservative, FlashVSR Quality Locked and DLSS-NR standard 2x candidates. The P4 builder normalizes all four serially with one H.264/yuv420p/Rec.709-limited/CBR contract and source packet-copied audio, then creates a deterministic cyclic-Latin A-D package whose public page contains no method mapping. The reveal analyzer hash-bound the complete user review, key and screening; all mechanics and DLSS non-regression checks passed. The user judged all four acceptable with different skin/texture character and no definitive winner. The anonymous B/D preference is not converted to a method preference because the A-D mapping rotates by clip.",
+    "prepared_validation_inputs": {
+      "status": "P5_GATES_PASS_V1_70_0_RELEASE_READY",
+      "manifest": "artifacts/dlss-nr-validation-inputs-20260903/validation_inputs.json",
+      "manifest_sha256": "9BA1B6E9907EFE69869D5D51B83395DA3A18F50DF013CDA3F88ED0301D935206",
+      "p2_image": "960x544 decoded RGB8 frame 61; 0.52224 MP",
+      "p3_speech": "byte-identical reviewed H3 source; 960x544; 124 frames; 24 fps; one decodable AAC stream; operator-confirmed phrase 你在哪里",
+      "p3_hard_cut": "two separately generated H3 clips joined at frame 62; strongest 96x54 transition; mean absolute delta 0.15044758",
+      "p3_fine_texture": "960x544x124 H3-derived clip with deterministic small text, one-pixel line and two-pixel checkerboard overlay",
+      "gate_effect": "P2 and P3 are closed by hash-bound human records; P4 human and mechanical non-regression passed for the fixed material; no automatic universal quality ranking follows"
+    },
+    "verification": "81 DLSS-specific tests, 130 focused DLSS/registration/frontend tests and the full 2133-test project suite pass; the full suite has 6 known dependency warnings. Ruff, 652 delivery Python compilation checks, 274 delivery JSON parses, 203/203 source/user workflow mirrors, git diff check, four synchronized v1.70.0 markers and Comfy Registry validation pass. The 530-entry release package is byte-identical to the Git index, isolated extraction imports 288/288 unique nodes with DLSS at the tail, and the package contains all four DLSS workflows with no proprietary binary, model, media or excluded developer directory; its exact non-self-referential SHA-256 is recorded in the excluded local release audit. The official full v1.2/v1.3 archives, same-directory load binding, mandatory route F, same-signature dual-GPU rejection, v1.3 Windows ZIP member names, complete-input-name image output convention, wrapper-standard parameter map/detail bound, SR-only effective reporting, actual motion backend, cancellable image helper, audio packet/decoded timelines, SR presets and v1.2 scaled-route rejection are regression-covered. The latest serial real report is artifacts/dlss-nr-v13-audit-fixes-real-validation-20260904/validation_report.json with SHA-256 CD817AC29BEC6DF128F35C57CA6F2646E8F0EEFC512BBF886F851A8C8E75CE78. It passed route F and unique-device checks; all three P3 videos resolved to NVOFA and preserved packet payload, packet timeline, decoded PCM and decoded-frame timeline. Its three P2 images and three P3 MP4s are byte-identical to the prior human-review set.",
+    "boundaries": "The current RTX 4060 Ti machine passes the driver prerequisite with Microsoft WHQL-signed NVIDIA 616.56 and the user-confirmed full v1.3 runtime passes the mandatory real route-F feature probe from ComfyUI/models/DLSS-NR/1.3; v1.2 remains installed separately but scaled SR/SR+NR is rejected. P2-P4 have hash-bound human PASS evidence for the fixed materials. P4 found no universal winner, and the stronger output has lower full-reference PSNR/SSIM on the synthetic game downsample tests, so no universal image/video quality, speed superiority, lip-sync improvement, or general 16 GiB safety claim is made."
+  },
   "openvdn_minimax_h3_advanced": {
     "status": "implemented as three append-only formal Advanced nodes with nine DMD8 frontend workflows. T2VA is the upstream-declared task; I2VA, L2VA, FL2VA, single/multiple image reference, video-plus-source-audio reference, standalone audio reference, and first-frame-plus-audio hybrid are T8 extensions backed by isolated real generation and strict native MP4 AV decode",
     "date": "2026-09-03",
@@ -2107,7 +2154,11 @@
     "MiniMaxH3LongVideoColorMatchT8Advanced",
     "MiniMaxH3VDNRuntimeAuditT8Advanced",
     "MiniMaxH3VDNModelComposerT8Advanced",
-    "MiniMaxH3VDNExecutionPlanT8Advanced"
+    "MiniMaxH3VDNExecutionPlanT8Advanced",
+    "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
+    "MiniMaxH3DLSSNRImageSuperResolutionT8Advanced",
+    "MiniMaxH3DLSSNRVideoFramesT8Advanced",
+    "MiniMaxH3DLSSNRVideoFileT8Advanced"
   ],
   "audio_refine_advanced": {
     "status": "Phase 1 and Phase 2 are implemented as seven append-only Advanced EXP nodes with dated frontend workflows. Three final base-without-Turbo Refine4 blind pairs completed after strict media validation; the optional route remains guarded by a manual Quality Gate rather than becoming an automatic default",

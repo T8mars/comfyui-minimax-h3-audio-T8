@@ -173,6 +173,7 @@ from .nodes_long_video_color_match_advanced import (
     LONG_VIDEO_COLOR_MATCH_ADVANCED_NODE_CLASSES,
 )
 from .nodes_vdn_h3_advanced import VDN_H3_ADVANCED_NODE_CLASSES
+from .nodes_dlss_nr_advanced import DLSS_NR_ADVANCED_NODE_CLASSES
 from .nodes_multikeyframe_advanced import MULTIKEYFRAME_ADVANCED_NODE_CLASSES
 from .nodes_long_video_exp import (
     MiniMaxH3LongVideoConditioningT8,
@@ -723,6 +724,9 @@ class MiniMaxH3AudioT8Extension(ComfyExtension):
                 # OpenVDN MiniMax H3 is an isolated T2VA architecture backend.
                 # Append-only after every v1.66.0 node; legacy schemas stay untouched.
                 *VDN_H3_ADVANCED_NODE_CLASSES,
+                # DLSS-NR is a separately governed Windows/RTX post-processing Plan B.
+                # Runtime Audit is the first append-only node; no proprietary file is bundled.
+                *DLSS_NR_ADVANCED_NODE_CLASSES,
             ]
 
 

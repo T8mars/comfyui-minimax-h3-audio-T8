@@ -1,0 +1,558 @@
+{
+  "id": "64fa9b46-b704-53df-9c96-3da8fbe8a8d7",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 12,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "使用说明 / Read first",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        1080,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## MiniMax H3 DLSS-NR v1.3 后处理\n\n- 仅支持 Windows + NVIDIA RTX。完整外部运行时由用户自行取得并放到 `ComfyUI/models/DLSS-NR/1.3/`；本节点不下载、不安装，也不分发 EXE/DLL。\n- 先阅读并接受外部许可，再把 Runtime Audit 的许可开关打开。保持关闭时工作流会明确拒绝执行。\n- 默认 Standard + 2x；它是经固定素材盲测通过的保守起点，不代表普遍优于其他超分方法。\n- 只处理 SDR 8-bit。视频不插帧；帧序列路线原样传递 AUDIO，文件路线严格复制并校验源音频。\n- 超分不会修复源片已有的身份、口型或真实纹理问题。请看完整候选，再决定是否采用。\n\n本工作流先解成 IMAGE batch；适合 H3 短片。长视频请用独立的 Video File 工作流。"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
+      "title": "1. DLSS-NR v1.3 运行时审计（确认许可后开启）",
+      "pos": [
+        0,
+        360
+      ],
+      "size": [
+        500,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "ready",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced"
+      },
+      "widgets_values": [
+        "1.3",
+        false,
+        "feature_probe_1_frame",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadVideo",
+      "title": "2. 选择H3短片",
+      "pos": [
+        0,
+        680
+      ],
+      "size": [
+        500,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_h3_video.mp4"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "GetVideoComponents",
+      "title": "3. 解出帧、原音频和帧率",
+      "pos": [
+        580,
+        680
+      ],
+      "size": [
+        470,
+        190
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            4,
+            10
+          ]
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3DLSSNRVideoFramesT8Advanced",
+      "title": "4. Standard 2x 时序视频超分",
+      "pos": [
+        1140,
+        350
+      ],
+      "size": [
+        620,
+        800
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "link": 2
+        },
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 4,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "links": [
+            6,
+            8
+          ]
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRVideoFramesT8Advanced"
+      },
+      "widgets_values": [
+        24.0,
+        "sr_nr",
+        "2.0",
+        "standard",
+        "default",
+        "0 Default",
+        "0 Default",
+        1.5,
+        1.0,
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0,
+        false,
+        false,
+        "auto"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewImage",
+      "title": "原片帧 / Source",
+      "pos": [
+        1850,
+        350
+      ],
+      "size": [
+        390,
+        180
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "title": "DLSS-NR 候选帧",
+      "pos": [
+        1850,
+        580
+      ],
+      "size": [
+        390,
+        180
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "CreateVideo",
+      "title": "5. 用原帧率和原音频合成",
+      "pos": [
+        1850,
+        820
+      ],
+      "size": [
+        440,
+        280
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 9,
+          "shape": 7
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 10,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "link": 11,
+          "widget": {
+            "name": "bit_depth"
+          },
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8,
+        "sRGB"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "SaveVideo",
+      "title": "6. 保存候选视频",
+      "pos": [
+        2380,
+        820
+      ],
+      "size": [
+        420,
+        240
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/DLSS-NR/video_frames_standard_2x"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      4,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      5,
+      0,
+      "T8_DLSS_NR_RUNTIME"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      1,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      2,
+      5,
+      2,
+      "FLOAT"
+    ],
+    [
+      5,
+      4,
+      1,
+      5,
+      3,
+      "AUDIO"
+    ],
+    [
+      6,
+      5,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      5,
+      1,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      5,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      5,
+      2,
+      8,
+      1,
+      "AUDIO"
+    ],
+    [
+      10,
+      4,
+      2,
+      8,
+      2,
+      "FLOAT"
+    ],
+    [
+      11,
+      4,
+      3,
+      8,
+      3,
+      "COMBO"
+    ],
+    [
+      12,
+      8,
+      0,
+      9,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.82,
+      "offset": [
+        110,
+        80
+      ]
+    },
+    "frontendVersion": "1.24.3"
+  },
+  "version": 0.4
+}

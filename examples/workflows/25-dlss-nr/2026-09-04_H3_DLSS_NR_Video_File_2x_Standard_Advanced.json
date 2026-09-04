@@ -1,0 +1,223 @@
+{
+  "id": "e20c18f2-8494-50bc-a43f-d10a80ab75e7",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "title": "使用说明 / Read first",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        1100,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## MiniMax H3 DLSS-NR v1.3 后处理\n\n- 仅支持 Windows + NVIDIA RTX。完整外部运行时由用户自行取得并放到 `ComfyUI/models/DLSS-NR/1.3/`；本节点不下载、不安装，也不分发 EXE/DLL。\n- 先阅读并接受外部许可，再把 Runtime Audit 的许可开关打开。保持关闭时工作流会明确拒绝执行。\n- 默认 Standard + 2x；它是经固定素材盲测通过的保守起点，不代表普遍优于其他超分方法。\n- 只处理 SDR 8-bit。视频不插帧；帧序列路线原样传递 AUDIO，文件路线严格复制并校验源音频。\n- 超分不会修复源片已有的身份、口型或真实纹理问题。请看完整候选，再决定是否采用。\n\n本工作流不把长片完整物化为 IMAGE batch；只接受未裁切的 SDR 8-bit Rec.709 CFR 文件视频。"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced",
+      "title": "1. DLSS-NR v1.3 运行时审计（确认许可后开启）",
+      "pos": [
+        0,
+        360
+      ],
+      "size": [
+        500,
+        250
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "ready",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRRuntimeAuditT8Advanced"
+      },
+      "widgets_values": [
+        "1.3",
+        false,
+        "feature_probe_1_frame",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadVideo",
+      "title": "2. 选择未裁切的CFR成片",
+      "pos": [
+        0,
+        680
+      ],
+      "size": [
+        500,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_h3_video.mp4"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3DLSSNRVideoFileT8Advanced",
+      "title": "3. Standard 2x 文件流式超分",
+      "pos": [
+        620,
+        360
+      ],
+      "size": [
+        680,
+        850
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "dlss_nr_runtime",
+          "type": "T8_DLSS_NR_RUNTIME",
+          "link": 2
+        },
+        {
+          "name": "source_video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "source_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DLSSNRVideoFileT8Advanced"
+      },
+      "widgets_values": [
+        "sr_nr",
+        "2.0",
+        "standard",
+        "default",
+        "0 Default",
+        "0 Default",
+        1.5,
+        1.0,
+        1.0,
+        -1.0,
+        1.0,
+        1.0,
+        -1.0,
+        false,
+        false,
+        "auto",
+        "MiniMaxH3/DLSS-NR/video_file_standard_2x",
+        18.0
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      4,
+      1,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      0,
+      "T8_DLSS_NR_RUNTIME"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.82,
+      "offset": [
+        110,
+        80
+      ]
+    },
+    "frontendVersion": "1.24.3"
+  },
+  "version": 0.4
+}

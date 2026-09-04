@@ -1,0 +1,30 @@
+{
+  "schema": "t8.dlss_nr.runtime_manifest.v1",
+  "runtime_version": "1.3",
+  "release_tag": "v1.3",
+  "release_tag_commit": "55a4ceb588a419b9b56497aa0b563d0c9e2b6c77",
+  "source_audit_commit": "55a4ceb588a419b9b56497aa0b563d0c9e2b6c77",
+  "release_archive": {
+    "path": "video2dlssnr_release.zip",
+    "bytes": 247420277,
+    "sha256": "1cab80a30927421c7fb36f42eb5f11d50fef2f2dbc8c1236424a0ccab2eff0bd"
+  },
+  "files": {
+    "executable": {
+      "path": "bin/video2dlssnr.exe",
+      "archive_path": "out/video2dlssnr.exe"
+    },
+    "dlss_sr": {
+      "path": "bin/nvngx_dlss.dll",
+      "archive_path": "out/nvngx_dlss.dll"
+    },
+    "dlss_nr": {
+      "path": "bin/nvngx_dlssnr.dll",
+      "archive_path": "out/nvngx_dlssnr.dll"
+    },
+    "forwarder": {
+      "path": "bin/nvngx.dll_dlssnr.dll",
+      "archive_path": "out/nvngx.dll_dlssnr.dll"
+    }
+  }
+}
