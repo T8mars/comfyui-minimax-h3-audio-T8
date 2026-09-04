@@ -12,7 +12,7 @@
 
 1. 从 [`examples/workflows/01-basic-generation`](examples/workflows/01-basic-generation) 跑一条普通 H3 视频。
 2. 需要参考图、首尾帧或音频控制时，看 [`02-audio-control`](examples/workflows/02-audio-control) 和对应的参考工作流。
-3. 需要 OpenVDN 8 步时，直接用 [`10-speed`](examples/workflows/10-speed) 里的 `OpenVDN_DMD8_*_Advanced.json`。
+3. 需要 OpenVDN 8 步时，先下载 [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)，再用 [`10-speed`](examples/workflows/10-speed) 里的 `OpenVDN_DMD8_*_Advanced.json`。
 4. 需要长视频或 MV 时，看 [`04-long-video`](examples/workflows/04-long-video) 和 [`24-mv-lipsync`](examples/workflows/24-mv-lipsync)。
 5. 需要图片或成片超分时，看 [`25-dlss-nr`](examples/workflows/25-dlss-nr)；这是 Windows RTX 专用的可选后处理。
 
@@ -81,8 +81,9 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 | Qwen3-VL 文本编码器 | `models/text_encoders` |
 | 视频与音频 VAE | `models/vae` |
 | Turbo、PDD、SLA 等 LoRA | `models/loras` |
+| OpenVDN 完整模型包 | [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)；仓库已按 `models` 下的正确目录整理 |
 | FlashVSR / RealBasicVSR | `models/upscale_models` 或工作流注明的专用目录 |
-| DLSS-NR v1.3 外部运行时 | `models/DLSS-NR/1.3`（用户自行取得，节点不下载或分发） |
+| DLSS-NR v1.3 外部运行时（不是模型） | `models/DLSS-NR/1.3`（用户自行取得，节点不下载或分发） |
 | 人脸、光流和分割模型 | 工作流或对应文档注明的目录 |
 
 不同 H3 基模和 LoRA 不是随便混用的。文件名相近也不代表结构兼容。
@@ -90,8 +91,37 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 ## DLSS-NR：Windows RTX 可选后处理
 
 [`examples/workflows/25-dlss-nr`](examples/workflows/25-dlss-nr) 提供运行时检查、图片、短视频帧序列和
-文件视频四份独立工作流。默认使用 v1.3 `Standard + 2x`。节点会校验用户自备的完整运行时、驱动、
-GPU映射和真实feature probe；许可开关默认关闭，也不会自动下载EXE或DLL。
+文件视频四份独立工作流。默认使用 v1.3 `Standard + 2x`。
+
+**DLSS-NR 不需要新的 PyTorch / safetensors 模型，但需要外部程序。** 请从
+[`video2dlssnr` v1.3 官方 Release](https://github.com/DaniilSokolyuk/video2dlssnr/releases/tag/v1.3)
+取得 `video2dlssnr_release.zip` 完整包；不要用 light 包，也不需要安装上游的 ComfyUI 节点包。本项目
+不会自动下载、安装或分发其中的 EXE 和 NVIDIA DLL。
+
+运行条件：
+
+- Windows 10/11、NVIDIA RTX 显卡、NVIDIA 驱动 **616.56 或更新版本**
+- 图片和帧序列路线不增加新的 pip 依赖；使用 ComfyUI 已有的 Torch、NumPy 和 PyAV 环境
+- `Video File` 路线还要求 `ffprobe` 可在 `PATH` 中找到；通常安装 FFmpeg 后即可获得
+- 阅读并接受外部运行时及 NVIDIA 的适用许可；工作流中的许可开关因此默认关闭
+
+正确目录结构如下。保留完整 ZIP，把其中 `out` 目录的四个文件复制到这里的 `bin`，并把本仓库的
+[`examples/runtime-manifests/dlss-nr-v1.3.json`](examples/runtime-manifests/dlss-nr-v1.3.json)
+复制为 `t8-runtime-manifest.json`：
+
+```text
+ComfyUI/models/DLSS-NR/1.3/
+├── t8-runtime-manifest.json
+├── video2dlssnr_release.zip
+└── bin/
+    ├── video2dlssnr.exe
+    ├── nvngx_dlss.dll
+    ├── nvngx_dlssnr.dll
+    └── nvngx.dll_dlssnr.dll
+```
+
+先运行 `Runtime_Audit`。节点会校验完整包及已解压文件的哈希、驱动、GPU 映射和真实 feature probe；
+只有显示 `READY` 后才运行超分。v1.2 只允许 1× NR-only，默认 2× 工作流必须使用 v1.3。
 
 三类固定素材的四路盲测均通过非退化门。人审结论是不同高清方法会带来不同皮肤和质感，没有一种在所有
 素材上一定更好。因此这里的Standard只是推荐起点；超分不修复源片已有的身份、口型或真实纹理问题。

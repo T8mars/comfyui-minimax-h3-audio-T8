@@ -102,3 +102,29 @@ def test_video_file_workflow_is_direct_file_backed_and_output_owned():
         18.0,
     ]
     assert all(item["type"] != "GetVideoComponents" for item in workflow["nodes"])
+
+
+def test_readmes_document_openvdn_bundle_and_complete_dlss_runtime_contract():
+    chinese = (ROOT / "README.md").read_text(encoding="utf-8")
+    english = (ROOT / "README_EN.md").read_text(encoding="utf-8")
+    workflow = (SOURCE / "README.md").read_text(encoding="utf-8")
+
+    for readme in (chinese, english):
+        assert "https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy" in readme
+        assert "https://github.com/DaniilSokolyuk/video2dlssnr/releases/tag/v1.3" in readme
+        assert "video2dlssnr_release.zip" in readme
+        assert "t8-runtime-manifest.json" in readme
+        assert "nvngx_dlssnr.dll" in readme
+        assert "616.56" in readme
+        assert "ffprobe" in readme.lower()
+
+    for required in (
+        "video2dlssnr_release.zip",
+        "t8-runtime-manifest.json",
+        "nvngx_dlss.dll",
+        "nvngx_dlssnr.dll",
+        "nvngx.dll_dlssnr.dll",
+        "616.56",
+        "ffprobe",
+    ):
+        assert required in workflow

@@ -12,7 +12,7 @@ If this is your first time using the pack:
 
 1. Run a basic H3 workflow from [`examples/workflows/01-basic-generation`](examples/workflows/01-basic-generation).
 2. For image or audio control, use the workflows under [`02-audio-control`](examples/workflows/02-audio-control) and the matching reference folders.
-3. For OpenVDN eight-step generation, use an `OpenVDN_DMD8_*_Advanced.json` workflow from [`10-speed`](examples/workflows/10-speed).
+3. For OpenVDN eight-step generation, download [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy), then use an `OpenVDN_DMD8_*_Advanced.json` workflow from [`10-speed`](examples/workflows/10-speed).
 4. For long video or music video work, start with [`04-long-video`](examples/workflows/04-long-video) or [`24-mv-lipsync`](examples/workflows/24-mv-lipsync).
 5. For image or finished-video upscaling, use [`25-dlss-nr`](examples/workflows/25-dlss-nr), an optional Windows RTX post-process.
 
@@ -79,8 +79,9 @@ This node pack follows recent native MiniMax H3 APIs in ComfyUI. If every node t
 | Qwen3-VL text encoder | `models/text_encoders` |
 | Video and audio VAEs | `models/vae` |
 | Turbo, PDD, SLA, and other LoRAs | `models/loras` |
+| Complete OpenVDN model bundle | [`t8star/Vdn-Minimax-H3-Comfy`](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy); already arranged under the correct `models` folders |
 | FlashVSR / RealBasicVSR | `models/upscale_models` or the workflow's named folder |
-| DLSS-NR v1.3 external runtime | `models/DLSS-NR/1.3` (user supplied; never downloaded or redistributed by the node) |
+| DLSS-NR v1.3 external runtime (not a model) | `models/DLSS-NR/1.3` (user supplied; never downloaded or redistributed by the node) |
 | Face, optical-flow, and segmentation models | The folder named by the workflow or its documentation |
 
 Similar filenames do not guarantee compatible H3 structures. Use the model and LoRA combination named by the workflow.
@@ -89,8 +90,38 @@ Similar filenames do not guarantee compatible H3 structures. Use the model and L
 
 [`examples/workflows/25-dlss-nr`](examples/workflows/25-dlss-nr) contains four independent workflows:
 runtime audit, image, short-video frames, and file-backed video. They start from v1.3 `Standard + 2x`.
-The nodes verify the user-supplied full runtime, driver, GPU mapping, and a real feature probe. The
-license acknowledgement remains off by default, and the project never downloads the EXE or DLLs.
+
+**DLSS-NR needs no new PyTorch or safetensors model, but it does need an external executable runtime.**
+Download the full `video2dlssnr_release.zip` from the official
+[`video2dlssnr` v1.3 release](https://github.com/DaniilSokolyuk/video2dlssnr/releases/tag/v1.3).
+Do not use the light archive, and do not install the upstream ComfyUI node package. This project never
+downloads, installs, or redistributes the EXE or proprietary NVIDIA DLLs.
+
+Requirements:
+
+- Windows 10/11, an NVIDIA RTX GPU, and NVIDIA driver **616.56 or newer**
+- No extra pip package for the image or frame workflows; they use ComfyUI's existing Torch, NumPy, and PyAV environment
+- The `Video File` workflow also needs `ffprobe` available on `PATH`, normally provided by an FFmpeg installation
+- Read and accept the applicable external-runtime and NVIDIA terms; the workflow acknowledgement is off by default
+
+Keep the full ZIP, copy the four files from its `out` folder into the `bin` folder below, and copy
+[`examples/runtime-manifests/dlss-nr-v1.3.json`](examples/runtime-manifests/dlss-nr-v1.3.json)
+as `t8-runtime-manifest.json`:
+
+```text
+ComfyUI/models/DLSS-NR/1.3/
+├── t8-runtime-manifest.json
+├── video2dlssnr_release.zip
+└── bin/
+    ├── video2dlssnr.exe
+    ├── nvngx_dlss.dll
+    ├── nvngx_dlssnr.dll
+    └── nvngx.dll_dlssnr.dll
+```
+
+Run `Runtime_Audit` first. It verifies the full archive and extracted-file hashes, driver, GPU mapping,
+and a real feature probe. Only continue after it reports `READY`. Runtime v1.2 is limited to 1x NR-only;
+the default 2x workflows require v1.3.
 
 All four methods passed the non-regression gate on the three fixed review clips. Human review found
 different skin and texture character but no universal winner. Standard is therefore a practical

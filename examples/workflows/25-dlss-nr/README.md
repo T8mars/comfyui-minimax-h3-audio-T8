@@ -5,12 +5,32 @@
 
 ## 使用前准备
 
-1. 仅支持 Windows 和 NVIDIA RTX 显卡。
-2. 用户自行取得完整的外部 DLSS-NR v1.3 运行时，并放到
-   `ComfyUI/models/DLSS-NR/1.3/`。节点不会下载、安装或分发 EXE、DLL。
-3. 阅读并接受外部运行时及 NVIDIA 的适用许可后，在工作流中打开
+DLSS-NR **不是另一个 safetensors 模型**，而是 Windows RTX 专用的外部便携程序。图片和帧序列路线
+不增加新的 pip 依赖；文件视频路线还要求安装 FFmpeg，并保证 `ffprobe` 可在 `PATH` 中找到。
+
+1. 使用 Windows 10/11、NVIDIA RTX 显卡和 616.56 或更新的 NVIDIA 驱动。
+2. 从 [`video2dlssnr` v1.3 官方 Release](https://github.com/DaniilSokolyuk/video2dlssnr/releases/tag/v1.3)
+   下载完整的 `video2dlssnr_release.zip`。不要使用 light 包，也不用安装它提供的 ComfyUI 节点包。
+3. 保留完整 ZIP，把 ZIP 中 `out` 目录的四个文件复制到 `bin`，并把
+   [`../../runtime-manifests/dlss-nr-v1.3.json`](../../runtime-manifests/dlss-nr-v1.3.json)
+   复制为 `t8-runtime-manifest.json`：
+
+   ```text
+   ComfyUI/models/DLSS-NR/1.3/
+   ├── t8-runtime-manifest.json
+   ├── video2dlssnr_release.zip
+   └── bin/
+       ├── video2dlssnr.exe
+       ├── nvngx_dlss.dll
+       ├── nvngx_dlssnr.dll
+       └── nvngx.dll_dlssnr.dll
+   ```
+
+4. 阅读并接受外部运行时及 NVIDIA 的适用许可后，在工作流中打开
    `accept_external_runtime_license`。该开关默认关闭；未打开时会明确拒绝执行。
-4. Runtime Audit 必须显示 `READY`。不要绕过驱动、设备、文件哈希或 512 MiB 剩余显存检查。
+5. Runtime Audit 必须显示 `READY`。不要绕过驱动、设备、文件哈希或 512 MiB 剩余显存检查。
+
+节点不会下载、安装或分发这些 EXE、DLL，也不负责升级显卡驱动。运行时是便携文件，不需要系统级安装。
 
 ## 四份工作流
 
