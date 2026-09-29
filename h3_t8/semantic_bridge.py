@@ -38,6 +38,12 @@ _CACHE_LOCK = threading.RLock()
 _MAX_FILE_BYTES = 64 * 1024 * 1024
 
 
+@dataclass(frozen=True)
+class _TransWeights:
+    state: dict
+    metadata: dict
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
@@ -75,8 +81,8 @@ class BridgeConfig:
             raise ValueError("Unknown Bridge token_scope")
         if self.device not in ("auto", "cpu", "cuda") or self.compute_profile != "fp32":
             raise ValueError("Unknown Bridge device/compute_profile")
-        if not isinstance(self.chunk_tokens, int) or self.chunk_tokens < 1:
-            raise ValueError("Bridge chunk_tokens must be a positive integer")
+        if not isinstance(self.chunk_tokens, int) or self.chunk_tokens < 0:
+            raise ValueError("Bridge chunk_tokens must be zero (whole sequence) or positive")
 
     @property
     def active(self):
@@ -136,7 +142,15 @@ def read_weights(path, expected_sha=None):
     if expected_sha is not None and sha != expected_sha:
         raise ValueError("Bridge model content changed; re-execute the configuration node")
     weights = load(data)
-    validate_weights(weights)
+    if "net.in_proj.weight" in weights:
+        from .semantic_bridge_trans import build_trans_bridge
+        header_size = int.from_bytes(data[:8], "little")
+        if header_size <= 0 or header_size > len(data) - 8:
+            raise ValueError("Invalid WushuBridge safetensors header")
+        metadata = json.loads(data[8:8 + header_size]).get("__metadata__", {})
+        build_trans_bridge(weights, metadata)
+    else:
+        validate_weights(weights)
     return weights, sha
 
 
@@ -148,7 +162,20 @@ def _weights(config):
         cached = _CACHE.get(config.sha256)
         if cached is None:
             state, _ = read_weights(config.path, config.sha256)
-            cached = {name: tensor.float() for name, tensor in state.items()}
+            if "net.in_proj.weight" in state:
+                from .semantic_bridge_trans import spec_from_metadata
+                with Path(config.path).open("rb") as stream:
+                    data = stream.read(8 + 1024 * 1024)
+                size = int.from_bytes(data[:8], "little")
+                if size > 1024 * 1024:
+                    raise ValueError("WushuBridge safetensors metadata header is too large")
+                metadata = json.loads(data[8:8 + size]).get("__metadata__", {})
+                spec_from_metadata(metadata)
+                if file_sha(config.path) != config.sha256:
+                    raise ValueError("Bridge model content changed; re-execute the configuration node")
+                cached = _TransWeights({name: tensor.float() for name, tensor in state.items()}, metadata)
+            else:
+                cached = {name: tensor.float() for name, tensor in state.items()}
             _CACHE[config.sha256] = cached
             while len(_CACHE) > 2:
                 _CACHE.popitem(last=False)
@@ -169,6 +196,53 @@ def _project(h, weights):
         first = F.silu(F.linear(normalized, weights["fc1.weight"], weights["fc1.bias"]))
         second = F.silu(F.linear(first, weights["fc2.weight"], weights["fc2.bias"]))
         return F.linear(second, weights["fc3.weight"], weights["fc3.bias"])
+
+
+def _apply_trans_bridge(conditioning, config, model, identity, cancel, encoding_source):
+    """Apply the trainer's sequence-wide Transformer without flattening tokens."""
+    outputs, receipts = [], []
+    for native, metadata in conditioning:
+        device = native.device if config.device == "auto" else torch.device(config.device)
+        if device.type == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError("Bridge CUDA explicitly selected but CUDA is unavailable")
+        model = model.to(device=device, dtype=torch.float32)
+        h = native.to(device=device, dtype=torch.float32)
+        pred = torch.empty_like(h)
+        stride = config.chunk_tokens or h.shape[1]
+        with torch.autocast(device_type=device.type, enabled=False):
+            for start in range(0, h.shape[1], stride):
+                cancel()
+                segment = h[:, start:start + stride]
+                normalized = segment / (segment.square().mean(dim=-1, keepdim=True) + 1e-6).sqrt()
+                pred[:, start:start + stride] = model(normalized)
+        if config.magnitude_match == "per_token":
+            pred = pred * ((h.square().mean(-1, keepdim=True) + 1e-8).sqrt() /
+                           (pred.square().mean(-1, keepdim=True) + 1e-8).sqrt())
+        elif config.magnitude_match == "global":
+            pred = pred * ((h.square().mean() + 1e-8).sqrt() /
+                           (pred.square().mean() + 1e-8).sqrt())
+        result = h + config.alpha * (pred - h)
+        if config.token_scope == "text_only_preserve_reference":
+            tags = metadata["minimax_token_tags"].to(device)
+            result = torch.where((tags == 1)[None, :, None], result, h)
+        output = result.to(device=native.device, dtype=native.dtype)
+        if not torch.isfinite(output).all().item():
+            raise ValueError("Non-finite Bridge output")
+        receipt = {
+            **identity, "encoding_source": encoding_source,
+            "input_sha256": _tensor_sha(native), "output_sha256": _tensor_sha(output),
+            "shape": list(native.shape), "dtype": str(native.dtype),
+            "applied_tokens_per_batch": (int((metadata["minimax_token_tags"] == 1).sum().item())
+                                         if config.token_scope != "all_tokens" else native.shape[1]),
+            "reference_payload_present": bool(metadata.get("minimax_refs")),
+        }
+        receipt["receipt_sha256"] = digest(receipt)
+        outputs.append([output, {**metadata, RECEIPT_KEY: receipt}])
+        receipts.append(receipt)
+    cancel()
+    return outputs, {"enabled": True, "applied": True, "identity": identity, "items": receipts,
+                     "quality": "experimental_not_human_qualified",
+                     "warning": "Reference audio/singing can degrade; video quality requires actual A/B review."}
 
 
 def _check_cancel():
@@ -206,6 +280,13 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
                 raise ValueError("Unknown native H3 token tags")
     cancel()
     state = _weights(config)
+    if isinstance(state, _TransWeights):
+        from .semantic_bridge_trans import build_trans_bridge, validate_contract
+        model = build_trans_bridge(state.state, state.metadata)
+        validate_contract(model.spec, alpha=config.alpha,
+                          magnitude_match=config.magnitude_match,
+                          token_scope=config.token_scope, chunk_tokens=config.chunk_tokens)
+        return _apply_trans_bridge(conditioning, config, model, identity, cancel, encoding_source)
     outputs, receipts = [], []
     for native, metadata in conditioning:
         device = native.device if config.device == "auto" else torch.device(config.device)
@@ -220,17 +301,19 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
             # Whole item statistics (all batches/tokens), not per-chunk matching.
             source_sum = torch.zeros((), dtype=torch.float64, device=device)
             target_sum = torch.zeros_like(source_sum)
-            for start in range(0, rows.shape[0], config.chunk_tokens):
+            chunk_tokens = config.chunk_tokens or rows.shape[0]
+            for start in range(0, rows.shape[0], chunk_tokens):
                 cancel()
-                h = rows[start:start + config.chunk_tokens].to(device=device, dtype=torch.float32)
+                h = rows[start:start + chunk_tokens].to(device=device, dtype=torch.float32)
                 projected = _project(h, weights)
                 source_sum += projected.double().square().sum()
                 target_sum += h.double().square().sum()
             global_scale = ((target_sum / native.numel() + 1e-8) /
                             (source_sum / native.numel() + 1e-8)).sqrt().float()
-        for start in range(0, rows.shape[0], config.chunk_tokens):
+        chunk_tokens = config.chunk_tokens or rows.shape[0]
+        for start in range(0, rows.shape[0], chunk_tokens):
             cancel()
-            h = rows[start:start + config.chunk_tokens].to(device=device, dtype=torch.float32)
+            h = rows[start:start + chunk_tokens].to(device=device, dtype=torch.float32)
             projected = _project(h, weights)
             if config.magnitude_match == "per_token":
                 projected = projected * ((h.square().mean(-1, keepdim=True) + 1e-8).sqrt() /
@@ -240,7 +323,7 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
             result = h + config.alpha * (projected - h)
             if not torch.isfinite(result).all().item():
                 raise ValueError("Non-finite Bridge output")
-            output[start:start + config.chunk_tokens] = result.to(device=native.device, dtype=native.dtype)
+            output[start:start + chunk_tokens] = result.to(device=native.device, dtype=native.dtype)
         output = output.reshape_as(native)
         if config.token_scope == "text_only_preserve_reference":
             tags = metadata["minimax_token_tags"].to(native.device)

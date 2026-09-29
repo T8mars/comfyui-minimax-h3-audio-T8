@@ -45,17 +45,18 @@ class MiniMaxH3SemanticBridgeConfigT8(io.ComfyNode):
             node_id="MiniMaxH3SemanticBridgeConfigT8",
             display_name="H3 Semantic Bridge / 模型与设置 (T8 EXP)",
             category=CATEGORY, is_experimental=True,
-            description="原版通用语义 / BUNNY动作语义。默认0.10；参考音频/唱歌可能退化。模型下载：https://huggingface.co/t8star/Semantic-Bridge-Comfy 。放入 models/semantic_bridge；不会自动下载或加载教师模型。",
+            description="Semantic Bridge 文本条件适配。原版/BUNNY 默认0.10；T8 动漫战斗 Transformer 权重按模型卡设 1.0、per_token、all_tokens、chunk_tokens=0。模型放入 models/semantic_bridge；参考音频/唱歌可能退化。",
             inputs=[
                 io.Combo.Input("model_name", options=list(model_paths()) or ["No Semantic Bridge models installed"],
-                    tooltip="原版FP16封装／BUNNY FP32封装： https://huggingface.co/t8star/Semantic-Bridge-Comfy 。保留 models/semantic_bridge/t8_compat 子目录；不是LoRA或H3主模型。"),
+                    tooltip="原版/BUNNY：https://huggingface.co/t8star/Semantic-Bridge-Comfy ；T8动漫战斗：https://huggingface.co/t8star/semantic_bridge_T8-comic-combat 。放在 models/semantic_bridge/t8_compat；不是LoRA或H3主模型。"),
                 io.Boolean.Input("enabled", default=True),
                 io.Float.Input("alpha", default=0.10, min=0.0, max=1.0, step=0.01),
                 io.Combo.Input("magnitude_match", options=["per_token", "global", "none"], default="per_token"),
                 io.Combo.Input("token_scope", options=["all_tokens", "text_only_preserve_reference"], default="all_tokens",
                                tooltip="all_tokens复现原作者；text_only仅修改原生tag=1行，仍不能保证歌声。"),
                 io.Combo.Input("device", options=["auto", "cpu", "cuda"], default="auto", advanced=True),
-                io.Int.Input("chunk_tokens", default=256, min=1, max=65536, advanced=True),
+                io.Int.Input("chunk_tokens", default=256, min=0, max=65536, advanced=True,
+                             tooltip="0 = whole sequence; required by some trained Transformer bridges."),
             ], outputs=[BridgeIO.Output("semantic_bridge"), io.String.Output("report_json")],
         )
 

@@ -42,6 +42,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 |TAEH3 时序／2D 预览模型|[Taeh3-Comfy](https://huggingface.co/t8star/Taeh3-Comfy) → `models/vae_approx/`；2D 文件另名保存|
 |Meridian ConvRot INT8 ＋ Omega 1B512|[Meridian-Comfy](https://huggingface.co/t8star/Meridian-Comfy) → `models/meridian/`；Omega 在 `vggt-omega/checkpoints/`，源码／assets 和 H3 VAE 另备|
 |Semantic Bridge|[Semantic-Bridge-Comfy](https://huggingface.co/t8star/Semantic-Bridge-Comfy) → `models/semantic_bridge/t8_compat/`|
+|T8 动漫战斗 Semantic Bridge|[模型](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat) → `models/semantic_bridge/t8_compat/`；用本仓库最新 GitHub 源码，设置见[Bridge 说明](docs/SEMANTIC_BRIDGE_EXP.md)|
 |OpenVDN 完整包|[Vdn-Minimax-H3-Comfy](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)；保持仓库目录结构|
 |H3-World 动作 LoRA|[Minimax-H3-World-Comfy](https://huggingface.co/t8star/Minimax-H3-World-Comfy)；[接线说明](examples/workflows/26-h3-world)|
 

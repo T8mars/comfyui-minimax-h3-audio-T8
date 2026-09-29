@@ -1,5 +1,13 @@
 # Semantic Bridge / BUNNY — v1.84.0
 
+## T8 动漫战斗训练权重（后续源码兼容）
+
+[T8 Comic Combat Semantic Bridge](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat) 是另行训练的跨 token Transformer 权重，结构不同于下文的六张量 MLP。将 `semantic_bridge_T8_comic_combat.safetensors` 放入 `ComfyUI/models/semantic_bridge/t8_compat/`，使用本仓库最新 GitHub 源码，重启 ComfyUI 并刷新模型列表。节点为 **H3 Semantic Bridge / 模型与设置 (T8 EXP)** 和 **H3 Semantic Bridge / 应用条件 (T8 EXP)**；普通工作流按「原生 H3 CONDITIONING → 应用条件 → 原采样条件输入」连接，配置节点接应用节点的 `semantic_bridge`。Relay 或内循环使用各自的内置 `semantic_bridge` 插口，避免重复应用。
+
+该权重的固定应用契约为 `alpha=1.0`、`magnitude_match=per_token`、`token_scope=all_tokens`、`chunk_tokens=0`（整条 token 序列一起计算）。配置不符会报错；0.10／256 是下文六张量 MLP 的默认值，不适用于此权重。它只改变文本条件，不是视频 LoRA；部分同提示词视频 A/B 观察到局部改善，不保证所有镜头有效。训练器见 [MinimaxH3_Semantic_Bridge_Trainer-T8](https://github.com/T8mars/MinimaxH3_Semantic_Bridge_Trainer-T8)。
+
+The T8 comic-combat model is a separately trained cross-token Transformer, not the six-tensor MLP below. Install it under `ComfyUI/models/semantic_bridge/t8_compat/` with the latest GitHub source. Set `alpha=1.0`, `magnitude_match=per_token`, `token_scope=all_tokens`, and `chunk_tokens=0` (whole sequence). Other settings fail the model's fixed application contract. Connect the T8 Config and Apply nodes as above, or use a Relay/loop's built-in Bridge input once. Its observed video benefit is limited to some tested scenes.
+
 ## 2026-09-17 最新验收与发布范围
 
 用户在8810复审后明确“可以了没问题了”，授权正式工作流及GitHub发布。
@@ -50,7 +58,7 @@ MODEL先进入 Relay，再在其MODEL输出后加载权重LoRA，然后采样。
 | magnitude_match | 默认per_token逐token匹配幅度；global按整条条件统计，none不匹配。不同模式不是等价效果。 |
 | token_scope | 默认all_tokens。text_only_preserve_reference只改原生tag=1行，是独立实验，不能保证声音不退化。 |
 | device | auto跟随条件张量；cpu/cuda仅高级覆盖。不会因此卸载其他模型或启动SenseNova教师。 |
-| chunk_tokens | 默认256，仅限制适配器临时工作区；不改变视频长度，不是分段生成或分块归一化。 |
+| chunk_tokens | 六张量 MLP 默认256；跨 token Transformer 的训练契约可要求0（整条序列），正数会把它切为独立序列，可能改变结果。不改变视频长度。 |
 | report_json | 记录模型内容身份、配置、编码来源、输入输出身份和应用次数，用于诊断，不是画质评分。 |
 
 遇到“重复应用”时撤掉多余Apply并从原生条件重新编码；遇到Relay绑定错误时使用内部插口。
