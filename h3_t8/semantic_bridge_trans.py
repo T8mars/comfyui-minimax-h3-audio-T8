@@ -49,9 +49,9 @@ def spec_from_metadata(metadata: dict) -> TransSpec:
     return TransSpec(hidden, layers, heads, max_tokens, skip == "true", scale, contract)
 
 
-def validate_contract(spec: TransSpec, *, alpha: float, magnitude_match: str,
+def validate_contract(spec: TransSpec | dict | None, *, alpha: float, magnitude_match: str,
                       token_scope: str, chunk_tokens: int) -> None:
-    contract = spec.application_contract
+    contract = spec.application_contract if isinstance(spec, TransSpec) else spec
     if contract is None:
         return
     expected = {
@@ -62,11 +62,10 @@ def validate_contract(spec: TransSpec, *, alpha: float, magnitude_match: str,
         "auto_alpha": False, "guard": False, "allow_dim_mismatch": False,
     }
     if any(contract.get(key) != value for key, value in expected.items()):
-        raise ValueError(
-            "WushuBridge application contract mismatch: set alpha=1.0, "
-            "magnitude_match=per_token, token_scope=all_tokens, chunk_tokens=0 "
-            "for the published T8 comic-combat model"
-        )
+        raise ValueError("WushuBridge application contract mismatch: required "
+                         f"alpha={contract.get('alpha_min')}, "
+                         f"magnitude_match={contract.get('magnitude_match')}, "
+                         f"token_scope=all_tokens, chunk_tokens={contract.get('chunk_tokens')}")
 
 
 def _positions(length: int, hidden: int) -> torch.Tensor:

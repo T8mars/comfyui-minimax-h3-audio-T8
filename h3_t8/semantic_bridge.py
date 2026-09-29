@@ -35,13 +35,29 @@ KNOWN_MODELS = {
 }
 _CACHE = OrderedDict()  # CPU FP32 only; a live caller holds its own strong reference.
 _CACHE_LOCK = threading.RLock()
-_MAX_FILE_BYTES = 64 * 1024 * 1024
+_MAX_FILE_BYTES = 256 * 1024 * 1024
 
 
 @dataclass(frozen=True)
 class _TransWeights:
     state: dict
     metadata: dict
+
+
+@dataclass(frozen=True)
+class _TrainerMLPWeights:
+    state: dict
+    spec: object
+
+
+def _weight_metadata(data: bytes) -> dict:
+    header_size = int.from_bytes(data[:8], "little")
+    if header_size <= 0 or header_size > min(len(data) - 8, 1024 * 1024):
+        raise ValueError("Invalid WushuBridge safetensors metadata header")
+    metadata = json.loads(data[8:8 + header_size]).get("__metadata__", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("Invalid WushuBridge safetensors metadata")
+    return metadata
 
 
 def canonical(value):
@@ -144,11 +160,10 @@ def read_weights(path, expected_sha=None):
     weights = load(data)
     if "net.in_proj.weight" in weights:
         from .semantic_bridge_trans import build_trans_bridge
-        header_size = int.from_bytes(data[:8], "little")
-        if header_size <= 0 or header_size > len(data) - 8:
-            raise ValueError("Invalid WushuBridge safetensors header")
-        metadata = json.loads(data[8:8 + header_size]).get("__metadata__", {})
-        build_trans_bridge(weights, metadata)
+        build_trans_bridge(weights, _weight_metadata(data))
+    elif "net.fc1.weight" in weights:
+        from .semantic_bridge_mlp import validate_trainer_mlp
+        validate_trainer_mlp(weights, _weight_metadata(data))
     else:
         validate_weights(weights)
     return weights, sha
@@ -162,18 +177,21 @@ def _weights(config):
         cached = _CACHE.get(config.sha256)
         if cached is None:
             state, _ = read_weights(config.path, config.sha256)
-            if "net.in_proj.weight" in state:
+            if "net.in_proj.weight" in state or "net.fc1.weight" in state:
                 from .semantic_bridge_trans import spec_from_metadata
+                from .semantic_bridge_mlp import validate_trainer_mlp
                 with Path(config.path).open("rb") as stream:
                     data = stream.read(8 + 1024 * 1024)
-                size = int.from_bytes(data[:8], "little")
-                if size > 1024 * 1024:
-                    raise ValueError("WushuBridge safetensors metadata header is too large")
-                metadata = json.loads(data[8:8 + size]).get("__metadata__", {})
-                spec_from_metadata(metadata)
+                metadata = _weight_metadata(data)
                 if file_sha(config.path) != config.sha256:
                     raise ValueError("Bridge model content changed; re-execute the configuration node")
-                cached = _TransWeights({name: tensor.float() for name, tensor in state.items()}, metadata)
+                if "net.in_proj.weight" in state:
+                    spec_from_metadata(metadata)
+                    cached = _TransWeights({name: tensor.float() for name, tensor in state.items()}, metadata)
+                else:
+                    spec = validate_trainer_mlp(state, metadata)
+                    cached = _TrainerMLPWeights(
+                        {name[4:]: tensor.float() for name, tensor in state.items()}, spec)
             else:
                 cached = {name: tensor.float() for name, tensor in state.items()}
             _CACHE[config.sha256] = cached
@@ -196,6 +214,13 @@ def _project(h, weights):
         first = F.silu(F.linear(normalized, weights["fc1.weight"], weights["fc1.bias"]))
         second = F.silu(F.linear(first, weights["fc2.weight"], weights["fc2.bias"]))
         return F.linear(second, weights["fc3.weight"], weights["fc3.bias"])
+
+
+def _predict_mlp(h, weights, trainer_spec=None):
+    projected = _project(h, weights)
+    if trainer_spec is not None and trainer_spec.residual_skip:
+        return h + trainer_spec.residual_scale * projected
+    return projected
 
 
 def _apply_trans_bridge(conditioning, config, model, identity, cancel, encoding_source):
@@ -287,6 +312,14 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
                           magnitude_match=config.magnitude_match,
                           token_scope=config.token_scope, chunk_tokens=config.chunk_tokens)
         return _apply_trans_bridge(conditioning, config, model, identity, cancel, encoding_source)
+    trainer_spec = None
+    if isinstance(state, _TrainerMLPWeights):
+        from .semantic_bridge_trans import validate_contract
+        trainer_spec = state.spec
+        validate_contract(trainer_spec.application_contract, alpha=config.alpha,
+                          magnitude_match=config.magnitude_match,
+                          token_scope=config.token_scope, chunk_tokens=config.chunk_tokens)
+        state = state.state
     outputs, receipts = [], []
     for native, metadata in conditioning:
         device = native.device if config.device == "auto" else torch.device(config.device)
@@ -305,7 +338,7 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
             for start in range(0, rows.shape[0], chunk_tokens):
                 cancel()
                 h = rows[start:start + chunk_tokens].to(device=device, dtype=torch.float32)
-                projected = _project(h, weights)
+                projected = _predict_mlp(h, weights, trainer_spec)
                 source_sum += projected.double().square().sum()
                 target_sum += h.double().square().sum()
             global_scale = ((target_sum / native.numel() + 1e-8) /
@@ -314,7 +347,7 @@ def apply_bridge(conditioning, config, *, encoding_source="external_unknown", ca
         for start in range(0, rows.shape[0], chunk_tokens):
             cancel()
             h = rows[start:start + chunk_tokens].to(device=device, dtype=torch.float32)
-            projected = _project(h, weights)
+            projected = _predict_mlp(h, weights, trainer_spec)
             if config.magnitude_match == "per_token":
                 projected = projected * ((h.square().mean(-1, keepdim=True) + 1e-8).sqrt() /
                                          (projected.square().mean(-1, keepdim=True) + 1e-8).sqrt())
