@@ -22,6 +22,9 @@ def validate(monkeypatch, tmp_path):
                         bridge.MiniMaxH3SemanticBridgeConfigT8)
     monkeypatch.setattr(bridge, "model_paths", lambda: {"present.safetensors": str(tmp_path / "present")})
     monkeypatch.setattr(bridge, "file_sha", lambda *_: pytest.fail("validation hashed/loaded a model"))
+    # This fixture tests Core range/enum and path-validation dispatch only.
+    # Real metadata/fixed-contract validation has separate saved-model tests.
+    monkeypatch.setattr(bridge, "inspect_bridge_profile", lambda *_: {"fixed_contract": None, "settings": None})
 
     def run(**overrides):
         inputs = dict(model_name="missing.safetensors", enabled=True, alpha=.1,
@@ -53,7 +56,7 @@ def test_range_and_finite_checks_not_lost_to_custom_validation(validate, value, 
 
 
 @pytest.mark.parametrize("overrides", [
-    {"chunk_tokens": 0}, {"chunk_tokens": 65537}, {"magnitude_match": "typo"},
+    {"chunk_tokens": -1}, {"chunk_tokens": 65537}, {"magnitude_match": "typo"},
     {"token_scope": "unknown"}, {"device": "unknown"},
 ])
 def test_other_native_validation_not_swallowed_on_bypass(validate, overrides):

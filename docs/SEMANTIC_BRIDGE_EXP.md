@@ -1,5 +1,30 @@
 # Semantic Bridge / BUNNY — v1.84.0
 
+## v1.87.0 自动模型参数与显式多桥组合（EXP）
+
+新建时推荐 **H3 Semantic Bridge / 自动模型参数 (T8 EXP)**。它读取所选权重的实际内容SHA及固定应用契约，不根据文件名、`trans` 架构或训练报告中的历史alpha猜设置。只准备配置，不启动教师、编码器或采样器。
+
+| 权重 | 自动 alpha | 其余自动参数 | 根据 |
+| --- | --- | --- | --- |
+| 原六张量 Original／BUNNY | 0.10 | per_token、all_tokens、chunk_tokens=256 | 原六张量默认配方 |
+| `semantic_bridge_T8-comic-combat.safetensors` | 1.0 | per_token、all_tokens、chunk_tokens=0 | 权重内固定 application_contract |
+| 已识别内容的 `wushu_bridge_wushu_v1.safetensors` | 0.12 | per_token、all_tokens、chunk_tokens=0 | [作者模型卡](https://huggingface.co/Jojocodex/ComfyUI-H3-WushuBridge)，SHA精确匹配v1 |
+
+**两个新Transformer不能共用一个alpha。** Comic-combat 要求1.0；武术v1推荐0.12，不是1.0，其训练日志出现的0.2也不等于推理固定契约。Wushu预设只覆盖SHA `4b7a459aac43e066b9cd8d3f84f52b7d6c2777e7de05f35a3cb042abab889ebd`，不冒称v2、重训或改包后的权重已识别。Comic模型见[模型卡](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat)。
+
+原 **模型与设置** 节点仍是手动入口：输入顺序、旧0.10／256默认值不变；`chunk_tokens=0`新增表示整条序列。固定契约冲突在Core排队预检／配置执行／内循环preflight和实际Apply检查，不等到采样后才发现。仅推荐值不同则警告而不禁止用户手动试验。禁用／alpha=0仍不读模型旁路；未知自训trans/mlp无可靠预设时自动入口要求使用手动节点及该权重说明，不偷设1.0。`report_json`记录实际参数、模型身份、来源及提示。
+
+支持训练器导出的`trans`与可变宽`mlp`，包括`residual_skip`／`residual_scale`。MLP残差的底座为**归一化后的输入**，不是未归一化H3条件；原六张量MLP数学路径不改。Transformer模型构造不消耗用户CPU随机数状态；模型数据与元数据由同一份哈希绑定字节读取，避免换文件混用身份。
+
+多模型接线：每份权重各接一个自动／手动配置 → **H3 Semantic Bridge / 多桥组合 (T8 EXP)** 的`first`、`second` → 原Apply的`semantic_bridge`，或Relay／内循环的原Bridge插口。继续把组合输出接到下一组合节点的`first`，第三份配置接`second`，最多8桥。最后只应用一次，不串多个Apply。
+
+当前组合是**显式 first→second 有序串行**，不是多LoRA权重加法或并联平均。每桥保留自己的alpha／固定契约；顺序、每桥参数与内容SHA都进入缓存身份。全体桥先预检，同SHA重复选择拒绝；禁用项不会重新启用。报告有整体及每阶段输入／输出／receipt，Relay绑定的是完整组合receipt。改变模型、顺序或强度换新chain_id。音频／参考对象和原metadata不改，但生成声音可能退化；参考tag保护仅适用于选择text-only的对应阶段。多桥不保证更好，需同seed单桥／多桥A/B和完整画音人审。
+
+软件验证已覆盖严格不同RMS／匹配模式／分块残差、真实已安装的两个新模型CPU及CUDA与pinned训练器数值对照、原版／BUNNY与改动前数学路径对照、多桥内容及顺序身份、取消不改原输入、重复／坏SHA／Relay入口。实际原生CPU画布Queue已执行两个自动配置及组合节点，确认分别1.0／0.12、有序独立身份；可见开关编辑、Save As、刷新重开后图语义精确保持，没有执行编码器／Apply／H3采样。GitHub版本不等于Registry可安装，此节不表示新多桥H3视频或质量验收；既有正式样片资格不继承给新权重或组合。
+
+English: use **Auto Config** for content/metadata-bound inference presets; the legacy manual Config keeps its old defaults. Comic-combat has a fixed alpha=1 contract, while the SHA-pinned Wushu v1 preset is alpha=.12. Unknown trained exports require explicit manual settings. **Compose** applies at most eight individually configured bridges in explicit serial order and emits one composite receipt; it is not additive LoRA merging. Apply the final composite once, before Relay binding. Numeric compatibility does not establish video/voice quality or Registry installation availability.
+
+
 ## T8 动漫战斗训练权重（后续源码兼容）
 
 [T8 Comic Combat Semantic Bridge](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat) 是另行训练的跨 token Transformer 权重，结构不同于下文的六张量 MLP。将 `semantic_bridge_T8_comic_combat.safetensors` 放入 `ComfyUI/models/semantic_bridge/t8_compat/`，使用本仓库最新 GitHub 源码，重启 ComfyUI 并刷新模型列表。节点为 **H3 Semantic Bridge / 模型与设置 (T8 EXP)** 和 **H3 Semantic Bridge / 应用条件 (T8 EXP)**；普通工作流按「原生 H3 CONDITIONING → 应用条件 → 原采样条件输入」连接，配置节点接应用节点的 `semantic_bridge`。Relay 或内循环使用各自的内置 `semantic_bridge` 插口，避免重复应用。
@@ -34,7 +59,7 @@ H16／Meridian继续暂停。本节覆盖下方历史开发／待审文字；详
 ## 中文快速接线与参数
 
 这是可选的条件语义适配器，不是 LoRA、放大器或速度优化节点。
-原版与 BUNNY 是两份独立训练的权重，不要串联叠加。新功能仍待集中画音审片，
+原版与 BUNNY 是两份独立训练的权重。不要串多个Apply；显式多桥使用上节Compose，另行完整画音对照。
 已有工作流不接这个输入时继续走原路径。
 
 **普通工作流：** 原生 H3 条件节点的 CONDITIONING → Bridge应用条件 →
@@ -117,7 +142,8 @@ not separate chunk statistics. Scheduled items are processed independently.
 Zero strength, disabled config or no connection bypasses unchanged without reading a
 model or adding receipt metadata. Active application records content identity and
 input/output tensor receipts, preserves other metadata and never mutates the input.
-Do not stack adapters; use a fresh native encoding for each separate LOW/HIGH stage.
+Do not chain Apply nodes; use explicit Compose for an ordered multi-bridge experiment.
+Use a fresh native encoding for each separate LOW/HIGH stage.
 
 ## Boundaries
 

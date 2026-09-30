@@ -210,7 +210,7 @@ def test_converter_unsupported_atomic_publish_cleans_partial(weight_file, tmp_pa
 
 
 @pytest.mark.parametrize("kwargs", [{"alpha": float("nan")}, {"alpha": 1.01},
-                                    {"chunk_tokens": 0}, {"compute_profile": "fake"}])
+                                    {"chunk_tokens": -1}, {"compute_profile": "fake"}])
 def test_invalid_settings(weight_file, kwargs):
     with pytest.raises(ValueError):
         replace(config(weight_file), **kwargs)

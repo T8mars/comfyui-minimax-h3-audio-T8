@@ -54,6 +54,7 @@ def validate_contract(spec: TransSpec | dict | None, *, alpha: float, magnitude_
     contract = spec.application_contract if isinstance(spec, TransSpec) else spec
     if contract is None:
         return
+    contract_settings(contract)
     expected = {
         "schema": 1, "alpha_min": alpha, "alpha_max": alpha,
         "magnitude_match": magnitude_match,
@@ -65,7 +66,25 @@ def validate_contract(spec: TransSpec | dict | None, *, alpha: float, magnitude_
         raise ValueError("WushuBridge application contract mismatch: required "
                          f"alpha={contract.get('alpha_min')}, "
                          f"magnitude_match={contract.get('magnitude_match')}, "
-                         f"token_scope=all_tokens, chunk_tokens={contract.get('chunk_tokens')}")
+                         f"token_scope=all_tokens, chunk_tokens={contract.get('chunk_tokens')}. "
+                         "Use H3 Semantic Bridge / 自动模型参数 (T8 EXP), or set these values explicitly.")
+
+
+def contract_settings(contract: dict) -> dict:
+    """Only the trainer's supported fixed inference formula, never guessed defaults."""
+    alpha = contract.get("alpha_min")
+    if (type(contract.get("schema")) is not int or contract["schema"] != 1
+            or type(alpha) not in (int, float) or not math.isfinite(alpha)
+            or not 0 < alpha <= 1 or type(contract.get("alpha_max")) not in (int, float)
+            or contract["alpha_max"] != alpha
+            or contract.get("magnitude_match") != "per_token"
+            or contract.get("token_span") != "all"
+            or type(contract.get("tail_ratio")) not in (int, float) or contract["tail_ratio"] != 1
+            or type(contract.get("chunk_tokens")) is not int or contract["chunk_tokens"] != 0
+            or any(contract.get(key) is not False for key in ("auto_alpha", "guard", "allow_dim_mismatch"))):
+        raise ValueError("Unsupported or incomplete Bridge fixed application contract")
+    return {"alpha": float(alpha), "magnitude_match": "per_token",
+            "token_scope": "all_tokens", "chunk_tokens": 0}
 
 
 def _positions(length: int, hidden: int) -> torch.Tensor:
@@ -106,7 +125,10 @@ class TransBridge(nn.Module):
 
 def build_trans_bridge(state: dict, metadata: dict) -> TransBridge:
     spec = spec_from_metadata(metadata)
-    model = TransBridge(spec)
+    # Module initialization is overwritten by state; it must not consume the
+    # caller's CPU noise RNG, including validation before an H3 sampling stage.
+    with torch.random.fork_rng(devices=[]):
+        model = TransBridge(spec)
     expected = {"net." + key for key in model.state_dict()}
     if set(state) != expected:
         raise ValueError("WushuBridge trans tensor keys do not match the declared architecture")

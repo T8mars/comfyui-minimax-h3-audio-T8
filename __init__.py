@@ -11,6 +11,7 @@ if __package__:
     from .hyperflow_long_video_exp.nodes import MiniMaxH3HyperFlowLongVideoEXPT8 as _HyperFlowLongVideoNode
     from .hyperflow_long_video_exp.single8_node import MiniMaxH3HyperFlowSingle8LongVideoEXPT8 as _HyperFlowSingle8LongVideoNode
     from .nodes_hyper_vae_2x import HYPER_VAE_2X_NODE_CLASSES as _hyper_vae_2x_node_classes
+    from .nodes_semantic_bridge import SEMANTIC_BRIDGE_EXTRA_NODE_CLASSES as _semantic_bridge_extra_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -36,12 +37,16 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _hyper_vae_2x_node_classes = import_module(
         f"{_package_name}.nodes_hyper_vae_2x"
     ).HYPER_VAE_2X_NODE_CLASSES
+    _semantic_bridge_extra_node_classes = import_module(
+        f"{_package_name}.nodes_semantic_bridge"
+    ).SEMANTIC_BRIDGE_EXTRA_NODE_CLASSES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
     async def get_node_list(self):
         return [*(await super().get_node_list()), _HyperFlowLongVideoNode,
-                _HyperFlowSingle8LongVideoNode, *_hyper_vae_2x_node_classes]
+                _HyperFlowSingle8LongVideoNode, *_hyper_vae_2x_node_classes,
+                *_semantic_bridge_extra_node_classes]
 
 
 def comfy_entrypoint():

@@ -1,4 +1,15 @@
 {
+  "semantic_bridge_model_contracts_20260930": {
+    "status": "EXP_content_bound_presets_and_ordered_stack_numeric_verified_video_quality_unqualified",
+    "nodes": [
+      "MiniMaxH3SemanticBridgeAutoConfigT8",
+      "MiniMaxH3SemanticBridgeComposeT8"
+    ],
+    "documentation": "docs/SEMANTIC_BRIDGE_EXP.md",
+    "contract": "Automatic config reads fixed metadata/content SHA, not filename or trans architecture. Comic-combat alpha1/per_token/all_tokens/chunk0; exact Wushu-v1 content uses author-recommended .12/per_token/all_tokens/chunk0; original/BUNNY defaults .10/256 unchanged. Manual fixed-contract mismatch fails before sampling; free manual settings remain allowed with recommendations. Ordered serial multi-bridge composition up to8 stages, per-model contracts/strengths, complete receipt and cache identity; repeated content and double application reject, disabled entries bypass, cancellation leaves original conditions unchanged. Original actual weights retain CPU/CUDA preimage bit parity. Trainer-exported residual MLP uses normalized input base. Native CPU Chromium actual config/compose Queue confirms separate strengths/order; visible bypass edit, Save As, refresh/reopen preserve named graph semantics. No encoder, Apply or H3 sampler in this UI test. Not additive LoRA merging, not H3 video quality, not Registry activation; unrelated paused development is excluded.",
+    "version": "1.87.0",
+    "registered_nodes": 373
+  },
   "hyper_vae_2x_20260927": {
     "version": "1.85.0",
     "registered_nodes": 371,
@@ -2881,7 +2892,9 @@
     "MiniMaxH3HyperFlowLatentParityT8Advanced",
     "MiniMaxH3HyperFlowLongVideoEXPT8",
     "MiniMaxH3HyperFlowSingle8LongVideoEXPT8",
-    "MiniMaxH3HyperVAE2xLoaderEXPT8"
+    "MiniMaxH3HyperVAE2xLoaderEXPT8",
+    "MiniMaxH3SemanticBridgeAutoConfigT8",
+    "MiniMaxH3SemanticBridgeComposeT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",

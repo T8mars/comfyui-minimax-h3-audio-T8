@@ -1,4 +1,15 @@
 {
+  "semantic_bridge_model_contracts_20260930": {
+    "status": "EXP_content_bound_presets_and_ordered_stack_numeric_verified_video_quality_unqualified",
+    "nodes": [
+      "MiniMaxH3SemanticBridgeAutoConfigT8",
+      "MiniMaxH3SemanticBridgeComposeT8"
+    ],
+    "documentation": "docs/SEMANTIC_BRIDGE_EXP.md",
+    "boundary": "Reviewed and narrowly integrated trainer trans/mlp support from f8efc65; normalized-input residual MLP fix. Content-bound automatic presets: legacy .10, fixed comic-combat metadata 1.0, exact Wushu-v1 SHA author recommendation .12; unknown trained weights require manual settings. Explicit ordered serial stack up to eight independently configured bridges, composite provenance and cache identity; no additive-LoRA equivalence or video/voice quality claim. Old node IDs/input order/defaults preserved, chunk zero supported, new two nodes append after the full existing prefix. Original/BUNNY actual tensors bit-exact to preimage in three modes on CPU/CUDA. New trained bridges and real trainer-exported synthetic MLP compared numerically on CPU/CUDA. Native CPU Chromium Queue executed actual preset/compose nodes with separate 1.0/.12 strengths; visible bypass edit, Save As and refresh/reopen preserved the exact graph. No encoder, Apply or H3 sampling in that canvas check. No new H3-video quality acceptance or Registry activation claim; unrelated paused development is excluded.",
+    "version": "1.87.0",
+    "registered_nodes": 373
+  },
   "hyper_vae_2x_20260927": {
     "version": "1.85.0",
     "registered_nodes": 371,
@@ -264,7 +275,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.86.0",
+  "version": "1.87.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
