@@ -1,5 +1,120 @@
 # Prepared Tao / LTX generation integration — GitHub EXP
 
+## Local split Prepared LTX and external effects (not published)
+
+The separate Bundle → Generate Refined Latent → Decode Frozen Latent nodes
+have now completed one actual native Chromium generation queue, a fresh-Core
+Load Frozen Refined Latent → Decode queue, and a third-Core cache queue.
+The unchanged native three-update worker performed three joint forwards and
+144 blocks; the fresh decoder did not generate again. The 73-frame, 832×480,
+24-fps H264/AAC clip passed complete strict decode; its original AAC packets
+were retained and decoded audio matched the input. Both cache stages then
+returned without launching either worker. This is one mechanical input case,
+not human quality, arbitrary input or full split-project acceptance.
+
+The append-only `Prepared LTX · External EAV / Relay` node is a **new local
+candidate**. It now has its own later native combination qualification below;
+it does not inherit that earlier baseline. Connect it between
+Bundle and each Generate / Load / Decode input, with a fresh chain ID. Connect
+the separate Stage EAV Config for video FETA. Optional Relay uses the separate
+`Prepared LTX · External Relay Timeline` node: it reads the actual SHA-bound
+CPU prepared video/metadata, without text/model/sampler/VAE work. Connect its
+LTX 8n+1 plan plus a local `t8_prepared_ltx_relay_caches_v1` JSON manifest
+containing the plan hash and one `{event_index, prompt, path, sha256}` cache per
+event. Paths are absolute; each prompt must be that event's actual local text.
+The caches must contain independently encoded native Gemma/AV-connector
+contexts accepted by the pinned prepared cache provider. Ordinary Core CLIP
+conditioning and the fixed global cache cannot be relabelled event caches.
+This binding node does not implicitly encode text, load models or sample.
+
+An additional local EXP `Prepared LTX · Encode Relay Event Caches` node now
+provides that **separate explicit encoding step**. Connect the original Bundle
+and the Prepared Relay Timeline to it, select the native INT8 Gemma checkpoint
+from the normal `models/text_encoders` menu, and connect its manifest-path
+output to External EAV / Relay. Keep the original Bundle connected to the
+encoder; connect the effects-bound Bundle to Generate / Load / Decode only.
+The original global prompt cache stays unchanged. The timeline's compiled
+prompt is a display/planning output, not a substitute for encoded features.
+
+Encoding uses the matching pinned Gemma/AV-connector cache provider, not an
+arbitrary Core CLIP. It runs in an owned serial worker with CPU/GPU weight
+leases, requiring 64 GiB free host RAM at startup, 8 GiB host and 2 GiB GPU
+runtime reserve. It does not run diffusion or a VAE. Use an absolute shared
+serial-lease path and a fresh `cache_id` when text, checkpoints, implementation
+or import environment changes. A matching committed cache is loaded without
+another encoder worker; bad hashes are errors, not requests to encode again.
+The global-only plan has an explicit zero-encoder/zero-GPU bypass. The normal
+full/fresh-cold sampling stages remain separate from this cache stage.
+
+Relay `apply_exp` appends those actual post-connector video context segments
+and applies bounded event bias over video text cross-attention; audio context
+is untouched. Disabled/report-only keeps the original video context and
+native output. EAV observes native post-norm/RoPE temporal Q/K, preserves the
+original masks/projection/gates, and applies a bounded gain only when explicitly
+selected. Unknown forward producers are retained and reported uncovered;
+genuine bad file/hash/shape/kernel/gain errors remain errors. No sigma, noise
+generator order, step count, audio delivery or old workflow changes.
+
+The new configuration and event-cache contents participate in the bundle and
+engine identity. Old successful files remain historical evidence; they are not
+adopted into new-source chains or manually assigned new fingerprints. The
+focused 188 CPU tests and real pinned upstream masked/gated CUDA tiny A/B/A
+verify contracts/delegation only. A separate trained-weight EAV A/B/A performed
+nine joint forwards: the two report-only outputs exactly matched each other and
+the original global-cache video/audio baseline; explicit EAV changed the video.
+Two actual local-event caches also completed independent native INT8 Gemma and
+AV-connector encoding with serial CPU/GPU weight leases, without sampling or
+changing the global cache. These are separate numeric/cache qualifications,
+not by themselves new-node complete media or human quality. A four-phase
+real-weight global → Relay → Relay+EAV → global control
+also completed twelve joint forwards, with 144 Relay applications in each
+selected phase, 96 EAV applications in the combined phase, exact global-control
+video/audio repeat, and restoration of instance forwards/attention delegates.
+The eleven focused modules subsequently passed 202 CPU tests. A separate,
+new-source native Chromium Queue then actually executed the public Plan →
+Encode → Effects Bind → Generate combination with both effects `apply_exp`:
+two independent Gemma/connector event encodings, three joint forwards,
+144 Relay and 96 EAV applications. The saved video/joint-audio tensors exactly
+matched the independently controlled combined numeric case. A fresh Core
+loaded the frozen generation and decoded only, while Encode hit its own cache.
+A third Core queue hit all three caches without running any worker or changing
+the original generation record. Both decoded outputs were the same strict
+complete 73-frame 832×480 H264/AAC clip, with original decoded audio unchanged.
+This is one indoor two-person/teacup input, not full human viewing, arbitrary
+materials, all backends or general quality acceptance.
+Six additional editable EAV / Relay / combined full and decode-only EXP graphs
+are built by `tools/build_formal_prepared_ltx_effect_workflows.py`; old graphs
+are not modified. Blank local events are an explicit global-only bypass.
+All six graphs subsequently passed actual native imports, visible independent
+EAV/local-Relay edits, Save As, browser reload/reopen, named-edge and widget
+audit in a separate CPU Core with queue/history empty. Edited QA graphs were
+kept private and never queued; this is UI serialization, not new inference.
+
+A separate encoder-only native Queue was actually interrupted through the
+owned Core API during native Gemma event encoding. Core reported cancellation,
+no cache was committed and the assigned Job ended with zero owned processes.
+A fresh Core reused the same incomplete cache namespace and encoded only the
+two events; another fresh Core read the committed cache without a worker.
+The cancelled evidence stayed unchanged, output features matched the earlier
+real encoder exactly, and no diffusion or VAE ran in any of these queues.
+This encoder-only cancellation qualification remains separate. A new chain
+then queued five real native canvases in five fresh owned Core processes,
+using the explicitly external completed encoder manifest: combined generation
+was interrupted after an actual joint forward, generation-only retry completed
+the original three forwards, decode was interrupted during actual tiled VAE
+work, decode-only retry completed, and the last queue launched no worker.
+Neither cancelled stage committed a completion record; failed stage contents
+stayed unchanged through retries and every owned Job ended with zero active
+processes. The generation record survived decode cancellation unchanged.
+The retried clip strictly decoded all 73 frames at 832×480 with original audio;
+its decoded picture/audio matched the earlier one-input combined clip.
+This is cancellation/recovery mechanics for that indoor teacup input, not
+arbitrary materials, providers, long durations or human quality acceptance.
+The expanded sixteen modules passed
+273 CPU tests with CUDA uninitialized and a stable source snapshot.
+The original missing-digest worker failure remains failed; its later
+source-bound repeat passed completion and owned-process cleanup.
+
 ## 2026-09-17 completed H16 source additions (latest status)
 
 The specific standard-LATENT/public LTX refinement and Tao two-request public

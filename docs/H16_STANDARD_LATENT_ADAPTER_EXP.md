@@ -1,5 +1,30 @@
 # Standard H3 → LTX video latent candidate
 
+## Later separate-refiner validation (local, not published)
+
+An explicit new native H3 teacher-eight-step **73-frame** joint AV source was
+generated, saved and authenticated; no 124-frame source was silently cropped or
+padded. Ordinary and Identity each completed six actual native Chromium
+full/fresh refiner pairs: no effect, EAV report/apply, Relay, and combined EAV
+report/apply. Each fresh run restores only the verified H3 input and performs
+the original three LTX sampler callbacks again. There is no H3 regeneration,
+additional upscaler, RGB detour, duration edit or LTX audio conversion.
+
+All 24 outputs strictly decode 73 frames at 832×480/24fps in H264/AAC. Each
+full/fresh candidate tensor and complete decoded RGB/PCM matches exactly; every
+decoded PCM equals the actual H3 source. The original five selected model files,
+pinned adapter/source and immutable inputs stayed unchanged. EAV apply reached
+all 48 video blocks for three steps with non-unit gains below the unchanged
+1.5 bound; Relay reached all 48 blocks with 288 backend delegate calls.
+
+Effect telemetry still says `observed_not_certified`. A separate matching actual
+sampler-return/callback proof is **live-only**, not authorization to restore
+completed LTX sampling across processes. These new checks do not qualify the
+different RGB route, arbitrary materials/backends, human picture/audio quality
+or publication. Historical RGB encoder failures and old accepted clips remain
+unchanged. The earlier released interface and evidence below retain their own
+scope, rather than inheriting acceptance of these new candidates.
+
 Scoped completed EXP source, rebased on released v1.84.0; registered as the343rd
 node after all342 existing IDs, including Sol and the two Semantic Bridge nodes.
 A conversion/save template is in

@@ -90,8 +90,9 @@ def load_hyper_vae_2x(path: str | Path):
     state, metadata = comfy.utils.load_torch_file(report["path"], return_metadata=True)
     original_weight = state["decoder.proj_out.weight"]
     original_bias = state["decoder.proj_out.bias"]
-    # Load all other weights through Comfy's normal VAE/ModelPatcher path, then
-    # replace the temporary native-shaped projection before first execution.
+    # Construct the stock H3 wrapper with a native-shaped *view* of the head.
+    # All other weights, including the unchanged encoder, load through Comfy's
+    # normal VAE/ModelPatcher path. Replace the head before first execution.
     native_shape_state = dict(state)
     native_shape_state["decoder.proj_out.weight"] = original_weight[:3_072]
     native_shape_state["decoder.proj_out.bias"] = original_bias[:3_072]
@@ -106,8 +107,8 @@ def load_hyper_vae_2x(path: str | Path):
     projection.to(dtype=vae.vae_dtype).eval()
     inner.decoder.proj_out = projection
     inner.decoder.out_channels = 12
-    # The checkpoint stores RGB-phase groups RRRR GGGG BBBB. Expand only
-    # during decode; the unchanged encoder still needs 3-channel statistics.
+    # The checkpoint stores RGB-phase groups: RRRR GGGG BBBB. Expand these
+    # statistics only inside decode finalization; the encoder still needs RGB.
     inner._finalize_pixels = MethodType(_finalize_hyper_pixels, inner)
     model_management.archive_model_dtypes(inner)
     vae.size = None
@@ -121,11 +122,14 @@ def load_hyper_vae_2x(path: str | Path):
     return vae, report
 
 
+# Importing Comfy only for the class avoids a global monkey-patch of its VAE
+# factory. The public node still imports this module lazily on actual execution.
 import comfy.sd  # noqa: E402
 
 
 class HyperVAE2x(comfy.sd.VAE):
     def spacial_compression_decode(self):
+        # Report the actual IMAGE geometry, not the internal packed buffer.
         return 32
 
     def decode(self, samples_in, vae_options={}):

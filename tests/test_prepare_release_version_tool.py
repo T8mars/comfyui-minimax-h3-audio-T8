@@ -83,18 +83,36 @@ def test_dry_run_prepares_only_the_four_current_release_markers(tmp_path):
     assert "历史版本：1.2.3" in plan["updated_texts"]["README.md"]
 
 
-def test_meta_history_versions_remain_unchanged(tmp_path):
+@pytest.mark.parametrize("indent", [None, 0, 2, 4])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_nested_release_evidence_versions_are_preserved_byte_exact(tmp_path, indent, newline):
     root = _project(tmp_path)
-    meta_path = root / "meta.json"
-    meta_path.write_text(
-        json.dumps({"history": {"version": "1.2.3"}, "name": "demo", "version": "1.45.0"}, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
+    original = json.dumps({
+        "past": {"version": "1.45.0", "other": [{"version": "1.2.3"}]},
+        "name": "demo", "version": "1.45.0", "tail": {"version": "1.45.0"},
+    }, indent=indent) + "\n"
+    original = original.replace("\n", newline)
+    (root / "meta.json").write_bytes(original.encode("utf8"))
     plan = prepare_version_update(root, bump="minor")
-    updated = json.loads(plan["updated_texts"]["meta.json"])
-    assert updated["version"] == "1.46.0"
-    assert updated["history"]["version"] == "1.2.3"
+    actual = plan["updated_texts"]["meta.json"]
+    expected = original
+    root_line = '"version": "1.45.0"'
+    # Locate the sole root value after name; do not normalize nested JSON.
+    offset = expected.index(root_line, expected.index('"name": "demo"'))
+    expected = expected[:offset] + expected[offset:].replace(root_line, '"version": "1.46.0"', 1)
+    assert actual == expected
+    assert (root / "meta.json").read_bytes() == original.encode("utf8")
+    assert json.loads(actual)["past"] == json.loads(original)["past"]
+    assert json.loads(actual)["tail"] == json.loads(original)["tail"]
+
+
+def test_duplicate_root_version_is_rejected_without_changing_files(tmp_path):
+    root = _project(tmp_path)
+    (root / "meta.json").write_text('{"version":"1.45.0","version":"1.45.0"}', encoding="utf8")
+    before = {p.name:p.read_bytes() for p in root.iterdir()}
+    with pytest.raises(ValueError, match="exactly one"):
+        prepare_version_update(root, bump="minor")
+    assert {p.name:p.read_bytes() for p in root.iterdir()} == before
 
 
 def test_apply_atomically_synchronizes_metadata_without_git_side_effects(tmp_path):

@@ -31,6 +31,12 @@ LTX源码的LICENSE.md标题为“LTX-2.x Community License Agreement”。上�
 
 ## 实测环境和依赖
 
+Prepared 的资源观察器需要 NVIDIA 的 [`nvidia-ml-py`](https://pypi.org/project/nvidia-ml-py/) 分发包，导入名为 `pynvml`；基础节点不依赖它，故不由基础 `requirements.txt` 自动安装。请在所选 Prepared 运行环境中显式准备该可选依赖，或在独立依赖目录中准备并让自有测试进程使用，不为此替换用户的 Torch/CUDA。缺失时资源观察器必须在启动 worker 前失败；不能改成虚假显存数、取消保护或拿 CPU 输入资格冒充实际推理通过。开发中的分离 Prepared LTX 原生画布已实际暴露过这一缺失，原失败记录保留，补齐依赖后的 worker/完整媒体资格需重新验证。
+
+隔离 import 路径有优先顺序，旧目录中的 NumPy 可能覆盖主环境里的版本，并与主环境 SciPy 冲突。不要通过增加属性别名或吞掉导入异常伪装兼容；在独立目录准备匹配依赖，重新构造清单和验证实际导入模块位置。准备工具会将 Git 忽略且没有任何被跟踪文件的依赖目录作完整资产清单，不把它误标为外层节点仓库的 Git 源码。被跟踪的真实源码仍走原 Git pin/脏源码拒绝门。全依赖导入可能触发上游 CUDA 能力探测；仅符号导入、零已分配 tensor 不能声称 CPU-only、模型推理或音视频通过。
+
+分离 Prepared LTX 的独立 Relay Encode 候选使用原生 INT8 Gemma 和 AV connector 的串行权重搬运，不改变 INT8 权重、FP32 scales 或原始 forward。它不是修改上游 resident cache-builder 的 SM121 限制来冒称该路线支持 SM89，而是另一个显式 worker。固定 provider 对实际文件名、尺寸、原生层数量、缓存 recipe／prompt／特征形状作校验；所有输入权重和依赖目录内容绑定到任务身份。其 private 两事件真实编码和后续实际权重 Relay／组合数值控制已通过，公开节点的原生画布、完整媒体、其它设备和主观效果仍须分别验收。模型、外部完整源码与隔离依赖目录不随节点包分发。
+
 本次为Windows、单张RTX4060Ti16GB、128GB RAM、Python3.12、PyTorch2.10.0+cu130。
 这不是最低系统配置或其他显卡/操作系统认证。Tao全底模CPU加载会使用大量内存；
 生成和VAE分进程串行，继续保留资源保护线，不以降低保护换取“跑通”。

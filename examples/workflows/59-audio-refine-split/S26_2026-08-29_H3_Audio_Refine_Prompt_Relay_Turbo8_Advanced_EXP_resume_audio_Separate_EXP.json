@@ -1,0 +1,2141 @@
+{
+  "id": "d42d6f0e-7e73-4e86-bc76-044ec9024404",
+  "revision": 0,
+  "last_node_id": 40,
+  "last_link_id": 101,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        150
+      ],
+      "size": [
+        320,
+        106
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            83
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            16,
+            44,
+            54,
+            84
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        400
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            17,
+            45,
+            55,
+            85
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3AVDecodeT8",
+      "pos": [
+        2450.0,
+        30
+      ],
+      "size": [
+        280,
+        120
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 96
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            51
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3AudioRefineAuditT8Advanced",
+      "title": "MiniMax H3 Audio Refine Audit / 音频精修前置审计 (T8 Advanced EXP)",
+      "pos": [
+        3310.0,
+        120
+      ],
+      "size": [
+        390,
+        368
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 88
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 89
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 97
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "link": 90,
+          "widget": {
+            "name": "conditioned_prompt"
+          }
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "link": 91,
+          "widget": {
+            "name": "media_map_json"
+          }
+        },
+        {
+          "name": "conditioning_report",
+          "type": "STRING",
+          "link": 92,
+          "widget": {
+            "name": "conditioning_report"
+          }
+        },
+        {
+          "name": "protected_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audit",
+          "type": "H3_T8_AUDIO_REFINE_AUDIT",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineAuditT8Advanced"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        512,
+        16.0,
+        8
+      ]
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced",
+      "title": "Audio Refine 4/8-Step Compatibility Route / 音频精修兼容路由",
+      "pos": [
+        3760.0,
+        120
+      ],
+      "size": [
+        440,
+        260
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audit",
+          "type": "H3_T8_AUDIO_REFINE_AUDIT",
+          "link": 28
+        },
+        {
+          "name": "refine_model",
+          "type": "MODEL",
+          "link": 93
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 94
+        }
+      ],
+      "outputs": [
+        {
+          "name": "refine_model",
+          "type": "MODEL",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "route",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_ROUTE",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineCompatibilityRouteT8Advanced"
+      },
+      "widgets_values": [
+        "prompt_relay_turbo8",
+        8
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced",
+      "title": "Audio Refine Compatibility Plan / 音频精修兼容计划",
+      "pos": [
+        4240.0,
+        120
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "route",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_ROUTE",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_PLAN",
+          "links": [
+            32,
+            59,
+            74
+          ]
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineCompatibilityPlanT8Advanced"
+      },
+      "widgets_values": [
+        4,
+        0.5,
+        2608290017
+      ]
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced",
+      "title": "Audio Refine Compatibility Setup / 音频精修兼容装配",
+      "pos": [
+        4690.0,
+        120
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_PLAN",
+          "link": 32
+        },
+        {
+          "name": "refine_model",
+          "type": "MODEL",
+          "link": 33
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 95
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 98
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            61
+          ]
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "links": [
+            63
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            64
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            65
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            41,
+            66
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            67,
+            77
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineCompatibilitySetupT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        5150.0,
+        120
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 68
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 69
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 70
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 71
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 72
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            79
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3AudioRefineTailDeliveryAuditEXPT8",
+      "title": "Audit sampled tail or exact ABSTAIN passthrough",
+      "pos": [
+        5560.0,
+        120
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "second_pass_input",
+          "type": "LATENT",
+          "link": 41
+        },
+        {
+          "name": "second_pass_output",
+          "type": "LATENT",
+          "link": 78
+        },
+        {
+          "name": "stage_boundary",
+          "type": "T8_AUDIO_REFINE_STAGE_BOUNDARY",
+          "link": 80
+        },
+        {
+          "name": "stage_report_json",
+          "type": "STRING",
+          "link": 81
+        }
+      ],
+      "outputs": [
+        {
+          "name": "verified_av_latent",
+          "type": "LATENT",
+          "links": [
+            43,
+            50
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineTailDeliveryAuditEXPT8"
+      },
+      "widgets_values": [
+        1.0,
+        false,
+        0.0
+      ]
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        5980.0,
+        120
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 43
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 44
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 45
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            46
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            47,
+            52
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 26,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        6410.0,
+        120
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 46
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 47,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            48
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        6810.0,
+        120
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 48
+        },
+        {
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/AudioRefineCompat/prompt_relay_turbo8_candidate"
+      ]
+    },
+    {
+      "id": 28,
+      "type": "MiniMaxH3AudioRefineQualityGateT8Advanced",
+      "title": "MiniMax H3 Audio Refine Quality Gate / 音频精修人工质量门 (T8 Advanced EXP)",
+      "pos": [
+        5980.0,
+        560
+      ],
+      "size": [
+        390,
+        492
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "original_av_latent",
+          "type": "LATENT",
+          "link": 99
+        },
+        {
+          "name": "candidate_av_latent",
+          "type": "LATENT",
+          "link": 50
+        },
+        {
+          "name": "original_audio",
+          "type": "AUDIO",
+          "link": 51
+        },
+        {
+          "name": "candidate_audio",
+          "type": "AUDIO",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selected_av_latent",
+          "type": "LATENT",
+          "links": [
+            53
+          ]
+        },
+        {
+          "name": "selected_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "candidate_selected",
+          "type": "BOOLEAN",
+          "links": []
+        },
+        {
+          "name": "decision",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioRefineQualityGateT8Advanced"
+      },
+      "widgets_values": [
+        false,
+        124,
+        24.0,
+        50.0,
+        0.3,
+        4.0,
+        3
+      ]
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        6840.0,
+        560
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 53
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 54
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 55
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            56
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            57
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 30,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        7270.0,
+        560
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 56
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 57,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            58
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        7670.0,
+        560
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 58
+        },
+        {
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null
+        },
+        {
+          "name": "codec",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/AudioRefineCompat/prompt_relay_turbo8_selected"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "MiniMaxH3AudioRefineCompatStageBindEXPT8",
+      "title": "Bind signed Audio Refine tail; preserve abstain",
+      "pos": [
+        2800,
+        760
+      ],
+      "size": [
+        470,
+        273
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "plan",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_PLAN",
+          "link": 59
+        },
+        {
+          "name": "original_av_latent",
+          "type": "LATENT",
+          "link": 100
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 61
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 62
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 63
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 64
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 65
+        },
+        {
+          "name": "stage_latent",
+          "type": "LATENT",
+          "link": 66
+        },
+        {
+          "name": "setup_report_json",
+          "type": "STRING",
+          "link": 67
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": []
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "links": [
+            68
+          ]
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "links": [
+            69
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            70
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            71
+          ]
+        },
+        {
+          "name": "stage_latent",
+          "type": "LATENT",
+          "links": [
+            72,
+            76
+          ]
+        },
+        {
+          "name": "stage_boundary",
+          "type": "T8_AUDIO_REFINE_STAGE_BOUNDARY",
+          "links": [
+            73,
+            80
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioRefineCompatStageBindEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 34,
+      "type": "MiniMaxH3AudioRefineCompatStageAuditEXPT8",
+      "title": "Audit tail candidate before existing Quality Gate",
+      "pos": [
+        3850,
+        740
+      ],
+      "size": [
+        470,
+        198
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_boundary",
+          "type": "T8_AUDIO_REFINE_STAGE_BOUNDARY",
+          "link": 73
+        },
+        {
+          "name": "plan",
+          "type": "H3_T8_AUDIO_REFINE_COMPAT_PLAN",
+          "link": 74
+        },
+        {
+          "name": "original_av_latent",
+          "type": "LATENT",
+          "link": 101
+        },
+        {
+          "name": "stage_latent",
+          "type": "LATENT",
+          "link": 76
+        },
+        {
+          "name": "setup_report_json",
+          "type": "STRING",
+          "link": 77
+        },
+        {
+          "name": "candidate_av_latent",
+          "type": "LATENT",
+          "link": 79
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_av_latent",
+          "type": "LATENT",
+          "links": [
+            78
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            81
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioRefineCompatStageAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 35,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "REFINE ONLY · independent Prompt Relay Plan",
+      "pos": [
+        1450,
+        1500
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            86
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "Nighttime cinematic continuous shot of one woman in red Hanfu, coherent identity, natural fabric motion, stable moonlight, synchronized wind and cloth ambience.",
+        "The woman looks toward the camera and slowly raises one hand.\nShe spins rapidly through the night sky, red gauze sleeves drawing wide arcs.\nThe camera pulls far back while she becomes small against the moonlit clouds.",
+        124,
+        "auto_equal",
+        "0-40\n41-81\n82-123",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 36,
+      "type": "UNETLoader",
+      "title": "REFINE ONLY · independent checkpoint",
+      "pos": [
+        1300,
+        1850
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            82
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 37,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "REFINE ONLY · paired Relay MODEL + CONDITIONING",
+      "pos": [
+        1900,
+        1500
+      ],
+      "size": [
+        470,
+        273
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 82
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 83
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 84
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 85
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 86
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            87
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            89,
+            94,
+            95
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": [
+            90
+          ]
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": [
+            91
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            92
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        736,
+        416,
+        "T2VA",
+        "native",
+        0.35,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 38,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "REFINE ONLY · optional independent LoRA (0 default)",
+      "pos": [
+        2200,
+        1850
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 87
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            88,
+            93
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+        0.0
+      ]
+    },
+    {
+      "id": 39,
+      "type": "MiniMaxH3AudioRefineFrozenFirstPassLoadEXPT8",
+      "title": "STEP 2 · paste frozen first-pass path, manifest and SHA",
+      "pos": [
+        300,
+        -360
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            96,
+            97,
+            98,
+            99,
+            100,
+            101
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "resume_verified",
+          "type": "BOOLEAN",
+          "links": []
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "content_sha256",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "file_sha256",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioRefineFrozenFirstPassLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "PASTE_EXACT_SAVE_MANIFEST_JSON",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        8
+      ]
+    },
+    {
+      "id": 40,
+      "type": "MarkdownNote",
+      "title": "Cold resume · only the tail can sample",
+      "pos": [
+        300,
+        -680
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "Paste all three values from the STEP 1 Save result. An empty path or placeholder manifest/SHA must fail before refinement. This is an explicit user-selected checkpoint, not automatic cache reuse."
+      ]
+    }
+  ],
+  "links": [
+    [
+      16,
+      4,
+      0,
+      11,
+      1,
+      "VAE"
+    ],
+    [
+      17,
+      5,
+      0,
+      11,
+      2,
+      "VAE"
+    ],
+    [
+      28,
+      19,
+      0,
+      20,
+      0,
+      "H3_T8_AUDIO_REFINE_AUDIT"
+    ],
+    [
+      31,
+      20,
+      1,
+      21,
+      0,
+      "H3_T8_AUDIO_REFINE_COMPAT_ROUTE"
+    ],
+    [
+      32,
+      21,
+      0,
+      22,
+      0,
+      "H3_T8_AUDIO_REFINE_COMPAT_PLAN"
+    ],
+    [
+      33,
+      20,
+      0,
+      22,
+      1,
+      "MODEL"
+    ],
+    [
+      41,
+      22,
+      5,
+      24,
+      0,
+      "LATENT"
+    ],
+    [
+      43,
+      24,
+      0,
+      25,
+      0,
+      "LATENT"
+    ],
+    [
+      44,
+      4,
+      0,
+      25,
+      1,
+      "VAE"
+    ],
+    [
+      45,
+      5,
+      0,
+      25,
+      2,
+      "VAE"
+    ],
+    [
+      46,
+      25,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      47,
+      25,
+      1,
+      26,
+      1,
+      "AUDIO"
+    ],
+    [
+      48,
+      26,
+      0,
+      27,
+      0,
+      "VIDEO"
+    ],
+    [
+      50,
+      24,
+      0,
+      28,
+      1,
+      "LATENT"
+    ],
+    [
+      51,
+      11,
+      1,
+      28,
+      2,
+      "AUDIO"
+    ],
+    [
+      52,
+      25,
+      1,
+      28,
+      3,
+      "AUDIO"
+    ],
+    [
+      53,
+      28,
+      0,
+      29,
+      0,
+      "LATENT"
+    ],
+    [
+      54,
+      4,
+      0,
+      29,
+      1,
+      "VAE"
+    ],
+    [
+      55,
+      5,
+      0,
+      29,
+      2,
+      "VAE"
+    ],
+    [
+      56,
+      29,
+      0,
+      30,
+      0,
+      "IMAGE"
+    ],
+    [
+      57,
+      29,
+      1,
+      30,
+      1,
+      "AUDIO"
+    ],
+    [
+      58,
+      30,
+      0,
+      31,
+      0,
+      "VIDEO"
+    ],
+    [
+      59,
+      21,
+      0,
+      33,
+      0,
+      "H3_T8_AUDIO_REFINE_COMPAT_PLAN"
+    ],
+    [
+      61,
+      22,
+      0,
+      33,
+      2,
+      "MODEL"
+    ],
+    [
+      62,
+      22,
+      1,
+      33,
+      3,
+      "NOISE"
+    ],
+    [
+      63,
+      22,
+      2,
+      33,
+      4,
+      "GUIDER"
+    ],
+    [
+      64,
+      22,
+      3,
+      33,
+      5,
+      "SAMPLER"
+    ],
+    [
+      65,
+      22,
+      4,
+      33,
+      6,
+      "SIGMAS"
+    ],
+    [
+      66,
+      22,
+      5,
+      33,
+      7,
+      "LATENT"
+    ],
+    [
+      67,
+      22,
+      6,
+      33,
+      8,
+      "STRING"
+    ],
+    [
+      68,
+      33,
+      1,
+      23,
+      0,
+      "NOISE"
+    ],
+    [
+      69,
+      33,
+      2,
+      23,
+      1,
+      "GUIDER"
+    ],
+    [
+      70,
+      33,
+      3,
+      23,
+      2,
+      "SAMPLER"
+    ],
+    [
+      71,
+      33,
+      4,
+      23,
+      3,
+      "SIGMAS"
+    ],
+    [
+      72,
+      33,
+      5,
+      23,
+      4,
+      "LATENT"
+    ],
+    [
+      73,
+      33,
+      6,
+      34,
+      0,
+      "T8_AUDIO_REFINE_STAGE_BOUNDARY"
+    ],
+    [
+      74,
+      21,
+      0,
+      34,
+      1,
+      "H3_T8_AUDIO_REFINE_COMPAT_PLAN"
+    ],
+    [
+      76,
+      33,
+      5,
+      34,
+      3,
+      "LATENT"
+    ],
+    [
+      77,
+      22,
+      6,
+      34,
+      4,
+      "STRING"
+    ],
+    [
+      78,
+      34,
+      0,
+      24,
+      1,
+      "LATENT"
+    ],
+    [
+      79,
+      23,
+      0,
+      34,
+      5,
+      "LATENT"
+    ],
+    [
+      80,
+      33,
+      6,
+      24,
+      2,
+      "T8_AUDIO_REFINE_STAGE_BOUNDARY"
+    ],
+    [
+      81,
+      34,
+      1,
+      24,
+      3,
+      "STRING"
+    ],
+    [
+      82,
+      36,
+      0,
+      37,
+      0,
+      "MODEL"
+    ],
+    [
+      83,
+      3,
+      0,
+      37,
+      1,
+      "CLIP"
+    ],
+    [
+      84,
+      4,
+      0,
+      37,
+      2,
+      "VAE"
+    ],
+    [
+      85,
+      5,
+      0,
+      37,
+      3,
+      "VAE"
+    ],
+    [
+      86,
+      35,
+      0,
+      37,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      87,
+      37,
+      0,
+      38,
+      0,
+      "MODEL"
+    ],
+    [
+      88,
+      38,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      89,
+      37,
+      1,
+      19,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      90,
+      37,
+      4,
+      19,
+      3,
+      "STRING"
+    ],
+    [
+      91,
+      37,
+      5,
+      19,
+      4,
+      "STRING"
+    ],
+    [
+      92,
+      37,
+      6,
+      19,
+      5,
+      "STRING"
+    ],
+    [
+      93,
+      38,
+      0,
+      20,
+      1,
+      "MODEL"
+    ],
+    [
+      94,
+      37,
+      1,
+      20,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      95,
+      37,
+      1,
+      22,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      96,
+      39,
+      0,
+      11,
+      0,
+      "LATENT"
+    ],
+    [
+      97,
+      39,
+      0,
+      19,
+      2,
+      "LATENT"
+    ],
+    [
+      98,
+      39,
+      0,
+      22,
+      3,
+      "LATENT"
+    ],
+    [
+      99,
+      39,
+      0,
+      28,
+      0,
+      "LATENT"
+    ],
+    [
+      100,
+      39,
+      0,
+      33,
+      1,
+      "LATENT"
+    ],
+    [
+      101,
+      39,
+      0,
+      34,
+      2,
+      "LATENT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Stock H3 loaders / 原生模型",
+      "bounding": [
+        -40,
+        -60,
+        380,
+        570
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Prompt Relay paper_v1 / 时间线与权威条件",
+      "bounding": [
+        380,
+        -580,
+        600,
+        1330
+      ],
+      "color": "#6950a1",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Stock20 joint AV sampling / 原生20步音画采样",
+      "bounding": [
+        930,
+        -60,
+        1040,
+        640
+      ],
+      "color": "#3f9e64",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Decode + synchronized MP4 / 解码保存",
+      "bounding": [
+        1980,
+        -60,
+        850,
+        650
+      ],
+      "color": "#9e6d3f",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        70,
+        180
+      ]
+    },
+    "ue_links": [],
+    "t8_prompt_relay": {
+      "schema": 1,
+      "paper": "arXiv:2604.10030v1",
+      "scope": "T2VA native Turbo8 EXP",
+      "date": "2026-08-20",
+      "inline_preview": true
+    }
+  },
+  "version": 0.4
+}

@@ -4,6 +4,7 @@ The original fixed-case GPU worker and its receipts remain unchanged. This
 variant requires CPU-qualified prepared AV/metadata and a matching prompt cache.
 """
 import argparse
+from contextlib import nullcontext
 import gc
 import json
 from pathlib import Path
@@ -55,6 +56,11 @@ def main():
         torch.set_num_threads(4)
         # Fail before CUDA/model preparation for wrong text, shape or provenance.
         inputs, cache = load_prepared(request)
+        effects = None
+        if "effects" in request:
+            from ltx_external_effects import PreparedLTXEffects
+            effects = PreparedLTXEffects(request["effects"], request["geometry"],
+                                         request["prompt"], request["identities"])
         shape, _, _ = geometry(request['geometry'])
         assert str(torch.cuda.get_device_properties(0).uuid).removeprefix("GPU-").lower() == request["gpu_uuid"].removeprefix("GPU-").lower()
         # Native SDPA protocol, but forbid a materializing MATH fallback for 20k tokens.
@@ -90,11 +96,19 @@ def main():
             video_context, audio_context = cache.contexts(request['prompt'], device)
             progress("three_joint_native_Euler_updates")
             start = time.perf_counter()
-            with offload_native_module(model, model.transformer_blocks, device,
-                                       minimum_free_bytes=2 * 1024**3) as lease:
-                refined_video, refined_audio = euler_denoising_loop(sigmas, video, audio, EulerDiffusionStep(),
-                    X0Model(model), SimpleDenoiser(video_context, audio_context))
-                torch.cuda.synchronize()
+            with (effects.installed(model) if effects is not None else nullcontext()):
+                if effects is not None:
+                    video_context = effects.bind_context(video_context)
+                denoiser = SimpleDenoiser(video_context, audio_context)
+                if effects is not None:
+                    denoiser = effects.denoiser(denoiser)
+                with offload_native_module(model, model.transformer_blocks, device,
+                                           minimum_free_bytes=2 * 1024**3) as lease:
+                    refined_video, refined_audio = euler_denoising_loop(sigmas, video, audio, EulerDiffusionStep(),
+                        X0Model(model), denoiser)
+                    torch.cuda.synchronize()
+            if effects is not None:
+                report["external_video_effects"] = effects.report()
             report["sampling_seconds_including_weight_transfer"] = time.perf_counter() - start
             result_video = vt.unpatchify(refined_video).latent.cpu().contiguous()
             result_audio = at.unpatchify(refined_audio).latent.cpu().contiguous()

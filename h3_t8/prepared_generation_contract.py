@@ -79,7 +79,8 @@ def validate_bundle(bundle):
         gen_fields = {'schema', 'source', 'source_revision', 'base', 'adapter', 'teacher',
             'download_receipt', 'stream_requests'}
         decode_fields = {'schema', 'core', 'source', 'video_vae', 'audio_vae', 'request_count'}
-    if set(gen) != gen_fields or set(decode) != decode_fields:
+    optional_gen = {'effects'} if bundle['kind'] == 'ltx_refine' else set()
+    if not gen_fields <= set(gen) or set(gen) - gen_fields - optional_gen or set(decode) != decode_fields:
         raise ValueError('Unknown or missing prepared request fields; workers/seeds/identities are controller bound')
     if bundle['kind'] == 'ltx_refine':
         if gen.get('geometry') != decode.get('geometry') or gen.get('normalization') != 'normalized_ltx_av' or gen.get('reference_prefix_frames') != 0:
@@ -109,6 +110,14 @@ def validate_bundle(bundle):
         if type(asset['bytes']) is not int or asset['bytes'] < 0 or type(asset['mtime_ns']) is not int or asset['mtime_ns'] < 0:
             raise ValueError('Invalid asset stat identity')
         paths.add(key)
+    if 'effects' in gen:
+        from .prepared_backend.ltx_effects_contract import validate_effects
+        validate_effects(gen['effects'], gen['geometry'], gen['prompt'], paths)
+        indexed = {absolute_path(asset['path']): asset for asset in assets}
+        relay = gen['effects']['relay']
+        if relay is not None and any(indexed[cache['path']]['sha256'] != cache['sha256']
+                                     for cache in relay['caches']):
+            raise ValueError('Prepared Relay cache SHA differs from the bundle asset identity')
     # Explicit path-bearing fields cannot escape the identity list.
     file_fields = ('text_features', 'milestones', 'download_receipt', 'cpu_receipt', 'inputs', 'text_cache', 'vae', 'audio', 'original_video', 'lora', 'video_vae', 'audio_vae')
     for request in (gen, decode):

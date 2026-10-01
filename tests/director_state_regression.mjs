@@ -8,6 +8,26 @@ import { makeDirectorServices } from '../web/director/session.mjs';
 import { createSamplingDialog } from '../web/director/sampling_ui.mjs';
 
 const copy = structuredClone;
+for(const mode of ['simple','advanced'])for(const flags of ['present','legacy'])for(const empty of [false,true])test(`writing drafts survive portable mode switching: ${mode}/${flags}/empty=${empty}`,()=>{
+    const html=readFileSync(new URL('../web/director/index.html',import.meta.url),'utf8');
+    const source=['composeAdvanced','normalizeWriting','switchWriting'].map(name=>html.split('\n').find(line=>line.startsWith('function '+name+'('))).join('\n');
+    const s={writingMode:mode,simplePrompt:empty?'':'simple original',prompt:empty?'':'advanced original',events:[]};
+    if(flags==='present'){s.simpleInitialized=true;s.advancedInitialized=true;}
+    const state={lastTextTarget:null,sh:()=>s,mutate:fn=>fn(s),notify(){}};
+    vm.createContext(state);vm.runInContext(source,state);
+    vm.runInContext(`normalizeWriting(sh());switchWriting('${mode==='simple'?'advanced':'simple'}');switchWriting('${mode}')`,state);
+    assert.equal(s.simplePrompt,empty?'':'simple original');assert.equal(s.prompt,empty?'':'advanced original');
+    assert.equal(s.simpleInitialized,true);assert.equal(s.advancedInitialized,true);
+});
+test('explicit never-initialized mode still gets its first copy only once',()=>{
+    const html=readFileSync(new URL('../web/director/index.html',import.meta.url),'utf8');
+    const source=['composeAdvanced','normalizeWriting','switchWriting'].map(name=>html.split('\n').find(line=>line.startsWith('function '+name+'('))).join('\n');
+    const s={writingMode:'simple',simplePrompt:'first text',prompt:'',events:[],simpleInitialized:true,advancedInitialized:false};
+    const state={sh:()=>s,mutate:fn=>fn(s),notify(){}};
+    vm.createContext(state);vm.runInContext(source,state);vm.runInContext("normalizeWriting(sh());switchWriting('advanced')",state);
+    assert.equal(s.prompt,'first text');s.prompt='';
+    vm.runInContext("switchWriting('simple');switchWriting('advanced')",state);assert.equal(s.prompt,'');
+});
 const storage = () => {
     const values = new Map();
     return { getItem:k=>values.get(k)??null, setItem:(k,v)=>values.set(k,String(v)), removeItem:k=>values.delete(k) };
@@ -16,7 +36,7 @@ const project = (id='project-a', revision=1, text='saved') => ({
     schema:'t8.minimax_h3.director_project', version:2, id, revision, title:'test',
     current:'shot-1', assets:[], doc:{shots:[{id:'shot-1',simplePrompt:text}]},
 });
-function serviceHarness({local=null, specific=null, pending=false, state='running', server=project(), persistent=null}={}) {
+function serviceHarness({local=null, specific=null, pending=false, state='running', server=project(), persistent=null, versions=[], selected=[], openDialogs=[]}={}) {
     globalThis.localStorage=persistent?.local||storage(); globalThis.sessionStorage=persistent?.session||storage();
     sessionStorage.setItem('t8director.tab','test');
     if(local) localStorage.setItem('t8director.draft:test',JSON.stringify(local));
@@ -33,7 +53,7 @@ function serviceHarness({local=null, specific=null, pending=false, state='runnin
     globalThis.document={createElement:node};
     const appended=[],nodes=new Map(),listeners={},requests=[],notices=[],dialogs=[],records=[],results=[];
     const $=selector=>{if(!nodes.has(selector))nodes.set(selector,node());return nodes.get(selector)};
-    const root={...node(),append:n=>appended.push(n),addEventListener:(event,fn)=>listeners[event]=fn};
+    const root={...node(),querySelectorAll:()=>openDialogs,append:n=>appended.push(n),addEventListener:(event,fn)=>listeners[event]=fn};
     let doc=project().doc,current='shot-1',jobState=state,assets=new Map();
     globalThis.fetch=async(url,opts)=>{
         const path=new URL(url).pathname; requests.push({path,method:opts.method,body:opts.body&&JSON.parse(opts.body)});
@@ -44,6 +64,7 @@ function serviceHarness({local=null, specific=null, pending=false, state='runnin
         else if(path.endsWith('/generate'))value={prompt_id:'second',recipe:'test'};
         else if(path.endsWith('/jobs/second'))value={state:'success',outputs:{}};
         else if(path.endsWith('/compile'))value={ready:true};
+        else if(path.endsWith('/batch-features'))value={selection_version:2};
         else if(path.endsWith('/batches')&&opts.method==='POST')value={id:JSON.parse(opts.body).batch_id};
         else if(path.endsWith('/continue'))value={prompt_id:'second',recipe:'test'};
         else if(path.includes('/batches/'))value={id:path.split('/').at(-1),project_id:'project-a',items:[{shot_id:'shot-1',state:'not_submitted',prompt_id:null}],next_index:0,complete:false};
@@ -51,13 +72,193 @@ function serviceHarness({local=null, specific=null, pending=false, state='runnin
         return {ok:true,json:async()=>value};
     };
     const showDialog=(...args)=>{dialogs.push(args);const dialog=$('[data-dialog]');delete dialog.dataset.jobId;dialog.open=true;};
-    const service=makeDirectorServices({root,$,esc:String,notify:t=>notices.push(t),showDialog,tokenMap:()=>new Map(),checkpoint(){},doc:()=>doc,assets:()=>assets,current:()=>current,replace:(d,c,a)=>{doc=d;current=c;assets=a},setResults:value=>results.push(value),recordResult:value=>records.push(value),resetHistory(){},render(){}});
+    const service=makeDirectorServices({root,$,esc:String,notify:t=>notices.push(t),showDialog,tokenMap:()=>new Map(),checkpoint(){},doc:()=>doc,assets:()=>assets,current:()=>current,versions:()=>versions,selectedShotIds:()=>selected,replace:(d,c,a)=>{doc=d;current=c;assets=a},setResults:value=>results.push(value),recordResult:value=>records.push(value),resetHistory(){},render(){}});
     const click=dataset=>listeners.click({target:{closest:()=>({dataset,disabled:false})},preventDefault(){},stopImmediatePropagation(){}});
     return {appended,assets:()=>assets,input:target=>listeners.input({target}),service,requests,notices,dialogs,timers,intervals,click,$,records,results,messages,doc:()=>doc,setCurrent:value=>{current=value},setState:value=>{jobState=value}};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 const waitFor=async predicate=>{const deadline=Date.now()+2000;while(!predicate()&&Date.now()<deadline)await realDelay(1);assert.ok(predicate(),'Expected asynchronous test state before timeout');};
 const response=(data,ok=true,status=200)=>({ok,status,json:async()=>data});
+
+for(const specific of ['project-a',null])test(`local recovery does not falsely claim server equality or unsaved changes: ${specific}`,async()=>{
+    const h=serviceHarness({local:project(),specific});await h.service.restore();
+    assert.match(h.$('[data-save]').textContent,/本地恢复副本.*未核对服务端/);
+    assert.match(h.notices.at(-1),/可能包含未保存编辑/);
+    assert.ok(!h.requests.some(row=>row.path.includes('/projects/')));
+});
+
+test('server project restoration caches locally without marking it as an unsaved edit',async()=>{
+    const h=serviceHarness({specific:'project-a',server:project()});await h.service.restore();
+    assert.match(h.$('[data-save]').textContent,/已载入项目.*版本 1/);
+    assert.equal(JSON.parse(localStorage.getItem('t8director.draft:test')).id,'project-a');
+    assert.ok(!h.requests.some(row=>row.method==='POST'));
+});
+
+test('selected generation freezes ordered UUIDs and individual seeds, including zero',async()=>{
+    const p=project();p.doc.shots[0].seed=0;
+    p.doc.shots.push({id:'shot-2',seed:900},{id:'shot-3',seed:23});
+    const h=serviceHarness({local:p,specific:p.id,selected:['shot-3','shot-1']});await h.service.restore();
+    const prior=fetch;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.includes('/batches/')?Promise.resolve(response({project_id:p.id,complete:true,items:[]})):prior(url,opts);
+    await h.click({service:'generate-selected'});
+    const body=h.requests.find(row=>row.path.endsWith('/batches')&&row.method==='POST').body;
+    assert.deepEqual(body.shot_ids,['shot-1','shot-3']);assert.deepEqual(body.seed_map,{'shot-1':0,'shot-3':23});
+    assert.equal(body.project.doc.shots.length,3);
+});
+
+test('modified generation never guesses a legacy configuration and preserves the explanation',async()=>{
+    const p=project(),versions=[{shot_id:'shot-1',prompt_id:'legacy',state:'success',outputs:{save:{videos:[{filename:'old.mp4'}]}}}];
+    const h=serviceHarness({local:p,specific:p.id,versions});await h.service.restore();
+    await h.click({service:'generate-modified'});
+    assert.ok(!h.requests.some(row=>row.path.endsWith('/compile')||row.path.endsWith('/batches')));
+    assert.match(h.notices.at(-1),/没有完整对照快照/);
+});
+
+for(const outcome of ['legacy','missing'])test(`old running Core cannot silently ignore subset selection: ${outcome}`,async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id,selected:['shot-1']});await h.service.restore();
+    const prior=fetch;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/batch-features')?Promise.resolve(response({},outcome==='legacy',404)):prior(url,opts);
+    await h.click({service:'generate-selected'});
+    assert.ok(!h.requests.some(row=>row.path.endsWith('/compile')||row.path.endsWith('/batches')));
+    assert.match(h.notices.at(-1),/重启 Core/);
+});
+
+test('switching project during selected compilation never creates a batch',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id,server:project('project-b'),selected:['shot-1']});await h.service.restore();
+    const prior=fetch;let resolve;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/compile')?new Promise(r=>{resolve=r;}):prior(url,opts);
+    const checking=h.click({service:'generate-selected'});await waitFor(()=>!!resolve);
+    globalThis.confirm=()=>true;await h.click({openProject:'project-b'});
+    resolve(response({ready:true}));await checking;
+    assert.ok(!h.requests.some(row=>row.path.endsWith('/batches')&&row.method==='POST'));
+    assert.match(h.notices.at(-1),/项目已切换/);
+});
+
+test('preflight dimensions become stale immediately after draft or shot change',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch;globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/compile')?Promise.resolve(response({ready:true,shots:[{id:'shot-1',canvas:{width:1024,height:576,preprocessing:[]}}],errors:[],warnings:[]})):prior(url,opts);
+    await h.service.compile();assert.equal(h.service.checkedCanvas().width,1024);
+    h.doc().shots[0].simplePrompt='changed';assert.equal(h.service.checkedCanvas(),null);
+    h.doc().shots[0].simplePrompt='saved';h.service.draft();assert.equal(h.service.checkedCanvas(),null);
+});
+
+for(const changed of [false,true])test(`film preparation is bound to its original draft: changed=${changed}`,async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch;let resolve;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/films/prepare')?new Promise(r=>{resolve=r;}):prior(url,opts);
+    const preparing=h.service.prepareFilm();await waitFor(()=>!!resolve);
+    if(changed)h.doc().shots[0].simplePrompt='new text';
+    resolve(response({id:'film',project_id:p.id,ready:true,entries:[{shot_id:'shot-1'}]}));
+    const result=await preparing;
+    if(changed)assert.equal(result,null);
+    else{assert.match(result.entries[0].media_url,/films\/project-a\/film\/media\/0$/);assert.match(result.manifest_url,/films\/project-a\/film$/);}
+    assert.ok(!h.requests.some(row=>row.path.endsWith('/generate')));
+});
+
+test('background completion cannot cover the film viewer or model dialog',async()=>{
+    const h=serviceHarness({local:project(),specific:'project-a',openDialogs:[{open:true,dataset:{filmDialog:''}}]});
+    sessionStorage.setItem('t8director.activeJob:test',JSON.stringify({prompt_id:'original',project_id:'project-a',shot_id:'shot-1'}));
+    await h.service.restore();const watching=h.timers.shift()();await flush();
+    assert.equal(h.dialogs.length,0);
+    h.setState('error');await [...h.intervals.values()][0]();await watching;
+    assert.equal(h.dialogs.length,0);assert.equal(h.$('[data-service="job-status"]').hidden,false);
+});
+
+for(const changed of [false,true])test(`comparison freezes two selected versions without adopting them: changed=${changed}`,async()=>{
+    const p=project();p.doc.shots[0].adoptedResultId='kept';p.doc.shots[0].filmTrim={in_frame:4,out_frame:8};p.doc.shots.push({id:'other'});
+    const versions=['one','two'].map(prompt_id=>({shot_id:'shot-1',prompt_id,state:'success',outputs:{save:{videos:[{filename:prompt_id+'.mp4'}]}}}));
+    const h=serviceHarness({local:p,specific:p.id,versions});await h.service.restore();
+    const before=structuredClone(h.doc()),waiting=[],requests=[],prior=fetch;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/films/prepare')?new Promise(resolve=>{requests.push(JSON.parse(opts.body));waiting.push(resolve);}):prior(url,opts);
+    const preparing=h.service.prepareComparison(['one','two']);await waitFor(()=>waiting.length===2);
+    assert.deepEqual(h.doc(),before);
+    assert.deepEqual(requests.map(row=>row.project.doc.shots[0].adoptedResultId),['one','two']);
+    assert.ok(requests.every(row=>row.project.doc.shots.length===1&&!row.project.doc.shots[0].filmTrim));
+    if(changed)h.doc().shots[0].simplePrompt='new';
+    waiting.forEach((resolve,i)=>resolve(response({project_id:p.id,id:'film'+i,ready:true,entries:[{shot_id:'shot-1'}]})));
+    const result=await preparing;
+    if(changed)assert.equal(result,null);else assert.match(result[1].media_url,/film1\/media\/0$/);
+    await assert.rejects(()=>h.service.prepareComparison(['one','one']));
+});
+
+for(const changed of [false,true])test(`frame preparation freezes a single selected version and rejects late drafts: ${changed}`,async()=>{
+    const p=project();p.doc.shots[0].adoptedResultId='kept';p.doc.shots[0].filmTrim={in_frame:4,out_frame:8};
+    const versions=[{shot_id:'shot-1',prompt_id:'one',state:'success',outputs:{save:{videos:[{filename:'one.mp4'}]}}}];
+    const h=serviceHarness({local:p,specific:p.id,versions});await h.service.restore();
+    const before=structuredClone(h.doc()),prior=fetch;let resolve,body;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/films/prepare')?new Promise(done=>{resolve=done;body=JSON.parse(opts.body);}):prior(url,opts);
+    const pending=h.service.prepareFrame('one');await waitFor(()=>!!resolve);
+    assert.deepEqual(h.doc(),before);assert.equal(body.project.doc.shots[0].adoptedResultId,'one');assert.equal(body.project.doc.shots[0].filmTrim,undefined);
+    if(changed)h.doc().shots[0].simplePrompt='changed';
+    resolve(response({id:'film',project_id:p.id,ready:true,entries:[{shot_id:'shot-1'}]}));
+    const result=await pending;
+    if(changed)assert.equal(result,null);else assert.match(result.entries[0].media_url,/film\/media\/0$/);
+    await assert.rejects(()=>h.service.prepareFrame('missing'));
+    await assert.rejects(()=>h.service.extractFrame({project_id:'foreign'},0));
+});
+
+test('version copy retries the same identity and never overwrites the current draft',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch,copies=[];let fail=true;
+    globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;
+        if(path.endsWith('/copy')){copies.push(JSON.parse(opts.body));return Promise.resolve(response(fail?{error:'offline'}:{id:copies[0].new_project_id},!fail,fail?500:200));}
+        if(path.includes('/snapshots/'))return Promise.resolve(response({complete:true,snapshot:{seed:42,recipe:'test'}}));
+        return prior(url,opts);
+    };
+    await h.service.showVersion({snapshot_available:true,request_id:'request'});
+    const before=structuredClone(h.service.envelope());
+    await h.click({service:'copy-version'});fail=false;await h.click({service:'copy-version'});
+    assert.equal(copies.length,2);assert.deepEqual(copies[0],copies[1]);
+    assert.deepEqual(h.service.envelope(),before);assert.match(h.dialogs.at(-1)[0],/新草稿已保存/);
+});
+
+test('late version copy success does not reopen a modal over a different project',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id,server:project('project-b')});await h.service.restore();
+    const prior=fetch;let resolve;
+    globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;
+        if(path.endsWith('/copy'))return new Promise(r=>{resolve=r;});
+        if(path.includes('/snapshots/'))return Promise.resolve(response({complete:true,snapshot:{seed:1}}));
+        return prior(url,opts);
+    };
+    await h.service.showVersion({snapshot_available:true,request_id:'request'});
+    const copying=h.click({service:'copy-version'});await waitFor(()=>!!resolve);
+    globalThis.confirm=()=>true;await h.click({openProject:'project-b'});const count=h.dialogs.length;
+    resolve(response({id:'created'}));await copying;
+    assert.equal(h.service.envelope().id,'project-b');assert.equal(h.dialogs.length,count);
+    assert.match(h.notices.at(-1),/新草稿已保存/);
+});
+
+for(const changed of [false,true])test(`bundle preview uses one frozen draft and never changes adoption: changed=${changed}`,async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch;let resolve,submitted;
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/bundles/prepare')?new Promise(r=>{resolve=r;submitted=JSON.parse(opts.body);}):prior(url,opts);
+    const preparing=h.service.prepareBundle(false);await waitFor(()=>!!resolve);
+    assert.equal(submitted.include_results,false);assert.equal(submitted.project.id,p.id);
+    if(changed)h.doc().shots[0].simplePrompt='new draft';
+    resolve(response({ready:true,id:'package',files:[]}));
+    const result=await preparing;
+    if(changed)assert.equal(result,null);else assert.equal(result.id,'package');
+    assert.equal(h.service.envelope().id,p.id);
+});
+
+test('bundle import request keeps target identity across uncertain response and restores it',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch,submissions=[];let fail=true;
+    globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;
+        if(path.endsWith('/apply')){submissions.push(JSON.parse(opts.body));return Promise.resolve(response(fail?{error:'network failure'}:{id:'new-project'},!fail,fail?500:200));}
+        if(path.includes('/bundle-imports/'))return Promise.resolve(response({ready:true,id:'upload',files:[]}));
+        return prior(url,opts);
+    };
+    const before=structuredClone(h.service.envelope());
+    await assert.rejects(()=>h.service.applyBundle({id:'upload',new_project_id:'new-project'}));
+    const recovered=await h.service.lastBundleImport();assert.equal(recovered.new_project_id,'new-project');
+    fail=false;await h.service.applyBundle(recovered);
+    assert.equal(submissions.length,2);assert.deepEqual(submissions[0],submissions[1]);
+    assert.deepEqual(h.service.envelope(),before);
+});
 
 for(const change of ['shot','project','draft','new-request','none'])test(`compile response context guard: ${change}`,async()=>{
     const p=project();p.doc.shots.push({id:'shot-2',simplePrompt:'second'});
@@ -277,6 +478,30 @@ test('unknown batch receipt blocks all resubmission and preserves frozen identit
     assert.equal(submits,0);
     assert.equal(persistent.local.getItem('t8director.batch:project-a'),'batch-unknown');
 });
+test('pause after current shot keeps frozen batch and does not interrupt Core',async()=>{
+    const persistent={local:storage(),session:storage()};
+    const p=project();p.doc.shots.push({id:'shot-2',simplePrompt:'next'});
+    persistent.local.setItem('t8director.batch:project-a','batch-pause');
+    const h=serviceHarness({local:p,specific:p.id,persistent});
+    const original=globalThis.fetch;let submits=0,done=false;
+    globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;
+        if(path.endsWith('/batches/batch-pause'))return Promise.resolve(response({id:'batch-pause',project_id:p.id,
+            items:[{shot_id:'shot-1',state:done?'success':'not_submitted'},{shot_id:'shot-2',state:'not_submitted'}],next_index:done?1:0,complete:false}));
+        if(path.endsWith('/batches/batch-pause/continue')){submits++;return Promise.resolve(response({prompt_id:'second',recipe:'director'}));}
+        if(path.endsWith('/jobs/second'))return Promise.resolve(response({state:done?'success':'running',outputs:done?{save:{images:[{filename:'one.mp4'}]}}:{}}));
+        return original(url,opts);
+    };
+    await h.service.restore();await flush();
+    const running=h.click({service:'resume-batch'});await waitFor(()=>h.intervals.size===1);
+    await h.click({service:'pause-batch'});
+    assert.equal(h.intervals.size,1,'current job continues');
+    done=true;await [...h.intervals.values()][0]();await running;
+    assert.equal(submits,1,'next shot was not queued');
+    assert.equal(h.requests.some(item=>item.path.endsWith('/cancel')||item.path.endsWith('/interrupt')),false);
+    assert.equal(persistent.local.getItem('t8director.batch:project-a'),'batch-pause');
+    assert.match(h.notices.at(-1),/批次已暂停/);
+});
 
 test('old Core unknown attempt only retries after explicit confirmation, preserving finished shots',async()=>{
     const persistent={local:storage(),session:storage()};
@@ -364,6 +589,15 @@ for(const state of ['success','error'])test(`restored ${state} task unlocks gene
 
 function samplingHarness(catalog={}) {
     const body={innerHTML:'',insertAdjacentHTML(_position,html){this.innerHTML=html+this.innerHTML}};
+    body.querySelectorAll=selector=>{
+        const key=selector.match(/data-stage="([^"]+)"/)[1];
+        return [...body.innerHTML.matchAll(new RegExp(`class="o-sampling-row" data-stage="${key}" data-index="(\\d+)"`,'g'))].map(match=>({
+            dataset:{index:match[1]},querySelector:()=>({set innerHTML(value){
+                const row=new RegExp(`(class="o-sampling-row" data-stage="${key}" data-index="${match[1]}"[\\s\\S]*?<select data-sampling-field="name">)[\\s\\S]*?(</select>)`);
+                body.innerHTML=body.innerHTML.replace(row,(_all,start,end)=>start+value+end);
+            }}),
+        }));
+    };
     const listeners={},notices=[],applied=[];
     const dialog={open:false,querySelector:s=>s==='[data-model-settings]'?body:{focus(){},setAttribute(){},setSelectionRange(){},insertAdjacentHTML:(where,html)=>body.insertAdjacentHTML(where,html)},addEventListener:(key,fn)=>listeners[key]=fn,showModal(){this.open=true},close(){this.open=false}};
     const data={generation:{resolution_mp:'auto'},sampling:{mode:'single'},shots:[{samplingInherit:true}]};
@@ -379,6 +613,34 @@ function samplingHarness(catalog={}) {
 }
 const hyperflowCatalog={hyperflow:[{value:'hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors',label:'HyperFlow original'}],lora:[{value:'loras/portrait.safetensors',label:'Portrait'},{value:'loras/motion.safetensors',label:'Motion'}]};
 const chooseHyperFlow=h=>{h.click({samplingMode:'hyperflow'});h.select('data-sampling-hyperflow-file',hyperflowCatalog.hyperflow[0].value)};
+test('local sampling explicitly warns about shared model changes',()=>{
+    const h=samplingHarness();h.data.shots.push({samplingInherit:false});
+    h.api.open();h.click({samplingScope:'local'});
+    assert.match(h.body.innerHTML,/全片 2 镜共用/);
+    assert.match(h.body.innerHTML,/底模仍全片共用/);
+    h.model('unet','new-model.safetensors');h.api.commit();
+    assert.match(h.notices.at(-1),/影响全片 2 镜/);
+    assert.equal(h.applied[0].generation.unet,'new-model.safetensors');
+    assert.equal(h.applied[0].inherited,false);
+});
+test('new variation persists seed, and lost response retry reuses exact request',async()=>{
+    const p=project();p.doc.shots[0].seed=42;
+    const h=serviceHarness({local:p,specific:p.id});await h.service.restore();await flush();
+    const prior=globalThis.fetch,submitted=[];
+    globalThis.fetch=async(url,options)=>{
+        if(new URL(url).pathname.endsWith('/generate')){
+            submitted.push(JSON.parse(options.body));
+            if(submitted.length===1)throw Error('response lost');
+        }
+        return prior(url,options);
+    };
+    await h.click({service:'new-variation'});
+    assert.notEqual(h.doc().shots[0].seed,42);
+    assert.equal(JSON.parse(localStorage.getItem('t8director.draft:test')).doc.shots[0].seed,submitted[0].seed);
+    await h.click({action:'generate'});
+    assert.equal(submitted.length,2);
+    assert.deepEqual(submitted[1],submitted[0]);
+});
 test('HyperFlow choices are explicit and original weight stays separate from content LoRA',()=>{
     const h=samplingHarness(hyperflowCatalog);h.api.open();chooseHyperFlow(h);
     assert.match(h.body.innerHTML,/连续 4\+4 · 同分辨率分段/);
@@ -628,7 +890,9 @@ test('late cancel response cannot stop the next task or unlock generation',async
         return prior(url,opts);
     };
     const cancelling=h.click({service:'cancel-job'});await flush();
-    h.setState('unknown');await [...h.intervals.values()][0]();await watching;
+    h.setState('unknown');await [...h.intervals.values()][0]();
+    assert.ok(sessionStorage.getItem('t8director.activeJob:test')); // Unconfirmed cancellation is not terminal.
+    h.setState('error');await [...h.intervals.values()][0]();await watching;
     const generating=h.click({action:'generate'});await waitFor(()=>h.records.length&&h.intervals.size);
     const notices=h.notices.length;finishCancel();await cancelling;
     assert.equal(h.intervals.size,1);assert.equal(h.notices.length,notices);

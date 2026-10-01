@@ -306,10 +306,17 @@ def build_director_generation_prompt(
     chunk_ffn_enabled = bool(memory_cfg.get("chunk_ffn", False))
     if fast_enabled and task != "t2va":
         raise ValueError("导演台 FastH3 V2 当前只允许 T2VA；首尾/参考/原音请先关闭 FastH3 V2")
+    relay_events = []
+    if relay_enabled and str(relay_cfg.get("execution_mode", "apply_exp")) == "apply_exp":
+        from .prompt_relay_advanced import _local_prompt_lines
+
+        relay_events = _local_prompt_lines(_relay_plan_inputs(shot)["local_prompts"])
+    if fast_enabled and len(relay_events) > 1 and str(fast_cfg.get("profile", "trained_vsa_exp")) != "dense_compat_exp":
+        raise ValueError("FastH3 V2 训练 VSA 无法执行 Prompt Relay 的逐查询时间偏置；请显式选择 dense_compat_exp，或关闭 Relay。不会静默忽略 Relay 或自动切换后端")
     if sampling["mode"] == "two_pass" and fast_enabled:
         raise ValueError("标准 4+4 双采不能与 FastH3 V2 的独立 8 步模型同时启用")
     if sampling["mode"] == "hyperflow":
-        if relay_enabled or fast_enabled:
+        if fast_enabled or (relay_enabled and sampling["variant"] != "continuous4plus4separate"):
             raise ValueError("HyperFlow EXP 尚未实现 D3 Relay/FastH3 的条件/模型接线；请关闭该路线或使用原采样方式")
         if bridge_enabled or low_vram_enabled or chunk_ffn_enabled:
             report["warnings"].append({"shot_id": shot_id,

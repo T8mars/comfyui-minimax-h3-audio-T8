@@ -31,8 +31,15 @@ ROUTE_WORKFLOWS: Mapping[str, tuple[str, ...]] = {
         "examples/workflows/14-prompt-relay/2026-08-20_H3_Prompt_Relay_Ref2VA_Stock20_Advanced_EXP.json",
     ),
     "fast_h3_v2": (
-        "examples/workflows/10-speed/FastH3_V2_Trained_VSA_73f_h1c1_EXP.json",
-        "examples/workflows/10-speed/FAST_H3_V2_README.md",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Trained_VSA_73f_h1c1_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_01_First_LOW_HIGH_Relay_EAV_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_02_First_Cold_HIGH_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_03_Accepted_Second_LOW_HIGH_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_04_Accepted_Second_Cold_HIGH_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_05_Review_Explicit_Accept_EXP.json",
+        "examples/workflows/34-fasth3-v2/FastH3_V2_Split_06_Compose_Accepted_EXP.json",
+        "examples/workflows/34-fasth3-v2/README.md",
+        "examples/workflows/34-fasth3-v2/FAST_H3_V2_README.md",
     ),
     "eav": (
         "examples/workflows/04-long-video/2026-09-11_H3_In_Node_Long_Video_Prompt_Relay_EAV_Dialogue_Segment_Aligned_Stock20_Advanced_EXP.json",
@@ -81,9 +88,9 @@ ROUTE_CONTRACTS: Mapping[str, Mapping[str, object]] = {
     },
     "fast_h3_v2": {
         "mode": "native_only",
-        "steps": ["使用 FastH3 V2 专用模型", "按 V2 Setup 配置步数", "运行 Runtime Audit 后采样"],
+        "steps": ["旧单镜入口仍用 V2 Setup／Runtime Audit", "分离 4+4 按 01～06 教学图先生成未接受候选、再分别审阅接受与拼接", "逐个核对真实模型、父片和阶段回执"],
         "requires": ["fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors", "FastH3 V2 入口节点"],
-        "boundary": "FastH3 启用时不要叠加普通 H3 Turbo LoRA；当前导演台已对真实编译路线执行此门禁。",
+        "boundary": "D3 只下载原生副本，不把当前镜头编译成分离图；旧单镜默认仍是原图。01～06 是可编辑 EXP，须安装新阶段/来源节点并填首帧和父片回执；活动 Relay 与训练 VSA 不兼容，需显式 Dense，不能静默换后端。",
     },
     "eav": {
         "mode": "native_only",
@@ -141,6 +148,10 @@ def handoff_d3_route(capability: str, file_path: str | None = None) -> dict[str,
         raise ValueError("未知 D3 原生路线")
     allowed = tuple(ROUTE_WORKFLOWS[capability])
     selected = file_path or allowed[0]
+    # Exact legacy aliases only: do not turn a missing path into a glob search.
+    if capability == 'fast_h3_v2':
+        legacy = {path.replace('/34-fasth3-v2/', '/10-speed/'): path for path in allowed}
+        selected = legacy.get(selected, selected)
     if selected not in allowed:
         raise ValueError("该文件不属于所选 D3 原生路线")
     rows: list[dict[str, object]] = []

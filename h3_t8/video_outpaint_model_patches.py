@@ -14,6 +14,7 @@ from types import CodeType, FunctionType, MethodType
 
 
 from .video_outpaint_kj_contract import KJ_SOURCE_SHA256 as KJ_SOURCE_SHA256, kj_source_contract
+from .source_code_identity import executable_code_equal
 
 
 def _codes(code):
@@ -69,7 +70,7 @@ def _verified_module(function):
     def check(fn, name):
         matches = [code for code in compiled if code.co_name == name]
         if (not isinstance(fn, FunctionType) or fn.__globals__ is not vars(module)
-                or len(matches) != 1 or fn.__code__ != matches[0]):
+                or len(matches) != 1 or not executable_code_equal(fn.__code__, matches[0])):
             raise ValueError(f"KJ memory live function differs from pinned source: {name}")
         declarations = [node for node in definitions if node.name == name]
         if len(declarations) != 1:

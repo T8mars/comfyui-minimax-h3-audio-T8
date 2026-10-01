@@ -12,10 +12,11 @@ import math
 from pathlib import Path
 import uuid
 
-from .director_project import atomic_json, contained, file_sha, identity, referenced_assets, sha
+from .director_project import atomic_json, contained, file_sha, identity, referenced_assets, sha, compile_project
 
 
 SCHEMA = "t8.minimax_h3.director_batch.v1"
+SELECTION_SCHEMA = "t8.minimax_h3.director_batch.v2"
 
 
 def _request_id(batch_id, index, shot_id, attempt):
@@ -27,8 +28,55 @@ def _path(store, batch_id):
     return contained(store.root, f"batches/{identity(batch_id)}.json")
 
 
-def _fingerprint(project, seed, built, resources):
-    return sha({"project": project, "seed": seed, "built": built, "resources": resources})
+def _fingerprint(project, seed, built, resources, selection=None):
+    value = {"project": project, "seed": seed, "built": built, "resources": resources}
+    if selection is not None:
+        value["selection"] = selection
+    return sha(value)
+
+
+def batch_selection(project, seed, shot_ids=None, seed_map=None):
+    """Resolve a subset in project order, with an explicit immutable seed per UUID."""
+    all_shots = project["doc"]["shots"]
+    all_ids = [identity(shot["id"]) for shot in all_shots]
+    if len(set(all_ids)) != len(all_ids):
+        raise ValueError("批次镜头身份不能重复")
+    if shot_ids is None:
+        shot_ids = all_ids
+    if (not isinstance(shot_ids, list) or not 1 <= len(shot_ids) <= 200
+            or any(not isinstance(sid, str) for sid in shot_ids)
+            or len(set(shot_ids)) != len(shot_ids) or not set(shot_ids) <= set(all_ids)):
+        raise ValueError("请选择项目内 1–200 个不重复的镜头")
+    shots = [shot for shot in all_shots if shot["id"] in shot_ids]
+    seed = int(seed)
+    if seed_map is None:
+        # Legacy clients retain their original base+position seeds, even for a subset.
+        seed_map = {sid: seed + all_ids.index(sid) for sid in shot_ids}
+    if (not isinstance(seed_map, dict) or set(seed_map) != set(shot_ids)
+            or any(type(value) is not int or not 0 <= value < 2**64 for value in seed_map.values())):
+        raise ValueError("批次需要每个选中镜头的有效种子，不能缺失或包含其它镜头")
+    return shots, {shot["id"]: seed_map[shot["id"]] for shot in shots}
+
+
+def selected_project(project, shots):
+    """A validation/resource view only; the durable batch keeps the full project."""
+    selected = {**project, "doc": {**project["doc"], "shots": shots}, "current": shots[0]["id"]}
+    referenced = referenced_assets(selected)
+    selected["assets"] = [asset for asset in project.get("assets", []) if asset.get("id") in referenced]
+    return selected
+
+
+def compile_batch_selection(project, store, shot_ids):
+    shots, _ = batch_selection(project, 0, shot_ids)
+    report = compile_project(selected_project(project, shots), store)
+    positions = {shot["id"]: index for index, shot in enumerate(project["doc"]["shots"], 1)}
+    for error in report["errors"]:
+        if error.get("shot_id") in positions:
+            error["shot_number"] = positions[error["shot_id"]]
+    report["selection"] = {"shot_ids": [shot["id"] for shot in shots]}
+    report.pop("compilation_sha256", None)
+    report["compilation_sha256"] = sha(report)
+    return report
 
 
 _MODEL_INPUTS = {
@@ -84,32 +132,36 @@ def verify_resources(store, resources, resolve_model):
             raise ValueError(f"冻结批次素材已变化：{aid}；不会提交下一镜")
 
 
-def create_batch(store, batch_id, project, seed, built, resources):
+def create_batch(store, batch_id, project, seed, built, resources, *, shot_ids=None, seed_map=None):
     """Persist a validated project's exact inputs before any GPU submission."""
     batch_id = identity(batch_id)
     identity(project["id"])
-    shots = project["doc"]["shots"]
+    explicit_selection = shot_ids is not None or seed_map is not None
+    shots, seeds = batch_selection(project, seed, shot_ids, seed_map)
     if not isinstance(shots, list) or not shots or len(shots) > 200:
         raise ValueError("批次镜头数量必须为 1–200")
     if len({identity(shot["id"]) for shot in shots}) != len(shots):
         raise ValueError("批次镜头身份不能重复")
     if len(built) != len(shots) or not all(isinstance(plan.get("prompt"), dict) for plan in built):
         raise ValueError("每个冻结镜头都需要正式 Core 生成图")
+    if explicit_selection and any(plan.get("seed") != seeds[shot["id"]] for shot, plan in zip(shots, built)):
+        raise ValueError("编译图种子与镜头种子映射不一致")
     seed = int(seed)
     if seed < 0 or seed >= 2**64 - len(shots):
         raise ValueError("批次种子超出范围")
+    selection = {"shot_ids": [shot["id"] for shot in shots], "seed_map": seeds} if explicit_selection else None
     # Never accept a mutable client-supplied item list, receipt or job state.
     batch = {
-        "schema": SCHEMA,
+        "schema": SELECTION_SCHEMA if explicit_selection else SCHEMA,
         "id": batch_id,
         "project_id": project["id"],
-        "fingerprint": _fingerprint(project, seed, built, resources),
+        "fingerprint": _fingerprint(project, seed, built, resources, selection),
         "project": project,
         "resources": resources,
         "items": [
             {
                 "shot_id": shot["id"],
-                "seed": seed + index,
+                "seed": seeds[shot["id"]],
                 "request_id": _request_id(batch_id, index, shot["id"], 0),
                 "attempt": 0,
                 "previous_request_ids": [],
@@ -118,6 +170,8 @@ def create_batch(store, batch_id, project, seed, built, resources):
             for index, shot in enumerate(shots)
         ],
     }
+    if explicit_selection:
+        batch.update(selection=selection, base_seed=seed)
     path = _path(store, batch_id)
     if path.exists():
         existing = load_batch(store, batch_id)
@@ -130,13 +184,21 @@ def create_batch(store, batch_id, project, seed, built, resources):
 
 def load_batch(store, batch_id):
     batch = json.loads(_path(store, batch_id).read_text(encoding="utf-8"))
-    if batch.get("schema") != SCHEMA or batch.get("id") != identity(batch_id):
+    if batch.get("schema") not in {SCHEMA, SELECTION_SCHEMA} or batch.get("id") != identity(batch_id):
         raise ValueError("批次身份或格式已损坏")
     project = batch.get("project")
     if not isinstance(project, dict) or project.get("id") != batch.get("project_id"):
         raise ValueError("批次项目身份已损坏")
     items = batch.get("items")
     shots = project.get("doc", {}).get("shots", [])
+    selection = None
+    if batch["schema"] == SELECTION_SCHEMA:
+        selection = batch.get("selection")
+        if not isinstance(selection, dict) or type(batch.get("base_seed")) is not int:
+            raise ValueError("批次选择快照已损坏")
+        shots, seeds = batch_selection(project, batch["base_seed"], selection.get("shot_ids"), selection.get("seed_map"))
+        if selection != {"shot_ids": [shot["id"] for shot in shots], "seed_map": seeds}:
+            raise ValueError("批次选择顺序已损坏")
     if not isinstance(items, list) or not items or len(items) != len(shots):
         raise ValueError("批次镜头列表已损坏")
     for index, (shot, item) in enumerate(zip(shots, items)):
@@ -154,10 +216,11 @@ def load_batch(store, batch_id):
         if type(item.get("seed")) is not int or item["seed"] < 0 or item["seed"] >= 2**64:
             raise ValueError("批次种子已损坏")
     if batch.get("fingerprint") != _fingerprint(
-        project, items[0]["seed"], [item.get("built") for item in items], batch.get("resources"),
+        project, batch.get("base_seed", items[0]["seed"]), [item.get("built") for item in items], batch.get("resources"), selection,
     ):
         raise ValueError("批次快照身份已损坏")
-    if [item["seed"] for item in items] != list(range(items[0]["seed"], items[0]["seed"] + len(items))):
+    expected_seeds = [selection["seed_map"][item["shot_id"]] for item in items] if selection else list(range(items[0]["seed"], items[0]["seed"] + len(items)))
+    if [item["seed"] for item in items] != expected_seeds:
         raise ValueError("批次种子顺序已损坏")
     return batch
 
@@ -234,38 +297,16 @@ def _check_delivery(evidence, expected):
 
 def _media_evidence(paths, output_root, expected):
     """Decode complete Director video and mandatory AV audio once."""
-    import av
+    from .director_media import batch_media
 
     evidence = []
     for path in paths:
         try:
-            with av.open(str(path)) as container:
-                video = next((stream for stream in container.streams if stream.type == "video"), None)
-                if video is None:
-                    raise ValueError("没有视频轨道")
-                width, height = video.width, video.height
-                frames = sum(1 for _ in container.decode(video))
-                if frames == 0 or width <= 0 or height <= 0:
-                    raise ValueError("没有完整的可解码视频帧")
-            with av.open(str(path)) as container:
-                audio = next((stream for stream in container.streams if stream.type == "audio"), None)
-                if audio is None:
-                    raise ValueError("导演台成片缺少音频轨道")
-                audio_frames = 0
-                audio_samples = 0
-                for frame in container.decode(audio):
-                    audio_frames += 1
-                    audio_samples += frame.samples
-                if audio_frames == 0:
-                    raise ValueError("音频轨道无法解码")
-                audio_sample_rate = audio.rate
+            decoded = batch_media(path)
         except Exception as error:
             raise ValueError(f"输出视频无法完整解码：{path.name}: {error}") from error
         item = {"file": str(path.relative_to(Path(output_root).resolve())),
-                "sha256": file_sha(path), "frames": frames,
-                "width": width, "height": height,
-                "audio_stream": True, "audio_frames": audio_frames,
-                "audio_samples": audio_samples, "audio_sample_rate": audio_sample_rate}
+                "sha256": file_sha(path), "audio_stream": True, **decoded}
         _check_delivery(item, expected)
         evidence.append(item)
     return evidence
@@ -402,7 +443,7 @@ def batch_status(store, batch_id, status_lookup, output_root, *, core_epoch=None
         records.append(row)
     next_index = next((i for i, row in enumerate(records) if row["state"] != "success"), None)
     return {
-        "schema": SCHEMA,
+        "schema": batch["schema"],
         "id": batch["id"],
         "project_id": batch["project_id"],
         "fingerprint": batch["fingerprint"],

@@ -28,9 +28,6 @@ H16-3 扩展而显式选择 `refined_exp`，并非改变节点的保守默认值
 - 节点只接受原生 H3 AV 嵌套张量，形状、有限值和正负 conditioning 会在执行前检查。
 - 这是实验性兼容层，不声称与外部实现逐值相同，也不声称所有 GPU、长片或音频感知质量已经通过。
   应先运行默认 `preserve_first_pass`，再固定输入、seed 和分块参数单独对照 `refined_exp`。
-- 2026-09-20 的资格样片已完成真实 GPU 闭环：73 帧、416×224→832×448、24fps、
-  `guarded_overlap_exp` 34/17 与 `refined_exp`，4 个精修音频块按绝对时间轴合并；用户实际播放后确认
-  画面与声音没有问题。该验收仅覆盖这组输入和参数，不是通用质量保证。
 - Issue #18 提供的上游线索、工作流和许可证记录在 `THIRD_PARTY_NOTICES.md`；外部参考仓库是
   [deciia/ComfyUI_Deciia_All](https://github.com/deciia/ComfyUI_Deciia_All)，其 GPL-3.0-or-later
   代码未被复制进本项目。

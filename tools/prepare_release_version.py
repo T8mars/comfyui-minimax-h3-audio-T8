@@ -14,9 +14,6 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VERSION_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 PYPROJECT_LINE_RE = re.compile(r'(?m)^(version\s*=\s*")(\d+\.\d+\.\d+)("\s*)$')
-META_LINE_RE = re.compile(
-    r'(?m)^(  "version"\s*:\s*")(\d+\.\d+\.\d+)("\s*,?\s*)$'
-)
 README_CURRENT_RE = re.compile(r"(当前版本：\*\*)(\d+\.\d+\.\d+)(\*\*)")
 README_EN_CURRENT_RE = re.compile(r"(Current version: \*\*)(\d+\.\d+\.\d+)(\*\*)")
 
@@ -116,6 +113,42 @@ def _replace_one(pattern: re.Pattern[str], text: str, target: str, label: str) -
     return updated
 
 
+def _replace_meta_version(text: str, target: str) -> str:
+    """Replace only the root release field, preserving nested evidence verbatim."""
+    decoder = json.JSONDecoder()
+
+    def skip(position: int) -> int:
+        return re.compile(r"\s*").match(text, position).end()
+
+    position = skip(0)
+    if text[position:position + 1] != "{":
+        raise ValueError("meta.json must be a root object")
+    position = skip(position + 1)
+    spans = []
+    while text[position:position + 1] != "}":
+        key, position = decoder.raw_decode(text, position)
+        position = skip(position)
+        if type(key) is not str or text[position:position + 1] != ":":
+            raise ValueError("invalid root metadata property")
+        start = skip(position + 1)
+        value, position = decoder.raw_decode(text, start)
+        if key == "version":
+            if type(value) is not str:
+                raise ValueError("root metadata version must be a string")
+            _version_tuple(value)
+            spans.append((start, position))
+        position = skip(position)
+        if text[position:position + 1] == "}":
+            break
+        if text[position:position + 1] != ",":
+            raise ValueError("invalid root metadata delimiter")
+        position = skip(position + 1)
+    if len(spans) != 1:
+        raise ValueError("meta.json root version marker count must be exactly one")
+    start, end = spans[0]
+    return text[:start] + json.dumps(target) + text[end:]
+
+
 def prepare_version_update(
     project_root: Path,
     *,
@@ -136,7 +169,7 @@ def prepare_version_update(
         "pyproject.toml": _replace_one(
             PYPROJECT_LINE_RE, texts["pyproject.toml"], target, "pyproject.toml"
         ),
-        "meta.json": _replace_one(META_LINE_RE, texts["meta.json"], target, "meta.json"),
+        "meta.json": _replace_meta_version(texts["meta.json"], target),
         "README.md": _replace_one(
             README_CURRENT_RE, texts["README.md"], target, "README.md"
         ),

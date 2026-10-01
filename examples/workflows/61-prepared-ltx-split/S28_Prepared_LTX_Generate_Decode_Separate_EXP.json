@@ -1,0 +1,215 @@
+{
+  "id": "1000bdce-c284-5483-ab61-50f9deac6786",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3PreparedGenerationBundleEXPT8",
+      "title": "Tao / LTX · 读取已准备生成输入 (T8 EXP)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        590,
+        340
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "links": [
+            1,
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedGenerationBundleEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3PreparedLTXGenerateEXPT8",
+      "title": "Prepared LTX · Generate Refined Latent (T8 EXP)",
+      "pos": [
+        640,
+        0
+      ],
+      "size": [
+        590,
+        340
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "generation_receipt",
+          "type": "T8_MODULAR_PREPARED_LTX_GENERATION",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "latent_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXGenerateEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        8301,
+        "fixed",
+        "ltx_split_trial_01",
+        true,
+        ""
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3PreparedLTXDecodeEXPT8",
+      "title": "Prepared LTX · Decode Frozen Latent (T8 EXP)",
+      "pos": [
+        1280,
+        0
+      ],
+      "size": [
+        590,
+        340
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 2
+        },
+        {
+          "name": "generation_receipt",
+          "type": "T8_MODULAR_PREPARED_LTX_GENERATION",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXDecodeEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "必读：独立阶段与恢复边界",
+      "pos": [
+        1920,
+        0
+      ],
+      "size": [
+        850,
+        660
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Prepared LTX 两阶段实验图\n\n只接受匹配的 normalized LTX AV prepared bundle；它不是普通 H3 latent 的自动转换器。生成节点只运行固定 LTX 三次更新并保存 refined-latents.safetensors；解码节点只从完成回执加载 latent，复用原解码 worker 保留输入原声，不隐式重新生成。\n\n请先填写本机 prepared_bundle_path 与双方共用的 serial_lease_path。新提示词/模型/输入要重新准备清单；改变 seed 或内容使用新 chain_id。另一个旧一体节点、旧图及其缓存目录不受此候选影响。本图可先运行生成节点，再运行解码；生成输出路径与 SHA 可供独立恢复图使用。\n\n仅候选图和 CPU 合同；未证明新分离 worker 的预训练 GPU 音画、人审或任意输入画质。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      1,
+      "T8_MODULAR_PREPARED_LTX_GENERATION"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3 Prepared LTX / Separate Generation and Decode / EXP",
+    "prepared_route": "ltx_refine",
+    "split_stage": "generation_then_decode"
+  },
+  "version": 0.4
+}

@@ -1,5 +1,6 @@
 from dataclasses import replace
 import importlib.util
+import json
 import os
 from pathlib import Path
 
@@ -123,7 +124,52 @@ def test_changed_same_name_same_mtime_model(weight_file, tmp_path):
         sb.apply_bridge(native_conditioning(), cfg)
 
 
-def test_cancel_never_mutates_input(weight_file):
+def _assert_cpu_fp32_cache_states(states):
+    assert states
+    for cached in states:
+        assert type(cached) in (dict, sb._TransWeights, sb._TrainerMLPWeights)
+        weights = cached if type(cached) is dict else cached.state
+        assert type(weights) is dict and weights
+        for tensor in weights.values():
+            assert type(tensor) is torch.Tensor
+            assert tensor.device.type == "cpu" and tensor.dtype == torch.float32
+            assert torch.isfinite(tensor).all()
+
+
+def _preload_other_bridge_cache(kind, directory):
+    """Populate the real loader cache, not synthetic replacements for _weights."""
+    path = directory / (kind + ".safetensors")
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(930)
+        if kind == "trans":
+            from h3_audio_t8_pkg.semantic_bridge_trans import TransBridge, TransSpec
+            model = TransBridge(TransSpec(64, 1, 4, 64, True, 1.0, None)).eval()
+            state = {"net." + key: value.contiguous() for key, value in model.state_dict().items()}
+            metadata = {"arch": "trans", "dim": "5120", "hidden": "64",
+                        "layers": "1", "heads": "4", "max_tokens": "64",
+                        "residual_skip": "True", "residual_scale": "1.0"}
+            expected_type = sb._TransWeights
+        else:
+            assert kind == "trainer_mlp"
+            shapes = {"fc1.weight": (8, 5120), "fc1.bias": (8,),
+                      "fc2.weight": (8, 8), "fc2.bias": (8,),
+                      "fc3.weight": (5120, 8), "fc3.bias": (5120,)}
+            state = {"net." + key: torch.randn(shape) * .002 for key, shape in shapes.items()}
+            metadata = {"arch": "mlp", "dim": "5120", "hidden": "8",
+                        "residual_skip": "True", "residual_scale": ".1",
+                        "extra_json": json.dumps({})}
+            expected_type = sb._TrainerMLPWeights
+        save_file(state, path, metadata=metadata)
+    loaded = sb._weights(config(path))
+    assert type(loaded) is expected_type
+    return loaded
+
+
+@pytest.mark.parametrize("other_cache", [None, "trans", "trainer_mlp"])
+def test_cancel_never_mutates_input(weight_file, tmp_path, other_cache):
+    other = _preload_other_bridge_cache(other_cache, tmp_path) if other_cache else None
+    other_before = ({key: tensor.clone() for key, tensor in other.state.items()}
+                    if other is not None else None)
     items = native_conditioning()
     before = items[0][0].clone()
     calls = []
@@ -136,7 +182,31 @@ def test_cancel_never_mutates_input(weight_file):
         sb.apply_bridge(items, config(weight_file, chunk_tokens=1), cancel=cancel)
     assert torch.equal(items[0][0], before)
     assert sb.RECEIPT_KEY not in items[0][1]
-    assert all(tensor.device.type == "cpu" for state in sb._CACHE.values() for tensor in state.values())
+    with sb._CACHE_LOCK:
+        states = list(sb._CACHE.values())
+    _assert_cpu_fp32_cache_states(states)
+    if other is not None:
+        assert any(cached is other for cached in states)
+        assert all(torch.equal(tensor, other_before[key]) for key, tensor in other.state.items())
+
+
+@pytest.mark.parametrize("damage", ["unknown", "empty", "not_tensor", "meta", "half", "nan"])
+def test_cache_assertion_does_not_skip_unknown_or_non_cpu_fp32_values(damage):
+    cached = {"weight": torch.ones(1)}
+    if damage == "unknown":
+        cached = object()
+    elif damage == "empty":
+        cached = {}
+    elif damage == "not_tensor":
+        cached["weight"] = 1
+    elif damage == "meta":
+        cached["weight"] = torch.ones(1, device="meta")
+    elif damage == "half":
+        cached["weight"] = torch.ones(1, dtype=torch.float16)
+    else:
+        cached["weight"] = torch.full((1,), float("nan"))
+    with pytest.raises(AssertionError):
+        _assert_cpu_fp32_cache_states([cached])
 
 
 def test_separate_scheduled_items_global(weight_file):

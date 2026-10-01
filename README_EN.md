@@ -2,7 +2,7 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.87.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.88.0** · [Changelog](CHANGELOG.md)
 
 ## Install
 
@@ -24,12 +24,12 @@ Replace placeholder models and media with your own before running.
 |First H3 generation / image-to-video|[Basic generation](examples/workflows/01-basic-generation)|
 |Audio references, talking or singing|[Audio control](examples/workflows/02-audio-control) · [Native voice/emotion and Avatar](examples/workflows/36-avatar-voice/README.md)|
 |Dual-model 4+4 or segmented long video|[Long-video workflows](examples/workflows/04-long-video)|
+|Independent stages and external EAV/Relay|[Separated sampling](docs/MODULAR_SAMPLING_EXP.md) · [Veda eight-step](examples/workflows/63-veda-t2va/README.md)|
 |Visually arrange shots, media and audio|[Obsidian Director](examples/workflows/39-director-console/README.md) (or use the dedicated `T8 Obsidian Director` entry in the ComfyUI left sidebar)|
 |OpenVDN, FastH3, memory-saving patches|[Acceleration](examples/workflows/10-speed) · [Memory nodes](docs/H3_MEMORY_NODES_EXP.md)|
 |Meridian camera and source-time editing|[Four-node workflows](examples/workflows/37-meridian/README.md)|
 |First-pass dynamic preview / scoped cancellation|[TAEH3 preview](docs/TAEH3_SAMPLING_PREVIEW_EXP.md)|
 |Enhancement / frame interpolation|[Topaz](docs/TOPAZ_EXP.md) · [DLSS-NR](examples/workflows/25-dlss-nr) · [DLSS interpolation](examples/workflows/29-dlss-fi)|
-|H16-3 chunked second pass / refined audio|[H16-3 workflow](examples/workflows/13-latent-upscale/2026-09-20_H3_H16_3_Chunked_PASS2_I2VA_Advanced_EXP.json) · [Guide](docs/H16_3_CHUNKED_PASS2_EXP.md)|
 |More features and advanced setup|[All workflows](examples/workflows) · [Detailed guide](docs/README_DETAILS_EN.md)|
 
 ## Download models
@@ -42,7 +42,6 @@ Read each repository's setup and licenses. Do not overwrite different architectu
 |TAEH3 temporal / 2D previews|[Taeh3-Comfy](https://huggingface.co/t8star/Taeh3-Comfy) → `models/vae_approx/`; the 2D file has a separate name|
 |Meridian ConvRot INT8 + Omega1B512|[Meridian-Comfy](https://huggingface.co/t8star/Meridian-Comfy) → `models/meridian/`; Omega in `vggt-omega/checkpoints/`; code/assets and H3 VAE are separate|
 |Semantic Bridge|[Semantic-Bridge-Comfy](https://huggingface.co/t8star/Semantic-Bridge-Comfy) → `models/semantic_bridge/t8_compat/`|
-|T8 comic-combat Semantic Bridge|[Model](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat) → `models/semantic_bridge/t8_compat/`; use the latest GitHub source and follow the [Bridge guide](docs/SEMANTIC_BRIDGE_EXP.md)|
 |OpenVDN bundle|[Vdn-Minimax-H3-Comfy](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy); retain the repository layout|
 |H3-World action LoRA|[Minimax-H3-World-Comfy](https://huggingface.co/t8star/Minimax-H3-World-Comfy); [setup](examples/workflows/26-h3-world)|
 

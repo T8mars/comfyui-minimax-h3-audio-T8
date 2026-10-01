@@ -16,7 +16,7 @@ import torch
 
 
 class NativeProgressiveMaskContract:
-    def __init__(self, model, normalized_mask, video_shape, audio_shape, *, continuation=None):
+    def __init__(self, model, normalized_mask, video_shape, audio_shape, *, continuation=None, accepted_source=None):
         import comfy.model_base
         import comfy.utils
 
@@ -25,6 +25,8 @@ class NativeProgressiveMaskContract:
             raise ValueError('Initialized EAV mask contract requires native H3')
         self._shapes = (tuple(video_shape), tuple(audio_shape))
         self._long_video = None
+        if continuation is not None and accepted_source is not None:
+            raise ValueError('Select paired continuation or one independently prepared accepted source')
         if continuation is not None:
             from .progressive_continuation_runtime import PreparedProgressiveContinuation
             from .enhance_a_video_advanced import _assert_long_video_contract
@@ -32,6 +34,14 @@ class NativeProgressiveMaskContract:
                 raise ValueError('Unknown EAV progressive continuation inputs')
             continuation.verify()
             request = continuation.source.binding['request']
+            self._long_video = _assert_long_video_contract(model,
+                segment_index=request['segment_index'], context_frames=request['context_frames'])
+        elif accepted_source is not None:
+            from .progressive_continuation import ProgressiveContinuationSource
+            from .enhance_a_video_advanced import _assert_long_video_contract
+            if type(accepted_source) is not ProgressiveContinuationSource:
+                raise ValueError('Independent continuation EAV requires an authenticated accepted source')
+            request = accepted_source.revalidate()['request']
             self._long_video = _assert_long_video_contract(model,
                 segment_index=request['segment_index'], context_frames=request['context_frames'])
         if (len(video_shape) != 5 or tuple(video_shape[:2]) != (1, 24) or
@@ -62,7 +72,8 @@ class NativeProgressiveMaskContract:
                        'policy': 'unchanged_target_video_feta_with_native_h3_known_region_constraints'}
         if self._long_video is not None:
             description['long_video_contract'] = self.long_video_contract
-            description['accepted_source_sha256'] = continuation.source.sha256
+            description['accepted_source_sha256'] = (
+                continuation.source.sha256 if continuation is not None else accepted_source.sha256)
         self._description = description | {'binding_sha256': hashlib.sha256(json.dumps(
             description, sort_keys=True, separators=(',', ':')).encode()).hexdigest()}
         self._device_masks = {}

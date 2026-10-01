@@ -47,13 +47,29 @@ def test_pre_lora_backup_provides_stable_base_identity():
     assert stage_model_identity(model)["sha256"] == before
 
 
-def test_kj_memory_identity_is_verified_without_losing_configuration(request):
+def test_installed_kj_memory_selection_is_retained_without_faking_portable_configuration(request):
     memory_fixture = request.getfixturevalue("memory_nodes")
     model = patched_source(memory_fixture, "sage_lowmem_ffn", 2)
+    methods = dict(model.object_patches)
+    assert model.model_options['transformer_options']['minimax_head_chunks'] == 2
     first = stage_model_identity(model)
-    assert first["memory"]["head_chunks"] == 2
     other = patched_source(memory_fixture, "sage_lowmem_ffn", 3)
-    assert stage_model_identity(other)["sha256"] != first["sha256"]
+    second = stage_model_identity(other)
+    assert model.model_options['transformer_options']['minimax_head_chunks'] == 2
+    assert other.model_options['transformer_options']['minimax_head_chunks'] == 3
+    assert set(methods) == set(model.object_patches)
+    assert all(model.object_patches[key] is value for key, value in methods.items())
+    if first.get('portable_cache_reuse') is False:
+        # Installed third-party implementation changes are allowed to run, but
+        # are not an excuse to mint a portable certificate or erase selection.
+        assert first['memory'] is None and first['backend']['kind'] == 'user_selected_unverified'
+        assert second['portable_cache_reuse'] is False
+        assert first['execution_selection']['model_options'] != second['execution_selection']['model_options']
+        assert first['execution_selection']['object_patches']
+        assert first['opaque_internal_state_verified'] is False
+    else:
+        assert first['memory']['head_chunks'] == 2 and second['memory']['head_chunks'] == 3
+        assert second['sha256'] != first['sha256']
 
 
 def test_t8_memory_nodes_are_authenticated_and_stage_specific():
@@ -98,7 +114,7 @@ def test_core_pytorch_backend_is_accepted_as_the_stage_attention_owner():
     assert identity["backend"]["name"] == "pytorch"
 
 
-def test_official_sol_backend_is_content_bound_with_its_exact_configuration(request):
+def test_installed_sol_selector_configuration_is_preserved_without_certifying_an_unknown_model_stack(request):
     sol_module = request.getfixturevalue("installed_sol")
     patched = sol_module.SolAttentionPatch().patch(
         small_model(),
@@ -110,16 +126,28 @@ def test_official_sol_backend_is_content_bound_with_its_exact_configuration(requ
         int8_qk=False,
         int8_pv=False,
     )[0]
-    identity = stage_model_identity(patched)
-    assert identity["backend"]["kind"] == "audited_sol_attn_selector"
-    assert identity["backend"]["configuration"] == {
-        "tau": 0.5,
-        "min_tokens": 4096,
-        "strict": True,
-        "thresh_type": "diag",
-        "int8_qk": False,
-        "int8_pv": False,
+    from h3_audio_t8_pkg.relay_sol_backend import capture_composed_backend
+    selected = patched.model_options['transformer_options']['optimized_attention_override']
+    selector = capture_composed_backend(selected)
+    assert selector is not None
+    configuration = {
+        "tau": 0.5, "min_tokens": 4096, "strict": True,
+        "thresh_type": "diag", "int8_qk": False, "int8_pv": False,
     }
+    assert selector.report()['configuration'] == configuration
+    before = dict(patched.object_patches)
+    identity = stage_model_identity(patched)
+    assert patched.model_options['transformer_options']['optimized_attention_override'] is selected
+    assert set(before) == set(patched.object_patches)
+    assert all(patched.object_patches[key] is value for key, value in before.items())
+    assert selector.report()['configuration'] == configuration
+    if identity.get('portable_cache_reuse') is False:
+        assert identity['backend']['kind'] == 'user_selected_unverified'
+        assert identity['execution_selection']['model_options']
+        assert identity['opaque_internal_state_verified'] is False
+    else:
+        assert identity['backend']['kind'] == 'audited_sol_attn_selector'
+        assert identity['backend']['configuration'] == configuration
 
 
 def test_unknown_live_hook_cannot_share_resume_identity():
@@ -153,6 +181,26 @@ def test_loader_metadata_cannot_hide_a_callback():
     model.set_attachments("t8_h3_lora_metadata", {"callback": lambda: None})
     with pytest.raises(ValueError, match="plain safetensors string map"):
         stage_model_identity(model)
+
+
+def test_lora_compat_diagnostic_is_inert_but_content_bound():
+    model = small_model()
+    baseline = stage_model_identity(model)["sha256"]
+    report = {"schema": "t8.minimax_h3.lora_compat.v1", "status": "applied",
+              "full_algorithm_verified": False, "model_class": type(model.model).__name__,
+              "file": {"name": "EMA-B.safetensors",
+                       "identity_policy": "display_only_not_a_load_gate_no_hash_scan"},
+              "applied_patch_count": 1}
+    model.set_attachments("t8_h3_lora_compat_report", report)
+    first = stage_model_identity(model)
+    assert first.get("portable_cache_reuse", True) is True
+    assert first["sha256"] != baseline
+    model.set_attachments("t8_h3_lora_compat_report", {**report, "applied_patch_count": 2})
+    assert stage_model_identity(model)["sha256"] != first["sha256"]
+    model.set_attachments("t8_h3_lora_compat_report", {**report, "extra_callback": lambda: None})
+    assert stage_model_identity(model)["portable_cache_reuse"] is False
+    model.set_attachments("t8_h3_lora_compat_report", {**report, "full_algorithm_verified": True})
+    assert stage_model_identity(model)["portable_cache_reuse"] is False
 
 
 def test_current_core_lora_adapter_and_legacy_tuples_are_both_content_bound():

@@ -1,0 +1,500 @@
+{
+  "id": "65f3fd04-d509-4fb1-a6ba-08bcf764c438",
+  "revision": 0,
+  "last_node_id": 10,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "Video VAE",
+      "pos": [
+        -450,
+        400
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "Audio VAE",
+      "pos": [
+        -450,
+        720
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode final HIGH AV",
+      "pos": [
+        3370,
+        1450
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "CreateVideo",
+      "title": "Create joint video",
+      "pos": [
+        3770,
+        1450
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "title": "Save video",
+      "pos": [
+        4140,
+        1450
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/Progressive_S10_i2va_eav_both_Legacy6plus2_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "title": "Actual execution / loading report",
+      "pos": [
+        2600,
+        2230
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3ProgressiveHighEffectsAuditEXPT8",
+      "title": "HIGH — immutable execution Audit",
+      "pos": [
+        2000,
+        3400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "high_result",
+          "type": "T8_PROGRESSIVE_HIGH_RESULT",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_result",
+          "type": "T8_PROGRESSIVE_HIGH_RESULT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ProgressiveHighEffectsAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewAny",
+      "title": "HIGH — actual effects report",
+      "pos": [
+        2400,
+        3400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3ProgressiveHighLoadEXPT8",
+      "title": "Frozen completed HIGH — all sampling bodies absent",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "high_result",
+          "type": "T8_PROGRESSIVE_HIGH_RESULT",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ProgressiveHighLoadEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_SAVED_HIGH_PATH/progressive-high.safetensors",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MarkdownNote",
+      "title": "External effects / EXP boundaries",
+      "pos": [
+        -1500,
+        -1000
+      ],
+      "size": [
+        1000,
+        680
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S10 Progressive I2VA / eav:both / Load_Completed_HIGH 分离式 EXP。此图对应旧公开6＋2配方：总8步、LOW6＋HIGH2，LOW/HIGH均显式装载EMA B LoRA，默认1024×512×124及旧样例种子；原一体图仍保留。LOW/HIGH 分别采样原渐进计划；LOW 边界是 clean_video＋仍在演化的 audio_next，不能当已完成音轨。视频经原外置 learned3D 放大，HIGH 从冻结起点继续，保留音频锚和原生 mask。两阶段 MODEL／LoRA、条件和噪声独立，几何来源不依赖 HIGH 提示词。外置 eav 效果作用于 both；有独立阶段 Plan／Config 与实际执行 Audit，EAV 默认 report_only，仅观察不增强；Relay Plan 修改只按对应阶段依赖重算。本图只读取已完成 HIGH 的 path 和 SHA 解码；不含扩散模型、放大或采样。占位 path/SHA 不可直接排队；I2VA 必须替换首帧占位图片。请核实本机 FL2VA、Qwen、双 VAE、learned3D、画布和模型内存预算。当前证据主要是 tiny CPU／候选前端与旧链机械比较，不是此通用图完整预训练 GPU、原尺寸、其它后端／素材／LoRA、长片、apply_exp 画质或人工画音验收。旧 Progressive 一体工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      9,
+      0,
+      3,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      3,
+      1,
+      4,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      4,
+      0,
+      5,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      9,
+      2,
+      6,
+      0,
+      "*"
+    ],
+    [
+      8,
+      9,
+      1,
+      7,
+      0,
+      "T8_PROGRESSIVE_HIGH_RESULT"
+    ],
+    [
+      9,
+      7,
+      1,
+      8,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S10 Progressive i2va eav:both Legacy6plus2 Load_Completed_HIGH EXP",
+    "t8_split_example": {
+      "schema": "t8.progressive.split-example.v1",
+      "route": "S10",
+      "task": "i2va",
+      "effect_kind": "eav",
+      "effect_scope": "both",
+      "variant": "load_high",
+      "status": "experimental_importable_not_quality_accepted",
+      "recipe": "legacy6plus2"
+    }
+  },
+  "version": 0.4
+}

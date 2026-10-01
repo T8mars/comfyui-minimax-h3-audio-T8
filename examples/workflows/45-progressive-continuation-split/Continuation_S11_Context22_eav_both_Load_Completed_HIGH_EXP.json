@@ -1,0 +1,548 @@
+{
+  "id": "652afa06-6198-4634-979d-26bd5cc4732d",
+  "revision": 0,
+  "last_node_id": 10,
+  "last_link_id": 9,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -1300,
+        700
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -1300,
+        1050
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3850,
+        1700
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        4250,
+        1700
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        4650,
+        1700
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/Continuation_22_eav_both_load_high_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        3400,
+        2400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3ContinuationSourceEXPT8",
+      "title": "H3 Continuation · Select Accepted Parent (T8 EXP)",
+      "pos": [
+        -1300,
+        -700
+      ],
+      "size": [
+        390,
+        520
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "accepted_source",
+          "type": "T8_CONTINUATION_ACCEPTED_SOURCE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ContinuationSourceEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_ACCEPTED_CHAIN",
+        1,
+        "REPLACE_WITH_ACCEPTED_CANDIDATE",
+        1,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        22,
+        896,
+        448,
+        448,
+        224
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3ProgressiveHighLoadEXPT8",
+      "title": "H3 Progressive · Load Exact Completed HIGH AV (T8 EXP)",
+      "pos": [
+        0,
+        -700
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "high_result",
+          "type": "T8_PROGRESSIVE_HIGH_RESULT",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ProgressiveHighLoadEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_SAVED_HIGH_PATH/progressive-high.safetensors",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3ContinuationDeliveryEXPT8",
+      "title": "H3 Continuation · Deliver Completed Window (T8 EXP)",
+      "pos": [
+        3400,
+        1700
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "high_result",
+          "type": "T8_PROGRESSIVE_HIGH_RESULT",
+          "link": 8
+        },
+        {
+          "name": "accepted_source",
+          "type": "T8_CONTINUATION_ACCEPTED_SOURCE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ContinuationDeliveryEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "MarkdownNote",
+      "title": "续段分离 / Read first",
+      "pos": [
+        -2600,
+        -1700
+      ],
+      "size": [
+        1250,
+        1000
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S11 已接受父片续段／上下文22帧／eav:both／Load_Completed_HIGH EXP。这是独立LOW→原learned3D→独立HIGH，不是自动长片Loop，不自动Candidate、Accept或Compose。先在Source填真实chain_id、直接前段candidate_id、revision、previous_job_sha256；父片必须已接受，原MP4与context字节会重新核验。previous_job_sha256只认证所选旧父片，不证明当前新配方与旧作业相同。父片的场景和人物与本图提示词不符时必须分别修改两阶段文本。LOW使用已接受MP4末39帧RGB24→原resize→当前VAE的motion guides；HIGH使用原已完成AV上下文，两阶段共享音频来源。保留22/39时间网格、LOW4/HIGH4原生8步，不是FastH3 V2；模型、LoRA、条件、噪声、提示词可分别编辑。外置eav作用于both；各阶段Relay Plan和EAV Config分别可编辑，EAV默认report_only，不增强画质，只有apply_exp才施加。本图校验直接父片及已完成HIGH path/SHA后交付，不运行条件编码、模型、放大或采样。占位父片ID、path、SHA不可直接排队。默认native生成音频；若改用final_audio，最终视频应改接Delivery的mux_audio。输出只是单段续片，不会自动写accepted记录或拼接。导入后核实本机模型、双VAE、learned3D、父片画布及内存预算。已有tiny CPU、来源身份与冷恢复证据不是本通用图的真实权重原尺寸GPU、长片接缝、apply_exp画质或人工音画验收。旧一体工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      9,
+      0,
+      3,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      3,
+      1,
+      4,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      4,
+      0,
+      5,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      9,
+      4,
+      6,
+      0,
+      "*"
+    ],
+    [
+      8,
+      8,
+      1,
+      9,
+      0,
+      "T8_PROGRESSIVE_HIGH_RESULT"
+    ],
+    [
+      9,
+      7,
+      0,
+      9,
+      1,
+      "T8_CONTINUATION_ACCEPTED_SOURCE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S11 Continuation context22 eav:both Load_Completed_HIGH EXP",
+    "t8_split_example": {
+      "schema": "t8.continuation.split-example.v1",
+      "route": "S11",
+      "context_frames": 22,
+      "effect_kind": "eav",
+      "effect_scope": "both",
+      "variant": "load_high",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

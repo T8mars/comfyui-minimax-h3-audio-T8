@@ -1,0 +1,1673 @@
+{
+  "id": "ed28bc9e-1d38-4c36-875e-34292bb9cf81",
+  "revision": 0,
+  "last_node_id": 24,
+  "last_link_id": 39,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        -450,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            17,
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        -900,
+        400
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1,
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        800
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            7,
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        1100
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            8,
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        450,
+        0
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 4
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 5
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            31,
+            32
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 6,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        1200,
+        600
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        26092301,
+        "fixed"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3400,
+        1750
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 6
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        3800,
+        1750
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 10,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        4200,
+        1750
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/HyperFlow_S13_Continuous_1plus7_relay_both_minimal_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        450,
+        1750
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 15
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 12
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 13
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 14
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 16
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            36,
+            37
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 11,
+      "type": "EmptyMiniMaxH3LatentAV",
+      "title": "Empty MiniMax H3 AV Latent",
+      "pos": [
+        -450,
+        -650
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            20,
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyMiniMaxH3LatentAV"
+      },
+      "widgets_values": [
+        512,
+        512,
+        73
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3HyperFlowLoaderT8Advanced",
+      "title": "MiniMax H3 HyperFlow Loader (Two-Time EXP/T8)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3HyperFlowLoaderT8Advanced",
+      "title": "MiniMax H3 HyperFlow Loader (Two-Time EXP/T8)",
+      "pos": [
+        0,
+        1750
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3HyperFlowHeadStageEXPT8",
+      "title": "H3 HyperFlow · Continuous HEAD Only (T8 EXP)",
+      "pos": [
+        2100,
+        0
+      ],
+      "size": [
+        390,
+        342
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 21
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 22
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "continuous_boundary",
+          "type": "T8_HYPERFLOW_CONTINUOUS_BOUNDARY",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowHeadStageEXPT8"
+      },
+      "widgets_values": [
+        1,
+        1.0,
+        1024
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3HyperFlowTailStageEXPT8",
+      "title": "H3 HyperFlow · Continuous TAIL Only (T8 EXP)",
+      "pos": [
+        2100,
+        1750
+      ],
+      "size": [
+        390,
+        334
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "continuous_boundary",
+          "type": "T8_HYPERFLOW_CONTINUOUS_BOUNDARY",
+          "link": 24
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 25
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 26
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "completed_result",
+          "type": "T8_HYPERFLOW_COMPLETED_AV",
+          "links": [
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowTailStageEXPT8"
+      },
+      "widgets_values": [
+        26092301,
+        "fixed",
+        1.0,
+        1024
+      ]
+    },
+    {
+      "id": 16,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        3000,
+        2400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        3000,
+        650
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        -1000
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "One adult walks through a quiet corridor in a continuous cinematic shot. Keep the same person, setting and natural ambience.",
+        "The person walks steadily through the corridor.\nThe person approaches a doorway without a change of location or identity.",
+        73,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3HyperFlowHeadEffectsBindEXPT8",
+      "title": "H3 HyperFlow · Bind External HEAD Effects (T8 EXP)",
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 30
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 33
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 31
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "stage_template",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowHeadEffectsBindEXPT8"
+      },
+      "widgets_values": [
+        1
+      ]
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3HyperFlowHeadEffectsAuditEXPT8",
+      "title": "H3 HyperFlow · HEAD Effects Execution Audit (T8 EXP)",
+      "pos": [
+        2550,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "continuous_boundary",
+          "type": "T8_HYPERFLOW_CONTINUOUS_BOUNDARY",
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "continuous_boundary",
+          "type": "T8_HYPERFLOW_CONTINUOUS_BOUNDARY",
+          "links": [
+            24,
+            38
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowHeadEffectsAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        750
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "Continue the same uninterrupted shot of the adult walking through the quiet corridor. Preserve identity, movement, camera and natural ambience.",
+        "The person walks steadily through the corridor.\nThe person approaches a doorway without a change of location or identity.",
+        73,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3HyperFlowTailEffectsBindEXPT8",
+      "title": "H3 HyperFlow · Bind External TAIL Effects (T8 EXP)",
+      "pos": [
+        900,
+        1750
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "continuous_boundary",
+          "type": "T8_HYPERFLOW_CONTINUOUS_BOUNDARY",
+          "link": 38
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 35
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 36
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "stage_template",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": null
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowTailEffectsBindEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3HyperFlowTailEffectsAuditEXPT8",
+      "title": "H3 HyperFlow · TAIL Effects Execution Audit (T8 EXP)",
+      "pos": [
+        2550,
+        1750
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "completed_result",
+          "type": "T8_HYPERFLOW_COMPLETED_AV",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "completed_result",
+          "type": "T8_HYPERFLOW_COMPLETED_AV",
+          "links": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowTailEffectsAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 24,
+      "type": "MarkdownNote",
+      "title": "先读 / External continuous effects",
+      "pos": [
+        -2000,
+        -900
+      ],
+      "size": [
+        1000,
+        1000
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S13 连续HyperFlow 1+7／relay:both／Full_NoSave EXP。这不是fresh4、P7、学习型放大或第二次从零生成。HEAD按绝对0:split采样并输出原始model-space x_sigma；TAIL直接续跑split:8，不重新加噪、不重置音频或时间窗、不放大。HEAD和TAIL各有专用HyperFlow Loader、可分别插入内容LoRA、条件与提示词；不能用普通LoRA Loader加载HyperFlow权重。HEAD初始联合AV噪声只有一份；TAIL的seed不是新RandomNoise。CFG1图复用正条件作负条件；改CFG须另配真实负条件。外置relay作用于both；阶段Relay Plan、配对MODEL/CONDITIONING和EAV Config均可外部单独编辑。EAV默认report_only，仅审计不施加增益；apply_exp才启用。Relay默认apply_exp；HEAD/TAIL效果各自绑定实际绝对时间窗。本图不保存阶段，修改后运行完整HEAD和TAIL。Load占位path/SHA不可直接排队；冻结存储会重新验来源和身份，未知wrapper不获可移植恢复资格。现有tiny CPU及私有候选前端证据不等于这些正式通用图的真实训练权重原尺寸GPU、其它后端、apply_exp画质或人工音画验收。旧图不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      5,
+      1,
+      "CLIP"
+    ],
+    [
+      2,
+      3,
+      0,
+      5,
+      2,
+      "VAE"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      3,
+      "VAE"
+    ],
+    [
+      4,
+      12,
+      0,
+      5,
+      0,
+      "MODEL"
+    ],
+    [
+      5,
+      18,
+      0,
+      5,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      6,
+      23,
+      1,
+      7,
+      0,
+      "LATENT"
+    ],
+    [
+      7,
+      3,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      8,
+      4,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      9,
+      7,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      7,
+      1,
+      8,
+      1,
+      "AUDIO"
+    ],
+    [
+      11,
+      8,
+      0,
+      9,
+      0,
+      "VIDEO"
+    ],
+    [
+      12,
+      2,
+      0,
+      10,
+      1,
+      "CLIP"
+    ],
+    [
+      13,
+      3,
+      0,
+      10,
+      2,
+      "VAE"
+    ],
+    [
+      14,
+      4,
+      0,
+      10,
+      3,
+      "VAE"
+    ],
+    [
+      15,
+      13,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      16,
+      21,
+      0,
+      10,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      17,
+      1,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      18,
+      1,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      19,
+      19,
+      0,
+      14,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      11,
+      0,
+      14,
+      1,
+      "LATENT"
+    ],
+    [
+      21,
+      6,
+      0,
+      14,
+      2,
+      "NOISE"
+    ],
+    [
+      22,
+      19,
+      1,
+      14,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      23,
+      19,
+      2,
+      14,
+      4,
+      "CONDITIONING"
+    ],
+    [
+      24,
+      20,
+      0,
+      15,
+      0,
+      "T8_HYPERFLOW_CONTINUOUS_BOUNDARY"
+    ],
+    [
+      25,
+      22,
+      0,
+      15,
+      1,
+      "MODEL"
+    ],
+    [
+      26,
+      22,
+      1,
+      15,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      27,
+      22,
+      2,
+      15,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      28,
+      23,
+      2,
+      16,
+      0,
+      "*"
+    ],
+    [
+      29,
+      20,
+      1,
+      17,
+      0,
+      "*"
+    ],
+    [
+      30,
+      5,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      31,
+      5,
+      1,
+      19,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      32,
+      5,
+      1,
+      19,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      33,
+      11,
+      0,
+      19,
+      1,
+      "LATENT"
+    ],
+    [
+      34,
+      14,
+      0,
+      20,
+      0,
+      "T8_HYPERFLOW_CONTINUOUS_BOUNDARY"
+    ],
+    [
+      35,
+      10,
+      0,
+      22,
+      1,
+      "MODEL"
+    ],
+    [
+      36,
+      10,
+      1,
+      22,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      37,
+      10,
+      1,
+      22,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      38,
+      20,
+      0,
+      22,
+      0,
+      "T8_HYPERFLOW_CONTINUOUS_BOUNDARY"
+    ],
+    [
+      39,
+      15,
+      2,
+      23,
+      0,
+      "T8_HYPERFLOW_COMPLETED_AV"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S13 HyperFlow continuous 1+7 relay:both Full_NoSave EXP",
+    "t8_split_example": {
+      "schema": "t8.hyperflow.continuous.split-example.v1",
+      "route": "S13",
+      "split_interval": 1,
+      "effect_kind": "relay",
+      "effect_scope": "both",
+      "variant": "minimal",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,162 @@
+{
+  "id": "937b08e4-cacb-4cd4-a62d-98a7ebc948d0",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3FastH3V2CurrentCandidateReviewAcceptEXPT8",
+      "title": "FastH3 V2 · Verify, Review & Explicitly Accept (T8 EXP)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "accepted",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "parent_candidate_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "parent_revision",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "current_job_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentCandidateReviewAcceptEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_SAVED_V2_CANDIDATE_JSON",
+        false
+      ]
+    },
+    {
+      "id": 2,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MarkdownNote",
+      "title": "只读预览 → 人工确认 → 显式接受",
+      "pos": [
+        -850,
+        -500
+      ],
+      "size": [
+        720,
+        440
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "可导入的分离式 EXP 教学图；不含测试用人物、歌曲或本机路径。Review 默认只读，必须人工确认后显式接受；Relay 活动时只能显式使用 dense_compat_exp；训练 VSA 没有时间偏置内核。使用前按 README 填首帧、模型、唯一 chain_id、已接受父片回执；冷 HIGH 还需填写LOW manifest 路径和 SHA。候选默认未接受，Review 默认 accept_candidate=false。旧固定124帧续段仅交付新增68帧；两段确认后才单独 Compose。固定密集配置曾与旧一体逐位对照，改提示词/素材/模型后须重新验收；本示例不代表人工画音或其它后端质量通过。旧工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      7,
+      2,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "FastH3 V2 · saved split candidate · separate review and explicit accept",
+    "t8_split_example": {
+      "schema": "t8.fasth3-v2.split-example.v1",
+      "kind": "review",
+      "status": "experimental_importable_not_quality_accepted",
+      "first_frame_required": false
+    }
+  },
+  "version": 0.4
+}

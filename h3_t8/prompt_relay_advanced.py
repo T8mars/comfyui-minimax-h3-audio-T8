@@ -417,10 +417,12 @@ def configure_prompt_relay_query_route(
 
 
 def _authoritative_entries(tokens: Mapping) -> list:
-    if not isinstance(tokens, Mapping) or set(tokens) != {"qwen3vl_32b"}:
-        raise RuntimeError("Prompt Relay requires the native MiniMax H3 qwen3vl_32b tokenizer output")
-    batches = tokens["qwen3vl_32b"]
-    if len(batches) != 1:
+    if not isinstance(tokens, Mapping) or len(tokens) != 1 or next(iter(tokens)) not in {
+        "qwen3vl_32b", "qwen3vl_4b", "qwen3vl_8b"
+    }:
+        raise RuntimeError("Prompt Relay requires one verified native H3 or projected Qwen3VL token stream")
+    batches = next(iter(tokens.values()))
+    if not isinstance(batches, (list, tuple)) or len(batches) != 1 or not isinstance(batches[0], (list, tuple)):
         raise RuntimeError("Prompt Relay requires exactly one native H3 token batch")
     return list(batches[0])
 
@@ -462,6 +464,8 @@ def _verified_native_tokenizer_fallback(clip, prompt: str) -> tuple[list[int], o
     try:
         connected_tokens = tokenize(prompt)
         connected_entries = _authoritative_entries(connected_tokens)
+        if set(connected_tokens) != {"qwen3vl_32b"}:
+            raise RuntimeError("Native 32B fallback requires its original selected token key")
         connected_ids = _text_token_ids(
             [connected_entries],
             source="connected CLIP tokenizer",
@@ -516,7 +520,44 @@ def _verified_native_tokenizer_fallback(clip, prompt: str) -> tuple[list[int], o
     return native_ids, native_hf
 
 
-def _prompt_token_ids(clip, prompt: str) -> tuple[list[int], object]:
+def _verified_selected_raw_tokenizer(clip, prompt: str, token_key: str) -> tuple[list[int], object]:
+    """Verify projected 4B/8B against the selected raw HF tokenizer, not 32B.
+
+    ClipProj emits raw prompt IDs; Boogu's outer chat template is deliberately
+    not accepted. The authoritative encoder tokens, exact tail, 5120 output,
+    native tags and lossless byte reconstruction remain required by binding.
+    """
+    from .prompt_relay_token_bytes import supports_byte_tokens
+
+    outer = getattr(clip, "tokenizer", None)
+    inner = getattr(outer, token_key, None)
+    hf = getattr(inner, "tokenizer", None)
+    tokenize = getattr(clip, "tokenize", None)
+    if (hf is None or not callable(getattr(hf, "encode", None)) or not supports_byte_tokens(hf)
+            or not callable(tokenize)):
+        raise RuntimeError("Prompt Relay projected Qwen3VL requires its inspectable selected lossless raw tokenizer")
+    try:
+        connected = tokenize(prompt)
+        entries = _authoritative_entries(connected)
+        if set(connected) != {token_key}:
+            raise RuntimeError("Connected projected tokenizer changed its selected family")
+        connected_ids = _text_token_ids([entries], source="selected projected CLIP tokenizer")
+        raw_ids = hf.encode(prompt, add_special_tokens=False)
+        if (not isinstance(raw_ids, list) or not raw_ids or any(type(token) is not int for token in raw_ids)
+                or any(type(token) is not int for token in connected_ids) or connected_ids != raw_ids):
+            raise RuntimeError("Connected projected tokenizer is not the exact selected raw prompt stream")
+        _token_byte_offsets(prompt, raw_ids, hf)
+    except Exception as error:
+        raise RuntimeError("Prompt Relay could not verify projected Qwen3VL raw tokens; chat templates, "
+                           "substituted IDs and normalized text are unsupported") from error
+    return connected_ids, hf
+
+
+def _prompt_token_ids(clip, prompt: str, *, token_key: str = "qwen3vl_32b") -> tuple[list[int], object]:
+    if token_key in {"qwen3vl_4b", "qwen3vl_8b"}:
+        return _verified_selected_raw_tokenizer(clip, prompt, token_key)
+    if token_key != "qwen3vl_32b":
+        raise RuntimeError("Prompt Relay has no verified tokenizer route for this family")
     direct = _inner_tokenizer(clip)
     if direct is None:
         return _verified_native_tokenizer_fallback(clip, prompt)
@@ -570,16 +611,24 @@ def build_prompt_relay_binding(
             "inside the Plan text"
         )
     entries = _authoritative_entries(tokens)
-    prompt_ids, hf = _prompt_token_ids(clip, conditioned_prompt)
+    token_key = next(iter(tokens))
+    prompt_ids, hf = _prompt_token_ids(clip, conditioned_prompt, token_key=token_key)
     if len(entries) < len(prompt_ids):
         raise RuntimeError("Prompt Relay authoritative token stream is shorter than the prompt")
     entry_tail = [entry[0] for entry in entries[-len(prompt_ids):]]
+    if token_key != "qwen3vl_32b" and any(type(token) is not int for token in entry_tail):
+        raise RuntimeError("Prompt Relay projected authoritative prompt tail contains a non-text token")
     if entry_tail != prompt_ids:
         raise RuntimeError(
             "Prompt Relay prompt tokens are not the exact tail of the authoritative H3 token stream"
         )
     if not conditioning or not conditioning[0] or not torch.is_tensor(conditioning[0][0]):
         raise RuntimeError("Prompt Relay did not receive a native ComfyUI CONDITIONING tensor")
+    if token_key != "qwen3vl_32b":
+        for item in conditioning:
+            if (not isinstance(item, (list, tuple)) or len(item) < 2 or not torch.is_tensor(item[0])
+                    or item[0].ndim != 3 or item[0].shape[0] != 1 or item[0].shape[-1] != 5120):
+                raise RuntimeError("Prompt Relay projected Qwen3VL requires the actual H3 5120-dimensional conditioning")
     text_len = int(conditioning[0][0].shape[1])
     prompt_start = text_len - len(prompt_ids)
     if prompt_start < 0:
@@ -590,6 +639,13 @@ def build_prompt_relay_binding(
         raise RuntimeError("Prompt Relay requires native H3 minimax_token_tags provenance")
     if not bool((tags.reshape(-1)[prompt_start:] == 1).all()):
         raise RuntimeError("Prompt Relay local prompt overlaps a visual presentation token")
+    if token_key != "qwen3vl_32b":
+        for item in conditioning[1:]:
+            scheduled_tags = item[1].get("minimax_token_tags") if isinstance(item[1], Mapping) else None
+            if (int(item[0].shape[1]) != text_len or not torch.is_tensor(scheduled_tags)
+                    or int(scheduled_tags.numel()) != text_len
+                    or not bool((scheduled_tags.reshape(-1)[prompt_start:] == 1).all())):
+                raise RuntimeError("Prompt Relay projected scheduled conditioning lost the exact native token/tag layout")
 
     offsets = _token_byte_offsets(conditioned_prompt, prompt_ids, hf)
     bound_events = []
@@ -623,6 +679,11 @@ def build_prompt_relay_binding(
         "events": bound_events,
         "query_route": str(plan.get("query_route", "video_only_paper")),
     }
+    if token_key != "qwen3vl_32b":
+        binding["tokenizer_route"] = {
+            "key": token_key,
+            "verification": "connected_public_equals_selected_lossless_raw",
+        }
     from .semantic_bridge import RECEIPT_KEY
     bridge_receipts = [item[1].get(RECEIPT_KEY) for item in conditioning]
     if any(receipt is not None for receipt in bridge_receipts):

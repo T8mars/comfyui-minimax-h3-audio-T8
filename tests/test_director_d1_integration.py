@@ -12,6 +12,7 @@ from h3_audio_t8_pkg.nodes_fiveview_exp import FIVE_VIEW_EXP_NODE_CLASSES
 from h3_audio_t8_pkg.nodes_hyperflow_advanced import HYPERFLOW_ADVANCED_NODE_CLASSES
 from h3_audio_t8_pkg.hyperflow_long_video_exp.nodes import MiniMaxH3HyperFlowLongVideoEXPT8
 from h3_audio_t8_pkg.hyperflow_long_video_exp.single8_node import MiniMaxH3HyperFlowSingle8LongVideoEXPT8
+from h3_audio_t8_pkg.modular_sampling import node_classes as modular_node_classes
 from h3_audio_t8_pkg.director_project import ProjectStore, new_project
 from h3_audio_t8_pkg.director_routes import export_preflight_workflow
 
@@ -34,7 +35,23 @@ def test_old_354_registry_class_order_and_schemas_are_unchanged():
     original = asyncio.run(old.comfy_entrypoint().get_node_list())
     current = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     assert len(original) == 354
-    assert len(current) == 358 + len(FIVE_VIEW_EXP_NODE_CLASSES) + len(HYPERFLOW_ADVANCED_NODE_CLASSES)
+    root_additions = [
+        *h3_audio_t8_pkg._hyper_vae_2x_node_classes,
+        *h3_audio_t8_pkg._audio_refine_effect_node_classes,
+        *h3_audio_t8_pkg._ltx_rgb_source_node_classes,
+        *h3_audio_t8_pkg._serial_video_io_node_classes,
+        *h3_audio_t8_pkg._ltx_effect_node_classes,
+        *h3_audio_t8_pkg._ltx_relay_node_classes,
+        *h3_audio_t8_pkg._veda_sparse_node_classes,
+        *h3_audio_t8_pkg._veda_heuristic_node_classes,
+        *h3_audio_t8_pkg._prepared_ltx_effect_node_classes,
+        *h3_audio_t8_pkg._prepared_ltx_relay_cache_node_classes,
+        *h3_audio_t8_pkg._semantic_bridge_extra_node_classes,
+        *h3_audio_t8_pkg._ltx_load_policy_node_classes,
+        *h3_audio_t8_pkg._face_source_node_classes,
+    ]
+    assert len(root_additions) == 28
+    assert len(current) == 581
     assert [c.define_schema().node_id for c in original] == [
         c.define_schema().node_id for c in current[:354]
     ]
@@ -48,7 +65,8 @@ def test_old_354_registry_class_order_and_schemas_are_unchanged():
     assert current[355] is nodes_h16_chunked_pass2.DeciiaChunkedPass2Sampler
     assert current[356:] == [*FIVE_VIEW_EXP_NODE_CLASSES, *HYPERFLOW_ADVANCED_NODE_CLASSES,
                              MiniMaxH3HyperFlowLongVideoEXPT8,
-                             MiniMaxH3HyperFlowSingle8LongVideoEXPT8]
+                             MiniMaxH3HyperFlowSingle8LongVideoEXPT8,
+                             *modular_node_classes(), *root_additions]
     assert h3_audio_t8_pkg.WEB_DIRECTORY == "./web"
 
 

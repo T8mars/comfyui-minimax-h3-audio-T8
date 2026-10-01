@@ -1,0 +1,923 @@
+{
+  "id": "d42d6f0e-7e73-4e86-bc76-044ec9024404",
+  "revision": 0,
+  "last_node_id": 34,
+  "last_link_id": 59,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        320,
+        82
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        150
+      ],
+      "size": [
+        320,
+        106
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        400
+      ],
+      "size": [
+        320,
+        58
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "论文公式 paper_v1：全局提示词 + 3段局部事件",
+      "pos": [
+        430,
+        -520
+      ],
+      "size": [
+        500,
+        450
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            21
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": [],
+          "slot_index": 2
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 3
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 4
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "Nighttime cinematic continuous shot of one woman in red Hanfu, coherent identity, natural fabric motion, stable moonlight, synchronized wind and cloth ambience.",
+        "The woman looks toward the camera and slowly raises one hand.\nShe spins rapidly through the night sky, red gauze sleeves drawing wide arcs.\nThe camera pulls far back while she becomes small against the moonlit clouds.",
+        124,
+        "auto_equal",
+        "0-40\n41-81\n82-123",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "先 report_only 检查；确认后切 apply_exp（本例已启用）",
+      "pos": [
+        430,
+        0
+      ],
+      "size": [
+        500,
+        690
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 5
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            6
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            9
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            7,
+            14
+          ],
+          "slot_index": 2
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": [],
+          "slot_index": 3
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 4
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 5
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        736,
+        416,
+        "T2VA",
+        "native",
+        0.35,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "Stock20 dual clock / 原生20步双时钟",
+      "pos": [
+        1400.0,
+        0.0
+      ],
+      "size": [
+        390,
+        190
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 20
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [
+        1840.0,
+        30
+      ],
+      "size": [
+        230,
+        70
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 8
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [
+        1840.0,
+        150
+      ],
+      "size": [
+        230,
+        82
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        123456789,
+        "fixed"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        2110.0,
+        30
+      ],
+      "size": [
+        290,
+        170
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 10
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 11
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 12
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 13
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            59
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "Prompt Relay first · corrected Alpha8 Turbo LoRA downstream",
+      "pos": [
+        960.0,
+        0.0
+      ],
+      "size": [
+        390.0,
+        194.0
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3PromptRelayPreviewT8Advanced",
+      "title": "先看 READY 与事件帧段；不加载模型、不采样",
+      "pos": [
+        950,
+        -780
+      ],
+      "size": [
+        470,
+        190
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "ready",
+          "type": "BOOLEAN",
+          "links": []
+        },
+        {
+          "name": "event_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "timeline_text",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptRelayPreviewT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 33,
+      "type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+      "title": "STEP 1 · save completed first-pass AV latent",
+      "pos": [
+        2300,
+        50
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "checkpoint_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "file_sha256",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "audio_refine_firstpass",
+        "audio_refine_firstpass",
+        false,
+        true,
+        8
+      ]
+    },
+    {
+      "id": 34,
+      "type": "MarkdownNote",
+      "title": "Freeze handoff · keep all three values",
+      "pos": [
+        2250,
+        -360
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "Run only this graph. Set confirm_save=true after reviewing output. Copy the returned checkpoint_path, file_sha256 and manifest_json into the resume graph. NOT_SAVED is not a frozen first pass."
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      6,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      3,
+      0,
+      6,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      4,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      5,
+      0,
+      6,
+      3,
+      "VAE"
+    ],
+    [
+      5,
+      18,
+      0,
+      6,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      6,
+      6,
+      0,
+      17,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      6,
+      2,
+      7,
+      1,
+      "LATENT"
+    ],
+    [
+      8,
+      7,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      9,
+      6,
+      1,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      10,
+      9,
+      0,
+      10,
+      0,
+      "NOISE"
+    ],
+    [
+      11,
+      8,
+      0,
+      10,
+      1,
+      "GUIDER"
+    ],
+    [
+      12,
+      7,
+      1,
+      10,
+      2,
+      "SAMPLER"
+    ],
+    [
+      13,
+      7,
+      2,
+      10,
+      3,
+      "SIGMAS"
+    ],
+    [
+      14,
+      6,
+      2,
+      10,
+      4,
+      "LATENT"
+    ],
+    [
+      20,
+      17,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      21,
+      13,
+      0,
+      18,
+      0,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      59,
+      10,
+      0,
+      33,
+      0,
+      "LATENT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Stock H3 loaders / 原生模型",
+      "bounding": [
+        -40,
+        -60,
+        380,
+        570
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Prompt Relay paper_v1 / 时间线与权威条件",
+      "bounding": [
+        380,
+        -580,
+        600,
+        1330
+      ],
+      "color": "#6950a1",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Stock20 joint AV sampling / 原生20步音画采样",
+      "bounding": [
+        930,
+        -60,
+        1040,
+        640
+      ],
+      "color": "#3f9e64",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Decode + synchronized MP4 / 解码保存",
+      "bounding": [
+        1980,
+        -60,
+        850,
+        650
+      ],
+      "color": "#9e6d3f",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        70,
+        180
+      ]
+    },
+    "ue_links": [],
+    "t8_prompt_relay": {
+      "schema": 1,
+      "paper": "arXiv:2604.10030v1",
+      "scope": "T2VA native Turbo8 EXP",
+      "date": "2026-08-20",
+      "inline_preview": true
+    }
+  },
+  "version": 0.4
+}

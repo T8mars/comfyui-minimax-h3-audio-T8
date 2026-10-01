@@ -1,0 +1,14 @@
+name: Modular sampling admission
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  source-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Reject unreviewed sampling or Director graph-builder changes
+        run: python3 tools/audit_modular_new_sampling.py guard

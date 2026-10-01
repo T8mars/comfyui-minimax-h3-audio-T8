@@ -1,0 +1,3999 @@
+{
+  "id": "0859f869-b752-430c-99a9-11e77a2f46cc",
+  "revision": 0,
+  "last_node_id": 41,
+  "last_link_id": 139,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            20,
+            67,
+            74,
+            96,
+            119
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            21,
+            68,
+            75,
+            97,
+            120
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2,
+            66,
+            73,
+            95,
+            118
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "UNETLoader",
+      "title": "LOW independent MODEL",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_YOUR_FIRST_LAST_IMAGE.png"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "ImageScale",
+      "title": "ImageScale",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5,
+            6,
+            70,
+            71,
+            79,
+            80,
+            101,
+            102,
+            124,
+            125
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScale",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "lanczos",
+        896,
+        448,
+        "center"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        782
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 5,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 6,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            8,
+            16,
+            28
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "An adult cyclist rides the same bicycle through a quiet city street at dusk. Keep the rider, clothing, bicycle, camera direction and ambience consistent.",
+        448,
+        224,
+        192,
+        "FL2VA",
+        "native",
+        1,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 7
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9,
+            65
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
+      "title": "MiniMax H3 Learned Two-Pass Parity Plan / H3学习放大原版二采计划 (Advanced)",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "coarse_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "refine_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            44,
+            53,
+            63,
+            90,
+            112,
+            135
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced"
+      },
+      "widgets_values": [
+        8,
+        4,
+        4
+      ]
+    },
+    {
+      "id": 10,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 10
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 11,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609174401,
+        "fixed"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 12
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 13
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 14
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 15
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [
+            18,
+            29,
+            31,
+            38,
+            47,
+            57,
+            86,
+            108,
+            131
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3ChunkedTwoPassPlanT8Advanced",
+      "title": "MiniMax H3 Chunked Two-Pass Plan (Advanced EXP/T8)",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        1056
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "parity_report_json",
+          "type": "STRING",
+          "link": 17,
+          "shape": 7
+        },
+        {
+          "name": "source_latent",
+          "type": "LATENT",
+          "link": 18,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "links": [
+            30,
+            34,
+            41,
+            50,
+            60,
+            89,
+            111,
+            134
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            77,
+            99,
+            122
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            78,
+            100,
+            123
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedTwoPassPlanT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        896,
+        448,
+        102,
+        34,
+        0.999,
+        896,
+        448,
+        0,
+        0,
+        128,
+        "smoothstep",
+        "fp16",
+        "offload_after",
+        "full_frame_safe",
+        "standard_joint_4plus4_exp",
+        "scale_by",
+        2.0,
+        0.7,
+        "preserve_source",
+        1.05
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        7040,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 19
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 20
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        7480,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 23,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8,
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "LoraLoaderBypassModelOnly",
+      "pos": [
+        440,
+        330
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors",
+        1
+      ]
+    },
+    {
+      "id": 17,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            35,
+            42,
+            51,
+            61
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609174402,
+        "fixed"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        7920,
+        0
+      ],
+      "size": [
+        390,
+        238
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/S22_Chunked_v5_3window_relay_all_full_no_save_EXP",
+        "mp4",
+        "auto"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "LoraLoaderBypassModelOnly",
+      "pos": [
+        440,
+        600
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderBypassModelOnly",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors",
+        1
+      ]
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        1320,
+        400
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 27
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            72,
+            81,
+            94,
+            103,
+            117,
+            126
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            43,
+            52,
+            62
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3ChunkedV5GlobalLiftEXPT8",
+      "title": "H3 Chunked v5 · Global Learned Lift (T8 EXP)",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 29
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "links": [
+            32,
+            39,
+            48,
+            58,
+            87,
+            109,
+            132
+          ]
+        },
+        {
+          "name": "lift_receipt",
+          "type": "T8_CHUNKED_V5_GLOBAL_LIFT",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5GlobalLiftEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3ChunkedV5PrepareEXPT8",
+      "title": "H3 Chunked v5 · Prepare Full AV Noise (T8 EXP)",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 31
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 32
+        },
+        {
+          "name": "lift_receipt",
+          "type": "T8_CHUNKED_V5_GLOBAL_LIFT",
+          "link": 33
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 34
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "links": [
+            40,
+            49,
+            59,
+            88,
+            92,
+            110,
+            115,
+            133,
+            138
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5PrepareEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3ChunkedV5PASS2WindowEXPT8",
+      "title": "H3 Chunked v5 · One Joint AV PASS2 Window (T8 EXP)",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        390,
+        402
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 36
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 37
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 38
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 39
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 40
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 41
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 42
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 43
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 44
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "links": [
+            54,
+            91,
+            113
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5PASS2WindowEXPT8"
+      },
+      "widgets_values": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3ChunkedV5PASS2WindowEXPT8",
+      "title": "H3 Chunked v5 · One Joint AV PASS2 Window (T8 EXP)",
+      "pos": [
+        5720,
+        0
+      ],
+      "size": [
+        390,
+        428
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 45
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 46
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 47
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 48
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 49
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 50
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 51
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 52
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 53
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 54,
+          "shape": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "links": [
+            64,
+            114,
+            136
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5PASS2WindowEXPT8"
+      },
+      "widgets_values": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3ChunkedV5PASS2WindowEXPT8",
+      "title": "H3 Chunked v5 · One Joint AV PASS2 Window (T8 EXP)",
+      "pos": [
+        6600,
+        0
+      ],
+      "size": [
+        390,
+        428
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 55
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 56
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 57
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 58
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 59
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 60
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 61
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 62
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 63
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 64,
+          "shape": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "links": [
+            137
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5PASS2WindowEXPT8"
+      },
+      "widgets_values": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": 26,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        0,
+        2100
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        2400
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            69
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "An adult cyclist rides the same bicycle through a quiet city street at dusk. Keep the rider, clothing, bicycle, camera direction and ambience consistent.",
+        "The cyclist passes warm streetlights in one continuous shot.\nThe camera tracks gently alongside; the rider and bicycle remain unchanged.",
+        192,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 28,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        1760,
+        300
+      ],
+      "size": [
+        390,
+        790
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 65
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 66
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 67
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 68
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 69
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 70,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 71,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        448,
+        224,
+        "FL2VA",
+        "native",
+        1,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        2924
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            76,
+            85
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "An adult cyclist rides the same bicycle through a quiet city street at dusk. Keep the rider, clothing, bicycle, camera direction and ambience consistent.",
+        "The cyclist passes warm streetlights in one continuous shot.\nThe camera tracks gently alongside; the rider and bicycle remain unchanged.",
+        192,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 30,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        3520,
+        300
+      ],
+      "size": [
+        390,
+        754
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 72
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 73
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 74
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 75
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 76
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 77,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 78,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 79,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 80,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            82
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            83
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            84
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        1056,
+        608,
+        "FL2VA",
+        "native",
+        1,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 31,
+      "type": "MiniMaxH3ChunkedV5RelayProjectEXPT8",
+      "title": "H3 Chunked v5 · Project External Relay to Window (T8 EXP)",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        384
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "raw_high_model",
+          "type": "MODEL",
+          "link": 81
+        },
+        {
+          "name": "relay_model",
+          "type": "MODEL",
+          "link": 82
+        },
+        {
+          "name": "relay_positive",
+          "type": "CONDITIONING",
+          "link": 83
+        },
+        {
+          "name": "relay_full_av_latent",
+          "type": "LATENT",
+          "link": 84
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 85
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 86
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 87
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 88
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 89
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 90
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            37
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "links": [
+            93
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayProjectEXPT8"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 32,
+      "type": "MiniMaxH3ChunkedV5RelayAuditEXPT8",
+      "title": "H3 Chunked v5 · Window Relay Actual Calls (T8 EXP)",
+      "pos": [
+        5280,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 91
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 92
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "link": 93
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 33,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        3448
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            98,
+            107
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "An adult cyclist rides the same bicycle through a quiet city street at dusk. Keep the rider, clothing, bicycle, camera direction and ambience consistent.",
+        "The cyclist passes warm streetlights in one continuous shot.\nThe camera tracks gently alongside; the rider and bicycle remain unchanged.",
+        192,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 34,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        3520,
+        1102
+      ],
+      "size": [
+        390,
+        754
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 94
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 95
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 96
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 97
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 98
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 99,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 100,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 101,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 102,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            104
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            105
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            106
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        1056,
+        608,
+        "FL2VA",
+        "native",
+        1,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 35,
+      "type": "MiniMaxH3ChunkedV5RelayProjectEXPT8",
+      "title": "H3 Chunked v5 · Project External Relay to Window (T8 EXP)",
+      "pos": [
+        5280,
+        300
+      ],
+      "size": [
+        390,
+        410
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "raw_high_model",
+          "type": "MODEL",
+          "link": 103
+        },
+        {
+          "name": "relay_model",
+          "type": "MODEL",
+          "link": 104
+        },
+        {
+          "name": "relay_positive",
+          "type": "CONDITIONING",
+          "link": 105
+        },
+        {
+          "name": "relay_full_av_latent",
+          "type": "LATENT",
+          "link": 106
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 107
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 108
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 109
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 110
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 111
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 112
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 113,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            46
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "links": [
+            116
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayProjectEXPT8"
+      },
+      "widgets_values": [
+        1
+      ]
+    },
+    {
+      "id": 36,
+      "type": "MiniMaxH3ChunkedV5RelayAuditEXPT8",
+      "title": "H3 Chunked v5 · Window Relay Actual Calls (T8 EXP)",
+      "pos": [
+        6160,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 114
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 115
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "link": 116
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 37,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        3972
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            121,
+            130
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "An adult cyclist rides the same bicycle through a quiet city street at dusk. Keep the rider, clothing, bicycle, camera direction and ambience consistent.",
+        "The cyclist passes warm streetlights in one continuous shot.\nThe camera tracks gently alongside; the rider and bicycle remain unchanged.",
+        192,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 38,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Conditioning / 分段提示词条件 (Advanced)",
+      "pos": [
+        3520,
+        1904
+      ],
+      "size": [
+        390,
+        754
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 117
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 118
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 119
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 120
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 121
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 122,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 123,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 124,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": 125,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            127
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            128
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            129
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        1056,
+        608,
+        "FL2VA",
+        "native",
+        1,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 39,
+      "type": "MiniMaxH3ChunkedV5RelayProjectEXPT8",
+      "title": "H3 Chunked v5 · Project External Relay to Window (T8 EXP)",
+      "pos": [
+        6160,
+        300
+      ],
+      "size": [
+        390,
+        410
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "raw_high_model",
+          "type": "MODEL",
+          "link": 126
+        },
+        {
+          "name": "relay_model",
+          "type": "MODEL",
+          "link": 127
+        },
+        {
+          "name": "relay_positive",
+          "type": "CONDITIONING",
+          "link": 128
+        },
+        {
+          "name": "relay_full_av_latent",
+          "type": "LATENT",
+          "link": 129
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 130
+        },
+        {
+          "name": "partial4_denoised_output",
+          "type": "LATENT",
+          "link": 131
+        },
+        {
+          "name": "lifted_full_av",
+          "type": "LATENT",
+          "link": 132
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 133
+        },
+        {
+          "name": "plan",
+          "type": "T8_H3_CHUNKED_TWO_PASS_PLAN",
+          "link": 134
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 135
+        },
+        {
+          "name": "previous_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 136,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            55
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            56
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "links": [
+            139
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayProjectEXPT8"
+      },
+      "widgets_values": [
+        2
+      ]
+    },
+    {
+      "id": 40,
+      "type": "MiniMaxH3ChunkedV5RelayAuditEXPT8",
+      "title": "H3 Chunked v5 · Window Relay Actual Calls (T8 EXP)",
+      "pos": [
+        7040,
+        300
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "window_result",
+          "type": "T8_CHUNKED_V5_WINDOW_RESULT",
+          "link": 137
+        },
+        {
+          "name": "prepared",
+          "type": "T8_CHUNKED_V5_PREPARED",
+          "link": 138
+        },
+        {
+          "name": "runtime",
+          "type": "T8_CHUNKED_V5_RELAY_RUNTIME",
+          "link": 139
+        }
+      ],
+      "outputs": [
+        {
+          "name": "cumulative_av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkedV5RelayAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 41,
+      "type": "MarkdownNote",
+      "title": "先读 / Chunked v5 EXP",
+      "pos": [
+        0,
+        -800
+      ],
+      "size": [
+        1230,
+        430
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S22 Chunked v5 · 192帧/3窗 · relay/all · full_no_save EXP。LOW partial4 → 全片learned3D仅一次 → 全片joint AV噪声准备一次 → 逐窗remaining4联合AV二采；最终音频取二采结果，不透传首采音频。LOW和活动HIGH窗均有可编辑MODEL、条件、Relay Plan与EAV Config；HIGH窗共享原全片准备噪声，不允许逐窗乱换其身份。EAV默认report_only。完整采样，不写阶段文件。冷图冻结前窗并裁掉其采样，不证明当前设置与冻结效果自动等价。请替换首/尾帧和保存回执占位；本图未获原尺寸、多tile、apply_exp画质或人审资格。旧一体工作流保持不变。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      5,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      3,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      1,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      4,
+      2,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      5,
+      "IMAGE"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      6,
+      "IMAGE"
+    ],
+    [
+      7,
+      16,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      8,
+      7,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      9,
+      8,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      28,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      11,
+      28,
+      1,
+      10,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      11,
+      0,
+      12,
+      0,
+      "NOISE"
+    ],
+    [
+      13,
+      10,
+      0,
+      12,
+      1,
+      "GUIDER"
+    ],
+    [
+      14,
+      8,
+      1,
+      12,
+      2,
+      "SAMPLER"
+    ],
+    [
+      15,
+      9,
+      0,
+      12,
+      3,
+      "SIGMAS"
+    ],
+    [
+      16,
+      7,
+      1,
+      12,
+      4,
+      "LATENT"
+    ],
+    [
+      17,
+      9,
+      2,
+      13,
+      0,
+      "STRING"
+    ],
+    [
+      18,
+      12,
+      1,
+      13,
+      1,
+      "LATENT"
+    ],
+    [
+      19,
+      25,
+      0,
+      14,
+      0,
+      "LATENT"
+    ],
+    [
+      20,
+      1,
+      0,
+      14,
+      1,
+      "VAE"
+    ],
+    [
+      21,
+      2,
+      0,
+      14,
+      2,
+      "VAE"
+    ],
+    [
+      22,
+      14,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      23,
+      14,
+      1,
+      15,
+      1,
+      "AUDIO"
+    ],
+    [
+      24,
+      4,
+      0,
+      16,
+      0,
+      "MODEL"
+    ],
+    [
+      25,
+      15,
+      0,
+      18,
+      0,
+      "VIDEO"
+    ],
+    [
+      26,
+      26,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      27,
+      19,
+      0,
+      20,
+      0,
+      "MODEL"
+    ],
+    [
+      28,
+      7,
+      1,
+      20,
+      1,
+      "LATENT"
+    ],
+    [
+      29,
+      12,
+      1,
+      21,
+      0,
+      "LATENT"
+    ],
+    [
+      30,
+      13,
+      0,
+      21,
+      1,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      31,
+      12,
+      1,
+      22,
+      0,
+      "LATENT"
+    ],
+    [
+      32,
+      21,
+      0,
+      22,
+      1,
+      "LATENT"
+    ],
+    [
+      33,
+      21,
+      1,
+      22,
+      2,
+      "T8_CHUNKED_V5_GLOBAL_LIFT"
+    ],
+    [
+      34,
+      13,
+      0,
+      22,
+      3,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      35,
+      17,
+      0,
+      22,
+      4,
+      "NOISE"
+    ],
+    [
+      36,
+      31,
+      0,
+      23,
+      0,
+      "MODEL"
+    ],
+    [
+      37,
+      31,
+      1,
+      23,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      38,
+      12,
+      1,
+      23,
+      2,
+      "LATENT"
+    ],
+    [
+      39,
+      21,
+      0,
+      23,
+      3,
+      "LATENT"
+    ],
+    [
+      40,
+      22,
+      0,
+      23,
+      4,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      41,
+      13,
+      0,
+      23,
+      5,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      42,
+      17,
+      0,
+      23,
+      6,
+      "NOISE"
+    ],
+    [
+      43,
+      20,
+      1,
+      23,
+      7,
+      "SAMPLER"
+    ],
+    [
+      44,
+      9,
+      1,
+      23,
+      8,
+      "SIGMAS"
+    ],
+    [
+      45,
+      35,
+      0,
+      24,
+      0,
+      "MODEL"
+    ],
+    [
+      46,
+      35,
+      1,
+      24,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      47,
+      12,
+      1,
+      24,
+      2,
+      "LATENT"
+    ],
+    [
+      48,
+      21,
+      0,
+      24,
+      3,
+      "LATENT"
+    ],
+    [
+      49,
+      22,
+      0,
+      24,
+      4,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      50,
+      13,
+      0,
+      24,
+      5,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      51,
+      17,
+      0,
+      24,
+      6,
+      "NOISE"
+    ],
+    [
+      52,
+      20,
+      1,
+      24,
+      7,
+      "SAMPLER"
+    ],
+    [
+      53,
+      9,
+      1,
+      24,
+      8,
+      "SIGMAS"
+    ],
+    [
+      54,
+      23,
+      1,
+      24,
+      9,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      55,
+      39,
+      0,
+      25,
+      0,
+      "MODEL"
+    ],
+    [
+      56,
+      39,
+      1,
+      25,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      57,
+      12,
+      1,
+      25,
+      2,
+      "LATENT"
+    ],
+    [
+      58,
+      21,
+      0,
+      25,
+      3,
+      "LATENT"
+    ],
+    [
+      59,
+      22,
+      0,
+      25,
+      4,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      60,
+      13,
+      0,
+      25,
+      5,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      61,
+      17,
+      0,
+      25,
+      6,
+      "NOISE"
+    ],
+    [
+      62,
+      20,
+      1,
+      25,
+      7,
+      "SAMPLER"
+    ],
+    [
+      63,
+      9,
+      1,
+      25,
+      8,
+      "SIGMAS"
+    ],
+    [
+      64,
+      24,
+      1,
+      25,
+      9,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      65,
+      8,
+      0,
+      28,
+      0,
+      "MODEL"
+    ],
+    [
+      66,
+      3,
+      0,
+      28,
+      1,
+      "CLIP"
+    ],
+    [
+      67,
+      1,
+      0,
+      28,
+      2,
+      "VAE"
+    ],
+    [
+      68,
+      2,
+      0,
+      28,
+      3,
+      "VAE"
+    ],
+    [
+      69,
+      27,
+      0,
+      28,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      70,
+      6,
+      0,
+      28,
+      7,
+      "IMAGE"
+    ],
+    [
+      71,
+      6,
+      0,
+      28,
+      8,
+      "IMAGE"
+    ],
+    [
+      72,
+      20,
+      0,
+      30,
+      0,
+      "MODEL"
+    ],
+    [
+      73,
+      3,
+      0,
+      30,
+      1,
+      "CLIP"
+    ],
+    [
+      74,
+      1,
+      0,
+      30,
+      2,
+      "VAE"
+    ],
+    [
+      75,
+      2,
+      0,
+      30,
+      3,
+      "VAE"
+    ],
+    [
+      76,
+      29,
+      0,
+      30,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      77,
+      13,
+      2,
+      30,
+      5,
+      "INT"
+    ],
+    [
+      78,
+      13,
+      3,
+      30,
+      6,
+      "INT"
+    ],
+    [
+      79,
+      6,
+      0,
+      30,
+      9,
+      "IMAGE"
+    ],
+    [
+      80,
+      6,
+      0,
+      30,
+      10,
+      "IMAGE"
+    ],
+    [
+      81,
+      20,
+      0,
+      31,
+      0,
+      "MODEL"
+    ],
+    [
+      82,
+      30,
+      0,
+      31,
+      1,
+      "MODEL"
+    ],
+    [
+      83,
+      30,
+      1,
+      31,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      84,
+      30,
+      2,
+      31,
+      3,
+      "LATENT"
+    ],
+    [
+      85,
+      29,
+      0,
+      31,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      86,
+      12,
+      1,
+      31,
+      5,
+      "LATENT"
+    ],
+    [
+      87,
+      21,
+      0,
+      31,
+      6,
+      "LATENT"
+    ],
+    [
+      88,
+      22,
+      0,
+      31,
+      7,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      89,
+      13,
+      0,
+      31,
+      8,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      90,
+      9,
+      1,
+      31,
+      9,
+      "SIGMAS"
+    ],
+    [
+      91,
+      23,
+      1,
+      32,
+      0,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      92,
+      22,
+      0,
+      32,
+      1,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      93,
+      31,
+      2,
+      32,
+      2,
+      "T8_CHUNKED_V5_RELAY_RUNTIME"
+    ],
+    [
+      94,
+      20,
+      0,
+      34,
+      0,
+      "MODEL"
+    ],
+    [
+      95,
+      3,
+      0,
+      34,
+      1,
+      "CLIP"
+    ],
+    [
+      96,
+      1,
+      0,
+      34,
+      2,
+      "VAE"
+    ],
+    [
+      97,
+      2,
+      0,
+      34,
+      3,
+      "VAE"
+    ],
+    [
+      98,
+      33,
+      0,
+      34,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      99,
+      13,
+      2,
+      34,
+      5,
+      "INT"
+    ],
+    [
+      100,
+      13,
+      3,
+      34,
+      6,
+      "INT"
+    ],
+    [
+      101,
+      6,
+      0,
+      34,
+      9,
+      "IMAGE"
+    ],
+    [
+      102,
+      6,
+      0,
+      34,
+      10,
+      "IMAGE"
+    ],
+    [
+      103,
+      20,
+      0,
+      35,
+      0,
+      "MODEL"
+    ],
+    [
+      104,
+      34,
+      0,
+      35,
+      1,
+      "MODEL"
+    ],
+    [
+      105,
+      34,
+      1,
+      35,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      106,
+      34,
+      2,
+      35,
+      3,
+      "LATENT"
+    ],
+    [
+      107,
+      33,
+      0,
+      35,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      108,
+      12,
+      1,
+      35,
+      5,
+      "LATENT"
+    ],
+    [
+      109,
+      21,
+      0,
+      35,
+      6,
+      "LATENT"
+    ],
+    [
+      110,
+      22,
+      0,
+      35,
+      7,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      111,
+      13,
+      0,
+      35,
+      8,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      112,
+      9,
+      1,
+      35,
+      9,
+      "SIGMAS"
+    ],
+    [
+      113,
+      23,
+      1,
+      35,
+      10,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      114,
+      24,
+      1,
+      36,
+      0,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      115,
+      22,
+      0,
+      36,
+      1,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      116,
+      35,
+      2,
+      36,
+      2,
+      "T8_CHUNKED_V5_RELAY_RUNTIME"
+    ],
+    [
+      117,
+      20,
+      0,
+      38,
+      0,
+      "MODEL"
+    ],
+    [
+      118,
+      3,
+      0,
+      38,
+      1,
+      "CLIP"
+    ],
+    [
+      119,
+      1,
+      0,
+      38,
+      2,
+      "VAE"
+    ],
+    [
+      120,
+      2,
+      0,
+      38,
+      3,
+      "VAE"
+    ],
+    [
+      121,
+      37,
+      0,
+      38,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      122,
+      13,
+      2,
+      38,
+      5,
+      "INT"
+    ],
+    [
+      123,
+      13,
+      3,
+      38,
+      6,
+      "INT"
+    ],
+    [
+      124,
+      6,
+      0,
+      38,
+      9,
+      "IMAGE"
+    ],
+    [
+      125,
+      6,
+      0,
+      38,
+      10,
+      "IMAGE"
+    ],
+    [
+      126,
+      20,
+      0,
+      39,
+      0,
+      "MODEL"
+    ],
+    [
+      127,
+      38,
+      0,
+      39,
+      1,
+      "MODEL"
+    ],
+    [
+      128,
+      38,
+      1,
+      39,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      129,
+      38,
+      2,
+      39,
+      3,
+      "LATENT"
+    ],
+    [
+      130,
+      37,
+      0,
+      39,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      131,
+      12,
+      1,
+      39,
+      5,
+      "LATENT"
+    ],
+    [
+      132,
+      21,
+      0,
+      39,
+      6,
+      "LATENT"
+    ],
+    [
+      133,
+      22,
+      0,
+      39,
+      7,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      134,
+      13,
+      0,
+      39,
+      8,
+      "T8_H3_CHUNKED_TWO_PASS_PLAN"
+    ],
+    [
+      135,
+      9,
+      1,
+      39,
+      9,
+      "SIGMAS"
+    ],
+    [
+      136,
+      24,
+      1,
+      39,
+      10,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      137,
+      25,
+      1,
+      40,
+      0,
+      "T8_CHUNKED_V5_WINDOW_RESULT"
+    ],
+    [
+      138,
+      22,
+      0,
+      40,
+      1,
+      "T8_CHUNKED_V5_PREPARED"
+    ],
+    [
+      139,
+      39,
+      2,
+      40,
+      2,
+      "T8_CHUNKED_V5_RELAY_RUNTIME"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S22 Chunked v5 · 3 windows · relay/all · full_no_save EXP",
+    "t8_split_example": {
+      "schema": "t8.chunked-v5.split-example.v1",
+      "route": "S22",
+      "window_count": 3,
+      "effect_kind": "relay",
+      "effect_scope": "all",
+      "storage": "full_no_save",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

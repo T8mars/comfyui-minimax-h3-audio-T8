@@ -1,0 +1,1302 @@
+{
+  "id": "bb582c68-a1d3-4f5b-a66a-060fa41f201e",
+  "revision": 0,
+  "last_node_id": 21,
+  "last_link_id": 28,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        -400,
+        1700
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        -900,
+        400
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        750
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        1100
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            6,
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+      "title": "MiniMax H3 Learned Latent Upscale / H3学习型潜空间放大 (Advanced)",
+      "pos": [
+        0,
+        2900
+      ],
+      "size": [
+        390,
+        546
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            15,
+            22
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LearnedLatentUpscaleT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "scale_by",
+        2.0,
+        0.46,
+        896,
+        512,
+        "preserve_source",
+        1.05,
+        "fp16",
+        "offload_after"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        420,
+        1700
+      ],
+      "size": [
+        390,
+        650
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 4
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 6
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 2,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 3,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "Refine the same adult walking through the same quiet corridor after the learned latent upscale. Preserve identity, action, camera and natural ambience.",
+        1344,
+        768,
+        73,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 7,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        950,
+        2350
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609032102,
+        "fixed"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3400,
+        1700
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 8
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        3800,
+        1700
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 10
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 11,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        4200,
+        1700
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/HyperFlow_partial4plus4_relay_low_resume_high_Formal_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3HyperFlowFreshLoaderEXPT8",
+      "title": "H3 HyperFlow · Fresh Route Loader / Original Endpoint (T8 EXP)",
+      "pos": [
+        0,
+        1700
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshLoaderEXPT8"
+      },
+      "widgets_values": [
+        "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3HyperFlowFreshStageSetupEXPT8",
+      "title": "H3 HyperFlow · Separate Full8 / Partial4 / Fresh4 Setup (T8 EXP)",
+      "pos": [
+        900,
+        1700
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshStageSetupEXPT8"
+      },
+      "widgets_values": [
+        "hyperflow_high_after_partial4"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        1800,
+        1700
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 16
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "H3 Stage Sampler · ONE Stage + Result (T8 EXP)",
+      "pos": [
+        2200,
+        1700
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 18
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 19
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 20
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 21
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 22
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3HyperFlowFreshStageAuditEXPT8",
+      "title": "H3 HyperFlow · Fresh Stage Execution Audit (T8 EXP)",
+      "pos": [
+        2600,
+        1700
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshStageAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3HyperFlowFreshLiftInputEXPT8",
+      "title": "H3 HyperFlow · Select LOW Learned-Lift Input (T8 EXP)",
+      "pos": [
+        3000,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshLiftInputEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        2950,
+        2400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        2950,
+        650
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3StageSaveEXPT8",
+      "title": "H3 Stage Result · Save Frozen Artifact (T8 EXP)",
+      "pos": [
+        3400,
+        2900
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSaveEXPT8"
+      },
+      "widgets_values": [
+        "HyperFlowFresh/partial4plus4/HIGH"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3HyperFlowFreshStageLoadEXPT8",
+      "title": "H3 HyperFlow · Load Exact Frozen Fresh Stage (T8 EXP)",
+      "pos": [
+        -500,
+        0
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshStageLoadEXPT8"
+      },
+      "widgets_values": [
+        "SELECT_SAVED_STAGE/manifest.json",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "hyperflow_low_partial4"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MarkdownNote",
+      "title": "先读 / Explicit fresh-noise stages",
+      "pos": [
+        -2100,
+        -700
+      ],
+      "size": [
+        1100,
+        950
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S15 HyperFlow partial4plus4／relay:low／Cold_HIGH 分离式EXP。这不是S13连续x_sigma，也不是P7长视频链。LOW和HIGH分别加载完整H3底模、专用Fresh HyperFlow Loader、可插内容LoRA、独立提示词／条件／NOISE；不能把普通LoRA Loader用于HyperFlow权重。LOW只跑绝对0:4，必须取预测干净denoised_output，不可把非终态output当干净画面；Lift Input再接原learned3D AV latent放大，HIGH在绝对4:8用独立新噪声和原fresh音频重基准；不能套用S13不重加噪规则，也不额外插入其它路线的音频锁定或reconcile。外置relay作用于low；阶段Relay Plan与EAV Config均可单独编辑，EAV默认report_only不施加增益，apply_exp才启用。Audit读实际阶段执行回执。本图从专用LOW Stage Load的真实path/SHA只运行放大和HIGH；没有LOW模型、条件、噪声、效果或采样链，改HIGH设置不改冻结LOW。Load占位path/SHA不可直接排队。共享模型驻留时Fresh Loader只读原底模端点备份；未知用户wrapper不获自动可移植复用资格。现有tiny CPU和私有候选前端证据不等于本通用图真实训练权重原尺寸、多后端、apply_exp画质或人工音画验收；旧图不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      16,
+      0,
+      5,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      5,
+      1,
+      6,
+      3,
+      "INT"
+    ],
+    [
+      3,
+      5,
+      2,
+      6,
+      4,
+      "INT"
+    ],
+    [
+      4,
+      2,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      5,
+      3,
+      0,
+      6,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      4,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      7,
+      19,
+      0,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      8,
+      3,
+      0,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      9,
+      4,
+      0,
+      8,
+      2,
+      "VAE"
+    ],
+    [
+      10,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      8,
+      1,
+      9,
+      1,
+      "AUDIO"
+    ],
+    [
+      12,
+      9,
+      0,
+      10,
+      0,
+      "VIDEO"
+    ],
+    [
+      13,
+      1,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      11,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      15,
+      5,
+      0,
+      12,
+      1,
+      "LATENT"
+    ],
+    [
+      16,
+      12,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      17,
+      6,
+      0,
+      13,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      7,
+      0,
+      14,
+      0,
+      "NOISE"
+    ],
+    [
+      19,
+      13,
+      0,
+      14,
+      1,
+      "GUIDER"
+    ],
+    [
+      20,
+      12,
+      1,
+      14,
+      2,
+      "SAMPLER"
+    ],
+    [
+      21,
+      12,
+      2,
+      14,
+      3,
+      "SIGMAS"
+    ],
+    [
+      22,
+      5,
+      0,
+      14,
+      4,
+      "LATENT"
+    ],
+    [
+      23,
+      12,
+      3,
+      14,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      24,
+      14,
+      2,
+      15,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      25,
+      20,
+      3,
+      16,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      26,
+      15,
+      3,
+      17,
+      0,
+      "*"
+    ],
+    [
+      27,
+      20,
+      4,
+      18,
+      0,
+      "*"
+    ],
+    [
+      28,
+      15,
+      0,
+      19,
+      0,
+      "T8_STAGE_RESULT"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S15 HyperFlow partial4plus4 relay:low Cold_HIGH EXP",
+    "t8_split_example": {
+      "schema": "t8.hyperflow.fresh.split-example.v1",
+      "route": "S15",
+      "fresh_recipe": "partial4plus4",
+      "effect_kind": "relay",
+      "effect_scope": "low",
+      "variant": "resume_high",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

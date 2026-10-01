@@ -47,9 +47,11 @@ def _ast_hash(node):
 
 
 def _live_code_matches(function, compiled, module):
+    from .source_code_identity import executable_code_equal
+
     return (isinstance(function, FunctionType)
             and function.__globals__ is vars(module)
-            and any(function.__code__ == code for code in compiled))
+            and any(executable_code_equal(function.__code__, code) for code in compiled))
 
 
 def _audited_mask_kernel(kernel):

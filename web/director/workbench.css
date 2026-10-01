@@ -1,4 +1,41 @@
 /* Selected visual: parallel writing desk. The original controls remain operational. */
+#t8-obsidian-lab[data-workbench] .w-creation-dialog{padding:20px}
+#t8-obsidian-lab[data-workbench] .w-creation-controls{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:14px 0}
+#t8-obsidian-lab[data-workbench] .w-creation-controls label:nth-child(2){flex:1 1 180px}
+#t8-obsidian-lab[data-workbench] [data-creation-list]{max-height:30vh;overflow:auto;margin:12px 0}
+#t8-obsidian-lab[data-workbench] [data-creation-list] article{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid var(--o-line);padding:10px 0}
+#t8-obsidian-lab[data-workbench] [data-creation-list] strong{min-width:0;overflow-wrap:anywhere;font-weight:500}
+#t8-obsidian-lab[data-workbench] [data-creation-preview]{border:1px solid var(--o-line);padding:12px;border-radius:8px}
+#t8-obsidian-lab[data-workbench] [data-creation-preview] pre{max-height:28vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+#t8-obsidian-lab[data-workbench] [data-creation-options] label,#t8-obsidian-lab[data-workbench] [data-creation-preview] label{display:flex;gap:6px;align-items:center}
+#t8-obsidian-lab[data-workbench] .w-creation-dialog input[type="checkbox"]{width:auto}
+#t8-obsidian-lab[data-workbench] [data-creation-options]>label{display:grid;gap:4px;margin-top:8px}
+#t8-obsidian-lab[data-workbench] .w-storyboard-dialog{padding:20px;width:min(1040px,calc(100vw - 32px))}
+#t8-obsidian-lab[data-workbench] [data-storyboard-text]{min-height:200px;max-height:40vh;margin:10px 0;font-size:15px;line-height:1.7}
+#t8-obsidian-lab[data-workbench] [data-storyboard-preview-body]{max-height:35vh;overflow:auto;margin:12px 0}
+#t8-obsidian-lab[data-workbench] [data-storyboard-preview-body] article{border:1px solid var(--o-line);border-radius:8px;padding:10px;margin-bottom:8px}
+#t8-obsidian-lab[data-workbench] [data-storyboard-preview-body] h4{margin:0 0 6px}
+#t8-obsidian-lab[data-workbench] [data-storyboard-preview-body] pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:0}
+#t8-obsidian-lab[data-workbench] [data-storyboard-ack-row]{display:flex;gap:8px;align-items:center}
+#t8-obsidian-lab[data-workbench] [data-storyboard-ack]{width:auto}
+#t8-obsidian-lab[data-workbench] .w-task-drawer{width:min(460px,calc(100vw - 36px));height:fit-content;max-height:min(640px,88dvh);box-sizing:border-box;padding:18px;background:var(--o-panel);border:1px solid var(--o-line);border-radius:10px;box-shadow:0 12px 50px #0009;z-index:105}
+#t8-obsidian-lab[data-workbench] .w-task-drawer[open]{display:flex;flex-direction:column;gap:10px}
+#t8-obsidian-lab[data-workbench] .w-task-drawer header,#t8-obsidian-lab[data-workbench] .w-task-controls{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#t8-obsidian-lab[data-workbench] .w-task-controls label{display:flex;align-items:center;gap:6px}
+#t8-obsidian-lab[data-workbench] .w-task-controls input{width:auto}
+#t8-obsidian-lab[data-workbench] [data-task-content]{min-height:0;overflow:auto;overflow-wrap:anywhere}
+#t8-obsidian-lab[data-workbench] [data-task-state]{font-size:12px;color:var(--o-muted)}
+#t8-obsidian-lab[data-workbench] .w-task-drawer ol{padding-left:24px}
+#t8-obsidian-lab[data-workbench] .w-reference-popup{position:fixed;z-index:110;max-height:265px;overflow:hidden;padding:10px;background:#202629;border:1px solid #8a755a;border-radius:8px;box-shadow:0 8px 30px #0008;font-size:13px}
+#t8-obsidian-lab[data-workbench] .w-reference-popup [role="listbox"]{max-height:185px;overflow:auto;margin:6px 0}
+#t8-obsidian-lab[data-workbench] .w-reference-popup button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px;border-color:transparent;background:transparent}
+#t8-obsidian-lab[data-workbench] .w-reference-popup button[aria-selected="true"]{border-color:var(--o-gold);background:#332c23}
+#t8-obsidian-lab[data-workbench] .w-reference-popup img{width:38px;height:38px;object-fit:contain;background:#101315;flex:none}
+#t8-obsidian-lab[data-workbench] .w-reference-popup span{min-width:0}
+#t8-obsidian-lab[data-workbench] .w-reference-popup strong,#t8-obsidian-lab[data-workbench] .w-reference-popup small{display:block;overflow-wrap:anywhere;font-weight:normal;line-height:1.45}
+#t8-obsidian-lab[data-workbench] .w-library-filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:14px 0}
+#t8-obsidian-lab[data-workbench] .w-library-filters label:first-child{flex:1 1 200px}
+#t8-obsidian-lab[data-workbench] .w-library-filters p{flex-basis:100%;font-size:12px;color:var(--o-muted)}
 html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){height:100%;overflow:hidden}
 #t8-obsidian-lab[data-workbench]{--w-rail:280px;--o-bg:#111315;--o-panel:#171b1d;--o-line:#30373c;--o-gold:#e3c395;max-width:none;margin:0;padding:0;width:100%;height:100dvh;border-radius:0;display:grid;grid-template-rows:64px minmax(0,1fr) 76px;font:15px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden}
 #t8-obsidian-lab[data-workbench] button,#t8-obsidian-lab[data-workbench] input,#t8-obsidian-lab[data-workbench] select{font-size:14px}
@@ -14,7 +51,7 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .o-project label{font-size:0;flex:0 1 230px}
 #t8-obsidian-lab[data-workbench] [data-project-title]{font-size:14px;min-height:40px}
 #t8-obsidian-lab[data-workbench] [data-save]{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#t8-obsidian-lab[data-workbench] .w-header-actions{display:flex;gap:8px;align-items:center;flex:none}
+#t8-obsidian-lab[data-workbench] .w-header-actions{display:flex;gap:8px;align-items:center;flex:none;max-width:100%;flex-wrap:wrap}
 #t8-obsidian-lab[data-workbench] .w-back{padding:7px 14px;border:1px solid var(--o-line);border-radius:6px;text-decoration:none;color:inherit;font-size:14px;white-space:nowrap}
 #t8-obsidian-lab[data-workbench] .w-menu{position:relative;margin:0;min-width:0}
 #t8-obsidian-lab[data-workbench] .w-menu>summary{padding:7px 12px;border:1px solid var(--o-line);border-radius:6px;background:var(--o-surface);cursor:pointer;min-height:36px;white-space:nowrap;font-size:14px}
@@ -24,7 +61,9 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .w-menu-body button:hover{background:#333b40}
 #t8-obsidian-lab[data-workbench] .w-menu-body .o-note{padding:8px;line-height:1.6}
 #t8-obsidian-lab[data-workbench] .w-tools-menu .w-menu-body{position:static;width:auto;max-height:none;border:0;box-shadow:none}
-#t8-obsidian-lab[data-workbench] .o-workspace{grid-row:2;display:grid;grid-template-columns:var(--w-rail) minmax(380px,1.12fr) minmax(350px,1fr);min-height:0;overflow:hidden;border-bottom:0}
+/* Nested panels must participate in the scrollable menu, not open beyond its clip. */
+#t8-obsidian-lab[data-workbench] .w-menu-body>.w-menu>.w-menu-body{position:static;width:auto;max-height:none;border:0;box-shadow:none}
+#t8-obsidian-lab[data-workbench] .o-workspace{position:relative;grid-row:2;display:grid;grid-template-columns:var(--w-rail) minmax(350px,var(--w-write-fr,53fr)) minmax(320px,var(--w-preview-fr,47fr));min-height:0;overflow:hidden;border-bottom:0}
 #t8-obsidian-lab[data-workbench] .o-shotbar{padding:22px 14px 12px;background:#131719;border-right:1px solid var(--o-line);min-height:0;display:flex;flex-direction:column;gap:20px}
 #t8-obsidian-lab[data-workbench] .o-shotbar>.o-row{display:block}
 #t8-obsidian-lab[data-workbench] .o-shotbar h3{font-size:16px}
@@ -57,7 +96,7 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .o-editwrap{position:relative;display:block}
 #t8-obsidian-lab[data-workbench] .o-editwrap>.o-expand{position:absolute;top:5px;right:5px;min-width:30px;width:30px;min-height:30px;height:30px;padding:0;background:transparent;border-color:transparent}
 #t8-obsidian-lab[data-workbench] [data-simple-zone]>.o-tip{font-size:11px;margin-top:6px}
-#t8-obsidian-lab[data-workbench] .w-settings{border-top:1px solid var(--o-line);padding-top:20px;margin-top:20px}
+#t8-obsidian-lab[data-workbench] .w-settings{container:director-settings / inline-size;border-top:1px solid var(--o-line);padding-top:20px;margin-top:20px}
 #t8-obsidian-lab[data-workbench] .w-setting-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:14px 0 18px}
 #t8-obsidian-lab[data-workbench] .w-setting-tiles button{text-align:left;min-height:66px;background:#1b2124;padding:9px 10px;display:flex;flex-direction:column;gap:3px}
 #t8-obsidian-lab[data-workbench] .w-setting-tiles small{font-size:12px;color:var(--o-muted)}
@@ -104,7 +143,12 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] [data-summary]{font-size:13px}
 #t8-obsidian-lab[data-workbench] [data-sound-summary]{font-size:11px}
 #t8-obsidian-lab[data-workbench] .o-notice{position:absolute;bottom:84px;left:calc(var(--w-rail) + 24px);max-width:min(640px,70vw);max-height:140px;overflow:auto;border:1px solid #68523b;border-radius:7px;padding:10px 16px;font-size:13px;z-index:35;box-shadow:0 6px 25px #0006}
-#t8-obsidian-lab[data-workbench] dialog{position:fixed!important;inset:0!important;margin:auto!important;top:auto!important;max-height:88dvh;overflow:auto;width:min(980px,calc(100vw - 36px));z-index:80}
+/* One viewport-centering rule for every window, including the non-modal tasks.
+   Both block insets must stay zero: top:auto bottom-aligns an auto-height dialog.
+   Overflow belongs to the window, never to the page or its clicked opener. */
+#t8-obsidian-lab[data-workbench] dialog{position:fixed;inset:0;margin:auto;max-width:calc(100vw - 36px);max-height:88dvh;overflow:auto;overscroll-behavior:contain;z-index:80}
+#t8-obsidian-lab[data-workbench] dialog:not(.w-task-drawer){width:min(980px,calc(100vw - 36px))}
+#t8-obsidian-lab[data-workbench] [data-model-zone] .o-dialoghead{position:sticky;top:0;z-index:2;background:var(--o-panel);flex-shrink:0}
 #t8-obsidian-lab[data-workbench] [data-editor]{min-height:50vh;font-size:16px;line-height:1.8}
 #t8-obsidian-lab[data-workbench] .w-mobile-shots{display:none}
 #t8-obsidian-lab[data-workbench] .o-header .o-project{order:0;flex:1;flex-basis:auto}
@@ -119,6 +163,75 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .w-selection-actions .w-menu-body{right:auto;left:0}
 #t8-obsidian-lab[data-workbench] [data-simple-zone]>.o-tip{display:none}
 #t8-obsidian-lab[data-workbench] [data-simple-zone] textarea{height:clamp(200px,22vh,280px)}
+#t8-obsidian-lab[data-workbench] .w-variation{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:12px}
+#t8-obsidian-lab[data-workbench] .w-variation label{flex:1;min-width:120px;font-size:12px}
+#t8-obsidian-lab[data-workbench] .w-variation input{margin-top:4px;min-width:0;width:100%}
+#t8-obsidian-lab[data-workbench] .w-versions{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin-top:12px;padding:12px;border:1px solid var(--o-line);border-radius:8px}
+#t8-obsidian-lab[data-workbench] .w-versions[hidden]{display:none}
+#t8-obsidian-lab[data-workbench] .w-versions label{flex:1;min-width:160px;font-size:12px}
+#t8-obsidian-lab[data-workbench] .w-versions select{width:100%;min-width:0;margin-top:4px}
+#t8-obsidian-lab[data-workbench] .w-versions small{width:100%;line-height:1.5;font-size:12px;color:var(--o-muted)}
+#t8-obsidian-lab[data-workbench] .w-preflight-issues li{padding:8px 0}
+#t8-obsidian-lab[data-workbench] .w-preflight-issues button{margin-left:8px}
+#t8-obsidian-lab[data-workbench] .w-readiness{margin-top:14px;padding:10px 12px;border:1px solid var(--o-line);border-radius:8px;font-size:12px;line-height:1.6}
+#t8-obsidian-lab[data-workbench] .w-readiness summary{cursor:pointer}
+#t8-obsidian-lab[data-workbench] .w-readiness li{margin:6px 0}
+#t8-obsidian-lab[data-workbench] .w-readiness button{font-size:12px;padding:5px 8px;min-height:30px}
+#t8-obsidian-lab[data-workbench] .w-task-list{list-style:none;padding:0}
+#t8-obsidian-lab[data-workbench] .w-task-list li{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--o-line);flex-wrap:wrap}
+#t8-obsidian-lab[data-workbench] .w-task-list small{color:var(--o-muted);margin-left:auto}
+#t8-obsidian-lab[data-workbench] .w-film-dialog{width:min(1100px,94vw);max-height:90dvh;overflow:auto;padding:20px;background:var(--o-bg);color:inherit;border:1px solid var(--o-line);border-radius:12px}
+#t8-obsidian-lab[data-workbench] .w-film-player{width:100%;height:min(55vh,620px);object-fit:contain;background:#060809}
+#t8-obsidian-lab[data-workbench] .w-film-shots{display:flex;gap:8px;list-style:none;padding:0;overflow:auto}
+#t8-obsidian-lab[data-workbench] .w-film-shots button{white-space:nowrap}
+#t8-obsidian-lab[data-workbench] .w-film-shots button[aria-current="true"]{border-color:var(--o-gold);color:var(--o-gold)}
+#t8-obsidian-lab[data-workbench] .w-film-issues li{padding:8px 0}
+#t8-obsidian-lab[data-workbench] .w-asset-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0;font-size:12px}
+#t8-obsidian-lab[data-workbench] .w-asset-filters input[type="search"]{flex:1 1 150px;min-width:100px}
+#t8-obsidian-lab[data-workbench] .w-asset-filters select{width:auto;max-width:130px}
+#t8-obsidian-lab[data-workbench] .w-asset-filters label{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#t8-obsidian-lab[data-workbench] .w-asset-filters input[type="checkbox"]{width:16px;height:16px}
+#t8-obsidian-lab[data-workbench] .w-asset-filters :is(input,select,button){font-size:12px;min-height:30px;padding:4px 7px}
+#t8-obsidian-lab[data-workbench] .w-asset-filters small{flex-basis:100%;color:var(--o-muted)}
+#t8-obsidian-lab[data-workbench] .w-asset-filters[hidden]{display:none}
+#t8-obsidian-lab[data-workbench] [data-thumbs] [data-tray-id][hidden]{display:none}
+#t8-obsidian-lab[data-workbench] .w-resizer{position:absolute;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none;z-index:8}
+#t8-obsidian-lab[data-workbench] .w-resizer:hover,#t8-obsidian-lab[data-workbench] .w-resizer:focus-visible{background:#e3c39566;outline:1px solid var(--o-gold)}
+#t8-obsidian-lab[data-workbench] .w-resizer[hidden]{display:none}
+#t8-obsidian-lab[data-workbench] [data-focus-layout][aria-pressed="true"]{border-color:var(--o-gold);color:var(--o-gold)}
+@media(min-width:801px){
+  #t8-obsidian-lab[data-workbench][data-focus-layout="writing"] .o-stage,#t8-obsidian-lab[data-workbench][data-focus-layout="review"] .w-editor{display:none}
+  #t8-obsidian-lab[data-workbench][data-focus-layout="writing"] .o-workspace,#t8-obsidian-lab[data-workbench][data-focus-layout="review"] .o-workspace{grid-template-columns:var(--w-rail) minmax(0,1fr)}
+  #t8-obsidian-lab[data-workbench][data-focus-layout="writing"] .w-editor{max-width:1100px;width:100%;justify-self:center}
+  #t8-obsidian-lab[data-workbench][data-focus-layout="review"] .o-output-player{height:clamp(300px,60vh,760px)}
+}
+@media(min-width:801px) and (max-width:1199px){
+  #t8-obsidian-lab[data-workbench][data-focus-layout="parallel"] .o-workspace{grid-template-columns:minmax(350px,var(--w-write-fr,53fr)) minmax(320px,var(--w-preview-fr,47fr))}
+  #t8-obsidian-lab[data-workbench][data-focus-layout="writing"] .o-workspace,#t8-obsidian-lab[data-workbench][data-focus-layout="review"] .o-workspace{grid-template-columns:minmax(0,1fr)}
+}
+#t8-obsidian-lab[data-workbench] .w-shot-choice{display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px;align-items:center}
+#t8-obsidian-lab[data-workbench] .w-shot-choice input{width:18px;height:18px;accent-color:var(--o-gold)}
+#t8-obsidian-lab[data-workbench] .w-shot-choice .o-shot{width:100%;min-width:0}
+#t8-obsidian-lab[data-workbench] .w-batch-menu .w-menu-body{top:auto;bottom:calc(100% + 6px);right:0;left:auto}
+#t8-obsidian-lab[data-workbench] .w-compact-save{display:none;font-size:12px;line-height:18px;color:var(--o-muted)}
+#t8-obsidian-lab[data-workbench] .w-compare-dialog{width:min(1200px,94vw);max-height:92dvh;overflow:auto;padding:20px}
+#t8-obsidian-lab[data-workbench] .w-bundle-dialog{width:min(980px,94vw);padding:20px}
+#t8-obsidian-lab[data-workbench] .w-bundle-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+#t8-obsidian-lab[data-workbench] .w-bundle-actions section{min-width:0;display:grid;gap:10px;align-content:start}
+#t8-obsidian-lab[data-workbench] .w-bundle-actions input[type="checkbox"]{width:auto}
+#t8-obsidian-lab[data-workbench] .w-bundle-files{max-height:32vh;overflow:auto;margin:12px 0}
+#t8-obsidian-lab[data-workbench] .w-bundle-files table{width:100%;border-collapse:collapse;table-layout:fixed}
+#t8-obsidian-lab[data-workbench] .w-bundle-files td,#t8-obsidian-lab[data-workbench] .w-bundle-files th{padding:8px;text-align:left;overflow-wrap:anywhere;border-bottom:1px solid var(--o-line)}
+#t8-obsidian-lab[data-workbench] .w-bundle-files th:first-child{width:90px}
+#t8-obsidian-lab[data-workbench] .w-bundle-files th:last-child{width:100px}
+@media(max-width:600px){#t8-obsidian-lab[data-workbench] .w-bundle-actions{grid-template-columns:minmax(0,1fr)}}
+#t8-obsidian-lab[data-workbench] .w-compare-selectors{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+#t8-obsidian-lab[data-workbench] .w-compare-selectors label{flex:1;min-width:160px}
+#t8-obsidian-lab[data-workbench] .w-compare-videos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+#t8-obsidian-lab[data-workbench] .w-compare-videos figure{margin:0;min-width:0}
+#t8-obsidian-lab[data-workbench] .w-compare-videos video{display:block;width:100%;height:clamp(180px,48vh,520px);object-fit:contain;background:#080b0c}
+@media(max-width:600px){#t8-obsidian-lab[data-workbench] .w-compare-videos{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1199px){#t8-obsidian-lab[data-workbench] .w-compact-save{display:block}}
 #t8-obsidian-lab[data-workbench] [data-insert-target]{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px}
 #t8-obsidian-lab[data-workbench] .o-notice{padding-right:60px}
 #t8-obsidian-lab[data-workbench] [data-workbench-dismiss]{position:absolute;right:6px;top:5px;padding:4px 6px;font-size:11px;min-height:26px;background:transparent}
@@ -126,3 +239,21 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 @media(max-height:820px){#t8-obsidian-lab[data-workbench]{grid-template-rows:60px minmax(0,1fr) 64px}#t8-obsidian-lab[data-workbench] .w-editor,#t8-obsidian-lab[data-workbench] .o-stage{padding-top:14px}#t8-obsidian-lab[data-workbench] .w-shot-heading{margin-bottom:10px}#t8-obsidian-lab[data-workbench] [data-writing-zone]{margin-top:10px}#t8-obsidian-lab[data-workbench] [data-writing-zone]>.o-tip{display:none}#t8-obsidian-lab[data-workbench] [data-simple-zone]{margin-top:10px}#t8-obsidian-lab[data-workbench] [data-simple-zone] textarea{height:180px;min-height:180px}#t8-obsidian-lab[data-workbench] .o-details{margin-bottom:10px;padding:8px 14px}#t8-obsidian-lab[data-workbench] .w-settings{padding-top:10px;margin-top:12px}#t8-obsidian-lab[data-workbench] .w-settings>h3{font-size:14px}#t8-obsidian-lab[data-workbench] .w-setting-tiles{margin:8px 0}#t8-obsidian-lab[data-workbench] .w-setting-tiles button{min-height:58px}#t8-obsidian-lab[data-workbench] .w-enhancements{min-height:46px}#t8-obsidian-lab[data-workbench] .w-assets{margin-top:10px}#t8-obsidian-lab[data-workbench] [data-thumbs] .o-thumb img{height:70px}#t8-obsidian-lab[data-workbench] .o-media-workbench .o-preview,#t8-obsidian-lab[data-workbench] .o-output-player{height:clamp(200px,30vh,260px)}#t8-obsidian-lab[data-workbench] .o-viewbar{margin-bottom:12px;padding-bottom:8px}#t8-obsidian-lab[data-workbench] .o-notice{bottom:70px}}
 @media(max-width:1199px){#t8-obsidian-lab[data-workbench]{--w-rail:0px}#t8-obsidian-lab[data-workbench] .o-workspace{grid-template-columns:minmax(360px,1.1fr) minmax(320px,1fr)}#t8-obsidian-lab[data-workbench] .w-mobile-shots{display:block}#t8-obsidian-lab[data-workbench] .o-shotbar{display:none}#t8-obsidian-lab[data-workbench][data-shots-open="true"] .o-shotbar{display:flex;position:absolute;left:0;top:60px;bottom:64px;width:260px;z-index:45;box-shadow:10px 0 35px #0007}#t8-obsidian-lab[data-workbench] [data-save],#t8-obsidian-lab[data-workbench] .o-eyebrow{display:none}#t8-obsidian-lab[data-workbench] .o-project>div{display:block}#t8-obsidian-lab[data-workbench] .o-header{padding:8px 12px;gap:10px}#t8-obsidian-lab[data-workbench] .o-brand h2{font-size:15px}#t8-obsidian-lab[data-workbench] .o-monogram{display:none}#t8-obsidian-lab[data-workbench] .o-footer{padding:8px 18px}#t8-obsidian-lab[data-workbench] .w-back{padding:7px 9px}}
 @media(max-width:800px){html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){overflow:auto}#t8-obsidian-lab[data-workbench]{display:block;height:auto;min-height:100dvh;padding-bottom:110px;overflow:visible}#t8-obsidian-lab[data-workbench] .o-header{position:sticky;top:0;z-index:30;flex-wrap:wrap;min-height:60px}#t8-obsidian-lab[data-workbench] .o-brand{display:none}#t8-obsidian-lab[data-workbench] .w-header-actions{margin-left:auto}#t8-obsidian-lab[data-workbench] .o-workspace{display:flex;flex-direction:column;overflow:visible}#t8-obsidian-lab[data-workbench] .w-editor,#t8-obsidian-lab[data-workbench] .o-stage{overflow:visible;padding:20px 16px}#t8-obsidian-lab[data-workbench] .o-stage{border-left:0;border-top:1px solid var(--o-line)}#t8-obsidian-lab[data-workbench] .w-setting-tiles{grid-template-columns:repeat(3,1fr)}#t8-obsidian-lab[data-workbench] .o-footer{position:fixed;bottom:0;left:0;right:0;padding:10px 12px;flex-wrap:wrap;gap:5px}#t8-obsidian-lab[data-workbench] .o-footer>div:first-child{width:100%}#t8-obsidian-lab[data-workbench] [data-sound-summary]{display:none}#t8-obsidian-lab[data-workbench] .o-footer>.o-row{width:100%}#t8-obsidian-lab[data-workbench] .o-footer button{min-width:0;flex:1;font-size:12px;padding:8px}#t8-obsidian-lab[data-workbench] .o-notice{position:fixed;left:12px;right:12px;bottom:112px;max-width:none}#t8-obsidian-lab[data-workbench][data-shots-open="true"] .o-shotbar{position:fixed;top:110px;bottom:105px}#t8-obsidian-lab[data-workbench] .w-menu-body{width:230px}#t8-obsidian-lab[data-workbench] .w-header-actions button{font-size:12px}}
+/* Use editor width, not total screen width: dragged narrow columns stay readable. */
+@media(max-width:480px){
+  #t8-obsidian-lab[data-workbench]{padding-bottom:180px}
+  #t8-obsidian-lab[data-workbench] .o-footer>.o-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  #t8-obsidian-lab[data-workbench] .o-footer .o-primary{min-width:0;grid-column:1/-1;order:-1}
+  #t8-obsidian-lab[data-workbench] .o-footer button{min-width:0;white-space:normal;overflow-wrap:anywhere}
+  #t8-obsidian-lab[data-workbench] .o-footer .w-batch-menu>summary{text-align:center;min-height:48px;display:grid;place-items:center}
+  #t8-obsidian-lab[data-workbench] .o-notice{bottom:184px}
+  #t8-obsidian-lab[data-workbench][data-shots-open="true"] .o-shotbar{bottom:180px}
+}
+@container director-settings (max-width:620px){#t8-obsidian-lab[data-workbench] .w-setting-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container director-settings (max-width:350px){#t8-obsidian-lab[data-workbench] .w-setting-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Static frame handoff remains a compact, explicit modal. */
+#t8-obsidian-lab[data-workbench] dialog.w-frame-dialog {width:min(760px,calc(100vw - 36px));max-height:88dvh;overflow:auto;}
+.w-frame-dialog [data-frame-body] {display:grid;gap:12px;}
+.w-frame-dialog [data-frame-preview] img {display:block;width:100%;height:220px;object-fit:contain;background:#090d0f;}
+#t8-obsidian-lab[data-workbench] .w-frame-dialog [data-frame-warning] label {display:flex;align-items:center;gap:8px;}
+#t8-obsidian-lab[data-workbench] .w-frame-dialog input[type="checkbox"] {width:auto;flex:0 0 auto;}

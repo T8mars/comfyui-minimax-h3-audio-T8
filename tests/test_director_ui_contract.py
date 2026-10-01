@@ -53,7 +53,7 @@ def test_director_scope_toolbar_and_compact_preview_contract():
     assert 'data-action="toggle-preview"' in html
     assert 'root.dataset.previewCollapsed=String(hidden)' in html
     assert 'position:absolute;inset:0;width:100%;height:100%;max-width:100%;max-height:100%' in html
-    assert 'grid-template-columns:var(--w-rail) minmax(380px,1.12fr) minmax(350px,1fr)' in layout
+    assert 'grid-template-columns:var(--w-rail) minmax(350px,var(--w-write-fr,53fr)) minmax(320px,var(--w-preview-fr,47fr))' in layout
     assert 'height:100dvh' in layout
     assert html.index('<div class="o-project">') < html.index('</header>')
     assert '$(".o-project").insertAdjacentHTML("afterend"' not in session
@@ -66,7 +66,7 @@ def test_director_scope_toolbar_and_compact_preview_contract():
     assert 'sequence !== compileRequest' in session
     assert 'snapshot !== JSON.stringify(envelope())' in session
     assert '全部生成前检查 · 尚未提交任务' in session
-    assert session.index('const batch = envelope()') < session.index('const report = await request("compile", { project: batch })') < session.index('await request("batches", { batch_id: batchId, project: batch, seed })')
+    assert session.index('const batch = envelope()') < session.index('await request("compile", { project: batch })') < session.index('await request("batches", { batch_id: batchId, project: batch, seed, shot_ids, seed_map })')
     assert 'request("batches/" + encodeURIComponent(batchId) + "/continue"' in session
     assert 'if (row.state !== "not_submitted"' in session
 
@@ -77,12 +77,15 @@ def test_director_d4_frontend_keeps_reconnect_and_large_asset_feedback_contract(
     assert 'xhr.upload.onprogress' in session
     assert '服务端未确认注册' in session
     assert 'window.addEventListener("offline"' in session
-    assert '已有任务不会重复提交' in session
+    assert '恢复连接后手动重试，不会自动补交' in session
+    assert 'window.addEventListener("online", connectionNotice)' in session
     assert 'xhr.onabort' in session
     assert 'button.dataset.service = "cancel-upload"' in session
     assert 't8director.activeJob:' in session
     assert 'setTimeout(() => watchJob' in session
-    assert 'cancelledJobId' in session
+    assert 'if (result.deleted_from_queue || result.interrupted)' in session
+    assert '取消请求未确认；保留任务身份并继续跟踪' in session
+    assert 'cancelledJobId' not in session  # A click/failed request cannot turn unknown into cancelled.
     assert 'unknownPolls >= 20' in session
     assert '已连接当前 Core' in host
     assert '页面加载失败，返回画布后可重试' in host

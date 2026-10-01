@@ -52,6 +52,20 @@ def test_d3_handoff_returns_exact_allowlisted_workflow_without_queueing():
     assert result["content"]["nodes"]
     assert result["text"].lstrip().startswith("{")
     assert all(item["exists"] for item in result["files"] if item["kind"] == "workflow")
+    assert '/34-fasth3-v2/' in result['selected']
+    legacy = handoff_d3_route('fast_h3_v2', result['selected'].replace('/34-fasth3-v2/', '/10-speed/'))
+    assert legacy['sha256'] == result['sha256'] and legacy['selected'] == result['selected']
+
+
+def test_d3_exposes_new_split_suite_without_changing_old_default():
+    default = handoff_d3_route("fast_h3_v2")
+    assert default["selected"].endswith("FastH3_V2_Trained_VSA_73f_h1c1_EXP.json")
+    split = next(item["path"] for item in default["files"]
+                 if item["name"] == "FastH3_V2_Split_01_First_LOW_HIGH_Relay_EAV_EXP.json")
+    selected = handoff_d3_route("fast_h3_v2", split)
+    assert selected["content"]["extra"]["t8_split_example"]["kind"] == "first"
+    assert selected["sha256"] != default["sha256"]
+    assert sum("FastH3_V2_Split_" in item["name"] for item in default["files"]) == 6
 
 
 def test_d3_handoff_rejects_path_injection_and_unknown_route():

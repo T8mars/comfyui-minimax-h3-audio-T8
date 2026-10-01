@@ -15,6 +15,7 @@ from functools import wraps
 from pathlib import Path
 import time
 import uuid
+from copy import deepcopy
 
 from .director_project import (
     ProjectConflict,
@@ -24,6 +25,7 @@ from .director_project import (
     identity,
     new_project,
     validate_project,
+    referenced_assets,
     atomic_json,
     sha,
 )
@@ -34,17 +36,21 @@ from .director_generation import (
     director_job_status,
     queue_director_prompt,
 )
+from .director_workflow_export import export_director_split_workflow
 from .director_capabilities import inspect_director_capabilities
 from .director_d3 import export_d3_package, handoff_d3_route, inspect_d3_routes
 from .director_batch import (
     batch_status, capture_resources, create_batch, load_batch,
     retry_batch_item, verify_resources,
+    batch_selection, selected_project, compile_batch_selection,
 )
 
 PREFIX = "/minimax_h3_t8/director"
 _REGISTERED = False
 _GENERATE_LOCK = asyncio.Lock()
 _CORE_EPOCH = str(uuid.uuid4())
+_FILM_EXPORT_LOCK = asyncio.Lock()
+_FILM_EXPORT_TASKS = {}
 
 
 def _record_deleted_queue_receipt(store, prompt_id):
@@ -103,12 +109,31 @@ async def _submit_director_request_locked(store, project, shot_id, seed, request
             return receipt["result"], 200
         return {"error": "提交状态尚未确认；请先按任务 ID 查询，不会自动重发", "prompt_id": receipt.get("prompt_id")}, 409
     if built is None:
-        built = await asyncio.to_thread(
-            build_director_generation_prompt, project, shot_id, store, seed=seed,
-        )
+        try:
+            built = await asyncio.to_thread(
+                build_director_generation_prompt, project, shot_id, store, seed=seed,
+            )
+        except (ValueError, KeyError, TypeError, FileNotFoundError) as error:
+            # No receipt/reservation or queue operation exists at this point.
+            # The client may release its pending ID only with this explicit proof;
+            # ambiguous errors AFTER reservation must retain the original ID.
+            return {"error": str(error), "submission_state": "not_submitted"}, 400
     prompt_id = str(uuid.uuid4())
+    # Save the input AND compiled graph before queueing. Neither a later edit nor
+    # an ambiguous queue response may replace this generation's configuration.
+    snapshot = {
+        "schema": "t8.director.generation_snapshot", "version": 1,
+        "project": project, "shot_id": shot_id, "seed": seed,
+        "prompt": built["prompt"], "report": built.get("report"),
+        "recipe": built.get("recipe"), "sampling": built.get("sampling"),
+        "d3_routes": built.get("d3_routes", []),
+    }
+    snapshot = deepcopy(snapshot)
+    snapshot_fields = {"snapshot": snapshot, "snapshot_sha256": sha(snapshot)}
     atomic_json(receipt_path, {"state": "submitting", "fingerprint": fingerprint,
-                               "prompt_id": prompt_id, "core_epoch": _CORE_EPOCH})
+                               "prompt_id": prompt_id, "core_epoch": _CORE_EPOCH,
+                               "project_id": project["id"], "shot_id": shot_id,
+                               **snapshot_fields})
     try:
         prompt_id = await queue_director_prompt(built["prompt"], client_id, prompt_id=prompt_id)
     except Exception:
@@ -127,8 +152,68 @@ async def _submit_director_request_locked(store, project, shot_id, seed, request
         "core_epoch": _CORE_EPOCH,
         "project_id": project["id"], "shot_id": shot_id,
         "shot_rev": shot_source.get("rev"), "submitted_at": time.time(), "result": result,
+        **snapshot_fields,
     })
     return result, 202
+
+
+def director_result_snapshot(store, project_id, request_id):
+    """Read one immutable source snapshot without inferring missing legacy data."""
+    project_id, request_id = identity(project_id), identity(request_id)
+    path = contained(store.root, f"requests/{request_id}.json")
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    if receipt.get("project_id") != project_id:
+        raise ValueError("此版本不属于当前项目")
+    snapshot = receipt.get("snapshot")
+    if not isinstance(snapshot, dict):
+        return {"complete": False, "reason": "旧版本未保存完整配置快照，不能精确还原"}
+    if sha(snapshot) != receipt.get("snapshot_sha256"):
+        raise ValueError("版本配置快照校验失败，不能用于还原")
+    if (snapshot.get("project", {}).get("id") != project_id
+            or snapshot.get("shot_id") != receipt.get("shot_id")):
+        raise ValueError("版本配置快照身份不匹配")
+    return {"complete": True, "sha256": receipt["snapshot_sha256"], "snapshot": snapshot}
+
+
+def copy_version_project(store, project_id, request_id, new_project_id):
+    """Explicitly save a new project; never overwrite the source or current draft."""
+    new_project_id = identity(new_project_id)
+    if new_project_id == identity(project_id):
+        raise ValueError('版本草稿必须使用新项目身份，不能覆盖原工程')
+    source = director_result_snapshot(store, project_id, request_id)
+    if not source['complete']:
+        raise ValueError(source['reason'])
+    snapshot = source['snapshot']
+    project = validate_project(snapshot['project'])
+    selected = next((shot for shot in project['doc']['shots'] if shot['id'] == snapshot['shot_id']), None)
+    if selected is None:
+        raise ValueError('快照缺少生成镜头')
+    seed = snapshot.get('seed')
+    if type(seed) is not int or not 0 <= seed <= 2**53-1:
+        raise ValueError('快照种子超出页面可精确保存范围；请保留原始快照，不舍入还原')
+    reference = {'project_id': project_id, 'request_id': request_id, 'snapshot_sha256': source['sha256']}
+    try:
+        existing = store.load(new_project_id)
+    except FileNotFoundError:
+        existing = None
+    if existing:
+        if existing.get('versionSource') != reference:
+            raise ValueError('此项目身份已用于不同内容，拒绝覆盖')
+        return {'id': new_project_id, 'revision': existing['revision'], 'already_created': True}
+    assets = {asset['id']: asset for asset in project['assets']}
+    for asset_id in referenced_assets(project):
+        original = assets.get(asset_id)
+        actual = store.asset(asset_id, verify=True)
+        if not original or any(original.get(key) != actual.get(key) for key in ('sha256', 'size', 'kind')):
+            raise ValueError('快照素材身份已改变，不能静默替换后复制版本')
+    project.update(id=new_project_id, revision=0, title=project['title'][:180]+' · 版本草稿',
+                   current=selected['id'], versionSource=reference)
+    selected['seed'] = seed
+    for shot in project['doc']['shots']:
+        shot.pop('adoptedResultId', None)
+        shot.pop('filmTrim', None)
+    saved = store.save(project, 0)
+    return {'id': new_project_id, 'revision': saved['revision'], 'already_created': False}
 
 
 def director_project_results(store, project_id, status_lookup=director_job_status, *, shot_ids=(), output_root=None):
@@ -139,7 +224,8 @@ def director_project_results(store, project_id, status_lookup=director_job_statu
     in Core's output directory and is served by Core's normal /view route.
     """
     project_id = identity(project_id)
-    records = []
+    from .director_bundle import imported_results
+    records = imported_results(store, project_id, output_root)
     for path in (store.root / "requests").glob("*.json"):
         try:
             receipt = json.loads(path.read_text(encoding="utf-8"))
@@ -167,6 +253,9 @@ def director_project_results(store, project_id, status_lookup=director_job_statu
                 "recipe": result.get("recipe", "director"),
                 "submitted_at": receipt.get("submitted_at") or path.stat().st_mtime,
                 "shot_rev": receipt.get("shot_rev"),
+                "request_id": path.stem,
+                "seed": result.get("seed"),
+                "snapshot_available": isinstance(receipt.get("snapshot"), dict),
             })
         except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
             # A damaged unrelated receipt must not hide the remaining films.
@@ -203,7 +292,7 @@ def director_project_results(store, project_id, status_lookup=director_job_statu
                     "recipe": "既有成片", "submitted_at": media.stat().st_mtime,
                     "shot_rev": None, "recovered_by": "project_and_shot_output_prefix",
                 })
-    records.sort(key=lambda item: (item["submitted_at"], item["prompt_id"]), reverse=True)
+    records.sort(key=lambda item: (item["submitted_at"], item["prompt_id"] or ""), reverse=True)
     return {"project_id": project_id, "results": records}
 
 
@@ -289,6 +378,9 @@ def register_director_routes():
     @guarded
     async def compile(request):
         body = await request.json()
+        if "shot_ids" in body:
+            result = await asyncio.to_thread(compile_batch_selection, body["project"], get_store(), body["shot_ids"])
+            return web.json_response(result)
         result = await asyncio.to_thread(
             compile_project, body["project"], get_store(), shot_id=body.get("shot_id")
         )
@@ -336,6 +428,12 @@ def register_director_routes():
             )
         return web.json_response(result, status=status)
 
+    @routes.get(PREFIX + "/batch-features")
+    async def batch_features(_request):
+        # UI files can refresh while an old Core still has its Python modules loaded.
+        # Negotiate before accepting a subset so a legacy server cannot queue all shots.
+        return web.json_response({"schema": "t8.director.batch_features.v1", "selection_version": 2})
+
     @routes.post(PREFIX + "/batches")
     @guarded
     async def start_batch(request):
@@ -343,16 +441,22 @@ def register_director_routes():
         store = get_store()
         project = body["project"]
         batch_id = identity(body["batch_id"])
+        seed = int(body["seed"])
+        shots, seeds = batch_selection(project, seed, body.get("shot_ids"), body.get("seed_map"))
+        def same_request(existing):
+            return (sha(existing["project"]) == sha(project)
+                    and [item["shot_id"] for item in existing["items"]] == [shot["id"] for shot in shots]
+                    and {item["shot_id"]: item["seed"] for item in existing["items"]} == seeds)
         async with _GENERATE_LOCK:
             try:
                 existing = load_batch(store, batch_id)
             except FileNotFoundError:
                 existing = None
             if existing is not None:
-                if sha(existing["project"]) != sha(project) or existing["items"][0]["seed"] != int(body["seed"]):
+                if not same_request(existing):
                     raise ValueError("批次身份已用于不同的项目或生成配置")
                 return web.json_response({"id": existing["id"], "project_id": existing["project_id"], "fingerprint": existing["fingerprint"]})
-        report = await asyncio.to_thread(compile_project, project, store)
+        report = await asyncio.to_thread(compile_batch_selection, project, store, [shot["id"] for shot in shots])
         if not report["ready"]:
             return web.json_response({"error": "全部生成前检查未通过", "report": report}, status=422)
         async with _GENERATE_LOCK:
@@ -361,21 +465,21 @@ def register_director_routes():
             except FileNotFoundError:
                 existing = None
             if existing is not None:
-                if sha(existing["project"]) != sha(project) or existing["items"][0]["seed"] != int(body["seed"]):
+                if not same_request(existing):
                     raise ValueError("批次身份已用于不同的项目或生成配置")
                 return web.json_response({"id": existing["id"], "project_id": existing["project_id"], "fingerprint": existing["fingerprint"]})
-            seed = int(body["seed"])
             prepared = []
-            for index, shot in enumerate(project["doc"]["shots"]):
+            for shot in shots:
                 shot_project = {**project, "current": shot["id"]}
                 prepared.append(await asyncio.to_thread(
                     build_director_generation_prompt, shot_project, shot["id"],
-                    store, seed=seed + index,
+                    store, seed=seeds[shot["id"]],
                 ))
             resources = await asyncio.to_thread(
-                capture_resources, store, project, prepared, _resolve_director_resource,
+                capture_resources, store, selected_project(project, shots), prepared, _resolve_director_resource,
             )
-            batch = create_batch(store, batch_id, project, seed, prepared, resources)
+            batch = create_batch(store, batch_id, project, seed, prepared, resources,
+                                 shot_ids=body.get("shot_ids"), seed_map=body.get("seed_map"))
         return web.json_response({"id": batch["id"], "project_id": batch["project_id"], "fingerprint": batch["fingerprint"]})
 
     @routes.get(PREFIX + "/batches/{batch_id}")
@@ -476,6 +580,18 @@ def register_director_routes():
             }
         )
 
+    @routes.post(PREFIX + "/d3/editable-split-workflow")
+    @guarded
+    async def d3_editable_split_workflow(request):
+        """Export an editable copy; never mutate the project or Core queue."""
+        body = await request.json()
+        result = await asyncio.to_thread(
+            export_director_split_workflow,
+            body["project"], body["shot_id"], get_store(),
+            seed=int(body.get("seed", 26091901)),
+        )
+        return web.json_response(result)
+
     @routes.get(PREFIX + "/jobs/{prompt_id}")
     @guarded
     async def job(request):
@@ -497,6 +613,182 @@ def register_director_routes():
                 shot_ids=shot_ids, output_root=folder_paths.get_output_directory(),
             )
         return web.json_response(records)
+
+    @routes.post(PREFIX + "/films/prepare")
+    @guarded
+    async def prepare_film_route(request):
+        import folder_paths
+        from .director_film import prepare_film
+
+        body = await request.json()
+        project = validate_project(body['project'])
+        store = get_store()
+        output = folder_paths.get_output_directory()
+        async with _GENERATE_LOCK:
+            records = await asyncio.to_thread(director_project_results, store, project['id'],
+                                            shot_ids=[shot['id'] for shot in project['doc']['shots']], output_root=output)
+        # Hashing/copying/decoding does not hold the generation submission lock.
+        result = await asyncio.to_thread(prepare_film, store, project, records['results'], output)
+        return web.json_response(result)
+
+    @routes.post(PREFIX + '/bundles/prepare')
+    @guarded
+    async def bundle_prepare_route(request):
+        import folder_paths
+        from .director_bundle import prepare_bundle
+        body = await request.json()
+        project = validate_project(body['project'])
+        store, output = get_store(), folder_paths.get_output_directory()
+        records = await asyncio.to_thread(director_project_results, store, project['id'],
+                                         shot_ids=[shot['id'] for shot in project['doc']['shots']], output_root=output)
+        result = await asyncio.to_thread(prepare_bundle, store, project, records['results'], output, body.get('include_results', True))
+        return web.json_response(result)
+
+    @routes.post(PREFIX + '/bundles/{project_id}/{bundle_id}/build')
+    @guarded
+    async def bundle_build_route(request):
+        from .director_bundle import build_bundle
+        if (await request.json()).get('confirm_contents') is not True:
+            raise ValueError('请先确认工程包媒体清单及私人内容')
+        path = await asyncio.to_thread(build_bundle, get_store(), request.match_info['project_id'], request.match_info['bundle_id'])
+        return web.json_response({'ready': True, 'bytes': path.stat().st_size})
+
+    @routes.get(PREFIX + '/bundles/{project_id}/{bundle_id}/file')
+    @guarded
+    async def bundle_download_route(request):
+        from .director_bundle import build_bundle
+        store = get_store()
+        # Download is read-only: an unbuilt package must be explicitly confirmed first.
+        path = contained(store.root, f"bundle_exports/{identity(request.match_info['bundle_id'])}.zip")
+        if not path.is_file():
+            raise ValueError('工程包尚未确认生成')
+        path = await asyncio.to_thread(build_bundle, store, request.match_info['project_id'], request.match_info['bundle_id'])
+        return web.FileResponse(path, headers={'Content-Disposition': 'attachment; filename="director-project.zip"'})
+
+    @routes.post(PREFIX + '/bundle-imports')
+    @guarded
+    async def bundle_upload_route(request):
+        from .director_bundle import MAX_BYTES, MAX_JSON, inspect_bundle
+        store = get_store()
+        reader = await request.multipart()
+        part = await reader.next()
+        if part is None or part.name != 'file' or not part.filename or not part.filename.lower().endswith('.zip'):
+            raise ValueError('请选择导演台工程ZIP文件')
+        upload_id = str(uuid.uuid4())
+        path = contained(store.root, f'bundle_imports/{upload_id}.zip')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        size = 0
+        try:
+            with path.open('xb') as stream:
+                while chunk := await part.read_chunk(1024**2):
+                    size += len(chunk)
+                    if size > MAX_BYTES+MAX_JSON+4*1024**2:
+                        raise ValueError('工程ZIP上传超过20GiB上限')
+                    await asyncio.to_thread(stream.write, chunk)
+            result = await asyncio.to_thread(inspect_bundle, store, upload_id)
+            return web.json_response(result)
+        except BaseException:
+            # Remove only this request's incomplete/rejected upload, never existing projects.
+            path.unlink(missing_ok=True)
+            raise
+
+    @routes.post(PREFIX + '/bundle-imports/{upload_id}/apply')
+    @guarded
+    async def bundle_import_route(request):
+        import folder_paths
+        from .director_bundle import import_bundle
+        body = await request.json()
+        if body.get('confirm_new_project') is not True:
+            raise ValueError('请确认以全新工程导入')
+        result = await asyncio.to_thread(import_bundle, get_store(), folder_paths.get_output_directory(),
+                                         request.match_info['upload_id'], body['new_project_id'])
+        return web.json_response(result)
+
+    @routes.get(PREFIX + '/bundle-imports/{upload_id}')
+    @guarded
+    async def bundle_import_preview_route(request):
+        from .director_bundle import import_preview
+        result = await asyncio.to_thread(import_preview, get_store(), request.match_info['upload_id'])
+        return web.json_response(result)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}")
+    @guarded
+    async def film_manifest(request):
+        from .director_film import load_film
+        result = await asyncio.to_thread(load_film, get_store(), request.match_info['project_id'], request.match_info['film_id'])
+        return web.json_response(result)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/media/{index}")
+    @guarded
+    async def film_media_route(request):
+        from .director_film import film_media
+        path = await asyncio.to_thread(film_media, get_store(), request.match_info['project_id'],
+                                       request.match_info['film_id'], int(request.match_info['index']))
+        return web.FileResponse(path)
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/frames")
+    @guarded
+    async def film_frame_route(request):
+        from .director_frame import extract_frame
+        body = await request.json()
+        result = await asyncio.to_thread(extract_frame, get_store(), request.match_info['project_id'],
+                                         request.match_info['film_id'], body['index'], body['frame'])
+        return web.json_response(result)
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/exports/{job_id}")
+    @guarded
+    async def film_export_start(request):
+        from .director_film_export import reserve_export, run_export
+        body = await request.json()
+        owner, film_id, job_id = (identity(request.match_info[key]) for key in ('project_id', 'film_id', 'job_id'))
+        store = get_store()
+        async with _FILM_EXPORT_LOCK:
+            exists = contained(store.root, f'film_exports/{job_id}.json').exists()
+            if not exists and any(not task.done() for task in _FILM_EXPORT_TASKS.values()):
+                raise ValueError('已有整片导出在运行，请等它完成后再导出；没有提交重复编码')
+            job, created = await asyncio.to_thread(reserve_export, store, owner, film_id, job_id, body)
+            if created:
+                async def work():
+                    try:
+                        await asyncio.to_thread(run_export, store, owner, film_id, job_id)
+                    finally:
+                        _FILM_EXPORT_TASKS.pop(job_id, None)
+                _FILM_EXPORT_TASKS[job_id] = asyncio.create_task(work())
+        return web.json_response(job)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/exports/{job_id}")
+    @guarded
+    async def film_export_progress(request):
+        from .director_film_export import export_status
+        args = tuple(request.match_info[key] for key in ('project_id', 'film_id', 'job_id'))
+        job = await asyncio.to_thread(export_status, get_store(), *args)
+        if job['state'] in {'queued', 'running'} and args[2] not in _FILM_EXPORT_TASKS:
+            job = {**job, 'state': 'interrupted', 'error': 'Core 已重启或导出进程不在当前实例；未自动重新编码，请明确另起导出。'}
+        return web.json_response(job)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/exports/{job_id}/file")
+    @guarded
+    async def film_export_download(request):
+        from .director_film_export import export_file
+        path = await asyncio.to_thread(export_file, get_store(), *(request.match_info[key] for key in ('project_id', 'film_id', 'job_id')))
+        return web.FileResponse(path, headers={'Content-Disposition': 'attachment; filename="director-film.mp4"'})
+
+    @routes.get(PREFIX + "/snapshots/{project_id}/{request_id}")
+    @guarded
+    async def generation_snapshot(request):
+        result = await asyncio.to_thread(
+            director_result_snapshot, get_store(), request.match_info["project_id"],
+            request.match_info["request_id"],
+        )
+        return web.json_response(result)
+
+    @routes.post(PREFIX + "/snapshots/{project_id}/{request_id}/copy")
+    @guarded
+    async def copy_version(request):
+        body = await request.json()
+        result = await asyncio.to_thread(copy_version_project, get_store(), request.match_info['project_id'],
+                                         request.match_info['request_id'], body['new_project_id'])
+        return web.json_response(result)
 
     @routes.post(PREFIX + "/jobs/{prompt_id}/cancel")
     @guarded

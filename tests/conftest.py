@@ -4,6 +4,8 @@ import importlib.util
 from pathlib import Path
 import sys
 
+import pytest
+
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_NAME = "h3_audio_t8_pkg"
@@ -20,3 +22,18 @@ if PACKAGE_NAME not in sys.modules:
     sys.modules[PACKAGE_NAME] = module
     assert spec.loader is not None
     spec.loader.exec_module(module)
+
+
+@pytest.fixture(autouse=True)
+def restore_cpu_thread_count_after_each_test():
+    """A test's explicit CPU setting must not leak into the next test.
+
+    Do not force one numerical configuration: keep the actual incoming count,
+    including a runner's deliberate setting, and restore it even on failure.
+    """
+    import torch
+    previous = torch.get_num_threads()
+    try:
+        yield
+    finally:
+        torch.set_num_threads(previous)

@@ -1,0 +1,1461 @@
+{
+  "id": "7ec4690e-f0ae-5b15-83cc-775ab74f55d3",
+  "revision": 0,
+  "last_node_id": 72,
+  "last_link_id": 216,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "Replace with an exact-24fps source; keep the original aspect ratio",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_2_person_exact_24fps_source.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "Source frames and untouched final soundtrack",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            48,
+            80,
+            105,
+            126,
+            196,
+            207
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            86,
+            197,
+            208
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": []
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "VAELoader",
+      "title": "Official MiniMax H3 video VAE",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            42,
+            74
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "VAELoader",
+      "title": "Official MiniMax H3 audio VAE",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            43,
+            75
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode the Character_A crop video; generated audio is discarded",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 192
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 42
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 43
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 30,
+      "type": "MiniMaxH3FaceRefineParityStitchT8Advanced",
+      "title": "Face-only audited stitch for Character_A; preview before accepting",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        390,
+        510
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 200
+        },
+        {
+          "name": "refined_crops",
+          "type": "IMAGE",
+          "link": 45
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 201
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "links": [
+            49
+          ]
+        },
+        {
+          "name": "changed_mask",
+          "type": "MASK",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "fallback_mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "fallback_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineParityStitchT8Advanced"
+      },
+      "widgets_values": [
+        "face_only",
+        24,
+        24.0,
+        1.0,
+        1.0,
+        "fade_out",
+        1.0,
+        "cpu_memory_safe"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "MiniMaxH3MultiFaceCompositeT8Advanced",
+      "title": "Character_A accepted by default; disable only for preview review",
+      "pos": [
+        5280,
+        300
+      ],
+      "size": [
+        390,
+        272
+      ],
+      "flags": {},
+      "order": 51,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 48
+        },
+        {
+          "name": "candidate_window",
+          "type": "IMAGE",
+          "link": 49
+        },
+        {
+          "name": "changed_mask",
+          "type": "MASK",
+          "link": 50
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 202
+        }
+      ],
+      "outputs": [
+        {
+          "name": "composited_frames",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "composite_state",
+          "type": "H3_T8_MULTIFACE_COMPOSITE",
+          "links": [
+            84
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "applied_job_count",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3MultiFaceCompositeT8Advanced"
+      },
+      "widgets_values": [
+        true,
+        "reject"
+      ]
+    },
+    {
+      "id": 41,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode the Character_B crop video; generated audio is discarded",
+      "pos": [
+        4400,
+        300
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 194
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 74
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 75
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            77
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 42,
+      "type": "MiniMaxH3FaceRefineParityStitchT8Advanced",
+      "title": "Face-only audited stitch for Character_B; preview before accepting",
+      "pos": [
+        4840,
+        558
+      ],
+      "size": [
+        390,
+        510
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 211
+        },
+        {
+          "name": "refined_crops",
+          "type": "IMAGE",
+          "link": 77
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 212
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "links": [
+            81
+          ]
+        },
+        {
+          "name": "changed_mask",
+          "type": "MASK",
+          "links": [
+            82
+          ]
+        },
+        {
+          "name": "fallback_mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "fallback_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineParityStitchT8Advanced"
+      },
+      "widgets_values": [
+        "face_only",
+        24,
+        24.0,
+        1.0,
+        1.0,
+        "fade_out",
+        1.0,
+        "cpu_memory_safe"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "MiniMaxH3MultiFaceCompositeT8Advanced",
+      "title": "Character_B accepted by default; disable only for preview review",
+      "pos": [
+        5720,
+        0
+      ],
+      "size": [
+        390,
+        298
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 80
+        },
+        {
+          "name": "candidate_window",
+          "type": "IMAGE",
+          "link": 81
+        },
+        {
+          "name": "changed_mask",
+          "type": "MASK",
+          "link": 82
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 213
+        },
+        {
+          "name": "previous_composite",
+          "type": "H3_T8_MULTIFACE_COMPOSITE",
+          "link": 84
+        }
+      ],
+      "outputs": [
+        {
+          "name": "composited_frames",
+          "type": "IMAGE",
+          "links": [
+            85
+          ]
+        },
+        {
+          "name": "composite_state",
+          "type": "H3_T8_MULTIFACE_COMPOSITE",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "applied_job_count",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3MultiFaceCompositeT8Advanced"
+      },
+      "widgets_values": [
+        true,
+        "reject"
+      ]
+    },
+    {
+      "id": 45,
+      "type": "CreateVideo",
+      "title": "Mux the untouched original soundtrack after all accepted face jobs",
+      "pos": [
+        6160,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 54,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 85
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 86,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            87
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 46,
+      "type": "MiniMaxH3SaveVideoIsolatedEXPT8",
+      "title": "Explicit isolated H264/AAC · original sampling/audio unchanged",
+      "pos": [
+        6600,
+        0
+      ],
+      "size": [
+        470,
+        300
+      ],
+      "flags": {},
+      "order": 55,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 87
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SaveVideoIsolatedEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "MiniMaxH3/multiface_sam31_2person_reviewed",
+        600,
+        16.0,
+        2.0
+      ]
+    },
+    {
+      "id": 53,
+      "type": "MiniMaxH3MultiFaceStageAuditEXPT8",
+      "title": "Audit character 1 before sequential composite",
+      "pos": [
+        4020,
+        1450
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 191
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 203
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 204
+        },
+        {
+          "name": "parent_frames",
+          "type": "IMAGE",
+          "link": 105
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 205
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_av",
+          "type": "LATENT",
+          "links": [
+            192
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MultiFaceStageAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 56,
+      "type": "MiniMaxH3MultiFaceStageAuditEXPT8",
+      "title": "Audit character 2 before sequential composite",
+      "pos": [
+        4020,
+        1900
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 193
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "link": 214
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 215
+        },
+        {
+          "name": "parent_frames",
+          "type": "IMAGE",
+          "link": 126
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 216
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_av",
+          "type": "LATENT",
+          "links": [
+            194
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MultiFaceStageAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 69,
+      "type": "MiniMaxH3StageLoadEXPT8",
+      "title": "Face job 1 · paste frozen manifest path + exact SHA",
+      "pos": [
+        3700,
+        0
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 69,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "expected_stage",
+          "type": "COMBO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": []
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            191,
+            195
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "native_high"
+      ]
+    },
+    {
+      "id": 70,
+      "type": "MiniMaxH3StageLoadEXPT8",
+      "title": "Face job 2 · paste frozen manifest path + exact SHA",
+      "pos": [
+        3700,
+        480
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 70,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "expected_stage",
+          "type": "COMBO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": []
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            193,
+            206
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "native_high"
+      ]
+    },
+    {
+      "id": 71,
+      "type": "MiniMaxH3MultiFaceSourceLoadEXPT8",
+      "title": "Character 1 · paste matching source-data path + SHA",
+      "pos": [
+        3500,
+        0
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 71,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 195
+        },
+        {
+          "name": "parent_frames",
+          "type": "IMAGE",
+          "link": 196
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 197
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "links": [
+            201,
+            202,
+            203
+          ]
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "links": [
+            200,
+            204
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            205
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MultiFaceSourceLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ]
+    },
+    {
+      "id": 72,
+      "type": "MiniMaxH3MultiFaceSourceLoadEXPT8",
+      "title": "Character 2 · paste matching source-data path + SHA",
+      "pos": [
+        3500,
+        550
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 72,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 206
+        },
+        {
+          "name": "parent_frames",
+          "type": "IMAGE",
+          "link": 207
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 208
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PARITY_PLAN",
+          "links": [
+            212,
+            213,
+            214
+          ]
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "links": [
+            211,
+            215
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            216
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MultiFaceSourceLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      42,
+      15,
+      0,
+      29,
+      1,
+      "VAE"
+    ],
+    [
+      43,
+      16,
+      0,
+      29,
+      2,
+      "VAE"
+    ],
+    [
+      45,
+      29,
+      0,
+      30,
+      1,
+      "IMAGE"
+    ],
+    [
+      48,
+      2,
+      0,
+      32,
+      0,
+      "IMAGE"
+    ],
+    [
+      49,
+      30,
+      0,
+      32,
+      1,
+      "IMAGE"
+    ],
+    [
+      50,
+      30,
+      1,
+      32,
+      2,
+      "MASK"
+    ],
+    [
+      74,
+      15,
+      0,
+      41,
+      1,
+      "VAE"
+    ],
+    [
+      75,
+      16,
+      0,
+      41,
+      2,
+      "VAE"
+    ],
+    [
+      77,
+      41,
+      0,
+      42,
+      1,
+      "IMAGE"
+    ],
+    [
+      80,
+      2,
+      0,
+      44,
+      0,
+      "IMAGE"
+    ],
+    [
+      81,
+      42,
+      0,
+      44,
+      1,
+      "IMAGE"
+    ],
+    [
+      82,
+      42,
+      1,
+      44,
+      2,
+      "MASK"
+    ],
+    [
+      84,
+      32,
+      1,
+      44,
+      4,
+      "H3_T8_MULTIFACE_COMPOSITE"
+    ],
+    [
+      85,
+      44,
+      0,
+      45,
+      0,
+      "IMAGE"
+    ],
+    [
+      86,
+      2,
+      1,
+      45,
+      1,
+      "AUDIO"
+    ],
+    [
+      87,
+      45,
+      0,
+      46,
+      0,
+      "VIDEO"
+    ],
+    [
+      105,
+      2,
+      0,
+      53,
+      3,
+      "IMAGE"
+    ],
+    [
+      126,
+      2,
+      0,
+      56,
+      3,
+      "IMAGE"
+    ],
+    [
+      191,
+      69,
+      3,
+      53,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      192,
+      53,
+      0,
+      29,
+      0,
+      "LATENT"
+    ],
+    [
+      193,
+      70,
+      3,
+      56,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      194,
+      56,
+      0,
+      41,
+      0,
+      "LATENT"
+    ],
+    [
+      195,
+      69,
+      3,
+      71,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      196,
+      2,
+      0,
+      71,
+      1,
+      "IMAGE"
+    ],
+    [
+      197,
+      2,
+      1,
+      71,
+      2,
+      "AUDIO"
+    ],
+    [
+      200,
+      71,
+      1,
+      30,
+      0,
+      "IMAGE"
+    ],
+    [
+      201,
+      71,
+      0,
+      30,
+      2,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      202,
+      71,
+      0,
+      32,
+      3,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      203,
+      71,
+      0,
+      53,
+      1,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      204,
+      71,
+      1,
+      53,
+      2,
+      "IMAGE"
+    ],
+    [
+      205,
+      71,
+      2,
+      53,
+      4,
+      "LATENT"
+    ],
+    [
+      206,
+      70,
+      3,
+      72,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      207,
+      2,
+      0,
+      72,
+      1,
+      "IMAGE"
+    ],
+    [
+      208,
+      2,
+      1,
+      72,
+      2,
+      "AUDIO"
+    ],
+    [
+      211,
+      72,
+      1,
+      42,
+      0,
+      "IMAGE"
+    ],
+    [
+      212,
+      72,
+      0,
+      42,
+      2,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      213,
+      72,
+      0,
+      44,
+      3,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      214,
+      72,
+      0,
+      56,
+      1,
+      "H3_T8_FACE_REFINE_PARITY_PLAN"
+    ],
+    [
+      215,
+      72,
+      1,
+      56,
+      2,
+      "IMAGE"
+    ],
+    [
+      216,
+      72,
+      2,
+      56,
+      4,
+      "LATENT"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+    "t8_split_example": {
+      "schema": "t8.face-refine.split-example.v1",
+      "route": "S24",
+      "variant": "multiface2",
+      "effect": "combined",
+      "status": "experimental_source_data_not_quality_accepted",
+      "storage": "cold_delivery",
+      "source_inputs": "explicit_frozen_multiface",
+      "delivery": "explicit_isolated_h264"
+    }
+  },
+  "version": 0.4
+}

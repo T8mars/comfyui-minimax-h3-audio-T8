@@ -51,6 +51,24 @@ def test_request_rejects_nonowned_port_before_any_network():
         _tool().call(NonOwner(), "GET", "/queue")
 
 
+def test_v2_probe_has_incomplete_unselected_shot_and_exact_seed_order():
+    from h3_audio_t8_pkg.director_project import new_project
+    from h3_audio_t8_pkg.director_batch import batch_selection
+    module = _tool()
+    original = module.configure_project(new_project(), 1, .2)
+    project, ids, seeds = module.selected_probe_project(original)
+    assert len(original['doc']['shots']) == 2 and len(project['doc']['shots']) == 3
+    shots, resolved = batch_selection(project, 100, ids, seeds)
+    assert [row['id'] for row in shots] == list(reversed(ids))
+    assert list(resolved.values()) == [0, 4294967295]
+    frozen = {'schema': 't8.minimax_h3.director_batch.v2', 'project': project,
+              'items': [{'shot_id': row['id'], 'seed': resolved[row['id']], 'built': {'seed': resolved[row['id']]}} for row in shots]}
+    module.check_selection_frozen(frozen, project, seeds)
+    frozen['items'][1]['built']['seed'] = 1
+    with pytest.raises(RuntimeError, match='exact seed'):
+        module.check_selection_frozen(frozen, project, seeds)
+
+
 def test_cleanup_attempts_all_owned_servers_despite_one_failure():
     seen = []
     class Owned:

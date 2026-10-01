@@ -1,0 +1,808 @@
+{
+  "id": "15cb8f01-3d08-4920-9a6b-8fc924a3939b",
+  "revision": 0,
+  "last_node_id": 14,
+  "last_link_id": 12,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "title": "Load CLIP",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "title": "Load Image",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "t8_fasth3_v2_loop_a89496c9bdc8cada29af5951.png"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+      "title": "MiniMax H3 Low VRAM Attention / 低显存注意力 (Advanced EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LowVRAMAttentionT8Advanced"
+      },
+      "widgets_values": [
+        4
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+      "title": "MiniMax H3 Chunk FeedForward / 分块前馈 (Advanced EXP/T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkFeedForwardT8Advanced"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+      "title": "MiniMax H3 Low VRAM Attention / 低显存注意力 (Advanced EXP/T8)",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LowVRAMAttentionT8Advanced"
+      },
+      "widgets_values": [
+        4
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+      "title": "MiniMax H3 Chunk FeedForward / 分块前馈 (Advanced EXP/T8)",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkFeedForwardT8Advanced"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "主角是已连接首帧参考图中的年轻女性：居中分缝的金色长卷发、黑色窄框墨镜、珊瑚色唇妆、含笑妩媚的眼神，身穿黑色上衣；她是夜晚外滩场景里的演唱者。已连接首帧是 [Shot 1] 角色参考；从第一帧开始保持她的脸部身份、五官、发型、墨镜、唇妆和黑色服装一致。写实温柔的韩文 MV 质感，夜晚外滩被暖金色路灯与冷色霓虹交织照亮，浅景深、肤色柔和，镜头运动缓慢滑顺。This is one continuous eight-second, two-segment diagnostic excerpt from the longer MV; preserve the same performer, wardrobe, voice and song across the internal segment boundary without restarting.",
+        "[Shot 1] 镜头从已连接首帧开始：主角的脸部近景，居中分缝的金色长卷发、黑色窄框墨镜、珊瑚色唇妆、含笑妩媚的眼神和黑色上衣保持与首帧一致。深色夜色里浮着柔散光斑，左下角虚化前景随镜头轻移滑出画面。她睫毛轻垂再抬起，嘴唇自然张开，从第一帧起柔声唱 <d>[Korean] 아침 햇살 문을 열면</d>；镜头以极慢速度向前推近，暖光在她发梢流动。\n[Shot 2] At 00:03.500, 柔和切到中近景并缓缓后拉，露出她身后外滩步道的栏杆与对岸楼群的金色散景。主角（S1）迎着江风微抬下巴，带着浅笑唱 <d>[Korean] 작은 새가 노래해요</d>，指尖轻轻碰一下耳环。本镜头、人物、歌声和后拉运动必须连续穿过内部片段接缝，不得暂停、重启、跳位或更换身份。\n[Shot 3] At 00:07.000, 镜头绕到她的侧面半身，江面反光在她发间流动，风把几缕发丝吹过脸颊。主角（S1）目光柔媚地落向镜头，唱 <d>[Korean] 초록 바람 <scenetrans></d>，歌声在切镜后保持连贯。",
+        193,
+        "percent",
+        "0-43.75\n43.75-87.5\n87.5-100",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3FastH3V2DualModelLongVideoEXPT8",
+      "title": "FastH3 V2 · Dual MODEL4+Upscale+4 Loop (T8 EXP)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        2330
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model_pass1",
+          "type": "MODEL",
+          "link": 5
+        },
+        {
+          "name": "model_pass2",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 7
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 8
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 9
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 11,
+          "shape": 7
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 10,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "persistent_identity_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "source_motion",
+          "type": "H3_T8_DANCE_MOTION",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "completed_segments",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2DualModelLongVideoEXPT8"
+      },
+      "widgets_values": [
+        "dense_compat_exp",
+        256,
+        384,
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "auto",
+        0.0,
+        "v2_loop_b4f8357d412a428d02cf",
+        8.0,
+        512,
+        768,
+        124,
+        22,
+        "",
+        "",
+        "apply_exp",
+        256,
+        "disabled",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5,
+        512,
+        2609152201,
+        "increment",
+        "I2VA",
+        "video_and_audio",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "segment0_only",
+        "single_reference",
+        1,
+        true,
+        "FastH3V2_Loop_8s_4plus4_EXP",
+        "cosine_bridge",
+        5.0,
+        8,
+        18,
+        true,
+        "high_native_mask_ramp_exp",
+        "accepted_picture_low_context_v1",
+        "bounded_motion_color_exp"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "title": "Preview as Text",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MarkdownNote",
+      "title": "FastH3 V2 · 通过配方与边界",
+      "pos": [
+        0,
+        -760
+      ],
+      "size": [
+        1000,
+        690
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "FastH3 V2 完整学生权重；本图转录已接受的固定样片配方，仍为EXP，不代表任意素材／LoRA／时长／显存均通过。\n\n不是旧EMA/Turbo加速LoRA；复用原生Qwen与音视频VAE。单MODEL用固定8步、CFG1、最终sigma0联合解码。trained / Dense / official template是不同配方，不可混称等价。73帧图与官方124帧图分别保留已审长度；单MODEL min_tokens=0是已审探针控制，不更改节点缺省12288。\n\nh4/c2训练图本机更慢且周期整卡占用更高，不作通用提速／省显存推荐。Sol仅在Dense、无Relay的已认证分支精确保留非video Q/KV；不做后期增音量。\n\n双MODEL为256×384→原有learned3D→512×768，两个裸MODEL各可加自己的普通LoRA；不要加旧EMA/Turbo。window124/context22，两段总8秒，约5.17秒是内部边界，不是两段各4秒。Relay图保留完整全局／局部／时间线；训练恢复图关闭Relay/EAV。\n\n首帧引用的是已审本地图，请自己放入ComfyUI/input或换自己的2:3参考，不拉伸；没有隐式下载。双MODEL执行前换新的chain_id；只有参数不变才resume。更换模型／LoRA／参考／代码需新链，不搬旧缓存。\n\n此图移除诊断观察器后保留同一Core RandomNoise→BasicGuider→SamplerCustomAdvanced执行连接；不是重新GPU生成／逐像素复现承诺。旧失败Sol A不保存成推荐图。模型与说明见docs/FAST_H3_V2_EXP.md。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      7,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      2,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      9,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      5,
+      8,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      10,
+      0,
+      12,
+      1,
+      "MODEL"
+    ],
+    [
+      7,
+      3,
+      0,
+      12,
+      2,
+      "CLIP"
+    ],
+    [
+      8,
+      4,
+      0,
+      12,
+      3,
+      "VAE"
+    ],
+    [
+      9,
+      5,
+      0,
+      12,
+      4,
+      "VAE"
+    ],
+    [
+      10,
+      6,
+      0,
+      12,
+      8,
+      "IMAGE"
+    ],
+    [
+      11,
+      11,
+      0,
+      12,
+      5,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      12,
+      12,
+      5,
+      13,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "FastH3_V2_Dense_Relay_Dual_4plus4_8s_EXP",
+    "t8_bound_review": {
+      "status": "accepted_in_this_review_scope",
+      "review_id": "7cc1a59f7fa2617dfa25e920f9b9544c402fb57ef5dbea1dd9a5d2aee838e6ca",
+      "media_sha256": "02884a07c8fd41048408d20e219eeea7343eb92e541fa624ec704bf8662fb7ae",
+      "ratings": {
+        "画面与细节": "正常／可接受",
+        "音乐与人声": "正常／可接受",
+        "口型": "正常／可接受",
+        "事件跟随与接缝": "正常／可接受"
+      },
+      "not_universal_quality_claim": true,
+      "control_transfer": "Exact accepted control values; diagnostic observer removed, native Core sampler unchanged; not a fresh GPU run"
+    }
+  },
+  "version": 0.4
+}

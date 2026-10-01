@@ -1,0 +1,956 @@
+{
+  "id": "e06e40b2-965e-4e8e-8a21-5b440ed7b4dc",
+  "revision": 0,
+  "last_node_id": 16,
+  "last_link_id": 22,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "Load Diffusion Model",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "Load CLIP",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "Load VAE",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        686
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            5,
+            10
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "A continuous cinematic medium shot of a woman in an old concert hall. She looks toward the camera and clearly says in Mandarin: <d>你在哪里</d>. Soft classical piano and strings, clean speech, natural mouth motion, no subtitles.",
+        832,
+        480,
+        73,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3FastH3V2SetupEXPT8",
+      "title": "FastH3 V2 · 8-Step Recipe (T8 EXP)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 4
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            17,
+            21
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2SetupEXPT8"
+      },
+      "widgets_values": [
+        "trained_vsa_exp",
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 6
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 7
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 8
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 9
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 11
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 12
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 14
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 15,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "MiniMaxH3/FastH3_V2_Probe",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3FastH3V2RuntimeAuditEXPT8",
+      "title": "FastH3 V2 · Actual Dispatch Audit (T8 EXP)",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 17
+        },
+        {
+          "name": "sampled_av_latent",
+          "type": "LATENT",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2RuntimeAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "PreviewAny",
+      "title": "Preview as Text",
+      "pos": [
+        2640,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "title": "Preview as Text",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        2609032101,
+        "fixed"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 21
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MarkdownNote",
+      "title": "FastH3 V2 · 通过配方与边界",
+      "pos": [
+        0,
+        -760
+      ],
+      "size": [
+        1000,
+        690
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "FastH3 V2 完整学生权重；本图转录已接受的固定样片配方，仍为EXP，不代表任意素材／LoRA／时长／显存均通过。\n\n不是旧EMA/Turbo加速LoRA；复用原生Qwen与音视频VAE。单MODEL用固定8步、CFG1、最终sigma0联合解码。trained / Dense / official template是不同配方，不可混称等价。73帧图与官方124帧图分别保留已审长度；单MODEL min_tokens=0是已审探针控制，不更改节点缺省12288。\n\nh4/c2训练图本机更慢且周期整卡占用更高，不作通用提速／省显存推荐。Sol仅在Dense、无Relay的已认证分支精确保留非video Q/KV；不做后期增音量。\n\n双MODEL为256×384→原有learned3D→512×768，两个裸MODEL各可加自己的普通LoRA；不要加旧EMA/Turbo。window124/context22，两段总8秒，约5.17秒是内部边界，不是两段各4秒。Relay图保留完整全局／局部／时间线；训练恢复图关闭Relay/EAV。\n\n首帧引用的是已审本地图，请自己放入ComfyUI/input或换自己的2:3参考，不拉伸；没有隐式下载。双MODEL执行前换新的chain_id；只有参数不变才resume。更换模型／LoRA／参考／代码需新链，不搬旧缓存。\n\n此图移除诊断观察器后保留同一Core RandomNoise→BasicGuider→SamplerCustomAdvanced执行连接；不是重新GPU生成／逐像素复现承诺。旧失败Sol A不保存成推荐图。模型与说明见docs/FAST_H3_V2_EXP.md。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      5,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      3,
+      0,
+      5,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      4,
+      0,
+      5,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      1,
+      0,
+      6,
+      0,
+      "MODEL"
+    ],
+    [
+      5,
+      5,
+      1,
+      6,
+      1,
+      "LATENT"
+    ],
+    [
+      6,
+      14,
+      0,
+      7,
+      0,
+      "NOISE"
+    ],
+    [
+      7,
+      15,
+      0,
+      7,
+      1,
+      "GUIDER"
+    ],
+    [
+      8,
+      6,
+      1,
+      7,
+      2,
+      "SAMPLER"
+    ],
+    [
+      9,
+      6,
+      2,
+      7,
+      3,
+      "SIGMAS"
+    ],
+    [
+      10,
+      5,
+      1,
+      7,
+      4,
+      "LATENT"
+    ],
+    [
+      11,
+      11,
+      0,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      12,
+      3,
+      0,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      13,
+      4,
+      0,
+      8,
+      2,
+      "VAE"
+    ],
+    [
+      14,
+      8,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      8,
+      1,
+      9,
+      1,
+      "AUDIO"
+    ],
+    [
+      16,
+      9,
+      0,
+      10,
+      0,
+      "VIDEO"
+    ],
+    [
+      17,
+      6,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      18,
+      7,
+      0,
+      11,
+      1,
+      "LATENT"
+    ],
+    [
+      19,
+      11,
+      1,
+      12,
+      0,
+      "*"
+    ],
+    [
+      20,
+      6,
+      3,
+      13,
+      0,
+      "*"
+    ],
+    [
+      21,
+      6,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      22,
+      5,
+      0,
+      15,
+      1,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "FastH3_V2_Trained_VSA_73f_h1c1_EXP",
+    "t8_bound_review": {
+      "status": "accepted_in_this_review_scope",
+      "review_id": "7cc1a59f7fa2617dfa25e920f9b9544c402fb57ef5dbea1dd9a5d2aee838e6ca",
+      "media_sha256": "83c89a4bba1ebcec68dec33a406946cdfd9e07413f25f42415506da282e52e13",
+      "ratings": {
+        "画面与细节": "正常／可接受",
+        "音乐与人声": "正常／可接受",
+        "口型": "正常／可接受",
+        "事件跟随与接缝": "不适用／无法判断"
+      },
+      "not_universal_quality_claim": true,
+      "control_transfer": "Exact accepted control values; diagnostic observer removed, native Core sampler unchanged; not a fresh GPU run"
+    }
+  },
+  "version": 0.4
+}

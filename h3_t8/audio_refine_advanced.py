@@ -1026,6 +1026,19 @@ def _authenticated_compat_runtime(
     long_video_version = getattr(
         live_function, "_t8_long_video_patch_version", None
     )
+    if live_extra is None and runtime_owner in ("long_video", "long_video_prompt_relay"):
+        # A cold audio-only resume has not sampled video, so Core has not yet
+        # materialized the declared object patch on the shared base model.
+        declared_extra = _mapping(getattr(model, "object_patches", {})).get("extra_conds")
+        declared_function = getattr(declared_extra, "__func__", declared_extra)
+        if (
+            getattr(declared_extra, "__self__", None) is base
+            and getattr(declared_function, "_t8_long_video_original_extra_conds", None)
+            is not None
+        ):
+            long_video_version = getattr(
+                declared_function, "_t8_long_video_patch_version", None
+            )
 
     if runtime_owner == "long_video":
         if long_video_version != LONG_VIDEO_PATCH_VERSION:

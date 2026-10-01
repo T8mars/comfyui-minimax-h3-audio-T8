@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.87.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.88.0** · [更新日志](CHANGELOG.md)
 
 ## 安装
 
@@ -24,12 +24,12 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 |第一次跑 H3／首帧图生视频|[基础生成](examples/workflows/01-basic-generation)|
 |音频参考、人物说话／唱歌|[音频控制](examples/workflows/02-audio-control) · [原生音色／情绪与 Avatar](examples/workflows/36-avatar-voice/README.md)|
 |双模型 4+4、分段长视频|[长视频](examples/workflows/04-long-video)|
+|独立一采／二采、外置 EAV／Relay|[分离采样](docs/MODULAR_SAMPLING_EXP.md) · [Veda 8 步](examples/workflows/63-veda-t2va/README.md)|
 |可视化编排镜头、素材和声音|[曜石导演台](examples/workflows/39-director-console/README.md)（也可点 ComfyUI 左侧独立的 `T8 曜石导演台`）|
 |OpenVDN、FastH3、低显存|[加速工作流](examples/workflows/10-speed) · [低显存说明](docs/H3_MEMORY_NODES_EXP.md)|
 |Meridian 图片／视频运镜、源时间编辑|[四节点工作流](examples/workflows/37-meridian/README.md)|
 |一采动态预览、定向取消|[TAEH3 预览](docs/TAEH3_SAMPLING_PREVIEW_EXP.md)|
 |成片高清放大／插帧|[Topaz](docs/TOPAZ_EXP.md) · [DLSS-NR](examples/workflows/25-dlss-nr) · [DLSS 插帧](examples/workflows/29-dlss-fi)|
-|H16-3 分块二采／精修音频|[H16-3 工作流](examples/workflows/13-latent-upscale/2026-09-20_H3_H16_3_Chunked_PASS2_I2VA_Advanced_EXP.json) · [说明](docs/H16_3_CHUNKED_PASS2_EXP.md)|
 |其他功能与详细操作|[完整工作流目录](examples/workflows) · [详细使用说明](docs/README_DETAILS_ZH.md)|
 
 ## 模型下载与位置
@@ -42,7 +42,6 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 |TAEH3 时序／2D 预览模型|[Taeh3-Comfy](https://huggingface.co/t8star/Taeh3-Comfy) → `models/vae_approx/`；2D 文件另名保存|
 |Meridian ConvRot INT8 ＋ Omega 1B512|[Meridian-Comfy](https://huggingface.co/t8star/Meridian-Comfy) → `models/meridian/`；Omega 在 `vggt-omega/checkpoints/`，源码／assets 和 H3 VAE 另备|
 |Semantic Bridge|[Semantic-Bridge-Comfy](https://huggingface.co/t8star/Semantic-Bridge-Comfy) → `models/semantic_bridge/t8_compat/`|
-|T8 动漫战斗 Semantic Bridge|[模型](https://huggingface.co/t8star/semantic_bridge_T8-comic-combat) → `models/semantic_bridge/t8_compat/`；用本仓库最新 GitHub 源码，设置见[Bridge 说明](docs/SEMANTIC_BRIDGE_EXP.md)|
 |OpenVDN 完整包|[Vdn-Minimax-H3-Comfy](https://huggingface.co/t8star/Vdn-Minimax-H3-Comfy)；保持仓库目录结构|
 |H3-World 动作 LoRA|[Minimax-H3-World-Comfy](https://huggingface.co/t8star/Minimax-H3-World-Comfy)；[接线说明](examples/workflows/26-h3-world)|
 

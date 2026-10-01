@@ -1,0 +1,475 @@
+{
+  "id": "34833cc9-aefc-40a3-b16b-30166ffdc063",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 8,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        750
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -900,
+        1100
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3400,
+        1700
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        3800,
+        1700
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        4200,
+        1700
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/HyperFlow_full8plus4_combined_both_load_high_Formal_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3HyperFlowFreshStageAuditEXPT8",
+      "title": "H3 HyperFlow · Fresh Stage Execution Audit (T8 EXP)",
+      "pos": [
+        2600,
+        1700
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": null
+        },
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshStageAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        2950,
+        2400
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3HyperFlowFreshStageLoadEXPT8",
+      "title": "H3 HyperFlow · Load Exact Frozen Fresh Stage (T8 EXP)",
+      "pos": [
+        -500,
+        0
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshStageLoadEXPT8"
+      },
+      "widgets_values": [
+        "SELECT_SAVED_STAGE/manifest.json",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "hyperflow_high_after_full8"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MarkdownNote",
+      "title": "先读 / Explicit fresh-noise stages",
+      "pos": [
+        -2100,
+        -700
+      ],
+      "size": [
+        1100,
+        950
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S14 HyperFlow full8plus4／combined:both／Load_Completed_HIGH 分离式EXP。这不是S13连续x_sigma，也不是P7长视频链。LOW和HIGH分别加载完整H3底模、专用Fresh HyperFlow Loader、可插内容LoRA、独立提示词／条件／NOISE；不能把普通LoRA Loader用于HyperFlow权重。LOW完整8步取已完成output；Lift Input再接原learned3D AV latent放大，HIGH在绝对4:8用独立新噪声和原fresh音频重基准；不能套用S13不重加噪规则，也不额外插入其它路线的音频锁定或reconcile。外置combined作用于both；阶段Relay Plan与EAV Config均可单独编辑，EAV默认report_only不施加增益，apply_exp才启用。Audit读实际阶段执行回执。本图只读取专用HIGH Stage Load的已完成AV并解码／保存，无模型、条件、放大或采样；效果标签只标记冻结结果来源，不能在这里修改旧输出。Load占位path/SHA不可直接排队。共享模型驻留时Fresh Loader只读原底模端点备份；未知用户wrapper不获自动可移植复用资格。现有tiny CPU和私有候选前端证据不等于本通用图真实训练权重原尺寸、多后端、apply_exp画质或人工音画验收；旧图不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      6,
+      1,
+      3,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      3,
+      1,
+      4,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      4,
+      0,
+      5,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      8,
+      3,
+      6,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      8,
+      6,
+      3,
+      7,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S14 HyperFlow full8plus4 combined:both Load_Completed_HIGH EXP",
+    "t8_split_example": {
+      "schema": "t8.hyperflow.fresh.split-example.v1",
+      "route": "S14",
+      "fresh_recipe": "full8plus4",
+      "effect_kind": "combined",
+      "effect_scope": "both",
+      "variant": "load_high",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

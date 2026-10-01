@@ -42,7 +42,7 @@ def _mask_parts(latent: Mapping[str, Any]) -> tuple[torch.Tensor, torch.Tensor] 
             "legacy video-only masks are ambiguous"
         )
     parts = tuple(masks.unbind())
-    if len(parts) != 2 or parts[0].ndim != 5 or parts[1].ndim != 4:
+    if len(parts) != 2 or parts[0].ndim not in (4, 5) or parts[1].ndim != 4:
         raise ValueError("Native latent timeline concat received an invalid nested AV noise_mask")
     return parts[0], parts[1]
 
@@ -244,7 +244,15 @@ def audit_native_h3_av_latent_resume_manifest(
 
     masks = _mask_parts(av_latent)
     if masks is not None:
-        if masks[0].shape != video.shape or masks[1].shape != audio.shape:
+        # Preserve both the latent-time one-channel mask and Core's native
+        # SetLatentNoiseMask [F,1,H,W] form. Core interpolates its frame and
+        # spatial dimensions for sampling; the LATENT retains source shape.
+        broadcast_video_shape = (video.shape[0], 1, *video.shape[2:])
+        native_pixel_mask = (masks[0].ndim == 4 and masks[0].shape[1] == 1
+                             and all(size > 0 for size in masks[0].shape))
+        if ((masks[0].shape not in (video.shape, broadcast_video_shape)
+                and not native_pixel_mask)
+                or masks[1].shape != audio.shape):
             raise ValueError("Native latent resume manifest noise_mask shapes do not match AV samples")
         for name, tensor in (("noise_mask.video", masks[0]), ("noise_mask.audio", masks[1])):
             digest, tensor_bytes = _tensor_content_digest(

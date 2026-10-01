@@ -1,0 +1,495 @@
+{
+  "id": "de18aef8-e5ad-58c9-9b93-c9455de7d482",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 10,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3PreparedGenerationBundleEXPT8",
+      "title": "Tao / LTX · 读取已准备生成输入 (T8 EXP)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "links": [
+            4,
+            5,
+            7
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedGenerationBundleEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3PreparedLTXGenerateEXPT8",
+      "title": "Prepared LTX · Generate Refined Latent (T8 EXP)",
+      "pos": [
+        1980,
+        0
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "generation_receipt",
+          "type": "T8_MODULAR_PREPARED_LTX_GENERATION",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "latent_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXGenerateEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        8301,
+        "fixed",
+        "ltx_split_trial_01",
+        true,
+        ""
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3PreparedLTXDecodeEXPT8",
+      "title": "Prepared LTX · Decode Frozen Latent (T8 EXP)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 2
+        },
+        {
+          "name": "generation_receipt",
+          "type": "T8_MODULAR_PREPARED_LTX_GENERATION",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXDecodeEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "H3 Stage EAV · External Config (T8 EXP)",
+      "pos": [
+        660,
+        0
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "report_only",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3PreparedLTXRelayPlanEXPT8",
+      "title": "Prepared LTX · External Relay Timeline (T8 EXP)",
+      "pos": [
+        0,
+        420
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ltx_relay_plan",
+          "type": "T8_LTX_PROMPT_RELAY_PLAN",
+          "links": [
+            6,
+            10
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXRelayPlanEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "auto_equal",
+        "",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3PreparedLTXRelayEncodeEXPT8",
+      "title": "Prepared LTX · Encode Relay Event Caches (T8 EXP)",
+      "pos": [
+        660,
+        420
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 5
+        },
+        {
+          "name": "ltx_relay_plan",
+          "type": "T8_LTX_PROMPT_RELAY_PLAN",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "relay_cache_manifest_path",
+          "type": "STRING",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXRelayEncodeEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+        "prepared_ltx_relay_01",
+        true,
+        ""
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3PreparedLTXEffectsBindEXPT8",
+      "title": "Prepared LTX · External EAV / Relay (T8 EXP)",
+      "pos": [
+        1320,
+        180
+      ],
+      "size": [
+        580,
+        350
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "link": 7
+        },
+        {
+          "name": "relay_cache_manifest_path",
+          "type": "STRING",
+          "link": 8,
+          "widget": {
+            "name": "relay_cache_manifest_path"
+          }
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 9,
+          "shape": 7
+        },
+        {
+          "name": "ltx_relay_plan",
+          "type": "T8_LTX_PROMPT_RELAY_PLAN",
+          "link": 10,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prepared_bundle",
+          "type": "T8_PREPARED_GENERATION_BUNDLE",
+          "links": [
+            1,
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PreparedLTXEffectsBindEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "report_only",
+        32
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "必读：外置效果和缓存边界",
+      "pos": [
+        1980,
+        430
+      ],
+      "size": [
+        1190,
+        650
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Prepared LTX 外置效果与独立阶段\n\n只接受匹配的 Prepared LTX bundle，不自动转换任意 H3 latent。填写本机 bundle、绝对 serial lease 路径，改变模型/提示词/效果/实现后使用新的 chain_id 与 cache_id。旧图与原 bundle 不修改；Plan/Encode 接原 bundle，Generate/Load/Decode 接 Effects Bind 输出。\n\nEAV 和 Relay 默认 report_only，不偷偷施加效果。Relay local_prompts 留空为显式 global-only旁路，不编码/不加局部效果。填真实局部事件后，独立 Encode 使用匹配的原生 INT8 Gemma/connector，需64GiB空闲主存和2GiB GPU运行预留；正常 text_encoders 下拉不是任意CLIP兼容认证。缓存命中不重编码，坏SHA不会自动重建。compiled_prompt不是编码特征。\n\nGenerate只采样保存完成latent；Decode只解码，原声不替换成新联合音频。\n\n单个真实组合输入已完成原生生成/冷解码/第三缓存及完整画音机械验收；不代表本图所有控件值、任意素材/后端、人审画质或一般加速。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      7,
+      0,
+      2,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      2,
+      7,
+      0,
+      3,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      1,
+      "T8_MODULAR_PREPARED_LTX_GENERATION"
+    ],
+    [
+      4,
+      1,
+      0,
+      5,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      5,
+      1,
+      0,
+      6,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      6,
+      5,
+      0,
+      6,
+      1,
+      "T8_LTX_PROMPT_RELAY_PLAN"
+    ],
+    [
+      7,
+      1,
+      0,
+      7,
+      0,
+      "T8_PREPARED_GENERATION_BUNDLE"
+    ],
+    [
+      8,
+      6,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      9,
+      4,
+      0,
+      7,
+      2,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      10,
+      5,
+      0,
+      7,
+      3,
+      "T8_LTX_PROMPT_RELAY_PLAN"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "Prepared LTX / EAV_Relay External / Generate and Decode / EXP",
+    "prepared_route": "ltx_refine",
+    "external_effect": "EAV_Relay",
+    "split_stage": "generation_then_decode"
+  },
+  "version": 0.4
+}

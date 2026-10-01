@@ -397,11 +397,15 @@ def test_hyperflow_single_ignores_inactive_high_draft_but_dual_validates_it():
     raw["variant"] = "continuous4plus4"
     with pytest.raises(ValueError, match="LoRA 强度"):
         normalize_sampling(raw)
+    raw["variant"] = "continuous4plus4separate"
+    with pytest.raises(ValueError, match="LoRA 强度"):
+        normalize_sampling(raw)
 
 
 @pytest.mark.parametrize("variant,recipe", [
     ("single8", "hyperflow8_single_v1"),
     ("continuous4plus4", "hyperflow8_continuous_split_exp_v1"),
+    ("continuous4plus4separate", "hyperflow8_continuous_separate_stages_exp_v1"),
     ("upscale8plus4", "hyperflow8plus4_new_noise_upscale_exp_v1"),
     ("upscale4plus4", "hyperflow4plus4_partial_x0_upscale_exp_v1"),
 ])
@@ -440,6 +444,30 @@ def test_director_hyperflow_explicit_graph_keeps_legacy_recipe_separate(tmp_path
         assert graph["10"]["inputs"]["av_latent"] != ["9", 0]
     if variant == "continuous4plus4":
         assert graph["9"]["class_type"] == "MiniMaxH3HyperFlowSplitT8Advanced"
+    if variant == "continuous4plus4separate":
+        assert graph["9"]["class_type"] == "MiniMaxH3HyperFlowHeadStageEXPT8"
+        assert "MiniMaxH3HyperFlowSplitT8Advanced" not in types
+        tails = [(key, node) for key, node in graph.items()
+                 if node["class_type"] == "MiniMaxH3HyperFlowTailStageEXPT8"]
+        assert len(tails) == 1
+        tail_id, tail = tails[0]
+        head_audit_id = next(key for key, node in graph.items()
+                             if node["class_type"] == "MiniMaxH3HyperFlowHeadEffectsAuditEXPT8")
+        tail_audit_id = next(key for key, node in graph.items()
+                             if node["class_type"] == "MiniMaxH3HyperFlowTailEffectsAuditEXPT8")
+        assert graph[head_audit_id]["inputs"]["continuous_boundary"] == ["9", 0]
+        assert tail["inputs"]["continuous_boundary"] == [head_audit_id, 0]
+        assert tail["inputs"]["positive"][0] == tail["inputs"]["negative"][0]
+        assert (tail["inputs"]["positive"][1], tail["inputs"]["negative"][1]) == (1, 2)
+        assert tail["inputs"]["positive"] != graph["9"]["inputs"]["positive"]
+        assert graph[tail_audit_id]["inputs"]["completed_result"] == [tail_id, 2]
+        assert graph["10"]["inputs"]["av_latent"] == [tail_audit_id, 1]
+        assert graph["9"]["inputs"]["noise"] == ["8", 0]
+        assert [node["class_type"] for node in graph.values()].count("MiniMaxH3AudioConditioningT8") == 2
+        assert types.count("MiniMaxH3HyperFlowHeadEffectsBindEXPT8") == 1
+        assert types.count("MiniMaxH3HyperFlowTailEffectsBindEXPT8") == 1
+        assert types.count("MiniMaxH3StageEAVConfigEXPT8") == 2
+        assert types.count("MiniMaxH3StageEAVApplyEXPT8") == 2
     if variant in {"upscale8plus4", "upscale4plus4"}:
         assert "MiniMaxH3LearnedLatentUpscaleT8Advanced" in types
         assert ("MiniMaxH3HyperFlowPartialRefineSamplerT8Advanced" if variant == "upscale4plus4"
@@ -450,6 +478,441 @@ def test_director_hyperflow_explicit_graph_keeps_legacy_recipe_separate(tmp_path
         upscaler = next(node for node in graph.values()
                         if node["class_type"] == "MiniMaxH3LearnedLatentUpscaleT8Advanced")
         assert upscaler["inputs"]["av_latent"] == ["9", 1]
+
+
+@pytest.mark.parametrize("relay", [False, True])
+@pytest.mark.parametrize("checkpoint_mode", ["off", "save", "resume_tail"])
+def test_director_hyperflow_separate_head_tail_validates_in_core(tmp_path, monkeypatch, relay, checkpoint_mode):
+    import json
+    import os
+    from pathlib import Path
+    import subprocess
+    import sys
+
+    from h3_audio_t8_pkg import director_generation, director_hyperflow
+    from h3_audio_t8_pkg.modular_sampling import hyperflow_storage
+
+    _patch_director_models(monkeypatch)
+    monkeypatch.setattr(director_generation.folder_paths, "get_filename_list", lambda folder: {
+        "diffusion_models": ["minimax_h3_fl2va_int8_convrot.safetensors"],
+        "vae": ["minimax_h3_video_vae_fp16.safetensors", "minimax_h3_audio_vae_fp32.safetensors"],
+        "clip": ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"],
+        "text_encoders": ["qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"],
+        "hyperflow": ["hf.safetensors"],
+    }.get(folder, []))
+    monkeypatch.setattr(director_generation.folder_paths, "get_full_path", lambda _folder, name: name)
+    weight = tmp_path / "hf.safetensors"
+    weight.write_bytes(b"preflight-only")
+    monkeypatch.setattr(director_hyperflow, "_resolve", lambda _selection: weight)
+    monkeypatch.setattr(director_hyperflow.folder_paths, "get_output_directory", lambda: str(tmp_path))
+    project = new_project()
+    project["doc"]["shots"][0]["simplePrompt"] = "A continuous scene."
+    project["doc"]["generation"]["unet"] = "minimax_h3_fl2va_int8_convrot.safetensors"
+    project["doc"]["sampling"] = {"mode": "hyperflow", "variant": "continuous4plus4separate",
+                                  "hyperflow_file": "hyperflow/hf.safetensors", "output_mp": 0.4}
+    if checkpoint_mode == "save":
+        project["doc"]["sampling"]["stage_checkpoint"] = {"mode": "save"}
+    elif checkpoint_mode == "resume_tail":
+        from test_modular_hyperflow import inputs, head
+
+        low, _, source, positive = inputs(monkeypatch)
+        boundary = head(low, source, positive)
+        root = tmp_path / "MiniMaxH3" / "hyperflow_stage_artifacts"
+        path, digest, _ = hyperflow_storage.save_boundary(boundary, root)
+        project["doc"]["sampling"]["stage_checkpoint"] = {
+            "mode": "resume_tail", "artifact_path": path, "artifact_sha256": digest}
+    if relay:
+        project["doc"]["d3"] = {"prompt_relay": {"enabled": True, "execution_mode": "apply_exp"}}
+        project["doc"]["sampling"]["stage_relay"] = {
+            "head": {"mode": "custom", "global_prompt": "Head stage portrait"},
+            "tail": {"mode": "custom", "global_prompt": "Tail stage portrait"},
+        }
+    graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+    root = Path(__file__).resolve().parents[1]
+    core = root.parents[1]
+    script = """
+import asyncio
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root.parents[1]))
+from comfy.cli_args import args
+args.cpu = True
+import folder_paths
+folder_paths.get_filename_list = lambda folder: {
+    'diffusion_models': ['minimax_h3_fl2va_int8_convrot.safetensors'],
+    'vae': ['minimax_h3_video_vae_fp16.safetensors', 'minimax_h3_audio_vae_fp32.safetensors'],
+    'clip': ['qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors'],
+    'text_encoders': ['qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors'],
+    'hyperflow': ['hf.safetensors'],
+}.get(folder, [])
+folder_paths.get_full_path = lambda _folder, name: name
+spec = importlib.util.spec_from_file_location('h3_audio_t8_pkg', root / '__init__.py',
+                                              submodule_search_locations=[str(root)])
+package = importlib.util.module_from_spec(spec)
+sys.modules['h3_audio_t8_pkg'] = package
+spec.loader.exec_module(package)
+import execution
+import nodes
+from comfy_extras import nodes_custom_sampler
+graph = json.load(sys.stdin)
+classes = asyncio.run(package.comfy_entrypoint().get_node_list())
+required = {item['class_type'] for item in graph.values()}
+for cls in classes:
+    if cls.__name__ in required:
+        nodes.NODE_CLASS_MAPPINGS[cls.__name__] = cls
+for cls in (nodes_custom_sampler.BasicGuider, nodes_custom_sampler.RandomNoise,
+            nodes_custom_sampler.SamplerCustomAdvanced):
+    nodes.NODE_CLASS_MAPPINGS[cls.__name__] = cls
+valid = asyncio.run(execution.validate_prompt('director-hyperflow-separate', graph, None))
+print(json.dumps({'valid': valid[0], 'errors': valid[1]}, default=str))
+"""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(core) + os.pathsep + env.get("PYTHONPATH", "")
+    result = subprocess.run([sys.executable, "-c", script, str(root)], input=json.dumps(graph),
+                            text=True, capture_output=True, env=env, cwd=root, timeout=60, check=True)
+    validation = json.loads(result.stdout.splitlines()[-1])
+    assert validation["valid"], validation["errors"]
+
+
+def test_director_hyperflow_separate_clones_semantic_bridge_per_stage(tmp_path, monkeypatch):
+    from h3_audio_t8_pkg import director_generation, director_hyperflow
+
+    _patch_director_models(monkeypatch)
+    monkeypatch.setattr(director_hyperflow, "_resolve", lambda _selection: tmp_path / "hf.safetensors")
+    (tmp_path / "hf.safetensors").write_bytes(b"preflight-only")
+    project = new_project()
+    project["doc"]["shots"][0]["simplePrompt"] = "A continuous scene."
+    project["doc"]["sampling"] = {"mode": "hyperflow", "variant": "continuous4plus4separate",
+                                  "hyperflow_file": "hyperflow/hf.safetensors", "output_mp": 0.4}
+    project["doc"]["d3"] = {"semantic_bridge": {"enabled": True, "model_name": "bridge.safetensors"}}
+    monkeypatch.setattr(director_generation, "_optional_semantic_bridge_model", lambda: "bridge.safetensors")
+    graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+    bridge_ids = {key for key, node in graph.items()
+                  if node["class_type"] == "MiniMaxH3SemanticBridgeApplyT8"}
+    assert len(bridge_ids) == 2
+    head_bind = next(node for node in graph.values()
+                     if node["class_type"] == "MiniMaxH3HyperFlowHeadEffectsBindEXPT8")
+    tail_bind = next(node for node in graph.values()
+                     if node["class_type"] == "MiniMaxH3HyperFlowTailEffectsBindEXPT8")
+    head_positive = head_bind["inputs"]["positive"]
+    tail_positive = tail_bind["inputs"]["positive"]
+    assert head_positive[0] in bridge_ids and tail_positive[0] in bridge_ids
+    assert head_positive != tail_positive
+    assert graph[tail_positive[0]]["inputs"]["conditioning"][0] != "5"
+
+
+def test_director_hyperflow_stage_checkpoint_validation_is_opt_in():
+    from h3_audio_t8_pkg.director_sampling_settings import normalize_sampling
+
+    raw = {"mode": "hyperflow", "variant": "continuous4plus4separate",
+           "hyperflow_file": "hyperflow/hf.safetensors"}
+    assert normalize_sampling(raw)["stage_checkpoint"] == {"mode": "off"}
+    assert normalize_sampling({**raw, "stage_checkpoint": {"mode": "save"}})["stage_checkpoint"] == {"mode": "save"}
+    for checkpoint in ({"mode": "unknown"}, {"mode": "resume_tail"},
+                       {"mode": "resume_tail", "artifact_path": "head.safetensors", "artifact_sha256": "x" * 64}):
+        with pytest.raises(ValueError, match="HEAD|TAIL"):
+            normalize_sampling({**raw, "stage_checkpoint": checkpoint})
+    old = {**raw, "variant": "continuous4plus4", "stage_checkpoint": {"mode": "unknown"}}
+    assert "stage_checkpoint" not in normalize_sampling(old)
+    old["stage_relay"] = {"head": {"mode": "invalid"}}
+    assert "stage_relay" not in normalize_sampling(old)
+    resume = {**raw, "stage_checkpoint": {"mode": "resume_tail", "artifact_path": "frozen/hyperflow-head.safetensors",
+                                            "artifact_sha256": "a" * 64},
+              "stage_eav": {"head": {"mode": "invalid"}, "tail": {"mode": "report_only", "tau": 2.0}},
+              "stage_relay": {"head": {"mode": "invalid"},
+                              "tail": {"mode": "custom", "global_prompt": "New TAIL"}}}
+    normalized = normalize_sampling(resume)
+    assert normalized["stage_eav"]["head"]["mode"] == "disabled"
+    assert normalized["stage_eav"]["tail"]["mode"] == "report_only"
+    assert normalized["stage_relay"]["head"] == {"mode": "inherit"}
+    assert normalized["stage_relay"]["tail"]["global_prompt"] == "New TAIL"
+
+
+def test_director_hyperflow_save_and_exact_tail_resume_graph(tmp_path, monkeypatch):
+    from h3_audio_t8_pkg import director_hyperflow
+    from h3_audio_t8_pkg.modular_sampling import hyperflow_storage
+    from test_modular_hyperflow import inputs, head
+
+    _patch_director_models(monkeypatch)
+    weight = tmp_path / "hf.safetensors"
+    weight.write_bytes(b"preflight-only")
+    monkeypatch.setattr(director_hyperflow, "_resolve", lambda _selection: weight)
+    monkeypatch.setattr(director_hyperflow.folder_paths, "get_output_directory", lambda: str(tmp_path))
+    project = new_project()
+    project["doc"]["shots"][0]["simplePrompt"] = "A continuous scene."
+    sampling = project["doc"]["sampling"] = {
+        "mode": "hyperflow", "variant": "continuous4plus4separate",
+        "hyperflow_file": "hyperflow/hf.safetensors", "output_mp": 0.4,
+        "stage_checkpoint": {"mode": "save"},
+    }
+    save_graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+    save_id = next(key for key, node in save_graph.items()
+                   if node["class_type"] == "MiniMaxH3HyperFlowHeadSaveEXPT8")
+    head_audit_id = next(key for key, node in save_graph.items()
+                         if node["class_type"] == "MiniMaxH3HyperFlowHeadEffectsAuditEXPT8")
+    tail_id = next(key for key, node in save_graph.items()
+                   if node["class_type"] == "MiniMaxH3HyperFlowTailStageEXPT8")
+    assert save_graph[save_id]["inputs"]["continuous_boundary"] == [head_audit_id, 0]
+    assert save_graph[tail_id]["inputs"]["continuous_boundary"] == [save_id, 0]
+    assert save_graph["12"]["class_type"] == "MiniMaxH3SafeAVSaveT8Advanced"
+
+    low, _, source, positive = inputs(monkeypatch)
+    boundary = head(low, source, positive)
+    root = tmp_path / "MiniMaxH3" / "hyperflow_stage_artifacts"
+    path, digest, report = hyperflow_storage.save_boundary(boundary, root)
+    assert '"portable_identity":true' in report
+    sampling["stage_checkpoint"] = {"mode": "resume_tail", "artifact_path": path,
+                                    "artifact_sha256": digest.upper()}
+    sampling["low_loras"] = [{"enabled": True, "name": "deleted-low-draft.safetensors", "strength": 9}]
+    resume = build_director_generation_prompt(project, project["current"], _store(tmp_path))
+    graph = resume["prompt"]
+    kinds = [node["class_type"] for node in graph.values()]
+    assert kinds.count("MiniMaxH3HyperFlowHeadLoadEXPT8") == 1
+    assert "MiniMaxH3HyperFlowHeadStageEXPT8" not in kinds
+    assert "MiniMaxH3HyperFlowHeadEffectsBindEXPT8" not in kinds
+    assert "MiniMaxH3HyperFlowHeadSaveEXPT8" not in kinds
+    assert "RandomNoise" not in kinds
+    load_id = next(key for key, node in graph.items()
+                   if node["class_type"] == "MiniMaxH3HyperFlowHeadLoadEXPT8")
+    tail_id = next(key for key, node in graph.items()
+                   if node["class_type"] == "MiniMaxH3HyperFlowTailStageEXPT8")
+    assert graph[tail_id]["inputs"]["continuous_boundary"] == [load_id, 0]
+    assert graph[load_id]["inputs"]["artifact_sha256"] == digest
+    assert resume["sampling"]["total_nfe"] == 4
+    sampling["stage_checkpoint"]["artifact_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="SHA256"):
+        build_director_generation_prompt(project, project["current"], _store(tmp_path))
+
+
+def test_director_hyperflow_separate_stage_eav_and_relay_are_independent(tmp_path, monkeypatch):
+    from h3_audio_t8_pkg import director_hyperflow
+    from h3_audio_t8_pkg.director_sampling_settings import normalize_sampling
+
+    _patch_director_models(monkeypatch)
+    monkeypatch.setattr(director_hyperflow, "_resolve", lambda _selection: tmp_path / "hf.safetensors")
+    (tmp_path / "hf.safetensors").write_bytes(b"preflight-only")
+    project = new_project()
+    project["doc"]["shots"][0]["simplePrompt"] = "A continuous scene."
+    project["doc"]["sampling"] = {"mode": "hyperflow", "variant": "continuous4plus4separate",
+        "hyperflow_file": "hyperflow/hf.safetensors", "output_mp": 0.4,
+        "stage_eav": {"head": {"mode": "report_only", "tau": 2.0},
+                      "tail": {"mode": "apply_exp", "tau": 4.0}},
+        "stage_relay": {
+            "head": {"mode": "custom", "global_prompt": "First stage city",
+                     "local_prompts": "A person starts walking\nCamera follows", "timing_mode": "auto_equal"},
+            "tail": {"mode": "custom", "global_prompt": "Second stage city",
+                     "local_prompts": "A person keeps walking\nCamera closes in", "timing_mode": "auto_equal"},
+        }}
+    project["doc"]["d3"] = {"prompt_relay": {"enabled": True, "execution_mode": "apply_exp"}}
+    graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+    def by_type(kind):
+        return [(key, node) for key, node in graph.items() if node["class_type"] == kind]
+    plans = by_type("MiniMaxH3PromptRelayPlanT8Advanced")
+    relays = by_type("MiniMaxH3PromptRelayConditioningT8Advanced")
+    configs = by_type("MiniMaxH3StageEAVConfigEXPT8")
+    applies = by_type("MiniMaxH3StageEAVApplyEXPT8")
+    assert len(plans) == len(relays) == len(configs) == len(applies) == 2
+    assert {node["inputs"]["mode"] for _, node in configs} == {"report_only", "apply_exp"}
+    assert {node["inputs"]["tau"] for _, node in configs} == {2.0, 4.0}
+    assert relays[0][1]["inputs"]["prompt_relay_plan"] != relays[1][1]["inputs"]["prompt_relay_plan"]
+    assert relays[0][1]["inputs"]["model"] != relays[1][1]["inputs"]["model"]
+    assert {node["inputs"]["global_prompt"] for _, node in plans} == {
+        "First stage city", "Second stage city"}
+    assert {node["inputs"]["local_prompts"] for _, node in plans} == {
+        "A person starts walking\nCamera follows", "A person keeps walking\nCamera closes in"}
+    assert graph["9"]["inputs"]["noise"] == ["8", 0]
+    for bad in ({"mode": "unknown"}, {"tau": float("nan")},
+                {"start_video_progress": .9, "end_video_progress": .2},
+                {"max_workspace_mib": 513}):
+        raw = {**project["doc"]["sampling"], "stage_eav": {"head": bad}}
+        with pytest.raises(ValueError, match="EAV"):
+            normalize_sampling(raw)
+    for bad in ({"mode": "custom", "global_prompt": " "},
+                {"mode": "custom", "global_prompt": "Valid", "timing_mode": "unknown"},
+                {"mode": "custom", "global_prompt": "Valid", "time_ranges": "0-23"}):
+        raw = {**project["doc"]["sampling"], "stage_relay": {"tail": bad}}
+        with pytest.raises(ValueError, match="Relay"):
+            normalize_sampling(raw)
+    invalid_timeline = deepcopy(project)
+    invalid_timeline["doc"]["sampling"]["stage_relay"]["tail"].update(
+        timing_mode="frames", time_ranges="0-23")
+    with pytest.raises(ValueError, match="one time range per local prompt"):
+        build_director_generation_prompt(invalid_timeline, invalid_timeline["current"], _store(tmp_path))
+
+
+@pytest.mark.parametrize("relay", [False, True])
+def test_director_hyperflow_separate_real_core_tail_eav_edit_keeps_head_cached(tmp_path, monkeypatch, relay):
+    import asyncio
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    import torch
+    import comfy.nested_tensor
+    from comfy_api.latest import io
+
+    from h3_audio_t8_pkg import director_hyperflow
+    from h3_audio_t8_pkg.modular_sampling import hyperflow as stages
+    from h3_audio_t8_pkg.modular_sampling import hyperflow_nodes, hyperflow_effect_nodes
+    from h3_audio_t8_pkg.modular_sampling import hyperflow_storage, hyperflow_storage_nodes
+    from h3_audio_t8_pkg.modular_sampling import nodes as effect_nodes
+    from test_hyperflow_advanced import _tiny_native_model
+    from test_modular_hyperflow_core_cache import TinyHyperBase, SyntheticHyperLoader, HyperResultSink
+    from test_modular_progressive_core_cache import TinyCondition
+    from test_progressive_sampling_runtime import tiny_model
+    from test_progressive_relay import paired
+    from tools import build_modular_hyperflow_workflow as builder
+
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[3]))
+    import execution
+    import nodes
+    from comfy_extras.nodes_custom_sampler import RandomNoise
+
+    _patch_director_models(monkeypatch)
+    monkeypatch.setattr(director_hyperflow, "_resolve", lambda _selection: tmp_path / "hf.safetensors")
+    monkeypatch.setattr(director_hyperflow.folder_paths, "get_output_directory", lambda: str(tmp_path))
+    (tmp_path / "hf.safetensors").write_bytes(b"preflight-only")
+    project = new_project()
+    project["doc"]["shots"][0]["simplePrompt"] = "A continuous scene."
+    project["doc"]["sampling"] = {"mode": "hyperflow", "variant": "continuous4plus4separate",
+        "hyperflow_file": "hyperflow/hf.safetensors", "output_mp": 0.4,
+        "stage_checkpoint": {"mode": "save"},
+        "stage_eav": {"head": {"mode": "report_only", "tau": .2, "g_hard_limit": 3.},
+                      "tail": {"mode": "report_only", "tau": .2, "g_hard_limit": 3.}}}
+    if relay:
+        project["doc"]["d3"] = {"prompt_relay": {"enabled": True, "execution_mode": "apply_exp"}}
+        project["doc"]["sampling"]["stage_relay"] = {
+            "head": {"mode": "custom", "global_prompt": "Head stage portrait"},
+            "tail": {"mode": "custom", "global_prompt": "Tail stage portrait"},
+        }
+    graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+
+    class TinyDirectorRelay(io.ComfyNode):
+        @classmethod
+        def define_schema(cls):
+            return io.Schema(node_id=cls.__name__, inputs=[io.Model.Input("model"),
+                io.Combo.Input("route", options=["joint_av_exp", "video_only_paper"]),
+                io.Float.Input("prompt", default=0.)],
+                outputs=[io.Model.Output(), io.Conditioning.Output(), io.Latent.Output()])
+
+        @classmethod
+        def execute(cls, model, route, prompt):
+            selected, positive, _ = paired(model, query_route=route)
+            positive[0][0].add_(prompt)
+            source = {"samples": comfy.nested_tensor.NestedTensor((
+                torch.zeros(1, 24, 2, 4, 8), torch.zeros(1, 32, 2, 8)))}
+            return io.NodeOutput(selected, positive, source)
+
+    _, diffusion = _tiny_native_model(monkeypatch)
+    base = tiny_model()
+    base.model.diffusion_model = diffusion
+    monkeypatch.setattr(TinyHyperBase, "execute", classmethod(lambda cls: io.NodeOutput(base)))
+    graph["1"] = {"class_type": "TinyHyperBase", "inputs": {}}
+    for key, node in list(graph.items()):
+        if node["class_type"] == "MiniMaxH3HyperFlowLoaderT8Advanced":
+            graph[key] = {"class_type": "SyntheticHyperLoader", "inputs": {
+                "model": node["inputs"]["model"], "patch": 0.}}
+        elif node["class_type"] == "MiniMaxH3AudioConditioningT8":
+            graph[key] = {"class_type": "TinyCondition", "inputs": {
+                "width": 64, "height": 64, "prompt": 0.}}
+        elif node["class_type"] == "MiniMaxH3PromptRelayConditioningT8Advanced":
+            plan = graph[node["inputs"]["prompt_relay_plan"][0]]["inputs"]
+            graph[key] = {"class_type": "TinyDirectorRelay", "inputs": {
+                "model": node["inputs"]["model"], "route": "joint_av_exp",
+                "prompt": .1 if plan["global_prompt"].startswith("Head stage") else .2}}
+    audit_id = next(key for key, node in graph.items()
+                    if node["class_type"] == "MiniMaxH3HyperFlowTailEffectsAuditEXPT8")
+    tail_bind_id = next(key for key, node in graph.items()
+                        if node["class_type"] == "MiniMaxH3HyperFlowTailEffectsBindEXPT8")
+    tail_apply_id = next(key for key, node in graph.items()
+                         if node["class_type"] == "MiniMaxH3StageEAVApplyEXPT8"
+                         and node["inputs"]["model"] == [tail_bind_id, 0])
+    tail_config_id = graph[tail_apply_id]["inputs"]["eav_config"][0]
+    graph["999"] = {"class_type": "HyperResultSink", "inputs": {"result": [audit_id, 0]}}
+    graph = builder.common.prune(graph, ["999"])
+    for cls in (*hyperflow_nodes.NODES, *hyperflow_effect_nodes.NODES, *hyperflow_storage_nodes.NODES, TinyHyperBase,
+                SyntheticHyperLoader, TinyCondition, TinyDirectorRelay, HyperResultSink, RandomNoise,
+                effect_nodes.MiniMaxH3StageEAVApplyEXPT8, effect_nodes.MiniMaxH3StageEAVConfigEXPT8):
+        monkeypatch.setitem(nodes.NODE_CLASS_MAPPINGS, cls.__name__, cls)
+    assert asyncio.run(execution.validate_prompt("director-stage-effects", graph, None))[0]
+    server = SimpleNamespace(client_id=None, last_node_id=None, sockets_metadata={}, send_sync=lambda *a, **k: None)
+    executor = execution.PromptExecutor(server, cache_args={"ram": 0., "ram_inactive": 0.},
+                                        asset_manager=SimpleNamespace(enabled=False))
+    calls, receipts = [], []
+    original = stages._run
+
+    def counted(model, plan, *args, **kwargs):
+        calls.append("tail" if plan.start_interval else "head")
+        output = original(model, plan, *args, **kwargs)
+        receipts.append(output[3]["effects"])
+        return output
+
+    monkeypatch.setattr(stages, "_run", counted)
+
+    def run(label):
+        executor.execute(deepcopy(graph), label, execute_outputs=["999"])
+        assert executor.success, executor.status_messages
+
+    run("first")
+    assert calls == ["head", "tail"]
+    root = tmp_path / "MiniMaxH3" / "hyperflow_stage_artifacts"
+    head_file = next(root.rglob("hyperflow-head.safetensors"))
+    frozen_head_sha = hyperflow_storage.file_sha(head_file)
+    assert all(receipt["composition_verified"] for receipt in receipts)
+    if relay:
+        assert all(receipt["relay"]["routed_attention_calls"] > 0 for receipt in receipts)
+    calls.clear()
+    run("same")
+    assert calls == []
+    graph[tail_config_id]["inputs"]["mode"] = "apply_exp"
+    run("tail-eav-only")
+    assert calls == ["tail"]
+    assert receipts[-1]["eav"]["status"] == "observed_apply_exp"
+    if relay:
+        calls.clear()
+        tail_relay_id = next(key for key, node in graph.items()
+                             if node["class_type"] == "TinyDirectorRelay"
+                             and node["inputs"]["prompt"] == .2)
+        graph[tail_relay_id]["inputs"]["prompt"] = .3
+        run("tail-relay-text-only")
+        assert calls == ["tail"]
+        assert receipts[-1]["relay"]["routed_attention_calls"] > 0
+    assert hyperflow_storage.file_sha(head_file) == frozen_head_sha
+    assert len(list(root.rglob("hyperflow-head.safetensors"))) == 1
+    path = head_file.relative_to(root).as_posix()
+    digest = hyperflow_storage.file_sha(head_file)
+    project["doc"]["sampling"]["stage_checkpoint"] = {
+        "mode": "resume_tail", "artifact_path": path, "artifact_sha256": digest}
+    resumed = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
+    for key, node in list(resumed.items()):
+        if node["class_type"] == "MiniMaxH3HyperFlowLoaderT8Advanced":
+            resumed[key] = {"class_type": "SyntheticHyperLoader", "inputs": {
+                "model": node["inputs"]["model"], "patch": 0.}}
+        elif node["class_type"] == "MiniMaxH3AudioConditioningT8":
+            resumed[key] = {"class_type": "TinyCondition", "inputs": {
+                "width": 64, "height": 64, "prompt": 0.}}
+        elif node["class_type"] == "MiniMaxH3PromptRelayConditioningT8Advanced":
+            plan = resumed[node["inputs"]["prompt_relay_plan"][0]]["inputs"]
+            resumed[key] = {"class_type": "TinyDirectorRelay", "inputs": {
+                "model": node["inputs"]["model"], "route": "joint_av_exp",
+                "prompt": .1 if plan["global_prompt"].startswith("Head stage") else .2}}
+    resumed["1"] = {"class_type": "TinyHyperBase", "inputs": {}}
+    audit_id = next(key for key, node in resumed.items()
+                    if node["class_type"] == "MiniMaxH3HyperFlowTailEffectsAuditEXPT8")
+    resumed["999"] = {"class_type": "HyperResultSink", "inputs": {"result": [audit_id, 0]}}
+    resumed = builder.common.prune(resumed, ["999"])
+    assert asyncio.run(execution.validate_prompt("director-resume-tail", resumed, None))[0]
+    calls.clear()
+    cold_executor = execution.PromptExecutor(server, cache_args={"ram": 0., "ram_inactive": 0.},
+                                             asset_manager=SimpleNamespace(enabled=False))
+    cold_executor.execute(deepcopy(resumed), "director-cold-tail", execute_outputs=["999"])
+    assert cold_executor.success, cold_executor.status_messages
+    assert calls == ["tail"]
+    assert receipts[-1]["composition_verified"]
+    assert not torch.cuda.is_initialized()
 
 
 def test_hyperflow_stage_memory_and_bridge_are_preserved_and_high_seed_wraps(tmp_path, monkeypatch):
@@ -706,6 +1169,54 @@ def test_d3_fast_h3_and_memory_nodes_are_chained_without_changing_default_graph(
     assert graph["9"]["class_type"] == "SamplerCustomAdvanced"
     assert graph["1"]["inputs"]["unet_name"] == "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors"
     assert built["turbo_lora"] is None
+
+
+def test_d3_fast_h3_relay_requires_explicit_dense_profile(tmp_path, monkeypatch):
+    _patch_director_models(monkeypatch)
+    store = _store(tmp_path)
+    project = new_project()
+    shot = project["doc"]["shots"][0]
+    shot["d3Inherit"] = False
+    shot["writingMode"] = "advanced"
+    shot["events"] = [
+        {"id": str(uuid.uuid4()), "start": 0, "end": 2, "text": "She turns left."},
+        {"id": str(uuid.uuid4()), "start": 2, "end": 4, "text": "She turns right."},
+    ]
+    project["doc"]["global"] = "A woman turns toward the camera."
+    shot["d3"] = {
+        "fast_h3_v2": {"enabled": True},
+        "prompt_relay": {"enabled": True, "execution_mode": "apply_exp"},
+    }
+    with pytest.raises(ValueError, match="训练 VSA 无法执行 Prompt Relay"):
+        build_director_generation_prompt(project, shot["id"], store)
+
+    shot["d3"]["prompt_relay"]["execution_mode"] = "report_only"
+    report_only = build_director_generation_prompt(project, shot["id"], store)["prompt"]
+    assert any(node["class_type"] == "MiniMaxH3FastH3V2SetupEXPT8" for node in report_only.values())
+
+    shot["d3"]["prompt_relay"]["execution_mode"] = "apply_exp"
+    shot["events"] = [{"id": str(uuid.uuid4()), "start": 0, "end": 4, "text": "She turns left."}]
+    assert any(node["class_type"] == "MiniMaxH3FastH3V2SetupEXPT8"
+               for node in build_director_generation_prompt(project, shot["id"], store)["prompt"].values())
+    shot["events"] = []
+    shot["writingMode"] = "simple"
+    shot["simplePrompt"] = "A woman turns toward the camera."
+    assert any(node["class_type"] == "MiniMaxH3FastH3V2SetupEXPT8"
+               for node in build_director_generation_prompt(project, shot["id"], store)["prompt"].values())
+    shot["writingMode"] = "advanced"
+    shot["events"] = [{"id": str(uuid.uuid4()), "start": 0, "end": 4,
+                       "text": "She turns left.|She turns right."}]
+    with pytest.raises(ValueError, match="训练 VSA 无法执行 Prompt Relay"):
+        build_director_generation_prompt(project, shot["id"], store)
+    shot["events"] = [
+        {"id": str(uuid.uuid4()), "start": 0, "end": 2, "text": "She turns left."},
+        {"id": str(uuid.uuid4()), "start": 2, "end": 4, "text": "She turns right."},
+    ]
+    shot["d3"]["fast_h3_v2"]["profile"] = "dense_compat_exp"
+    graph = build_director_generation_prompt(project, shot["id"], store)["prompt"]
+    kinds = {node["class_type"] for node in graph.values()}
+    assert "MiniMaxH3FastH3V2SetupEXPT8" in kinds
+    assert "MiniMaxH3PromptRelayConditioningT8Advanced" in kinds
 
 
 def test_generation_settings_support_multiple_loras_and_total_pixel_resolution(tmp_path, monkeypatch):

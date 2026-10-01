@@ -54,7 +54,7 @@ CAPABILITY_SPECS: tuple[Mapping[str, object], ...] = (
             "MiniMaxH3FastH3V2DualModelLongVideoEXPT8",
         ),
         "route": "native_fast_h3_v2_workflow",
-        "note": "仅在实际安装的 FastH3 V2 模型与对应 LoRA／审计节点齐全时开放。",
+        "note": "现有导演台编译为单镜 8 步；双 MODEL 4+4 分离图仍走原生实验路线。训练 VSA 不支持活动 Prompt Relay 时间偏置，二者同开须显式选择 Dense。",
     },
     {
         "id": "eav",

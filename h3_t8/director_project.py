@@ -213,6 +213,18 @@ def director_canvas(fraction, megapixels="auto"):
     return width, height
 
 
+def validate_source_frame(value):
+    """Portable provenance, not a signature or proof of imported media ancestry."""
+    if (not isinstance(value, dict) or set(value) != {'media_sha256', 'frame', 'fps'}
+            or not isinstance(value.get('media_sha256'), str)
+            or not re.fullmatch('[0-9a-f]{64}', value['media_sha256'])
+            or type(value.get('frame')) is not int or not 0 <= value['frame'] <= 2**53-1
+            or type(value.get('fps')) not in (int, float)
+            or not math.isfinite(value['fps']) or not 0 < value['fps'] <= 1000):
+        raise ValueError('取帧来源必须包含有效视频SHA、整数帧号和帧率')
+    return deepcopy(value)
+
+
 def validate_project(value):
     if not isinstance(value, dict) or value.get("schema") != SCHEMA:
         raise ValueError("不是导演台 project.json；未知工作流请保留原图并返回画布")
@@ -281,6 +293,9 @@ def validate_project(value):
             raise ValueError("镜头画面或声音意图无效")
         if shot.get("writingMode") not in {"simple", "advanced"}:
             raise ValueError("提示词写法无效")
+        for field in ("simpleInitialized", "advancedInitialized"):
+            if field in shot and type(shot[field]) is not bool:
+                raise ValueError(f"{field} 必须是布尔值")
         for field in ("name", "prompt", "simplePrompt"):
             if not isinstance(shot.get(field), str):
                 raise ValueError(f"{field} 必须是文字")
@@ -329,6 +344,13 @@ def validate_project(value):
     asset_ids = [identity(a.get("id")) for a in assets if isinstance(a, dict)]
     if len(asset_ids) != len(assets) or len(asset_ids) != len(set(asset_ids)):
         raise ValueError("资产 UUID 无效或重复")
+    for asset in assets:
+        if 'source_frame' in asset:
+            validate_source_frame(asset['source_frame'])
+            if asset.get('kind') != 'image':
+                raise ValueError('取帧来源只能用于图片素材')
+    from .director_creation import validate_project_library
+    validate_project_library(project, validate_project, new_project)
     canonical(
         project
     )  # Reject NaN even in extra fields; unknown fields otherwise preserved.
@@ -384,6 +406,8 @@ class ProjectStore:
         asset = json.loads(manifest.read_text(encoding="utf-8"))
         if asset.get("id") != asset_id:
             raise ValueError("资产身份损坏")
+        if 'source_frame' in asset:
+            validate_source_frame(asset['source_frame'])
         path = contained(self.input_root, asset["server_path"])
         if not path.is_file():
             if allow_missing:
@@ -397,9 +421,11 @@ class ProjectStore:
             raise ValueError("服务端素材字节改变，请重新上传并显式重连")
         return asset
 
-    def register_asset(self, path, asset_id, original_name):
+    def register_asset(self, path, asset_id, original_name, *, source_frame=None):
         """Only server-generated paths are accepted; metadata derived from actual bytes."""
         asset_id = identity(asset_id)
+        if source_frame is not None:
+            source_frame = validate_source_frame(source_frame)
         expected = contained(self.input_root, f"t8_director/{asset_id}")
         path = Path(path).resolve()
         if path.parent != expected or not path.is_file():
@@ -425,26 +451,13 @@ class ProjectStore:
                 upright = ImageOps.exif_transpose(image)
                 asset.update(kind="image", width=upright.width, height=upright.height)
         except (OSError, ValueError):
-            import av
+            from .director_media import metadata
 
-            with av.open(str(path)) as media:
-                video = list(media.streams.video)
-                audio = list(media.streams.audio)
-                if not video and not audio:
-                    raise ValueError("素材不是可读取的图片、视频或音频")
-                asset["kind"] = "video" if video else "audio"
-                asset["has_audio"] = bool(audio)
-                if video:
-                    asset.update(width=video[0].width, height=video[0].height)
-                stream = (video or audio)[0]
-                duration = (
-                    float(stream.duration * stream.time_base)
-                    if stream.duration
-                    else float(media.duration or 0) / av.time_base
-                )
-                if not math.isfinite(duration) or duration <= 0:
-                    raise ValueError("素材时长不可读取，请转为标准 MP4/WAV 后上传")
-                asset["duration"] = duration
+            asset.update(metadata(path))
+        if source_frame is not None:
+            if asset['kind'] != 'image':
+                raise ValueError('取帧来源只能用于图片素材')
+            asset['source_frame'] = source_frame
         with _LOCK:
             manifest = contained(self.root, f"assets/{asset_id}.json")
             if manifest.exists():
@@ -611,9 +624,9 @@ def compile_project(value, store=None, *, shot_id=None):
     for shot in doc["shots"]:
         sid = shot["id"]
 
-        def fail(message):
+        def fail(message, field="source"):
             number, name = shot_positions[sid]
-            errors.append({"shot_id": sid, "shot_number": number, "shot_name": name, "message": message})
+            errors.append({"shot_id": sid, "shot_number": number, "shot_name": name, "field": field, "message": message})
 
         shared = list(dict.fromkeys(doc["sharedRefs"]))
         tray = list(
@@ -653,12 +666,12 @@ def compile_project(value, store=None, *, shot_id=None):
         if shot["sound"] != "native" and (
             not selected_audio or assets.get(selected_audio, {}).get("kind") != "audio"
         ):
-            fail("请选择已上传的音频素材")
+            fail("请选择已上传的音频素材", "audio")
         if selected_audio and (
             shot["end"] <= shot["start"]
             or shot["end"] > assets.get(selected_audio, {}).get("duration", 0) + 0.001
         ):
-            fail("录音选区无效")
+            fail("录音选区无效", "audio")
         if shot["sound"] == "record" and selected_audio in refs:
             refs.remove(
                 selected_audio
@@ -740,7 +753,7 @@ def compile_project(value, store=None, *, shot_id=None):
 
         def translate(text):
             if "@missing_" in text:
-                fail("文字引用素材已移除，请显式修正 missing 引用")
+                fail("文字引用素材已移除，请显式修正 missing 引用", "prompt")
 
             def replacement(match):
                 token = match.group(0)
@@ -755,7 +768,7 @@ def compile_project(value, store=None, *, shot_id=None):
             available = {item["native"] for item in media}
             for match in NATIVE_MEDIA.finditer(translated):
                 if match.group(0) not in available:
-                    fail(f"{match.group(0)} 没有对应的生效素材槽，请核对引用")
+                    fail(f"{match.group(0)} 没有对应的生效素材槽，请核对引用", "prompt")
             return translated
 
         duration = shot["manualDuration"]
@@ -766,17 +779,17 @@ def compile_project(value, store=None, *, shot_id=None):
             elif shot["sound"] == "record" and selected_audio:
                 duration = shot["end"] - shot["start"]
         if duration <= 0:
-            fail("时长必须大于0")
+            fail("时长必须大于0", "timing")
             duration = 0.001
         requested = max(5, math.ceil(duration * 24))
         frames = requested + ((5 - requested) % 17)
         events = []
         for event in active_events:
             if event["end"] <= event["start"] or event["end"] > duration:
-                fail("事件结束早于开始或超出本镜")
+                fail("事件结束早于开始或超出本镜", "events")
             start, end = event["start"] * 24, event["end"] * 24
             if not float(start).is_integer() or not float(end).is_integer():
-                fail("高级事件必须落在24fps帧网格；不偷偷舍入时间")
+                fail("高级事件必须落在24fps帧网格；不偷偷舍入时间", "events")
             events.append(
                 {
                     **event,
@@ -791,13 +804,13 @@ def compile_project(value, store=None, *, shot_id=None):
         global_text = translate(doc["global"])
         for token in ALIAS.finditer(doc["global"]):
             if alias_to_id.get(token.group(0)) not in shared:
-                fail("全片文字仅可引用全片共享素材")
+                fail("全片文字仅可引用全片共享素材", "global")
         if (
             not local.strip()
             and not any(e["text"].strip() for e in events)
             and shot["sound"] != "record"
         ):
-            fail("请填写本镜提示词")
+            fail("请填写本镜提示词", "prompt")
         prompt = "\n\n".join(
             x
             for x in (
@@ -819,7 +832,7 @@ def compile_project(value, store=None, *, shot_id=None):
         source = assets.get(first or last or (pictures[0] if pictures else None), {})
         if ratio == "原图":
             if not source.get("width") or not source.get("height"):
-                fail("原图画幅需要生效图片")
+                fail("原图画幅需要生效图片", "timing")
             fraction = source.get("width", 1) / source.get("height", 1)
         else:
             a, b = map(int, ratio.split(":"))

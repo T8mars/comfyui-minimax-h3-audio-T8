@@ -1,0 +1,5274 @@
+{
+  "id": "df0ad6e1-5c83-47c1-adc2-09e812250d62",
+  "revision": 0,
+  "last_node_id": 63,
+  "last_link_id": 175,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            65,
+            82,
+            107
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            67,
+            83,
+            94
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            51,
+            68,
+            84,
+            95,
+            160
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            69,
+            85,
+            96,
+            161
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3FastH3V2StageSetupEXPT8",
+      "title": "FastH3 V2 · Separate LOW / HIGH Stage (T8 EXP)",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            33
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            8,
+            34,
+            111
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            10,
+            36,
+            113
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2StageSetupEXPT8"
+      },
+      "widgets_values": [
+        "low_0_4",
+        "dense_compat_exp",
+        12288
+      ]
+    },
+    {
+      "id": 6,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            5,
+            110
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609152202,
+        "fixed"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            6,
+            109
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "H3 Stage Sampler · ONE Stage + Result (T8 EXP)",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 5
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 6
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 7
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 8
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 9
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            14,
+            47,
+            48,
+            106,
+            138,
+            170
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        10120,
+        0
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 12,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        10560,
+        0
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/FastH3V2_Accepted_Second_New68_Unaccepted_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3StageUNETLoaderAfterEXPT8",
+      "title": "H3 Stage · Independent UNET Load After Result (T8 EXP)",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "completed_stage",
+          "type": "T8_STAGE_RESULT",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            66,
+            93,
+            123
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageUNETLoaderAfterEXPT8"
+      },
+      "widgets_values": [
+        "fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3FastH3V2AcceptedReconcileEXPT8",
+      "title": "FastH3 V2 · Accepted Joint-Audio Reconcile (T8 EXP)",
+      "pos": [
+        5280,
+        0
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 15
+        },
+        {
+          "name": "learned_latent",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "highres_template",
+          "type": "LATENT",
+          "link": 17
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "reconciled_av",
+          "type": "LATENT",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedReconcileEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3FastH3V2StageSetupEXPT8",
+      "title": "FastH3 V2 · Separate LOW / HIGH Stage (T8 EXP)",
+      "pos": [
+        6160,
+        0
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            29,
+            38
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            26,
+            39,
+            127
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            28,
+            41,
+            129
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            32
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2StageSetupEXPT8"
+      },
+      "widgets_values": [
+        "high_4_8",
+        "dense_compat_exp",
+        12288
+      ]
+    },
+    {
+      "id": 14,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            23,
+            126
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609152202,
+        "fixed"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        7040,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 21
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            24,
+            125
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "H3 Stage Sampler · ONE Stage + Result (T8 EXP)",
+      "pos": [
+        7480,
+        0
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 23
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 24
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 25
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 26
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 27
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            49,
+            122,
+            139,
+            159
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3FastH3V2RuntimeAuditEXPT8",
+      "title": "FastH3 V2 · Actual Dispatch Audit (T8 EXP)",
+      "pos": [
+        8800,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 29
+        },
+        {
+          "name": "sampled_av_latent",
+          "type": "LATENT",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            31
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2RuntimeAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        9240,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        6600,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            56,
+            71,
+            114
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "A single adult cyclist rides a bicycle through a quiet city at dusk. Keep the same rider, bicycle, clothing, street, camera direction, lighting and ambient sound across the entire eight-second clip.",
+        "The cyclist starts moving past a row of warm streetlights.\nThe camera gently tracks alongside the cyclist without changing identity or direction.\nThe cyclist continues into the distance with the same bicycle and ambient sound.",
+        193,
+        "percent",
+        "0-40\n40-80\n80-100",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "MiniMax H3 Prompt Relay Plan / 分段提示词时间线 (Advanced)",
+      "pos": [
+        0,
+        2324
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            59,
+            72,
+            130
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "A single adult cyclist rides a bicycle through a quiet city at dusk. Keep the same rider, bicycle, clothing, street, camera direction, lighting and ambient sound across the entire eight-second clip.",
+        "The cyclist starts moving past a row of warm streetlights.\nThe camera gently tracks alongside the cyclist without changing identity or direction.\nThe cyclist continues into the distance with the same bicycle and ambient sound.",
+        193,
+        "percent",
+        "0-40\n40-80\n80-100",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "H3 Stage EAV · External Config (T8 EXP)",
+      "pos": [
+        0,
+        2848
+      ],
+      "size": [
+        390,
+        344
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            37,
+            73,
+            116
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8"
+      },
+      "widgets_values": [
+        "disabled",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ]
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "H3 Stage EAV · External Config (T8 EXP)",
+      "pos": [
+        0,
+        3240
+      ],
+      "size": [
+        390,
+        344
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            42,
+            74,
+            132
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8"
+      },
+      "widgets_values": [
+        "disabled",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ]
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3StageEAVApplyEXPT8",
+      "title": "H3 Stage EAV · Apply to This Stage (T8 EXP)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 33
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 34
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 35
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 36
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            3,
+            108
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "links": [
+            44
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVApplyEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3StageEAVApplyEXPT8",
+      "title": "H3 Stage EAV · Apply to This Stage (T8 EXP)",
+      "pos": [
+        6600,
+        300
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 38
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 39
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 40
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 41
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            21,
+            124
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "links": [
+            46
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVApplyEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 26,
+      "type": "MiniMaxH3StageEAVAuditEXPT8",
+      "title": "H3 Stage EAV · Actual Calls Audit (T8 EXP)",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 43
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            104
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 27,
+      "type": "MiniMaxH3StageEAVAuditEXPT8",
+      "title": "H3 Stage EAV · Actual Calls Audit (T8 EXP)",
+      "pos": [
+        8360,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 45
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "link": 46
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 28,
+      "type": "MiniMaxH3FastH3V2CompletedLowX0EXPT8",
+      "title": "FastH3 V2 · Completed LOW x0 for Learned Handoff (T8 EXP)",
+      "pos": [
+        3960,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "low_stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "low_x0",
+          "type": "LATENT",
+          "links": [
+            43
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CompletedLowX0EXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3StageSaveEXPT8",
+      "title": "H3 Stage Result · Save Frozen Artifact (T8 EXP)",
+      "pos": [
+        3960,
+        600
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 48
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "links": [
+            173
+          ]
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "links": [
+            174
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSaveEXPT8"
+      },
+      "widgets_values": [
+        "FastH3V2/LOW"
+      ]
+    },
+    {
+      "id": 30,
+      "type": "MiniMaxH3StageSaveEXPT8",
+      "title": "H3 Stage Result · Save Frozen Artifact (T8 EXP)",
+      "pos": [
+        7920,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSaveEXPT8"
+      },
+      "widgets_values": [
+        "FastH3V2/HIGH"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "MiniMaxH3ContinuationSourceEXPT8",
+      "title": "H3 Continuation · Select Accepted Parent (T8 EXP)",
+      "pos": [
+        0,
+        3632
+      ],
+      "size": [
+        390,
+        520
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "accepted_source",
+          "type": "T8_CONTINUATION_ACCEPTED_SOURCE",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ContinuationSourceEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_ACCEPTED_CHAIN",
+        1,
+        "REPLACE_WITH_ACCEPTED_CANDIDATE",
+        1,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        22,
+        512,
+        768,
+        256,
+        384
+      ]
+    },
+    {
+      "id": 32,
+      "type": "MiniMaxH3ContinuationContextsEXPT8",
+      "title": "H3 Continuation · Prepare Accepted Contexts (T8 EXP)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "accepted_source",
+          "type": "T8_CONTINUATION_ACCEPTED_SOURCE",
+          "link": 50
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "links": [
+            15,
+            52,
+            53,
+            54,
+            55,
+            58,
+            61,
+            63,
+            151,
+            156
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ContinuationContextsEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 33,
+      "type": "MiniMaxH3FastH3V2AcceptedWindowEXPT8",
+      "title": "FastH3 V2 · Accepted Remainder Window (T8 EXP)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "length",
+          "type": "INT",
+          "links": [
+            57,
+            60,
+            92,
+            103
+          ]
+        },
+        {
+          "name": "new_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedWindowEXPT8"
+      },
+      "widgets_values": [
+        192,
+        "old_fixed_124"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "MiniMaxH3FastH3V2AcceptedContextEXPT8",
+      "title": "FastH3 V2 · Accepted LOW / HIGH Context Port (T8 EXP)",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 53
+        }
+      ],
+      "outputs": [
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "links": [
+            86
+          ]
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": [
+            87
+          ]
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "links": [
+            88
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            77,
+            90
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            78,
+            91
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedContextEXPT8"
+      },
+      "widgets_values": [
+        "low"
+      ]
+    },
+    {
+      "id": 35,
+      "type": "MiniMaxH3FastH3V2AcceptedContextEXPT8",
+      "title": "FastH3 V2 · Accepted LOW / HIGH Context Port (T8 EXP)",
+      "pos": [
+        880,
+        600
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 54
+        }
+      ],
+      "outputs": [
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "links": [
+            97
+          ]
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": [
+            98
+          ]
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "links": [
+            99
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            79,
+            101
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            80,
+            102
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedContextEXPT8"
+      },
+      "widgets_values": [
+        "high"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "MiniMaxH3FastH3V2AcceptedRelayProjectEXPT8",
+      "title": "FastH3 V2 · Accepted Timeline Relay Window (T8 EXP)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        202
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 55
+        },
+        {
+          "name": "global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 56
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 57,
+          "widget": {
+            "name": "length"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "projected_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            89,
+            115
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedRelayProjectEXPT8"
+      },
+      "widgets_values": [
+        124,
+        192
+      ]
+    },
+    {
+      "id": 37,
+      "type": "MiniMaxH3FastH3V2AcceptedRelayProjectEXPT8",
+      "title": "FastH3 V2 · Accepted Timeline Relay Window (T8 EXP)",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        390,
+        202
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 58
+        },
+        {
+          "name": "global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 59
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 60,
+          "widget": {
+            "name": "length"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "projected_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            100,
+            131
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedRelayProjectEXPT8"
+      },
+      "widgets_values": [
+        124,
+        192
+      ]
+    },
+    {
+      "id": 38,
+      "type": "MiniMaxH3FastH3V2AcceptedHighPrefixEXPT8",
+      "title": "FastH3 V2 · Accepted HIGH Prefix After Reconcile (T8 EXP)",
+      "pos": [
+        5720,
+        0
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 61
+        },
+        {
+          "name": "reconciled_av",
+          "type": "LATENT",
+          "link": 62
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_av",
+          "type": "LATENT",
+          "links": [
+            20,
+            27,
+            40,
+            128,
+            149
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedHighPrefixEXPT8"
+      },
+      "widgets_values": [
+        "high_native_mask_ramp_exp"
+      ]
+    },
+    {
+      "id": 39,
+      "type": "MiniMaxH3FastH3V2AcceptedDeliveryWindowEXPT8",
+      "title": "FastH3 V2 · Accepted Remainder Delivery Port (T8 EXP)",
+      "pos": [
+        880,
+        900
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 63
+        }
+      ],
+      "outputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "links": [
+            76
+          ]
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": [
+            117,
+            133,
+            150,
+            155
+          ]
+        },
+        {
+          "name": "parent_candidate_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "parent_manifest_revision",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_start_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "trim_start_seconds",
+          "type": "FLOAT",
+          "links": [
+            162
+          ]
+        },
+        {
+          "name": "final_duration_seconds",
+          "type": "FLOAT",
+          "links": [
+            163
+          ]
+        },
+        {
+          "name": "save_context",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2AcceptedDeliveryWindowEXPT8"
+      },
+      "widgets_values": [
+        192,
+        "old_fixed_124"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        9680,
+        0
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 64
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 41,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        4200
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            70
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "SELECT_YOUR_FIRST_FRAME.png"
+      ]
+    },
+    {
+      "id": 42,
+      "type": "MiniMaxH3FastH3V2CurrentRecipeEXPT8",
+      "title": "FastH3 V2 · Current Editable Recipe Fingerprint (T8 EXP)",
+      "pos": [
+        5280,
+        300
+      ],
+      "size": [
+        390,
+        628
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model_pass1",
+          "type": "MODEL",
+          "link": 65
+        },
+        {
+          "name": "model_pass2",
+          "type": "MODEL",
+          "link": 66
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 67
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 68
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 69
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 70
+        },
+        {
+          "name": "low_global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 71
+        },
+        {
+          "name": "high_global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 72
+        },
+        {
+          "name": "low_eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 73
+        },
+        {
+          "name": "high_eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 74
+        },
+        {
+          "name": "upscale_report_json",
+          "type": "STRING",
+          "link": 75
+        },
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "link": 76,
+          "widget": {
+            "name": "chain_id"
+          }
+        },
+        {
+          "name": "low_width",
+          "type": "INT",
+          "link": 77,
+          "widget": {
+            "name": "low_width"
+          }
+        },
+        {
+          "name": "low_height",
+          "type": "INT",
+          "link": 78,
+          "widget": {
+            "name": "low_height"
+          }
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 79,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 80,
+          "widget": {
+            "name": "height"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "links": [
+            105,
+            121,
+            137,
+            153,
+            169
+          ]
+        },
+        {
+          "name": "current_recipe_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "model_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            81
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentRecipeEXPT8"
+      },
+      "widgets_values": [
+        "",
+        256,
+        384,
+        512,
+        768,
+        192,
+        2609152201,
+        124
+      ]
+    },
+    {
+      "id": 43,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        5720,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 81
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 44,
+      "type": "MiniMaxH3FastH3V2ConditionProvenanceEXPT8",
+      "title": "FastH3 V2 · Long Video Relay Conditions + Origin (T8 EXP)",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        894
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 82
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 83
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 84
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 85
+        },
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "link": 86
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 89
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 87
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": 88
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 90,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 91,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 92
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "persistent_identity_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            2,
+            9,
+            35,
+            112,
+            119
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "links": [
+            118,
+            142,
+            172
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2ConditionProvenanceEXPT8"
+      },
+      "widgets_values": [
+        "video_and_audio",
+        1056,
+        608,
+        "I2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256,
+        "segment0_only",
+        "single_reference",
+        1
+      ]
+    },
+    {
+      "id": 45,
+      "type": "MiniMaxH3FastH3V2ConditionProvenanceEXPT8",
+      "title": "FastH3 V2 · Long Video Relay Conditions + Origin (T8 EXP)",
+      "pos": [
+        4400,
+        300
+      ],
+      "size": [
+        390,
+        894
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 93
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 94
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 95
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 96
+        },
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "link": 97
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 100
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 98
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": 99
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 101,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 102,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 103
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "persistent_identity_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            18,
+            148
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            17,
+            135,
+            147
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "links": [
+            134,
+            143
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2ConditionProvenanceEXPT8"
+      },
+      "widgets_values": [
+        "video_and_audio",
+        1056,
+        608,
+        "I2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256,
+        "segment0_only",
+        "single_reference",
+        1
+      ]
+    },
+    {
+      "id": 46,
+      "type": "MiniMaxH3FastH3V2UpscaleProvenanceEXPT8",
+      "title": "FastH3 V2 · Learned 3D Upscale + Origin (T8 EXP)",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        390,
+        546
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 104
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            16,
+            145
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            75,
+            146
+          ]
+        },
+        {
+          "name": "upscale_receipt",
+          "type": "T8_FAST_H3_V2_UPSCALE_RECEIPT",
+          "links": [
+            144
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2UpscaleProvenanceEXPT8"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "target_dimensions",
+        2.0,
+        0.46,
+        512,
+        768,
+        "honor_dimensions_exp",
+        1.05,
+        "fp16",
+        "offload_after"
+      ]
+    },
+    {
+      "id": 47,
+      "type": "MiniMaxH3FastH3V2OriginStageAttestEXPT8",
+      "title": "FastH3 V2 · Verify Stage + Condition Origin (T8 EXP)",
+      "pos": [
+        5720,
+        600
+      ],
+      "size": [
+        390,
+        514
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "link": 105
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 106
+        },
+        {
+          "name": "raw_model",
+          "type": "MODEL",
+          "link": 107
+        },
+        {
+          "name": "stage_model",
+          "type": "MODEL",
+          "link": 108
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 109
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 110
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 111
+        },
+        {
+          "name": "source_latent",
+          "type": "LATENT",
+          "link": 112
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 113
+        },
+        {
+          "name": "global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 114
+        },
+        {
+          "name": "projected_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 115
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 116
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 117,
+          "widget": {
+            "name": "segment_index"
+          }
+        },
+        {
+          "name": "condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "link": 118
+        },
+        {
+          "name": "conditioned_latent",
+          "type": "LATENT",
+          "link": 119
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stage_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION",
+          "links": [
+            140,
+            171
+          ]
+        },
+        {
+          "name": "attestation_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            120
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2OriginStageAttestEXPT8"
+      },
+      "widgets_values": [
+        0,
+        "low_0_4"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        6160,
+        312
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 120
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 49,
+      "type": "MiniMaxH3FastH3V2OriginStageAttestEXPT8",
+      "title": "FastH3 V2 · Verify Stage + Condition Origin (T8 EXP)",
+      "pos": [
+        7920,
+        300
+      ],
+      "size": [
+        390,
+        514
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "link": 121
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 122
+        },
+        {
+          "name": "raw_model",
+          "type": "MODEL",
+          "link": 123
+        },
+        {
+          "name": "stage_model",
+          "type": "MODEL",
+          "link": 124
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 125
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 126
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 127
+        },
+        {
+          "name": "source_latent",
+          "type": "LATENT",
+          "link": 128
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 129
+        },
+        {
+          "name": "global_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 130
+        },
+        {
+          "name": "projected_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 131
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 132
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 133,
+          "widget": {
+            "name": "segment_index"
+          }
+        },
+        {
+          "name": "condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "link": 134
+        },
+        {
+          "name": "conditioned_latent",
+          "type": "LATENT",
+          "link": 135
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stage_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION",
+          "links": [
+            141
+          ]
+        },
+        {
+          "name": "attestation_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            136
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2OriginStageAttestEXPT8"
+      },
+      "widgets_values": [
+        0,
+        "high_4_8"
+      ]
+    },
+    {
+      "id": 50,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        8360,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 136
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 51,
+      "type": "MiniMaxH3FastH3V2CurrentHandoffAttestEXPT8",
+      "title": "FastH3 V2 · Verify LOW→Upscale→HIGH Origin (T8 EXP)",
+      "pos": [
+        8360,
+        600
+      ],
+      "size": [
+        390,
+        470
+      ],
+      "flags": {},
+      "order": 50,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "link": 137
+        },
+        {
+          "name": "low_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 138
+        },
+        {
+          "name": "high_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 139
+        },
+        {
+          "name": "low_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION",
+          "link": 140
+        },
+        {
+          "name": "high_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION",
+          "link": 141
+        },
+        {
+          "name": "low_condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "link": 142
+        },
+        {
+          "name": "high_condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "link": 143
+        },
+        {
+          "name": "upscale_receipt",
+          "type": "T8_FAST_H3_V2_UPSCALE_RECEIPT",
+          "link": 144
+        },
+        {
+          "name": "upscaled_latent",
+          "type": "LATENT",
+          "link": 145
+        },
+        {
+          "name": "upscale_report_json",
+          "type": "STRING",
+          "link": 146
+        },
+        {
+          "name": "high_template",
+          "type": "LATENT",
+          "link": 147
+        },
+        {
+          "name": "high_positive",
+          "type": "CONDITIONING",
+          "link": 148
+        },
+        {
+          "name": "high_source_latent",
+          "type": "LATENT",
+          "link": 149
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 150,
+          "widget": {
+            "name": "segment_index"
+          }
+        },
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 151,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "handoff_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_HANDOFF",
+          "links": [
+            154
+          ]
+        },
+        {
+          "name": "handoff_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            152
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentHandoffAttestEXPT8"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 52,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        8800,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 51,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 152
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 53,
+      "type": "MiniMaxH3FastH3V2CurrentJobBindEXPT8",
+      "title": "FastH3 V2 · Bind Current Job to Accepted Parent (T8 EXP)",
+      "pos": [
+        8800,
+        600
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "link": 153
+        },
+        {
+          "name": "handoff_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_HANDOFF",
+          "link": 154
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 155,
+          "widget": {
+            "name": "segment_index"
+          }
+        },
+        {
+          "name": "contexts",
+          "type": "T8_CONTINUATION_STAGE_CONTEXTS",
+          "link": 156,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "job_binding",
+          "type": "T8_FAST_H3_V2_CURRENT_JOB_BINDING",
+          "links": [
+            158
+          ]
+        },
+        {
+          "name": "job_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "model_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            157
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentJobBindEXPT8"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 54,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        9240,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 157
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 55,
+      "type": "MiniMaxH3FastH3V2CurrentMediaPrepareEXPT8",
+      "title": "FastH3 V2 · Decode + Trim Bound HIGH (T8 EXP)",
+      "pos": [
+        9240,
+        600
+      ],
+      "size": [
+        390,
+        280
+      ],
+      "flags": {},
+      "order": 54,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "job_binding",
+          "type": "T8_FAST_H3_V2_CURRENT_JOB_BINDING",
+          "link": 158
+        },
+        {
+          "name": "high_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 159
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 160
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 161
+        },
+        {
+          "name": "start_seconds",
+          "type": "FLOAT",
+          "link": 162
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "link": 163
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "media_receipt",
+          "type": "T8_FAST_H3_V2_CURRENT_MEDIA_RECEIPT",
+          "links": [
+            165
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            64,
+            164
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentMediaPrepareEXPT8"
+      },
+      "widgets_values": [
+        24.0
+      ]
+    },
+    {
+      "id": 56,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        9680,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 55,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 164
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 57,
+      "type": "MiniMaxH3FastH3V2ExternalColorMatchEXPT8",
+      "title": "FastH3 V2 · External Accepted-Picture Color Match (T8 EXP)",
+      "pos": [
+        9680,
+        600
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 56,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "media_receipt",
+          "type": "T8_FAST_H3_V2_CURRENT_MEDIA_RECEIPT",
+          "link": 165
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "color_receipt",
+          "type": "T8_FAST_H3_V2_COLORED_MEDIA_RECEIPT",
+          "links": [
+            167
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            166
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2ExternalColorMatchEXPT8"
+      },
+      "widgets_values": [
+        true,
+        "bounded_motion_color_exp"
+      ]
+    },
+    {
+      "id": 58,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        10120,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 57,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 166
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 59,
+      "type": "MiniMaxH3FastH3V2ColoredCandidateSaveEXPT8",
+      "title": "FastH3 V2 · Save Externally Colored Candidate (T8 EXP)",
+      "pos": [
+        10120,
+        600
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 58,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "color_receipt",
+          "type": "T8_FAST_H3_V2_COLORED_MEDIA_RECEIPT",
+          "link": 167
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_json_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "candidate_video_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "source_provenance_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            168
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2ColoredCandidateSaveEXPT8"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 60,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        10560,
+        330
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 59,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 168
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 61,
+      "type": "MiniMaxH3FastH3V2FrozenLOWBundleSaveEXPT8",
+      "title": "FastH3 V2 · Save Attested Frozen LOW Recipe (T8 EXP)",
+      "pos": [
+        6160,
+        600
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 60,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "current_recipe",
+          "type": "T8_FAST_H3_V2_CURRENT_RECIPE",
+          "link": 169
+        },
+        {
+          "name": "low_stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 170
+        },
+        {
+          "name": "low_attestation",
+          "type": "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION",
+          "link": 171
+        },
+        {
+          "name": "low_condition_receipt",
+          "type": "T8_FAST_H3_V2_CONDITION_RECEIPT",
+          "link": 172
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "link": 173
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "link": 174
+        }
+      ],
+      "outputs": [
+        {
+          "name": "bundle_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "bundle_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            175
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2FrozenLOWBundleSaveEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 62,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        6600,
+        600
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 61,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 175
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 63,
+      "type": "MarkdownNote",
+      "title": "第二窗口边界 / Read first",
+      "pos": [
+        -1800,
+        -800
+      ],
+      "size": [
+        1250,
+        700
+      ],
+      "flags": {},
+      "order": 62,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "可导入的分离式 EXP 教学图；不含测试用人物、歌曲或本机路径。首段/续段各自显式 LOW4→learned3D→HIGH4，可独立编辑两路 MODEL、Relay、EAV；Relay 活动时只能显式使用 dense_compat_exp；训练 VSA 没有时间偏置内核。使用前按 README 填首帧、模型、唯一 chain_id、已接受父片回执；冷 HIGH 还需填写LOW manifest 路径和 SHA。候选默认未接受，Review 默认 accept_candidate=false。旧固定124帧续段仅交付新增68帧；两段确认后才单独 Compose。固定密集配置曾与旧一体逐位对照，改提示词/素材/模型后须重新验收；本示例不代表人工画音或其它后端质量通过。旧工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      44,
+      0,
+      5,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      44,
+      2,
+      5,
+      1,
+      "LATENT"
+    ],
+    [
+      3,
+      24,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      44,
+      1,
+      7,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      5,
+      6,
+      0,
+      8,
+      0,
+      "NOISE"
+    ],
+    [
+      6,
+      7,
+      0,
+      8,
+      1,
+      "GUIDER"
+    ],
+    [
+      7,
+      5,
+      1,
+      8,
+      2,
+      "SAMPLER"
+    ],
+    [
+      8,
+      5,
+      2,
+      8,
+      3,
+      "SIGMAS"
+    ],
+    [
+      9,
+      44,
+      2,
+      8,
+      4,
+      "LATENT"
+    ],
+    [
+      10,
+      5,
+      3,
+      8,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      11,
+      57,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      57,
+      1,
+      9,
+      1,
+      "AUDIO"
+    ],
+    [
+      13,
+      9,
+      0,
+      10,
+      0,
+      "VIDEO"
+    ],
+    [
+      14,
+      8,
+      2,
+      11,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      15,
+      32,
+      0,
+      12,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      16,
+      46,
+      0,
+      12,
+      1,
+      "LATENT"
+    ],
+    [
+      17,
+      45,
+      2,
+      12,
+      2,
+      "LATENT"
+    ],
+    [
+      18,
+      45,
+      1,
+      12,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      45,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      38,
+      0,
+      13,
+      1,
+      "LATENT"
+    ],
+    [
+      21,
+      25,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      22,
+      12,
+      1,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      23,
+      14,
+      0,
+      16,
+      0,
+      "NOISE"
+    ],
+    [
+      24,
+      15,
+      0,
+      16,
+      1,
+      "GUIDER"
+    ],
+    [
+      25,
+      13,
+      1,
+      16,
+      2,
+      "SAMPLER"
+    ],
+    [
+      26,
+      13,
+      2,
+      16,
+      3,
+      "SIGMAS"
+    ],
+    [
+      27,
+      38,
+      0,
+      16,
+      4,
+      "LATENT"
+    ],
+    [
+      28,
+      13,
+      3,
+      16,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      29,
+      13,
+      0,
+      17,
+      0,
+      "MODEL"
+    ],
+    [
+      30,
+      27,
+      0,
+      17,
+      1,
+      "LATENT"
+    ],
+    [
+      31,
+      17,
+      1,
+      18,
+      0,
+      "*"
+    ],
+    [
+      32,
+      13,
+      4,
+      19,
+      0,
+      "*"
+    ],
+    [
+      33,
+      5,
+      0,
+      24,
+      0,
+      "MODEL"
+    ],
+    [
+      34,
+      5,
+      2,
+      24,
+      1,
+      "SIGMAS"
+    ],
+    [
+      35,
+      44,
+      2,
+      24,
+      2,
+      "LATENT"
+    ],
+    [
+      36,
+      5,
+      3,
+      24,
+      3,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      37,
+      22,
+      0,
+      24,
+      4,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      38,
+      13,
+      0,
+      25,
+      0,
+      "MODEL"
+    ],
+    [
+      39,
+      13,
+      2,
+      25,
+      1,
+      "SIGMAS"
+    ],
+    [
+      40,
+      38,
+      0,
+      25,
+      2,
+      "LATENT"
+    ],
+    [
+      41,
+      13,
+      3,
+      25,
+      3,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      42,
+      23,
+      0,
+      25,
+      4,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      43,
+      28,
+      0,
+      26,
+      0,
+      "LATENT"
+    ],
+    [
+      44,
+      24,
+      1,
+      26,
+      1,
+      "T8_STAGE_EAV_RUNTIME"
+    ],
+    [
+      45,
+      30,
+      0,
+      27,
+      0,
+      "LATENT"
+    ],
+    [
+      46,
+      25,
+      1,
+      27,
+      1,
+      "T8_STAGE_EAV_RUNTIME"
+    ],
+    [
+      47,
+      8,
+      2,
+      28,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      48,
+      8,
+      2,
+      29,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      49,
+      16,
+      2,
+      30,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      50,
+      31,
+      0,
+      32,
+      0,
+      "T8_CONTINUATION_ACCEPTED_SOURCE"
+    ],
+    [
+      51,
+      3,
+      0,
+      32,
+      1,
+      "VAE"
+    ],
+    [
+      52,
+      32,
+      0,
+      33,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      53,
+      32,
+      0,
+      34,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      54,
+      32,
+      0,
+      35,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      55,
+      32,
+      0,
+      36,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      56,
+      20,
+      0,
+      36,
+      1,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      57,
+      33,
+      0,
+      36,
+      2,
+      "INT"
+    ],
+    [
+      58,
+      32,
+      0,
+      37,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      59,
+      21,
+      0,
+      37,
+      1,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      60,
+      33,
+      0,
+      37,
+      2,
+      "INT"
+    ],
+    [
+      61,
+      32,
+      0,
+      38,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      62,
+      12,
+      0,
+      38,
+      1,
+      "LATENT"
+    ],
+    [
+      63,
+      32,
+      0,
+      39,
+      0,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      64,
+      55,
+      3,
+      40,
+      0,
+      "*"
+    ],
+    [
+      65,
+      1,
+      0,
+      42,
+      0,
+      "MODEL"
+    ],
+    [
+      66,
+      11,
+      0,
+      42,
+      1,
+      "MODEL"
+    ],
+    [
+      67,
+      2,
+      0,
+      42,
+      2,
+      "CLIP"
+    ],
+    [
+      68,
+      3,
+      0,
+      42,
+      3,
+      "VAE"
+    ],
+    [
+      69,
+      4,
+      0,
+      42,
+      4,
+      "VAE"
+    ],
+    [
+      70,
+      41,
+      0,
+      42,
+      5,
+      "IMAGE"
+    ],
+    [
+      71,
+      20,
+      0,
+      42,
+      6,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      72,
+      21,
+      0,
+      42,
+      7,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      73,
+      22,
+      0,
+      42,
+      8,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      74,
+      23,
+      0,
+      42,
+      9,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      75,
+      46,
+      3,
+      42,
+      10,
+      "STRING"
+    ],
+    [
+      76,
+      39,
+      0,
+      42,
+      11,
+      "STRING"
+    ],
+    [
+      77,
+      34,
+      3,
+      42,
+      12,
+      "INT"
+    ],
+    [
+      78,
+      34,
+      4,
+      42,
+      13,
+      "INT"
+    ],
+    [
+      79,
+      35,
+      3,
+      42,
+      14,
+      "INT"
+    ],
+    [
+      80,
+      35,
+      4,
+      42,
+      15,
+      "INT"
+    ],
+    [
+      81,
+      42,
+      3,
+      43,
+      0,
+      "*"
+    ],
+    [
+      82,
+      1,
+      0,
+      44,
+      0,
+      "MODEL"
+    ],
+    [
+      83,
+      2,
+      0,
+      44,
+      1,
+      "CLIP"
+    ],
+    [
+      84,
+      3,
+      0,
+      44,
+      2,
+      "VAE"
+    ],
+    [
+      85,
+      4,
+      0,
+      44,
+      3,
+      "VAE"
+    ],
+    [
+      86,
+      34,
+      0,
+      44,
+      4,
+      "H3_T8_CONTEXT"
+    ],
+    [
+      87,
+      34,
+      1,
+      44,
+      6,
+      "INT"
+    ],
+    [
+      88,
+      34,
+      2,
+      44,
+      7,
+      "INT"
+    ],
+    [
+      89,
+      36,
+      0,
+      44,
+      5,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      90,
+      34,
+      3,
+      44,
+      8,
+      "INT"
+    ],
+    [
+      91,
+      34,
+      4,
+      44,
+      9,
+      "INT"
+    ],
+    [
+      92,
+      33,
+      0,
+      44,
+      10,
+      "INT"
+    ],
+    [
+      93,
+      11,
+      0,
+      45,
+      0,
+      "MODEL"
+    ],
+    [
+      94,
+      2,
+      0,
+      45,
+      1,
+      "CLIP"
+    ],
+    [
+      95,
+      3,
+      0,
+      45,
+      2,
+      "VAE"
+    ],
+    [
+      96,
+      4,
+      0,
+      45,
+      3,
+      "VAE"
+    ],
+    [
+      97,
+      35,
+      0,
+      45,
+      4,
+      "H3_T8_CONTEXT"
+    ],
+    [
+      98,
+      35,
+      1,
+      45,
+      6,
+      "INT"
+    ],
+    [
+      99,
+      35,
+      2,
+      45,
+      7,
+      "INT"
+    ],
+    [
+      100,
+      37,
+      0,
+      45,
+      5,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      101,
+      35,
+      3,
+      45,
+      8,
+      "INT"
+    ],
+    [
+      102,
+      35,
+      4,
+      45,
+      9,
+      "INT"
+    ],
+    [
+      103,
+      33,
+      0,
+      45,
+      10,
+      "INT"
+    ],
+    [
+      104,
+      26,
+      0,
+      46,
+      0,
+      "LATENT"
+    ],
+    [
+      105,
+      42,
+      0,
+      47,
+      0,
+      "T8_FAST_H3_V2_CURRENT_RECIPE"
+    ],
+    [
+      106,
+      8,
+      2,
+      47,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      107,
+      1,
+      0,
+      47,
+      2,
+      "MODEL"
+    ],
+    [
+      108,
+      24,
+      0,
+      47,
+      3,
+      "MODEL"
+    ],
+    [
+      109,
+      7,
+      0,
+      47,
+      4,
+      "GUIDER"
+    ],
+    [
+      110,
+      6,
+      0,
+      47,
+      5,
+      "NOISE"
+    ],
+    [
+      111,
+      5,
+      2,
+      47,
+      6,
+      "SIGMAS"
+    ],
+    [
+      112,
+      44,
+      2,
+      47,
+      7,
+      "LATENT"
+    ],
+    [
+      113,
+      5,
+      3,
+      47,
+      8,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      114,
+      20,
+      0,
+      47,
+      9,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      115,
+      36,
+      0,
+      47,
+      10,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      116,
+      22,
+      0,
+      47,
+      11,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      117,
+      39,
+      1,
+      47,
+      12,
+      "INT"
+    ],
+    [
+      118,
+      44,
+      7,
+      47,
+      13,
+      "T8_FAST_H3_V2_CONDITION_RECEIPT"
+    ],
+    [
+      119,
+      44,
+      2,
+      47,
+      14,
+      "LATENT"
+    ],
+    [
+      120,
+      47,
+      2,
+      48,
+      0,
+      "*"
+    ],
+    [
+      121,
+      42,
+      0,
+      49,
+      0,
+      "T8_FAST_H3_V2_CURRENT_RECIPE"
+    ],
+    [
+      122,
+      16,
+      2,
+      49,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      123,
+      11,
+      0,
+      49,
+      2,
+      "MODEL"
+    ],
+    [
+      124,
+      25,
+      0,
+      49,
+      3,
+      "MODEL"
+    ],
+    [
+      125,
+      15,
+      0,
+      49,
+      4,
+      "GUIDER"
+    ],
+    [
+      126,
+      14,
+      0,
+      49,
+      5,
+      "NOISE"
+    ],
+    [
+      127,
+      13,
+      2,
+      49,
+      6,
+      "SIGMAS"
+    ],
+    [
+      128,
+      38,
+      0,
+      49,
+      7,
+      "LATENT"
+    ],
+    [
+      129,
+      13,
+      3,
+      49,
+      8,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      130,
+      21,
+      0,
+      49,
+      9,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      131,
+      37,
+      0,
+      49,
+      10,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      132,
+      23,
+      0,
+      49,
+      11,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      133,
+      39,
+      1,
+      49,
+      12,
+      "INT"
+    ],
+    [
+      134,
+      45,
+      7,
+      49,
+      13,
+      "T8_FAST_H3_V2_CONDITION_RECEIPT"
+    ],
+    [
+      135,
+      45,
+      2,
+      49,
+      14,
+      "LATENT"
+    ],
+    [
+      136,
+      49,
+      2,
+      50,
+      0,
+      "*"
+    ],
+    [
+      137,
+      42,
+      0,
+      51,
+      0,
+      "T8_FAST_H3_V2_CURRENT_RECIPE"
+    ],
+    [
+      138,
+      8,
+      2,
+      51,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      139,
+      16,
+      2,
+      51,
+      2,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      140,
+      47,
+      0,
+      51,
+      3,
+      "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION"
+    ],
+    [
+      141,
+      49,
+      0,
+      51,
+      4,
+      "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION"
+    ],
+    [
+      142,
+      44,
+      7,
+      51,
+      5,
+      "T8_FAST_H3_V2_CONDITION_RECEIPT"
+    ],
+    [
+      143,
+      45,
+      7,
+      51,
+      6,
+      "T8_FAST_H3_V2_CONDITION_RECEIPT"
+    ],
+    [
+      144,
+      46,
+      4,
+      51,
+      7,
+      "T8_FAST_H3_V2_UPSCALE_RECEIPT"
+    ],
+    [
+      145,
+      46,
+      0,
+      51,
+      8,
+      "LATENT"
+    ],
+    [
+      146,
+      46,
+      3,
+      51,
+      9,
+      "STRING"
+    ],
+    [
+      147,
+      45,
+      2,
+      51,
+      10,
+      "LATENT"
+    ],
+    [
+      148,
+      45,
+      1,
+      51,
+      11,
+      "CONDITIONING"
+    ],
+    [
+      149,
+      38,
+      0,
+      51,
+      12,
+      "LATENT"
+    ],
+    [
+      150,
+      39,
+      1,
+      51,
+      13,
+      "INT"
+    ],
+    [
+      151,
+      32,
+      0,
+      51,
+      14,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      152,
+      51,
+      2,
+      52,
+      0,
+      "*"
+    ],
+    [
+      153,
+      42,
+      0,
+      53,
+      0,
+      "T8_FAST_H3_V2_CURRENT_RECIPE"
+    ],
+    [
+      154,
+      51,
+      0,
+      53,
+      1,
+      "T8_FAST_H3_V2_CURRENT_HANDOFF"
+    ],
+    [
+      155,
+      39,
+      1,
+      53,
+      2,
+      "INT"
+    ],
+    [
+      156,
+      32,
+      0,
+      53,
+      3,
+      "T8_CONTINUATION_STAGE_CONTEXTS"
+    ],
+    [
+      157,
+      53,
+      3,
+      54,
+      0,
+      "*"
+    ],
+    [
+      158,
+      53,
+      0,
+      55,
+      0,
+      "T8_FAST_H3_V2_CURRENT_JOB_BINDING"
+    ],
+    [
+      159,
+      16,
+      2,
+      55,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      160,
+      3,
+      0,
+      55,
+      2,
+      "VAE"
+    ],
+    [
+      161,
+      4,
+      0,
+      55,
+      3,
+      "VAE"
+    ],
+    [
+      162,
+      39,
+      5,
+      55,
+      4,
+      "FLOAT"
+    ],
+    [
+      163,
+      39,
+      6,
+      55,
+      5,
+      "FLOAT"
+    ],
+    [
+      164,
+      55,
+      3,
+      56,
+      0,
+      "*"
+    ],
+    [
+      165,
+      55,
+      2,
+      57,
+      0,
+      "T8_FAST_H3_V2_CURRENT_MEDIA_RECEIPT"
+    ],
+    [
+      166,
+      57,
+      3,
+      58,
+      0,
+      "*"
+    ],
+    [
+      167,
+      57,
+      2,
+      59,
+      0,
+      "T8_FAST_H3_V2_COLORED_MEDIA_RECEIPT"
+    ],
+    [
+      168,
+      59,
+      3,
+      60,
+      0,
+      "*"
+    ],
+    [
+      169,
+      42,
+      0,
+      61,
+      0,
+      "T8_FAST_H3_V2_CURRENT_RECIPE"
+    ],
+    [
+      170,
+      8,
+      2,
+      61,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      171,
+      47,
+      0,
+      61,
+      2,
+      "T8_FAST_H3_V2_CURRENT_STAGE_ATTESTATION"
+    ],
+    [
+      172,
+      44,
+      7,
+      61,
+      3,
+      "T8_FAST_H3_V2_CONDITION_RECEIPT"
+    ],
+    [
+      173,
+      29,
+      2,
+      61,
+      4,
+      "STRING"
+    ],
+    [
+      174,
+      29,
+      3,
+      61,
+      5,
+      "STRING"
+    ],
+    [
+      175,
+      61,
+      2,
+      62,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "FastH3 V2 · Accepted second window · independent LOW/HIGH · verified AV trim preview · current editable recipe fingerprint · two current stage input attestations · actual CLIP/VAE condition origin receipts · accepted LOW/upscale/HIGH handoff proof · current job/parent SHA match · bound HIGH AV decode/68-frame trim · external accepted-picture Color Match · unaccepted candidate save · save attested frozen LOW",
+    "t8_split_example": {
+      "schema": "t8.fasth3-v2.split-example.v1",
+      "kind": "second",
+      "status": "experimental_importable_not_quality_accepted",
+      "first_frame_required": true
+    }
+  },
+  "version": 0.4
+}

@@ -249,7 +249,9 @@ def test_new_nodes_append_after_all_current_old_ids():
     from h3_audio_t8_pkg import comfy_entrypoint
     registered = asyncio.run(comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in registered]
-    assert ids[-2:] == [node.__name__ for node in nodes.SEMANTIC_BRIDGE_EXTRA_NODE_CLASSES]
+    # Preserve the released two nodes at their original577-prefix positions;
+    # later append-only additions must not move them or force them to stay last.
+    assert ids[575:577] == [node.__name__ for node in nodes.SEMANTIC_BRIDGE_EXTRA_NODE_CLASSES]
     assert len(ids) == len(set(ids))
     manual = nodes.MiniMaxH3SemanticBridgeConfigT8.define_schema()
     assert [item.id for item in manual.inputs] == ["model_name", "enabled", "alpha", "magnitude_match",

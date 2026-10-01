@@ -1,0 +1,195 @@
+{
+  "id": "4a684876-8ead-439e-95bc-e6031f93eab4",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MiniMaxH3FastH3V2CurrentAcceptedChainVerifyEXPT8",
+      "title": "FastH3 V2 · Verify Accepted Two-Segment Source (T8 EXP)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FastH3V2CurrentAcceptedChainVerifyEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_ACCEPTED_V2_CHAIN"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3LongVideoComposeAcceptedT8",
+      "title": "MiniMax H3 Compose Accepted / 合成已接受片段 (EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        326
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "link": 1,
+          "widget": {
+            "name": "chain_id"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongVideoComposeAcceptedT8"
+      },
+      "widgets_values": [
+        "my_h3_long_video",
+        "FastH3V2_SourceBound_8s",
+        true,
+        "cosine_bridge",
+        5.0,
+        18
+      ]
+    },
+    {
+      "id": 3,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        440,
+        374
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "title": "两段已接受后再单独拼接",
+      "pos": [
+        -900,
+        -560
+      ],
+      "size": [
+        740,
+        460
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "可导入的分离式 EXP 教学图；不含测试用人物、歌曲或本机路径。仅在两段都已接受、来源核验通过后才单独 Compose；Relay 活动时只能显式使用 dense_compat_exp；训练 VSA 没有时间偏置内核。使用前按 README 填首帧、模型、唯一 chain_id、已接受父片回执；冷 HIGH 还需填写LOW manifest 路径和 SHA。候选默认未接受，Review 默认 accept_candidate=false。旧固定124帧续段仅交付新增68帧；两段确认后才单独 Compose。固定密集配置曾与旧一体逐位对照，改提示词/素材/模型后须重新验收；本示例不代表人工画音或其它后端质量通过。旧工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      1,
+      1,
+      3,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "FastH3 V2 · verify two accepted segments · compose separately",
+    "t8_split_example": {
+      "schema": "t8.fasth3-v2.split-example.v1",
+      "kind": "compose",
+      "status": "experimental_importable_not_quality_accepted",
+      "first_frame_required": false
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,522 @@
+{
+  "schema": "t8.modular-sampling.new-sampling-admission.v1",
+  "scope": "production Python sampler calls and Director dynamic graph builders",
+  "sites": [
+    {
+      "path": "h3_t8/avatar_progressive_entry.py",
+      "symbol": "sample_avatar_progressive",
+      "callee": "sample_progressive_h3",
+      "call_sha256": "70e36fd55296f0763c473377c552772587dbce717d980361ff32f4fa4a8f7885"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_parity.py",
+      "symbol": "execute_standard_chunked",
+      "callee": "legacy.sample_piece",
+      "call_sha256": "24aa2c49713dde1b1fd649a12285ad42f8ec5267160b412791c2bd4ec5edd017"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "symbol": "_build_global_target_av_noise",
+      "callee": "noise.generate_noise",
+      "call_sha256": "a99f412883f64ff30046abefa0b2fa3a923ee093b9097ace279ef370cc22bc1c"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "symbol": "_spatial_resample",
+      "callee": "sample_piece",
+      "call_sha256": "be0441ea7d8be688ed17cde14c563cd87bc5dc622e00ba1e0f65b2b4a4abad8c"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "symbol": "execute_chunked_two_pass_upscale",
+      "callee": "execute_standard_chunked",
+      "call_sha256": "c5d2f6af3112e32a1df05d4d6c53bc097660551bb320bf084d01e96eaf7f5c36"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "symbol": "sample_piece",
+      "callee": "guider.sample",
+      "call_sha256": "b910ff9dc95895f27ef360ba96078bff6c240c5b6f3f135d234bb8a256fda847"
+    },
+    {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "symbol": "sample_piece",
+      "callee": "noise.generate_noise",
+      "call_sha256": "bba4bc61b2fe427c28516e11acffd22de461e02db3d738473b5c98c0c4b6b520"
+    },
+    {
+      "path": "h3_t8/detail_sampling_advanced.py",
+      "symbol": "setup_rectified_flow_restart_sampling.sampler_function",
+      "callee": "sample_minimax_h3_dual_clock_euler",
+      "call_sha256": "224f31d17a7d83878a6bc336b51304b8cc91b86f8fc1150e4399990f7fa12b1c"
+    },
+    {
+      "path": "h3_t8/detail_sampling_advanced.py",
+      "symbol": "setup_rectified_flow_restart_sampling.sampler_function",
+      "callee": "sample_minimax_h3_dual_clock_euler",
+      "call_sha256": "334a4c67d7a21547ba623b5485402759b9fdbc4f90f1c9285750c8e32c1504ae"
+    },
+    {
+      "path": "h3_t8/director_generation.py",
+      "symbol": "build_director_generation_prompt",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "5569e3e4db78e134b477b3d15bf72bf810d759398d6633c05c5d62fd804edd74"
+    },
+    {
+      "path": "h3_t8/director_hyperflow.py",
+      "symbol": "apply_hyperflow_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "b2a0b362876666e975470fe4bae34d33d69d3f6691496cdd6ed46fd6de1b73d3"
+    },
+    {
+      "path": "h3_t8/director_two_pass.py",
+      "symbol": "apply_two_pass_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "7112d6b04e5fb6e0bca850ee94e42741481d7b7047d52d49ceb67b499b285a19"
+    },
+    {
+      "path": "h3_t8/dlss_fi_backend/file_task.py",
+      "symbol": "Monitor.__init__",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/dlss_fi_backend/file_task.py",
+      "symbol": "Monitor._run",
+      "callee": "self.reader.sample",
+      "call_sha256": "7ca8b46538a1e610e8ad411912217588ea1c07e05d42ea7b8d971b892181cba4"
+    },
+    {
+      "path": "h3_t8/hyperflow_two_pass_advanced.py",
+      "symbol": "sample_hyperflow_split",
+      "callee": "comfy.sample.sample_custom",
+      "call_sha256": "37ad94c7bcdc185cf799d3855a647a69c11b8ac1e1355b33247bdf1787dc30c8"
+    },
+    {
+      "path": "h3_t8/hyperflow_two_pass_advanced.py",
+      "symbol": "sample_hyperflow_split",
+      "callee": "comfy.sample.sample_custom",
+      "call_sha256": "38c01089508ab21f3b756da8655b4f6a099f5208e7cbd4d62e0bbec37317bac0"
+    },
+    {
+      "path": "h3_t8/long_video_dual_model_stages.py",
+      "symbol": "_sample_model_stage",
+      "callee": "_sample_prepared_segment",
+      "call_sha256": "2cb79bdd924fe7230c7701a2ecde83b8e4b7b4d1d1f582e1b585c9dfd781aad4"
+    },
+    {
+      "path": "h3_t8/long_video_dual_model_stages.py",
+      "symbol": "_sample_model_stage",
+      "callee": "model.model.process_latent_out",
+      "call_sha256": "290029fc6050cd3935a6d488f79a6107780bbe8e89f3140176d19508e0cbb072"
+    },
+    {
+      "path": "h3_t8/long_video_in_node_loop_advanced.py",
+      "symbol": "_sample_one_segment.run_once",
+      "callee": "guider.sample",
+      "call_sha256": "81d7d0e3e760246154324b1725923a4f317324fafdd998fa3ee83b2e887871ba"
+    },
+    {
+      "path": "h3_t8/long_video_in_node_loop_advanced.py",
+      "symbol": "run_long_video_in_node_loop",
+      "callee": "_sample_one_segment",
+      "call_sha256": "b4a1570ae8f16ec1db6ac6b3d2cfa3e70a7b8cb651798b3dd158ef6c5ade32eb"
+    },
+    {
+      "path": "h3_t8/long_video_in_node_loop_effects_advanced.py",
+      "symbol": "_sample_prepared_segment",
+      "callee": "guider.sample",
+      "call_sha256": "ba96ec6f4d14a6e327bff0daf87c043ea7fab64700b2e828af2e2b1c89854309"
+    },
+    {
+      "path": "h3_t8/long_video_in_node_loop_effects_advanced.py",
+      "symbol": "run_long_video_in_node_loop_effects",
+      "callee": "_sample_prepared_segment",
+      "call_sha256": "2f964070bf8341cd14577d5899b450e8d197476d7ce34982a4bbae36144b6126"
+    },
+    {
+      "path": "h3_t8/long_video_in_node_loop_effects_advanced.py",
+      "symbol": "run_long_video_in_node_loop_effects",
+      "callee": "_sample_prepared_segment",
+      "call_sha256": "7338e7858d77ae37c884876c47dcbb1f019524ffc40d3d941095b55c7c3c9c58"
+    },
+    {
+      "path": "h3_t8/meridian_generate.py",
+      "symbol": "_generate.sampling",
+      "callee": "comfy.sample.sample_custom",
+      "call_sha256": "03d7b3e9efb12a8372ceb7c2005d888d424def87b84650d52e448f84d7f1995b"
+    },
+    {
+      "path": "h3_t8/meridian_resources.py",
+      "symbol": "ResourceTrace.observe",
+      "callee": "self.reader.sample",
+      "call_sha256": "7ca8b46538a1e610e8ad411912217588ea1c07e05d42ea7b8d971b892181cba4"
+    },
+    {
+      "path": "h3_t8/modular_sampling/avatar.py",
+      "symbol": "sample_low",
+      "callee": "stages.sample_low",
+      "call_sha256": "b6c51764b3877534d7cc491467a882703424457c112f5b654e734ba2fb7347b8"
+    },
+    {
+      "path": "h3_t8/modular_sampling/avatar_nodes.py",
+      "symbol": "MiniMaxH3AvatarLowStageEXPT8.execute",
+      "callee": "avatar.sample_low",
+      "call_sha256": "1fbdb00d0930343bb10d0a56d3abc03fc8d5e29d6f420c55e5a7f67fe77507e0"
+    },
+    {
+      "path": "h3_t8/modular_sampling/chunked_stage_nodes.py",
+      "symbol": "MiniMaxH3ChunkedPass2SegmentEXPT8.execute",
+      "callee": "sample_chunked_pass2",
+      "call_sha256": "3c8ac8f3dd171fa21f4f2b4323a54599d66cf1b9dea1ca50ca4d429b4fae7c2c"
+    },
+    {
+      "path": "h3_t8/modular_sampling/chunked_v5_nodes.py",
+      "symbol": "MiniMaxH3ChunkedV5PASS2WindowEXPT8.execute",
+      "callee": "sample_standard_window",
+      "call_sha256": "5e3907e3013e2abcf722c66fe65348f4e3a65127a20fcbe33b365e417d35ec1a"
+    },
+    {
+      "path": "h3_t8/modular_sampling/continuation.py",
+      "symbol": "sample_low",
+      "callee": "stages.sample_low",
+      "call_sha256": "1932a99000665ddcf683f037b88ba4b07580ead4723cbf18ea592d58c36a993e"
+    },
+    {
+      "path": "h3_t8/modular_sampling/continuation_nodes.py",
+      "symbol": "MiniMaxH3ContinuationHighStageEXPT8.execute",
+      "callee": "stages.sample_high",
+      "call_sha256": "c5a853b0b4646beda220c3e1f94f64531648e8d9c4245460a74482a76cc4330e"
+    },
+    {
+      "path": "h3_t8/modular_sampling/continuation_nodes.py",
+      "symbol": "MiniMaxH3ContinuationLowStageEXPT8.execute",
+      "callee": "stages.sample_low",
+      "call_sha256": "1607e9fed0303e7f93114ee060e58f06a7ab7f1dce9ab13ebce7e80e7fa0e7a7"
+    },
+    {
+      "path": "h3_t8/modular_sampling/h16_nodes.py",
+      "symbol": "MiniMaxH3H16Pass2WindowEXPT8.execute",
+      "callee": "sample_h16_pass2",
+      "call_sha256": "f65e8416c54f641ade50481354a988c2c6e6df3e6f9b52e44acbbade38099525"
+    },
+    {
+      "path": "h3_t8/modular_sampling/h16_stages.py",
+      "symbol": "sample_h16_pass2",
+      "callee": "sample_chunked_pass2",
+      "call_sha256": "22c434552bddf6da9f208aabbdbc47c4676bac598fe2a5af204b04782c897b0b"
+    },
+    {
+      "path": "h3_t8/modular_sampling/ltx_latent_sample_stage.py",
+      "symbol": "sample_ltx_latent_stage.ObservedGuider.sample",
+      "callee": "guider.sample",
+      "call_sha256": "096e9ea03e74d6e6d5e67ed3efda2aa15f714b156a0339050a73a490d76045c7"
+    },
+    {
+      "path": "h3_t8/modular_sampling/nodes.py",
+      "symbol": "MiniMaxH3StageSamplerEXPT8.execute",
+      "callee": "sample_stage",
+      "call_sha256": "630ee6c650383652b2b2987e04620f787ddab89c51ea50809275d976806c3d6c"
+    },
+    {
+      "path": "h3_t8/modular_sampling/prepared_ltx_relay_cache.py",
+      "symbol": "run_cache_encoding",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/modular_sampling/prepared_ltx_relay_cache.py",
+      "symbol": "run_cache_encoding",
+      "callee": "run_worker",
+      "call_sha256": "04d4403995ab9b2da9b3b084dc2cb51a5dd56e76b52513e6f1f837006c61be22"
+    },
+    {
+      "path": "h3_t8/modular_sampling/prepared_ltx_stage.py",
+      "symbol": "_run_one",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/modular_sampling/prepared_ltx_stage.py",
+      "symbol": "_run_one",
+      "callee": "run_worker",
+      "call_sha256": "f00c5c760d4b15be2dd255475f777cc46b4a9ab6212c6b270d536387c32d316f"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive.py",
+      "symbol": "lift_input",
+      "callee": "model.get_model_object('latent_format').process_out",
+      "call_sha256": "09150ec3bac6109448839e95054a7ae764af99c09a55d456b12522797a5deb19"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive.py",
+      "symbol": "prepare_high",
+      "callee": "fmt.process_in",
+      "call_sha256": "1e895cfca15514fd1428fb47cd35240dbcef22593912d4b0ea9fb8a619be837e"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive.py",
+      "symbol": "prepare_high",
+      "callee": "fmt.process_out",
+      "call_sha256": "5001b61cef07a1fbf57df3a6d21496d91237e233f846e1325de5d4eadb5a7db8"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive_high_result.py",
+      "symbol": "sample_high_result",
+      "callee": "stages.sample_high",
+      "call_sha256": "c40f4667c3641e00a998e9f0212808343cd0afc370a3965f014b5606eeec52ae"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive_nodes.py",
+      "symbol": "MiniMaxH3ProgressiveHighStageEXPT8.execute",
+      "callee": "high_results.sample_high_result",
+      "call_sha256": "2c33c7fe5d5caf21d6a61e31301da1ae99e7887dee5638ace0eb5410bd1af1b6"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive_nodes.py",
+      "symbol": "MiniMaxH3ProgressiveLowStageEXPT8.execute",
+      "callee": "stages.sample_low",
+      "call_sha256": "e0a532d7ecc36e4d1ee8fe5acadbe18312aea20a5bebf35bc4aba82f2f0e0b40"
+    },
+    {
+      "path": "h3_t8/modular_sampling/progressive_nodes.py",
+      "symbol": "_generate_noise",
+      "callee": "noise.generate_noise",
+      "call_sha256": "bba4bc61b2fe427c28516e11acffd22de461e02db3d738473b5c98c0c4b6b520"
+    },
+    {
+      "path": "h3_t8/modular_sampling/results.py",
+      "symbol": "sample_stage.ObservedGuider.sample",
+      "callee": "guider.sample",
+      "call_sha256": "096e9ea03e74d6e6d5e67ed3efda2aa15f714b156a0339050a73a490d76045c7"
+    },
+    {
+      "path": "h3_t8/modular_sampling/rf_restart.py",
+      "symbol": "EndpointCapture.sample",
+      "callee": "self.sampler.sample",
+      "call_sha256": "4d35ea06269ce64a566d231a015989e445b6b47756108ed41584f3d7d14d2436"
+    },
+    {
+      "path": "h3_t8/modular_sampling/rf_restart.py",
+      "symbol": "RFRestartSampler.sample",
+      "callee": "model_wrap.inner_model.process_latent_out",
+      "call_sha256": "79bacd833972549f04ff48e5e93c9c0c3a7c93221bafaaffff7b213a625bb0a2"
+    },
+    {
+      "path": "h3_t8/modular_sampling/rf_restart.py",
+      "symbol": "_model_space",
+      "callee": "model.process_latent_in",
+      "call_sha256": "1d8166b680c59bcf69797b8fe6e649018a6331e2c55c7a491ad82b064d9071b3"
+    },
+    {
+      "path": "h3_t8/modular_sampling/speed_stages.py",
+      "symbol": "sample_speed_stage",
+      "callee": "guider.sample",
+      "call_sha256": "7646b5f4e3d7090dd7867a662e03f5a676e1cf81876b448677a38db73f3511d4"
+    },
+    {
+      "path": "h3_t8/mv_lipsync_advanced.py",
+      "symbol": "run_local_mv_in_node_loop",
+      "callee": "_sample_one_segment",
+      "call_sha256": "c3e2b7a4ae0c0afdf85453cd51aa32e7ae85595fa88f0b11bf789542d872b3eb"
+    },
+    {
+      "path": "h3_t8/nodes_avatar_progressive.py",
+      "symbol": "MiniMaxH3AvatarProgressiveEXPT8.execute",
+      "callee": "sample_avatar_progressive",
+      "call_sha256": "859be7fa5dd26bea6045fbc7f3793b407798fab490e5906296f6d6b2782c6848"
+    },
+    {
+      "path": "h3_t8/nodes_chunked_two_pass_upscale_advanced.py",
+      "symbol": "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced.execute",
+      "callee": "execute_chunked_two_pass_upscale",
+      "call_sha256": "9c7ce726ea201b887da41f460694a6b89a140acef9d790288779b463a4dfb476"
+    },
+    {
+      "path": "h3_t8/nodes_fast_h3_v2_advanced.py",
+      "symbol": "MiniMaxH3FastH3V2DualModelLongVideoEXPT8.execute",
+      "callee": "MiniMaxH3DualModelLongVideoEXPT8.execute",
+      "call_sha256": "b5672c9b52d953a9e5f76f8b4ceb373fd0a8c6074bd60dfa91159e7600641905"
+    },
+    {
+      "path": "h3_t8/nodes_h16_chunked_pass2.py",
+      "symbol": "DeciiaChunkedPass2Sampler.execute",
+      "callee": "_chunked.execute_chunked_two_pass_upscale",
+      "call_sha256": "69f02d81005266e50f2043da6e65a904fd1ec607ad4e531cd9e2f5e1d2cdee09"
+    },
+    {
+      "path": "h3_t8/nodes_h16_chunked_pass2.py",
+      "symbol": "_run_refined_audio",
+      "callee": "_chunked.execute_chunked_two_pass_upscale",
+      "call_sha256": "8fa320d1e6174b36e068c39c3b606d935ad802a3c1089af41fe94ea9d050a313"
+    },
+    {
+      "path": "h3_t8/nodes_long_video_dual_model.py",
+      "symbol": "MiniMaxH3DualModelLongVideoEXPT8.execute",
+      "callee": "run_long_video_in_node_loop_effects",
+      "call_sha256": "3845d907f74b4e380df976fa5ae800768375f1ab7306916df0f4c6e7d04176a0"
+    },
+    {
+      "path": "h3_t8/nodes_progressive_long_video.py",
+      "symbol": "MiniMaxH3ProgressiveLongVideoEXPT8.execute",
+      "callee": "ProgressiveChainDelivery(job, **delivery_options).run",
+      "call_sha256": "332395a6424ec830d6b084627d5508d75d60c67f053db90122908197769956d1"
+    },
+    {
+      "path": "h3_t8/nodes_progressive_sampling.py",
+      "symbol": "MiniMaxH3ProgressiveSamplerEXPT8.execute",
+      "callee": "sample_progressive_h3",
+      "call_sha256": "359e2d483a25dfdb4b5a59efc755856a27355e9fa16c492d3359da9ae3d3ccf4"
+    },
+    {
+      "path": "h3_t8/prepared_generation_runtime.py",
+      "symbol": "run_prepared",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/prepared_generation_runtime.py",
+      "symbol": "run_prepared",
+      "callee": "run_worker",
+      "call_sha256": "91a221e3a43a0fb00faadb6383eab23bee0314075f1fd2b1ed69a57c72a8ef9f"
+    },
+    {
+      "path": "h3_t8/prepared_generation_runtime.py",
+      "symbol": "run_worker.observe",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/progressive_continuation_runtime.py",
+      "symbol": "sample_progressive_continuation",
+      "callee": "sample_progressive_h3",
+      "call_sha256": "2a10f1f79e15d3a65fd5fd9e3071d12b818fcd1c3349b54e56c62286b56c03ea"
+    },
+    {
+      "path": "h3_t8/progressive_delivery.py",
+      "symbol": "ProgressiveChainDelivery._generate_candidate",
+      "callee": "self.job.sample_continuation",
+      "call_sha256": "3885dfd3578d3bc95dc476ab14d5eb4dc95843f2c97ddf2276c30b380a59ad00"
+    },
+    {
+      "path": "h3_t8/progressive_delivery.py",
+      "symbol": "ProgressiveChainDelivery._generate_candidate",
+      "callee": "self.job.sample_first",
+      "call_sha256": "607aaace5deb45947da823c77196af805ac80c82169dcdb71037268741d544be"
+    },
+    {
+      "path": "h3_t8/progressive_job.py",
+      "symbol": "NativeProgressiveJob.sample_continuation",
+      "callee": "sample_progressive_continuation",
+      "call_sha256": "6a59eccf1f4acdb4ed2a9ac1e6b5596422d2154287bd92db0d96a73de40ac986"
+    },
+    {
+      "path": "h3_t8/progressive_job.py",
+      "symbol": "NativeProgressiveJob.sample_first",
+      "callee": "runtime.sample_progressive_h3",
+      "call_sha256": "c670b091ddfb88ac56057c4ae32b34f66d66e4a18f8dc09f59909cf4e800ba1b"
+    },
+    {
+      "path": "h3_t8/progressive_masking.py",
+      "symbol": "sampler_with_clean_anchor.anchored_euler",
+      "callee": "base.process_latent_in",
+      "call_sha256": "883824d53146646984319d71333c4e9091d0e2e4035c2e8645e76e82fb607ab7"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_composed.py",
+      "symbol": "sample_progressive_configured",
+      "callee": "latent_format.process_in",
+      "call_sha256": "1ca36141b672809662373a48c4e5f1e3931901139061e2371be250c0c48cd839"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_composed.py",
+      "symbol": "sample_progressive_configured",
+      "callee": "latent_format.process_out",
+      "call_sha256": "39a70df35933c9fc74fd6cf52a6a21b879e91648181ea96b71c47cb88acbfb32"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_composed.py",
+      "symbol": "sample_progressive_configured",
+      "callee": "latent_format.process_out",
+      "call_sha256": "4d2da2d3dad6e4968d0efb7edffd56abe92acef68172531aed89a752537b5e93"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "symbol": "_native_stage",
+      "callee": "comfy.samplers.sample",
+      "call_sha256": "5bf0df350a2537cdc0c7edcd5841d7a91e0079e74d958a2b7e013c013cc9a4bb"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_in",
+      "call_sha256": "1ca36141b672809662373a48c4e5f1e3931901139061e2371be250c0c48cd839"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_out",
+      "call_sha256": "39a70df35933c9fc74fd6cf52a6a21b879e91648181ea96b71c47cb88acbfb32"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_out",
+      "call_sha256": "4d2da2d3dad6e4968d0efb7edffd56abe92acef68172531aed89a752537b5e93"
+    },
+    {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "sample_progressive_configured",
+      "call_sha256": "c3c62e92fb8bcf43dc9a7ab35d671c21f5e5f90bfda740d7119ca5b7e54c02a7"
+    },
+    {
+      "path": "h3_t8/speed_advanced.py",
+      "symbol": "execute_speed_sampling",
+      "callee": "guider.sample",
+      "call_sha256": "274bf327d728701da1111002d68c6e5680e40d5b1bb377c5f48552bd2803a5dd"
+    },
+    {
+      "path": "h3_t8/topaz_runtime.py",
+      "symbol": "record_topaz_startup_sample",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/topaz_runtime.py",
+      "symbol": "run_interpolation.check",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/topaz_runtime.py",
+      "symbol": "run_regular.check",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/trt_vae_compile.py",
+      "symbol": "main",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/trt_vae_compile.py",
+      "symbol": "main.check",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/trt_vae_prepare_t1.py",
+      "symbol": "main",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    },
+    {
+      "path": "h3_t8/trt_vae_prepare_t1.py",
+      "symbol": "main.check",
+      "callee": "reader.sample",
+      "call_sha256": "d8694c5a6d380d3314004292ccd5a0064726c070fbb9fac377ed0c4f664b7a62"
+    }
+  ]
+}

@@ -1,0 +1,1317 @@
+{
+  "id": "9490dee6-e3b7-4d5d-bc50-78e00f17050b",
+  "revision": 0,
+  "last_node_id": 41,
+  "last_link_id": 89,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "Full FL2VA base · Prompt Relay must bind before LoRA",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "UNETLoader"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "Native MiniMax H3 Qwen3-VL CLIP",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "MiniMax H3 video VAE",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "MiniMax H3 audio VAE",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "Create this global 345-frame event timeline only once",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "A single continuous cinematic story with the same woman, coherent identity, stable night lighting, continuous camera direction and synchronized ambience.",
+        "The woman hears one bell strike, raises her hand and looks toward camera.\nShe turns and runs through the illuminated street; only rapid footsteps accompany the motion.\nThe camera pulls far back as lightning flashes and one thunder roll closes the scene.",
+        345,
+        "auto_equal",
+        "0-114\n115-229\n230-344",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3LongVideoPlannerT8",
+      "title": "Run segment 0, then 1, 2... without rebuilding the global Plan",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        390,
+        388
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "links": [
+            1,
+            29
+          ]
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "links": [
+            2,
+            4,
+            15,
+            30
+          ]
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": [
+            5,
+            17
+          ]
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "links": [
+            6,
+            16
+          ]
+        },
+        {
+          "name": "trim_start_seconds",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "final_duration_seconds",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "timeline_start_seconds",
+          "type": "FLOAT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "timeline_end_seconds",
+          "type": "FLOAT",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "save_context",
+          "type": "BOOLEAN",
+          "links": [
+            87
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3LongVideoPlannerT8"
+      },
+      "widgets_values": [
+        "prompt_relay_long_video_demo",
+        0,
+        4.25,
+        22,
+        124,
+        -1.0,
+        false
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3LongVideoContextLoadT8",
+      "title": "Load exactly the immediately previous AV tail",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "link": 1
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "has_context",
+          "type": "BOOLEAN",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3LongVideoContextLoadT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3PromptRelayLongVideoPlanT8Advanced",
+      "title": "Map global time to render start = accepted start minus overlap",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 3
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 4
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 5
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": 6
+        },
+        {
+          "name": "timeline_start_seconds",
+          "type": "FLOAT",
+          "link": 7
+        },
+        {
+          "name": "timeline_end_seconds",
+          "type": "FLOAT",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptRelayLongVideoPlanT8Advanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3PromptRelayLongVideoConditioningT8Advanced",
+      "title": "Scoped Long Video payload repair + paper video-query relay",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        1018
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 10
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 11
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 12
+        },
+        {
+          "name": "context",
+          "type": "H3_T8_CONTEXT",
+          "link": 13
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 14
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 15
+        },
+        {
+          "name": "context_frames",
+          "type": "INT",
+          "link": 16
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "link": 17
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "persistent_identity_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            20,
+            27
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3PromptRelayLongVideoConditioningT8Advanced"
+      },
+      "widgets_values": [
+        "video_and_audio",
+        736,
+        416,
+        "auto",
+        "native",
+        0.35,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256,
+        "segment0_only",
+        "single_reference",
+        1
+      ]
+    },
+    {
+      "id": 10,
+      "type": "LoraLoaderBypassModelOnly",
+      "title": "Corrected Alpha8 LoRA · only after Relay binding",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoraLoaderBypassModelOnly"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8-T8-convert.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "Turbo8 dual-clock sampler",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "BasicGuider",
+      "title": "CFG=false BasicGuider",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 21
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "RandomNoise",
+      "title": "Fixed seed for reproducible segment review",
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2608204101,
+        "fixed"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "SamplerCustomAdvanced",
+      "title": "Sample one bounded Prompt Relay Long Video segment",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 23
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 24
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 25
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 26
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            85
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3LongVideoContextSaveT8",
+      "title": "Save bounded AV tail; run the next segment only after this succeeds",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        272
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 88
+        },
+        {
+          "name": "chain_id",
+          "type": "STRING",
+          "link": 29
+        },
+        {
+          "name": "segment_index",
+          "type": "INT",
+          "link": 30
+        },
+        {
+          "name": "save_context",
+          "type": "BOOLEAN",
+          "link": 89
+        }
+      ],
+      "outputs": [
+        {
+          "name": "context_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3LongVideoContextSaveT8"
+      },
+      "widgets_values": [
+        "FL2VA full INT8 + corrected Alpha8 + Prompt Relay Long Video v1",
+        "Turbo8 dual_clock_euler/native_flow shift12/3"
+      ]
+    },
+    {
+      "id": 39,
+      "type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+      "title": "STEP 1 · freeze final video AV before audio refinement",
+      "pos": [
+        2300,
+        50
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 85
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            88
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": [
+            86
+          ]
+        },
+        {
+          "name": "checkpoint_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "file_sha256",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "audio_refine_firstpass",
+        "audio_refine_firstpass",
+        false,
+        true,
+        8
+      ]
+    },
+    {
+      "id": 40,
+      "type": "MiniMaxH3AudioRefineContextCommitGateEXPT8",
+      "title": "Commit long context only after verified freeze",
+      "pos": [
+        2600,
+        260
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "checkpoint_status",
+          "type": "STRING",
+          "link": 86
+        },
+        {
+          "name": "planned_save_context",
+          "type": "BOOLEAN",
+          "link": 87
+        }
+      ],
+      "outputs": [
+        {
+          "name": "save_context",
+          "type": "BOOLEAN",
+          "links": [
+            89
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioRefineContextCommitGateEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 41,
+      "type": "MarkdownNote",
+      "title": "Freeze final video AV · keep all three values",
+      "pos": [
+        2250,
+        -360
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "Set confirm_save=true only after reviewing the final video pass. Copy checkpoint_path, file_sha256 and manifest_json to STEP 2. For learned/PDD double-video routes this checkpoint is after both video samplers. Long-video context writes only after verified checkpoint Save."
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      6,
+      0,
+      7,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      6,
+      1,
+      7,
+      1,
+      "INT"
+    ],
+    [
+      3,
+      5,
+      0,
+      8,
+      0,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      4,
+      6,
+      1,
+      8,
+      1,
+      "INT"
+    ],
+    [
+      5,
+      6,
+      2,
+      8,
+      2,
+      "INT"
+    ],
+    [
+      6,
+      6,
+      3,
+      8,
+      3,
+      "INT"
+    ],
+    [
+      7,
+      6,
+      6,
+      8,
+      4,
+      "FLOAT"
+    ],
+    [
+      8,
+      6,
+      7,
+      8,
+      5,
+      "FLOAT"
+    ],
+    [
+      9,
+      1,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      2,
+      0,
+      9,
+      1,
+      "CLIP"
+    ],
+    [
+      11,
+      3,
+      0,
+      9,
+      2,
+      "VAE"
+    ],
+    [
+      12,
+      4,
+      0,
+      9,
+      3,
+      "VAE"
+    ],
+    [
+      13,
+      7,
+      0,
+      9,
+      4,
+      "H3_T8_CONTEXT"
+    ],
+    [
+      14,
+      8,
+      0,
+      9,
+      5,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      15,
+      6,
+      1,
+      9,
+      6,
+      "INT"
+    ],
+    [
+      16,
+      6,
+      3,
+      9,
+      7,
+      "INT"
+    ],
+    [
+      17,
+      6,
+      2,
+      9,
+      8,
+      "INT"
+    ],
+    [
+      18,
+      9,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      19,
+      10,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      9,
+      2,
+      11,
+      1,
+      "LATENT"
+    ],
+    [
+      21,
+      11,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      22,
+      9,
+      1,
+      12,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      23,
+      13,
+      0,
+      14,
+      0,
+      "NOISE"
+    ],
+    [
+      24,
+      12,
+      0,
+      14,
+      1,
+      "GUIDER"
+    ],
+    [
+      25,
+      11,
+      1,
+      14,
+      2,
+      "SAMPLER"
+    ],
+    [
+      26,
+      11,
+      2,
+      14,
+      3,
+      "SIGMAS"
+    ],
+    [
+      27,
+      9,
+      2,
+      14,
+      4,
+      "LATENT"
+    ],
+    [
+      29,
+      6,
+      0,
+      15,
+      1,
+      "STRING"
+    ],
+    [
+      30,
+      6,
+      1,
+      15,
+      2,
+      "INT"
+    ],
+    [
+      85,
+      14,
+      0,
+      39,
+      0,
+      "LATENT"
+    ],
+    [
+      86,
+      39,
+      1,
+      40,
+      0,
+      "STRING"
+    ],
+    [
+      87,
+      6,
+      8,
+      40,
+      1,
+      "BOOLEAN"
+    ],
+    [
+      88,
+      39,
+      0,
+      15,
+      0,
+      "LATENT"
+    ],
+    [
+      89,
+      40,
+      0,
+      15,
+      3,
+      "BOOLEAN"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "Prompt Relay Long Video Turbo8 Advanced EXP",
+    "t8_prompt_relay_long_video": {
+      "schema": 1,
+      "default_route": "video_only_paper",
+      "validated_scope": "mechanical_projection_and_scoped_patch_only",
+      "old_long_video_nodes_changed": false
+    }
+  },
+  "version": 0.4
+}

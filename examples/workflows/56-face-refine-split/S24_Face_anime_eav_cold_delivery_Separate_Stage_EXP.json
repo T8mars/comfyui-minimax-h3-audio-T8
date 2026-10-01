@@ -1,0 +1,1137 @@
+{
+  "last_node_id": 23,
+  "last_link_id": 59,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "Load exact 24fps / 17n+5 source (keep original aspect)",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        400,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "replace_with_exact_24fps_124frame_source.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "Original-aspect frames + untouched soundtrack + FPS",
+      "pos": [
+        450,
+        0
+      ],
+      "size": [
+        400,
+        110
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3,
+            28,
+            46
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": []
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3FaceRefinePlanT8Advanced",
+      "title": "EXP anime-only ONNX face plan — review preview first",
+      "pos": [
+        900,
+        0
+      ],
+      "size": [
+        430,
+        610
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "links": [
+            14,
+            30,
+            45
+          ]
+        },
+        {
+          "name": "crops",
+          "type": "IMAGE",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "preview",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "canvas_width",
+          "type": "INT",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "canvas_height",
+          "type": "INT",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefinePlanT8Advanced"
+      },
+      "widgets_values": [
+        24.0,
+        "local_anime_onnx_exp",
+        "face_detection/anime_face_detect_v1.4_n.onnx",
+        "cpu",
+        0.35,
+        0.3,
+        0.1,
+        0.4,
+        0.55,
+        0.28,
+        0.18,
+        4,
+        2,
+        3.0,
+        "auto_512",
+        true,
+        8
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "Load H3 video VAE",
+      "pos": [
+        0,
+        260
+      ],
+      "size": [
+        400,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            6,
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "title": "Load H3 audio VAE",
+      "pos": [
+        0,
+        432
+      ],
+      "size": [
+        400,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            8,
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPLoader",
+      "title": "Load H3 CLIP",
+      "pos": [
+        0,
+        604
+      ],
+      "size": [
+        400,
+        212
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "Square crop conditioning + lock original soundtrack",
+      "pos": [
+        1400,
+        0
+      ],
+      "size": [
+        470,
+        690
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 10
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 8
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 11
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 12
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 13
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": [
+            32
+          ]
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "Preserve the same identity, expression, gaze, head pose, lighting and timing. Restore plausible natural facial structure and fine detail only; do not beautify or add speech.",
+        1344,
+        768,
+        124,
+        "T2VA",
+        "lock_source",
+        0.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3FaceRefineConditioningT8Advanced",
+      "title": "Face crop latent; input audio mask locked (candidate audio not delivered)",
+      "pos": [
+        1930,
+        0
+      ],
+      "size": [
+        430,
+        260
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 16
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 17
+        },
+        {
+          "name": "crops",
+          "type": "IMAGE",
+          "link": 15
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 6
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": []
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            47
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineConditioningT8Advanced"
+      },
+      "widgets_values": [
+        "require_locked",
+        false
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "Decode generated crop video; discard generated audio",
+      "pos": [
+        3830,
+        0
+      ],
+      "size": [
+        420,
+        158
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 59
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            29
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3FaceRefineStitchAuditT8Advanced",
+      "title": "Review candidate — fallback risky frames, never auto-accept",
+      "pos": [
+        4310,
+        0
+      ],
+      "size": [
+        460,
+        430
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "base_frames",
+          "type": "IMAGE",
+          "link": 28
+        },
+        {
+          "name": "refined_crops",
+          "type": "IMAGE",
+          "link": 29
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_frames",
+          "type": "IMAGE",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "changed_mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "fallback_mask",
+          "type": "MASK",
+          "links": []
+        },
+        {
+          "name": "fallback_count",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "minimax-h3-audio-T8",
+        "Node name for S&R": "MiniMaxH3FaceRefineStitchAuditT8Advanced"
+      },
+      "widgets_values": [
+        "ellipse",
+        12.0,
+        1.0,
+        0.65,
+        0.4,
+        1,
+        "cpu_memory_safe"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "CreateVideo",
+      "title": "Mux candidate with untouched source soundtrack",
+      "pos": [
+        4820,
+        0
+      ],
+      "size": [
+        400,
+        220
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 31
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        8
+      ]
+    },
+    {
+      "id": 17,
+      "type": "SaveVideo",
+      "title": "Save candidate only — never overwrite source",
+      "pos": [
+        5270,
+        0
+      ],
+      "size": [
+        400,
+        238
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/face_refine_anime_advanced_candidate",
+        "mp4",
+        "h264"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3FaceStageAuditEXPT8",
+      "title": "Audit source before candidate crop decode",
+      "pos": [
+        3800,
+        450
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 58
+        },
+        {
+          "name": "face_plan",
+          "type": "H3_T8_FACE_REFINE_PLAN",
+          "link": 45
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 46
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_av",
+          "type": "LATENT",
+          "links": [
+            59
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FaceStageAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3StageLoadEXPT8",
+      "title": "Face job 1 · paste frozen manifest path + exact SHA",
+      "pos": [
+        3700,
+        0
+      ],
+      "size": [
+        470,
+        180
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "expected_stage",
+          "type": "COMBO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": []
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            58
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageLoadEXPT8",
+        "cnr_id": "minimax-h3-audio-T8"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "native_high"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      2,
+      3,
+      1,
+      "FLOAT"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      2,
+      1,
+      7,
+      6,
+      "AUDIO"
+    ],
+    [
+      5,
+      4,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      4,
+      0,
+      8,
+      3,
+      "VAE"
+    ],
+    [
+      7,
+      4,
+      0,
+      14,
+      1,
+      "VAE"
+    ],
+    [
+      8,
+      5,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      9,
+      5,
+      0,
+      14,
+      2,
+      "VAE"
+    ],
+    [
+      10,
+      6,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      11,
+      3,
+      4,
+      7,
+      3,
+      "INT"
+    ],
+    [
+      12,
+      3,
+      5,
+      7,
+      4,
+      "INT"
+    ],
+    [
+      13,
+      3,
+      6,
+      7,
+      5,
+      "INT"
+    ],
+    [
+      14,
+      3,
+      0,
+      8,
+      4,
+      "H3_T8_FACE_REFINE_PLAN"
+    ],
+    [
+      15,
+      3,
+      1,
+      8,
+      2,
+      "IMAGE"
+    ],
+    [
+      16,
+      7,
+      0,
+      8,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      17,
+      7,
+      1,
+      8,
+      1,
+      "LATENT"
+    ],
+    [
+      28,
+      2,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      29,
+      14,
+      0,
+      15,
+      1,
+      "IMAGE"
+    ],
+    [
+      30,
+      3,
+      0,
+      15,
+      2,
+      "H3_T8_FACE_REFINE_PLAN"
+    ],
+    [
+      31,
+      15,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      32,
+      7,
+      2,
+      16,
+      1,
+      "AUDIO"
+    ],
+    [
+      33,
+      16,
+      0,
+      17,
+      0,
+      "VIDEO"
+    ],
+    [
+      45,
+      3,
+      0,
+      19,
+      1,
+      "H3_T8_FACE_REFINE_PLAN"
+    ],
+    [
+      46,
+      2,
+      0,
+      19,
+      2,
+      "IMAGE"
+    ],
+    [
+      47,
+      8,
+      1,
+      19,
+      3,
+      "LATENT"
+    ],
+    [
+      58,
+      23,
+      3,
+      19,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      59,
+      19,
+      0,
+      14,
+      0,
+      "LATENT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "EXP: review crop plan before spending H3 compute",
+      "bounding": [
+        860,
+        -70,
+        540,
+        760
+      ],
+      "color": "#7b3f8c",
+      "font_size": 24
+    },
+    {
+      "id": 2,
+      "title": "Candidate only — original audio and source remain untouched",
+      "bounding": [
+        4270,
+        -70,
+        1450,
+        560
+      ],
+      "color": "#3f789e",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.72,
+      "offset": [
+        80,
+        300
+      ]
+    },
+    "frontendVersion": "1.26.7",
+    "t8_split_example": {
+      "schema": "t8.face-refine.split-example.v1",
+      "route": "S24",
+      "variant": "anime",
+      "effect": "eav",
+      "status": "experimental_frozen_stage_not_quality_accepted",
+      "storage": "cold_delivery"
+    }
+  },
+  "version": 0.4
+}

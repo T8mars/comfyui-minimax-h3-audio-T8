@@ -1,0 +1,1638 @@
+{
+  "id": "4a00bb70-ba64-4437-957f-5c0de466f03e",
+  "revision": 0,
+  "last_node_id": 25,
+  "last_link_id": 39,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        380
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        670
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        1102
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3,
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3370,
+        1800
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        3740,
+        1800
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        4110,
+        1800
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/Modular_Native_Dual_4plus5_EXP",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "UNETLoader",
+      "title": "HIGH independent MODEL load — insert HIGH LoRA chain",
+      "pos": [
+        0,
+        1300
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+      "title": "Existing learned 3D upscale — video only",
+      "pos": [
+        400,
+        1300
+      ],
+      "size": [
+        390,
+        546
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LearnedLatentUpscaleT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "scale_by",
+        2.0,
+        0.46,
+        896,
+        512,
+        "preserve_source",
+        1.05,
+        "fp16",
+        "offload_after"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+      "title": "HIGH Relay — rebuilt real layout",
+      "pos": [
+        800,
+        1300
+      ],
+      "size": [
+        390,
+        702
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 10
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 11
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 12
+        },
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 14
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 8,
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 9,
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayConditioningT8Advanced"
+      },
+      "widgets_values": [
+        1056,
+        608,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "apply_exp",
+        256
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3NativeDualHandoffEXPT8",
+      "title": "Original Dual audio handoff — locked prefix / joint policy",
+      "pos": [
+        1200,
+        1300
+      ],
+      "size": [
+        390,
+        290
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "learned_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
+          "name": "highres_template",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            19,
+            26,
+            31
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3NativeDualHandoffEXPT8"
+      },
+      "widgets_values": [
+        "4",
+        "auto",
+        0.0
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3NativeDualStageSetupEXPT8",
+      "title": "HIGH 5 — independent published LBH schedule",
+      "pos": [
+        1560,
+        1300
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 18
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            29
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            25,
+            30
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            27,
+            32
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3NativeDualStageSetupEXPT8"
+      },
+      "widgets_values": [
+        "dual_high_5",
+        12.0,
+        3.0
+      ]
+    },
+    {
+      "id": 12,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        1560,
+        1650
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2609032102,
+        "fixed"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        2280,
+        1300
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 20
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "PASS 2 — final joint AV",
+      "pos": [
+        2640,
+        1300
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 22
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 23
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 24
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 25
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 26
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        1920,
+        1630
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "title": "External HIGH Relay Plan — editable without changing LOW",
+      "pos": [
+        350,
+        1050
+      ],
+      "size": [
+        390,
+        476
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced"
+      },
+      "widgets_values": [
+        "One adult cyclist rides a bicycle through a quiet city street at dusk. Keep the cyclist, bicycle, direction, clothing and ambient sound consistent.",
+        "The cyclist passes warm streetlights with steady forward motion.\nThe camera tracks alongside as the cyclist continues into the distance.",
+        73,
+        "auto_equal",
+        "",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "External HIGH EAV config",
+      "pos": [
+        1560,
+        2000
+      ],
+      "size": [
+        390,
+        344
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8"
+      },
+      "widgets_values": [
+        "report_only",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ]
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3StageEAVApplyEXPT8",
+      "title": "HIGH EAV + Relay owner",
+      "pos": [
+        1920,
+        1300
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 29
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 30
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 31
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 32
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVApplyEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3StageEAVAuditEXPT8",
+      "title": "HIGH actual effect audit",
+      "pos": [
+        3000,
+        1300
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 34
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "link": 35
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3StageSaveEXPT8",
+      "title": "Save completed HIGH — exact output and denoised state",
+      "pos": [
+        2600,
+        900
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "artifact_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSaveEXPT8"
+      },
+      "widgets_values": [
+        "NativeDual/HIGH5"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+      "title": "HIGH acceleration LoRA — insert content LoRAs independently",
+      "pos": [
+        -400,
+        1300
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LoRACompatibilityLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 22,
+      "type": "PreviewAny",
+      "title": "Actual handoff / audio-policy report",
+      "pos": [
+        1200,
+        2300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 38
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3StageLoadEXPT8",
+      "title": "Load frozen LOW — enter BOTH saved path and SHA; LOW does not execute",
+      "pos": [
+        0,
+        842
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageLoadEXPT8"
+      },
+      "widgets_values": [
+        "REPLACE_WITH_SAVED_LOW_PATH/manifest.json",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "dual_low_4"
+      ]
+    },
+    {
+      "id": 24,
+      "type": "PreviewAny",
+      "title": "Frozen LOW provenance / implementation report",
+      "pos": [
+        450,
+        700
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "MarkdownNote",
+      "title": "先读 / Qualification boundaries",
+      "pos": [
+        0,
+        -650
+      ],
+      "size": [
+        1250,
+        580
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S06 旧 Dual MODEL 的 LOW4→原learned3D→独立HIGH5 分离式 EXP 图。LOW4使用原simple8前四区间，音频由旧auto策略按未完成阶段继续；HIGH3/4/5是各自发布的LBH细化表，不是LOW的余步，也不是FastH3 V2窗口。两阶段MODEL／LoRA／条件／NOISE独立，外置两套Prompt Relay Plan与Stage EAV可分别编辑；EAV默认report_only，不增强画质。LOW取denoised_output经原learned3D进入Native Dual Handoff，保留旧音频锁定前缀／零强度迁移，最终解码HIGH output。本图只读冻结LOW并运行HIGH；填准确manifest路径及SHA，没有LOW模型或采样链。导入后核实本机FL2VA底模、对应EMA B、Qwen、双VAE、learned3D和画布。已有六种配方的真实权重GPU证据仅是固定128×64×22小画布与新Core冷HIGH机械对照，不是本通用图默认尺寸、其它任务／LoRA／后端、EAV apply_exp画质、长片或人工画音验收。旧一体Dual MODEL节点和工作流不迁移。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      19,
+      0,
+      4,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      2,
+      0,
+      4,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      4,
+      1,
+      5,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      5,
+      0,
+      6,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      23,
+      1,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      8,
+      8,
+      1,
+      9,
+      5,
+      "INT"
+    ],
+    [
+      9,
+      8,
+      2,
+      9,
+      6,
+      "INT"
+    ],
+    [
+      10,
+      1,
+      0,
+      9,
+      1,
+      "CLIP"
+    ],
+    [
+      11,
+      2,
+      0,
+      9,
+      2,
+      "VAE"
+    ],
+    [
+      12,
+      3,
+      0,
+      9,
+      3,
+      "VAE"
+    ],
+    [
+      13,
+      21,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      16,
+      0,
+      9,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      15,
+      8,
+      0,
+      10,
+      0,
+      "LATENT"
+    ],
+    [
+      16,
+      9,
+      2,
+      10,
+      1,
+      "LATENT"
+    ],
+    [
+      17,
+      9,
+      1,
+      10,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      9,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      19,
+      10,
+      0,
+      11,
+      1,
+      "LATENT"
+    ],
+    [
+      20,
+      18,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      21,
+      10,
+      1,
+      13,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      22,
+      12,
+      0,
+      14,
+      0,
+      "NOISE"
+    ],
+    [
+      23,
+      13,
+      0,
+      14,
+      1,
+      "GUIDER"
+    ],
+    [
+      24,
+      11,
+      1,
+      14,
+      2,
+      "SAMPLER"
+    ],
+    [
+      25,
+      11,
+      2,
+      14,
+      3,
+      "SIGMAS"
+    ],
+    [
+      26,
+      10,
+      0,
+      14,
+      4,
+      "LATENT"
+    ],
+    [
+      27,
+      11,
+      3,
+      14,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      28,
+      11,
+      4,
+      15,
+      0,
+      "*"
+    ],
+    [
+      29,
+      11,
+      0,
+      18,
+      0,
+      "MODEL"
+    ],
+    [
+      30,
+      11,
+      2,
+      18,
+      1,
+      "SIGMAS"
+    ],
+    [
+      31,
+      10,
+      0,
+      18,
+      2,
+      "LATENT"
+    ],
+    [
+      32,
+      11,
+      3,
+      18,
+      3,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      33,
+      17,
+      0,
+      18,
+      4,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      34,
+      20,
+      0,
+      19,
+      0,
+      "LATENT"
+    ],
+    [
+      35,
+      18,
+      1,
+      19,
+      1,
+      "T8_STAGE_EAV_RUNTIME"
+    ],
+    [
+      36,
+      14,
+      2,
+      20,
+      0,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      37,
+      7,
+      0,
+      21,
+      0,
+      "MODEL"
+    ],
+    [
+      38,
+      10,
+      2,
+      22,
+      0,
+      "*"
+    ],
+    [
+      39,
+      23,
+      4,
+      24,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "Native Dual LOW4 / HIGH5 — resume_effects EXP",
+    "t8_split_example": {
+      "schema": "t8.native-dual.split-example.v1",
+      "route": "S06",
+      "coarse": 4,
+      "refine": 5,
+      "variant": "resume_effects",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

@@ -1,13 +1,13 @@
-# HyperVAE Krea2+MiniMax v2 2× 视频 VAE（EXP）
+# HyperVAE Krea2+MiniMax v2 2× 视频 VAE（本地 EXP）
 
-`MiniMax H3 HyperVAE 2× 加载 (T8 EXP)` 是独立、显式选择的视频 VAE 加载节点，不替换项目原有视频／音频 VAE，不修改旧工作流或 ComfyUI 核心。将权重放进 `ComfyUI/models/vae/` 后，可像普通 VAE 加载节点一样从 `vae_name` 下拉选择；`absolute_path` 默认留空，仅保留给已有绝对路径工作流兼容使用，填写时仍优先。权重不随代码发布。
+这是独立、显式选择的 MiniMax H3 视频 VAE 加载节点，不替换项目原有视频／音频 VAE 节点，也不修改旧工作流或 ComfyUI 核心文件。
 
-权重的 H3 编码器仍是空间 16×，解码头输出 12 个相位打包 RGB 通道，PixelShuffle 后宽高各为普通 H3 视频 VAE 的 2×。这是最终视频 VAE 解码的像素放大，**不是**采样器之间的 2× latent upscaler。音频 VAE 仍走旧连接。普通 ComfyUI VAE Loader 无法直接使用这个 12 通道解码头。
+## 使用
 
-示例：[5 秒同潜空间双路画布工作流](../examples/workflows/58-hypervae-2x/README.md)。它只用一个 8 步 sampler，原生 AV Decode 后将同一 `video_latent` 分给 HyperVAE 解码，音频只解码一次；对照标签明确，不作为匿名盲测或普适画质推荐。使用到其它二采／长视频图时，预留 4 倍输出像素内存，使用新的缓存身份／输出前缀，不复用旧结果，并单独验证最终音画。
+添加 `MiniMax H3 HyperVAE 2× 加载 (T8 EXP)`。将权重放进 `ComfyUI/models/vae/`，再从 `vae_name` 下拉选择；`absolute_path` 通常留空，只保留给旧工作流兼容，填写时仍优先。将 `video_vae` 输出接到原有 `MiniMax H3 AV Decode` 或其它接受视频 `VAE` 的解码入口，音频 VAE 保持原连接。权重不会自动下载或进入发行包。
 
-本机用户提供的 v2 文件 SHA-256 为 `84DA7F476F3732D2B7F6CD51B03063979E8CDCE225032A6D4ED16542775A2DE2`。复制到 `models/vae` 的文件哈希完全相同。真实权重已完成单帧与 5 帧极小输入的编码／解码及单帧 tiled 解码，形状、有限值、16×编码合同通过。另从真实 ComfyUI 画布打开上述保存图并点击运行：512×288 原生路与 1024×576 HyperVAE 路各产出 120 帧、24 fps、精确 5.000 秒 H.264/AAC；双路严格音画解码通过，解码音轨 SHA-256 相同，且可在画布预览。修订后的目录下拉图再次从画布运行，实际提交的 `absolute_path` 为空、`vae_name` 为 `models/vae` 中的 HyperVAE 文件；两路再次各 120 帧、5.000 秒、严格音画解码通过、解码音轨 SHA-256 相同。第一次模板裁剪误接渲染时长而产出 124 帧／5.167 秒，仅保留为本地失败证据；正式图已改接最终时长。
+该模型的编码仍是原生 H3 空间 16×；解码头输出 12 个相位打包 RGB 通道，再经 PixelShuffle 得到相对普通 H3 VAE **宽高各 2×** 的画面。因此它是输出像素放大 VAE，**不是**采样器之间的 2× latent upscaler；若把它用于已有二采工作流的最终解码，应按 2× 输出分辨率预留内存、检查保存节点尺寸，并以新 `chain_id`／缓存身份运行，不能复用旧结果。普通 ComfyUI VAE Loader 无法直接加载这个 12 通道解码头。
 
-这只是一个短片、一个 seed 和一套本机权重的真实运行，不证明原尺寸、长片、所有双采路线、主观画质提升或旧图逐帧等价。
+本地文件 SHA-256 `84DA7F476F3732D2B7F6CD51B03063979E8CDCE225032A6D4ED16542775A2DE2` 与发布版本一致。真实权重已完成单帧和 5 帧最小编码／解码，以及单帧 tiled 解码：32×32 输入分别得到 64×64 输出，形状、有限值和 16× 编码合同通过。另有[5秒同潜空间画布工作流](../examples/workflows/58-hypervae-2x/README.md)在隔离真实 ComfyUI 前端运行，两路各120帧、严格5.000秒、音画完整解码、相同解码音轨；原生512×288与HyperVAE1024×576。此项只证明这一个短片的机械兼容；原尺寸、长视频、所有双采路线、主观画质、旧工作流逐帧等价尚未验证，不作为默认或推荐 VAE。
 
-来源：[作者模型页](https://civitai.com/models/2894736/hypervaekrea2minimax?modelVersionId=3301496)、[作者的 MiniMax 2× VAE 解码实现](https://github.com/TripleHeadedMonkey/ComfyUI-MiniMaxH3_LatentUpscaler/blob/main/vae_decode.py)。仅使用本机权重，没有打包第三方代码或模型。
+来源：[作者模型页](https://civitai.com/models/2894736/hypervaekrea2minimax?modelVersionId=3301496)、[作者的 MiniMax 2× VAE 解码实现](https://github.com/TripleHeadedMonkey/ComfyUI-MiniMaxH3_LatentUpscaler/blob/main/vae_decode.py)。项目只使用本机用户提供的权重，没有打包第三方代码或模型。

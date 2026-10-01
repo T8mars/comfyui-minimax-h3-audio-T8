@@ -2,10 +2,10 @@
 
 ## HyperFlow 0.6 MP / 8 秒实验工作流（2026-09-22）
 
-- [P7 双采 4+4](2026-09-22_H3_HyperFlow_P7_Dual_0p6MP_8s_EXP.json)：LOW 512×288 采样 4 步，经学习型 3D latent 放大，HIGH 1024×576 再采样 4 步。
-- [原生单次 8 步](2026-09-22_H3_HyperFlow_Native_Single8_0p6MP_8s_EXP.json)：每段直接在 1024×576 完成 8 步，无 latent 放大。
+- [P7 双采 4+4](2026-09-22_H3_HyperFlow_P7_Dual_0p6MP_8s_EXP.json)：每段先在 512×288 采样 4 步，使用学习型 3D latent upscaler，再在 1024×576 采样 4 步。
+- [原生单次 8 步](2026-09-22_H3_HyperFlow_Native_Single8_0p6MP_8s_EXP.json)：每段直接在 1024×576 完成 8 步，不调用 latent upscaler。
 
-两份都是可在 ComfyUI 编辑的前端工作流，采用两段共 8 秒、T2VA/native 的同规格对照。运行前须换新的 chain_id，准备独立 HyperFlow 权重及所选底模、CLIP、VAE；P7 另需 3D latent upscaler。隔离 Core 需禁用 comfy-aimdo 编译器。两条路线的本机 GPU 成片与音画机械解码已通过，动态画质、接缝和声音仍待真人审片。详见 [实验说明](../../../docs/HYPERFLOW_LONG_VIDEO_EXP.md)。
+两份均为可在 ComfyUI 打开编辑的前端工作流，采用两段共 8 秒、192 帧、T2VA/native 的同规格对照；运行前必须换新的 `chain_id`，并准备独立 HyperFlow 权重及所选底模、CLIP、VAE。P7 还需要学习型 3D latent upscaler。请先在禁用 comfy-aimdo 编译器的隔离 Core 运行，不要混用两条路线的缓存。两条路线已各有本机 GPU 成片及全音画机械解码记录，但动态画质与接缝、声音仍待真人完整审片；详见 [实验说明](../../../docs/HYPERFLOW_LONG_VIDEO_EXP.md)。
 
 新增[已验收 Dance／4+4／KJ／两段8秒示例](2026-09-13_H3_Dance_4plus4_Accepted_Picture_KJ.json)：后段LOW使用前段实际成片参考，指定样片三项人审均接受。正确接线、提示词、原音乐、恢复规则与证据边界见[说明](../../../docs/DANCE_ACCEPTED_PICTURE_20260913.md)。此前原生／旧双采Dance和两条Depth失败模板不作为推荐方案。
 

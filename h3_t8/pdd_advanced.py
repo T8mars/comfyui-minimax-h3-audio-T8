@@ -515,7 +515,11 @@ class PDDHeadFinalLayer(nn.Module):
         bias = bias_bank[index].to(device=hidden.device)
         return F.linear(hidden.to(weight.dtype), weight, bias)
 
-    def forward(self, x, t_emb, video_seg, audio_seg):
+    def forward(self, x, t_emb, video_seg, audio_seg, sigma=None, sample_sigmas=None, shifts=None):
+        # New Core supplies its native head-bank scheduling arguments. The
+        # fallback still uses the absolute head already selected by our wrapper;
+        # keep the old four-argument calls and all head/blending math unchanged.
+        del sigma, sample_sigmas, shifts
         shift, scale = self.base.adaln_proj(t_emb)
 
         def mod(segment):

@@ -6,6 +6,7 @@ from .patch_stack_policy import UnverifiedModelStack
 import hashlib
 import importlib.metadata
 import inspect
+from copy import copy
 from pathlib import Path
 from types import MethodType, SimpleNamespace
 
@@ -174,12 +175,90 @@ def _original_state(model, state):
     return original
 
 
+CORE_SIGMA_SHIFT_SOURCE_SHA256 = "5999ed8c22b13c8251084c0629fd82137d2fb52b55106abfc73bf5cafc73841d"
+CORE_SIGMA_SHIFT_EXECUTE_SHA256 = "ef0b67d716bab7cd65c83f86ac8067859d8f8712b64dba88a3d7b84356a710a3"
+
+
+def _native_sigma_shift_factory(cls, core_sampling):
+    """Recognize one audited empty Core carrier, never arbitrary subclasses.
+
+    The local class has no executable members. Bind its exact actual Core
+    factory source and bytecode too: filenames/qualnames alone are not proof.
+    Existing instance, inherited-method, sigma-buffer and hook checks still run.
+    This admits sampling identity, not arbitrary effect or video quality claims.
+    """
+    import json
+    from types import CodeType
+
+    native_av = getattr(core_sampling, "ModelSamplingAV", None)
+    if (native_av is None or type(cls) is not type
+            or cls.__bases__ != (native_av, core_sampling.CONST)
+            or cls.__module__ != "comfy_extras.nodes_minimax_h3"
+            or cls.__qualname__ != "MiniMaxH3SigmaShift.execute.<locals>.ModelSamplingAdvanced"
+            or set(vars(cls)) - {"__module__", "__doc__"}):
+        return None
+    try:
+        from comfy_extras import nodes_minimax_h3 as core_h3
+    except ImportError as error:
+        raise UnverifiedModelStack("Core SigmaShift factory is unavailable") from error
+    expected_path = Path(core_sampling.__file__).resolve().parents[1] / "comfy_extras/nodes_minimax_h3.py"
+    source_path = Path(core_h3.__file__).resolve()
+    factory = inspect.unwrap(core_h3.MiniMaxH3SigmaShift.execute)
+    if (source_path != expected_path or Path(inspect.getsourcefile(cls)).resolve() != source_path
+            or factory.__module__ != core_h3.__name__
+            or factory.__qualname__ != "MiniMaxH3SigmaShift.execute"
+            or factory.__globals__ is not vars(core_h3)
+            or factory.__closure__ is not None
+            or Path(factory.__code__.co_filename).resolve() != source_path):
+        raise UnverifiedModelStack("Core SigmaShift has a foreign executable factory")
+    source = source_path.read_bytes()
+    source_sha = hashlib.sha256(source).hexdigest()
+    execute_sha = hashlib.sha256(inspect.getsource(factory).encode()).hexdigest()
+    if source_sha != CORE_SIGMA_SHIFT_SOURCE_SHA256 or execute_sha != CORE_SIGMA_SHIFT_EXECUTE_SHA256:
+        raise UnverifiedModelStack("Core SigmaShift source is outside the audited sampling factory")
+    compiled = compile(source, factory.__code__.co_filename, "exec", dont_inherit=True)
+    def code_named(parent, name):
+        matches = [item for item in parent.co_consts if isinstance(item, CodeType) and item.co_name == name]
+        if len(matches) != 1:
+            raise UnverifiedModelStack("Core SigmaShift has an ambiguous factory implementation")
+        return matches[0]
+    expected = code_named(code_named(compiled, "MiniMaxH3SigmaShift"), "execute")
+    def code_payload(code):
+        def constant(item):
+            if isinstance(item, CodeType):
+                return {"type": "code", "value": code_payload(item)}
+            if type(item) is bytes:
+                return {"type": "bytes", "value": item.hex()}
+            if type(item) is tuple:
+                return {"type": "tuple", "value": [constant(value) for value in item]}
+            if item is None or type(item) in (bool, int, float, str):
+                return {"type": type(item).__name__, "value": item}
+            raise UnverifiedModelStack("Core SigmaShift has an unknown executable constant")
+        # marshal's intern/reference flags can differ for equal loaded/compiled
+        # code objects. Compare exact typed executable fields instead. The
+        # verified source path is deliberately not a portable content field.
+        fields = ("co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals",
+                  "co_stacksize", "co_flags", "co_name", "co_qualname", "co_firstlineno",
+                  "co_names", "co_varnames", "co_freevars", "co_cellvars")
+        return {**{name: getattr(code, name, None) for name in fields},
+                "co_code": code.co_code.hex(), "co_linetable": code.co_linetable.hex(),
+                "co_exceptiontable": getattr(code, "co_exceptiontable", b"").hex(),
+                "co_consts": [constant(value) for value in code.co_consts]}
+    live_payload, expected_payload = code_payload(factory.__code__), code_payload(expected)
+    if live_payload != expected_payload:
+        raise UnverifiedModelStack("Core SigmaShift live factory bytecode differs from its source")
+    return {"owner": factory.__qualname__, "source_sha256": source_sha,
+            "execute_sha256": execute_sha,
+            "bytecode_sha256": hashlib.sha256(json.dumps(live_payload, sort_keys=True).encode()).hexdigest()}
+
+
 def _v2_sampling_identity(value):
-    """Only the inert native sampling surfaces emitted by the V2 setup."""
+    """Audited inert T8 and native Core AV sampling surfaces only."""
     import comfy.model_sampling as core_sampling
     from . import sampling
 
     cls = type(value)
+    native_factory = None
     native_av = getattr(core_sampling, "ModelSamplingAV", None)
     if cls is sampling.MiniMaxH3FlowSampling:
         if set(vars(cls)) - {"__module__", "__doc__", "audio_scale"}:
@@ -194,6 +273,8 @@ def _v2_sampling_identity(value):
         # identity is not stable, but its exact bases and empty executable
         # namespace are: no arbitrary subclass or repr-based exemption.
         protocol = "native_av_carrier"
+    elif (native_factory := _native_sigma_shift_factory(cls, core_sampling)) is not None:
+        protocol = "core_minimax_h3_sigma_shift"
     else:
         raise UnverifiedModelStack("V2 model_sampling lacks a portable native sampling schema")
     reference = cls()
@@ -239,8 +320,11 @@ def _v2_sampling_identity(value):
         raise ValueError("V2 model_sampling audio carrier has a foreign source owner")
     methods["audio_scale"] = {"source": _implementation(audio_scale.fget),
                                "value": content_identity(value.audio_scale)}
-    return {"schema": "t8.fasth3_v2.native_sampling/v1", "protocol": protocol,
+    identity = {"schema": "t8.fasth3_v2.native_sampling/v1", "protocol": protocol,
             "configuration": configuration, "implementation": _implementation(cls), "methods": methods}
+    if native_factory is not None:
+        identity["factory"] = native_factory
+    return identity
 
 
 def _v2_stage_adapter(model):
@@ -261,8 +345,11 @@ def _v2_stage_adapter(model):
         raise UnverifiedModelStack("V2 live user-selected owners need execution-local cache identity")
     if any(key in vars(runtime) for key in ("validate_options", "_config", "block_patch", "dense_sol_contract")):
         raise ValueError("V2 runtime methods were replaced outside their source owner")
-    if "model_sampling" in getattr(model, "object_patches_backup", {}):
-        raise UnverifiedModelStack("V2 stage identity has live model_sampling ownership")
+    original_sampling = getattr(model, "object_patches_backup", {}).get("model_sampling")
+    if original_sampling is not None:
+        selected_sampling = model.object_patches.get("model_sampling")
+        if selected_sampling is None or model.model.model_sampling is not selected_sampling:
+            raise UnverifiedModelStack("V2 live model_sampling owner differs from selected patch")
     previous = runtime.override
     sparse_config = None
     kernel = None
@@ -331,6 +418,15 @@ def _v2_stage_adapter(model):
     if protected_sol:
         contract["protected_sol"] = runtime.dense_sol_contract()
     cloned = model.clone()
+    if original_sampling is not None:
+        # A prior stage may leave Core's selected sampling object installed
+        # while HIGH loads. Restore only the dormant module on a read-only
+        # shallow network view; never unpatch or unload the executing MODEL.
+        cloned.model = copy(model.model)
+        cloned.model._modules = dict(model.model._modules)
+        cloned.model._modules["model_sampling"] = original_sampling
+        cloned.object_patches_backup = dict(model.object_patches_backup)
+        cloned.object_patches_backup.pop("model_sampling")
     options = cloned.model_options["transformer_options"]
     options.pop(v2.RUN_KEY)
     if previous is None:
@@ -360,23 +456,28 @@ def _v2_stage_adapter(model):
     return cloned, contract
 
 
-def stage_model_identity(model):
+def stage_model_identity(model, *, _omit_dormant_sampling=False):
     from .taeh3_sampling_preview import cache_projection
     model = cache_projection(model)
     try:
-        return _audited_stage_model_identity(model)
+        return _audited_stage_model_identity(model, _omit_dormant_sampling=_omit_dormant_sampling)
     except UnverifiedModelStack as error:
         from .patch_stack_policy import nonportable_model_identity
         return nonportable_model_identity(model, str(error), schema="t8.h3.dual_stage_model/user_stack_v1")
 
 
-def _audited_stage_model_identity(model):
+def _audited_stage_model_identity(model, *, _omit_dormant_sampling=False):
     from comfy.model_base import MiniMaxH3
     if not isinstance(model.model, MiniMaxH3):
         raise ValueError("Dual-model native4+4 loop requires native H3 MODELs; VDN uses a separate8+4 contract")
+    if "apply_model" in vars(model.model):
+        selected_apply = model.model.apply_model
+        if (getattr(selected_apply, "__self__", None) is not model.model
+                or getattr(selected_apply, "__func__", None) is not type(model.model).apply_model):
+            raise UnverifiedModelStack("Dual-stage base MODEL apply_model was replaced outside its class")
     if getattr(model, "attachments", {}).get("t8_fasth3_v2_owner_v1") is not None:
         normalized, v2_contract = _v2_stage_adapter(model)
-        identity = stage_model_identity(normalized)
+        identity = stage_model_identity(normalized, _omit_dormant_sampling=True)
         return {**identity, "schema": "t8.h3.dual_stage_model/v2",
                 "sha256": _sha256_json({"base": identity, "fast_h3_v2": v2_contract}),
                 "fast_h3_v2": v2_contract}
@@ -391,6 +492,27 @@ def _audited_stage_model_identity(model):
     if lora_metadata is not None and (type(lora_metadata) is not dict or
             not all(type(key) is str and type(value) is str for key, value in lora_metadata.items())):
         raise ValueError("H3 LoRA metadata must be the loader's plain safetensors string map")
+    # Current stock Core LoRA loaders use this separate attachment name for
+    # the same inert safetensors string map. Bind its exact data; it does not
+    # authenticate another hook, adapter subclass or executable attachment.
+    core_lora_metadata = attachments.pop("lora_metadata", None)
+    if core_lora_metadata is not None and (type(core_lora_metadata) is not dict or
+            not all(type(key) is str and type(value) is str for key, value in core_lora_metadata.items())):
+        raise ValueError("Core LoRA metadata must be the loader's plain safetensors string map")
+    # The compatibility loader attaches an inert diagnostic report after
+    # adding native Core weight patches. Preserve its exact contents in the
+    # identity, but do not mistake that known JSON receipt for an executable
+    # attachment. Actual patch tensor bytes/order are bound below as before.
+    lora_report = attachments.pop("t8_h3_lora_compat_report", None)
+    if lora_report is not None and (type(lora_report) is not dict or
+            lora_report.get("schema") != "t8.minimax_h3.lora_compat.v1" or
+            lora_report.get("status") not in ("applied", "no_compatible_patches") or
+            lora_report.get("full_algorithm_verified") is not False or
+            lora_report.get("model_class") != type(model.model).__name__ or
+            type(lora_report.get("file")) is not dict or
+            lora_report["file"].get("identity_policy") != "display_only_not_a_load_gate_no_hash_scan"):
+        raise UnverifiedModelStack("H3 LoRA compatibility report is not the known inert loader receipt")
+    lora_report_identity = None if lora_report is None else content_identity(lora_report)
     t8_memory_attachment = attachments.pop(T8_MEMORY_ATTACHMENT_KEY, None)
     t8_memory = inspect_t8_memory_composition(model)
     if (t8_memory_attachment is None) != (t8_memory is None):
@@ -446,6 +568,8 @@ def _audited_stage_model_identity(model):
     implementations = {}
     classes = []
     for name, module in model.model.named_modules():
+        if _omit_dormant_sampling and (name == "model_sampling" or name.startswith("model_sampling.")):
+            continue
         if module._forward_pre_hooks or module._forward_hooks:
             raise UnverifiedModelStack('Dual-stage MODEL contains shared live hooks; no cross-branch identity proof')
         current = vars(module).get("forward")
@@ -464,6 +588,13 @@ def _audited_stage_model_identity(model):
     if not state:
         raise ValueError("Dual-stage MODEL has no loaded tensor state")
     state = _original_state(model, state)
+    if _omit_dormant_sampling:
+        # The dormant Core sampling module may be swapped on first load while
+        # its selected V2 replacement is already fully authenticated above by
+        # _v2_sampling_identity. It is not executed in this stage. Bind every
+        # diffusion/LoRA tensor unchanged; omit only dormant sampling buffers.
+        state = {key: value for key, value in state.items()
+                 if not key.startswith("model_sampling.")}
     data = {"schema": "t8.h3.dual_stage_model/v1", "classes": classes,
             "implementations": sorted(implementations.values()), "state": content_identity(state),
             "patches": content_identity(model.patches), "model_options": content_identity(configuration),
@@ -474,6 +605,13 @@ def _audited_stage_model_identity(model):
             "runtime": {"torch": torch.__version__, "cuda": torch.version.cuda,
                         "matmul_precision": matmul_precision_identity(),
                         "deterministic": torch.are_deterministic_algorithms_enabled()}}
+    if _omit_dormant_sampling:
+        data["v2_raw_noise_scale"] = content_identity(
+            getattr(model.model.model_sampling, "noise_scale", None))
+    if lora_report_identity is not None:
+        data["lora_compat_report"] = lora_report_identity
+    if core_lora_metadata is not None:
+        data["core_lora_metadata"] = content_identity(core_lora_metadata)
     config = getattr(model.model, "model_config", None)
     data["unet_config"] = content_identity(getattr(config, "unet_config", None))
     data["manual_cast_dtype"] = str(getattr(model.model, "manual_cast_dtype", None))

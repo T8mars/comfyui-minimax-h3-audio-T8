@@ -1,0 +1,849 @@
+{
+  "id": "76e54ef9-281d-427b-a04e-672a63a9afe2",
+  "revision": 0,
+  "last_node_id": 17,
+  "last_link_id": 14,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "pos": [
+        0,
+        140
+      ],
+      "size": [
+        390,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "CLIP",
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "title": "2. Load MiniMax H3 Qwen3-VL CLIP",
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "title": "3. H3 video VAE",
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        0,
+        410
+      ],
+      "size": [
+        390,
+        58
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "title": "4. H3 audio VAE",
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MarkdownNote",
+      "pos": [
+        1870,
+        1190
+      ],
+      "size": [
+        620,
+        270
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "NOTE 5 · chain_id 与断点恢复",
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "## 失败不会污染已完成段\n每段审计通过后才写入候选并接受；中断、OOM或重启后，参数和`chain_id`完全不变即可续跑。只要改了时长、上下文、提示词、时间范围、Relay路由、模型、EAV或二采，就必须换全新`chain_id`，否则`resume_existing=true`可能直接复用旧段。第一次运行本示例前也请把示例ID改成自己的唯一ID。"
+      ],
+      "color": "#604b1d",
+      "bgcolor": "#332810"
+    },
+    {
+      "id": 10,
+      "type": "MarkdownNote",
+      "pos": [
+        1870,
+        1500
+      ],
+      "size": [
+        620,
+        310
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "NOTE 6 · 实验边界与精确对白",
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "## joint_av_exp仍是实验扩展\n本例只证明这一条24秒素材实跑不再重复、掉句或错序，不保证任意台词逐字命中。必须逐字准确时，先制作整条成品音频，同时连接`drive_audio`与`final_audio`，把`audio_mode`改为`lock_source`，并把Relay路由改回`video_only_paper`；`joint_av_exp`不能与`lock_source`同时使用。严格串行也不等于绝不会OOM，512MiB只是下一段前的余量门。"
+      ],
+      "color": "#6b3030",
+      "bgcolor": "#371919"
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "pos": [
+        1870,
+        590
+      ],
+      "size": [
+        620,
+        260
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "NOTE 3 · EAV固定Stock20",
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "## 不接Turbo LoRA，固定20步\n当前EAV组合只接受`20步 + dual_clock_euler + native_flow`。`report_only`只记录测量，`apply_exp`才应用FETA。模型从原生UNET直接进入长视频节点；不要再叠SageAttention、Sola/sol-attn或其他注意力所有者。组合器内部按`Prompt Relay → FETA`执行。"
+      ],
+      "color": "#214d35",
+      "bgcolor": "#12281d"
+    },
+    {
+      "id": 12,
+      "type": "MarkdownNote",
+      "pos": [
+        1870,
+        890
+      ],
+      "size": [
+        620,
+        260
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "NOTE 4 · 先关闭二采验证对白",
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "## 首轮保持Sampling Plan = disabled\n先只验证一次主采样的对白顺序。确认无重复、掉句、错序后，才可选`manual_second_pass`；二采也处理联合音画，开启后必须换新`chain_id`并重新试听，不能复用这次已接受的段。`tail_subdivide`只细分主轨迹尾段，不等于独立的8+2双采。"
+      ],
+      "color": "#3f3a1f",
+      "bgcolor": "#242112"
+    },
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        -217.96047973632812,
+        -166.55471801757812
+      ],
+      "size": [
+        418.3374938964844,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "title": "1. Load native MiniMax H3 model · Stock20 (no Turbo LoRA)",
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3LongVideoSamplingPlanT8Advanced",
+      "pos": [
+        140.78469848632812,
+        760
+      ],
+      "size": [
+        650,
+        230
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "sampling_plan",
+          "name": "sampling_plan",
+          "type": "H3_T8_LONG_VIDEO_SAMPLING_PLAN",
+          "links": [
+            6
+          ]
+        },
+        {
+          "label": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "6. Sampling Plan · dialogue validation first (disabled)",
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongVideoSamplingPlanT8Advanced",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "disabled",
+        1,
+        "video_sigma_linear",
+        "0.5, 0.412, 0.350, 0"
+      ],
+      "color": "#614a1f",
+      "bgcolor": "#332712"
+    },
+    {
+      "id": 13,
+      "type": "SaveVideo",
+      "pos": [
+        1940.09228515625,
+        17.674671173095703
+      ],
+      "size": [
+        210,
+        180
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "label": "video_url",
+          "name": "video_url",
+          "type": "STRING"
+        },
+        {
+          "label": "video",
+          "name": "video",
+          "type": "VIDEO"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "video/ComfyUI",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MarkdownNote",
+      "pos": [
+        1870,
+        230
+      ],
+      "size": [
+        620,
+        320
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "NOTE 1 · 对白窗口必须按实际分段对齐",
+      "properties": {
+        "Node name for S&R": "MarkdownNote",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "## 本例固定24秒，不是强制30秒\n最终交付576帧；Plan的583帧只用于覆盖H3对齐网格。`render_window=124`、`context=39`时，实际接收边界为`0 / 124 / 209 / 294 / 379 / 464 / 549 / 576`帧，即`0 / 5.1667 / 8.7083 / 12.25 / 15.7917 / 19.3333 / 22.875 / 24`秒。第一段容纳前两句，之后每个事件都从续段边界开始，禁止让一句对白横跨边界。时间范围生效必须选择`timing_mode=seconds`；`auto_equal`会忽略手填范围。Plan只建立一次，长视频节点的`global_prompt`和`segment_prompts_json`保持为空。"
+      ],
+      "color": "#73551e",
+      "bgcolor": "#35270e"
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced",
+      "pos": [
+        1074.9832763671875,
+        8.218018531799316
+      ],
+      "size": [
+        760,
+        1406
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        },
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        },
+        {
+          "label": "video_vae",
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 3
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "label": "prompt_relay_plan",
+          "name": "prompt_relay_plan",
+          "shape": 7,
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 13
+        },
+        {
+          "label": "drive_audio",
+          "name": "drive_audio",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "final_audio",
+          "name": "final_audio",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "first_frame",
+          "name": "first_frame",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "last_frame",
+          "name": "last_frame",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "persistent_identity_image",
+          "name": "persistent_identity_image",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "ref_images.ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "ref_videos.ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "ref_video_audios.ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "ref_audios.ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "long_video_sampling_plan",
+          "name": "long_video_sampling_plan",
+          "shape": 7,
+          "type": "H3_T8_LONG_VIDEO_SAMPLING_PLAN",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "label": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            7
+          ]
+        },
+        {
+          "label": "video_path",
+          "name": "video_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "label": "manifest_path",
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "label": "completed_segments",
+          "name": "completed_segments",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "label": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "label": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "7. Dialogue-safe Long Video + Prompt Relay + EAV · Stock20",
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LongVideoInNodeLoopEffectsT8Advanced",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "h3_dialogue_aligned_stock20_24s_example_v1",
+        24.000000000000004,
+        736,
+        416,
+        124,
+        39,
+        "",
+        "",
+        "apply_exp",
+        256,
+        "apply_exp",
+        4,
+        0,
+        1,
+        32,
+        1.5,
+        512,
+        123456789,
+        "increment",
+        20,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow",
+        "auto",
+        "video_and_audio",
+        "native",
+        0.35,
+        true,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        "segment0_only",
+        "single_reference",
+        1,
+        true,
+        "H3_DialogueAligned_24s_Stock20",
+        "cosine_bridge",
+        5,
+        8,
+        18,
+        "minimax_h3_native_stock20_relay_eav"
+      ],
+      "color": "#4f3a71",
+      "bgcolor": "#291f3b"
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3PromptRelayPlanT8Advanced",
+      "pos": [
+        433.14593505859375,
+        207.35301208496094
+      ],
+      "size": [
+        540,
+        500
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "prompt_relay_events",
+          "name": "prompt_relay_events",
+          "shape": 7,
+          "type": "H3_T8_PROMPT_RELAY_EVENTS"
+        }
+      ],
+      "outputs": [
+        {
+          "label": "prompt_relay_plan",
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "slot_index": 0,
+          "links": [
+            12
+          ]
+        },
+        {
+          "label": "compiled_prompt",
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "slot_index": 1
+        },
+        {
+          "label": "length",
+          "name": "length",
+          "type": "INT",
+          "slot_index": 2
+        },
+        {
+          "label": "timeline_json",
+          "name": "timeline_json",
+          "type": "STRING",
+          "slot_index": 3
+        },
+        {
+          "label": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "slot_index": 4
+        }
+      ],
+      "title": "5. Global dialogue Relay · seconds + segment-aligned ranges",
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PromptRelayPlanT8Advanced",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "3D CG，皮克斯风格动画卡通。唐代乡村，一座破旧茅草屋，门外堆着柴垛。主角是卡通杜甫：瘦弱、略微佝偻，穿补丁累累的灰蓝色布袍，戴旧头巾。全片保持杜甫的外貌、衣着和声音一致。杜甫使用同一个滑稽、细弱、略带喘息而兴奋的男性声音（S1），说普通话。其他人物不朗诵，不添加额外对白。每个镜头只朗诵该镜头指定的诗句一次，不重复前面已经说过的诗句。按照局部事件依次推进故事，动作自然连贯。杜甫露脸时采用侧面或三分之二侧面，不出现完整正脸。远处有轻微胜利鼓声和锣声，背景声音低于人声，具体动作配合对应音效。无屏幕字幕、文字、诗句叠加或水印。",
+        "中景，三分之二侧拍。杜甫站在茅草屋外劈柴，听见远处胜利的鼓声和锣声，突然停下动作，侧头竖耳，兴奋地睁大眼睛，松手让斧头落在地上。他用细弱、喘息却兴奋的滑稽声音（S1）朗诵一次：<d>[普通话] 剑外忽传收蓟北。</d> 配合斧头落地声。\n切到侧面脸部特写，只看见杜甫瘦削的脸颊和眼角。喜悦的泪水涌出，他用破袖子擦眼泪，鼻涕和眼泪擦得满脸都是，袖口的一块补丁轻轻脱落。他用相同声音（S1）朗诵一次：<d>[普通话] 初闻涕泪满衣裳。</d> 配合袖子摩擦和补丁掉落的轻响。\n切到杜甫身后的中景，主要看见他的瘦弱背影和旧头巾侧面。他转头看向门口的妻子与孩子，妻子和孩子原本忧愁的表情变成惊喜，三人短暂呆住，随即相视而笑。他用欢快的相同声音（S1）朗诵一次：<d>[普通话] 却看妻子愁何在。</d> 不出现文字、气泡或头顶符号。\n切到三分之二侧面中景。杜甫喜不自胜，把手里的诗书向上抛起，书页哗啦散开；他向前迈步，踩到落下的书，脚下一滑，张开双臂摇晃着站稳。他用欢快而晕头转向的相同声音（S1）朗诵一次：<d>[普通话] 漫卷诗书喜欲狂。</d> 配合书页散落声和脚底滑动声。\n切到侧面中景。杜甫举起一只破葫芦仰头喝酒，酒却从葫芦底部的小裂口漏出，滴到他的下巴和衣襟上。他发现葫芦漏酒，尴尬地咧嘴笑，摇晃葫芦。他用相同的滑稽声音（S1）朗诵一次：<d>[普通话] 白日放歌须纵酒。</d> 配合轻微的漏酒滴答声。\n切到侧面中景。杜甫蹲在地上，用草绳捆扎一个鼓鼓的行礼包裹；他急切地拉紧绳子，绳子突然崩断，包裹松开，衣物散落。他愣了一下，仍然兴奋地笑着。他用急切的相同声音（S1）朗诵一次：<d>[普通话] 青春作伴好还乡。</d> 配合绳子断裂和衣物落地声。\n切到侧面中景。杜甫坐在院子里的木澡盆中，把澡盆当作船，双手做划桨动作，身体兴奋地左右摇晃；澡盆向一侧倾倒，他滑坐到地上。他用快速但清晰的相同声音（S1）连续朗诵一次：<d>[普通话] 即从巴峡穿巫峡，便下襄阳向洛阳。</d> 配合木盆倾倒落地声。\n切到侧面全景。杜甫起身指向远方，用相同声音（S1）短促地喊一次：<d>[普通话] 走！</d> 刚迈步就被脚边的草绳绊倒，扑进迎上来的妻子和孩子怀里，全家跌坐成一团，开心地笑着。配合短促的绊倒和衣物摩擦声，画面结束。",
+        583,
+        "seconds",
+        "0-2.5\n2.5-5.166667\n5.166667-8.708333\n8.708333-12.25\n12.25-15.791667\n15.791667-19.333333\n19.333333-22.875\n22.875-24.291667",
+        "paper_v1",
+        0.1,
+        false,
+        false
+      ],
+      "color": "#73551e",
+      "bgcolor": "#35270e"
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3PromptRelayQueryRouteT8Advanced",
+      "title": "5B. Joint A/V Relay · generated dialogue uses joint_av_exp",
+      "pos": [
+        470,
+        -45
+      ],
+      "size": [
+        500,
+        150
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "prompt_relay_plan",
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "label": "prompt_relay_plan",
+          "name": "prompt_relay_plan",
+          "type": "H3_T8_PROMPT_RELAY_PLAN",
+          "links": [
+            13
+          ]
+        },
+        {
+          "label": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "widget_ue_connectable": {},
+        "Node name for S&R": "MiniMaxH3PromptRelayQueryRouteT8Advanced"
+      },
+      "widgets_values": [
+        "joint_av_exp"
+      ]
+    }
+  ],
+  "links": [
+    [
+      2,
+      2,
+      0,
+      6,
+      1,
+      "CLIP"
+    ],
+    [
+      3,
+      3,
+      0,
+      6,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      4,
+      0,
+      6,
+      3,
+      "VAE"
+    ],
+    [
+      6,
+      11,
+      0,
+      6,
+      14,
+      "H3_T8_LONG_VIDEO_SAMPLING_PLAN"
+    ],
+    [
+      7,
+      6,
+      0,
+      13,
+      0,
+      "VIDEO"
+    ],
+    [
+      12,
+      5,
+      0,
+      17,
+      0,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      13,
+      17,
+      0,
+      6,
+      4,
+      "H3_T8_PROMPT_RELAY_PLAN"
+    ],
+    [
+      14,
+      1,
+      0,
+      6,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Native Stock20 + one global dialogue Relay Plan",
+      "bounding": [
+        -260,
+        -220,
+        1250,
+        1250
+      ],
+      "color": "#3f789e",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "24s verified layout · serial Long Video + joint A/V Relay + EAV",
+      "bounding": [
+        1000,
+        -70,
+        850,
+        1530
+      ],
+      "color": "#704c91",
+      "font_size": 26,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Read before running",
+      "bounding": [
+        1850,
+        -70,
+        700,
+        1940
+      ],
+      "color": "#8b6b32",
+      "font_size": 26,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5989500000000005,
+      "offset": [
+        190.14919664632652,
+        477.6825599123031
+      ]
+    },
+    "ue_links": [],
+    "t8_long_video_state": "in_node_loop_effects_v1",
+    "t8_dialogue_segment_alignment": {
+      "status": "single_user_reviewed_run_pass",
+      "final_frames": 576,
+      "plan_frames": 583,
+      "fps": 24,
+      "render_window_frames": 124,
+      "context_frames": 39,
+      "accepted_segment_boundaries": [
+        0,
+        124,
+        209,
+        294,
+        379,
+        464,
+        549,
+        576
+      ],
+      "query_route": "joint_av_exp",
+      "sampling_plan": "disabled"
+    },
+    "pixaromaGroups": [],
+    "0246.VERSION": [
+      0,
+      0,
+      4
+    ],
+    "links_added_by_ue": [],
+    "frontendVersion": "1.23.0",
+    "KKvideo_latentpreview": false,
+    "KKvideo_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0
+  },
+  "version": 0.4
+}

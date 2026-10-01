@@ -1,0 +1,2008 @@
+{
+  "id": "008c520a-db9d-43d4-89a4-d40204422947",
+  "revision": 0,
+  "last_node_id": 28,
+  "last_link_id": 54,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        -1050,
+        268
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        -1450,
+        800
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            6,
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -1450,
+        1150
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2,
+            7,
+            31,
+            51
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        -1450,
+        1500
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            8,
+            32,
+            52
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        -1050,
+        1950
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3HyperFlowP7AcceptedParentEXPT8",
+      "title": "H3 HyperFlow P7 · Select Existing Accepted Parent (T8 EXP)",
+      "pos": [
+        -1050,
+        -300
+      ],
+      "size": [
+        390,
+        520
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "accepted_parent",
+          "type": "T8_HYPERFLOW_P7_ACCEPTED_PARENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "low_height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7AcceptedParentEXPT8"
+      },
+      "widgets_values": [
+        "replace_with_unique_p7_chain_id",
+        1,
+        "REPLACE_WITH_SEGMENT0_ACCEPTED_CANDIDATE_ID",
+        1,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        22,
+        896,
+        448,
+        448,
+        224
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3HyperFlowP7PrepareContextsEXPT8",
+      "title": "H3 HyperFlow P7 · Prepare LOW/HIGH Continuation Contexts (T8 EXP)",
+      "pos": [
+        -650,
+        -300
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "accepted_parent",
+          "type": "T8_HYPERFLOW_P7_ACCEPTED_PARENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "contexts",
+          "type": "T8_HYPERFLOW_P7_CONTEXTS",
+          "links": [
+            5,
+            29
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7PrepareContextsEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3HyperFlowFreshLoaderEXPT8",
+      "title": "H3 HyperFlow · Fresh Route Loader / Original Endpoint (T8 EXP)",
+      "pos": [
+        -630,
+        200
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshLoaderEXPT8"
+      },
+      "widgets_values": [
+        "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3HyperFlowFreshLoaderEXPT8",
+      "title": "H3 HyperFlow · Fresh Route Loader / Original Endpoint (T8 EXP)",
+      "pos": [
+        -630,
+        1950
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            34
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowFreshLoaderEXPT8"
+      },
+      "widgets_values": [
+        "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3HyperFlowP7ConditioningEXPT8",
+      "title": "H3 HyperFlow P7 · One Phase Native Conditions (T8 EXP)",
+      "pos": [
+        -170,
+        200
+      ],
+      "size": [
+        390,
+        316
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_HYPERFLOW_P7_CONTEXTS",
+          "link": 5
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 6
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prepared_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "links": [
+            9,
+            18,
+            27
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            11,
+            20
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "source_av",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7ConditioningEXPT8"
+      },
+      "widgets_values": [
+        "low",
+        "One adult walks through a quiet corridor in a continuous cinematic shot. Maintain the person's appearance, setting and natural ambience. LOW framing and motion.",
+        124
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3HyperFlowP7LowSetupEXPT8",
+      "title": "H3 HyperFlow P7 · LOW 0:4 Setup Only (T8 EXP)",
+      "pos": [
+        300,
+        200
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "link": 9
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 10
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 11
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            14,
+            24
+          ]
+        },
+        {
+          "name": "source_av",
+          "type": "LATENT",
+          "links": [
+            15,
+            25
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            16,
+            26
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7LowSetupEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "H3 Stage EAV · External Config (T8 EXP)",
+      "pos": [
+        300,
+        1300
+      ],
+      "size": [
+        390,
+        344
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8"
+      },
+      "widgets_values": [
+        "report_only",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3HyperFlowP7StageEAVApplyEXPT8",
+      "title": "H3 HyperFlow P7 · External Stage EAV for This Phase (T8 EXP)",
+      "pos": [
+        750,
+        1300
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 14
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 15
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 16
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 17
+        },
+        {
+          "name": "prepared_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_STAGE_EAV_RUNTIME",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7StageEAVApplyEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 14,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        300,
+        880
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        123456790,
+        "fixed"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        750,
+        200
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "H3 Stage Sampler · ONE Stage + Result (T8 EXP)",
+      "pos": [
+        1200,
+        200
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 21
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 22
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 23
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 24
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 25
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 26
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3HyperFlowP7LowResultEXPT8",
+      "title": "H3 HyperFlow P7 · Bind Completed LOW Result (T8 EXP)",
+      "pos": [
+        1650,
+        200
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prepared_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "link": 27
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "low_result",
+          "type": "T8_HYPERFLOW_P7_LOW_RESULT",
+          "links": [
+            49
+          ]
+        },
+        {
+          "name": "low_x0",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7LowResultEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3HyperFlowP7ConditioningEXPT8",
+      "title": "H3 HyperFlow P7 · One Phase Native Conditions (T8 EXP)",
+      "pos": [
+        -170,
+        1950
+      ],
+      "size": [
+        390,
+        316
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "contexts",
+          "type": "T8_HYPERFLOW_P7_CONTEXTS",
+          "link": 29
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 30
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 31
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 32
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prepared_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "links": [
+            46
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            47
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            48
+          ]
+        },
+        {
+          "name": "source_av",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7ConditioningEXPT8"
+      },
+      "widgets_values": [
+        "high",
+        "The same adult continues through the same corridor in the same cinematic shot. Preserve identity, action, camera and ambience. HIGH texture and stable detail.",
+        124
+      ]
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3HyperFlowP7HighSetupEXPT8",
+      "title": "H3 HyperFlow P7 · HIGH 4:8 Setup Only (T8 EXP)",
+      "pos": [
+        3350,
+        1950
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "high_handoff",
+          "type": "T8_HYPERFLOW_P7_HIGH_INPUT",
+          "link": 33
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            35
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            39
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            40
+          ]
+        },
+        {
+          "name": "source_av",
+          "type": "LATENT",
+          "links": [
+            41
+          ]
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "links": [
+            42
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7HighSetupEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        3350,
+        2600
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        123456791,
+        "fixed"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        3800,
+        1950
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 35
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 36
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3StageSamplerEXPT8",
+      "title": "H3 Stage Sampler · ONE Stage + Result (T8 EXP)",
+      "pos": [
+        4250,
+        1950
+      ],
+      "size": [
+        390,
+        236
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 37
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 38
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 39
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 40
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 41
+        },
+        {
+          "name": "stage_context",
+          "type": "T8_STAGE_CONTEXT",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "links": [
+            44
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageSamplerEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3HyperFlowP7HighResultEXPT8",
+      "title": "H3 HyperFlow P7 · Bind Completed HIGH Result (T8 EXP)",
+      "pos": [
+        4700,
+        1950
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "high_handoff",
+          "type": "T8_HYPERFLOW_P7_HIGH_INPUT",
+          "link": 43
+        },
+        {
+          "name": "stage_result",
+          "type": "T8_STAGE_RESULT",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_result",
+          "type": "T8_HYPERFLOW_P7_HIGH_RESULT",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "completed_av",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7HighResultEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3HyperFlowP7HighHandoffEXPT8",
+      "title": "H3 HyperFlow P7 · Original HIGH Audio Reconcile (T8 EXP)",
+      "pos": [
+        2950,
+        1600
+      ],
+      "size": [
+        390,
+        184
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "learned_lift",
+          "type": "T8_HYPERFLOW_P7_LEARNED_LIFT",
+          "link": 45
+        },
+        {
+          "name": "high_phase",
+          "type": "T8_HYPERFLOW_P7_PREPARED_PHASE",
+          "link": 46
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 47
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 48
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_handoff",
+          "type": "T8_HYPERFLOW_P7_HIGH_INPUT",
+          "links": [
+            33,
+            43
+          ]
+        },
+        {
+          "name": "high_source_av",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7HighHandoffEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3HyperFlowP7LearnedLiftEXPT8",
+      "title": "H3 HyperFlow P7 · Original Learned 3D Lift (T8 EXP)",
+      "pos": [
+        2500,
+        200
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "low_result",
+          "type": "T8_HYPERFLOW_P7_LOW_RESULT",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "learned_lift",
+          "type": "T8_HYPERFLOW_P7_LEARNED_LIFT",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "enlarged_av",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7LearnedLiftEXPT8"
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "MiniMaxH3HyperFlowP7CandidateSaveEXPT8",
+      "title": "H3 HyperFlow P7 · Save Separate Candidate (T8 EXP)",
+      "pos": [
+        5550,
+        1950
+      ],
+      "size": [
+        390,
+        528
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "high_result",
+          "type": "T8_HYPERFLOW_P7_HIGH_RESULT",
+          "link": 50
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 51
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_json_path",
+          "type": "STRING",
+          "links": [
+            53
+          ]
+        },
+        {
+          "name": "candidate_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "job_sha256",
+          "type": "STRING",
+          "links": [
+            54
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7CandidateSaveEXPT8"
+      },
+      "widgets_values": [
+        "",
+        true,
+        68,
+        "h3_p7_modular_exp",
+        123456790,
+        "fixed",
+        true,
+        8,
+        18
+      ]
+    },
+    {
+      "id": 27,
+      "type": "MiniMaxH3HyperFlowP7CandidateAcceptEXPT8",
+      "title": "H3 HyperFlow P7 · Review & Accept Separate Candidate (T8 EXP)",
+      "pos": [
+        6000,
+        1950
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "candidate_json_path",
+          "type": "STRING",
+          "link": 53
+        },
+        {
+          "name": "job_sha256",
+          "type": "STRING",
+          "link": 54
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "accepted",
+          "type": "BOOLEAN",
+          "links": null
+        },
+        {
+          "name": "manifest_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "parent_candidate_id",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "parent_revision",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "previous_job_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowP7CandidateAcceptEXPT8"
+      },
+      "widgets_values": [
+        false
+      ]
+    },
+    {
+      "id": 28,
+      "type": "MarkdownNote",
+      "title": "先读 / P7 staged delivery",
+      "pos": [
+        -1450,
+        -1500
+      ],
+      "size": [
+        1400,
+        1060
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "S16 P7 segment1／eav:low／Full_NoStageSave 分离式 EXP。本图不是 S13 连续采样或 S14/S15 单段 fresh4。LOW 绝对0:4取真实denoised_output→原 learned3D→原 audio reconcile→HIGH 独立新噪声绝对4:8。LOW/HIGH 的完整底模、专用 HyperFlow Loader、内容 LoRA、提示词、条件、噪声与 Sampler 分开；HyperFlow 权重不可用普通 LoRA Loader 代替。segment0 交付124帧；segment1 必须从已经显式接受的 segment0 直接父片读取 candidate ID／revision／job SHA，渲染124帧但只交付新增68帧。两段候选经单独审阅和显式 Accept 后，才可用原 Compose 拼成192帧／8秒。本图 Candidate Accept 默认 false，不会自动接受或拼片。外置 eav 作用于 low；阶段 Relay Plan 可单独改，EAV Config 默认 report_only，不产生增强增益，apply_exp 才施加。全局四事件须覆盖两段窗口。完整运行并保存未接受候选，但不保存阶段 LOW/HIGH 回执。链 ID 必须换成该任务唯一值；parent ID／revision／job SHA、模型、素材和Load 占位路径/SHA 必须用真实回执替换，不能直接排队。旧公开工作流不迁移。静态／浏览器可导入不等于原尺寸真实权重、apply_exp 画质或人工音画验收。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      6,
+      0,
+      7,
+      0,
+      "T8_HYPERFLOW_P7_ACCEPTED_PARENT"
+    ],
+    [
+      2,
+      3,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      1,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      5,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      5,
+      7,
+      0,
+      10,
+      0,
+      "T8_HYPERFLOW_P7_CONTEXTS"
+    ],
+    [
+      6,
+      2,
+      0,
+      10,
+      1,
+      "CLIP"
+    ],
+    [
+      7,
+      3,
+      0,
+      10,
+      2,
+      "VAE"
+    ],
+    [
+      8,
+      4,
+      0,
+      10,
+      3,
+      "VAE"
+    ],
+    [
+      9,
+      10,
+      0,
+      11,
+      0,
+      "T8_HYPERFLOW_P7_PREPARED_PHASE"
+    ],
+    [
+      10,
+      8,
+      0,
+      11,
+      1,
+      "MODEL"
+    ],
+    [
+      11,
+      10,
+      1,
+      11,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      10,
+      2,
+      11,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      11,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      11,
+      2,
+      13,
+      1,
+      "SIGMAS"
+    ],
+    [
+      15,
+      11,
+      3,
+      13,
+      2,
+      "LATENT"
+    ],
+    [
+      16,
+      11,
+      4,
+      13,
+      3,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      17,
+      12,
+      0,
+      13,
+      4,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      18,
+      10,
+      0,
+      13,
+      5,
+      "T8_HYPERFLOW_P7_PREPARED_PHASE"
+    ],
+    [
+      19,
+      13,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      10,
+      1,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      21,
+      14,
+      0,
+      16,
+      0,
+      "NOISE"
+    ],
+    [
+      22,
+      15,
+      0,
+      16,
+      1,
+      "GUIDER"
+    ],
+    [
+      23,
+      11,
+      1,
+      16,
+      2,
+      "SAMPLER"
+    ],
+    [
+      24,
+      11,
+      2,
+      16,
+      3,
+      "SIGMAS"
+    ],
+    [
+      25,
+      11,
+      3,
+      16,
+      4,
+      "LATENT"
+    ],
+    [
+      26,
+      11,
+      4,
+      16,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      27,
+      10,
+      0,
+      17,
+      0,
+      "T8_HYPERFLOW_P7_PREPARED_PHASE"
+    ],
+    [
+      28,
+      16,
+      2,
+      17,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      29,
+      7,
+      0,
+      18,
+      0,
+      "T8_HYPERFLOW_P7_CONTEXTS"
+    ],
+    [
+      30,
+      2,
+      0,
+      18,
+      1,
+      "CLIP"
+    ],
+    [
+      31,
+      3,
+      0,
+      18,
+      2,
+      "VAE"
+    ],
+    [
+      32,
+      4,
+      0,
+      18,
+      3,
+      "VAE"
+    ],
+    [
+      33,
+      24,
+      0,
+      19,
+      0,
+      "T8_HYPERFLOW_P7_HIGH_INPUT"
+    ],
+    [
+      34,
+      9,
+      0,
+      19,
+      1,
+      "MODEL"
+    ],
+    [
+      35,
+      19,
+      0,
+      21,
+      0,
+      "MODEL"
+    ],
+    [
+      36,
+      19,
+      5,
+      21,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      37,
+      20,
+      0,
+      22,
+      0,
+      "NOISE"
+    ],
+    [
+      38,
+      21,
+      0,
+      22,
+      1,
+      "GUIDER"
+    ],
+    [
+      39,
+      19,
+      1,
+      22,
+      2,
+      "SAMPLER"
+    ],
+    [
+      40,
+      19,
+      2,
+      22,
+      3,
+      "SIGMAS"
+    ],
+    [
+      41,
+      19,
+      3,
+      22,
+      4,
+      "LATENT"
+    ],
+    [
+      42,
+      19,
+      4,
+      22,
+      5,
+      "T8_STAGE_CONTEXT"
+    ],
+    [
+      43,
+      24,
+      0,
+      23,
+      0,
+      "T8_HYPERFLOW_P7_HIGH_INPUT"
+    ],
+    [
+      44,
+      22,
+      2,
+      23,
+      1,
+      "T8_STAGE_RESULT"
+    ],
+    [
+      45,
+      25,
+      0,
+      24,
+      0,
+      "T8_HYPERFLOW_P7_LEARNED_LIFT"
+    ],
+    [
+      46,
+      18,
+      0,
+      24,
+      1,
+      "T8_HYPERFLOW_P7_PREPARED_PHASE"
+    ],
+    [
+      47,
+      18,
+      1,
+      24,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      48,
+      18,
+      2,
+      24,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      49,
+      17,
+      0,
+      25,
+      0,
+      "T8_HYPERFLOW_P7_LOW_RESULT"
+    ],
+    [
+      50,
+      23,
+      0,
+      26,
+      0,
+      "T8_HYPERFLOW_P7_HIGH_RESULT"
+    ],
+    [
+      51,
+      3,
+      0,
+      26,
+      1,
+      "VAE"
+    ],
+    [
+      52,
+      4,
+      0,
+      26,
+      2,
+      "VAE"
+    ],
+    [
+      53,
+      26,
+      0,
+      27,
+      0,
+      "STRING"
+    ],
+    [
+      54,
+      26,
+      2,
+      27,
+      1,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "S16 HyperFlow P7 segment1 eav:low Full_NoStageSave EXP",
+    "t8_split_example": {
+      "schema": "t8.hyperflow.p7.split-example.v1",
+      "route": "S16",
+      "segment": "segment1",
+      "effect_kind": "eav",
+      "effect_scope": "low",
+      "variant": "minimal",
+      "status": "experimental_importable_not_quality_accepted"
+    }
+  },
+  "version": 0.4
+}

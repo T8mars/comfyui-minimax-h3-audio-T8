@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.87.0"
+version = "1.88.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,18 +22,31 @@ DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
     "CHANGELOG.md", "docs/README_POLICY.md", "docs/README_DETAILS_ZH.md", "docs/README_DETAILS_EN.md",
-    "docs/MODEL_DOWNLOADS_1.85.md", "docs/RELEASE_1.86.0.md", "docs/RELEASE_1.87.0.md", "docs/DIRECTOR_D1.md", "docs/DIRECTOR_D2A.md",
-    "docs/H16_3_CHUNKED_PASS2_EXP.md", "docs/H18_PROMPT_CHAIN_AUDIT.md", "docs/HYPERVAE_2X_EXP.md",
+    "docs/MODEL_DOWNLOADS_1.85.md",
+    "docs/DIRECTOR_D1.md", "docs/DIRECTOR_D2A.md",
+    "docs/DIRECTOR_WORKBENCH.md", "docs/DIRECTOR_TWO_PASS_20260921.md",
+    "docs/HYPERFLOW_RUNTIME_EXP.md", "docs/FIVE_VIEW_CHARACTER_SHEET_EXP.md",
+    "docs/H3_COMPATIBILITY_DIAGNOSTICS.md", "docs/H3_PERFORMANCE_BASELINE.md",
+    "docs/H16_3_CHUNKED_PASS2_EXP.md", "docs/H18_PROMPT_CHAIN_AUDIT.md",
     "docs/README_ComfyUI.md",
     "docs/CHANGELOG_ARCHIVE_ZH.md", "docs/CHANGELOG_ARCHIVE_EN.md",
-    "docs/RELEASE_1.85.0.md", "docs/MERIDIAN_LOCAL_EXP.md", "docs/MERIDIAN_CONVERSION_EXP.md",
+    "docs/RELEASE_1.85.0.md", "docs/RELEASE_1.87.0.md", "docs/MERIDIAN_LOCAL_EXP.md", "docs/MERIDIAN_CONVERSION_EXP.md",
     "docs/AVATAR_PROGRESSIVE_EXP.md", "docs/NATIVE_VOICE_EMOTION_EXP.md",
     "docs/TAEH3_SAMPLING_PREVIEW_EXP.md", "docs/READABLE_AUDIO_P1_EXP.md",
-    "tools/convert_meridian_convrot.py",
+    "tools/convert_meridian_convrot.py", "tools/h3_cold_warm_baseline.py",
+    "tools/summarize_h3_measurements.py",
     "docs/H16_OFFICIAL_INT8_VAE_QUALIFICATION.md", "docs/H16_STANDARD_LATENT_ADAPTER_EXP.md",
     "docs/H16_TAOMATE_STREAM_LIFECYCLE_EXP.md", "docs/H16_SOURCE_UPDATE_20260917.md",
     "docs/PREPARED_GENERATION_INTEGRATION_EXP.md", "docs/PREPARED_SOURCES_AND_ENVIRONMENT.md",
     "docs/RELEASE_1.84.0.md",
+    "docs/VEDA_SPARSE_T2VA_EXP.md", "docs/LTX_NATIVE_LOAD_POLICY_EXP.md", "h3_t8/veda_vendor/LICENSE",
+    "docs/FACE_ANIME_ISOLATED_DELIVERY_EXP.md", "docs/MODULAR_SAMPLING_EXP.md",
+    "docs/MULTIFACE_FROZEN_SOURCE_EXP.md", "docs/RELEASE_1.88.0.md",
+    "docs/AUDIO_REFINE_EXTERNAL_EFFECTS_EXP.md", "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
+    "docs/PREPARED_RELAY_ENCODER_ADMISSION.md",
+    "docs/FACE_REFINE_ADVANCED_VALIDATION.md", "docs/HYPERVAE_2X_EXP.md",
+    "tools/api_to_frontend_workflow.py", "tools/repair_frontend_workflow_order.py",
+    "tools/frontend_workflow_compat.py",
     "docs/SEMANTIC_BRIDGE_EXP.md", "docs/SEMANTIC_BRIDGE_QUALIFICATION.md", "tools/convert_semantic_bridge.py",
     "sol_attn_minimax_v2.py", "docs/PATCH_STACK_POLICY.md", "docs/SELFLIFT_INTERFACE_REPAIR_20260917.md",
     "docs/GITHUB_SOURCE_SYNC_20260917.md",
@@ -58,7 +71,7 @@ testpaths = ["tests"]
 norecursedirs = ["artifacts"]
 
 [tool.ruff]
-extend-exclude = ["h3_t8/flashvsr_vendor", "h3_t8/vendor/vretoucher_upstream"]
+extend-exclude = ["h3_t8/flashvsr_vendor", "h3_t8/vendor/vretoucher_upstream", "h3_t8/veda_vendor"]
 
 [tool.ruff.lint.per-file-ignores]
 "tools/*.py" = ["T201"]

@@ -127,6 +127,26 @@ def wait_shot(server, batch_id, index, timeout):
     raise TimeoutError("Owned shot did not finish by deadline")
 
 
+def selected_probe_project(project):
+    """A deliberately incomplete unselected middle shot must never be prepared."""
+    result = deepcopy(project)
+    first, last = result['doc']['shots']
+    middle = deepcopy(first)
+    middle.update(id=str(uuid.uuid4()), name='UNSELECTED missing inputs', mode='ends',
+                  sound='record', simplePrompt='', first=None, last=None, audio=None)
+    first['seed'], last['seed'] = 0, 4294967295
+    result['doc']['shots'] = [first, middle, last]
+    return result, [last['id'], first['id']], {first['id']: 0, last['id']: 4294967295}
+
+
+def check_selection_frozen(frozen, project, seed_map):
+    expected = [shot['id'] for shot in project['doc']['shots'] if shot['id'] in seed_map]
+    if (not frozen['schema'].endswith('.v2') or len(frozen['project']['doc']['shots']) != 3
+            or [item['shot_id'] for item in frozen['items']] != expected
+            or any(item['seed'] != seed_map[item['shot_id']] or item['built']['seed'] != item['seed'] for item in frozen['items'])):
+        raise RuntimeError('v2 selection, project order or exact seed map changed')
+
+
 def verify_media(output, row, built):
     import av
 
@@ -199,6 +219,7 @@ def main():
     parser.add_argument("--seconds", type=float, default=1.0)
     parser.add_argument("--mp", type=float, default=.2)
     parser.add_argument("--sampling", choices=("single", "hyperflow"), default="single")
+    parser.add_argument("--selection-version", choices=(1, 2), type=int, default=1)
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
     if not args.run:
@@ -246,13 +267,33 @@ def main():
         first_core = start(1)
         project = configure_project(call(first_core, "GET", PREFIX + "/default"), args.seconds, args.mp,
                                     sampling_mode=args.sampling)
+        selection = {}
+        if args.selection_version == 2:
+            features = call(first_core, 'GET', PREFIX+'/batch-features')
+            if features.get('selection_version') != 2:
+                raise RuntimeError('Core does not support v2 subset batches')
+            project, shot_ids, seed_map = selected_probe_project(project)
+            selection = {'shot_ids': shot_ids, 'seed_map': seed_map}
         write_new(evidence / "project.json", project)
         batch_id = str(uuid.uuid4())
-        call(first_core, "POST", PREFIX + "/batches", {"batch_id": batch_id, "project": project, "seed": 26092201})
+        payload = {"batch_id": batch_id, "project": project, "seed": 26092201, **selection}
+        created = call(first_core, "POST", PREFIX + "/batches", payload)
+        if call(first_core, 'POST', PREFIX+'/batches', payload) != created:
+            raise RuntimeError('Same batch request was not idempotent')
+        if args.selection_version == 2:
+            saved = call(first_core, 'POST', PREFIX+'/projects/'+project['id'], {'project': project, 'expected_revision': 0})
+            edited = deepcopy(saved)
+            edited['doc']['shots'].reverse()
+            for shot in edited['doc']['shots']:
+                shot['seed'] = 123456
+            call(first_core, 'POST', PREFIX+'/projects/'+project['id'], {'project': edited, 'expected_revision': saved['revision']})
+            write_new(evidence/'reordered-live-project.json', edited)
         submitted1 = call(first_core, "POST", PREFIX + "/batches/" + batch_id + "/continue", {}, expected=(200, 202))
         complete1 = wait_shot(first_core, batch_id, 0, args.timeout)
         batch_path = shared / "user/t8_director/batches" / (batch_id + ".json")
         frozen = json.loads(batch_path.read_text(encoding="utf-8"))
+        if args.selection_version == 2:
+            check_selection_frozen(frozen, project, seed_map)
         receipt1 = shared / "user/t8_director/requests" / (frozen["items"][0]["request_id"] + ".json")
         record1 = json.loads(receipt1.read_text(encoding="utf-8"))
         media1 = verify_media(shared / "output", complete1["items"][0], frozen["items"][0]["built"])
@@ -264,6 +305,10 @@ def main():
         write_new(evidence / "core-1-stop.json", first_core.stop_receipt)
 
         second_core = start(2)
+        if args.selection_version == 2:
+            check_selection_frozen(json.loads(batch_path.read_text(encoding='utf-8')), project, seed_map)
+            if record1['snapshot']['seed'] != 0:
+                raise RuntimeError('First request did not snapshot exact seed zero')
         recovered = call(second_core, "GET", PREFIX + "/batches/" + batch_id)
         if recovered["next_index"] != 1 or recovered["items"][0]["prompt_id"] != submitted1["prompt_id"]:
             raise RuntimeError("Restart did not retain the verified first shot")
@@ -277,6 +322,8 @@ def main():
         media2 = verify_media(shared / "output", complete2["items"][1], frozen["items"][1]["built"])
         receipt2 = shared / "user/t8_director/requests" / (frozen["items"][1]["request_id"] + ".json")
         record2 = json.loads(receipt2.read_text(encoding="utf-8"))
+        if args.selection_version == 2 and record2['snapshot']['seed'] != 4294967295:
+            raise RuntimeError('Restarted second request did not retain its frozen seed')
         if record2["core_epoch"] == record1["core_epoch"] or second_core.process.pid == first_core.process.pid:
             raise RuntimeError("Core PID/epoch did not change")
         history2 = call(second_core, "GET", "/history")
@@ -287,7 +334,8 @@ def main():
         if not complete2["complete"]:
             raise RuntimeError("Two-shot batch did not become complete")
         summary["core_runs"].append({"pid": second_core.process.pid, "epoch": record2["core_epoch"]})
-        summary.update(status="machine_pass_human_review_pending", second_prompt_id=submitted2["prompt_id"],
+        summary.update(status="machine_pass_human_review_pending", selection_version=args.selection_version,
+                       selection=selection, second_prompt_id=submitted2["prompt_id"],
                        second_media=media2, first_shot_recomputed=False, restarted_core_history=list(history2),
                        final_queue=assert_idle(second_core), final_batch=complete2)
     except BaseException as error:

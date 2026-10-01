@@ -388,6 +388,7 @@ def _spatial_resample(
     chunk_inherited_video_mask=None,
     audio_sampling_policy="locked_input_audio",
     rebind_shape_bound_sampler=False,
+    captured_audio=None,
 ):
     tile_w = plan["tile_width"] // VAE_DOWNSAMPLE
     tile_h = plan["tile_height"] // VAE_DOWNSAMPLE
@@ -535,7 +536,7 @@ def _spatial_resample(
                 tile_height,
                 tile_width,
             )
-            sampled = sample_piece(
+            sampled_av = sample_piece(
                 piece,
                 tile_conditioning,
                 model,
@@ -545,7 +546,10 @@ def _spatial_resample(
                 negative,
                 cfg,
                 prepared_noise=prepared_noise,
-            ).tensors[0]
+            )
+            if captured_audio is not None:
+                captured_audio.append(sampled_av.tensors[1].detach().clone())
+            sampled = sampled_av.tensors[0]
             region = accumulated[
                 :, :, :, row : row + tile_height, col : col + tile_width
             ].clone()

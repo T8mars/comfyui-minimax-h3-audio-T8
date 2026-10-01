@@ -21,6 +21,28 @@ def source_pin(path):
     return {'path': str(Path(root)), 'revision': revision}
 
 
+def _ignored_import_runtime(path):
+    """An ignored, wholly untracked dependency directory needs file inventory.
+
+    Never inherit an enclosing project's Git pin for its ignored runtime.
+    Actual tracked source directories still pass through the unchanged pin gate.
+    """
+    try:
+        root = Path(subprocess.check_output(
+            ['git', '-C', str(path), 'rev-parse', '--show-toplevel'],
+            text=True, stderr=subprocess.PIPE, timeout=15).strip()).resolve()
+        relative = Path(path).resolve(strict=True).relative_to(root).as_posix()
+        tracked = subprocess.check_output(
+            ['git', '-C', str(root), 'ls-files', '-z', '--', relative], timeout=15)
+        if tracked:
+            return False
+        return subprocess.run(
+            ['git', '-C', str(root), 'check-ignore', '--quiet', '--', relative],
+            capture_output=True, timeout=15, check=False).returncode == 0
+    except subprocess.CalledProcessError:
+        return False
+
+
 def prepare(kind, generation, decode, *, audio_seed=None, geometry=None, prompt=None, progress=lambda *args: None):
     # A local namespace avoids importing Comfy or loading any optional node.
     package_name = '_t8_prepared_bundle_tools'
@@ -68,6 +90,9 @@ def prepare(kind, generation, decode, *, audio_seed=None, geometry=None, prompt=
             normalization='normalized_ltx_av', reference_prefix_frames=0)
         dec['geometry'] = deepcopy(geometry)
         for path in gen['isolated_paths']:
+            if _ignored_import_runtime(path):
+                directories.append(path)
+                continue
             try:
                 pin(path)
             except subprocess.CalledProcessError:
