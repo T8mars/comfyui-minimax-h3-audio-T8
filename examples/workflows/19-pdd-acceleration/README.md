@@ -9,7 +9,16 @@
 - `2026-08-27_H3_PDD_FL2VA_Learned_Latent_TwoPass_4Plus4_Advanced_EXP.json`：FL2VA学习型latent放大双采，LOW 4步 + HIGH 4步；首尾图会分别居中预对齐到同一 16:9 画布，避免两次 Conditioning 产生渐进拉宽。
 - `2026-08-27_H3_PDD_Ref2VA_Learned_Latent_TwoPass_4Plus4_Stable.json`：正式Ref2VA学习型latent双采；默认864×480×22、1.5×，实际HIGH为1312×736×22。
 
-四个文件都是可直接拖入ComfyUI的前端工作流，不是API格式。双采工作流带五个NOTE，解释4+4切分、尺寸交接、音频继续采样和显存边界。Ref2VA双采已经实测并作为正式工作流；FL2VA双采仍保留Advanced EXP，等待同等真实验证。
+上述原有四个文件都是可直接拖入ComfyUI的前端工作流，不是API格式。双采工作流带五个NOTE，解释4+4切分、尺寸交接、音频继续采样和显存边界。Ref2VA双采已经实测并作为正式工作流；FL2VA旧双采仍保留Advanced EXP。以下新图不覆盖或迁移这些文件。
+
+## 新增：可独立编辑／冷 HIGH 的 PDD 4+4 EXP
+
+- `PDD_Split_FL2VA_4plus4_Full_Stages_EXP.json`、`PDD_Split_FL2VA_4plus4_Cold_HIGH_EXP.json`：FL2VA首尾帧，完整 LOW4／HIGH4 或从已保存 LOW 只恢复 HIGH4。
+- `PDD_Split_Ref2VA_4plus4_Full_Stages_EXP.json`、`PDD_Split_Ref2VA_4plus4_Cold_HIGH_EXP.json`：Ref2VA参考图，同样提供完整与冷 HIGH 两种入口。
+
+两阶段各自选择 MODEL／对应 PDD LoRA、条件、噪声，并有独立外置 Prompt Relay Plan 与 Stage EAV。EAV 默认 `report_only`，只作观察；不把原 PDD 八步变成两次完整八步。完整图保存 LOW/HIGH 回执；冷图必须填入相应 LOW 的 `artifact_path` 和 `artifact_sha256`，更改 LOW 模型、LoRA、条件或素材后须重新采 LOW，不能默认为旧缓存仍匹配。先把 `SELECT_YOUR_FIRST_FRAME.png`／`SELECT_YOUR_LAST_FRAME.png` 或 `SELECT_YOUR_REFERENCE_IMAGE.png` 换成自己的 ComfyUI 输入文件，再核实模型与画布。
+
+四张新图已在隔离原生前端打开、另存、刷新重开并通过节点／连线／控件值核对；此前两底模各自的真实 GPU 与跨 Core 冷 HIGH 精确结果只覆盖固定小画布22帧设置。新图默认尺寸／用户图片、其它 LoRA／后端、EAV `apply_exp`、长片与人工画音质量仍未验收；请先自行预览，不要把浏览器通过当成画质通过。
 
 ## PDD 双采为什么是 4+4
 

@@ -1,4 +1,11 @@
 {
+  "rf_joint_clock_restart_local": {
+    "status": "v1.88.1_explicit_opt_in_native_B8_C1_C2_specific_human_review_passed",
+    "nodes": ["MiniMaxH3RFRestartJointClockSetupEXPT8"],
+    "documentation": "docs/RF_JOINT_CLOCK_RESTART_EXP.md",
+    "workflows": "examples/workflows/64-reviewed-audio-followup/README.md",
+    "boundary": "Explicit joint-clock RF initializes each AV stream once, preserving original Core anchor/noise/masks, both participating streams and legacy nodes/defaults/graphs. New policy has distinct authenticated StageContext identity. User separately reviewed and passed the actual native C1/C2 saved-BASE original3-step RF videos and independent B8 same-source/seed4-step denoise.35 candidate. This is fixed-material approval, not a universal audio-quality guarantee. Six reusable full/cold templates retain explicit checkpoint placeholders, original generic sizes/assets and manual QualityGate/confirm; not private exact-review captures. Four previously saved S04 PDD split examples are now also included. GitHub publication is separate from Registry availability; models/private receipts/media are excluded."
+  },
   "multiface_frozen_source_local": {
     "status": "local_native_two_three_person_full_fresh_AV_and_four_canvas_roundtrips_verified_final4416_CPU_pass_not_quality_or_published",
     "nodes": ["MiniMaxH3MultiFaceSourceSaveEXPT8", "MiniMaxH3MultiFaceSourceLoadEXPT8"],
@@ -498,7 +505,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.88.0",
+  "version": "1.88.1",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",

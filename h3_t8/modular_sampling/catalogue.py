@@ -554,14 +554,17 @@ ROUTES = (
            "MiniMaxH3PreparedLTXDecodeEXPT8", "MiniMaxH3PreparedLTXEffectsBindEXPT8",
            "MiniMaxH3PreparedLTXRelayPlanEXPT8", "MiniMaxH3PreparedLTXRelayEncodeEXPT8")),
     Route("S29", "M2", "Rectified-flow restart", ("base_descent", "restart_descent"),
-          "clean endpoint -> joint AV RF re-noise -> second descent; independent restart_seed; disabled exact bypass", ("standalone", "detail_mixer", "two_pass_detail_mixer", "third_stage"),
+          "clean endpoint -> joint AV RF re-noise -> second descent; independent restart_seed; disabled exact bypass", ("standalone", "detail_mixer", "two_pass_detail_mixer", "third_stage", "explicit_joint_clock_start"),
           (src("detail_sampling_advanced", "setup_rectified_flow_restart_sampling"), src("detail_sampling_advanced", "setup_detail_mixer_sampling"),
            src("detail_sampling_advanced", "setup_two_pass_detail_mixer_sampling"),
            src("modular_sampling/rf_restart", "prepare_handoff"), src("modular_sampling/rf_restart", "build_restart_stage"),
            src("modular_sampling/rf_restart", "RFRestartSampler.sample"),
            src("modular_sampling/rf_stages", "build_base_stage"), src("modular_sampling/rf_stages", "build_restart_stage"),
-           src("modular_sampling/rf_stages", "handoff"), src("modular_sampling/detail_effects", "forward_plan")),
-          ("MiniMaxH3RFBaseStageSetupEXPT8", "MiniMaxH3RFHandoffEXPT8", "MiniMaxH3RFRestartStageSetupEXPT8")),
+           src("modular_sampling/rf_stages", "handoff"), src("modular_sampling/detail_effects", "forward_plan"),
+           src("modular_sampling/rf_restart", "JointClockInitializedModel.__call__"),
+           src("modular_sampling/rf_audio_clock_nodes", "MiniMaxH3RFRestartJointClockSetupEXPT8.execute")),
+          ("MiniMaxH3RFBaseStageSetupEXPT8", "MiniMaxH3RFHandoffEXPT8", "MiniMaxH3RFRestartStageSetupEXPT8",
+           "MiniMaxH3RFRestartJointClockSetupEXPT8")),
 )
 
 

@@ -83,14 +83,15 @@ def build_base_stage(model, av_latent, sigmas, shift_video=12., shift_audio=3.):
 
 
 def build_restart_stage(model, rf_handoff, shift_video=12., shift_audio=3., restart_video_sigma=.15,
-                        restart_steps=3, restart_seed=1234):
+                        restart_steps=3, restart_seed=1234, *, audio_start_policy="legacy_second_rebase"):
     dtype = rf_handoff.completed_av.get(SIGMA_DTYPE, "torch.float32")
     dtypes = {str(value): value for value in (torch.float16, torch.bfloat16, torch.float32, torch.float64)}
     if dtype not in dtypes:
         raise ValueError("RF saved SIGMAS dtype is unknown")
     prepared, sampler, sigmas, raw = rf_restart.build_restart_stage(model, rf_handoff,
         shift_video=shift_video, shift_audio=shift_audio, restart_video_sigma=restart_video_sigma,
-        restart_steps=restart_steps, restart_seed=restart_seed, sigma_dtype=dtypes[dtype])
+        restart_steps=restart_steps, restart_seed=restart_seed, sigma_dtype=dtypes[dtype],
+        audio_start_policy=audio_start_policy)
     profile = {"anchor_identity": json.loads(rf_handoff.template_identity),
         "endpoint_identity": json.loads(rf_handoff.completed_identity), "restart_report": json.loads(sampler.report_json)}
     result = _bind(prepared, sampler, sigmas, rf_handoff.completed_av, STAGES[1], profile, shift_video, shift_audio)

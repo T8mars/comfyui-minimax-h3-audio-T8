@@ -1,4 +1,11 @@
 {
+  "rf_joint_clock_restart_local": {
+    "status": "v1.88.1_explicit_opt_in_native_B8_C1_C2_specific_human_review_passed",
+    "nodes": ["MiniMaxH3RFRestartJointClockSetupEXPT8"],
+    "documentation": "docs/RF_JOINT_CLOCK_RESTART_EXP.md",
+    "workflows": "examples/workflows/64-reviewed-audio-followup/README.md",
+    "contract": "Replace only RF Restart Setup to avoid a second audio rebase after joint re-noising. Original anchors/noise/masks/joint AV and all legacy defaults/graphs remain. Human approval covers the specific native C1/C2 original3-step saved-BASE restarts and B8 independent4-step denoise.35 candidate only. Six additive paired generic templates retain explicit checkpoint placeholders and manual acceptance; no bundled private assets or automatic cache. Four additive S04 PDD templates retain the original4+4 recipe. GitHub main/release does not certify Registry installability or arbitrary materials."
+  },
   "multiface_frozen_source_local": {
     "status": "local_native_two_three_person_full_fresh_AV_and_four_canvas_roundtrips_verified_final4416_CPU_pass_not_quality_or_published",
     "nodes": ["MiniMaxH3MultiFaceSourceSaveEXPT8", "MiniMaxH3MultiFaceSourceLoadEXPT8"],
@@ -3311,7 +3318,8 @@
     "MiniMaxH3LTXLoadPolicyEXPT8",
     "MiniMaxH3LTXLoadPolicyAuditEXPT8",
     "MiniMaxH3MultiFaceSourceSaveEXPT8",
-    "MiniMaxH3MultiFaceSourceLoadEXPT8"
+    "MiniMaxH3MultiFaceSourceLoadEXPT8",
+    "MiniMaxH3RFRestartJointClockSetupEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",

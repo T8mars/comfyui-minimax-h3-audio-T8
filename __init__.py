@@ -24,6 +24,7 @@ if __package__:
     from .nodes_semantic_bridge import SEMANTIC_BRIDGE_EXTRA_NODE_CLASSES as _semantic_bridge_extra_node_classes
     from .modular_sampling.ltx_load_policy_nodes import NODES as _ltx_load_policy_node_classes
     from .modular_sampling.face_source_nodes import NODES as _face_source_node_classes
+    from .modular_sampling.rf_audio_clock_nodes import NODES as _rf_audio_clock_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -86,6 +87,9 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _face_source_node_classes = import_module(
         f"{_package_name}.modular_sampling.face_source_nodes"
     ).NODES
+    _rf_audio_clock_node_classes = import_module(
+        f"{_package_name}.modular_sampling.rf_audio_clock_nodes"
+    ).NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -104,7 +108,7 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_veda_sparse_node_classes, *_veda_heuristic_node_classes,
                 *_prepared_ltx_effect_node_classes, *_prepared_ltx_relay_cache_node_classes,
                 *_semantic_bridge_extra_node_classes, *_ltx_load_policy_node_classes,
-                *_face_source_node_classes]
+                *_face_source_node_classes, *_rf_audio_clock_node_classes]
 
 
 def comfy_entrypoint():

@@ -2,7 +2,16 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.88.0
+## 当前版本：1.88.1
+
+### 2026-10-02 分离式音频复审修正
+
+- 新增显式 JointClock RF Restart 节点：RF 联合重噪后各音频/视频时钟只初始化一次，避免再次音频 rebase；旧节点、默认数学、原 inpaint 锚点/噪声/遮罩、旧工作流保留。
+- B8 Long Relay 新增独立4步音频尾采强度0.35配方；B8/C1/C2指定原生画布候选均已获用户复审通过，不泛化到任意素材或模型。
+- 保存六张完整/冷恢复配对修正版，补齐上次未收入GitHub的四张PDD分离图；新增[所有分离图入口](examples/workflows/SEPARATED_WORKFLOWS.md)。恢复图需真实检查点路径/manifest/SHA，QualityGate/confirm不自动接受。
+- 仅发布源码和通用模板，不打包私有实跑图、检查点、模型、媒体或本地交接；Registry可安装性独立。详见[1.88.1说明](docs/RELEASE_1.88.1.md)。
+
+## 1.88.0
 
 ### 2026-10-02 Veda 与分离式采样（EXP）
 

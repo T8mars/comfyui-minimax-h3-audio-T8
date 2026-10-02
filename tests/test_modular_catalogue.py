@@ -39,9 +39,12 @@ def test_handoffs_and_differently_hidden_second_passes_remain_distinct():
     assert routes["S09"].public_nodes == ("MiniMaxH3ManualPassStageSetupEXPT8", "MiniMaxH3StageNoiseEXPT8")
     assert {source.symbol for source in routes["S29"].sources} == {
         "setup_rectified_flow_restart_sampling", "setup_detail_mixer_sampling", "setup_two_pass_detail_mixer_sampling",
-        "prepare_handoff", "build_restart_stage", "RFRestartSampler.sample", "build_base_stage", "handoff", "forward_plan"}
+        "prepare_handoff", "build_restart_stage", "RFRestartSampler.sample", "build_base_stage", "handoff", "forward_plan",
+        "JointClockInitializedModel.__call__", "MiniMaxH3RFRestartJointClockSetupEXPT8.execute"}
     assert routes["S29"].public_nodes == (
-        "MiniMaxH3RFBaseStageSetupEXPT8", "MiniMaxH3RFHandoffEXPT8", "MiniMaxH3RFRestartStageSetupEXPT8")
+        "MiniMaxH3RFBaseStageSetupEXPT8", "MiniMaxH3RFHandoffEXPT8", "MiniMaxH3RFRestartStageSetupEXPT8",
+        "MiniMaxH3RFRestartJointClockSetupEXPT8")
+    assert routes["S29"].variants[-1] == "explicit_joint_clock_start"
     assert len(routes["S29"].stages) == 2  # Re-noise is a handoff, not a third diffusion stage.
     assert routes["S17"].repeated_stages and "DCT" in routes["S17"].handoff
     assert routes["S17"].public_nodes == catalogue.SPEED_STAGE_NODES

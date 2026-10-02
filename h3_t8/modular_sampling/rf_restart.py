@@ -17,6 +17,23 @@ from .. import sampling
 from ..progressive_continuation_runtime import _input_identity
 
 RAW_ENDPOINT = "t8_modular_rf_model_endpoint_v1"
+AUDIO_START_POLICIES = ("legacy_second_rebase", "already_joint_renoised")
+
+
+class JointClockInitializedModel:
+    """Callable boundary for RF state ALREADY initialized on both AV clocks.
+
+    Generic dual-clock Euler rebases Core's *video-clock* initialization when
+    its callable exposes noise/latent_image. RF supplies its own joint-clock
+    initialization instead. Do not advertise generic initialization terms a
+    second time. The actual Core inpaint object still owns the original anchor,
+    noise, masks, callback/model options and all real model calls unchanged.
+    """
+    def __init__(self, inpaint):
+        self.inpaint = inpaint
+
+    def __call__(self, *args, **kwargs):
+        return self.inpaint(*args, **kwargs)
 
 
 def retained_endpoint(completed_av):
@@ -165,14 +182,22 @@ class RFRestartSampler(comfy.samplers.KSAMPLER):
             if callback is not None:
                 callback(item["i"], item["denoised"], item["x"], report["restart_nfe"])
 
-        output = self.sampler_function(model_k, restarted, sigmas, extra_args=args,
+        policy = report.get("audio_start_policy", AUDIO_START_POLICIES[0])
+        if policy not in AUDIO_START_POLICIES:
+            raise ValueError("Unknown RF audio initialization policy")
+        descent_model = (JointClockInitializedModel(model_k)
+                         if policy == AUDIO_START_POLICIES[1] else model_k)
+        output = self.sampler_function(descent_model, restarted, sigmas, extra_args=args,
                                        callback=k_callback, disable=disable_pbar)
         self.handoff.verify()
         return model_wrap.inner_model.model_sampling.inverse_noise_scaling(sigmas[-1], output)
 
 
 def build_restart_stage(model, handoff, *, shift_video=12., shift_audio=3.,
-                        restart_video_sigma=.15, restart_steps=3, restart_seed=1234, sigma_dtype=torch.float32):
+                        restart_video_sigma=.15, restart_steps=3, restart_seed=1234, sigma_dtype=torch.float32,
+                        audio_start_policy="legacy_second_rebase"):
+    if audio_start_policy not in AUDIO_START_POLICIES:
+        raise ValueError("Unknown RF audio initialization policy")
     if type(handoff) is not RFHandoff:
         raise ValueError("Connect an explicit RF endpoint/original-template handoff")
     handoff.verify()
@@ -182,6 +207,10 @@ def build_restart_stage(model, handoff, *, shift_video=12., shift_audio=3.,
         steps=max(1, restart_steps), shift_video=shift_video, shift_audio=shift_audio,
         restart_video_sigma=restart_video_sigma, restart_steps=restart_steps, restart_seed=restart_seed)
     report = json.loads(raw)
+    # Keep the complete historical report/identity byte semantics by default.
+    # Only the explicit new mode gets a distinct cache/context identity.
+    if audio_start_policy != AUDIO_START_POLICIES[0]:
+        report["audio_start_policy"] = audio_start_policy
     video, audio = sampling.nested_av_parts(handoff.completed_av)
     base = sampling._build_dual_clock_sampler(video_values=math.prod(video.shape[1:]),
         packed_values=math.prod(video.shape[1:]) + math.prod(audio.shape[1:]),
@@ -197,4 +226,7 @@ def build_restart_stage(model, handoff, *, shift_video=12., shift_audio=3.,
         "boundary": "Restart descent only. Connect bound completed_av as latent_image and original base NOISE. "
                     "Preserves legacy original-template audio rebase, including its second rebase; not an algorithm fix. "
                     "Generic public StageContext/effect/portable-result integration is not yet qualified."}
+    if audio_start_policy == AUDIO_START_POLICIES[1]:
+        details["boundary"] = ("Explicit joint-clock RF initialization, once per stream; no second audio rebase. "
+            "Original inpaint anchor/noise/masks and joint AV descent retained. Not perceptual quality approval.")
     return prepared, sampler, sigmas, json.dumps(details, ensure_ascii=False, indent=2)

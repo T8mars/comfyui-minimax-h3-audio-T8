@@ -1,6 +1,7 @@
 """Fresh-interpreter CPU execution of exact saved S09/S29 resume candidates."""
 
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -64,7 +65,13 @@ def run_cold(kind, artifact_root, artifact_path, artifact_sha256):
     assert not torch.cuda.is_initialized()
     # Candidate-builder imports may prepend the extension root; Core's
     # top-level `nodes` module must win before importing `execution`.
-    sys.path.insert(0, str(ROOT.parents[1]))
+    # Detached release trees are not necessarily below Core/custom_nodes.
+    # Only the test harness may supply the explicit actual Core; installed
+    # plugin tests retain the original inferred directory by default.
+    core = Path(os.environ.get("T8_TEST_CORE_ROOT", str(ROOT.parents[1]))).resolve()
+    if not (core / "nodes.py").is_file() or not (core / "execution.py").is_file():
+        raise ValueError("Saved-workflow test Core directory is invalid")
+    sys.path.insert(0, str(core))
     import execution
     import nodes
     from comfy_extras.nodes_custom_sampler import BasicGuider, RandomNoise
