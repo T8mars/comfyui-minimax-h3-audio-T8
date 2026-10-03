@@ -39,6 +39,8 @@ def output_videos(record):
 
 
 def result_key(record):
+    if record.get('external_take_id'):
+        return 'external:' + identity(record['external_take_id'])
     if record.get('prompt_id'):
         return record['prompt_id']
     videos = output_videos(record)
@@ -117,6 +119,10 @@ def prepare_film(store, project, records, output_root):
         for entry, shot, source in sources:
             try:
                 cache, digest = _copy_media(store, source)
+                record = next(row for row in records if row.get('shot_id') == entry['shot_id'] and result_key(row) == entry['version_id'])
+                external = record.get('origin') == 'external'
+                if external and digest != record.get('media_sha256'):
+                    raise ValueError('外片在固定副本前字节改变，拒绝更换已登记版本')
                 evidence = inspect_media(cache)
                 trim = shot.get('filmTrim') or {}
                 start, end = trim.get('in_frame', 0), trim.get('out_frame', evidence['frames'])
@@ -126,6 +132,11 @@ def prepare_film(store, project, records, output_root):
                                 'source_file': source.relative_to(output_root).as_posix(), 'bytes': cache.stat().st_size,
                                 'media': evidence, 'in_frame': start, 'out_frame': end,
                                 'seconds': (end-start)/evidence['fps']})
+                if external:
+                    from copy import deepcopy
+                    entries[-1].update(origin='external', can_resample=False,
+                        decoded_clock=deepcopy(record['decoded_clock']), source_timing=deepcopy(record['source_timing']),
+                        provenance_category=record['provenance_category'])
             except (OSError, ValueError, TypeError) as error:
                 errors.append({**entry, 'message': '无法准备此镜：' + str(error)})
         if errors:

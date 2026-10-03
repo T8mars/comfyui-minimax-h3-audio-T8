@@ -1350,6 +1350,7 @@ def _contract(
     full_song,
     vocal_lock_audio=None,
     route_revision: str = "v1",
+    cast_runtime=None,
 ) -> dict:
     contract = {
         "schema": 1,
@@ -1377,6 +1378,10 @@ def _contract(
                 "delivery_audio_policy": "full_song_muxed_once",
             }
         )
+    if route_revision == "cast_solo_v4":
+        if not isinstance(cast_runtime, dict) or cast_runtime.get("schema") != "t8.mv.cast-solo.runtime.v1":
+            raise ValueError("Cast-solo requires an actual runtime binding, not model_id labels")
+        contract["cast_runtime"] = cast_runtime
     return contract
 
 
@@ -1448,6 +1453,7 @@ def run_local_mv_in_node_loop(
     route_revision: str = "v1",
     loop_state_name: str = MV_LOOP_STATE_NAME,
     state_schema: str = "t8.minimax_h3.mv_in_node_loop.v1",
+    cast_binding=None,
 ) -> tuple[str, str, int, str, str]:
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("MiniMax H3 MV width and height must be positive and divisible by 32")
@@ -1462,6 +1468,19 @@ def run_local_mv_in_node_loop(
     if bit_depth not in {8, 10} or not 0 <= int(crf) <= 51:
         raise ValueError("bit_depth must be 8/10 and crf must be between 0 and 51")
     prompt_plan = prompt_plan_validator(mv_prompt_plan)
+    if route_revision == "cast_solo_v4":
+        from .mv_cast_solo import CastRuntimeBinding, validate_plan
+        if type(cast_binding) is not CastRuntimeBinding or prompt_plan_validator is not validate_plan:
+            raise ValueError("Use the explicit cast-solo renderer and its actual runtime binding")
+        if (any(cast_binding.components[key] is not value for key, value in
+                dict(model=model, clip=clip, video_vae=video_vae, audio_vae=audio_vae).items())
+                or cast_binding.media["references"] is not reference_image
+                or cast_binding.media["full_song"] is not full_song
+                or cast_binding.media["vocal_lock_audio"] is not vocal_lock_audio):
+            raise ValueError("Cast-solo actual input objects differ from the bound inputs")
+        cast_binding.verify()
+    elif cast_binding is not None:
+        raise ValueError("Cast binding cannot alter an existing MV route")
     scene_plan = prompt_plan["scene_plan"]
     scenes = scene_plan["scenes"]
     prompts = prompt_plan["segments"]
@@ -1488,6 +1507,7 @@ def run_local_mv_in_node_loop(
         full_song=full_song,
         vocal_lock_audio=vocal_lock_audio,
         route_revision=route_revision,
+        cast_runtime=cast_binding.identity if cast_binding is not None else None,
     )
     contract_sha256 = _hash(contract)
 
@@ -1565,6 +1585,8 @@ def run_local_mv_in_node_loop(
         try:
             for index in range(len(manifest.get("segments", [])), len(scenes)):
                 comfy.model_management.throw_exception_if_processing_interrupted()
+                if cast_binding is not None:
+                    cast_binding.verify()
                 manifest, _source = load_delivery_manifest(safe_chain, allow_new=True)
                 if len(manifest["segments"]) != index:
                     raise RuntimeError("accepted MV manifest changed during local rendering")
@@ -1646,13 +1668,14 @@ def run_local_mv_in_node_loop(
                             render_audio,
                             None,
                             None,
-                            {"ref_image_1": reference_image},
+                            {"ref_image_1": reference_image[prompt_item["performer_id"]]
+                             if cast_binding is not None else reference_image},
                             None,
                             None,
                             None,
                         )
                         sampled = _sample_one_segment(
-                            model,
+                            cast_binding.sampling_model if cast_binding is not None else model,
                             positive,
                             av_latent,
                             seed=seed,
@@ -1675,6 +1698,8 @@ def run_local_mv_in_node_loop(
                             None,
                             FPS,
                         )
+                        if cast_binding is not None:
+                            cast_binding.verify()
                         candidate_json, _video, _save_report = save_long_video_candidate(
                             trimmed_frames,
                             delivery_audio,
@@ -1696,6 +1721,8 @@ def run_local_mv_in_node_loop(
                         )
                     finally:
                         _release_segment_memory()
+                if cast_binding is not None:
+                    cast_binding.verify()
                 _preview, accepted, _manifest_path, _accept_report = (
                     accept_long_video_candidate(candidate_json, True, "reject_existing", True)
                 )
@@ -1716,6 +1743,8 @@ def run_local_mv_in_node_loop(
                 )
                 _atomic_write_json(state_path, state)
 
+            if cast_binding is not None:
+                cast_binding.verify()
             assembled_path, assembled_report_json = compose_accepted_long_video(
                 safe_chain,
                 f"{filename_prefix}_segments",
@@ -1730,6 +1759,8 @@ def run_local_mv_in_node_loop(
                 int(scene_plan["total_frames"]),
                 filename_prefix,
             )
+            if cast_binding is not None:
+                cast_binding.verify()
             manifest, _source = load_delivery_manifest(safe_chain)
             state = _state_payload(
                 schema=state_schema,

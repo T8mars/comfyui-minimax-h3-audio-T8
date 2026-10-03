@@ -10,6 +10,11 @@ from dataclasses import dataclass
 DIMENSIONS = ("public_stages", "editable_workflow", "external_eav", "external_relay",
               "stage_resume", "legacy_regression", "gpu_mechanical", "human_review")
 
+CURVE_NODES = tuple("MiniMaxH3HyperFlowCurve" + name + "EXPT8" for name in (
+    "FitBuild", "FitLoad", "ModelApply", "FullSamplerSetup", "HeadStage", "TailStage",
+    "HeadSave", "HeadLoad", "TailSave", "TailLoad", "HeadEffectsBind", "TailEffectsBind",
+    "HeadEffectsAudit", "TailEffectsAudit", "BaseLoader"))
+
 
 @dataclass(frozen=True)
 class Source:
@@ -565,14 +570,33 @@ ROUTES = (
            src("modular_sampling/rf_audio_clock_nodes", "MiniMaxH3RFRestartJointClockSetupEXPT8.execute")),
           ("MiniMaxH3RFBaseStageSetupEXPT8", "MiniMaxH3RFHandoffEXPT8", "MiniMaxH3RFRestartStageSetupEXPT8",
            "MiniMaxH3RFRestartJointClockSetupEXPT8")),
+    Route("S30", "M5", "Pruned HyperFlow per-projection curve approximation",
+          ("curve_head", "curve_tail"),
+          "exact captured model-space x_sigma plus separate Core scaffold; no fresh TAIL noise or upscale; NOT full-time equivalence",
+          ("continuous1plus7", "continuous4plus4", "continuous7plus1"),
+          (src("hyperflow_curve_loader_exp", "load_curve_base"),
+           src("hyperflow_curve_runtime_exp", "install_curve"),
+           src("modular_sampling/hyperflow_curve", "_run"),
+           src("modular_sampling/hyperflow_curve", "sample_head"),
+           src("modular_sampling/hyperflow_curve", "sample_tail"),
+           src("modular_sampling/hyperflow_curve_storage", "save_boundary"),
+           src("modular_sampling/hyperflow_curve_storage", "load_boundary"),
+           src("modular_sampling/hyperflow_curve_storage", "save_result"),
+           src("modular_sampling/hyperflow_curve_storage", "load_result"),
+           src("modular_sampling/hyperflow_curve_effects", "bind_head"),
+           src("modular_sampling/hyperflow_curve_effects", "bind_tail"),
+           src("modular_sampling/hyperflow_curve_effects", "execution"),
+           *(src("nodes_hyperflow_curve_exp", name + ".execute") for name in CURVE_NODES)),
+          (*CURVE_NODES, "MiniMaxH3StageEAVApplyEXPT8", "MiniMaxH3StageEAVConfigEXPT8",
+           "MiniMaxH3PromptRelayConditioningT8Advanced", "MiniMaxH3PromptRelayPlanT8Advanced")),
 )
 
 
 def validate_catalogue(routes=ROUTES):
     ids = [route.id for route in routes]
-    required = [f"S{index:02d}" for index in range(1, 30)]
+    required = [route.id for route in ROUTES]
     if ids[:len(required)] != required or ids != [f"S{index:02d}" for index in range(1, len(ids) + 1)]:
-        raise ValueError("The full ordered S01-S29 scope and append-only route IDs are required")
+        raise ValueError("The complete current ordered scope and append-only route IDs are required")
     for route in routes:
         if (route.phase not in ("M1", "M2", "M3", "M4", "M5") or len(route.stages) < 2
                 or not route.name or not route.handoff or not route.variants or not route.sources

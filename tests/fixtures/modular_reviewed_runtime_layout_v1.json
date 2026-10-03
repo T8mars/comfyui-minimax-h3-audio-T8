@@ -1,0 +1,170 @@
+{
+  "schema": "t8.modular-sampling.reviewed-runtime-layout.v1",
+  "reason": "Explicit21 dormant root compatibility sites are retained in v10/local118. Public runtime has precedence h3_t8 and97 actual sites. Omission is permitted only for absent named root files with exact reviewed full replacement-module AST; never relax real sampling or graph admission.",
+  "retired_sites": [
+    {
+      "path": "chunked_two_pass_upscale_advanced.py",
+      "symbol": "_build_global_target_av_noise",
+      "callee": "noise.generate_noise",
+      "call_sha256": "a99f412883f64ff30046abefa0b2fa3a923ee093b9097ace279ef370cc22bc1c"
+    },
+    {
+      "path": "chunked_two_pass_upscale_advanced.py",
+      "symbol": "_spatial_resample",
+      "callee": "sample_piece",
+      "call_sha256": "be0441ea7d8be688ed17cde14c563cd87bc5dc622e00ba1e0f65b2b4a4abad8c"
+    },
+    {
+      "path": "chunked_two_pass_upscale_advanced.py",
+      "symbol": "sample_piece",
+      "callee": "guider.sample",
+      "call_sha256": "b910ff9dc95895f27ef360ba96078bff6c240c5b6f3f135d234bb8a256fda847"
+    },
+    {
+      "path": "chunked_two_pass_upscale_advanced.py",
+      "symbol": "sample_piece",
+      "callee": "noise.generate_noise",
+      "call_sha256": "bba4bc61b2fe427c28516e11acffd22de461e02db3d738473b5c98c0c4b6b520"
+    },
+    {
+      "path": "detail_sampling_advanced.py",
+      "symbol": "setup_rectified_flow_restart_sampling.sampler_function",
+      "callee": "sample_minimax_h3_dual_clock_euler",
+      "call_sha256": "224f31d17a7d83878a6bc336b51304b8cc91b86f8fc1150e4399990f7fa12b1c"
+    },
+    {
+      "path": "detail_sampling_advanced.py",
+      "symbol": "setup_rectified_flow_restart_sampling.sampler_function",
+      "callee": "sample_minimax_h3_dual_clock_euler",
+      "call_sha256": "334a4c67d7a21547ba623b5485402759b9fdbc4f90f1c9285750c8e32c1504ae"
+    },
+    {
+      "path": "long_video_in_node_loop_advanced.py",
+      "symbol": "_sample_one_segment.run_once",
+      "callee": "guider.sample",
+      "call_sha256": "81d7d0e3e760246154324b1725923a4f317324fafdd998fa3ee83b2e887871ba"
+    },
+    {
+      "path": "long_video_in_node_loop_advanced.py",
+      "symbol": "run_long_video_in_node_loop",
+      "callee": "_sample_one_segment",
+      "call_sha256": "b4a1570ae8f16ec1db6ac6b3d2cfa3e70a7b8cb651798b3dd158ef6c5ade32eb"
+    },
+    {
+      "path": "long_video_in_node_loop_effects_advanced.py",
+      "symbol": "_sample_prepared_segment",
+      "callee": "guider.sample",
+      "call_sha256": "ba96ec6f4d14a6e327bff0daf87c043ea7fab64700b2e828af2e2b1c89854309"
+    },
+    {
+      "path": "long_video_in_node_loop_effects_advanced.py",
+      "symbol": "run_long_video_in_node_loop_effects",
+      "callee": "_sample_prepared_segment",
+      "call_sha256": "2f964070bf8341cd14577d5899b450e8d197476d7ce34982a4bbae36144b6126"
+    },
+    {
+      "path": "long_video_in_node_loop_effects_advanced.py",
+      "symbol": "run_long_video_in_node_loop_effects",
+      "callee": "_sample_prepared_segment",
+      "call_sha256": "7338e7858d77ae37c884876c47dcbb1f019524ffc40d3d941095b55c7c3c9c58"
+    },
+    {
+      "path": "mv_lipsync_advanced.py",
+      "symbol": "run_local_mv_in_node_loop",
+      "callee": "_sample_one_segment",
+      "call_sha256": "c3e2b7a4ae0c0afdf85453cd51aa32e7ae85595fa88f0b11bf789542d872b3eb"
+    },
+    {
+      "path": "nodes_chunked_two_pass_upscale_advanced.py",
+      "symbol": "MiniMaxH3ChunkedTwoPassUpscaleT8Advanced.execute",
+      "callee": "execute_chunked_two_pass_upscale",
+      "call_sha256": "9c7ce726ea201b887da41f460694a6b89a140acef9d790288779b463a4dfb476"
+    },
+    {
+      "path": "nodes_progressive_sampling.py",
+      "symbol": "MiniMaxH3ProgressiveSamplerEXPT8.execute",
+      "callee": "sample_progressive_h3",
+      "call_sha256": "359e2d483a25dfdb4b5a59efc755856a27355e9fa16c492d3359da9ae3d3ccf4"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "_native_stage",
+      "callee": "comfy.samplers.sample",
+      "call_sha256": "b65083efe12f7a5eb581d5fc82cee4590ffc2adb8733b93fbaaef93c4fdfc38b"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "_native_stage",
+      "call_sha256": "0a6a4b354e43542a99773ed8ee87c429d9e115bbbb0f8fe6592c9bf3762975b8"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "_native_stage",
+      "call_sha256": "f08163c9d67babc8aded61b05a0171d6bb6bb476cf766459aa80f8c60bcb5b69"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_in",
+      "call_sha256": "1ca36141b672809662373a48c4e5f1e3931901139061e2371be250c0c48cd839"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_out",
+      "call_sha256": "39a70df35933c9fc74fd6cf52a6a21b879e91648181ea96b71c47cb88acbfb32"
+    },
+    {
+      "path": "progressive_sampling_runtime.py",
+      "symbol": "sample_progressive_h3",
+      "callee": "latent_format.process_out",
+      "call_sha256": "4d2da2d3dad6e4968d0efb7edffd56abe92acef68172531aed89a752537b5e93"
+    },
+    {
+      "path": "speed_advanced.py",
+      "symbol": "execute_speed_sampling",
+      "callee": "guider.sample",
+      "call_sha256": "274bf327d728701da1111002d68c6e5680e40d5b1bb377c5f48552bd2803a5dd"
+    }
+  ],
+  "replacements": {
+    "chunked_two_pass_upscale_advanced.py": {
+      "path": "h3_t8/chunked_two_pass_upscale_advanced.py",
+      "ast_sha256": "c9fcef9ac8f2e2de5b342ea42cb022a88cb2c1dd82cc84c4c2bb70efe93b0eba"
+    },
+    "detail_sampling_advanced.py": {
+      "path": "h3_t8/detail_sampling_advanced.py",
+      "ast_sha256": "386f068f13f2f37fcd83902a8db453d24ea839256eb3b857a63cef3993eb3dba"
+    },
+    "long_video_in_node_loop_advanced.py": {
+      "path": "h3_t8/long_video_in_node_loop_advanced.py",
+      "ast_sha256": "6e9146e672ecdbffb2c2532d79833fed88a16d6991326d218152283f27da83f7"
+    },
+    "long_video_in_node_loop_effects_advanced.py": {
+      "path": "h3_t8/long_video_in_node_loop_effects_advanced.py",
+      "ast_sha256": "382597c32ff93814cc978997dbe506f712ddf402f52ed902fc7a8d909ecface3"
+    },
+    "mv_lipsync_advanced.py": {
+      "path": "h3_t8/mv_lipsync_advanced.py",
+      "ast_sha256": "e99d9636cafb57c65cab5669e197e61325678a643d11fec735bc533de2711930"
+    },
+    "nodes_chunked_two_pass_upscale_advanced.py": {
+      "path": "h3_t8/nodes_chunked_two_pass_upscale_advanced.py",
+      "ast_sha256": "568b4791d2e536a74d4549449589f67171d2e220d71298c468e0410d521c4bd7"
+    },
+    "nodes_progressive_sampling.py": {
+      "path": "h3_t8/nodes_progressive_sampling.py",
+      "ast_sha256": "f2d4f2a9b362efc62b3f94ca8a26259893bdb5bf3ca319373d895768837d3b6c"
+    },
+    "progressive_sampling_runtime.py": {
+      "path": "h3_t8/progressive_sampling_runtime.py",
+      "ast_sha256": "7a940ba6dd4b1f3b234c7a43807d42046823f3eb96729474fa9825552ab6cbb0"
+    },
+    "speed_advanced.py": {
+      "path": "h3_t8/speed_advanced.py",
+      "ast_sha256": "5f9bc39c5868bf04bdc1c8a1e31f696787f8704b47f5cd6ca8d71a56dd7f3e62"
+    }
+  }
+}

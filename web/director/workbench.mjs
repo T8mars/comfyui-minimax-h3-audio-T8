@@ -12,6 +12,7 @@ import { createReferenceCandidates } from './references_ui.mjs';
 import { createTaskDrawer } from './tasks_ui.mjs';
 import { createStoryboardDialog } from './storyboard_ui.mjs';
 import { createCreationLibrary } from './creation_ui.mjs';
+import { createRadarDialog } from './radar_ui.mjs';
 import { directorTaskLabel } from './session.mjs';
 export function createDirectorWorkbench(ctx) {
     const { root, doc, shot, assets, results, videos } = ctx;
@@ -45,6 +46,8 @@ export function createDirectorWorkbench(ctx) {
     moreBody.append(...projectActions.children);
     moreBody.append($('[data-action="undo"]'), $('[data-action="redo"]'));
     const creation=createCreationLibrary(root,{...ctx.creation,escape:ctx.esc,notify:ctx.notify});
+    const radar=createRadarDialog(root,{...ctx.radar,escape:ctx.esc,notify:ctx.notify});
+    const radarButton=document.createElement('button');radarButton.type='button';radarButton.dataset.radarOpen='';radarButton.textContent='镜头证据与规则';radarButton.addEventListener('click',radar.open);moreBody.prepend(radarButton);
     const creationButton=document.createElement('button');creationButton.type='button';creationButton.dataset.creationOpen='';creationButton.textContent='创作收藏';creationButton.addEventListener('click',creation.open);moreBody.prepend(creationButton);
     const oldBadge = $('.o-badge');
     oldBadge.parentElement.remove();
@@ -141,6 +144,8 @@ export function createDirectorWorkbench(ctx) {
     selectedActions.className='w-selection-actions';
     selectedActions.setAttribute('aria-label','选中素材操作');
     thumbs.after(selectedActions);
+    const externalTakeButton=document.createElement('button');externalTakeButton.type='button';externalTakeButton.dataset.externalTakeOpen='';externalTakeButton.textContent='登记为本镜外片版本';
+    externalTakeButton.addEventListener('click',()=>{const selected=$('[data-thumbs] [data-tray-id][data-selected="true"]');if(selected)ctx.showExternalTake(selected.dataset.trayId);});
     mediaWorkbench.after(mediaSection);
     const versionBar=document.createElement('section');
     versionBar.className='w-versions';
@@ -266,6 +271,9 @@ export function createDirectorWorkbench(ctx) {
             selectedActions.append(extra);
             selected.dataset.workbenchActions='detached';
         }
+        const selectedAsset=selected?assets().get(selected.dataset.trayId):null;
+        externalTakeButton.hidden=selectedAsset?.kind!=='video'||!!selectedAsset?.missing;
+        if(selected)selectedActions.append(externalTakeButton);
     }
     function syncShots() {
         root.dataset.shotsOpen='false';
@@ -304,7 +312,7 @@ export function createDirectorWorkbench(ctx) {
         const select=versionBar.querySelector('[data-result-version]');
         const options=records.map((item,index)=>{
             const date=item.submitted_at?new Date(item.submitted_at*1000).toLocaleString():'时间未记录';
-            const state={success:'已生成',error:'失败',pending:'生成中',cancelled:'已取消'}[item.state]||'待核对';
+            const state=item.origin==='external'&&item.state==='success'?'外部成片 · 不可重采样':({success:'已生成',error:'失败',pending:'生成中',cancelled:'已取消'}[item.state]||'待核对');
             return `<option value="${ctx.esc(ctx.resultKey(item))}">${ctx.esc(`${records.length-index} · ${date} · ${state}`)}</option>`;
         }).join('');
         if(select.dataset.options!==options){select.innerHTML='<option value="" disabled>选择一个版本</option>'+options;select.dataset.options=options;}

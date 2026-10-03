@@ -20,14 +20,11 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-# Canonical published layout: h3_t8 is the implementation namespace. The
-# unchanged v9 research inventory also records 19 inert root-copy callsites
-# that were never published; its complete 105 entries remain archived.
-BASELINE = ROOT / "tests/fixtures/modular_new_sampling_release_baseline_v1.json"
+BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v10.json"
 SCHEMA = "t8.modular-sampling.new-sampling-admission.v1"
 SAMPLING_CALLEES = {"sample", "sample_custom", "sample_stage", "sample_low",
                     "sample_high", "run_worker", "_sample_one_segment",
-                    "_sample_prepared_segment"}
+                    "_sample_prepared_segment", "sample_head", "sample_tail", "_native_stage"}
 MULTISTAGE = re.compile(r"two.?pass|dual.?model|second.?pass|pass.?2|progressive|restart|multi.?stage|high.?stage", re.I)
 DELEGATE = re.compile(r"^(?:sample|run|execute|generate|refine|continue|process)(?:_[a-z0-9_]+)?$")
 DIRECTOR_SAMPLER = re.compile(r"sampler|hyperflow.?split|two.?pass|dual.?model", re.I)
@@ -150,6 +147,53 @@ def discover(root=ROOT):
 
 def _key(site):
     return (site["path"], site["symbol"], site["callee"], site["call_sha256"])
+
+
+def reviewed_layout_sites(root, baseline):
+    """Preserve v10; qualify absent dormant aliases by exact replacement AST.
+
+    This is a finite reviewed deployment distinction, not discovery/capture
+    of a smaller passing baseline. Present aliases remain fully checked.
+    Missing actual runtime sources or altered full module AST fail closed.
+    """
+    root = Path(root).resolve()
+    path = root / "tests/fixtures/modular_reviewed_runtime_layout_v1.json"
+    if not path.is_file():
+        return list(baseline["sites"]), []
+    review = json.loads(path.read_text(encoding="utf8"))
+    if (set(review) != {"schema", "reason", "retired_sites", "replacements"}
+            or review["schema"] != "t8.modular-sampling.reviewed-runtime-layout.v1"
+            or len(review["retired_sites"]) != 21 or len(review["replacements"]) != 9):
+        raise ValueError("Invalid reviewed runtime layout")
+    retired = {_key(site) for site in review["retired_sites"]}
+    if len(retired) != 21:
+        raise ValueError("Duplicate reviewed compatibility site")
+    absent = set()
+    for name, replacement in review["replacements"].items():
+        if Path(name).name != name or not name.endswith(".py"):
+            raise ValueError("Layout root alias must be an exact file basename")
+        alias = root / name
+        if alias.exists():
+            if not alias.is_file() or alias.is_symlink():
+                raise ValueError("Invalid existing root compatibility alias")
+            continue
+        if (set(replacement) != {"path", "ast_sha256"}
+                or replacement["path"] != "h3_t8/" + name
+                or not re.fullmatch(r"[0-9a-f]{64}", replacement["ast_sha256"])):
+            raise ValueError("Invalid reviewed replacement module")
+        target = root / replacement["path"]
+        if not target.is_file() or target.is_symlink():
+            raise ValueError("Reviewed actual runtime replacement is missing")
+        tree = ast.parse(target.read_text(encoding="utf-8-sig"))
+        actual = hashlib.sha256(ast.dump(tree, include_attributes=False).encode()).hexdigest()
+        if actual != replacement["ast_sha256"]:
+            raise ValueError("Reviewed actual runtime replacement AST changed: " + name)
+        absent.add(name)
+    omitted = [site for site in review["retired_sites"] if site["path"] in absent]
+    if omitted and not retired <= {_key(site) for site in baseline["sites"]}:
+        raise ValueError("Reviewed alias sites must all remain in the declared baseline")
+    keys = {_key(site) for site in omitted}
+    return [site for site in baseline["sites"] if _key(site) not in keys], omitted
 
 
 def _workflow_graph(root, relative):
@@ -287,7 +331,8 @@ def audit(root, baseline, admissions, routes, live_ids=None):
     if admissions.get("schema") != SCHEMA or set(admissions) != {"schema", "entries"}:
         raise ValueError("Invalid new-sampling admissions schema")
     current = discover(root)
-    old = Counter(_key(site) for site in baseline["sites"])
+    baseline_sites, layout_omissions = reviewed_layout_sites(root, baseline)
+    old = Counter(_key(site) for site in baseline_sites)
     now = Counter(_key(site) for site in current)
     new = now - old
     removed = old - now
@@ -310,6 +355,8 @@ def audit(root, baseline, admissions, routes, live_ids=None):
         if key not in new:
             issues.append({"kind": "stale_or_unneeded_admission", "site": list(key)})
     return {"schema": SCHEMA, "status": "pass" if not issues else "fail",
+            "declared_baseline_sites": len(baseline["sites"]),
+            "reviewed_absent_root_alias_sites": len(layout_omissions),
             "baseline_sites": sum(old.values()), "current_sites": sum(now.values()),
             "new_sites": sum(new.values()), "removed_sites": sum(removed.values()),
             "issues": issues,

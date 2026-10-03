@@ -4,7 +4,10 @@ import { createModalAccess } from './modal_ui.mjs';
 export function filmClipTimes(entry) {
     const fps=entry?.media?.fps;
     if(!Number.isFinite(fps)||fps<=0||!Number.isInteger(entry.in_frame)||!Number.isInteger(entry.out_frame)||entry.in_frame<0||entry.out_frame<=entry.in_frame)throw Error('整片镜头时间无效');
-    return {start:entry.in_frame/fps,end:entry.out_frame/fps,duration:(entry.out_frame-entry.in_frame)/fps};
+    const first=entry.origin==='external'?entry.decoded_clock?.video?.first_time:null;
+    const offset=first?first.num/first.den:0;
+    if(!Number.isFinite(offset))throw Error('外片源时钟无效');
+    return {start:offset+entry.in_frame/fps,end:offset+entry.out_frame/fps,duration:(entry.out_frame-entry.in_frame)/fps};
 }
 export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExport,exportStatus}) {
     const dialog=document.createElement('dialog');dialog.className='w-film-dialog';dialog.dataset.filmDialog='';

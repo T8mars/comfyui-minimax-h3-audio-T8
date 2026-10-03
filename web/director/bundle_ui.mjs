@@ -6,6 +6,10 @@ export function createBundleDialog({root,escape:esc,prepare,build,upload,apply,l
     const dialog=document.createElement('dialog');dialog.className='w-bundle-dialog';dialog.dataset.bundleDialog='';
     dialog.innerHTML='<div class="o-row o-between"><h3>工程包 ZIP</h3><button type="button" data-bundle-close>关闭</button></div><p>将工程文字、输入素材及采用成片一起迁移。不会打包模型权重、其它历史、环境密钥或运行目录。模型需在目标机器另行安装。</p><div class="w-bundle-actions"><section><h4>导出当前工程</h4><label><input type="checkbox" data-bundle-results checked> 包含已采用成片</label><button type="button" data-bundle-prepare>检查清单与大小</button></section><section><h4>导入为新工程</h4><label>选择工程 ZIP<input type="file" accept=".zip" data-bundle-file></label><button type="button" data-bundle-last>恢复上次导入请求</button></section></div><p data-bundle-status role="status"></p><div data-bundle-body></div>';
     root.append(dialog);
+    const radarOption=document.createElement('label');
+    radarOption.innerHTML='<input type="checkbox" data-bundle-radar> 包含证据、规则快照与候选稿（可能含ASR/OCR私密原文，须检查）';
+    dialog.querySelector('.w-bundle-actions section').append(radarOption);
+    const radarNotice=document.createElement('p');radarNotice.className='o-tip';radarNotice.textContent='默认不携带证据/规则/候选扩展，只保留原作者稿。需要完整迁移这些功能时，请勾选并检查实际文字。';radarOption.after(radarNotice);
     const modal=createModalAccess(dialog,{root});
     const $=selector=>dialog.querySelector(selector),status=$('[data-bundle-status]'),body=$('[data-bundle-body]');
     let sequence=0,controller=null,plan=null,kind=null;
@@ -25,7 +29,8 @@ export function createBundleDialog({root,escape:esc,prepare,build,upload,apply,l
         try{const value=await getPlan();if(ticket===sequence&&dialog.open){showPlan(value,type);const tip=body.querySelector('.o-tip');if(tip)tip.textContent+=' 成片保留完整源文件，包含裁剪范围外的画面。';}}
         catch(error){if(ticket===sequence&&dialog.open)status.textContent='未完成：'+error.message;}
     }
-    $('[data-bundle-prepare]').addEventListener('click',()=>run(()=>prepare($('[data-bundle-results]').checked),'export','正在核对素材、固定采用成片并计算清单；不加载模型…'));
+    $('[data-bundle-prepare]').addEventListener('click',()=>run(()=>prepare($('[data-bundle-results]').checked,$('[data-bundle-radar]').checked),'export','正在核对素材、固定采用成片并计算清单；不加载模型…'));
+    $('[data-bundle-radar]').addEventListener('change',()=>{reset();status.textContent='证据/规则导出范围已变化，请重新检查清单与私人文字。';});
     $('[data-bundle-results]').addEventListener('change',()=>{reset();status.textContent='导出范围已变化，请重新检查清单。';});
     $('[data-bundle-last]').addEventListener('click',()=>run(lastImport,'import','正在读取上次导入；不会新建重复项目…'));
     $('[data-bundle-file]').addEventListener('change',()=>{

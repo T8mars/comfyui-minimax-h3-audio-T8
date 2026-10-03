@@ -1,4 +1,74 @@
 {
+  "radar_human_review_20261003": {
+    "status": "ten_specific_media_cases_human_accepted_selected_local_implementation_complete_unpublished",
+    "review_id": "ca05523dee095ff5bf75d3d696d1e90f7b30bf02e7c648b4554bd084e0fee8f6",
+    "revision": 23,
+    "accepted_cases": ["M1", "M2", "M3", "R01", "R04", "R05", "R06", "R10"],
+    "failed_cases_retained": {"R07": "B有个手一直贴脸上，C脸重影", "R08": "没有画面，声音夜视镜噪音，是不是发错了？"},
+    "followup_review": {"review_id": "cc955c8326cf8afb02735489665cd5a4e7e9d45d93e9547fea1c27da54c2b41b", "revision": 2, "accepted_cases": ["R07", "R08"], "pending_cases": [], "total_accepted_case_count": 10},
+    "followup": "User revision1 accepted R07 only; revision2 accepted R07 and R08, export/live/formal disk and all5 media labels/SHA matched. R07 explicit opt-in denoise0.05/original12 steps/model/seed/Relay/audio and manually annotated per-frame external MASK; full12/fresh0 complete AV exact, two optional graphs preserve old14/defaults. R08 real124-frame736x144 feet/ground crop with original input AAC; four native phases preserve complete RGB/PCM and skip retained heavy dependencies. Original revision23 failures/media remain historical, not rewritten.",
+    "boundary": "Acceptance covers the original eight exact cases and the two specified followup cases only, not all materials/families/recipes/hardware or later media. Original source/hardware/Core-authority/net-benefit conditional exclusions remain as planned; not false implementations or certifications. No automatic acceptance, QualityGate mutation, automatic occlusion segmentation, publication or release."
+  },
+  "radar_model_compatibility_local": {
+    "status": "local_exp_three_native_single_variable_pairs_specific_M1_M2_M3_human_passed_old_defaults_preserved_unpublished",
+    "documentation": "docs/RADAR_MODEL_COMPATIBILITY_EXP.md",
+    "workflows": "examples/workflows/70-radar-model-compatibility/README.md",
+    "boundary": "Existing loaders only. LMS completed124-frame512->1024 native pair preserves decoded PCM. Orbit pruned28/73/768 pair has complete silent H264 but internal joint AV, not author audio-off parity. Wallpaper R32 Ref2VA/Turbo4 pair has complete124-frame512 H264/AAC, not R64/Taomate3/LMS recipe or preserved generated audio. Both LoRAs map416 tensors/208 targets with zero misses. Exact zz_radar physical menu additions preserve every original default/first option and2029 old JSON/index/stable sampler. No automatic human acceptance, general speed/quality or publication."
+  },
+  "hyperflow_curve_local": {
+    "status": "local_exp_15_nodes_native_full8_freshTAIL4_freshDelivery0_specific_R10_human_passed_dynamic_not_certified_unpublished",
+    "documentation": "docs/HYPERFLOW_CURVE_EXP.md",
+    "workflows": "examples/workflows/68-radar-hyperflow-curves/README.md",
+    "boundary": "Fifteen own fit/apply/stage/store/phase-effect/fresh-base nodes append604->619; three Core typed graphs retain independent stages/effects. Eighteen whole CPU scopes281/source1665 stable/CUDAfalse/no skip includes real2.8GB adapter, legacy HyperFlow/five seam and native precision/LoRA/reconstruction tests, not summed with other receipts. Actual native Save/reopen/Queue full HEAD4+TAIL4, fresh HEADLoad/TAIL4 and fresh TAILLoad/decode0 produced complete124-frame512-square24fps AV with exact full RGB/PCM; portable HEAD/TAIL and200 Relay/EAV calls each stage. Explicit disable-dynamic-vram/reserve4.5 qualification only; previous basis refusal and dynamic resource-guard/Core cleanup illegal-access failures retained, dynamic not certified. Source/six full weights-fit/helpers/Core/original files stable, owned closed. EAV gain1 not quality benefit; fit residuals not full-time equivalence. Exact basis/producer/SHA guards stay strict, unknown delegates retained/nonportable. Explicit reviewed S30 AST/topology admission precedes baseline v10; future runtime completeness and human/performance pending, unpublished."
+  },
+  "external_motion_effects_local": {
+    "status": "local_exp_four_graphs_native_Relay_EAV_full4_fresh0_specific_R06_human_passed_unpublished",
+    "documentation": "docs/EXTERNAL_CONTINUATION_EFFECTS_EXP.md",
+    "nodes": ["MiniMaxH3ExternalRelayWindowEXPT8", "MiniMaxH3ExternalRelayConditioningEXPT8", "MiniMaxH3ExternalMotionEffectsBindEXPT8", "MiniMaxH3ExternalStageEAVApplyEXPT8"],
+    "workflows": "examples/workflows/67-radar-external-continuation/README.md",
+    "contract": "Four append-only independent external RGB/PCM Relay/window/motion scope/stage EAV operations. Explicit independent Relay clock, no fake native accepted ancestor, original task/masks/audio/schedules. Current ten complete CPU scopes161 passed/source1649 stable/CUDA false includes actual tiny four motion forwards/composed Relay-EAV, stereo5/22/39 EAV-only, late wrong-payload abort/code rejection, four reusable typed-edge/Core-validated FullSave-ColdDelivery graphs and five seam gates. Earlier327 broader scope overlaps, not added; GBK warnings retained. One actual trained native Save-reopen-Queue full4 composed Relay/EAV and independent GPU cold StageLoad0:102-frame448x256/24fps complete RGB/PCM exact, portableStage and all source/weight/helper/original-file guards true, owned closed. Relay/EAV selectors200 each; one active EAV forward50 measurements had unit gain, not quality benefit. Not PCM-context/all graphs/dual-stage/seam/human certification, unpublished."
+  },
+  "no_face_lazy_local": {
+    "status": "local_exp_six_graphs_native_real124_lazy_four_phases_specific_R08_human_passed_unpublished",
+    "documentation": "docs/NO_FACE_LAZY_EXP.md",
+    "workflows": "examples/workflows/66-radar-no-face-lazy/README.md",
+    "contract": "Nine append-only operations: complete actual detector observation once, unknown never false, negative requires manual exact observation SHA; matching old Standard/Parity planner reused in call-local namespace. Lazy StageSave and four dependent-only original Audit/Stitch delegates prevent heavy output roots firing. Thirteen full CPU scopes245/no exclusions/CUDA false; actual Core four-state scheduler and six graph checks.600 schemas retain original prefix/2029 oldJSON/index/sampling. Four ownedCPU actual native Save/reopen/Queue phases: direct AV baseline, unconfirmed actualYuNet22-frame negative blocked, manually literal-SHA confirmed bypass, independent fresh same-SHA bypass. FullSave retains heavy dependencies but actual events confirm all UNET/CLIP/VAE/plan/sampler/audit/stitch skipped/no Stage files, full RGB/PCM equals baseline/fresh, public/source/four actual-weight fullSHA/detector/Core/helpers/runtime stable and owned closed. Synthetic one Standard negative is not all-family/quality/human approval; unpublished."
+  },
+  "visible_face_mask_local": {
+    "status": "local_exp_16_graphs_native_light12_temporal_MASK_fresh0_specific_R07_human_passed_old_static_failure_retained_unpublished",
+    "nodes": ["MiniMaxH3VisibleFaceMaskBindEXPT8", "MiniMaxH3VisibleFaceCompositeEXPT8"],
+    "documentation": "docs/VISIBLE_FACE_MASK_EXP.md",
+    "workflows": "examples/workflows/65-radar-visible-face-mask/README.md",
+    "boundary": "Explicit full-source post-composite whole RGB/mask/declared24fps/request/code binding. Black exact original, white exact already-blended candidate, no alpha squared; unchanged Multi-Face full support and same AUDIO object. Eleven full CPU scopes203 passed/CUDA false, fourteen additive Full/Cold graphs across seven Face families and actual Core edge validation. One actual native Save/reopen/Queue reuses an unchanged completed Standard Face Stage with zero sampling: full124-frame736x416/24fps AV; independent fresh native zero-sampling full RGB/PCM exact, original source audio decode preserved,321539 previously changed pixels protected. Source/old-stage-and-media/three selected weights/helpers/Core/optional runtime stable, owned closed.591 schemas/2029 oldJSON/index/sampling preserved. Original collection/paste-label/missing-new-file and private canvas preview/Load report-field failures retained. Synthetic static MASK is not detector segmentation/occlusion truth, all-family native/canvas qualification, approval or published support."
+  },
+  "external_continuation_local": {
+    "status": "local_exp_native_video_only_full4_fresh0_independent_effects_specific_R06_human_passed_unpublished",
+    "nodes": ["MiniMaxH3ExternalContinuationSourceEXPT8", "MiniMaxH3ExternalContextEncodeEXPT8", "MiniMaxH3ExternalContinuationConditioningEXPT8"],
+    "documentation": "docs/EXTERNAL_CONTINUATION_EXP.md",
+    "boundary": "Three append-only operations bind SAVED manually adopted external media, exact5/22/39 RGB/stereo PCM and unchanged native conditions/audio-grid overhang.195 CPU tests/twelve full scopes passed, CUDA false. Separate native canvas Save/reopen/Queue on one video_only22-frame tail: original4-step124-frame render, explicit22-frame trim to102 frames448x256/24fps4.25s. Fresh GPU native exact StageLoad0 sampling delivered identical complete decoded RGB/PCM; full source epoch/five weights/helpers/Core/original project and media stable, owned service closed. Interrupted CPU/float32 cold retained, not decoder equivalence. Not PCM-context/two-pass or seam/human quality certification. Independent external motion effects and67-directory templates are implemented and separately native-qualified in external_motion_effects_local, not retroactive plain-path evidence. No original latent/native-parent fiction, automatic append/adopt/mux/cache/approval; unknown wrappers execute nonportable, old schemas/defaults/2029 localJSON protected. Unpublished."
+  },
+  "director_external_takes_local": {
+    "status": "local_exp_actual_Core_Chromium_registration_adopt_trim_save_reopen_play_and_658_CPU_passed_unpublished",
+    "documentation": "docs/DIRECTOR_EXTERNAL_TAKES_EXP.md",
+    "boundary": "Explicit saved-project external take registration, immutable full-SHA copy, complete decoded CFR/AV clocks and strict project CAS. Actual owned CPU Core/current Chromium file upload, registration without project mutation, manual adoption/integer trim, Save/reopen and real10-second playback passed.55 complete CPU scopes658 tests passed, no skip/deselect/xfail, CUDA false; source/original movie/upload copy SHA stable and owned service closed. Same-UUID retry, storage failure, late response and bundle provenance regressions retained; actual session relative-module route fixed. No implicit adoption, Queue, model/seed/snapshot/StageResult ancestry, resampling or perceptual certificate. Other FPS/nonzero export and VFR need explicit processing. Separate continuation bridge qualification is tracked independently. Legacy nodes/defaults/workflows unchanged, unpublished."
+  },
+  "mv_cast_solo_local": {
+    "status": "local_exp_native_AB_full_same_output_fresh0_specific_R05_human_passed_unpublished",
+    "nodes": ["MiniMaxH3MVCastSoloPlanEXPT8", "MiniMaxH3MVCastSoloRendererEXPT8"],
+    "documentation": "docs/MV_CAST_SOLO_EXP.md",
+    "boundary": "Explicit independent A/B solo scenes/literal cues, original clock and one full-song mux. Actual native canvas full A/B each4 callbacks produced strictly decoded248 frames448x256/24fps; fresh native Save/reopen/Queue in the same saved output root returned verified master with zero sampling, complete RGB/PCM exact and source/weights/helpers/original output bytes stable, owned service closed. Seven complete CPU scopes175 passed including real tiny AV/LoRA parity and late crop rejection. Three first-scene failures, copied-output containment refusal and interrupted collector retained. No relocated-output portability, identity/lipsync/human quality or publication claim. Original584 schemas/2029 localJSON protected, only two additive IDs."
+  },
+  "radar_source_evidence_skills_local": {
+    "status": "local_exp_Chromium_native_candidate_full4_exact5s_specific_R01_human_passed_Core_cache_observed_unpublished",
+    "documentation": "docs/DIRECTOR_SOURCE_EVIDENCE_SKILLS_EXP.md",
+    "boundary": "Explicit source evidence, manual review, independent intent and declarative skill snapshots; immutable saved histories, adopted-candidate modified selection and scoped cross-shot batch dependencies.739 joint CPU and actual Chromium tests remain distinct from one current native saved QA project: literal-SHA candidate adoption, actual canvas Save/reopen/Queue four callbacks, complete120-frame608x320/24fps exact5s H264/AAC strict decode; all source/Core/helpers/five actual full-weight SHAs/original-file guards stable and owned closed. QA observations/acceptance are not human factual or perceptual approval. Private read-only profiling with original default Core cache observed no Qwen encoding for identical inputs even with renamed node IDs, one encoding after prompt change; real history preserved. No duplicate conditioning LRU added or internal renderer/portable cache/performance certificate. No automatic media upload, VLM truth, Queue, approval or rewriting of legacy prompt/audio clocks. Quality review/publication separate, unpublished."
+  },
+  "h3_fun_union2_local": {
+    "status": "local_exp_native40_specific_R04_human_passed_legacy_Turbo4plus4_quality_failure_retained_unpublished",
+    "nodes": ["MiniMaxH3FunUnion2LoaderEXPT8", "MiniMaxH3FunUnion2ApplyEXPT8"],
+    "documentation": "docs/H3_FUN_UNION2_EXP.md",
+    "boundary": "Actual full-weight10x5/49/post_norm native LOW/save/independentHIGH/freshHIGH-repeat request/state/decodedAV mechanics passed for one Turbo4+4 case, but its colored-square picture failure is retained and not recommended. A separate no-Turbo native40 CFG1 full-strength5s control passed actual canvas Save/reopen/Queue, callbacks/portableSave and strictAV decode; quality unreviewed, not upstream parity or isolated causal proof. External EAV/Relay delegation observed in4+4, EAV gain1 only. Unknown user stacks retained/nonportable, no unchanged joint-audio/outsideRGB claim, old schemas/defaults preserved apart from exact physical menu addition. No shared Core change or publication."
+  },
   "rf_joint_clock_restart_local": {
     "status": "v1.88.1_explicit_opt_in_native_B8_C1_C2_specific_human_review_passed",
     "nodes": ["MiniMaxH3RFRestartJointClockSetupEXPT8"],
@@ -505,7 +575,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.88.1",
+  "version": "1.89.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",

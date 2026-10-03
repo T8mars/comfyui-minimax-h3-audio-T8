@@ -73,12 +73,20 @@ def _library(value):
     return result
 
 
-def portable_project(value):
+def portable_project(value, *, include_radar=False):
     """Explicit public settings only; keep inactive prompt/LoRA drafts, not metadata blobs."""
     value = validate_project(value)
     result = _pick(value, ('schema', 'version', 'id', 'title', 'revision', 'current'))
     doc = value['doc']
     target = _pick(doc, ('global', 'sharedRefs', 'sharedRatio', 'ratio'))
+    if type(include_radar) is not bool:
+        raise ValueError('证据/规则导出开关必须是布尔值')
+    from .director_radar import DOC_FIELDS as RADAR_DOC_FIELDS, SHOT_FIELDS as RADAR_SHOT_FIELDS
+    has_radar = any(key in doc for key in RADAR_DOC_FIELDS) or any(
+        any(key in shot for key in RADAR_SHOT_FIELDS) for shot in doc['shots'])
+    if include_radar and has_radar:
+        target.update(_pick(doc, RADAR_DOC_FIELDS))
+        result['radarPortability'] = {'schema': 't8.director.radar_portability.v1', 'include_evidence': True}
     if 'creationLibrary' in doc:
         target['creationLibrary'] = _library(doc['creationLibrary'])
     if 'generation' in doc:
@@ -93,6 +101,8 @@ def portable_project(value):
     target['shots'] = []
     for shot in doc['shots']:
         clean = _pick(shot, SHOT_FIELDS)
+        if include_radar:
+            clean.update(_pick(shot, RADAR_SHOT_FIELDS))
         seed = clean.get('seed')
         if seed is not None and (type(seed) is not int or not 0 <= seed <= 2**53-1):
             raise ValueError('镜头种子无法在页面精确表达，请先修正再打包')
@@ -104,7 +114,27 @@ def portable_project(value):
             clean['filmTrim'] = _pick(shot['filmTrim'], ('in_frame', 'out_frame'))
         target['shots'].append(clean)
     result['doc'] = target
-    result['assets'] = [_pick(asset, ('id', 'name', 'kind', 'width', 'height', 'duration', 'has_audio', 'sha256', 'size', 'source_frame')) for asset in value['assets']]
+    excluded = set()
+    if has_radar and not include_radar:
+        from .director_radar import _packet_media
+        evidence_assets = {row['asset_id'] for shot in doc['shots']
+                           for evidence in shot.get('evidenceHistory', []) + ([shot['sourceEvidence']] if shot.get('sourceEvidence') else [])
+                           for row in _packet_media(evidence['packet'])}
+        keep = referenced_assets(result)
+        def library_references(node):
+            if isinstance(node, str):
+                if node in evidence_assets:
+                    keep.add(node)
+            elif isinstance(node, dict):
+                for child in node.values():
+                    library_references(child)
+            elif isinstance(node, list):
+                for child in node:
+                    library_references(child)
+        library_references(target.get('creationLibrary'))
+        excluded = evidence_assets - keep
+    result['assets'] = [_pick(asset, ('id', 'name', 'kind', 'width', 'height', 'duration', 'has_audio', 'sha256', 'size', 'source_frame'))
+                        for asset in value['assets'] if asset['id'] not in excluded]
     # Model names are retained for manual installation, not absolute machine paths or URLs.
     def model_names(node):
         if isinstance(node, dict):
@@ -157,10 +187,10 @@ def _save_sealed(path, value):
     return value
 
 
-def prepare_bundle(store, value, records, output_root, include_results=True):
+def prepare_bundle(store, value, records, output_root, include_results=True, *, include_radar=False):
     if type(include_results) is not bool:
         raise ValueError('采用成片开关必须是布尔值')
-    project = portable_project(value)
+    project = portable_project(value, include_radar=include_radar)
     rows, sources, errors = [], {}, []
     assets = {asset['id']: asset for asset in project['assets']}
     for missing in referenced_assets(project)-assets.keys():
@@ -193,6 +223,9 @@ def prepare_bundle(store, value, records, output_root, include_results=True):
                 path = f"results/{entry['shot_id']}{source.suffix.lower()}"
                 rows.append({'role': 'result', 'shot_id': entry['shot_id'], 'version_id': entry['version_id'],
                              'name': entry['name'], 'path': path, 'sha256': entry['media_sha256'], 'size': entry['bytes']})
+                if entry.get('origin') == 'external':
+                    rows[-1]['external'] = {'schema': 't8.director.external_bundle.v1', 'origin': 'external',
+                        'can_resample': False, 'provenance_category': entry['provenance_category']}
                 sources[path] = source
     if not include_results:
         for shot in project['doc']['shots']:
@@ -319,7 +352,10 @@ def _inspect_bundle(store, upload_id):
         if (not isinstance(manifest, dict) or manifest.get('schema') != SCHEMA or set(manifest) != {'schema', 'project', 'files', 'sha256'}
                 or sha({key: value for key, value in manifest.items() if key != 'sha256'}) != manifest.get('sha256')):
             raise ValueError('工程包版本、字段或清单SHA校验失败')
-        project = portable_project(manifest['project'])
+        radar = manifest['project'].get('radarPortability')
+        if radar is not None and radar != {'schema': 't8.director.radar_portability.v1', 'include_evidence': True}:
+            raise ValueError('证据/规则工程包版本或导出确认记录无效')
+        project = portable_project(manifest['project'], include_radar=radar is not None)
         if project != manifest['project']:
             raise ValueError('工程包包含未声明的扩展字段或本机路径')
         rows = manifest['files']
@@ -339,6 +375,14 @@ def _inspect_bundle(store, upload_id):
                 raise ValueError('文件清单路径、身份、大小或SHA无效')
             names.add(row['path'])
             expected_fields = {'role', 'name', 'path', 'sha256', 'size', 'asset_id'} if role == 'asset' else {'role', 'name', 'path', 'sha256', 'size', 'shot_id', 'version_id'}
+            if role == 'result' and 'external' in row:
+                expected_fields.add('external')
+                extra = row['external']
+                from .director_external import PROVENANCE
+                if (not isinstance(extra, dict) or set(extra) != {'schema', 'origin', 'can_resample', 'provenance_category'}
+                        or extra.get('schema') != 't8.director.external_bundle.v1' or extra.get('origin') != 'external'
+                        or extra.get('can_resample') is not False or extra.get('provenance_category') not in PROVENANCE):
+                    raise ValueError('工程包外片来源合同无效，不可虚构生成祖先')
             if set(row) != expected_fields:
                 raise ValueError('文件清单包含未知字段')
             if role == 'asset':
@@ -375,6 +419,9 @@ def _inspect_bundle(store, upload_id):
                 temporary.unlink(missing_ok=True)
             if row['role'] == 'result':
                 evidence = inspect_media(target)
+                if 'external' in row:
+                    from .director_media import run_media
+                    run_media('external', target.resolve())
                 trim = shots[row['shot_id']].get('filmTrim') or {}
                 start, end = trim.get('in_frame', 0), trim.get('out_frame', evidence['frames'])
                 if type(start) is not int or type(end) is not int or not 0 <= start < end <= evidence['frames']:
@@ -460,6 +507,16 @@ def import_bundle(store, output_root, upload_id, new_project_id):
                                 'recipe': '导入采用成片（原工程）', 'submitted_at': 0, 'shot_rev': None,
                                 'snapshot_available': False, 'source_bundle_sha256': plan['archive_sha256'],
                                 'media_sha256': row['sha256']})
+                if 'external' in row:
+                    from .director_media import run_media
+                    measured = run_media('external', target.resolve())
+                    if file_sha(target) != row['sha256']:
+                        raise ValueError('外片在导入解码期间改变，拒绝登记')
+                    results[-1].update(prompt_id=None, external_take_id=version_id, origin='external',
+                        can_resample=False, seed=None, request_id=None,
+                        recipe='导入外部成片（不可精确重采样）',
+                        provenance_category=row['external']['provenance_category'],
+                        provenance_is_user_label_not_generation_proof=True, **measured)
         project['doc']['sharedRefs'] = [asset_map[value] for value in project['doc']['sharedRefs']]
         for shot in project['doc']['shots']:
             old_id = shot['id']
@@ -472,10 +529,13 @@ def import_bundle(store, output_root, upload_id, new_project_id):
             for event in shot['events']:
                 event['id'] = fresh('event', old_id+':'+event['id'])
             if shot.get('adoptedResultId'):
-                shot['adoptedResultId'] = fresh('version', old_id)
+                external = any(row['role'] == 'result' and row['shot_id'] == old_id and 'external' in row for row in plan['manifest']['files'])
+                shot['adoptedResultId'] = ('external:' if external else '') + fresh('version', old_id)
         if 'creationLibrary' in project['doc']:
             from .director_creation import remap_library
             remap_library(project['doc']['creationLibrary'], asset_map, fresh)
+        from .director_radar import remap_project
+        remap_project(project, asset_map, shot_map)
         project.update(id=new_project_id, revision=0, current=shot_map[project['current']], assets=assets,
                        title=project['title'][:180]+' · 导入副本', bundleSource=origin)
         _save_sealed(contained(store.root, f'bundle_results/{new_project_id}.json'),

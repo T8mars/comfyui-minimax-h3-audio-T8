@@ -55,6 +55,9 @@ class EAVConfig:
 
 
 def validate_stage(model, sigmas, av_latent, context):
+    from . import hyperflow_curve_effects
+    if type(context) is StageContext and context.recipe == hyperflow_curve_effects.RECIPE:
+        return hyperflow_curve_effects.validate_stage(model, sigmas, av_latent, context)
     from . import audio_refine_effects
     if type(context) is StageContext and context.recipe == audio_refine_effects.RECIPE:
         return audio_refine_effects.validate_stage(model, sigmas, av_latent, context)
@@ -191,12 +194,21 @@ class StageEAVRuntime:
                             "text weighting is experimental. Unknown producers can bypass effects; no silent Dense replacement."}
 
 
-def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase=None):
+def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase=None, external_scope=None):
     if type(config) is not EAVConfig:
         raise TypeError("Use the external Stage EAV Config node")
     video, audio, v2_owner = validate_stage(model, sigmas, av_latent, stage_context)
     long_video_contract = None
     native_relay_task = None
+    if external_scope is not None:
+        from ..external_continuation_effects import ExternalEffectScope
+        if type(external_scope) is not ExternalEffectScope or p7_phase is not None:
+            raise TypeError('External Stage EAV requires its own bound scope, not a native/P7 ancestor')
+        external_scope.verify(model, av_latent)
+        long_video_contract = feta._assert_long_video_contract(model, segment_index=1,
+            context_frames=external_scope.context.context['metadata']['max_context_frames'])
+        if model.get_wrappers('diffusion_model', relay.PROMPT_RELAY_WRAPPER_KEY):
+            native_relay_task = relay.prompt_relay_model_contract(model)['binding']['task'].lower()
     from . import audio_refine_effects
     if stage_context.recipe == audio_refine_effects.RECIPE:
         tail_owner = audio_refine_effects.capture_owner(model)
@@ -263,6 +275,9 @@ def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase
             payload = kwargs.get("minimax_payload")
             if not isinstance(payload, Mapping):
                 raise RuntimeError("Stage EAV requires the native H3 payload")
+            if external_scope is not None:
+                external_scope.verify(model, av_latent)
+                external_scope.validate_payload(payload)
             if (len(x) != 2 or tuple(x[0].shape) != stage_context.video_shape
                     or tuple(x[1].shape) != stage_context.audio_shape):
                 raise RuntimeError("Stage EAV actual AV layout differs from the bound stage")
@@ -343,6 +358,8 @@ def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase
     report["relay_binding_hash"] = binding["binding_hash"] if binding else None
     if long_video_contract is not None:
         report["long_video_contract"] = long_video_contract
+    if external_scope is not None:
+        report['external_motion_scope_sha256'] = external_scope.verify(model, av_latent)['sha256']
     report["source_model_unchanged"] = True
     return patched, runtime, json.dumps(report, ensure_ascii=False, indent=2)
 

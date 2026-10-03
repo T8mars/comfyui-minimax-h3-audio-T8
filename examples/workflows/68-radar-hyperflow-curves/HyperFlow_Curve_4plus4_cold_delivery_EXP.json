@@ -1,0 +1,404 @@
+{
+  "id": "05668fbc-2225-4c43-b414-2673aa239820",
+  "revision": 0,
+  "last_node_id": 8,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 1
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 2
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 4,
+      "type": "CreateVideo",
+      "title": "Create Video",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo"
+      },
+      "widgets_values": [
+        24.0,
+        "auto",
+        "sRGB",
+        "none"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "title": "Save Video",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "MiniMaxH3/HyperFlow_Curves/4plus4_cold_delivery",
+        "mp4",
+        "h264",
+        "auto"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        390,
+        110
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3HyperFlowCurveTailLoadEXPT8",
+      "title": "H3 HyperFlow Curve · Load Exact Completed TAIL (T8 EXP)",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "completed_result",
+          "type": "T8_HYPERFLOW_CURVE_COMPLETED_AV_V1",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3HyperFlowCurveTailLoadEXPT8"
+      },
+      "widgets_values": [
+        "SELECT_SAVED_TAIL/curve-tail.safetensors",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MarkdownNote",
+      "title": "曲线近似 / Explicit fit, separate stages",
+      "pos": [
+        0,
+        -800
+      ],
+      "size": [
+        1100,
+        720
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "R10/S30 原生pruned H3 HyperFlow曲线近似，非完整时间教师等价。原完整HyperFlow/旧图保持。\n先独立Build Fit：所选pruned底模＋匹配完整教师＋原632tensor HyperFlow；然后把新asset放models/hyperflow/curve_fits，或在Fit Load填明确绝对路径。此图不自动拟合/下载/替换模型。Fit SHA可固定精确文件。专用Base Loader首次加载保留Core声明FP32层，不修补已加载MODEL/不改单独UNETLoader。先从该底模分支，再在两路Apply前各插不同内容LoRA。\nHEAD只0:4、TAIL只4:8；直接传原model-space x_sigma与独立scaffold，不抽二次噪声/放大/重置音频。两路条件/Prompt Relay Plan与配对MODEL、EAV Config各自外置。CFG1；EAV默认report_only，apply_exp才改数学，Relay默认apply_exp。\nFullSave保存两份实际阶段path/SHA；ColdTAIL删除HEAD模型/噪声/效果/输出，只载实际HEAD再续4步；ColdDelivery只读完成AV与两VAE解码，无MODEL/CLIP/fit/采样。Load占位path/SHA不可直接执行，坏文件不隐藏重采。HEAD/TAIL必须同actual base/adapter/fit/producer implementation；未知用户owner保留执行但不认证持久恢复。\n拟合残差和CPU逐值通过不是画质/完整权重GPU或人审。当前资格见专题文档，confirm/质量审核由用户决定。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      7,
+      0,
+      3,
+      0,
+      "LATENT"
+    ],
+    [
+      2,
+      1,
+      0,
+      3,
+      1,
+      "VAE"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      2,
+      "VAE"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      3,
+      1,
+      4,
+      1,
+      "AUDIO"
+    ],
+    [
+      6,
+      4,
+      0,
+      5,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      7,
+      2,
+      6,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "HyperFlow Curve 4+4 / cold_delivery EXP",
+    "t8_split_example": {
+      "schema": "t8.hyperflow.curve.split-example.v1",
+      "route": "S30",
+      "variant": "cold_delivery",
+      "split_interval": 4,
+      "approximation": true,
+      "status": "opt_in_importable_quality_unreviewed"
+    }
+  },
+  "version": 0.4
+}

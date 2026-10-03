@@ -157,6 +157,13 @@ def _project_selected_effects(model):
     from .effect_identity import project_stage_effects
     from .continuation_identity import project as project_continuation
     from . import hyperflow_fresh
+    # Peel only the exact new Core wrapper from an inspection clone first;
+    # existing Relay/EAV owners and prior block delegates remain untouched.
+    from ..h3_fun_union2 import ATTACHMENT_KEY as union_key
+    union = None
+    if model.get_attachment(union_key) is not None:
+        from .. import h3_fun_union2_identity
+        model, union = h3_fun_union2_identity.project(model)
     view, effects = project_stage_effects(model)
     # HyperFlow authenticates its live selected owner and verified sibling.
     if view.get_attachment(hyperflow_fresh.KEY) is not None:
@@ -168,6 +175,8 @@ def _project_selected_effects(model):
         effects = {"effects": effects, "continuation": continuation}
     if veda is not None:
         effects = {"effects": effects, "veda_operator": veda}
+    if union is not None:
+        effects = {"effects": effects, "fun_union2_operator": union}
     return view, effects
 
 

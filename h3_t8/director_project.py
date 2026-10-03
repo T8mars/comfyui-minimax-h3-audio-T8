@@ -351,19 +351,26 @@ def validate_project(value):
                 raise ValueError('取帧来源只能用于图片素材')
     from .director_creation import validate_project_library
     validate_project_library(project, validate_project, new_project)
+    from .director_radar import validate_fields
+    validate_fields(project)
     canonical(
         project
     )  # Reject NaN even in extra fields; unknown fields otherwise preserved.
     return project
 
 
-def referenced_assets(project):
+def referenced_assets(project, *, evidence_context=None):
     result = set(project["doc"]["sharedRefs"])
     for shot in project["doc"]["shots"]:
         result.update(shot["tray"] + shot["refs"])
         result.update(
             shot[key] for key in ("first", "last", "audio", "selected") if shot.get(key)
         )
+        if shot.get('sourceEvidence'):
+            from .director_radar import _packet_media
+            result.update(row['asset_id'] for row in _packet_media(shot['sourceEvidence']['packet']))
+    from .director_radar import dependency_media
+    result.update(dependency_media(evidence_context or project, project['doc']['shots']))
     return result
 
 
@@ -550,11 +557,15 @@ class ProjectStore:
             raise ProjectConflict("提交 revision 与读取版本不一致")
         with _LOCK:
             path = self._path(project["id"])
-            current = self.load(project["id"])["revision"] if path.exists() else 0
+            previous = self.load(project['id']) if path.exists() else None
+            current = previous['revision'] if previous else 0
             if current != expected_revision:
                 raise ProjectConflict(
                     f"另一标签已保存（服务端版本 {current}）；保留本地草稿，另存副本或重新载入"
                 )
+            if previous is not None:
+                from .director_radar import validate_history_progress
+                validate_history_progress(previous, project)
             # Client metadata is never trusted as a filesystem or media authority.
             referenced = referenced_assets(project)
 
@@ -588,10 +599,13 @@ class ProjectStore:
         return project
 
 
-def compile_project(value, store=None, *, shot_id=None):
+def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
     from .director_sampling_settings import effective_sampling
     project = validate_project(value)
     project_sha256 = sha(project)
+    candidate_project = validate_project(candidate_context) if candidate_context is not None else deepcopy(project)
+    if candidate_project['id'] != project['id'] or candidate_project['revision'] != project['revision']:
+        raise ValueError('候选编译上下文必须属于同一工程版本')
     shot_positions = {
         shot["id"]: (index, shot["name"])
         for index, shot in enumerate(project["doc"]["shots"], 1)
@@ -605,7 +619,7 @@ def compile_project(value, store=None, *, shot_id=None):
         project["current"] = shot_id
     assets = {a["id"]: a for a in project["assets"]}
     errors, warnings, shots = [], [], []
-    referenced = referenced_assets(project)
+    referenced = referenced_assets(project, evidence_context=candidate_project)
     for asset_id in assets:
         if store:
             try:
@@ -798,9 +812,15 @@ def compile_project(value, store=None, *, shot_id=None):
                     "end_frame": end,
                 }
             )
-        local = translate(
-            shot["simplePrompt"] if shot["writingMode"] == "simple" else shot["prompt"]
-        )
+        from .director_radar import compiled_local
+        try:
+            candidate_assets = {row['id']: row for row in candidate_project['assets']}
+            candidate_assets.update(assets)
+            candidate_project['assets'] = list(candidate_assets.values())
+            local = translate(compiled_local(candidate_project, shot))
+        except ValueError as error:
+            fail(str(error), 'prompt')
+            local = translate(shot['simplePrompt'] if shot['writingMode'] == 'simple' else shot['prompt'])
         global_text = translate(doc["global"])
         for token in ALIAS.finditer(doc["global"]):
             if alias_to_id.get(token.group(0)) not in shared:

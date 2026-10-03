@@ -226,6 +226,8 @@ def director_project_results(store, project_id, status_lookup=director_job_statu
     project_id = identity(project_id)
     from .director_bundle import imported_results
     records = imported_results(store, project_id, output_root)
+    from .director_external import external_results
+    records.extend(external_results(store, project_id, output_root))
     for path in (store.root / "requests").glob("*.json"):
         try:
             receipt = json.loads(path.read_text(encoding="utf-8"))
@@ -392,6 +394,79 @@ def register_director_routes():
         body = await request.json()
         return web.json_response({"project": validate_project(body["project"])})
 
+    @routes.post(PREFIX + '/radar/operate')
+    @guarded
+    async def radar_operate(request):
+        """Pure draft operation: no save/queue/provider/model or automatic adoption."""
+        from .director_project import sha
+        from .director_radar import apply_operation, candidate_status, evidence_status, evidence_time_map
+        if request.content_length is not None and request.content_length > 2 * 1024**2:
+            raise ValueError('证据/规则请求超过2MiB')
+        body = await request.json()
+        project = validate_project(body['project'])
+        base_sha = sha(project)
+        if 'base_json' in body:
+            import hashlib
+            import json
+            from .director_project import canonical
+            if not isinstance(body['base_json'], str) or canonical(json.loads(body['base_json'])) != canonical(project):
+                raise ProjectConflict('请求原稿 JSON 与当前项目不一致')
+            base_sha = hashlib.sha256(body['base_json'].encode('utf-8')).hexdigest()
+        if body.get('base_sha256') != base_sha:
+            raise ProjectConflict('请求草稿身份已改变，请重新打开证据/规则面板')
+        store = get_store()
+        try:
+            saved = await asyncio.to_thread(store.load, project['id'])
+        except FileNotFoundError:
+            saved = None
+        if saved is not None and saved['revision'] != project['revision']:
+            raise ProjectConflict('服务端项目版本已变化，当前草稿不被覆盖')
+        from .director_project import referenced_assets
+        for aid in referenced_assets(project):
+            actual = await asyncio.to_thread(store.asset, aid, verify=True)
+            client = next((row for row in project['assets'] if row['id'] == aid), {})
+            if actual['sha256'] != client.get('sha256'):
+                raise ValueError('素材真实字节与草稿不一致，请重新登记')
+        # Evidence imported in this operation can reference a registered library
+        # asset that was not previously used by the shot.
+        if body['operation'] == 'evidence_import':
+            from .director_radar import _packet_media, seal_packet, verify_packet_timing, verify_audio_timing
+            from .director_media import source_timing
+            packet = seal_packet(body['value'])
+            for source in _packet_media(packet):
+                actual = await asyncio.to_thread(store.asset, source['asset_id'], verify=True)
+                if actual['sha256'] != source['sha256']:
+                    raise ValueError('证据来源真实 SHA 不符')
+            source = await asyncio.to_thread(store.asset, packet['source']['asset_id'], verify=True)
+            timing = await asyncio.to_thread(source_timing, contained(store.input_root, source['server_path']))
+            verify_packet_timing(packet, timing)
+            if (await asyncio.to_thread(store.asset, source['id'], verify=True))['sha256'] != source['sha256']:
+                raise ValueError('测量期间证据来源发生变化')
+            if packet.get('audio_source'):
+                audio = await asyncio.to_thread(store.asset, packet['audio_source']['asset_id'], verify=True)
+                audio_timing = await asyncio.to_thread(source_timing, contained(store.input_root, audio['server_path']))
+                verify_audio_timing(packet['audio_source'], audio_timing)
+                if (await asyncio.to_thread(store.asset, audio['id'], verify=True))['sha256'] != audio['sha256']:
+                    raise ValueError('测量期间音频证据来源发生变化')
+        result = apply_operation(project, body['shot_id'], body['operation'], body['value'])
+        shot = next(row for row in result['doc']['shots'] if row['id'] == body['shot_id'])
+        return web.json_response({'project': result, 'evidence_status': evidence_status(result, shot),
+                                  'candidate_status': candidate_status(result, shot), 'queued': False, 'saved': False,
+                                  'time_map': evidence_time_map(shot['sourceEvidence']['packet']) if shot.get('sourceEvidence') else None})
+
+    @routes.get(PREFIX + '/radar/assets/{asset_id}/timing')
+    @guarded
+    async def radar_source_timing(request):
+        from .director_media import source_timing
+        store = get_store()
+        asset = await asyncio.to_thread(store.asset, request.match_info['asset_id'], verify=True)
+        if asset['kind'] != 'video':
+            raise ValueError('源证据需要真实视频素材')
+        timing = await asyncio.to_thread(source_timing, contained(store.input_root, asset['server_path']))
+        if (await asyncio.to_thread(store.asset, asset['id'], verify=True))['sha256'] != asset['sha256']:
+            raise ValueError('测量期间源视频改变')
+        return web.json_response({'asset_id': asset['id'], 'sha256': asset['sha256'], **timing})
+
     @routes.post(PREFIX + "/export")
     @guarded
     async def export(request):
@@ -477,6 +552,7 @@ def register_director_routes():
                 ))
             resources = await asyncio.to_thread(
                 capture_resources, store, selected_project(project, shots), prepared, _resolve_director_resource,
+                evidence_context=project,
             )
             batch = create_batch(store, batch_id, project, seed, prepared, resources,
                                  shot_ids=body.get("shot_ids"), seed_map=body.get("seed_map"))
@@ -641,7 +717,8 @@ def register_director_routes():
         store, output = get_store(), folder_paths.get_output_directory()
         records = await asyncio.to_thread(director_project_results, store, project['id'],
                                          shot_ids=[shot['id'] for shot in project['doc']['shots']], output_root=output)
-        result = await asyncio.to_thread(prepare_bundle, store, project, records['results'], output, body.get('include_results', True))
+        result = await asyncio.to_thread(prepare_bundle, store, project, records['results'], output,
+                                         body.get('include_results', True), include_radar=body.get('include_radar', False))
         return web.json_response(result)
 
     @routes.post(PREFIX + '/bundles/{project_id}/{bundle_id}/build')
@@ -790,6 +867,28 @@ def register_director_routes():
                                          request.match_info['request_id'], body['new_project_id'])
         return web.json_response(result)
 
+    @routes.post(PREFIX + "/external-takes")
+    @guarded
+    async def register_external(request):
+        from .director_external import register_external_take, registration_absent
+        import folder_paths
+        if request.content_length is not None and request.content_length > 2 * 1024**2:
+            raise ValueError('外片登记请求超过2MiB')
+        body = await request.json()
+        if not isinstance(body, dict) or set(body) != {'project', 'shot_id', 'asset_id', 'take_id', 'label', 'provenance_category'}:
+            raise ValueError('外片登记字段不完整，不接受模型/seed等虚构生成配置')
+        project = validate_project(body['project'])
+        store, output_root = get_store(), folder_paths.get_output_directory()
+        value = {key: body[key] for key in ('shot_id', 'asset_id', 'take_id', 'label', 'provenance_category')}
+        value.update(project_id=project['id'], expected_revision=project['revision'], project_sha256=sha(project))
+        try:
+            result = await asyncio.to_thread(register_external_take, store, value, output_root)
+        except (ValueError, OSError) as error:
+            absent = await asyncio.to_thread(registration_absent, store, project['id'], value['take_id'], output_root)
+            return web.json_response({'error': str(error), 'registration_state': 'not_registered' if absent else 'unknown_or_registered'},
+                                     status=409 if isinstance(error, ProjectConflict) else 400)
+        return web.json_response(result)
+
     @routes.post(PREFIX + "/jobs/{prompt_id}/cancel")
     @guarded
     async def cancel(request):
@@ -885,6 +984,14 @@ def register_director_routes():
     async def sampling_ui(_request):
         return web.FileResponse(
             Path(__file__).resolve().parents[1] / "web" / "director" / "sampling_ui.mjs"
+        )
+
+    @routes.get(PREFIX + "/radar_state.mjs")
+    async def radar_state(_request):
+        # session.mjs is also served at PREFIX, so its static relative import
+        # must resolve here as well as under Core's /extensions directory.
+        return web.FileResponse(
+            Path(__file__).resolve().parents[1] / "web" / "director" / "radar_state.mjs"
         )
 
     @routes.get(PREFIX + "/default")

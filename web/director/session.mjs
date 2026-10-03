@@ -1,4 +1,5 @@
 // Persistent D1 services; UI drafts are separate from saved server revisions.
+import { radarCandidateInputState } from './radar_state.mjs';
 export function directorUUID() {
     if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
     // getRandomValues is available on ordinary LAN HTTP, unlike randomUUID.
@@ -32,6 +33,7 @@ export function directorOutputVideos(data) {
     return result;
 }
 export function directorResultKey(record) {
+    if (record?.external_take_id) return 'external:' + record.external_take_id;
     if (record?.prompt_id) return record.prompt_id;
     const media = directorOutputVideos(record)[0];
     return media ? 'legacy:' + JSON.stringify([record.shot_id, media.type || 'output', (media.subfolder || '').replaceAll('\\', '/'), media.filename]) : null;
@@ -94,6 +96,8 @@ export function directorShotInputKey(doc, shot, assets = []) {
         d3:shot.d3Inherit===false?shot.d3:doc.d3 || shot.d3,
         assets:ids.map(id=>{const a=media.get(id)||{};return {id,sha256:a.sha256,kind:a.kind,width:a.width,height:a.height,duration:a.duration,has_audio:a.has_audio};}),
     };
+    const candidate = radarCandidateInputState(doc, shot, assets);
+    if (candidate !== undefined) value.radarCandidate = candidate;
     const sorted=v=>Array.isArray(v)?v.map(sorted):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(key=>[key,sorted(v[key])])):v;
     return JSON.stringify(sorted(value));
 }
@@ -132,6 +136,7 @@ export function makeDirectorServices(ctx) {
     let resultRequest = 0, compileRequest = 0, d3Request = 0, projectLoadRequest = 0, editEpoch = 0;
     let reconnectTarget = null, lastJobDialog = null;
     let activeBatch = null, pauseBatch = false, versionRequest = 0, tasksRequest = 0, versionCopy = null;
+    let externalTakeDialog = null;
     const completedResults = new Map();
     const contextToken = () => `${projectId}:${projectEpoch}`;
     let latest = null, latestSnapshot = null, importFile = null, activeJobId = null, activeUpload = null, stopWatchingJob = null;
@@ -140,7 +145,7 @@ export function makeDirectorServices(ctx) {
     const pendingRequests = new Map();
     let pendingRequestReview = null;
     let pendingProjectSwitch = null;
-    $("[data-dialog]").addEventListener('close',()=>{if(!$("[data-dialog]").open)pendingProjectSwitch=null;});
+    $("[data-dialog]").addEventListener('close',()=>{if(!$("[data-dialog]").open){pendingProjectSwitch=null;externalTakeDialog=null;}});
     // sessionStorage is copied by window.open. Hold an exclusive same-origin
     // lock for this document so a second live document cannot share its draft.
     async function claimScope(recoverCurrent = false) {
@@ -607,9 +612,9 @@ export function makeDirectorServices(ctx) {
         } finally { busy = false; }
     }
     async function loadModels() { return request("models"); }
-    async function prepareBundle(includeResults=true) {
+    async function prepareBundle(includeResults=true,includeRadar=false) {
         const project=envelope(),context=contextToken(),snapshot=JSON.stringify(project);
-        const result=await request('bundles/prepare',{project,include_results:includeResults});
+        const result=await request('bundles/prepare',{project,include_results:includeResults,include_radar:includeRadar});
         if(context!==contextToken()||snapshot!==JSON.stringify(envelope()))return null;
         return result;
     }
@@ -698,6 +703,10 @@ export function makeDirectorServices(ctx) {
     async function showVersion(record) {
         const sequence = ++versionRequest;
         versionCopy=null;
+        if (record?.origin === 'external') {
+            showDialog('外部成片版本', `<p>外部导入 · 不可精确重采样。来源类别只是人工标签，不证明模型、seed或采样祖先；仍可播放、采用、编辑范围与取帧。</p><pre>${esc(JSON.stringify({take_id:record.external_take_id,media_sha256:record.media_sha256,provenance_category:record.provenance_category,media:record.media,source_timing:record.source_timing,decoded_clock:record.decoded_clock},null,2))}</pre>`);
+            return;
+        }
         if (!record?.snapshot_available || !record.request_id) {
             showDialog("版本详情", "<p>此版本未保存完整配置快照，不能精确还原。成片仍可播放、下载与采用。</p>");
             return;
@@ -710,6 +719,39 @@ export function makeDirectorServices(ctx) {
             ? `<p>生成时保存的只读配置，不是当前草稿。种子：${esc(result.snapshot.seed)}；配方：${esc(result.snapshot.recipe)}。</p><button data-service="copy-version">复制此版设置为新草稿</button><p>新建独立工程，不覆盖当前页；只还原此镜实际种子，其它镜头保留当时草稿。模型文件或环境变化可能使结果不同。</p><details><summary>完整项目、素材身份与实际编译图</summary><pre>${esc(JSON.stringify(result.snapshot, null, 2))}</pre></details>`
             : `<p>${esc(result.reason)}</p>`);
         if(result.complete)versionCopy={owner:projectId,request:record.request_id,target:id(),context,sequence};
+    }
+    async function showExternalTake(assetId) {
+        if ($('[data-dialog]').open || otherModalOpen()) { notify('请先关闭当前编辑窗口。'); return; }
+        const project=envelope(),shotId=ctx.current(),asset=project.assets.find(row=>row.id===assetId);
+        if(!asset||asset.kind!=='video'||asset.missing)throw Error('请选中已上传且可用的视频素材');
+        const key=`t8director.external:${projectId}:${shotId}:${assetId}`;
+        let pending=pendingRequests.get(key);
+        if(!pending){try{pending=JSON.parse(storageRead('sessionStorage',key)||'null');}catch{throw Error('原外片登记缓存损坏，请先在版本列表核对，不会自动另起请求');}}
+        if(pending&&(pending.input?.project?.id!==projectId||pending.input?.shot_id!==shotId||pending.input?.asset_id!==assetId||typeof pending.input?.take_id!=='string'))throw Error('原外片登记身份不一致，请先核对版本列表');
+        externalTakeDialog={context:contextToken(),snapshot:JSON.stringify(project),project,shotId,assetId,key,pending};
+        showDialog('登记外部成片版本', `<p>仅将「${esc(asset.name)}」的完整原片登记到当前镜头版本列表。先保存项目；不会生成、采用、裁改原片或虚构模型/seed，来源类别只是人工标签。</p>${pending?'<p>上次响应未确认：以下保留原请求，点击重试；当前新编辑不会覆盖原请求。</p>':''}<label>版本名称<input data-external-label maxlength="200" required value="${esc(pending?.input?.label||asset.name.slice(0,200))}" ${pending?'disabled':''}></label><label>来源类别<select data-external-category ${pending?'disabled':''}>${[['external','外部原片'],['local_mux','本地音画合成'],['upscaled','后期放大'],['repaired','后期修复']].map(([value,label])=>`<option value="${value}" ${(pending?.input?.provenance_category||'external')===value?'selected':''}>${label}</option>`).join('')}</select></label><p>实测完整视频/音轨/PTS。变帧率、含多个音轨或缺少时钟时会拒绝，不静默转换；登记后仍须手动采用。非24fps或非零起点的导出另需明确处理。</p><button data-service="register-external-take">${pending?'重试原登记请求':'确认登记为外片版本'}</button>`);
+        externalTakeDialog.labelElement=$('[data-external-label]');
+        externalTakeDialog.categoryElement=$('[data-external-category]');
+    }
+    async function registerExternalTake() {
+        const ticket=externalTakeDialog;
+        if(!ticket||ticket.context!==contextToken()||ticket.shotId!==ctx.current()||!$('[data-dialog]').open||ticket.labelElement!==$('[data-external-label]')||ticket.categoryElement!==$('[data-external-category]'))throw Error('登记窗口已过时，请重新打开');
+        if(!ticket.pending&&ticket.snapshot!==JSON.stringify(envelope()))throw Error('草稿已改变，保留当前编辑，请关闭后重新登记');
+        const label=$('[data-external-label]');if(!label.reportValidity())return;
+        let pending=ticket.pending;
+        if(!pending){pending={input:{project:structuredClone(ticket.project),shot_id:ticket.shotId,asset_id:ticket.assetId,take_id:id(),label:label.value,provenance_category:$('[data-external-category]').value}};ticket.pending=pending;}
+        pendingRequests.set(ticket.key,pending);
+        if(!storageWrite('sessionStorage',ticket.key,JSON.stringify(pending)))throw Error('浏览器无法保存原登记请求，未提交。请恢复本标签存储后重试，当前工程和原片保持不变。');
+        let result;
+        try{result=await request('external-takes',pending.input);}
+        catch(error){if(error.data?.registration_state==='not_registered'){pendingRequests.delete(ticket.key);storageRemove('sessionStorage',ticket.key);ticket.pending=null;}throw error;}
+        const record=result.record;
+        if(record?.external_take_id!==pending.input.take_id||record?.shot_id!==ticket.shotId||record?.origin!=='external'||record?.can_resample!==false||record?.snapshot_available!==false)throw Error('登记响应身份不完整，保留原请求，请先核对版本列表');
+        pendingRequests.delete(ticket.key);storageRemove('sessionStorage',ticket.key);
+        if(ticket!==externalTakeDialog||ticket.context!==contextToken()||ticket.shotId!==ctx.current()||ticket.labelElement!==$('[data-external-label]')){notify('先前项目的外片已登记；当前工程、镜头与编辑窗口保持不变。');return;}
+        $('[data-dialog]').close();externalTakeDialog=null;
+        try{await loadResults(projectId,false);notify('外片版本已真实登记；未采用、未改动草稿、没有提交生成。可切到输出预览并手动采用。');}
+        catch(error){notify('外片已登记，但版本列表暂未刷新：'+error.message+'；请重新打开当前项目核对，不用重复登记。');}
     }
     async function copyVersion(button) {
         const copy=versionCopy,dialog=$('[data-dialog]');
@@ -1041,6 +1083,7 @@ export function makeDirectorServices(ctx) {
             else if (action === "new-variation") await generate(true);
             else if (action === "task-list") await showTasks();
             else if (action === "copy-version") await copyVersion(b);
+            else if (action === "register-external-take") { b.disabled=true; try { await registerExternalTake(); } finally { b.disabled=false; } }
             else if (action === "locate-task") {
                 if(!ctx.doc().shots.some(shot=>shot.id===b.dataset.taskShot)){notify('该镜头不在当前草稿，冻结任务仍保留。');return;}
                 $('[data-dialog]').close();ctx.locateIssue?.({shot_id:b.dataset.taskShot,field:'prompt'});
@@ -1226,5 +1269,5 @@ export function makeDirectorServices(ctx) {
         catch (error) { notify("节点快照未载入，原JSON保留：" + error.message); }
     });
     const checkedCanvas = () => latest && latestSnapshot === JSON.stringify(envelope()) ? latest.shots?.find(shot=>shot.id===ctx.current())?.canvas : null;
-    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, contextToken, checkedCanvas, cancelUpload: () => activeUpload?.abort() };
+    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, contextToken, checkedCanvas, cancelUpload: () => activeUpload?.abort() };
 }

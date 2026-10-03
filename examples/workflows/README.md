@@ -6,6 +6,12 @@
 
 | 目录 | 主要用途 |
 |---|---|
+| [65-radar-visible-face-mask](65-radar-visible-face-mask/README.md) | 16张可见区域MASK模板；建议先用通过定向复审的逐帧MASK／显式0.05轻修配对图，不推荐旧失败静态遮罩配方 |
+| [66-radar-no-face-lazy](66-radar-no-face-lazy/README.md) | 6张完整检测、显式SHA确认与真正lazy无脸旁路模板；不自动判无脸或接受结果 |
+| [67-radar-external-continuation](67-radar-external-continuation/README.md) | 4张外片续拍Full／Cold图，EAV与Prompt Relay独立外置 |
+| [68-radar-hyperflow-curves](68-radar-hyperflow-curves/README.md) | 3张独立Curve HEAD／TAIL、冷TAIL与零采样交付图；须匹配底模／教师／adapter／fit，dynamic模式未认证 |
+| [69-radar-native-recipes](69-radar-native-recipes/README.md) | 4张Union2原生40步与A/B交替独唱完整／恢复图；不推荐失败的Turbo4+4 |
+| [70-radar-model-compatibility](70-radar-model-compatibility/README.md) | 6张LMS、Orbit、Wallpaper R32单变量对照图，使用现有加载器，须自行选素材和模型 |
 | [58-hypervae-2x](58-hypervae-2x/README.md) | HyperVAE 2× 视频 VAE：5秒画布实跑、一次采样同潜空间原生／2×解码双路对照（EXP）；旧图不变 |
 | [36-avatar-voice](36-avatar-voice/README.md) | 正式Avatar录音驱动、原生音色／狂怒、标准4+4、独立20+4、两段8秒及EAV对照；可选TAEH3预览 |
 | [37-meridian](37-meridian/README.md) | 独立ConvRot INT8四节点、授权Omega几何、空间／源时间编辑器，图片横移、视频冻结及源相机 |

@@ -14,9 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_all_29_research_routes_are_retained_with_eight_independent_dimensions():
     research = json.loads((ROOT / "artifacts/research/two-pass-modular-audit-20260922/INVENTORY.json").read_text(encoding="utf-8"))
-    assert [route.id for route in catalogue.validate_catalogue()] == [row["id"] for row in research["coverage_routes"]]
+    assert [route.id for route in catalogue.validate_catalogue()][:29] == [row["id"] for row in research["coverage_routes"]]
+    assert [route.id for route in catalogue.ROUTES][29:] == ["S30"]
     report = audit(ROOT, catalogue=catalogue)
-    assert report["status"] == "pass" and report["route_count"] == 29
+    assert report["status"] == "pass" and report["route_count"] == 30
     # The catalogue is append-only while routes gain public stages; an exact
     # global count would make the next valid route extension look like damage.
     assert report["source_binding_count"] >= 330
@@ -161,14 +162,14 @@ def test_scope_and_contract_damage_fail_instead_of_being_silently_omitted(change
 
 def test_future_routes_are_append_only_without_rewriting_original_scope():
     next_route = catalogue.Route(
-        id="S30", phase="M5", name="Future split route", stages=("low", "high"),
+        id="S31", phase="M5", name="Future split route", stages=("low", "high"),
         handoff="typed frozen handoff", variants=("default",),
         sources=(catalogue.Source("h3_t8/modular_sampling/future.py", "sample_high"),),
         public_nodes=("FutureLowStage", "FutureHighStage"),
     )
     assert catalogue.validate_catalogue((*catalogue.ROUTES, next_route))[-1] == next_route
     with pytest.raises(ValueError):
-        catalogue.validate_catalogue((*catalogue.ROUTES, replace(next_route, id="S31")))
+        catalogue.validate_catalogue((*catalogue.ROUTES, replace(next_route, id="S32")))
     with pytest.raises(ValueError):
         catalogue.validate_catalogue((*catalogue.ROUTES[:-1], next_route))
 
@@ -183,7 +184,7 @@ def test_deleted_or_renamed_actual_entry_is_an_explicit_issue_not_an_old_line_nu
 
 def test_missing_live_public_node_fails_resolution_without_downgrading_scope():
     report = audit(ROOT, catalogue=catalogue, live_ids=set())
-    assert report["status"] == "fail" and report["route_count"] == 29
+    assert report["status"] == "fail" and report["route_count"] == 30
     assert any(item.get("node") == "MiniMaxH3FastH3V2StageSetupEXPT8" for item in report["issues"])
 
 

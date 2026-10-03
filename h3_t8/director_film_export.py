@@ -28,6 +28,9 @@ def reserve_export(store, project_id, film_id, job_id, options):
         raise ValueError('导出宽高必须是 32–4096 内的偶数')
     if any(abs(entry['media']['fps']-24) > 0.00001 for entry in manifest['entries']):
         raise ValueError('当前导出只接受24fps成片，不会偷偷改变其它帧率')
+    if any(entry.get('origin') == 'external' and entry.get('decoded_clock', {}).get('zero_origin_film_compatible') is not True
+           for entry in manifest['entries']):
+        raise ValueError('外片有非零视频/音频起点；请显式转换并登记新take，不会静默改写PTS或声音偏移')
     silent = options.get('allow_silent') is True
     if not silent and any(not entry['media']['has_audio'] for entry in manifest['entries']):
         raise ValueError('有镜头没有音轨；请明确允许为无音轨镜头补静音')

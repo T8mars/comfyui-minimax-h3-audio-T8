@@ -347,6 +347,7 @@ services=makeDirectorServices({
  refreshSummary:()=>workbench?.syncSummary(),resetHistory:()=>{history=[];future=[];},render:()=>render()
 });
 workbench=createDirectorWorkbench({root,doc:()=>doc,shot:sh,assets:()=>assets,results:()=>outputRecords,videos:directorOutputVideos,esc,effectiveD3,importFiles,view:()=>view,
+ radar:{context:()=>services.contextToken(),snapshot:()=>services.envelope(),apply:project=>{checkpoint();doc=project.doc;current=project.current;lastTextTarget=null;persist();render();}},
  referenceContext,referenceChoices,insertReference:(id,query)=>insertAsset(id,query),
  creation:{
   context:()=>services.contextToken(),snapshot:()=>JSON.stringify(services.envelope()),items:()=>doc.creationLibrary?.items||[],target:()=>({...resolveInsertTarget()}),targetLabel,
@@ -370,7 +371,7 @@ workbench=createDirectorWorkbench({root,doc:()=>doc,shot:sh,assets:()=>assets,re
   checkpoint();doc.shots.push(...shots);current=shots[0].id;lastTextTarget=null;view='input';syncRatios();persist();render();notify('已追加 '+shots.length+' 个镜头，可一次撤销；没有提交生成，请核对素材与全片设置。');
  },
  taskContext:()=>services.contextToken(),loadTasks:signal=>services.taskSnapshot(signal),locateTask:id=>{if(!doc.shots.some(s=>s.id===id)){notify('该镜头不在当前草稿，冻结任务仍保留。');return;}current=id;render();persist();workbench.focusIssue('prompt');},
- prepareBundle:include=>services.prepareBundle(include),buildBundle:plan=>services.buildBundle(plan),uploadBundle:(file,signal)=>services.uploadBundle(file,signal),applyBundle:plan=>services.applyBundle(plan),lastBundleImport:()=>services.lastBundleImport(),
+ prepareBundle:(include,radar)=>services.prepareBundle(include,radar),buildBundle:plan=>services.buildBundle(plan),uploadBundle:(file,signal)=>services.uploadBundle(file,signal),applyBundle:plan=>services.applyBundle(plan),lastBundleImport:()=>services.lastBundleImport(),
  trim:{context:()=>services.contextToken(),snapshot:()=>JSON.stringify(services.envelope()),shot:sh,notify,prepare:key=>services.prepareFrame(key),
 apply:(id,key,range)=>{const s=doc.shots.find(row=>row.id===id);if(!s||s!==sh()||s.adoptedResultId!==key)throw Error('采用版本已变化，请重新准备');checkpoint();if(range)s.filmTrim={...range};else delete s.filmTrim;persist();summary();renderStage();notify(range?'已保存采用范围，可撤销；原片和生成时长未变。请保存项目。':'已恢复采用完整原片，可撤销。请保存项目。');}},
  frame:{context:()=>services.contextToken(),snapshot:()=>JSON.stringify(services.envelope()),current:()=>current,escape:esc,notify,
@@ -392,7 +393,7 @@ apply:(id,key,range)=>{const s=doc.shots.find(row=>row.id===id);if(!s||s!==sh()|
  versions:()=>resultVersions.filter(item=>item.shot_id===current),resultKey:directorResultKey,
  previewVersion:key=>{previewVersions.set(current,key);rebuildOutputRecords();view='output';renderStage();},
  adoptVersion:key=>{const item=resultVersions.find(item=>item.shot_id===current&&directorResultKey(item)===key);if(item?.state!=='success'||!directorOutputVideos(item).length){notify('只能采用有成片的成功版本。');return;}checkpoint();const changed=sh().adoptedResultId!==key;if(changed)delete sh().filmTrim;sh().adoptedResultId=key;previewVersions.delete(current);rebuildOutputRecords();persist();summary();renderStage();notify('已采用此版，采用范围已恢复全片；后续生成不会自动替换。请保存项目。');},
- showVersion:item=>services.showVersion(item).catch(error=>notify(error.message))});
+ showVersion:item=>services.showVersion(item).catch(error=>notify(error.message)),showExternalTake:aid=>services.showExternalTake(aid).catch(error=>notify(error.message))});
 const workbenchInspector=renderInspector;renderInspector=function(){workbenchInspector();workbench.syncInspector();};
 const workbenchThumbs=renderThumbs;renderThumbs=function(){workbenchThumbs();workbench.syncAssets();};
 const workbenchShots=renderShots;renderShots=function(){workbenchShots();workbench.syncShots();};

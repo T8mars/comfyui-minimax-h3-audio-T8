@@ -6,6 +6,8 @@ failure is intentionally not retried or converted into a successful result.
 from __future__ import annotations
 
 import json
+import hashlib
+from fractions import Fraction
 import math
 from pathlib import Path
 import sys
@@ -134,6 +136,31 @@ def metadata(path):
     return asset
 
 
+def source_timing(path):
+    """Header PTS/timebases only; not a decoded-frame or factual-quality proof."""
+    import av
+
+    rows = []
+    with av.open(str(path)) as container:
+        for stream in container.streams:
+            if stream.type not in ('video', 'audio'):
+                continue
+            if len(rows) >= 64 or not stream.time_base or stream.time_base <= 0:
+                raise ValueError('源媒体轨道过量或缺少有效 timebase')
+            start = stream.start_time
+            duration = stream.duration
+            rows.append({'index': stream.index, 'kind': stream.type,
+                         'timebase': {'num': stream.time_base.numerator, 'den': stream.time_base.denominator},
+                         'start_pts': start, 'duration_pts': duration,
+                         'end_pts': start + duration if start is not None and duration is not None else None,
+                         'frames': stream.frames, 'width': stream.width if stream.type == 'video' else 0,
+                         'height': stream.height if stream.type == 'video' else 0,
+                         'sample_rate': stream.rate if stream.type == 'audio' else None})
+    if not rows:
+        raise ValueError('没有可用的源视频/音频轨道')
+    return {'streams': rows, 'fully_decoded': False}
+
+
 def validate(path, kind):
     """Original bundle validation: decode every audio/video stream, not only first."""
     import av
@@ -182,8 +209,175 @@ def frame(path, frame_number, output_png):
         image.close()
 
 
+def external(path):
+    import av
+
+    def rational(value):
+        value = Fraction(value)
+        if abs(value.numerator) > 2**53 - 1 or value.denominator > 2**53 - 1:
+            raise ValueError('实测时间坐标超出页面可精确表示的整数范围')
+        return {'num': value.numerator, 'den': value.denominator}
+
+    headers = source_timing(path)
+    videos = [row for row in headers['streams'] if row['kind'] == 'video']
+    audios = [row for row in headers['streams'] if row['kind'] == 'audio']
+    if len(videos) != 1 or len(audios) > 1:
+        raise ValueError('外部take须唯一视频、最多一音轨；请先明确选择轨道并另存，不自动猜轨')
+    # Old inspect math/defaults remain untouched. It fully decodes AV; this
+    # extra operation verifies every decoded timestamp rather than using only
+    # first/last duration as a variable-frame-rate certificate.
+    media = inspect(path)
+    with av.open(str(path)) as container:
+        stream = container.streams.video[0]
+        stream.codec_context.thread_count = 1
+        rate = Fraction(stream.average_rate)
+        if not 1 <= float(rate) <= 240 or not math.isfinite(float(rate)):
+            raise ValueError('外部take实测帧率无效')
+        if stream.sample_aspect_ratio and Fraction(stream.sample_aspect_ratio) != 1:
+            raise ValueError('外部take非方形像素，需显式另存转换版，原片保留')
+        if float(stream.metadata.get('rotate', 0)) % 360:
+            raise ValueError('外部take有旋转元数据，需显式另存转换版，原片保留')
+        first = last = tolerance = None
+        count, pts_digest = 0, hashlib.sha256()
+        for decoded in container.decode(stream):
+            if (decoded.pts is None or not decoded.time_base or decoded.time_base <= 0
+                    or getattr(decoded, 'rotation', 0) % 360):
+                raise ValueError('外部take缺少实测逐帧PTS或带旋转矩阵，不能猜坐标')
+            current = decoded.pts * Fraction(decoded.time_base)
+            if first is None:
+                first = current
+                tolerance = Fraction(decoded.time_base) / 2
+            if (last is not None and current <= last
+                    or abs(current - first - count / rate) > tolerance):
+                raise ValueError('逐帧PTS不是实测CFR网格；请显式转换新素材，不静默补帧')
+            if (decoded.width, decoded.height) != (media['width'], media['height']):
+                raise ValueError('外部take中途改变画幅')
+            # A bounded digest, not an unbounded million-frame JSON list.
+            pts_digest.update(f'{current.numerator}/{current.denominator}\n'.encode('ascii'))
+            last, count = current, count + 1
+            if count > 5_000_000:
+                raise ValueError('外部take超过五百万帧，请拆分登记')
+        if count != media['frames'] or first is None:
+            raise ValueError('两次完整解码的帧数不一致，未记录成功')
+        video_clock = {'stream_index': stream.index, 'frames': count,
+                       'fps': rational(rate), 'first_time': rational(first),
+                       'last_time': rational(last), 'end_time': rational(last + 1 / rate),
+                       'grid_tolerance_seconds': rational(tolerance),
+                       'frame_pts_sha256': pts_digest.hexdigest()}
+    audio_clock = None
+    if audios:
+        with av.open(str(path)) as container:
+            stream = container.streams.audio[0]
+            stream.codec_context.thread_count = 1
+            first = end = None
+            samples, pts_digest = 0, hashlib.sha256()
+            for decoded in container.decode(stream):
+                if (decoded.pts is None or not decoded.time_base or decoded.time_base <= 0
+                        or decoded.sample_rate != media['audio_rate']
+                        or len(decoded.layout.channels) != media['audio_channels']):
+                    raise ValueError('外部take音频缺PTS或中途改变采样格式')
+                current = decoded.pts * Fraction(decoded.time_base)
+                if end is not None and abs(current - end) > Fraction(1, decoded.sample_rate):
+                    raise ValueError('音频PTS不连续，需显式另存处理，不自动补静音或对齐')
+                if first is None:
+                    first = current
+                end = current + Fraction(decoded.samples, decoded.sample_rate)
+                samples += decoded.samples
+                pts_digest.update(f'{current.numerator}/{current.denominator}:{decoded.samples}\n'.encode('ascii'))
+            if samples != media['audio_samples'] or first is None:
+                raise ValueError('两次完整解码的音频样本数不一致')
+            audio_clock = {'stream_index': stream.index, 'samples': samples,
+                           'sample_rate': media['audio_rate'], 'channels': media['audio_channels'],
+                           'first_time': rational(first), 'end_time': rational(end),
+                           'audio_pts_sha256': pts_digest.hexdigest()}
+    return {'media': media, 'source_timing': headers,
+            'decoded_clock': {'fully_decoded': True, 'video': video_clock, 'audio': audio_clock,
+                'normalization_performed': False,
+                'zero_origin_film_compatible': video_clock['first_time']['num'] == 0
+                    and (audio_clock is None or audio_clock['first_time']['num'] == 0)}}
+
+
+def external_tail(path, start, end, include_audio, output):
+    """One bounded integer RGB/PCM window from the completely verified movie."""
+    import av
+    import numpy as np
+
+    def digest(file):
+        value = hashlib.sha256()
+        with file.open('rb') as handle:
+            for chunk in iter(lambda: handle.read(1024**2), b''):
+                value.update(chunk)
+        return value.hexdigest()
+
+    original_sha = digest(path)
+    evidence = external(path)
+    media, clock = evidence['media'], evidence['decoded_clock']
+    count = end - start
+    if (clock['video']['fps'] != {'num': 24, 'den': 1} or not clock['zero_origin_film_compatible']
+            or not 0 <= start < end <= media['frames'] or count not in (5, 22, 39)):
+        raise ValueError('续拍尾部须为零起点24fps CFR的精确5/22/39帧窗口')
+    if count * media['width'] * media['height'] * 3 > 512 * 1024**2:
+        raise ValueError('续拍RGB尾部超过512MiB，请显式处理新素材，未自动缩放')
+    pixels = []
+    with av.open(str(path)) as container:
+        container.streams.video[0].codec_context.thread_count = 1
+        for index, decoded in enumerate(container.decode(video=0)):
+            if start <= index < end:
+                pixels.append(decoded.to_ndarray(format='rgb24'))
+            if index + 1 == end:
+                break
+    if len(pixels) != count:
+        raise ValueError('未解出完整续拍RGB尾部')
+    frames = np.stack(pixels)
+    audio = np.empty((0, 0), dtype=np.float32)
+    interval = None
+    if include_audio:
+        audio_clock = clock['audio']
+        if not audio_clock or audio_clock['channels'] != 2:
+            raise ValueError('续拍音频须实际双声道，未自动复制或混音')
+        rate = audio_clock['sample_rate']
+        if start * rate % 24 or end * rate % 24:
+            raise ValueError('音频窗不是整数原始样本边界，不舍入')
+        first, last = start * rate // 24, end * rate // 24
+        if last > audio_clock['samples'] or (last-first)*2*4 > 64*1024**2:
+            raise ValueError('音频尾部不完整或超过64MiB')
+        chunks, offset = [], 0
+        with av.open(str(path)) as container:
+            stream = container.streams.audio[0]
+            stream.codec_context.thread_count = 1
+            converter = av.AudioResampler(format='fltp', layout=stream.layout, rate=rate)
+            for decoded in container.decode(stream):
+                for converted in converter.resample(decoded):
+                    samples = converted.to_ndarray()
+                    if samples.dtype != np.float32 or samples.shape != (2, converted.samples):
+                        raise ValueError('音频PCM解码布局异常')
+                    left, right = max(first-offset, 0), min(last-offset, converted.samples)
+                    if left < right:
+                        chunks.append(samples[:, left:right].copy())
+                    offset += converted.samples
+                if offset >= last:
+                    break
+        audio = np.concatenate(chunks, axis=1) if chunks else audio
+        if audio.shape != (2, last-first) or not np.isfinite(audio).all():
+            raise ValueError('实际PCM尾部样本数或有限值无效')
+        interval = [first, last]
+    if digest(path) != original_sha:
+        raise ValueError('外片在尾部解码时改变，未交付')
+    # Server-created new output only; no object/pickle data and no overwrite.
+    with output.open('xb') as handle:
+        np.savez(handle, frames=frames, audio=audio)
+    return {'evidence': evidence, 'media_sha256': original_sha,
+            'frame_interval': [start, end], 'sample_interval': interval,
+            'frames_shape': list(frames.shape), 'audio_shape': list(audio.shape),
+            'output_sha256': digest(output),
+            'audio_format': 'float32_planar_no_rate_or_channel_change' if include_audio else None}
+
+
 _KEYS = {
     'inspect': {'op', 'path'}, 'batch': {'op', 'path'}, 'metadata': {'op', 'path'},
+    'source_timing': {'op', 'path'},
+    'external': {'op', 'path'},
+    'external_tail': {'op', 'path', 'start_frame', 'end_frame', 'include_audio', 'output_npz'},
     'validate': {'op', 'path', 'kind'},
     'frame': {'op', 'path', 'frame_number', 'output_png'},
 }
@@ -196,6 +390,16 @@ def dispatch(request):
     if not isinstance(op, str) or op not in _KEYS or set(request) != _KEYS[op]:
         raise ValueError('媒体请求操作或字段无效')
     path = _input_path(request['path'])
+    if op == 'external_tail':
+        start, end, include = (request[key] for key in ('start_frame', 'end_frame', 'include_audio'))
+        if (type(start) is not int or type(end) is not int or not 0 <= start < end <= 5_000_000
+                or end-start not in (5, 22, 39) or type(include) is not bool):
+            raise ValueError('外片尾部请求须精确整数帧窗口和显式音频政策')
+        output = Path(request['output_npz'])
+        if (not output.is_absolute() or output.suffix.lower() != '.npz' or not output.parent.is_dir()
+                or output.exists() or output.is_symlink()):
+            raise ValueError('尾部输出须已存在目录内的新绝对NPZ路径')
+        return external_tail(path, start, end, include, output.parent.resolve(strict=True)/output.name)
     if op == 'validate':
         if request['kind'] not in ('audio', 'video'):
             raise ValueError('素材种类无效')
@@ -205,7 +409,7 @@ def dispatch(request):
         if type(number) is not int or number < 0 or number > 2**53-1:
             raise ValueError('请选择有效非负整数帧号')
         return frame(path, number, _output_path(request['output_png']))
-    return {'inspect': inspect, 'batch': batch, 'metadata': metadata}[op](path)
+    return {'inspect': inspect, 'batch': batch, 'metadata': metadata, 'source_timing': source_timing, 'external': external}[op](path)
 
 
 def main():

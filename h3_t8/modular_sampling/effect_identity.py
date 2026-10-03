@@ -59,7 +59,7 @@ def _project_plain_relay(model, selector, binding, query_rows):
     MODEL and no actual callback, weight or selected sampling object is changed.
     Sparse Relay and third-party Relay backends need their own adapters.
     """
-    from . import hyperflow_effects, hyperflow_fresh, speed_effects
+    from . import hyperflow_effects, hyperflow_fresh, speed_effects, hyperflow_curve_effects
     native = native_dual.capture_owner(model) if model.get_attachment(native_dual.KEY) is not None else None
     if native is None and model.get_attachment(speed_effects.KEY) is not None:
         native = speed_effects.capture_owner(model)
@@ -67,6 +67,8 @@ def _project_plain_relay(model, selector, binding, query_rows):
         native = hyperflow_fresh.capture_owner(model)
     if native is None and model.get_attachment(hyperflow_effects.KEY) is not None:
         native = hyperflow_effects.capture_owner(model)
+    if native is None and model.get_attachment(hyperflow_curve_effects.KEY) is not None:
+        native = hyperflow_curve_effects.capture_owner(model)
     if native is None and model.get_attachment(manual_pass.KEY) is not None:
         native = manual_pass.capture_owner(model)
     if native is None and model.get_attachment(rf_stages.KEY) is not None:
@@ -187,12 +189,16 @@ def project_stage_effects(model):
     model, contract = _project_stage_effects(model)
     if vdn_contract is not None:
         contract = {**(contract or {}), "vdn_relay": vdn_contract}
+    from ..external_continuation_effects import project_scope
+    model, external = project_scope(model)
+    if external is not None:
+        contract = {**(contract or {}), 'external_motion_scope': external}
     return model, contract
 
 
 def _project_stage_effects(model):
     """Return an inspection-only base view and the actual bound effect contract."""
-    from . import hyperflow_effects, hyperflow_fresh, speed_effects
+    from . import hyperflow_effects, hyperflow_fresh, speed_effects, hyperflow_curve_effects
     runtime = model.get_attachment(eav.KEY)
     wrappers = model.get_wrappers("diffusion_model", eav.KEY)
     if runtime is None and not wrappers:
@@ -227,6 +233,7 @@ def _project_stage_effects(model):
                  and relay_contract.get("attention_backend") is None,
                  "Composed Relay backend/binding lacks its persistent owner adapter")
     owner = (speed_effects.capture_owner(model) if runtime.context.recipe == speed_effects.RECIPE
+             else hyperflow_curve_effects.capture_owner(model) if runtime.context.recipe == hyperflow_curve_effects.RECIPE
              else hyperflow_fresh.capture_owner(model) if runtime.context.recipe in hyperflow_fresh.RECIPES
              else hyperflow_effects.capture_owner(model) if runtime.context.recipe == hyperflow_effects.RECIPE
              else vdn_stages.capture_owner(model) if runtime.context.recipe == vdn_stages.RECIPE
@@ -284,6 +291,12 @@ def _project_stage_effects(model):
     contract = {"schema": "t8.modular-sampling.effect-identity.v1", "eav": asdict(runtime.config),
                 "stage_context": runtime.context.to_dict(), "blocks": runtime.blocks,
                 "mask": _mask_identity(wrapper.get("mask_contract"))}
+    external_scope = wrapper.get('external_scope')
+    if external_scope is not None:
+        from ..external_continuation_effects import ExternalEffectScope
+        _require(type(external_scope) is ExternalEffectScope,
+                 'Stage EAV external scope has an unknown executable owner')
+        contract['external_motion_scope_sha256'] = external_scope.verify(model)['sha256']
     if binding is not None:
         cloned, contract["relay"] = _project_plain_relay(cloned, previous, binding, relay_contract["query_chunk_rows"])
     from ..prompt_relay_long_video_advanced import PROMPT_RELAY_LONG_VIDEO_ATTACHMENT_KEY

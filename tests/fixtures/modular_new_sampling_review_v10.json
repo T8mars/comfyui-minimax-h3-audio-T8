@@ -1,0 +1,230 @@
+{
+  "schema": "t8.modular-sampling.new-sampling-admission.v1",
+  "removed_site": [
+    "h3_t8/mv_lipsync_advanced.py",
+    "run_local_mv_in_node_loop",
+    "_sample_one_segment",
+    "c3e2b7a4ae0c0afdf85453cd51aa32e7ae85595fa88f0b11bf789542d872b3eb"
+  ],
+  "reviewed_added_sites": [
+    [
+      "h3_t8/modular_sampling/hyperflow.py",
+      "_run",
+      "cleanup._native_stage",
+      "1abbdf37316be6eaac89bd43de75ef26985a012e214b90c27ef2452a02c0c2ce"
+    ],
+    [
+      "h3_t8/modular_sampling/hyperflow.py",
+      "sample_tail_result",
+      "sample_tail",
+      "b7edd1a0a903d68db69eac0b8c2e9e616f81742f28110df34ed5453a515d3a22"
+    ],
+    [
+      "h3_t8/modular_sampling/hyperflow_curve.py",
+      "_run",
+      "cleanup._native_stage",
+      "1abbdf37316be6eaac89bd43de75ef26985a012e214b90c27ef2452a02c0c2ce"
+    ],
+    [
+      "h3_t8/modular_sampling/hyperflow_nodes.py",
+      "MiniMaxH3HyperFlowHeadStageEXPT8.execute",
+      "stages.sample_head",
+      "319958c384a1b8a6615e9d745f8edf925e11d17ac4efa2dbf8c474aa07cb1efd"
+    ],
+    [
+      "h3_t8/modular_sampling/progressive.py",
+      "_run",
+      "legacy._native_stage",
+      "1ea7fa8127ee253803596b193baa76d0fe47001c25ba110497326ace82c8a74f"
+    ],
+    [
+      "h3_t8/mv_lipsync_advanced.py",
+      "run_local_mv_in_node_loop",
+      "_sample_one_segment",
+      "3b3381ab8794becf884665878e0eca5302e3479fa94b1e8c80b0a49d829628ba"
+    ],
+    [
+      "h3_t8/nodes_hyperflow_curve_exp.py",
+      "MiniMaxH3HyperFlowCurveHeadStageEXPT8.execute",
+      "stages.sample_head",
+      "1dec698a85b91dc1c6fa324150218a93c6b163e30074ef6a8779816fec39092c"
+    ],
+    [
+      "h3_t8/nodes_hyperflow_curve_exp.py",
+      "MiniMaxH3HyperFlowCurveTailStageEXPT8.execute",
+      "stages.sample_tail",
+      "2b4578f5d8424fa0a692526083744aedf2d98e5c19cf5105e80d42beaa689ab1"
+    ],
+    [
+      "h3_t8/progressive_sampling_composed.py",
+      "sample_progressive_configured",
+      "_native_stage",
+      "569f56df2058e56cd41afd7acd5bbc3601469e6413002bbb6f7263309a9aac90"
+    ],
+    [
+      "h3_t8/progressive_sampling_composed.py",
+      "sample_progressive_configured",
+      "_native_stage",
+      "6863c276164a8ce7cfd69f6cb2372b7bfa7b6c4fcc66811488d497a55cd3adaa"
+    ],
+    [
+      "h3_t8/progressive_sampling_runtime.py",
+      "sample_progressive_h3",
+      "_native_stage",
+      "6f2f8dd4890cb6f77b727a8191cac7196b5f7afd5b92e53814b0c94c6afcf3fa"
+    ],
+    [
+      "h3_t8/progressive_sampling_runtime.py",
+      "sample_progressive_h3",
+      "_native_stage",
+      "bc43e312560e68dbe9934141c256b52aaa2dee48fbee1bcfc9658fd98df25c33"
+    ],
+    [
+      "progressive_sampling_runtime.py",
+      "sample_progressive_h3",
+      "_native_stage",
+      "0a6a4b354e43542a99773ed8ee87c429d9e115bbbb0f8fe6592c9bf3762975b8"
+    ],
+    [
+      "progressive_sampling_runtime.py",
+      "sample_progressive_h3",
+      "_native_stage",
+      "f08163c9d67babc8aded61b05a0171d6bb6bb476cf766459aa80f8c60bcb5b69"
+    ]
+  ],
+  "curve_admissions": {
+    "schema": "t8.modular-sampling.new-sampling-admission.v1",
+    "entries": [
+      {
+        "route": "S30",
+        "variant": "curve_continuous4plus4",
+        "stage_nodes": [
+          "MiniMaxH3HyperFlowCurveHeadStageEXPT8",
+          "MiniMaxH3HyperFlowCurveTailStageEXPT8"
+        ],
+        "workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_full_save_EXP.json",
+        "resume_workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_cold_tail_EXP.json",
+        "workflow_stage_ids": [
+          14,
+          15
+        ],
+        "resume_source_id": 18,
+        "resume_source_type": "MiniMaxH3HyperFlowCurveHeadLoadEXPT8",
+        "resume_stage_id": 10,
+        "external_effects": {
+          "eav": "supported",
+          "prompt_relay": "supported"
+        },
+        "external_effect_nodes": {
+          "workflow": {
+            "eav": [
+              21,
+              26
+            ],
+            "prompt_relay": [
+              19,
+              24
+            ]
+          },
+          "resume_workflow": {
+            "eav": 16,
+            "prompt_relay": 14
+          }
+        },
+        "site": [
+          "h3_t8/modular_sampling/hyperflow_curve.py",
+          "_run",
+          "cleanup._native_stage",
+          "1abbdf37316be6eaac89bd43de75ef26985a012e214b90c27ef2452a02c0c2ce"
+        ]
+      },
+      {
+        "route": "S30",
+        "variant": "curve_continuous4plus4",
+        "stage_nodes": [
+          "MiniMaxH3HyperFlowCurveHeadStageEXPT8",
+          "MiniMaxH3HyperFlowCurveTailStageEXPT8"
+        ],
+        "workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_full_save_EXP.json",
+        "resume_workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_cold_tail_EXP.json",
+        "workflow_stage_ids": [
+          14,
+          15
+        ],
+        "resume_source_id": 18,
+        "resume_source_type": "MiniMaxH3HyperFlowCurveHeadLoadEXPT8",
+        "resume_stage_id": 10,
+        "external_effects": {
+          "eav": "supported",
+          "prompt_relay": "supported"
+        },
+        "external_effect_nodes": {
+          "workflow": {
+            "eav": [
+              21,
+              26
+            ],
+            "prompt_relay": [
+              19,
+              24
+            ]
+          },
+          "resume_workflow": {
+            "eav": 16,
+            "prompt_relay": 14
+          }
+        },
+        "site": [
+          "h3_t8/nodes_hyperflow_curve_exp.py",
+          "MiniMaxH3HyperFlowCurveHeadStageEXPT8.execute",
+          "stages.sample_head",
+          "1dec698a85b91dc1c6fa324150218a93c6b163e30074ef6a8779816fec39092c"
+        ]
+      },
+      {
+        "route": "S30",
+        "variant": "curve_continuous4plus4",
+        "stage_nodes": [
+          "MiniMaxH3HyperFlowCurveHeadStageEXPT8",
+          "MiniMaxH3HyperFlowCurveTailStageEXPT8"
+        ],
+        "workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_full_save_EXP.json",
+        "resume_workflow": "examples/workflows/68-radar-hyperflow-curves/HyperFlow_Curve_4plus4_cold_tail_EXP.json",
+        "workflow_stage_ids": [
+          14,
+          15
+        ],
+        "resume_source_id": 18,
+        "resume_source_type": "MiniMaxH3HyperFlowCurveHeadLoadEXPT8",
+        "resume_stage_id": 10,
+        "external_effects": {
+          "eav": "supported",
+          "prompt_relay": "supported"
+        },
+        "external_effect_nodes": {
+          "workflow": {
+            "eav": [
+              21,
+              26
+            ],
+            "prompt_relay": [
+              19,
+              24
+            ]
+          },
+          "resume_workflow": {
+            "eav": 16,
+            "prompt_relay": 14
+          }
+        },
+        "site": [
+          "h3_t8/nodes_hyperflow_curve_exp.py",
+          "MiniMaxH3HyperFlowCurveTailStageEXPT8.execute",
+          "stages.sample_tail",
+          "2b4578f5d8424fa0a692526083744aedf2d98e5c19cf5105e80d42beaa689ab1"
+        ]
+      }
+    ]
+  },
+  "review_boundary": "Ten previously implemented HyperFlow/progressive calls newly detected, including two dormant root-copy tripwires, not new GPU certification. One MV conditional MODEL selection retains single-per-scene sampling and has separate native AB/same-root zero-sampling qualification. Three new S30 calls have actual live619/topology admission and independent native full8/fresh4/0 receipt; mechanical only, not human quality or dynamic-VRAM certification."
+}

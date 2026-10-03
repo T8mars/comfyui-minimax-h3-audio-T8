@@ -25,6 +25,13 @@ if __package__:
     from .modular_sampling.ltx_load_policy_nodes import NODES as _ltx_load_policy_node_classes
     from .modular_sampling.face_source_nodes import NODES as _face_source_node_classes
     from .modular_sampling.rf_audio_clock_nodes import NODES as _rf_audio_clock_node_classes
+    from .nodes_h3_fun_union2 import NODES as _union2_node_classes
+    from .nodes_mv_cast_solo import NODES as _mv_cast_node_classes
+    from .nodes_external_continuation import NODES as _external_continuation_node_classes
+    from .nodes_visible_face_mask import NODES as _visible_face_mask_node_classes
+    from .nodes_face_observations import NODES as _face_observation_node_classes
+    from .nodes_external_continuation_effects import NODES as _external_effect_node_classes
+    from .nodes_hyperflow_curve_exp import NODES as _curve_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -90,6 +97,13 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _rf_audio_clock_node_classes = import_module(
         f"{_package_name}.modular_sampling.rf_audio_clock_nodes"
     ).NODES
+    _union2_node_classes = import_module(f"{_package_name}.nodes_h3_fun_union2").NODES
+    _mv_cast_node_classes = import_module(f"{_package_name}.nodes_mv_cast_solo").NODES
+    _external_continuation_node_classes = import_module(f"{_package_name}.nodes_external_continuation").NODES
+    _visible_face_mask_node_classes = import_module(f"{_package_name}.nodes_visible_face_mask").NODES
+    _face_observation_node_classes = import_module(f"{_package_name}.nodes_face_observations").NODES
+    _external_effect_node_classes = import_module(f"{_package_name}.nodes_external_continuation_effects").NODES
+    _curve_node_classes = import_module(f"{_package_name}.nodes_hyperflow_curve_exp").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -108,7 +122,10 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_veda_sparse_node_classes, *_veda_heuristic_node_classes,
                 *_prepared_ltx_effect_node_classes, *_prepared_ltx_relay_cache_node_classes,
                 *_semantic_bridge_extra_node_classes, *_ltx_load_policy_node_classes,
-                *_face_source_node_classes, *_rf_audio_clock_node_classes]
+                *_face_source_node_classes, *_rf_audio_clock_node_classes, *_union2_node_classes,
+                *_mv_cast_node_classes, *_external_continuation_node_classes,
+                *_visible_face_mask_node_classes, *_face_observation_node_classes,
+                *_external_effect_node_classes, *_curve_node_classes]
 
 
 def comfy_entrypoint():

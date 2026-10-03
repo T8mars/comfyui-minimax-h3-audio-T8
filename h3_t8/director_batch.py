@@ -61,14 +61,14 @@ def batch_selection(project, seed, shot_ids=None, seed_map=None):
 def selected_project(project, shots):
     """A validation/resource view only; the durable batch keeps the full project."""
     selected = {**project, "doc": {**project["doc"], "shots": shots}, "current": shots[0]["id"]}
-    referenced = referenced_assets(selected)
+    referenced = referenced_assets(selected, evidence_context=project)
     selected["assets"] = [asset for asset in project.get("assets", []) if asset.get("id") in referenced]
     return selected
 
 
 def compile_batch_selection(project, store, shot_ids):
     shots, _ = batch_selection(project, 0, shot_ids)
-    report = compile_project(selected_project(project, shots), store)
+    report = compile_project(selected_project(project, shots), store, candidate_context=project)
     positions = {shot["id"]: index for index, shot in enumerate(project["doc"]["shots"], 1)}
     for error in report["errors"]:
         if error.get("shot_id") in positions:
@@ -90,7 +90,7 @@ _MODEL_INPUTS = {
 }
 
 
-def capture_resources(store, project, built, resolve_model):
+def capture_resources(store, project, built, resolve_model, *, evidence_context=None):
     """Hash actual selected weight files and referenced assets once per batch.
 
     resolve_model(folder,name) must use the same configured Core search roots as
@@ -113,7 +113,7 @@ def capture_resources(store, project, built, resolve_model):
             models[key] = {"folder": folder, "name": name, "path": str(path),
                            "size": path.stat().st_size, "sha256": file_sha(path)}
     assets = {}
-    for aid in sorted(referenced_assets(project)):
+    for aid in sorted(referenced_assets(project, evidence_context=evidence_context)):
         item = store.asset(aid, verify=True)
         assets[aid] = {"sha256": item["sha256"], "server_path": item["server_path"]}
     return {"models": models, "assets": assets}

@@ -1,18 +1,17 @@
 """Future multi-stage sampler callsites cannot silently bypass split-route review."""
 
 import json
-from collections import Counter
 from pathlib import Path
 import subprocess
 import sys
 from types import SimpleNamespace
 
 from h3_audio_t8_pkg.modular_sampling import catalogue
-from tools.audit_modular_new_sampling import BASELINE as PRODUCTION_BASELINE
-from tools.audit_modular_new_sampling import SCHEMA, audit, discover, guard
+from tools.audit_modular_new_sampling import SCHEMA, audit, discover, guard, reviewed_layout_sites
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v9.json"
+BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v10.json"
+PREVIOUS_RADAR_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v9.json"
 PREVIOUS_ENCODER_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v8.json"
 PREVIOUS_SAFETY_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v7.json"
 PRIVATE_BASELINE = ROOT / "artifacts/development/modular-sampling-m5-admission-20260924/baseline-v7-director-stage-relay.json"
@@ -42,19 +41,12 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
         site for site in before_encoder["sites"] if not changed_safety(site)]
     assert sum(changed_safety(site) for site in before_safety["sites"]) == 1
     assert sum(changed_safety(site) for site in baseline["sites"]) == 1
-    production = json.loads(PRODUCTION_BASELINE.read_text(encoding="utf8"))
-    def key(site):
-        return (site["path"], site["symbol"], site["callee"], site["call_sha256"])
-    assert len(baseline["sites"]) == 105
-    assert len(production["sites"]) == 86
-    root_copies = [site for site in baseline["sites"] if "/" not in site["path"]]
-    assert len(root_copies) == 19
-    assert all(not (ROOT/site["path"]).exists() for site in root_copies)
-    assert Counter(key(site) for site in production["sites"]) == Counter(
-        key(site) for site in baseline["sites"] if "/" in site["path"])
-    report = audit(ROOT, production, _admissions(), {route.id: route for route in catalogue.ROUTES})
+    report = audit(ROOT, baseline, _admissions(), {route.id: route for route in catalogue.ROUTES})
     assert report["status"] == "pass"
-    assert report["baseline_sites"] == report["current_sites"] == 86
+    effective, omitted = reviewed_layout_sites(ROOT, baseline)
+    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 118
+    assert report["baseline_sites"] == report["current_sites"] == len(effective)
+    assert report["reviewed_absent_root_alias_sites"] == len(omitted)
     assert report["new_sites"] == report["removed_sites"] == 0
     before_stage_relay = json.loads(PREVIOUS_RELAY_BASELINE.read_text(encoding="utf8"))
     def unchanged(site):
@@ -87,7 +79,7 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
 
 def test_v9_preserves_every_v8_site_and_only_reviews_the_two_explicit_encoder_calls():
     previous = json.loads(PREVIOUS_ENCODER_BASELINE.read_text(encoding="utf8"))
-    current = json.loads(BASELINE.read_text(encoding="utf8"))
+    current = json.loads(PREVIOUS_RADAR_BASELINE.read_text(encoding="utf8"))
     added = [site for site in current["sites"] if site not in previous["sites"]]
     assert len(previous["sites"]) == 103
     assert [site for site in current["sites"] if site not in added] == previous["sites"]
@@ -108,12 +100,51 @@ def test_v9_preserves_every_v8_site_and_only_reviews_the_two_explicit_encoder_ca
     assert not any(name.rsplit(".", 1)[-1] in {"sample", "sample_custom", "sample_stage"} for name in calls)
 
 
+def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_admission():
+    from tools.audit_modular_sampling_compat import capture
+    previous = json.loads(PREVIOUS_RADAR_BASELINE.read_text(encoding="utf8"))
+    current = json.loads(BASELINE.read_text(encoding="utf8"))
+    review = json.loads((ROOT / "tests/fixtures/modular_new_sampling_review_v10.json").read_text(encoding="utf8"))
+    key = lambda site: [site[name] for name in ("path", "symbol", "callee", "call_sha256")]
+    added = [key(site) for site in current["sites"] if site not in previous["sites"]]
+    removed = [key(site) for site in previous["sites"] if site not in current["sites"]]
+    assert added == review["reviewed_added_sites"] and len(added) == 14
+    assert removed == [review["removed_site"]] and removed[0][:3] == [
+        "h3_t8/mv_lipsync_advanced.py", "run_local_mv_in_node_loop", "_sample_one_segment"]
+    assert len([site for site in previous["sites"] if site in current["sites"]]) == 104
+    admissions = review["curve_admissions"]
+    assert len(admissions["entries"]) == 3
+    curve_sites = {tuple(entry["site"]) for entry in admissions["entries"]}
+    assert {site[0] for site in curve_sites} == {
+        "h3_t8/modular_sampling/hyperflow_curve.py", "h3_t8/nodes_hyperflow_curve_exp.py"}
+    before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
+    live = {node["id"] for node in capture()["nodes"]}
+    assert len(live) == 619
+    report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
+    assert report["status"] == "pass" and report["new_sites"] == 3
+    effective, _ = reviewed_layout_sites(ROOT, before_curve)
+    assert report["removed_sites"] == 0 and report["baseline_sites"] == len(effective)
+    assert report["declared_baseline_sites"] == 115
+    assert audit(ROOT, before_curve, _admissions(), {})["status"] == "fail"
+
+
+def test_future_head_tail_and_native_calls_are_not_hidden_outside_multistage_names(tmp_path):
+    source = tmp_path / "h3_t8" / "ordinary_name.py"
+    source.parent.mkdir()
+    previous = _baseline(tmp_path)
+    source.write_text("def ordinary(x):\n x.sample_head(1)\n x.sample_tail(2)\n x._native_stage(3)\n", encoding="utf8")
+    assert {site["callee"] for site in discover(tmp_path)} == {"x.sample_head", "x.sample_tail", "x._native_stage"}
+    report = guard(tmp_path, previous)
+    assert report["status"] == "fail" and report["new_sites"] == 3
+
+
 def test_ci_guard_needs_only_python_stdlib_and_rejects_new_site(tmp_path):
-    baseline = json.loads(PRODUCTION_BASELINE.read_text(encoding="utf8"))
+    baseline = json.loads(BASELINE.read_text(encoding="utf8"))
     result = subprocess.run([sys.executable, "-S", str(ROOT / "tools/audit_modular_new_sampling.py"),
                              "guard"], cwd=ROOT, capture_output=True, text=True, check=False)
     assert result.returncode == 0
-    assert json.loads(result.stdout)["current_sites"] == len(baseline["sites"])
+    effective, _ = reviewed_layout_sites(ROOT, baseline)
+    assert json.loads(result.stdout)["current_sites"] == len(effective)
     source = tmp_path / "h3_t8" / "new_two_pass.py"
     source.parent.mkdir()
     synthetic = _baseline(tmp_path)
@@ -271,7 +302,8 @@ def test_same_public_stage_type_needs_two_connected_instances_and_one_resume_ins
 def test_real_fast_v2_candidate_uses_two_instances_of_one_public_stage_type():
     from tools.audit_modular_new_sampling import _reaches, _workflow_graph
 
-    # Published, independently wired examples: no private artifact dependency.
+    # Preserve the published graph fixture: a checkout must not need private
+    # candidate artifacts for this public topology assertion.
     base = "examples/workflows/34-fasth3-v2/"
     full, full_edges = _workflow_graph(ROOT, base +
         "FastH3_V2_Split_01_First_LOW_HIGH_Relay_EAV_EXP.json")

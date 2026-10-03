@@ -3,6 +3,7 @@
 import asyncio
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -17,6 +18,7 @@ from h3_audio_t8_pkg.director_project import ProjectStore, new_project
 from h3_audio_t8_pkg.director_routes import export_preflight_workflow
 
 ROOT = Path(__file__).resolve().parents[1]
+CORE = Path(os.environ.get("T8_TEST_CORE_ROOT", str(ROOT.parents[1]))).resolve()
 
 
 def backup_module(name, filename):
@@ -51,7 +53,41 @@ def test_old_354_registry_class_order_and_schemas_are_unchanged():
         *h3_audio_t8_pkg._face_source_node_classes,
     ]
     assert len(root_additions) == 28
-    assert len(current) == 581
+    appended = [*h3_audio_t8_pkg._rf_audio_clock_node_classes,
+                *h3_audio_t8_pkg._union2_node_classes, *h3_audio_t8_pkg._mv_cast_node_classes,
+                *h3_audio_t8_pkg._external_continuation_node_classes,
+                *h3_audio_t8_pkg._visible_face_mask_node_classes,
+                *h3_audio_t8_pkg._face_observation_node_classes,
+                *h3_audio_t8_pkg._external_effect_node_classes]
+    assert [cls.define_schema().node_id for cls in appended] == [
+        'MiniMaxH3RFRestartJointClockSetupEXPT8', 'MiniMaxH3FunUnion2LoaderEXPT8',
+        'MiniMaxH3FunUnion2ApplyEXPT8', 'MiniMaxH3MVCastSoloPlanEXPT8',
+        'MiniMaxH3MVCastSoloRendererEXPT8', 'MiniMaxH3ExternalContinuationSourceEXPT8',
+        'MiniMaxH3ExternalContextEncodeEXPT8', 'MiniMaxH3ExternalContinuationConditioningEXPT8',
+        'MiniMaxH3VisibleFaceMaskBindEXPT8', 'MiniMaxH3VisibleFaceCompositeEXPT8',
+        'MiniMaxH3CompleteFaceObserveEXPT8','MiniMaxH3NoFaceDecisionEXPT8',
+        'MiniMaxH3ObservedStandardPlanEXPT8','MiniMaxH3ObservedParityPlanEXPT8',
+        'MiniMaxH3FaceBranchStageSaveEXPT8','MiniMaxH3FaceDependentStageAuditEXPT8',
+        'MiniMaxH3FaceDependentParityStageAuditEXPT8','MiniMaxH3FaceDependentStitchEXPT8',
+        'MiniMaxH3FaceDependentParityStitchEXPT8',
+        'MiniMaxH3ExternalRelayWindowEXPT8', 'MiniMaxH3ExternalRelayConditioningEXPT8',
+        'MiniMaxH3ExternalMotionEffectsBindEXPT8', 'MiniMaxH3ExternalStageEAVApplyEXPT8']
+    curve_nodes = h3_audio_t8_pkg._curve_node_classes
+    assert [cls.define_schema().node_id for cls in curve_nodes] == [
+        'MiniMaxH3HyperFlowCurveFitBuildEXPT8', 'MiniMaxH3HyperFlowCurveFitLoadEXPT8',
+        'MiniMaxH3HyperFlowCurveModelApplyEXPT8', 'MiniMaxH3HyperFlowCurveFullSamplerSetupEXPT8',
+        'MiniMaxH3HyperFlowCurveHeadStageEXPT8', 'MiniMaxH3HyperFlowCurveTailStageEXPT8',
+        'MiniMaxH3HyperFlowCurveHeadSaveEXPT8', 'MiniMaxH3HyperFlowCurveHeadLoadEXPT8',
+        'MiniMaxH3HyperFlowCurveTailSaveEXPT8', 'MiniMaxH3HyperFlowCurveTailLoadEXPT8',
+        'MiniMaxH3HyperFlowCurveHeadEffectsBindEXPT8', 'MiniMaxH3HyperFlowCurveTailEffectsBindEXPT8',
+        'MiniMaxH3HyperFlowCurveHeadEffectsAuditEXPT8', 'MiniMaxH3HyperFlowCurveTailEffectsAuditEXPT8',
+        'MiniMaxH3HyperFlowCurveBaseLoaderEXPT8',
+    ]
+    # Retain every historical prefix/order/schema check below; the new IDs
+    # belong only AFTER the already qualified 604-node registry.
+    assert len(current) == 619
+    assert current[581:604] == appended
+    assert current[604:] == curve_nodes
     assert [c.define_schema().node_id for c in original] == [
         c.define_schema().node_id for c in current[:354]
     ]
@@ -63,7 +99,7 @@ def test_old_354_registry_class_order_and_schemas_are_unchanged():
         assert old_class.RETURN_NAMES == current_class.RETURN_NAMES
     assert current[354] is nodes_director.MiniMaxH3DirectorProjectT8
     assert current[355] is nodes_h16_chunked_pass2.DeciiaChunkedPass2Sampler
-    assert current[356:] == [*FIVE_VIEW_EXP_NODE_CLASSES, *HYPERFLOW_ADVANCED_NODE_CLASSES,
+    assert current[356:581] == [*FIVE_VIEW_EXP_NODE_CLASSES, *HYPERFLOW_ADVANCED_NODE_CLASSES,
                              MiniMaxH3HyperFlowLongVideoEXPT8,
                              MiniMaxH3HyperFlowSingle8LongVideoEXPT8,
                              *modular_node_classes(), *root_additions]
@@ -81,11 +117,11 @@ def test_real_native_Core_validates_export_and_real_D1_node_executes_without_que
     # Core's own namespace must win over historical root/h3_t8 nodes.py copies.
     previous_paths = list(sys.path)
     try:
-        sys.path.insert(0, str(ROOT.parents[1]))
+        sys.path.insert(0, str(CORE))
         import nodes as native_nodes
         import execution
 
-        assert Path(native_nodes.__file__).resolve() == ROOT.parents[1] / "nodes.py"
+        assert Path(native_nodes.__file__).resolve() == CORE / "nodes.py"
         monkeypatch.setitem(
             native_nodes.NODE_CLASS_MAPPINGS,
             "MiniMaxH3DirectorProjectT8",
