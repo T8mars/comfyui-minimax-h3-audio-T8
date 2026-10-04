@@ -32,6 +32,7 @@ if __package__:
     from .nodes_face_observations import NODES as _face_observation_node_classes
     from .nodes_external_continuation_effects import NODES as _external_effect_node_classes
     from .nodes_hyperflow_curve_exp import NODES as _curve_node_classes
+    from .nodes_kijai_pdd_advanced import NODES as _kijai_pdd_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -104,6 +105,7 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _face_observation_node_classes = import_module(f"{_package_name}.nodes_face_observations").NODES
     _external_effect_node_classes = import_module(f"{_package_name}.nodes_external_continuation_effects").NODES
     _curve_node_classes = import_module(f"{_package_name}.nodes_hyperflow_curve_exp").NODES
+    _kijai_pdd_node_classes = import_module(f"{_package_name}.nodes_kijai_pdd_advanced").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -125,7 +127,7 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_face_source_node_classes, *_rf_audio_clock_node_classes, *_union2_node_classes,
                 *_mv_cast_node_classes, *_external_continuation_node_classes,
                 *_visible_face_mask_node_classes, *_face_observation_node_classes,
-                *_external_effect_node_classes, *_curve_node_classes]
+                *_external_effect_node_classes, *_curve_node_classes, *_kijai_pdd_node_classes]
 
 
 def comfy_entrypoint():

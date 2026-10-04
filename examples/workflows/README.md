@@ -6,6 +6,7 @@
 
 | 目录 | 主要用途 |
 |---|---|
+| [71-kijai-experimental-split](71-kijai-experimental-split/README.md) | 九个Kijai非二步原件18张Full_Save／Cold_HIGH，独立MODEL／条件／Relay／EAV；须配对Full／Pruned与FL／Ref |
 | [65-radar-visible-face-mask](65-radar-visible-face-mask/README.md) | 16张可见区域MASK模板；建议先用通过定向复审的逐帧MASK／显式0.05轻修配对图，不推荐旧失败静态遮罩配方 |
 | [66-radar-no-face-lazy](66-radar-no-face-lazy/README.md) | 6张完整检测、显式SHA确认与真正lazy无脸旁路模板；不自动判无脸或接受结果 |
 | [67-radar-external-continuation](67-radar-external-continuation/README.md) | 4张外片续拍Full／Cold图，EAV与Prompt Relay独立外置 |

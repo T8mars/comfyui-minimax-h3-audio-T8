@@ -1,5 +1,7 @@
 # 分离式工作流总索引
 
+v1.90.0 新增 [Kijai 九原件18张 Full_Save／Cold_HIGH](71-kijai-experimental-split/README.md)，两阶段MODEL／条件／Relay／EAV独立；不覆盖下列旧路线，四Acc8与普通完整LOW的音频策略不同。
+
 全部 S01–S29 已有前端 JSON 文件保存在下列目录；打开目录说明选择“完整生成/保存”或“冷恢复/只跑后采”。这里说明保存位置，不代表任意素材、模型和效果组合均已通过画质验收。
 
 最新 B8 / C1 / C2 音频修正版的完整/恢复配对入口在 [64-reviewed-audio-followup](64-reviewed-audio-followup/README.md)。三份用户通过的原生实跑副本另有本地交接记录；通用示例不带私有检查点。旧 S26 / S29 保留以兼容旧工作流，新 RF 修正需要本地新增 JointClock 节点，不在既有 v1.88.0 中。

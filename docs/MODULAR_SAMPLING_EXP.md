@@ -1,5 +1,7 @@
 # 分离式采样：当前本地实验入口
 
+v1.90.0 的 [Kijai 九原件入口](KIJAI_EXPERIMENTAL_LORAS_EXP.md) 与 [18张Full_Save／Cold_HIGH](../examples/workflows/71-kijai-experimental-split/README.md) 已追加；旧S01–S29／Veda路线不替换，Acc8保持绝对联合音频。
+
 这是S01–S29独立阶段与外置效果的实验入口。旧一体节点、旧图、原采样公式不替换、不自动迁移。新节点需正常重启ComfyUI后出现；开发工具不会替用户重启服务。节点／存取／画布功能验收不等于人工质量或全部组合认证。
 
 ## 1.88.0 当前发行内容与历史说明

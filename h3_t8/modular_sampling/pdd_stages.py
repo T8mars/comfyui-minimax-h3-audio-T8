@@ -21,6 +21,7 @@ KEY = "t8_modular_pdd_stage_v1"
 STAGES = ("pdd_low_0_4", "pdd_high_4_8")
 NATIVE = "comfyui_native_pdd_final_layer_plus_backbone_lora"
 DYNAMIC = "comfyui_dynamic_model_only_bypass_plus_final_forward_injection"
+RELATIVE = "comfyui_native_kijai_pdd_relative_heads_plus_backbone"
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,41 @@ def _head_contract(model):
                         found.append(content_identity(tensor))
                 if len(found) != 1:
                     raise ValueError("PDD native MODEL is missing its unique 32-head replacement: " + key)
+                banks[key] = found[0]
+        result["heads"] = banks
+    elif mode == RELATIVE:
+        final = model.get_model_object("diffusion_model.final_layer")
+        descriptor = receipt["lora"]
+        strength = descriptor.get("strength")
+        if (type(strength) not in (float, int) or not 0.0 <= strength <= 1.0
+                or descriptor.get("native_head_patch_targets") != 4):
+            raise ValueError("Kijai PDD relative head strength/receipt is invalid")
+        banks = {}
+        for stream in ("video", "audio"):
+            head = getattr(final, stream + "_out")
+            for field in ("weight", "bias"):
+                key = f"diffusion_model.final_layer.{stream}_out.{field}"
+                expected = ((pdd.PDD_NUM_STEPS * head.out_features, head.in_features)
+                            if field == "weight" else (pdd.PDD_NUM_STEPS * head.out_features,))
+                found = []
+                for patch in model.patches.get(key, ()):
+                    if not isinstance(patch, tuple) or len(patch) != 5:
+                        continue
+                    amount, payload, base_strength, offset, function = patch
+                    if not (amount == strength and base_strength == 1.0 and offset is None and function is None
+                            and isinstance(payload, tuple) and len(payload) == 2 and payload[0] == "diff"
+                            and isinstance(payload[1], tuple) and len(payload[1]) == 2):
+                        continue
+                    tensor, options = payload[1]
+                    if not isinstance(tensor, torch.Tensor) or options != {"pad_weight": True}:
+                        continue
+                    if tuple(tensor.shape) != expected or not bool(torch.isfinite(tensor).all()):
+                        raise ValueError("Kijai PDD relative head has invalid shape/values")
+                    identity = content_identity(tensor)
+                    if identity == descriptor.get("native_head_differences", {}).get(key):
+                        found.append(identity)
+                if len(found) != 1:
+                    raise ValueError("Kijai PDD MODEL lacks its unique content-bound relative head: " + key)
                 banks[key] = found[0]
         result["heads"] = banks
     elif mode == DYNAMIC:

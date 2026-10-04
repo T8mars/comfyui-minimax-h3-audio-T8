@@ -2,7 +2,16 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.89.0
+## 当前版本：1.90.0
+
+### 2026-10-04 Kijai 九原件与分离双采（EXP）
+
+- 新增 Kijai Acc-8Step 相对32头独立加载入口，区分FL2VA／Ref2VA、Full／Pruned，保留backbone、AdaLN、bias及绝对0:4／4:8联合音频。
+- 保存九个家族18张Full_Save／Cold_HIGH；MODEL、Noise、条件、EAV及Prompt Relay独立外置，旧图不覆盖。
+- DMAD、PDMD4、ELM、FlashGen与Ref Difference保持各自已验收配方；Ref Difference非加速、ELM非无限KV。只读Core Bypass身份与显式默认LCM识别，不清空用户补丁或替换旧数学。
+- 九份指定完整音画已获真人通过；发布模板仅清理注释／私有元数据及本地LoRA别名，素材、Stage和编辑后质量不随包认证。详见[1.90.0说明](docs/RELEASE_1.90.0.md)。
+
+## 1.89.0
 
 ### 2026-10-03 RADAR 集成与独立阶段（EXP）
 

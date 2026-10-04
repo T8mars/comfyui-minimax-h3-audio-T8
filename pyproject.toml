@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.89.0"
+version = "1.90.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -51,6 +51,7 @@ includes = [
     "docs/VISIBLE_FACE_MASK_EXP.md", "docs/NO_FACE_LAZY_EXP.md",
     "docs/HYPERFLOW_CURVE_EXP.md",
     "docs/RADAR_MODEL_COMPATIBILITY_EXP.md", "docs/RELEASE_1.89.0.md",
+    "docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md", "docs/RELEASE_1.90.0.md",
     "docs/FACE_REFINE_ADVANCED_VALIDATION.md", "docs/HYPERVAE_2X_EXP.md",
     "tools/api_to_frontend_workflow.py", "tools/repair_frontend_workflow_order.py",
     "tools/frontend_workflow_compat.py",

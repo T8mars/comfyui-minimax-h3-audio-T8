@@ -1,4 +1,15 @@
 {
+  "kijai_experimental_loras_1_90": {
+    "version": "1.90.0",
+    "documentation": "docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md",
+    "workflows": "examples/workflows/71-kijai-experimental-split/README.md",
+    "new_nodes": ["MiniMaxH3KijaiPDD8StepSetupEXPT8"],
+    "families": ["DMAD", "PDMD4", "ELM", "FlashGen", "FL2VA_Full", "FL2VA_Pruned", "Ref2VA_Full", "Ref2VA_Pruned", "Ref_Difference"],
+    "workflow_count": 18,
+    "human_accepted_fixed_clips": 9,
+    "source_revision": "d8023be02fefbb3633b0cd335c3879f91177299d",
+    "boundary": "EXP fixed clips and initial recipes only. Append-only node; old619 IDs/defaults and workflows preserved. Independent per-stage MODEL/conditioning/Noise/Relay/EAV and explicit LOW save/cold HIGH; Acc8 absolute0:4/4:8 joint audio, ordinary completed LOW may lock audio. Core Bypass identity is read-only/content-bound; explicit default Core LCM recognition does not change old mathematics. No models/media/private caches, automatic acceptance, two-step PDMD, infinite KV, author pipeline parity or general quality/speed guarantee. GitHub and Registry installation status are separate."
+  },
   "radar_human_review_20261003": {
     "status": "ten_specific_media_cases_human_accepted_selected_local_implementation_complete_unpublished",
     "review_id": "ca05523dee095ff5bf75d3d696d1e90f7b30bf02e7c648b4554bd084e0fee8f6",
@@ -575,7 +586,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.89.0",
+  "version": "1.90.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",

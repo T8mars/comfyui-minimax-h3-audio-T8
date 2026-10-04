@@ -460,6 +460,12 @@ def stage_model_identity(model, *, _omit_dormant_sampling=False):
     from .taeh3_sampling_preview import cache_projection
     model = cache_projection(model)
     try:
+        if model.get_injections("bypass_lora"):
+            from .modular_sampling import core_bypass_identity
+            view, contract = core_bypass_identity.project(model)
+            base = _audited_stage_model_identity(view, _omit_dormant_sampling=_omit_dormant_sampling)
+            return {**base, "schema": "t8.h3.dual_stage_model/core-bypass-v1", "core_bypass_lora": contract,
+                    "sha256": _sha256_json({"base": base, "core_bypass_lora": contract})}
         return _audited_stage_model_identity(model, _omit_dormant_sampling=_omit_dormant_sampling)
     except UnverifiedModelStack as error:
         from .patch_stack_policy import nonportable_model_identity

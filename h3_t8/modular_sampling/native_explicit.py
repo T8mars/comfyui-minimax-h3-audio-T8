@@ -24,6 +24,7 @@ KEY = "t8_modular_native_explicit_v1"
 STAGES = ("native_low", "native_high")
 ER_SDE_SOURCE_SHA256 = "0f8db8e10b7d1b5311adaffe1ebfbdb41ced68c88fa31041eaa9e3a5c4d83543"
 ER_SDE_FIRST_SIGMA_SHA256 = "38a667cea46183a84a6183d40cc0e67bb84ffe36cf09db197f4a5dee277d0ff6"
+LCM_SOURCE_SHA256 = "7c3bb88e758dbc13825f26db141026e008016d18ae0615981e08130fe15df6cb"
 
 
 @dataclass(frozen=True)
@@ -49,7 +50,30 @@ def _sampler_kind(model, sampler, context, owner):
         return "euler"
     if _exact_source_er_sde(sampler):
         return "er_sde_exact_source"
+    if _exact_source_lcm(sampler):
+        return "lcm_exact_source"
     return "unadapted"
+
+
+def _lcm_core_source_hash():
+    try:
+        return hashlib.sha256(inspect.getsource(k_sampling.sample_lcm).encode()).hexdigest()
+    except (AttributeError, OSError, TypeError):
+        return None
+
+
+def _exact_source_lcm(sampler):
+    """Recognize only Core's unmodified one-forward/fresh-noise LCM.
+
+    This authenticates completion of the connected stage, not an ELM checkpoint,
+    author RNG replay or content quality. Non-default options remain unverified.
+    """
+    expected = comfy.samplers.sampler_object("lcm")
+    return (type(sampler) is comfy.samplers.KSAMPLER
+            and sampler.sampler_function is expected.sampler_function
+            and sampler.sampler_function is k_sampling.sample_lcm
+            and not sampler.extra_options and not sampler.inpaint_options
+            and _lcm_core_source_hash() == LCM_SOURCE_SHA256)
 
 
 def _exact_source_er_sde(sampler):
@@ -109,8 +133,16 @@ def bind_stage(model, sampler, sigmas, av_latent, stage=STAGES[0]):
     terminal = float(sigmas[-1]) == 0.
     block_count = len(prepared.get_model_object("diffusion_model").blocks)
     er_sde_plan = _er_sde_eav_forward_plan(prepared, sampler, sigmas, effects, block_count)
+    lcm_plan = None
+    if _exact_source_lcm(sampler):
+        lcm_plan = detail_effects.forward_plan(effects, sigmas.tolist(), block_count)
+        lcm_plan["lcm_solver_sha256"] = _lcm_core_source_hash()
+        lcm_plan["boundary"] = ("Exact Core LCM has one model call per interval; non-terminal fresh-noise "
+                                "transitions make no additional model calls. Not author RNG or quality parity.")
+    coverage_adapter = ("core_er_sde_exact_source" if er_sde_plan is not None else
+                        "core_lcm_exact_source" if lcm_plan is not None else "none")
     initial_profile = {"sigma_dtype": str(sigmas.dtype), "detail_effects": effects,
-        "forward_plan": er_sde_plan or detail_effects.forward_plan(effects, sigmas.tolist(), block_count),
+        "forward_plan": er_sde_plan or lcm_plan or detail_effects.forward_plan(effects, sigmas.tolist(), block_count),
         "origin": "explicit_connected_native_stage_not_upstream_recipe_provenance"}
     def context(profile):
         return StageContext(RECIPE, stage, native_dual._canonical(profile), 0, len(sigmas) - 1,
@@ -122,7 +154,7 @@ def bind_stage(model, sampler, sigmas, av_latent, stage=STAGES[0]):
     owner = NativeExplicitOwner(initial, selected, sampling_json, sampling.model_uses_raw_audio_velocity(model))
     kind = _sampler_kind(model, sampler, initial, owner)
     initial_profile["sampler_kind"] = kind
-    initial_profile["eav_forward_coverage_adapter"] = "core_er_sde_exact_source" if er_sde_plan is not None else "none"
+    initial_profile["eav_forward_coverage_adapter"] = coverage_adapter
     if kind == "unadapted" and er_sde_plan is None:
         initial_profile["forward_plan"]["known"] = False
     bound = context(initial_profile)
@@ -132,7 +164,7 @@ def bind_stage(model, sampler, sigmas, av_latent, stage=STAGES[0]):
     report = {"schema": "t8.modular-sampling.native-explicit.v1", "stage_context": bound.to_dict(),
         "sampled": False, "sampler_replaced": False, "sigmas_replaced": False,
         "portable_completion_sampler_adapted": kind != "unadapted",
-        "eav_forward_coverage_adapter": "core_er_sde_exact_source" if er_sde_plan is not None else "none",
+        "eav_forward_coverage_adapter": coverage_adapter,
         "boundary": "Binds the actual connected native stage only, not its upstream plan provenance. "
                     "Keep original base-flow/LBH/full-first schedules, separate learned upscaler/reconcile and fresh HIGH noise. "
                     "PDD/VDN/V2-specific effects and completion are not certified by this native binding."}
@@ -160,6 +192,8 @@ def project_identity(model):
 
 def forward_plan(context):
     plan = json.loads(context.profile)["forward_plan"]
+    if "lcm_solver_sha256" in plan and _lcm_core_source_hash() != plan["lcm_solver_sha256"]:
+        return {**plan, "known": False, "boundary": "Bound LCM Core source changed; EAV coverage is unverified."}
     if "er_sde_solver_sha256" in plan and _er_sde_core_source_hashes() != (
             plan["er_sde_solver_sha256"], plan["er_sde_first_sigma_sha256"]):
         return {**plan, "known": False, "boundary": "Bound ER-SDE Core source changed; EAV coverage is unverified."}

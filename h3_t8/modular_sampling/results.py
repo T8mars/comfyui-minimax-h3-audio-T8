@@ -212,6 +212,7 @@ def implementation_identity():
     from comfy.ldm.modules import attention
     from comfy_extras import nodes_sparse_attention
     from . import hyperflow_fresh, hyperflow_identity
+    from . import core_bypass_identity
     from .. import hyperflow_runtime_advanced, hyperflow_sampling_advanced
     selected = (v2, sampling, h3_core_compat, contracts, eav, comfy.model_base, comfy.sample,
                 comfy.samplers, comfy.conds, comfy.sampler_helpers, comfy.model_sampling,
@@ -224,7 +225,8 @@ def implementation_identity():
                 pdd_stages, pdd_dynamic, pdd_advanced, minimax_model, bypass_lora, native_lora,
                 vdn_stages, vdn_identity, vdn_effects, vdn_relay, vdn_relay_math,
                 vdn_h3_advanced, vdn_two_pass, vdn_sdpa_backend, vdn_attention_compat,
-                hyperflow_fresh, hyperflow_identity, hyperflow_runtime_advanced, hyperflow_sampling_advanced)
+                hyperflow_fresh, hyperflow_identity, hyperflow_runtime_advanced, hyperflow_sampling_advanced,
+                core_bypass_identity)
     paths = {Path(module.__file__).resolve() for module in selected}
     paths.add(Path(__file__).resolve())
     return {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
@@ -245,12 +247,19 @@ def execution_identity(model, initial_sampling):
             raise ValueError("Stage live model_sampling owner changed during sampling")
         return hyperflow.model_selection(model)
     dynamic_contract = None
+    bypass_contract = None
     owner = model.get_attachment(pdd_stages.KEY)
     if owner is not None and json.loads(owner.context.profile)["pdd"]["mode"] == pdd_stages.DYNAMIC:
         try:
             model, dynamic_contract = pdd_dynamic.project(model)
         except UnverifiedModelStack:
             pass  # Unknown executable selection remains unverified, not erased.
+    if model.get_injections("bypass_lora"):
+        from . import core_bypass_identity
+        try:
+            model, bypass_contract = core_bypass_identity.project(model)
+        except UnverifiedModelStack:
+            pass  # Unknown injection/forward stays in the integrity snapshot.
     selected = model.object_patches.get("model_sampling")
     try:
         sampling_contract = _v2_sampling_identity(selected)
@@ -298,6 +307,8 @@ def execution_identity(model, initial_sampling):
     identity["selected_native_sampling"] = sampling_contract
     if dynamic_contract is not None:
         identity["pdd_dynamic"] = dynamic_contract
+    if bypass_contract is not None:
+        identity["core_bypass_lora"] = bypass_contract
     return identity
 
 
