@@ -3,8 +3,20 @@
     "version": "1.90.0",
     "documentation": "docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md",
     "workflows": "examples/workflows/71-kijai-experimental-split/README.md",
-    "new_nodes": ["MiniMaxH3KijaiPDD8StepSetupEXPT8"],
-    "families": ["DMAD", "PDMD4", "ELM", "FlashGen", "FL2VA_Full", "FL2VA_Pruned", "Ref2VA_Full", "Ref2VA_Pruned", "Ref_Difference"],
+    "new_nodes": [
+      "MiniMaxH3KijaiPDD8StepSetupEXPT8"
+    ],
+    "families": [
+      "DMAD",
+      "PDMD4",
+      "ELM",
+      "FlashGen",
+      "FL2VA_Full",
+      "FL2VA_Pruned",
+      "Ref2VA_Full",
+      "Ref2VA_Pruned",
+      "Ref_Difference"
+    ],
     "workflow_count": 18,
     "human_accepted_fixed_clips": 9,
     "source_revision": "d8023be02fefbb3633b0cd335c3879f91177299d",
@@ -14,9 +26,30 @@
     "status": "ten_specific_media_cases_human_accepted_selected_local_implementation_complete_unpublished",
     "review_id": "ca05523dee095ff5bf75d3d696d1e90f7b30bf02e7c648b4554bd084e0fee8f6",
     "revision": 23,
-    "accepted_cases": ["M1", "M2", "M3", "R01", "R04", "R05", "R06", "R10"],
-    "failed_cases_retained": {"R07": "B有个手一直贴脸上，C脸重影", "R08": "没有画面，声音夜视镜噪音，是不是发错了？"},
-    "followup_review": {"review_id": "cc955c8326cf8afb02735489665cd5a4e7e9d45d93e9547fea1c27da54c2b41b", "revision": 2, "accepted_cases": ["R07", "R08"], "pending_cases": [], "total_accepted_case_count": 10},
+    "accepted_cases": [
+      "M1",
+      "M2",
+      "M3",
+      "R01",
+      "R04",
+      "R05",
+      "R06",
+      "R10"
+    ],
+    "failed_cases_retained": {
+      "R07": "B有个手一直贴脸上，C脸重影",
+      "R08": "没有画面，声音夜视镜噪音，是不是发错了？"
+    },
+    "followup_review": {
+      "review_id": "cc955c8326cf8afb02735489665cd5a4e7e9d45d93e9547fea1c27da54c2b41b",
+      "revision": 2,
+      "accepted_cases": [
+        "R07",
+        "R08"
+      ],
+      "pending_cases": [],
+      "total_accepted_case_count": 10
+    },
     "followup": "User revision1 accepted R07 only; revision2 accepted R07 and R08, export/live/formal disk and all5 media labels/SHA matched. R07 explicit opt-in denoise0.05/original12 steps/model/seed/Relay/audio and manually annotated per-frame external MASK; full12/fresh0 complete AV exact, two optional graphs preserve old14/defaults. R08 real124-frame736x144 feet/ground crop with original input AAC; four native phases preserve complete RGB/PCM and skip retained heavy dependencies. Original revision23 failures/media remain historical, not rewritten.",
     "boundary": "Acceptance covers the original eight exact cases and the two specified followup cases only, not all materials/families/recipes/hardware or later media. Original source/hardware/Core-authority/net-benefit conditional exclusions remain as planned; not false implementations or certifications. No automatic acceptance, QualityGate mutation, automatic occlusion segmentation, publication or release."
   },
@@ -46,14 +79,21 @@
   },
   "visible_face_mask_local": {
     "status": "local_exp_16_graphs_native_light12_temporal_MASK_fresh0_specific_R07_human_passed_old_static_failure_retained_unpublished",
-    "nodes": ["MiniMaxH3VisibleFaceMaskBindEXPT8", "MiniMaxH3VisibleFaceCompositeEXPT8"],
+    "nodes": [
+      "MiniMaxH3VisibleFaceMaskBindEXPT8",
+      "MiniMaxH3VisibleFaceCompositeEXPT8"
+    ],
     "documentation": "docs/VISIBLE_FACE_MASK_EXP.md",
     "workflows": "examples/workflows/65-radar-visible-face-mask/README.md",
     "contract": "Two append-only post-Stitch/Gate operations restrict existing full-source changes, never alpha squared; exact whole tensor/declared24fps/broadcast/request/code binding and AUDIO same object. Eleven full CPU scopes203 passed/CUDA false and fourteen additive Full/Cold graphs with current Core typed-edge validation;591 schemas/2029 oldJSON/index/sampling kept. One native actual Save/reopen/Queue completed Standard Face Stage0 sampling ->124-frame736x416 full AV, independent fresh native0 complete RGB/PCM exact and original source-audio decode preserved,321539 changed pixels protected, all source/media/selected-model/runtime/helper/Core guards stable and owned closed. Prior test/generation/private canvas/report-field failures retained. No implicit geometry/clock/clamp/cache, automatic acceptance or segmentation truth; synthetic MASK/native one representative does not qualify every graph family's UI/media or human quality. Unpublished."
   },
   "external_continuation_local": {
     "status": "local_exp_native_video_only_full4_fresh0_independent_effects_specific_R06_human_passed_unpublished",
-    "nodes": ["MiniMaxH3ExternalContinuationSourceEXPT8", "MiniMaxH3ExternalContextEncodeEXPT8", "MiniMaxH3ExternalContinuationConditioningEXPT8"],
+    "nodes": [
+      "MiniMaxH3ExternalContinuationSourceEXPT8",
+      "MiniMaxH3ExternalContextEncodeEXPT8",
+      "MiniMaxH3ExternalContinuationConditioningEXPT8"
+    ],
     "documentation": "docs/EXTERNAL_CONTINUATION_EXP.md",
     "contract": "SAVED manually adopted external full SHA/project/revision/trim/clock/code bound RGB or same-rate same-channel stereo PCM, independent Source/Encode/ONE Conditions; unchanged native audio-grid rule.195 CPU cases/twelve full scopes/CUDA false. One native video_only22 tail full4 callbacks and fresh GPU explicit StageLoad0 sampling produced102-frame448x256/24fps4.25s complete RGB/PCM exact; actual canvas Save/reopen/Queue, full source/model/helper/Core/original bytes stable and owned close. Interrupted CPU decoder attempt retained. Not PCM-context/dual/seam or human certification. Independent external effect adapter/four67-directory graphs implemented; separate trained full4/fresh0 qualification in external_motion_effects_local does not replace plain-path evidence. No fake original state/ancestor, implicit conversion or automatic append/mux/adopt/approve/cache; old schemas/defaults/workflows preserved, unpublished."
   },
@@ -64,7 +104,10 @@
   },
   "mv_cast_solo_local": {
     "status": "local_exp_native_AB_full_same_root_fresh0_specific_R05_human_passed_unpublished",
-    "nodes": ["MiniMaxH3MVCastSoloPlanEXPT8", "MiniMaxH3MVCastSoloRendererEXPT8"],
+    "nodes": [
+      "MiniMaxH3MVCastSoloPlanEXPT8",
+      "MiniMaxH3MVCastSoloRendererEXPT8"
+    ],
     "documentation": "docs/MV_CAST_SOLO_EXP.md",
     "contract": "A/B independent solo references/literal cues, no previous performer tail, original clock and one final-song mux. Actual native canvas full4 callbacks each and same-output-root fresh0 complete248-frame448x256/24fps RGB/PCM exact qualification passed; all selected-source/model/helper/original-output guards true and owned service closed.175 CPU tests/seven complete scopes with real tiny AV/LoRA parity and late crop rejection remain distinct. Three first-scene failures, copied-output path refusal and interrupted collector preserved. No moved-output portability or subjective identity/lipsync/human quality certificate. OldV1-V3/defaults/workflows and stable sampler unchanged, unpublished."
   },
@@ -75,20 +118,28 @@
   },
   "h3_fun_union2_local": {
     "status": "local_exp_native40_specific_R04_human_passed_legacy_Turbo4plus4_quality_failure_retained_unpublished",
-    "nodes": ["MiniMaxH3FunUnion2LoaderEXPT8", "MiniMaxH3FunUnion2ApplyEXPT8"],
+    "nodes": [
+      "MiniMaxH3FunUnion2LoaderEXPT8",
+      "MiniMaxH3FunUnion2ApplyEXPT8"
+    ],
     "documentation": "docs/H3_FUN_UNION2_EXP.md",
     "contract": "Independent append-only10-block49-channel/every5/post_norm nodes and strict full2688 versus curve8; aligned actual sampler/VAE16x, preserved delegates and content-bound stage projection/cache integrity. One native4+4 partitionedLOW/save/HIGH/freshHIGH exact request/state/AV passed mechanically, but colored-square quality failed and no recommended example. One separate no-Turbo native40 CFG1 full-strength5s control passed actual Save/reopen/Queue,40 callbacks/portableSave/strictAV. Not full upstream parity, single-factor root-cause proof or human acceptance;4+4 externalEAV/Relay observed with unitEAVgain only. No original joint-audio or exact outside-RGB guarantee."
   },
   "rf_joint_clock_restart_local": {
     "status": "v1.88.1_explicit_opt_in_native_B8_C1_C2_specific_human_review_passed",
-    "nodes": ["MiniMaxH3RFRestartJointClockSetupEXPT8"],
+    "nodes": [
+      "MiniMaxH3RFRestartJointClockSetupEXPT8"
+    ],
     "documentation": "docs/RF_JOINT_CLOCK_RESTART_EXP.md",
     "workflows": "examples/workflows/64-reviewed-audio-followup/README.md",
     "contract": "Replace only RF Restart Setup to avoid a second audio rebase after joint re-noising. Original anchors/noise/masks/joint AV and all legacy defaults/graphs remain. Human approval covers the specific native C1/C2 original3-step saved-BASE restarts and B8 independent4-step denoise.35 candidate only. Six additive paired generic templates retain explicit checkpoint placeholders and manual acceptance; no bundled private assets or automatic cache. Four additive S04 PDD templates retain the original4+4 recipe. GitHub main/release does not certify Registry installability or arbitrary materials."
   },
   "multiface_frozen_source_local": {
     "status": "local_native_two_three_person_full_fresh_AV_and_four_canvas_roundtrips_verified_final4416_CPU_pass_not_quality_or_published",
-    "nodes": ["MiniMaxH3MultiFaceSourceSaveEXPT8", "MiniMaxH3MultiFaceSourceLoadEXPT8"],
+    "nodes": [
+      "MiniMaxH3MultiFaceSourceSaveEXPT8",
+      "MiniMaxH3MultiFaceSourceLoadEXPT8"
+    ],
     "documentation": "docs/MULTIFACE_FROZEN_SOURCE_EXP.md",
     "contract": "Exact original Multi-Face plan/window/AV Save/Load plus independent completed portable StageResult and current full parent RGB/source AUDIO. Two appended public nodes/four opt-in graphs preserve84 old Face files, SAM defaults/hash/math/audio/approvals; EAV/Relay external, Saveconfirm=false/no automatic acceptance/cache. Real native two/three-person original8 callbacks each plus independent fresh cold0 strictly decoded124-frame736x416/24fps5.167s H264AAC, complete RGB/PCM exact and eleven checks passed for each. Seven complete scopes96 CPU/source4754/optional stable/CUDAfalse/no exclusions; counts overlap not added. Four actual native edited SaveAs/refresh/sidebar reopens and exact node/edge/widget audits passed/emptyQueue/history/source/controller/runtime stable/ownedclosed. Current epoch final CPU pending, previous failures retained; not human quality or published."
   },
@@ -124,7 +175,10 @@
   },
   "ltx_native_load_policy_local": {
     "status": "local_one_public_native_identity_full_fresh_complete_AV_exact_not_quality_or_published",
-    "nodes": ["MiniMaxH3LTXLoadPolicyEXPT8", "MiniMaxH3LTXLoadPolicyAuditEXPT8"],
+    "nodes": [
+      "MiniMaxH3LTXLoadPolicyEXPT8",
+      "MiniMaxH3LTXLoadPolicyAuditEXPT8"
+    ],
     "documentation": "docs/LTX_NATIVE_LOAD_POLICY_EXP.md",
     "delivery_verification": "Four saved opt-in ordinary/Identity full/cold graphs preserve old effect defaults. Native visible policy/EAV/local-Relay edits, Save As/reload/reopen and named wires passed4/4 with no Queue/history; existing exact connected-empty-report guard reused, original strict failure retained. Eighteen current scopes passed305 CPU/CUDA false/source4731 stable before this metadata-only sync, including the preserved seam tests. Not all-repository, four-preset GPU or human-quality certification.",
     "contract": "Legacy default bypass keeps original MODEL and old workflows. Explicit consistent_streaming_exp clones without removing LoRAs/wrappers, delegates native preparation force_offload and reports observations only, never completion/provenance/cache/quality certification. Public original-three-step native Identity combined EAV/Relay full/fresh complete121-frame1024x576/24fps H264AAC candidate tensors and decoded AV match exactly; source audio preserved,48x3 EAV/Relay covered,max gain1.10954<1.5 and720 backend delegates. Nine source/selected-weight/Core/stage/controller/resource-close gates passed. Relevant195 CPU and old577/2100 schema/JSON preservation passed; root additive import/append precisely reviewed separately from retained strict requires-review failure. Original mixed-residency failure retained. No general acceleration/reproducibility/all-material/quality or publication claim; later metadata/workflow epoch needs current final regression."
@@ -169,7 +223,11 @@
   },
   "prepared_ltx_external_effects_local": {
     "status": "local_EXP_one_native_combined_AV_and_generation_decode_cancel_fresh_retry_cache_verified_not_human_or_published",
-    "nodes": ["MiniMaxH3PreparedLTXEffectsBindEXPT8", "MiniMaxH3PreparedLTXRelayPlanEXPT8", "MiniMaxH3PreparedLTXRelayEncodeEXPT8"],
+    "nodes": [
+      "MiniMaxH3PreparedLTXEffectsBindEXPT8",
+      "MiniMaxH3PreparedLTXRelayPlanEXPT8",
+      "MiniMaxH3PreparedLTXRelayEncodeEXPT8"
+    ],
     "documentation": "docs/PREPARED_GENERATION_INTEGRATION_EXP.md",
     "contract": "Original bundle/old nodes unchanged; explicit plan and separately committed per-event INT8 text/connector caches, SHA/source/environment identities and serial owned Job/resource guards. EAV is video-only native post-norm/RoPE FETA; Relay uses actual post-connector event contexts and bounded video text bias. Native combined apply-exp generate, fresh decode-only and third cache queues passed one 73-frame 832x480 strict AV/original-audio case with 144 Relay/96 EAV applications and generation unchanged. Cache hits launch no worker; global-only bypass uses no text checkpoint or GPU. Six report-only full/cold graphs passed actual native independent-control edits, Save As and reload/reopen serialization audits, without sampling. Encoder-only native Gemma cancellation/no-commit/Job-zero, fresh encoding-only retry and third cache passed with original failure SHA unchanged. A separate five-fresh-Core native chain also passed real generation cancellation after a completed joint forward, same-chain generation-only retry, real decode cancellation, decode-only retry and zero-worker cache. Cancelled stages committed nothing, failed stage bytes/original generation stayed unchanged and every owned Job ended at zero. Arbitrary providers/materials and human quality remain separate gates. AST v9 reviews exactly two non-diffusion interfaces and preserves all v8 sites. Not published."
   },
@@ -185,19 +243,29 @@
     "revision": "9a1fd3a41b4a754a7886e64e82edbddf599fd1bd",
     "sha256": "2a8d8845c5342756a2781e8e69563940e4bb573c9a40ebb534915ff8fd76573a",
     "installed_filename": "minimax_h3_t2va_veda_8nfe_600step_preview_fp8_9a1fd3a.safetensors",
-    "example_workflows": ["examples/workflows/63-veda-t2va/H3_Veda_8NFE_9a1fd3a_report_only_EXP.json", "examples/workflows/63-veda-t2va/H3_Veda_8NFE_9a1fd3a_apply_exp_EXP.json"],
+    "example_workflows": [
+      "examples/workflows/63-veda-t2va/H3_Veda_8NFE_9a1fd3a_report_only_EXP.json",
+      "examples/workflows/63-veda-t2va/H3_Veda_8NFE_9a1fd3a_apply_exp_EXP.json"
+    ],
     "contract": "Official predictor, not DiT or LoRA. Existing models/veda_scorers Bundle loader reads it directly; all100 bf16 CPU parameters exactly match official FP8/head-scale dequantization and all12 packed plans. Explicit native8-step Turbo v4 step600 teacher pairing; historical inferred4 label does not override author8 recommendation. Initial first-seed cold/warm sparse latent and decoded AV repeat failure retained. Fixed-QKV real-predictor diagnostic isolated static-first shape generalization with equal masks/inputs/RNG; compile-only dynamic=True correction was revalidated in a new same-PID cache-none eight native Queue matrix. Every case completed400 calls and strict5-second120-frame768x768 H264/AAC plus joint checkpoints; both seeds repeated each mode's complete latent/manifest content and decoded RGB/PCM exactly, including cold sparse. Sources/controllers/bundle stayed stable and owned service stopped. Cold sparse565.484 seconds vs warm243.203; second-seed sparse238.343/237.547 vs dense321.797/322.766 seconds. Cold-inclusive paired speed gate still fails; warm advantage only, no human quality/general speed or inherited other-grid/effect/split qualification or publication. Old file/graphs, predictor selection mathematics, sampler, audio, dense defaults and Windows prerequisites preserved."
   },
   "veda_sparse_t2va_local": {
     "status": "local_EXP_native_8NFE_AV_first_run_slower_repeat_run_speed_hint_not_published",
-    "nodes": ["MiniMaxH3VedaBundleEXPT8", "MiniMaxH3VedaApplyEXPT8", "MiniMaxH3VedaAuditEXPT8"],
+    "nodes": [
+      "MiniMaxH3VedaBundleEXPT8",
+      "MiniMaxH3VedaApplyEXPT8",
+      "MiniMaxH3VedaAuditEXPT8"
+    ],
     "documentation": "docs/VEDA_SPARSE_T2VA_EXP.md",
     "windows_flex_python_utf8_preflight": true,
     "contract": "Exact official T2VA Veda bundle plans only; per-MODEL clone, original dense report-only default, explicit Flex apply mode, history audit, no silent unsupported-plan fallback. Pinned MIT upstream predictor code; external predictor weight is not packaged. Windows selected sparse apply_exp rejects DynamicVRAM before MODEL mutation after an isolated native Triton crash. Matched 768x768 1x1_t37 native Chromium 8-NFE canvases produced 400 sparse versus 400 dense calls, both strictly decoded 120-frame/5s H264/AAC; default Veda was slower on this 16 GiB RTX 4060 Ti on first run. Separate isolated same-route repeats without media found Flex 618.5→191.1 s versus dense 546.3→433.5 s, each 400 true calls; the warm Flex advantage is process/cache-sensitive and not a first-run or general speed qualification. A cross-order repeat drifted and was interrupted, not counted as a completed baseline. Pinned Triton fused tile I/O also passed a 400-call native 5-second AV canvas, but 16:16 sampling/17:38 prompt was slower than both dense and default Veda, so it stays default-off. Existing unverified attention/DiT owners are retained with Veda bypassed. Veda-before-EAV native canvases showed 400 sparse calls plus 400 EAV measurements; report_only media exactly matched Veda-only and apply_exp changed decoded picture and audio. Masked H3 calls delegate dense with zero sparse claim. No human quality or general speedup; other-grid full media, Relay sparse composition, LOW/HIGH, cold resume, other modalities, release and Registry remain open."
   },
   "veda_heuristic_tile64_local": {
     "status": "local_EXP_model_free_two_native_AV_canvases_not_quality_or_speed_qualified_not_published",
-    "nodes": ["MiniMaxH3VedaHeuristicApplyEXPT8", "MiniMaxH3VedaHeuristicAuditEXPT8"],
+    "nodes": [
+      "MiniMaxH3VedaHeuristicApplyEXPT8",
+      "MiniMaxH3VedaHeuristicAuditEXPT8"
+    ],
     "documentation": "docs/VEDA_SPARSE_T2VA_EXP.md",
     "windows_flex_python_utf8_preflight": true,
     "optional_sigma_window_and_sink_controls": "real_weight_one_NFE_and_native_mixed_window_AV_mechanical_only_not_quality_or_speed_qualified",
@@ -205,38 +273,57 @@
   },
   "ltx_prompt_relay_timeline_local": {
     "status": "local_EXP_eight_media_routes_four_native_cold_canvas_runs_three_native_full_canvas_runs_one_original_full_strict_media_failure_not_full_S27_or_published",
-    "nodes": ["MiniMaxH3LTXPromptRelayPlanEXPT8", "MiniMaxH3LTXPromptRelayEncodeEXPT8", "MiniMaxH3LTXPromptRelayApplyEXPT8", "MiniMaxH3LTXPromptRelayAuditEXPT8"],
+    "nodes": [
+      "MiniMaxH3LTXPromptRelayPlanEXPT8",
+      "MiniMaxH3LTXPromptRelayEncodeEXPT8",
+      "MiniMaxH3LTXPromptRelayApplyEXPT8",
+      "MiniMaxH3LTXPromptRelayAuditEXPT8"
+    ],
     "documentation": "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
     "contract": "Output-frame-exact 8n+1 plan, actual selected-CLIP segment token binding and delegated bounded positive video cross-attention Relay with report-only default. Eight additive Relay-only/EAV+Relay full/cold graphs validate statically and pass native browser open/edit/Save As/reload serialization; real-weight same-PID A/B/A isolates numeric effect. Four ordinary/Identity Relay-only/EAV+Relay routes at 128x64 and 1024x576 each yield exact API full/fresh-cold candidate latent and complete-media parity. Native Chromium Queue produced strict-complete 1024x576 media for three full graphs and all four cold-resume graphs, each with decoded picture/audio matching its independent API control. The original Identity EAV+Relay full-canvas strict H264 decode failed and remains failed; identical raw inputs and passing post-exit partial decode do not retroactively pass it. EAV remains report-only in combined routes. Original H3 Plan, negative/audio routes and old workflows remain. One historical source only; no human-quality, all-backend or portable-cache qualification."
   },
   "ltx_external_eav_local": {
     "status": "local_EXP_trained_numeric_ABA_ordinary_identity_not_full_media_or_quality_qualified_not_published",
-    "nodes": ["MiniMaxH3LTXEAVApplyEXPT8", "MiniMaxH3LTXEAVAuditEXPT8"],
+    "nodes": [
+      "MiniMaxH3LTXEAVApplyEXPT8",
+      "MiniMaxH3LTXEAVAuditEXPT8"
+    ],
     "documentation": "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
     "contract": "External video-only FETA over the existing LTX attention delegate with finite bounded temporal CFI. Disabled/report-only preserve original tiny Core output; apply_exp reaches every video block in ordinary/Identity tiny Euler. Same-PID trained Gemma/LTX A/B/A at 128x64 proves exact repeat of report-only latent and non-identity apply-exp latent changes in both ordinary and Identity combined Relay graphs, with 144 video-block applications each at tau=4; Relay remains applied in every phase. Original saved graphs keep EAV report-only. No claim for third-party bypass, full-size media, cold apply-exp parity, human quality or publication."
   },
   "isolated_video_export_local": {
     "status": "local_EXP_not_full_graph_qualified_not_published",
-    "nodes": ["MiniMaxH3SaveVideoIsolatedEXPT8"],
+    "nodes": [
+      "MiniMaxH3SaveVideoIsolatedEXPT8"
+    ],
     "documentation": "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
     "boundary": "Explicit Windows Job-owned original-frame H.264/AAC export, bounded staging/hash/logs, cancellation/deadline and strict complete decode before exclusive publication. Appended after all 560 existing nodes; old graphs unchanged. Saved real-latent output replays pass, but new full/freeze/cold candidate integration still fails both cold media gates. Failed outputs remain uncommitted; no retry, algorithm fallback, complete media or quality claim."
   },
   "serial_video_io_local": {
     "status": "local_EXP_not_delivery_qualified_not_published",
-    "nodes": ["MiniMaxH3VideoComponentsSerialEXPT8", "MiniMaxH3SaveVideoSerialEXPT8"],
+    "nodes": [
+      "MiniMaxH3VideoComponentsSerialEXPT8",
+      "MiniMaxH3SaveVideoSerialEXPT8"
+    ],
     "documentation": "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
     "boundary": "Preserves component slots, crop/trim, depth/color/fps/audio and old node prefix. Explicit packet/frame cancellation and corrupt-packet rejection. Single-thread PyAV remains unqualified. The separate isolated writer and opt-in six-graph variants now exist, but full cold media qualification, canvas and LTX effects remain pending."
   },
   "ltx_rgb_source_storage_local": {
     "status": "local_EXP_not_published_not_S27_complete",
-    "nodes": ["MiniMaxH3LTXRGBSourceSaveEXPT8", "MiniMaxH3LTXRGBSourceLoadEXPT8"],
+    "nodes": [
+      "MiniMaxH3LTXRGBSourceSaveEXPT8",
+      "MiniMaxH3LTXRGBSourceLoadEXPT8"
+    ],
     "documentation": "docs/LTX_RGB_SOURCE_STORAGE_EXP.md",
     "boundary": "Append-only source data Save/Load, no hidden sampling/encoding/upscale or completed-stage claims. Latest opt-in serial-reader/isolated-exporter six-graph trials establish full/freeze source equality and real-weight full/cold latent equality, but both cold media gates failed. Earlier Core-export failures remain historical evidence; post-exit diagnostic success does not qualify failed runs. Old Core/graphs unchanged; native browser, LTX effects and quality remain incomplete."
   },
   "audio_refine_external_effects_local": {
     "status": "local_ten_original_native_full_cold_combined_controls_at_distinct_epochs_not_all_effects_quality_or_published",
     "latest_native_scope": "Each of ten original recipes independently passed native full/fresh-cold combined Relay-apply/EAV-report controls, actual original/tail-only callbacks, strict source checkpoint identity and complete original/candidate/default H264/AAC. Full/cold candidate/default AV tensors and all three decoded RGB/PCM signatures match; default retains original AV exactly, no candidate accepted. Source geometries and original intervals preserved: PDD4plus4 remains22 frames, long Relay120, others124. These receipts have distinct frozen source epochs, not a unified current-source all-effects qualification. Relay's new retry uses explicit4GiB reserve without weakening original resource gates; Turbo8 retains2.5GiB and stock writer. Historical headroom/codec failures remain failed, codec root cause unproven. General EAV apply strengths/windows, materials and human picture/listening remain separate gates.",
-    "nodes": ["MiniMaxH3AudioRefineEffectsBindEXPT8", "MiniMaxH3AudioRefineEffectsGuiderEXPT8"],
+    "nodes": [
+      "MiniMaxH3AudioRefineEffectsBindEXPT8",
+      "MiniMaxH3AudioRefineEffectsGuiderEXPT8"
+    ],
     "documentation": "docs/AUDIO_REFINE_EXTERNAL_EFFECTS_EXP.md",
     "boundary": "Additive source-bound EAV/paired Relay interfaces; old controls, ABSTAIN, Quality Gate, original recipes and20 freeze/resume graphs retained.26 local examples preserve report-only defaults and independently externalized plans/effects. Historical browser/tiny CPU and two22-frame PDD API tails remain distinct. New original-size PDD8 combined native full/fresh-cold Queue passed actual8+4 versus cold4 callbacks, source-bound strict verified checkpoint, four EAV report-only forwards/200 Relay applications and three124-frame736x416/24fps complete H264/AAC deliveries. Candidate/selected AV tensors and original/candidate/selected decoded AV match full versus cold; source checkpoint unchanged. Default ABSTAIN selection is bit-exact original AV and decoded media. Unaccepted candidate picture/sound differ; zero-video mask is not a bit-exact candidate-output guarantee. Actual installed Core/ClipProj schemas additionally pass40 composed route/effect DAGs and8 negative checks without weights/Queue. A unified current-source whole-effect matrix, general apply-exp choices, all materials and human quality remain incomplete. No portable StageResult or publication authorization."
   },
@@ -342,7 +429,13 @@
     "cpu": "Latest scoped522 cases/25 modules/2127 frozen sources unchanged/CUDAfalse/0skip+deselect in five-track-cpu-final-v19;not whole repository qualification. Original first-pass preview identity/seam/P1 media-cancel/voice refs/Relay-owner/CPU native continuation-text and source-bound workflow tests included. Current freeze check differs only descriptive features.json;old eight formal JSON unchanged. New artifact non-pruned Ref2VA/independent EMA B standard4+4 exact GPU helper/16node Core350 CPU and full16-forward GPU/192frame AV/ASR/review HTTP have their own receipts,NOT inherited522 coverage. No numerical source or old schema/default migration;human quality and MeridianP2 gate retained.",
     "gpu": "Meridian250 native INT8 layers/three forwards/complete73frame H264 mechanically complete,P2 human pending before fullP3/P4. Avatar native8/4+4/cancel recovery and fresh TAE OFF/ON eight input/output pairs/final AV exact0/0,three real decodes,complete73frame media independently audited. Core same-process LoRA residency differences remain a documented unresolved boundary,no Core edits. Native minimal Ref2VA reference ablation/neutral-emotion/native20+4 joint192frame8s mechanically complete;single-model20 old designs retain repeated or extra-word risks. New original-required standard4+4 is independent non-pruned Ref2VA plus two EMA B branches,two8s segments/16 actual forwards/owned721.547s exit0 cleanup0/Core-assets-source bindings unchanged/full192 H264+251 AAC blocks decoded. No-hint CPU ASR still observes extra English after target two lines:not fixed,recommended,human accepted or root-cause proof. EAV off and original voice_long/EAV combinations do not inherit this mechanical qualification. Model-generated audio only,no source mux,trim,mute or gain. New8835 six-group11-clip review retains all prior cohorts;not browser or human quality proof.",
     "frontend": "Actual-source fake DOM tests plus isolated live CPU Core/browser real-GPU-frame replay, native request cancellation and next ordinary request recovery passed. Replay is NOT new live GPU inference; user's frontend untouched.",
-    "documentation": ["docs/AVATAR_PROGRESSIVE_EXP.md", "docs/TAEH3_SAMPLING_PREVIEW_EXP.md", "docs/READABLE_AUDIO_P1_EXP.md", "docs/NATIVE_VOICE_EMOTION_EXP.md", "docs/FIVE_TRACK_LOCAL_HANDOFF_20260918.md"],
+    "documentation": [
+      "docs/AVATAR_PROGRESSIVE_EXP.md",
+      "docs/TAEH3_SAMPLING_PREVIEW_EXP.md",
+      "docs/READABLE_AUDIO_P1_EXP.md",
+      "docs/NATIVE_VOICE_EMOTION_EXP.md",
+      "docs/FIVE_TRACK_LOCAL_HANDOFF_20260918.md"
+    ],
     "workflows": "examples/workflows/36-avatar-voice/README.md"
   },
   "h16_completed_source_20260917": {
@@ -3437,7 +3530,19 @@
     "MiniMaxH3HyperFlowCurveHeadEffectsAuditEXPT8",
     "MiniMaxH3HyperFlowCurveTailEffectsAuditEXPT8",
     "MiniMaxH3HyperFlowCurveBaseLoaderEXPT8",
-    "MiniMaxH3KijaiPDD8StepSetupEXPT8"
+    "MiniMaxH3KijaiPDD8StepSetupEXPT8",
+    "MiniMaxH3FreeVideoLoaderEXPT8",
+    "MiniMaxH3FreeVideoLoRAEXPT8",
+    "MiniMaxH3FreeVideoLOWEXPT8",
+    "MiniMaxH3FreeVideoHIGHEXPT8",
+    "MiniMaxH3FreeVideoStageSaveEXPT8",
+    "MiniMaxH3FreeVideoStageLoadEXPT8",
+    "MiniMaxH3FreeVideoEAVEXPT8",
+    "MiniMaxH3FreeVideoPromptRelayEXPT8",
+    "MiniMaxH3FreeVideoSplitLOWEXPT8",
+    "MiniMaxH3FreeVideoSplitHIGHEXPT8",
+    "MiniMaxH3FreeVideoMIDSaveEXPT8",
+    "MiniMaxH3FreeVideoMIDLoadEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",
@@ -5831,5 +5936,98 @@
     "long_video_validation": "cancelled_by_user_not_qualified",
     "performance": "No measured total output-stage benefit: native30.54s versusTRT31.33s including loading/decoding/saving; excludes sampling.",
     "runtime": "Optional TensorRT cu13 10.13.3.9.post1 in an isolated directory; locally compiled engines; no binaries/models redistributed."
+  },
+  "freevideo_exp_1_91": {
+    "status": "v1.91.0_EXP_fixed_8plus2_and_split4plus4_human_accepted",
+    "documentation": "docs/FREEVIDEO_EXP.md",
+    "new_nodes": [
+      "MiniMaxH3FreeVideoLoaderEXPT8",
+      "MiniMaxH3FreeVideoLoRAEXPT8",
+      "MiniMaxH3FreeVideoLOWEXPT8",
+      "MiniMaxH3FreeVideoHIGHEXPT8",
+      "MiniMaxH3FreeVideoStageSaveEXPT8",
+      "MiniMaxH3FreeVideoStageLoadEXPT8",
+      "MiniMaxH3FreeVideoEAVEXPT8",
+      "MiniMaxH3FreeVideoPromptRelayEXPT8",
+      "MiniMaxH3FreeVideoSplitLOWEXPT8",
+      "MiniMaxH3FreeVideoSplitHIGHEXPT8",
+      "MiniMaxH3FreeVideoMIDSaveEXPT8",
+      "MiniMaxH3FreeVideoMIDLoadEXPT8"
+    ],
+    "freevideo_revision": "98b3550ae551a70ae3f0a9a463f9dfc9a23b21a7",
+    "vdn_revision": "30b6b380c2482f3519469350810c2955d8847fd9",
+    "diffusers_tree": "37068ab7331d8b28f4cf718dba7015c742a306d2",
+    "model_revision": "ae041e5aec51f8516a3416bd86d579cb29c4c796",
+    "verification": {
+      "affected_CPU": 104,
+      "CUDA_in_CPU_scope": false,
+      "small_kernel_probes": 2,
+      "actual_new_GPU_cases": 1,
+      "LOW_NFE": 8,
+      "HIGH_NFE": 2,
+      "output_width": 512,
+      "output_height": 288,
+      "output_frames": 120,
+      "fps": 24,
+      "seconds": 5,
+      "complete_AV_decode": true,
+      "LOW_audio_preserved_exactly": true,
+      "human_quality_accepted": true
+    },
+    "effects_extension": {
+      "status": "one_combined_native_8plus2_human_accepted",
+      "external_EAV": true,
+      "external_Prompt_Relay": true,
+      "linear_relay_profile": "beta_weighted_text_seed_exp_v1",
+      "audio_reference_tables": "derived_constant_rows_exp_v1",
+      "CPU_affected_scope": 124,
+      "CUDA_in_CPU_scope": false,
+      "readback_constant_row_groups": 2600,
+      "masked_cudnn_tiny_RMSE": 0.00017342346553204092,
+      "new_GPU_cases": 1,
+      "LOW_NFE": 8,
+      "HIGH_NFE": 2,
+      "EAV_measurements": 200,
+      "EAV_observed_gain_min": 1,
+      "EAV_observed_gain_max": 1,
+      "LOW_audio_exactly_preserved": true,
+      "human_quality_accepted": true
+    },
+    "human_review": {
+      "accepted_fixed_clips": 3,
+      "scope": "Two 8+2 clips and one true split4+4 clip; not arbitrary media/LoRA/parameters"
+    },
+    "split4plus4": {
+      "status": "one_native_full_and_cold_saved_fixed_clip_human_accepted",
+      "profile": "dmd8_split4_lift_x0_continue_audio_exp_v1",
+      "LOW_NFE": 4,
+      "HIGH_NFE": 4,
+      "total_NFE": 8,
+      "MID_type": "H3_T8_FREEVIDEO_MID",
+      "audio_policy": "continue_actual_noisy_a4_not_frozen",
+      "old8plus2_unchanged": true,
+      "CPU_affected_scope": 141,
+      "CUDA_in_CPU_scope": false,
+      "pinned_tiny_CPU_layouts": 4,
+      "new_GPU_cases": 1,
+      "complete_AV_decode": true,
+      "output_width": 512,
+      "output_height": 288,
+      "output_frames": 120,
+      "fps": 24,
+      "seconds": 5,
+      "MID_CPU_cold_load": true,
+      "cold_extra_GPU": false,
+      "EAV_LOW_measurements": 200,
+      "EAV_HIGH_measurements": 100,
+      "EAV_LOW_gain_min": 1,
+      "EAV_LOW_gain_max": 1.0507023334503174,
+      "EAV_HIGH_gain_min": 1,
+      "EAV_HIGH_gain_max": 1,
+      "native_Full_Cold_saved": true,
+      "old_user_JSON_unchanged": 325,
+      "human_quality_accepted": true
+    },
+    "boundary": "Append-only twelve nodes, original620 prefix/defaults/workflows and original eight FreeVideo schemas preserved. Separate content-bound FreeVideo Python engine, native conditioning and standard AV LATENT. Two fixed 8+2 clips human accepted; one true front4/lift/back4 native canvas and MID CPU cold-load complete, fixed new clip human accepted. Branch-local descriptors never patch Core MODEL. Bounded head-chunk adapters; nonlinear text-seed Relay EXP, not paper softmax equivalence. EAV measured, not general visible enhancement qualification. Owned audio-ref table rows byte-copied from explicit official constants, not full-projection GEMM parity; actual ref2va_audio qualified, ref2va_av structurally supported, not separate GPU quality tested. Online linear LoRA target-validated, not fused/AdaLN fallback. No plain UNET conversion, arbitrary-task quality/speed/RNG parity or Registry installability."
   }
 }

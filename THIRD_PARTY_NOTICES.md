@@ -431,6 +431,10 @@ Demucs or AivisSpeech runtime.
 Unlike that reference application, the T8 renderer never submits remote or local HTTP generation
 jobs: every scene is sampled directly through the connected ComfyUI MODEL. The complete original
 song is muxed once after video assembly. No upstream model weights or example media are included.
+## FreeVideo / VDN independent-engine adapter
+
+FreeVideo: https://github.com/FlashML-org/FreeVideo at `98b3550ae551a70ae3f0a9a463f9dfc9a23b21a7`; VDN at `30b6b380c2482f3519469350810c2955d8847fd9`. Upstream code is Apache-2.0; see [FreeVideo license](THIRD_PARTY_NOTICES/FreeVideo-LICENSE.txt) and the existing OpenVDN notices. The T8 adapter adds independent stages, explicit MID storage and external EAV/Relay descriptors. The pinned engine and rowwise model run in a separate environment and are not bundled. Model weights remain subject to the MiniMax H3 Community License; the code license does not replace the model license.
+
 ## PlagueKind MiniMax H3 SLA Attention
 
 The files under `h3_t8/sla_precision_v2_vendor/` are derived from

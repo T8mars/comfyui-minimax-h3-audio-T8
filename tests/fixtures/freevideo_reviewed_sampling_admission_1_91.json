@@ -1,0 +1,179 @@
+{
+  "schema": "t8.modular-sampling.new-sampling-admission.v1",
+  "entries": [
+    {
+      "route": "freevideo_effects",
+      "variant": "completed8plus2",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoLOWEXPT8",
+        "MiniMaxH3FreeVideoHIGHEXPT8"
+      ],
+      "workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Full_8plus2.json",
+      "resume_workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Cold_HIGH.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 7,
+      "resume_source_id": 16,
+      "resume_source_type": "MiniMaxH3FreeVideoStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 15,
+          "prompt_relay": 6
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_exp/nodes.py",
+        "MiniMaxH3FreeVideoHIGHEXPT8.execute",
+        "sample",
+        "c03a1b64fc266705655bafa322f1bc177a2d854ed4b1dd3a8461ef4944988761"
+      ]
+    },
+    {
+      "route": "freevideo_effects",
+      "variant": "completed8plus2",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoLOWEXPT8",
+        "MiniMaxH3FreeVideoHIGHEXPT8"
+      ],
+      "workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Full_8plus2.json",
+      "resume_workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Cold_HIGH.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 7,
+      "resume_source_id": 16,
+      "resume_source_type": "MiniMaxH3FreeVideoStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 15,
+          "prompt_relay": 6
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_exp/nodes.py",
+        "MiniMaxH3FreeVideoLOWEXPT8.execute",
+        "sample",
+        "d96a2e66da3581ce8802ccd3e1e08e51ec5dc70628475301c05f71bc7d1f7751"
+      ]
+    },
+    {
+      "route": "freevideo_effects",
+      "variant": "completed8plus2",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoLOWEXPT8",
+        "MiniMaxH3FreeVideoHIGHEXPT8"
+      ],
+      "workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Full_8plus2.json",
+      "resume_workflow": "examples/workflows/72-freevideo-split/FreeVideo_Effects_Cold_HIGH.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 7,
+      "resume_source_id": 16,
+      "resume_source_type": "MiniMaxH3FreeVideoStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 15,
+          "prompt_relay": 6
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_exp/worker.py",
+        "main",
+        "engine.sample",
+        "df661619eb7bb028f0e4d09b0261e75f0c8053f7251678fb8ecb2d47335c246a"
+      ]
+    }
+  ],
+  "additional_qualified_route": {
+    "route": "freevideo_split",
+    "variant": "split4plus4",
+    "stage_nodes": [
+      "MiniMaxH3FreeVideoSplitLOWEXPT8",
+      "MiniMaxH3FreeVideoSplitHIGHEXPT8"
+    ],
+    "workflow": "examples/workflows/72-freevideo-split/FreeVideo_Split_Full_4plus4.json",
+    "resume_workflow": "examples/workflows/72-freevideo-split/FreeVideo_Split_Cold_HIGH.json",
+    "workflow_stage_ids": [
+      6,
+      10
+    ],
+    "resume_stage_id": 7,
+    "resume_source_id": 16,
+    "resume_source_type": "MiniMaxH3FreeVideoMIDLoadEXPT8",
+    "external_effects": {
+      "eav": "supported",
+      "prompt_relay": "supported"
+    },
+    "external_effect_nodes": {
+      "workflow": {
+        "eav": [
+          18,
+          21
+        ],
+        "prompt_relay": [
+          5,
+          9
+        ]
+      },
+      "resume_workflow": {
+        "eav": 15,
+        "prompt_relay": 6
+      }
+    }
+  },
+  "runtime_evidence": {
+    "fixed_5_second_native_clips_human_accepted": 3,
+    "8plus2_completed_audio_exact": true,
+    "split4plus4_actual_a4_continued": true,
+    "full_and_cold_native_workflows_saved": 6,
+    "cold_cpu_only_not_additional_GPU": true,
+    "scope": "AST + explicit live registration/topology admission; fixed full clips reviewed separately, not arbitrary quality"
+  }
+}

@@ -709,6 +709,24 @@
       "symbol": "execute_speed_sampling",
       "callee": "guider.sample",
       "call_sha256": "274bf327d728701da1111002d68c6e5680e40d5b1bb377c5f48552bd2803a5dd"
+    },
+    {
+      "path": "h3_t8/freevideo_exp/nodes.py",
+      "symbol": "MiniMaxH3FreeVideoHIGHEXPT8.execute",
+      "callee": "sample",
+      "call_sha256": "c03a1b64fc266705655bafa322f1bc177a2d854ed4b1dd3a8461ef4944988761"
+    },
+    {
+      "path": "h3_t8/freevideo_exp/nodes.py",
+      "symbol": "MiniMaxH3FreeVideoLOWEXPT8.execute",
+      "callee": "sample",
+      "call_sha256": "d96a2e66da3581ce8802ccd3e1e08e51ec5dc70628475301c05f71bc7d1f7751"
+    },
+    {
+      "path": "h3_t8/freevideo_exp/worker.py",
+      "symbol": "main",
+      "callee": "engine.sample",
+      "call_sha256": "df661619eb7bb028f0e4d09b0261e75f0c8053f7251678fb8ecb2d47335c246a"
     }
   ]
 }

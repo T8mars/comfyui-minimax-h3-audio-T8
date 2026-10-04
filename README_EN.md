@@ -2,7 +2,7 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.90.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.91.0** · [Changelog](CHANGELOG.md)
 
 ## Install
 
@@ -25,6 +25,7 @@ Replace placeholder models and media with your own before running.
 |Audio references, talking or singing|[Audio control](examples/workflows/02-audio-control) · [Native voice/emotion and Avatar](examples/workflows/36-avatar-voice/README.md)|
 |Dual-model 4+4 or segmented long video|[Long-video workflows](examples/workflows/04-long-video)|
 |Independent stages and external EAV/Relay|[Separated sampling](docs/MODULAR_SAMPLING_EXP.md) · [Veda eight-step](examples/workflows/63-veda-t2va/README.md)|
+|FreeVideo FP8: 8+2 / true 4+4 (EXP)|[Six separated workflows](examples/workflows/72-freevideo-split/README.md) · [Independent runtime](docs/FREEVIDEO_EXP.md)|
 |Nine Kijai originals, Acc8 Full/Pruned independent stages|[18 workflows](examples/workflows/71-kijai-experimental-split/README.md) · [Model pairing](docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md)|
 |External continuation, visible-face masks, no-face bypass and curve stages|[RADAR workflows and limits](docs/RELEASE_1.89.0.md)|
 |Visually arrange shots, media and audio|[Obsidian Director](examples/workflows/39-director-console/README.md) (or use the dedicated `T8 Obsidian Director` entry in the ComfyUI left sidebar)|

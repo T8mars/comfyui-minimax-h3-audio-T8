@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.90.0"
+version = "1.91.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,6 +21,9 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/FREEVIDEO_EXP.md", "docs/RELEASE_1.91.0.md", "THIRD_PARTY_NOTICES/FreeVideo-LICENSE.txt",
+    "tools/prepare_freevideo_runtime.py", "tools/check_freevideo_kernels.py",
+    "tools/prepare_freevideo_audio_tables.py", "tools/check_freevideo_masked_kernel.py", "tools/check_freevideo_split_cpu.py",
     "CHANGELOG.md", "docs/README_POLICY.md", "docs/README_DETAILS_ZH.md", "docs/README_DETAILS_EN.md",
     "docs/MODEL_DOWNLOADS_1.85.md",
     "docs/DIRECTOR_D1.md", "docs/DIRECTOR_D2A.md",

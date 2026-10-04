@@ -6,6 +6,7 @@
 
 | 目录 | 主要用途 |
 |---|---|
+| [72-freevideo-split](72-freevideo-split/README.md) | FreeVideo FP8六张Full／Cold；基础8+2、外置EAV／Relay音频参考8+2、真正4+4，须独立环境 |
 | [71-kijai-experimental-split](71-kijai-experimental-split/README.md) | 九个Kijai非二步原件18张Full_Save／Cold_HIGH，独立MODEL／条件／Relay／EAV；须配对Full／Pruned与FL／Ref |
 | [65-radar-visible-face-mask](65-radar-visible-face-mask/README.md) | 16张可见区域MASK模板；建议先用通过定向复审的逐帧MASK／显式0.05轻修配对图，不推荐旧失败静态遮罩配方 |
 | [66-radar-no-face-lazy](66-radar-no-face-lazy/README.md) | 6张完整检测、显式SHA确认与真正lazy无脸旁路模板；不自动判无脸或接受结果 |

@@ -28,6 +28,25 @@ def _admissions(*entries):
     return {"schema": SCHEMA, "entries": list(entries)}
 
 
+def test_freevideo_finite_reviewed_sites_and_both_independent_resume_topologies():
+    from tools.audit_modular_new_sampling import _admission_issues
+    review = json.loads((ROOT / "tests/fixtures/freevideo_reviewed_sampling_admission_1_91.json").read_text(encoding="utf8"))
+    baseline = json.loads(BASELINE.read_text(encoding="utf8"))
+    assert len(review["entries"]) == 3
+    sites = [entry["site"] for entry in review["entries"]]
+    assert len({tuple(site) for site in sites}) == 3
+    assert [list(site.values()) for site in baseline["sites"][-3:]] == sites
+    assert not any("freevideo_exp/" in site["path"] for site in baseline["sites"][:-3])
+    live_ids = set(json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"])
+    entries = [review["entries"][0], review["additional_qualified_route"]]
+    routes = {entry["route"]: SimpleNamespace(public_nodes=tuple(live_ids)) for entry in entries}
+    for entry in entries:
+        assert _admission_issues({}, entry, ROOT, routes, live_ids) == []
+        broken = {**entry, "external_effect_nodes": {}}
+        assert any(issue["kind"] == "missing_independent_effect_nodes" for issue in
+                   _admission_issues({}, broken, ROOT, routes, live_ids))
+
+
 def test_current_production_sampler_sites_match_frozen_review_baseline():
     baseline = json.loads(BASELINE.read_text(encoding="utf8"))
     before_encoder = json.loads(PREVIOUS_ENCODER_BASELINE.read_text(encoding="utf8"))
@@ -44,7 +63,7 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
     report = audit(ROOT, baseline, _admissions(), {route.id: route for route in catalogue.ROUTES})
     assert report["status"] == "pass"
     effective, omitted = reviewed_layout_sites(ROOT, baseline)
-    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 118
+    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 121
     assert report["baseline_sites"] == report["current_sites"] == len(effective)
     assert report["reviewed_absent_root_alias_sites"] == len(omitted)
     assert report["new_sites"] == report["removed_sites"] == 0
@@ -105,8 +124,12 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
     previous = json.loads(PREVIOUS_RADAR_BASELINE.read_text(encoding="utf8"))
     current = json.loads(BASELINE.read_text(encoding="utf8"))
     review = json.loads((ROOT / "tests/fixtures/modular_new_sampling_review_v10.json").read_text(encoding="utf8"))
-    key = lambda site: [site[name] for name in ("path", "symbol", "callee", "call_sha256")]
-    added = [key(site) for site in current["sites"] if site not in previous["sites"]]
+    def key(site):
+        return [site[name] for name in ("path", "symbol", "callee", "call_sha256")]
+    # Preserve the historical v10 delta; the finite appended FreeVideo delta
+    # is independently checked above, not treated as unreviewed curve work.
+    historical = current["sites"][:118]
+    added = [key(site) for site in historical if site not in previous["sites"]]
     removed = [key(site) for site in previous["sites"] if site not in current["sites"]]
     assert added == review["reviewed_added_sites"] and len(added) == 14
     assert removed == [review["removed_site"]] and removed[0][:3] == [
@@ -119,12 +142,12 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
         "h3_t8/modular_sampling/hyperflow_curve.py", "h3_t8/nodes_hyperflow_curve_exp.py"}
     before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
     live = {node["id"] for node in capture()["nodes"]}
-    assert len(live) == 619
+    assert len(live) == 632
     report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
     assert report["status"] == "pass" and report["new_sites"] == 3
     effective, _ = reviewed_layout_sites(ROOT, before_curve)
     assert report["removed_sites"] == 0 and report["baseline_sites"] == len(effective)
-    assert report["declared_baseline_sites"] == 115
+    assert report["declared_baseline_sites"] == 118
     assert audit(ROOT, before_curve, _admissions(), {})["status"] == "fail"
 
 

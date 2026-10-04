@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.90.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.91.0** · [更新日志](CHANGELOG.md)
 
 ## 安装
 
@@ -25,6 +25,7 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 |音频参考、人物说话／唱歌|[音频控制](examples/workflows/02-audio-control) · [原生音色／情绪与 Avatar](examples/workflows/36-avatar-voice/README.md)|
 |双模型 4+4、分段长视频|[长视频](examples/workflows/04-long-video)|
 |独立一采／二采、外置 EAV／Relay|[分离采样](docs/MODULAR_SAMPLING_EXP.md) · [Veda 8 步](examples/workflows/63-veda-t2va/README.md)|
+|FreeVideo FP8：8+2／真正4+4（EXP）|[六张分离工作流](examples/workflows/72-freevideo-split/README.md) · [独立环境](docs/FREEVIDEO_EXP.md)|
 |Kijai 九原件、Acc8 Full／Pruned 分离双采|[18张工作流](examples/workflows/71-kijai-experimental-split/README.md) · [模型配对](docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md)|
 |外片续拍、可见脸 MASK、无脸旁路及曲线双采|[RADAR 新工作流与限制](docs/RELEASE_1.89.0.md)|
 |可视化编排镜头、素材和声音|[曜石导演台](examples/workflows/39-director-console/README.md)（也可点 ComfyUI 左侧独立的 `T8 曜石导演台`）|

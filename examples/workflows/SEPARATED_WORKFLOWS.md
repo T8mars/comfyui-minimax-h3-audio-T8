@@ -1,5 +1,7 @@
 # 分离式工作流总索引
 
+v1.91.0新增[FreeVideo六张Full／Cold](72-freevideo-split/README.md)：基础8+2、外置EAV／Relay与音频参考8+2、真正4+4；独立引擎，MID未完成音频继续采样，不覆盖原路线。
+
 v1.90.0 新增 [Kijai 九原件18张 Full_Save／Cold_HIGH](71-kijai-experimental-split/README.md)，两阶段MODEL／条件／Relay／EAV独立；不覆盖下列旧路线，四Acc8与普通完整LOW的音频策略不同。
 
 全部 S01–S29 已有前端 JSON 文件保存在下列目录；打开目录说明选择“完整生成/保存”或“冷恢复/只跑后采”。这里说明保存位置，不代表任意素材、模型和效果组合均已通过画质验收。
