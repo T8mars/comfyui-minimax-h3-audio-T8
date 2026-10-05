@@ -1,5 +1,7 @@
 # 分离式工作流总索引
 
+v1.92.0新增[Temporal Chunk窗口对白8张Full／Cold](73-temporal-dialogue-scope/README.md)：v5／H16独立合同、外置EAV／Relay与字面恢复。固定v5案例已人审，H16／效果模板仅CPU资格，旧路线不迁移。
+
 v1.91.0新增[FreeVideo六张Full／Cold](72-freevideo-split/README.md)：基础8+2、外置EAV／Relay与音频参考8+2、真正4+4；独立引擎，MID未完成音频继续采样，不覆盖原路线。
 
 v1.90.0 新增 [Kijai 九原件18张 Full_Save／Cold_HIGH](71-kijai-experimental-split/README.md)，两阶段MODEL／条件／Relay／EAV独立；不覆盖下列旧路线，四Acc8与普通完整LOW的音频策略不同。

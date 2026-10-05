@@ -2,7 +2,7 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.91.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.92.0** · [Changelog](CHANGELOG.md)
 
 ## Install
 

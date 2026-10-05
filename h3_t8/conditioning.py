@@ -376,6 +376,7 @@ def build_conditioning(
     return_details: bool = False,
     allow_above_reference_area: bool = False,
     semantic_bridge=None,
+    return_text_recipe: bool = False,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -589,7 +590,7 @@ def build_conditioning(
         media_map,
         "\n".join(report_lines),
     )
-    if not return_details:
+    if not return_details and not return_text_recipe:
         return result
     details = {
         "tokens": tokens,
@@ -603,4 +604,18 @@ def build_conditioning(
         "allow_above_reference_area": bool(allow_above_reference_area),
         "reference_area_policy": "warning_only_no_area_gate",
     }
+    if return_text_recipe:
+        # Explicit opt-in raw native encoding recipe. Never reconstruct media
+        # tokenization from an already contextualized/bridged text embedding.
+        from .temporal_dialogue_encoding import capture_native_text_recipe
+        tokenize_kwargs = (
+            {"minimax_ref_items": ref_items} if keyframes and real_ref_blocks
+            else {"minimax_ref_items": real_ref_items} if real_ref_blocks
+            else {"images": keyframe_images}
+        )
+        details["text_recipe"] = capture_native_text_recipe(
+            clip, tokenize_kwargs, values, counts, source_audio_ordinal,
+            prompt_primary_audio_ordinal, strict_prompt_tags, semantic_bridge,
+            resolved_task, frame_count, width, height,
+        )
     return (*result, details)

@@ -35,8 +35,8 @@ def test_freevideo_finite_reviewed_sites_and_both_independent_resume_topologies(
     assert len(review["entries"]) == 3
     sites = [entry["site"] for entry in review["entries"]]
     assert len({tuple(site) for site in sites}) == 3
-    assert [list(site.values()) for site in baseline["sites"][-3:]] == sites
-    assert not any("freevideo_exp/" in site["path"] for site in baseline["sites"][:-3])
+    assert [list(site.values()) for site in baseline["sites"][118:121]] == sites
+    assert not any("freevideo_exp/" in site["path"] for site in baseline["sites"][:118])
     live_ids = set(json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"])
     entries = [review["entries"][0], review["additional_qualified_route"]]
     routes = {entry["route"]: SimpleNamespace(public_nodes=tuple(live_ids)) for entry in entries}
@@ -63,7 +63,7 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
     report = audit(ROOT, baseline, _admissions(), {route.id: route for route in catalogue.ROUTES})
     assert report["status"] == "pass"
     effective, omitted = reviewed_layout_sites(ROOT, baseline)
-    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 121
+    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 123
     assert report["baseline_sites"] == report["current_sites"] == len(effective)
     assert report["reviewed_absent_root_alias_sites"] == len(omitted)
     assert report["new_sites"] == report["removed_sites"] == 0
@@ -142,13 +142,34 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
         "h3_t8/modular_sampling/hyperflow_curve.py", "h3_t8/nodes_hyperflow_curve_exp.py"}
     before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
     live = {node["id"] for node in capture()["nodes"]}
-    assert len(live) == 632
+    assert len(live) == 656
     report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
     assert report["status"] == "pass" and report["new_sites"] == 3
     effective, _ = reviewed_layout_sites(ROOT, before_curve)
     assert report["removed_sites"] == 0 and report["baseline_sites"] == len(effective)
-    assert report["declared_baseline_sites"] == 118
+    assert report["declared_baseline_sites"] == 120
     assert audit(ROOT, before_curve, _admissions(), {})["status"] == "fail"
+
+
+def test_temporal_finite_delegate_sites_preserve121_and_real_full_cold_effect_topologies():
+    from tools.audit_modular_new_sampling import _admission_issues
+    review = json.loads((ROOT / "tests/fixtures/temporal_reviewed_sampling_admission_1_92.json").read_text(encoding="utf8"))
+    baseline = json.loads(BASELINE.read_text(encoding="utf8"))
+    entries = review["entries"]
+    assert len(entries) == 2
+    assert [list(site.values()) for site in baseline["sites"][121:]] == [entry["site"] for entry in entries]
+    assert {entry["site"][1] for entry in entries} == {
+        "MiniMaxH3TemporalV5JointPass2EXPT8.execute", "MiniMaxH3TemporalH16JointPass2EXPT8.execute"}
+    live_ids = set(json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"])
+    routes = {entry["route"]: SimpleNamespace(public_nodes=tuple(live_ids)) for entry in entries}
+    historical = {**baseline, "sites": baseline["sites"][:121]}
+    report = audit(ROOT, historical, _admissions(*entries), routes, live_ids)
+    assert report["status"] == "pass" and report["new_sites"] == 2 and report["removed_sites"] == 0
+    for entry in entries:
+        assert _admission_issues({}, entry, ROOT, routes, live_ids) == []
+        broken = {**entry, "external_effect_nodes": {}}
+        assert any(issue["kind"] == "missing_independent_effect_nodes" for issue in
+                   _admission_issues({}, broken, ROOT, routes, live_ids))
 
 
 def test_future_head_tail_and_native_calls_are_not_hidden_outside_multistage_names(tmp_path):

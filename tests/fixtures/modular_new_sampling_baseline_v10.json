@@ -727,6 +727,18 @@
       "symbol": "main",
       "callee": "engine.sample",
       "call_sha256": "df661619eb7bb028f0e4d09b0261e75f0c8053f7251678fb8ecb2d47335c246a"
+    },
+    {
+      "path": "h3_t8/nodes_temporal_dialogue.py",
+      "symbol": "MiniMaxH3TemporalV5JointPass2EXPT8.execute",
+      "callee": "run_scoped_v5",
+      "call_sha256": "fdc7848ab38f3df0c8e672963060553f40faee5c78f566e1c8025115df2ed3f6"
+    },
+    {
+      "path": "h3_t8/nodes_temporal_h16.py",
+      "symbol": "MiniMaxH3TemporalH16JointPass2EXPT8.execute",
+      "callee": "sample_scoped_h16",
+      "call_sha256": "0d5e1221bee7b158346f876072cb61d7926e7d3b88d9bbf6f00269061252016d"
     }
   ]
 }

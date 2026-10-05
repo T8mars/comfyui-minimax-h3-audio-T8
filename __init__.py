@@ -34,6 +34,7 @@ if __package__:
     from .nodes_hyperflow_curve_exp import NODES as _curve_node_classes
     from .nodes_kijai_pdd_advanced import NODES as _kijai_pdd_node_classes
     from .freevideo_exp.nodes import NODES as _freevideo_node_classes
+    from .nodes_temporal_dialogue import NODES as _temporal_dialogue_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -108,6 +109,7 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _curve_node_classes = import_module(f"{_package_name}.nodes_hyperflow_curve_exp").NODES
     _kijai_pdd_node_classes = import_module(f"{_package_name}.nodes_kijai_pdd_advanced").NODES
     _freevideo_node_classes = import_module(f"{_package_name}.freevideo_exp.nodes").NODES
+    _temporal_dialogue_node_classes = import_module(f"{_package_name}.nodes_temporal_dialogue").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -129,7 +131,8 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_face_source_node_classes, *_rf_audio_clock_node_classes, *_union2_node_classes,
                 *_mv_cast_node_classes, *_external_continuation_node_classes,
                 *_visible_face_mask_node_classes, *_face_observation_node_classes,
-                *_external_effect_node_classes, *_curve_node_classes, *_kijai_pdd_node_classes, *_freevideo_node_classes]
+                *_external_effect_node_classes, *_curve_node_classes, *_kijai_pdd_node_classes, *_freevideo_node_classes,
+                *_temporal_dialogue_node_classes]
 
 
 def comfy_entrypoint():

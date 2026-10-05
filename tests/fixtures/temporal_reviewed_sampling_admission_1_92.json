@@ -1,0 +1,92 @@
+{
+  "schema": "t8.modular-sampling.new-sampling-admission.v1",
+  "entries": [
+    {
+      "site": [
+        "h3_t8/nodes_temporal_dialogue.py",
+        "MiniMaxH3TemporalV5JointPass2EXPT8.execute",
+        "run_scoped_v5",
+        "fdc7848ab38f3df0c8e672963060553f40faee5c78f566e1c8025115df2ed3f6"
+      ],
+      "route": "TemporalV5",
+      "variant": "native_scoped_windows_literal_cold",
+      "stage_nodes": [
+        "MiniMaxH3TemporalV5WindowEXPT8",
+        "MiniMaxH3TemporalV5WindowEXPT8"
+      ],
+      "workflow": "examples/workflows/73-temporal-dialogue-scope/Temporal_V5_Full_12s187_4plus4_EXP_External_EAV_Relay_CPU_Template.json",
+      "resume_workflow": "examples/workflows/73-temporal-dialogue-scope/Temporal_V5_Cold_W1_EXP_External_EAV_Relay_CPU_Template.json",
+      "workflow_stage_ids": [
+        24,
+        26
+      ],
+      "resume_source_id": 17,
+      "resume_source_type": "MiniMaxH3TemporalV5ResumeLoadEXPT8",
+      "resume_stage_id": 11,
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            31,
+            35
+          ],
+          "prompt_relay": [
+            32,
+            36
+          ]
+        },
+        "resume_workflow": {
+          "eav": 19,
+          "prompt_relay": 20
+        }
+      }
+    },
+    {
+      "site": [
+        "h3_t8/nodes_temporal_h16.py",
+        "MiniMaxH3TemporalH16JointPass2EXPT8.execute",
+        "sample_scoped_h16",
+        "0d5e1221bee7b158346f876072cb61d7926e7d3b88d9bbf6f00269061252016d"
+      ],
+      "route": "TemporalH16",
+      "variant": "native_scoped_windows_literal_cold",
+      "stage_nodes": [
+        "MiniMaxH3TemporalH16WindowEXPT8",
+        "MiniMaxH3TemporalH16WindowEXPT8"
+      ],
+      "workflow": "examples/workflows/73-temporal-dialogue-scope/Temporal_H16_Full_CPU_Template_EXP_External_EAV_Relay_CPU_Template.json",
+      "resume_workflow": "examples/workflows/73-temporal-dialogue-scope/Temporal_H16_Cold_CPU_Template_EXP_External_EAV_Relay_CPU_Template.json",
+      "workflow_stage_ids": [
+        29,
+        32
+      ],
+      "resume_source_id": 18,
+      "resume_source_type": "MiniMaxH3TemporalH16ResumeLoadEXPT8",
+      "resume_stage_id": 17,
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            33,
+            36
+          ],
+          "prompt_relay": [
+            34,
+            37
+          ]
+        },
+        "resume_workflow": {
+          "eav": 20,
+          "prompt_relay": 21
+        }
+      }
+    }
+  ],
+  "qualification": "Real registered frontend effect topology plus affected tiny CPU runtime tests; not H16 GPU or universal quality"
+}

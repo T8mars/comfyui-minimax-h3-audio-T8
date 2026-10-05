@@ -6,6 +6,7 @@
 
 | 目录 | 主要用途 |
 |---|---|
+| [73-temporal-dialogue-scope](73-temporal-dialogue-scope/README.md) | 8张v5／H16 Full-Cold；窗口对白新分支，外置EAV／Relay；固定v5通过、H16及效果模板仅CPU资格 |
 | [72-freevideo-split](72-freevideo-split/README.md) | FreeVideo FP8六张Full／Cold；基础8+2、外置EAV／Relay音频参考8+2、真正4+4，须独立环境 |
 | [71-kijai-experimental-split](71-kijai-experimental-split/README.md) | 九个Kijai非二步原件18张Full_Save／Cold_HIGH，独立MODEL／条件／Relay／EAV；须配对Full／Pruned与FL／Ref |
 | [65-radar-visible-face-mask](65-radar-visible-face-mask/README.md) | 16张可见区域MASK模板；建议先用通过定向复审的逐帧MASK／显式0.05轻修配对图，不推荐旧失败静态遮罩配方 |

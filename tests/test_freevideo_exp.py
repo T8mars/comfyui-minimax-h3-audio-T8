@@ -32,8 +32,10 @@ def conditioning(extra=None):
 def test_append_only_registration_and_lazy_engine():
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [c.define_schema().node_id for c in classes]
-    assert len(ids) == 632 and len(set(ids)) == 632
-    assert ids[-12:] == [c.__name__ for c in NODES]
+    from h3_audio_t8_pkg.nodes_temporal_dialogue import NODES as scope_nodes
+    assert len(ids) == 632 + len(scope_nodes) and len(set(ids)) == len(ids)
+    assert ids[620:632] == [c.__name__ for c in NODES]
+    assert ids[632:] == [c.__name__ for c in scope_nodes]
     features = json.loads((Path(__file__).parents[1] / "features.json").read_text(encoding="utf8"))
     assert ids[:len(features["nodes"])] == features["nodes"]
     assert not any(k == "freevideo_engine" or k.startswith("freevideo_engine.") for k in sys.modules)

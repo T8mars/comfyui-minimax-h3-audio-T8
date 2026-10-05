@@ -664,7 +664,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.91.0",
+  "version": "1.92.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
@@ -853,5 +853,69 @@
       "human_quality_accepted": true
     },
     "boundary": "Append-only twelve nodes, original620 prefix/defaults/workflows and original eight FreeVideo schemas preserved. Separate content-bound FreeVideo Python engine, native conditioning and standard AV LATENT. Two fixed 8+2 clips human accepted; one true front4/lift/back4 native canvas and MID CPU cold-load complete, fixed new clip human accepted. Branch-local descriptors never patch Core MODEL. Bounded head-chunk adapters; nonlinear text-seed Relay EXP, not paper softmax equivalence. EAV measured, not general visible enhancement qualification. Owned audio-ref table rows byte-copied from explicit official constants, not full-projection GEMM parity; actual ref2va_audio qualified, ref2va_av structurally supported, not separate GPU quality tested. Online linear LoRA target-validated, not fused/AdaLN fallback. No plain UNET conversion, arbitrary-task quality/speed/RNG parity or Registry installability."
+  },
+  "temporal_dialogue_exp_1_92": {
+    "status": "v1.92.0_EXP_fixed_v5_12s187_human_accepted_H16_CPU_only",
+    "documentation": "docs/TEMPORAL_DIALOGUE_SCOPE_EXP.md",
+    "append_nodes": 24,
+    "released_schema_prefix_preserved": 632,
+    "policies": [
+      "t8.temporal-dialogue.window-text.v2",
+      "t8.temporal-h16.accepted-av-exact-prefix.v1"
+    ],
+    "partial4_audio": "joint_refine_not_frozen",
+    "completed_audio": "actual_terminal_completion_receipt_required",
+    "cold": "independent_literal_v5_and_H16_source_lifts_noise_native_conditions_and_accepted_AV",
+    "verification": {
+      "affected_CPU_passed": 321,
+      "CPU_CUDA_initialized": false,
+      "registered_nodes": 656,
+      "released_632_schema_prefix_exact": true,
+      "new_actual_GPU_cases": 1,
+      "GPU_scope": "v5_standard_joint4plus4_only",
+      "GPU_width": 512,
+      "GPU_height": 288,
+      "GPU_seconds": 12,
+      "GPU_frames": 288,
+      "fps": 24,
+      "complete_native_AV_decoded": true,
+      "actual_v5_capsule_fresh_CPU_loaded": true,
+      "H16_GPU_executed": false,
+      "native_Full_Cold_graphs_saved": true
+    },
+    "external_EAV_and_Relay": true,
+    "hard_time_isolation": false,
+    "human_quality_accepted": true,
+    "human_review": {
+      "accepted_fixed_v5_cases": 1,
+      "scope": "Native joint4plus4, 12s, chunk187/overlap34, 512x288; not arbitrary media/models or H16 quality",
+      "H16_human_quality_accepted": false
+    },
+    "new_nodes": [
+      "MiniMaxH3TemporalDialoguePlanEXPT8",
+      "MiniMaxH3TemporalNativeRecipeEXPT8",
+      "MiniMaxH3TemporalWindowBankEXPT8",
+      "MiniMaxH3TemporalWindowConditioningEXPT8",
+      "MiniMaxH3TemporalV5WindowEXPT8",
+      "MiniMaxH3TemporalV5WindowSaveEXPT8",
+      "MiniMaxH3TemporalV5WindowLoadEXPT8",
+      "MiniMaxH3TemporalRelayConfigEXPT8",
+      "MiniMaxH3TemporalV5RelayApplyEXPT8",
+      "MiniMaxH3TemporalV5RelayAuditEXPT8",
+      "MiniMaxH3TemporalV5JointPass2EXPT8",
+      "MiniMaxH3TemporalH16WindowEXPT8",
+      "MiniMaxH3TemporalH16EffectsApplyEXPT8",
+      "MiniMaxH3TemporalH16EffectsAuditEXPT8",
+      "MiniMaxH3TemporalH16WindowSaveEXPT8",
+      "MiniMaxH3TemporalH16WindowLoadEXPT8",
+      "MiniMaxH3TemporalH16JointPass2EXPT8",
+      "MiniMaxH3TemporalV5ResumeSaveEXPT8",
+      "MiniMaxH3TemporalV5ResumeLoadEXPT8",
+      "MiniMaxH3TemporalCompletedAudioEXPT8",
+      "MiniMaxH3TemporalH16BundlePrepareEXPT8",
+      "MiniMaxH3TemporalH16BundleWindowEXPT8",
+      "MiniMaxH3TemporalH16ResumeSaveEXPT8",
+      "MiniMaxH3TemporalH16ResumeLoadEXPT8"
+    ]
   }
 }
