@@ -1,6 +1,7 @@
 """Optional official Topaz postprocessing. No discovery/installation at import."""
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import uuid
 
@@ -57,6 +58,37 @@ def _parameter_overrides(mode, auto_estimate_frames, preblur, noise, details, ha
     return values
 
 
+def _source_root(directory):
+    if not isinstance(directory, str):
+        raise ValueError('Topaz 输入规整输出目录必须是本地路径字符串')
+    if directory.strip():
+        root = Path(directory.strip())
+        if not root.is_absolute() or root.parent == root:
+            raise ValueError('自定义输出目录必须是绝对路径且不能是盘符根')
+        root.mkdir(parents=True, exist_ok=True)
+        return root.resolve(strict=True)
+    root = Path(folder_paths.get_output_directory()) / 'MiniMaxH3-Topaz-Source'
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve(strict=True)
+
+
+def _free_destination(root, source):
+    candidate = root / f'{source.stem}_cfr{source.suffix}'
+    index = 2
+    while candidate.exists():
+        candidate = root / f'{source.stem}_cfr{index}{source.suffix}'
+        index += 1
+    return candidate
+
+
+def _timing_report(timing):
+    if not timing:
+        return None
+    return {'timescale': timing['timescale'], 'frames': timing['frames'],
+        'duration_ticks': timing['duration_ticks'],
+        'deltas': [[count, delta] for count, delta in timing['entries']]}
+
+
 class MiniMaxH3TopazEnvironmentEXPT8(io.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -81,6 +113,77 @@ class MiniMaxH3TopazEnvironmentEXPT8(io.ComfyNode):
         handle = {'schema': 't8_official_topaz_paths_v1', 'install': str(runtime.install),
             'definitions': str(runtime.definitions), 'data': str(runtime.data)}
         return io.NodeOutput(handle, json.dumps(report, ensure_ascii=False, indent=2))
+
+    @classmethod
+    def fingerprint_inputs(cls, **kwargs):
+        return float('nan')
+
+
+class MiniMaxH3TopazSourcePrepareEXPT8(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(node_id='MiniMaxH3TopazSourcePrepareEXPT8',
+            display_name='Official Topaz · 输入时间轴规整 (T8 EXP)', category=CATEGORY,
+            is_experimental=True, is_output_node=True,
+            description='送入正式Topaz前修正视频时间轴。拼接或转码时只要有一帧的时长写错，其后每一帧的时间戳都会错位，'
+                '正式Topaz会在增强开始前直接拒绝整片。默认先只改写MP4/MOV容器里的帧时长表：编码帧数据与音轨逐字节不动，'
+                '无画质损失。确实是可变帧率、必须重新规整时才用FFmpeg重编码为严格恒定帧率。输入本来就合规时原样透传，不产生新文件。',
+            inputs=[io.Video.Input('source_video'),
+                io.Combo.Input('repair_mode', options=['auto', 'lossless', 'reencode'], default='auto',
+                    display_name='规整方式',
+                    tooltip='auto：先无损改写时长表，不适用才重编码。lossless：只允许无损改写，不适用直接报错不重编码。'
+                        'reencode：一律用FFmpeg重编码。普通使用保持auto。'),
+                io.String.Input('output_directory', default='', optional=True, advanced=True,
+                    tooltip='可选输出目录。留空写入ComfyUI/output/MiniMaxH3-Topaz-Source。')],
+            outputs=[io.Video.Output('normalized_video'), io.String.Output('saved_path'),
+                io.String.Output('report_json')])
+
+    @classmethod
+    def execute(cls, source_video, repair_mode='auto', output_directory=''):
+        from comfy.model_management import throw_exception_if_processing_interrupted
+        from . import mp4_timing
+        from .dlss_fi_backend.entry import file_video_path
+        source = file_video_path(source_video, InputImpl.VideoFromFile)
+        throw_exception_if_processing_interrupted()
+        timing = mp4_timing.video_timing(source)
+        report = {'source': str(source), 'container_timing': _timing_report(timing)}
+        constant = mp4_timing.constant_delta(timing) if timing else None
+        if constant:
+            report.update(status='already_constant_rate', fps=str(mp4_timing.frame_rate(timing, constant)))
+            return io.NodeOutput(source_video, str(source),
+                json.dumps(report, ensure_ascii=False, indent=2))
+        if timing is None:
+            raise ValueError('无损规整只支持MP4/MOV容器。本片是其它容器，请先用其他节点转成MP4再送入正式Topaz。')
+        destination = _free_destination(_source_root(output_directory), source)
+        delta = mp4_timing.repair_delta(timing)
+        if delta and repair_mode != 'reencode':
+            mp4_timing.apply_delta(source, destination, timing, delta)
+            report.update(status='lossless_timing_rewrite', saved_path=str(destination),
+                fps=str(mp4_timing.frame_rate(timing, delta)), rewritten_delta=delta,
+                original_deltas=report['container_timing']['deltas'],
+                drift_ticks=timing['duration_ticks'] - timing['frames'] * delta,
+                note='只改写容器帧时长表；编码帧数据与音轨逐字节未改动')
+            return io.NodeOutput(InputImpl.VideoFromFile(str(destination)), str(destination),
+                json.dumps(report, ensure_ascii=False, indent=2))
+        if repair_mode == 'lossless':
+            raise ValueError('这个视频不是单一帧时长写错，只改写容器时长表无法修好。'
+                '请把规整方式改为auto或reencode。')
+        from .ffmpeg_utils import resolve_ffmpeg
+        fps = mp4_timing.frame_rate(timing, delta or mp4_timing.dominant_delta(timing))
+        command = [resolve_ffmpeg(), '-hide_banner', '-nostdin', '-n', '-i', str(source),
+            '-fps_mode', 'cfr', '-r', str(fps), '-frames:v', str(timing['frames']),
+            '-c:v', 'hevc_nvenc', '-preset', 'p6', '-rc', 'vbr', '-cq', '16', '-b:v', '0',
+            '-video_track_timescale', str(timing['timescale']), '-c:a', 'copy', str(destination)]
+        result = subprocess.run(command, capture_output=True, text=True, encoding='utf8',
+            errors='replace', stdin=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        if result.returncode or not destination.is_file():
+            raise RuntimeError('FFmpeg 重新规整时间轴失败：' + result.stderr.strip()[-500:])
+        throw_exception_if_processing_interrupted()
+        report.update(status='reencode_constant_rate', saved_path=str(destination), fps=str(fps),
+            command=[str(part) for part in command], note='已用FFmpeg重编码为严格恒定帧率，音轨直接复制')
+        return io.NodeOutput(InputImpl.VideoFromFile(str(destination)), str(destination),
+            json.dumps(report, ensure_ascii=False, indent=2))
 
     @classmethod
     def fingerprint_inputs(cls, **kwargs):
@@ -298,5 +401,5 @@ class MiniMaxH3TopazFrameInterpolationEXPT8(io.ComfyNode):
         return float('nan')
 
 
-TOPAZ_NODE_CLASSES = [MiniMaxH3TopazEnvironmentEXPT8, MiniMaxH3TopazVideoEXPT8,
-                      MiniMaxH3TopazFrameInterpolationEXPT8]
+TOPAZ_NODE_CLASSES = [MiniMaxH3TopazEnvironmentEXPT8, MiniMaxH3TopazSourcePrepareEXPT8,
+                      MiniMaxH3TopazVideoEXPT8, MiniMaxH3TopazFrameInterpolationEXPT8]
