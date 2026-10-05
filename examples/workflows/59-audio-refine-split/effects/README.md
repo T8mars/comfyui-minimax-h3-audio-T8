@@ -1,5 +1,7 @@
 # Audio Refine：尾采独立 EAV / Prompt Relay（EXP）
 
+本目录的长名图已换为短配方名，`resume_audio`及下面三种效果后缀保留；JSON原字节不变。旧名定位见[文件名对照表](../../filename-map.tsv)，不要按旧长名生成别名副本。
+
 这里的26张新图不替换父目录的20张冻结／恢复图，也不修改 `18-audio-refine` 的十张旧图。
 
 先用父目录**同配方**的 `freeze_video` 图保存最终视频 AV，再将返回的路径、完整 manifest 和 SHA 原样填入这里的 Load。Learned／PDD 4+4 必须冻结最后一遍视频，不能用低分辨率首采替代。新图仍只有一个外置 Core 音频尾采 Sampler；没有隐藏视频重采。

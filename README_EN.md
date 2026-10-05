@@ -15,6 +15,8 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 
 Exit and restart ComfyUI after installing/updating, then refresh the page. Manager can search `MiniMax H3 Audio T8`; Registry activation is separate from GitHub publication. Use GitHub if the latest version is not available there.
 
+Windows update reports `Filename too long`? See [path limits and recovery](docs/WINDOWS_PATHS.md); preserve local changes and saved workflows.
+
 ## Choose a workflow
 
 Replace placeholder models and media with your own before running.

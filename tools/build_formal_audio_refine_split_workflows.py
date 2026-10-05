@@ -11,6 +11,7 @@ import json
 
 from tools.build_modular_audio_refine_resume_all import pairs_from_current_sources
 from tools.build_modular_audio_refine_workflows import ROOT, sources
+from tools.workflow_paths import public_workflow_path
 
 
 DESTINATION = ROOT / "examples/workflows/59-audio-refine-split"
@@ -40,7 +41,7 @@ def generated():
     if set(pairs) != set(paths):
         raise ValueError("S26 generated pair inventory differs from old sources")
     return {
-        DESTINATION / f"S26_{path.stem}_{phase}_Separate_EXP.json": graph
+        public_workflow_path(DESTINATION / f"S26_{path.stem}_{phase}_Separate_EXP.json"): graph
         for path in paths
         for phase, graph in zip(PHASES, pairs[path], strict=True)
     }

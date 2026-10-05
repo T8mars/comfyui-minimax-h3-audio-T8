@@ -11,6 +11,7 @@ import hashlib
 import json
 from pathlib import Path
 import uuid
+from tools.workflow_paths import public_workflow_path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / "examples/workflows"
@@ -36,10 +37,10 @@ SOURCES = {
         "62-rf-restart-split/S29_RF_detail_mixer_resume_effects_Separate_EXP.json",
         "5d11fd68d5e98c8685ee29b1ed4555e9e07e17deac6659bc673109110726b51d"),
     "B8_LongRelay_035_Freeze_Video_EXP.json": (
-        f"59-audio-refine-split/{LONG_STEM}_freeze_video_Separate_EXP.json",
+        "59-audio-refine-split/S26_LongRelay_Turbo8_freeze_video_Separate_EXP.json",
         "4a99fc23361e169d772d49a830bfd851044c4e337d0931ec6dc27fee6565620b"),
     "B8_LongRelay_035_Resume_Audio_EAV_EXP.json": (
-        f"59-audio-refine-split/effects/{LONG_STEM}_resume_audio_Separate_EXP_eav_TailEffects.json",
+        "59-audio-refine-split/effects/S26_LongRelay_Turbo8_resume_audio_Separate_EXP_eav_TailEffects.json",
         "06a5b69efa5330c90dd7c17233a2cc53e726297a717072ca9cfb97a17e9aa443"),
 }
 
@@ -103,7 +104,7 @@ def transform(source, filename):
 def generated():
     result = {}
     for filename, (relative, expected) in SOURCES.items():
-        path = WORKFLOWS / relative
+        path = public_workflow_path(WORKFLOWS / relative)
         content = path.read_bytes()
         if hashlib.sha256(content).hexdigest() != expected:
             raise ValueError(f"Pinned legacy input changed: {relative}")

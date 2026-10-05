@@ -1,5 +1,7 @@
 # 长视频与断点续跑
 
+旧 Stock20 对话时间线示例改用短名：[完整图](H3_Dialogue_Relay_EAV_Stock20_EXP.json)／[手动二采图](H3_Dialogue_Relay_EAV_Stock20_Pass2_EXP.json)。只改文件名、原JSON字节保持，不改变原各自验收范围；完整对照见[文件名映射](../filename-map.tsv)。
+
 ## HyperFlow 0.6 MP / 8 秒实验工作流（2026-09-22）
 
 - [P7 双采 4+4](2026-09-22_H3_HyperFlow_P7_Dual_0p6MP_8s_EXP.json)：每段先在 512×288 采样 4 步，使用学习型 3D latent upscaler，再在 1024×576 采样 4 步。

@@ -15,6 +15,8 @@ git clone https://github.com/T8mars/comfyui-minimax-h3-audio-T8.git minimax-h3-a
 
 安装或更新后，完全退出并重启 ComfyUI，再刷新网页。Manager 可搜索 `MiniMax H3 Audio T8`；Registry 与 GitHub 发布进度独立，未显示最新版时使用 GitHub 安装。
 
+Windows 更新提示 `Filename too long`？见[短路径与恢复说明](docs/WINDOWS_PATHS.md)；不要删除本地修改或已保存画布。
+
 ## 选一个工作流开始
 
 先替换自己的模型和素材，不要直接运行示例里的占位文件。

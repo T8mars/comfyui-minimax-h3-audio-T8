@@ -4,6 +4,7 @@ from pathlib import Path
 from tools import build_modular_ltx_relay_workflows as relay
 from tools.build_modular_h16_storage_workflow import Draft
 from tools.build_modular_ltx_rgb_workflows import _source, _unique, AUDIT
+from tools.workflow_paths import public_workflow_path
 
 POLICY = "MiniMaxH3LTXLoadPolicyEXPT8"
 OBSERVE = "MiniMaxH3LTXLoadPolicyAuditEXPT8"
@@ -55,5 +56,6 @@ def build(graph):
 
 
 def generated():
-    return {name + "_native_consistent_streaming": build(graph) for name, graph in relay.generated().items()
+    return {public_workflow_path(TARGET / (name + "_native_consistent_streaming.json")).stem: build(graph)
+            for name, graph in relay.generated().items()
             if name.endswith("_external_eav_relay")}

@@ -10,6 +10,7 @@ import hashlib
 import json
 
 from tools.build_modular_ltx_rgb_workflows import ROOT, sources, split_frontend
+from tools.workflow_paths import public_workflow_path
 
 
 DESTINATION = ROOT / "examples/workflows/60-ltx-rgb-stage-split"
@@ -30,7 +31,7 @@ def generated():
         source = path.read_bytes()
         if hashlib.sha256(source).hexdigest().upper() != SOURCE_SHA256[path.name]:
             raise ValueError(f"S27 original LTX source changed: {path}")
-        result[DESTINATION / f"S27_{path.stem}_StageBound_Separate_EXP.json"] = (
+        result[public_workflow_path(DESTINATION / f"S27_{path.stem}_StageBound_Separate_EXP.json")] = (
             split_frontend(json.loads(source)))
     return result
 

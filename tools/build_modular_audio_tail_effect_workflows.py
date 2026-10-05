@@ -191,7 +191,8 @@ def generated(effect="eav"):
 
 
 def generated_matrix():
-    return {path.with_name(path.stem + "_" + effect + ".json"): (path, graph)
+    from tools.workflow_paths import legacy_workflow_path
+    return {legacy_workflow_path(path).with_name(legacy_workflow_path(path).stem + "_" + effect + ".json"): (path, graph)
             for effect in ("eav", "relay", "combined") for path, graph in generated(effect).items()}
 
 

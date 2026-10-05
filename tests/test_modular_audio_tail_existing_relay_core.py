@@ -88,11 +88,13 @@ def _graphs(route, mode, strength, checkpoint, full, media_prefix):
     kind = "Long_Video_Prompt_Relay" if long else "Prompt_Relay"
     stem = f"2026-08-29_H3_Audio_Refine_{kind}_Turbo8_Advanced_EXP"
     expected = generated()
-    public = next(path for path in expected if path.name ==
+    from tools.workflow_paths import legacy_workflow_path
+    public = next(path for path in expected if legacy_workflow_path(path).name ==
                   f"S26_{stem}_resume_audio_Separate_EXP_eav_TailEffects.json")
     frontend = json.loads(public.read_text(encoding="utf8"))
-    assert frontend == expected[public] == json.loads((SAVED / public.name).read_text(encoding="utf8"))
-    tail = json.loads((SAVED / public.name.replace(".json", ".api.json")).read_text(encoding="utf8"))
+    saved_name = legacy_workflow_path(public).name
+    assert frontend == expected[public] == json.loads((SAVED / saved_name).read_text(encoding="utf8"))
+    tail = json.loads((SAVED / saved_name.replace(".json", ".api.json")).read_text(encoding="utf8"))
     freeze = json.loads((TARGET / stem / "freeze_video.api.json").read_text(encoding="utf8"))
     for graph in (freeze, tail):
         graph[_one(graph, builder.RELAY_PLAN)]["inputs"].update(length=22, time_ranges="0-6\n7-13\n14-21")
@@ -377,4 +379,3 @@ def test_evidence_archive_refuses_external_target_and_existing_case(tmp_path, mo
     monkeypatch.setenv("T8_TAIL_RELAY_TEST_EVIDENCE", str(destination))
     with pytest.raises(FileExistsError):
         _archive(tmp_path / "source", "case", {}, {})
-

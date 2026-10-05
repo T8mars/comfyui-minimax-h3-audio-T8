@@ -21,6 +21,7 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/WINDOWS_PATHS.md",
     "docs/TEMPORAL_DIALOGUE_SCOPE_EXP.md", "docs/RELEASE_1.92.0.md",
     "docs/FREEVIDEO_EXP.md", "docs/RELEASE_1.91.0.md", "THIRD_PARTY_NOTICES/FreeVideo-LICENSE.txt",
     "tools/prepare_freevideo_runtime.py", "tools/check_freevideo_kernels.py",

@@ -3,12 +3,13 @@ import argparse
 import json
 
 from tools.build_modular_audio_tail_effect_workflows import ROOT, generated_matrix
+from tools.workflow_paths import public_workflow_path
 
 DESTINATION = ROOT / "examples/workflows/59-audio-refine-split/effects"
 
 
 def generated():
-    return {DESTINATION / (path.stem + "_TailEffects.json"): graph
+    return {public_workflow_path(DESTINATION / (path.stem + "_TailEffects.json")): graph
             for path, (_, graph) in generated_matrix().items()}
 
 

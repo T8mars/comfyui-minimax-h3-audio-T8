@@ -1,6 +1,8 @@
 # MiniMax H3 T8 工作流目录
 
-这里仅保存可直接拖入或通过 ComfyUI“工作流”菜单打开的前端 JSON，以及每个功能目录的一份说明文件。文件名前的日期是该工作流的发布日期，不代表功能稳定等级；带 `EXP` 或 `Advanced` 的路线应先阅读所在目录说明和画布 NOTE。
+这里保存可直接拖入或通过 ComfyUI“工作流”菜单打开的前端 JSON、目录说明与文件名对照表。带日期的文件名只表示该工作流的发布日期，不代表功能稳定等级；带 `EXP` 或 `Advanced` 的路线应先阅读所在目录说明和画布 NOTE。
+
+Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新文件建议≤64。37份旧长名示例已仅重命名，内容不变，见[旧名→新名与原SHA](filename-map.tsv)及[更新失败处理／维护约束](../../docs/WINDOWS_PATHS.md)。不要把全部功能描述叠到文件名。
 
 分离式 S01–S29 / Veda 的保存位置见 [总索引](SEPARATED_WORKFLOWS.md)；最新 B8 / C1 / C2 音频修正版完整/恢复配对图见 [64-reviewed-audio-followup](64-reviewed-audio-followup/README.md)，不覆盖旧图。
 

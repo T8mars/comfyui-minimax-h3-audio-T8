@@ -1,0 +1,19 @@
+name: Windows path budget
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  paths:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Reject overlong filenames and repository paths
+        run: python tools/check_windows_paths.py
+      - name: Verify path limits, byte-preserving examples and Windows Git checkout
+        run: python -m unittest discover -s tests -p test_windows_paths.py -v

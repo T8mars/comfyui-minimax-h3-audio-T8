@@ -83,7 +83,8 @@ def isolated_media_graph(graph):
 
 
 def generated(*, isolated_media=False):
-    graphs = {path.stem + "_" + variant: build(graph, variant)
+    from tools.workflow_paths import legacy_workflow_path
+    graphs = {legacy_workflow_path(path).stem + "_" + variant: build(graph, variant)
             for path, graph in original_graphs().items()
             for variant in ("full_save", "freeze_source", "resume_ltx")}
     return {name: isolated_media_graph(graph) for name, graph in graphs.items()} if isolated_media else graphs

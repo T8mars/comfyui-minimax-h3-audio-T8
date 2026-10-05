@@ -1,5 +1,7 @@
 # 可选一致流式加载（EXP）
 
+短名入口：[Ordinary Full](S27_LTX25_Ordinary_full_save_eav_relay_native_EXP.json)／[Ordinary Cold](S27_LTX25_Ordinary_resume_ltx_eav_relay_native_EXP.json)／[Identity Full](S27_LTX25_Identity_Preserve_full_save_eav_relay_native_EXP.json)／[Identity Cold](S27_LTX25_Identity_Preserve_resume_ltx_eav_relay_native_EXP.json)。仅重命名、原字节不变，旧名见[对照表](../../filename-map.tsv)。
+
 四张新增图对应普通／Identity 的 full-save 和 cold-LTX；旧图未覆盖。
 
 `LTX · Native Load Policy` 明确选择 `consistent_streaming_exp`，可自行切回 `legacy_default`；观察节点只报告准备调用，不认证采样完成或缓存。
