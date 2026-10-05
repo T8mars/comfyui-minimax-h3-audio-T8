@@ -94,12 +94,10 @@
 <script type="module">
 import { makeDirectorServices, directorUUID, directorOutputVideos, directorResultKey, mergeDirectorResults, selectDirectorResult, moveDirectorShot } from "./session.mjs";
 import { createSamplingDialog } from "./sampling_ui.mjs";
-const {captureCreation,addCreation,renameCreation,planCreation,remapCreationAsset}=await import(location.pathname.startsWith('/minimax_h3_t8/director/')
- ? '/extensions/minimax-h3-audio-T8/director/creation_library.mjs' : './creation_library.mjs');
-const { createDirectorWorkbench } = await import(location.pathname.startsWith('/minimax_h3_t8/director/')
- ? '/extensions/minimax-h3-audio-T8/director/workbench.mjs' : './workbench.mjs');
-const { createModalAccess } = await import(location.pathname.startsWith('/minimax_h3_t8/director/')
- ? '/extensions/minimax-h3-audio-T8/director/modal_ui.mjs' : './modal_ui.mjs');
+const directorModules = /^\/(?:api\/)?minimax_h3_t8\/director\//.test(location.pathname) ? '/extensions/minimax-h3-audio-T8/director/' : './';
+const {captureCreation,addCreation,renameCreation,planCreation,remapCreationAsset}=await import(directorModules + 'creation_library.mjs');
+const { createDirectorWorkbench } = await import(directorModules + 'workbench.mjs');
+const { createModalAccess } = await import(directorModules + 'modal_ui.mjs');
 (() => {
 const root=document.getElementById('t8-obsidian-lab'), $=s=>root.querySelector(s), $$=s=>Array.from(root.querySelectorAll(s));
 const genericModal=createModalAccess($('[data-dialog]'),{root});

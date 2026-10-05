@@ -1,0 +1,146 @@
+{
+  "id": "61f0ff67-9184-46b7-a0ec-19393fd7231a",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "MiniMaxH3SemanticBridgeConfigT8",
+      "pos": [
+        674.5345739293981,
+        2652.9938271604938
+      ],
+      "size": [
+        377.2271484375,
+        222
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "enabled",
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enabled"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "alpha",
+          "name": "alpha",
+          "type": "FLOAT",
+          "widget": {
+            "name": "alpha"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "magnitude_match",
+          "name": "magnitude_match",
+          "type": "COMBO",
+          "widget": {
+            "name": "magnitude_match"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "token_scope",
+          "name": "token_scope",
+          "type": "COMBO",
+          "widget": {
+            "name": "token_scope"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "device",
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "chunk_tokens",
+          "name": "chunk_tokens",
+          "type": "INT",
+          "widget": {
+            "name": "chunk_tokens"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "semantic_bridge",
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "links": null
+        },
+        {
+          "localized_name": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SemanticBridgeConfigT8"
+      },
+      "widgets_values": [
+        "t8_compat/semantic_bridge_T8-comic-combat.safetensors",
+        true,
+        1,
+        "per_token",
+        "all_tokens",
+        "auto",
+        0
+      ],
+      "widgets_values_named": {
+        "model_name": "t8_compat/semantic_bridge_T8-comic-combat.safetensors",
+        "enabled": true,
+        "alpha": 1,
+        "magnitude_match": "per_token",
+        "token_scope": "all_tokens",
+        "device": "auto",
+        "chunk_tokens": 0
+      }
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.8,
+      "offset": [
+        -507.59259259259255,
+        -2548.9938271604938
+      ]
+    },
+    "workflow_title": "Bridge_Confirmed",
+    "t8_radar_r6_delivery": {
+      "release": "1.93.0",
+      "native_saved_source": true,
+      "public_asset_selectors_need_user_inputs": true,
+      "unchanged_sampling_geometry_time_audio_and_edges": true,
+      "accepted_scope": "five_fixed_cases_not_all_materials_templates_or_encoders",
+      "Cold_additional_GPU_run": false,
+      "EAV_mode": "report_only"
+    }
+  },
+  "version": 0.4
+}

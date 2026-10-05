@@ -115,6 +115,37 @@ def _dynamic_runtime_fields(patcher, module, name):
             'weight_lowvram_function', 'bias_lowvram_function'}
 
 
+def _legacy_runtime_fields(patcher, module):
+    """Canonicalize authenticated Core no-op lists and selected cast aliases.
+
+    ModelPatcher.load/wipe_lowvram_weight materializes these no-op class
+    defaults during residency changes. Its cast backup must equal the declared
+    Core class default, with the selected force-cast policy bound on patcher.
+    Nonempty/replaced functions and foreign cast values remain content-bound;
+    this does not omit weights, selected casts, hooks or arbitrary fields.
+    """
+    from comfy.model_patcher import ModelPatcher
+    from comfy.ops import CastWeightBiasOp
+    if type(patcher) is not ModelPatcher or not isinstance(module, CastWeightBiasOp):
+        return set()
+    ignored = set()
+    for key in ('weight_function', 'bias_function'):
+        default, effective = getattr(type(module), key, None), getattr(module, key, None)
+        if type(default) is list and not default and type(effective) is list and not effective:
+            ignored.add(key)
+    fields = vars(module)
+    default_cast = getattr(type(module), 'comfy_cast_weights', None)
+    current_cast = getattr(module, 'comfy_cast_weights', None)
+    if type(default_cast) is bool and type(current_cast) is bool:
+        if 'prev_comfy_cast_weights' not in fields and current_cast == default_cast:
+            ignored.add('comfy_cast_weights')
+        elif (type(fields.get('prev_comfy_cast_weights')) is bool
+              and fields['prev_comfy_cast_weights'] == default_cast and current_cast is True
+              and (patcher.force_cast_weights or getattr(patcher.model, 'model_lowvram', False))):
+            ignored.update({'comfy_cast_weights', 'prev_comfy_cast_weights'})
+    return ignored
+
+
 def _native_producer_description(component, role):
     import comfy.sd
     from comfy.ldm.minimax.vae import MiniMaxH3VideoVAE
@@ -150,6 +181,7 @@ def _native_producer_description(component, role):
                                          if isinstance(getattr(cls, method, None), FunctionType)}}
         ignored = set(module_internals)
         ignored.update(_dynamic_runtime_fields(component.patcher, module, name))
+        ignored.update(_legacy_runtime_fields(component.patcher, module))
         # Core writes these for each loaded module. The selected force-cast
         # policy is bound on the patcher; patched_weights is residency status.
         ignored.update({'comfy_force_cast_weights', 'comfy_patched_weights'})

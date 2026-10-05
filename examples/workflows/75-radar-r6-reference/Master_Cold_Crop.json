@@ -1,0 +1,398 @@
+{
+  "id": "b0e60711-1b3f-4577-8412-c63273c965e5",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        380,
+        490
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "文件",
+          "name": "file",
+          "type": "COMBO",
+          "widget": {
+            "name": "file"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "选择要上传的文件",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "视频",
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1,
+            3
+          ]
+        }
+      ],
+      "title": "Load Video",
+      "properties": {
+        "Node name for S&R": "LoadVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "SELECT_YOUR_SAVED_MASTER.mp4",
+        "image"
+      ],
+      "widgets_values_named": {
+        "file": "SELECT_YOUR_SAVED_MASTER.mp4",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "pos": [
+        430,
+        0
+      ],
+      "size": [
+        380,
+        380
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "视频",
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "图像",
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "localized_name": "音频",
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "localized_name": "帧率",
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "localized_name": "bit_depth",
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "localized_name": "color_space",
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "title": "Get Video Components",
+      "properties": {
+        "Node name for S&R": "GetVideoComponents",
+        "cnr_id": "comfy-core"
+      }
+    },
+    {
+      "id": 3,
+      "type": "ImageCropV2",
+      "pos": [
+        860,
+        0
+      ],
+      "size": [
+        380,
+        490
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "图像",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "localized_name": "裁剪区域",
+          "name": "crop_region",
+          "type": "BOUNDING_BOX",
+          "widget": {
+            "name": "crop_region"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "图像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "title": "Crop Image",
+      "properties": {
+        "Node name for S&R": "ImageCropV2",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        {
+          "x": 0,
+          "y": 4,
+          "width": 512,
+          "height": 280
+        },
+        0,
+        4,
+        512,
+        280
+      ],
+      "widgets_values_named": {
+        "crop_region": {
+          "x": 0,
+          "y": 4,
+          "width": 512,
+          "height": 280
+        },
+        "x": 0,
+        "y": 4,
+        "width": 512,
+        "height": 280
+      }
+    },
+    {
+      "id": 4,
+      "type": "MiniMaxH3PostprocessSaveEXPT8",
+      "pos": [
+        1290,
+        0
+      ],
+      "size": [
+        388.15,
+        414
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "master_video",
+          "name": "master_video",
+          "type": "VIDEO",
+          "link": 3
+        },
+        {
+          "localized_name": "processed_frames",
+          "name": "processed_frames",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "confirm_postprocess",
+          "name": "confirm_postprocess",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "confirm_postprocess"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "crf",
+          "name": "crf",
+          "type": "INT",
+          "widget": {
+            "name": "crf"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "expected_master_sha256",
+          "name": "expected_master_sha256",
+          "type": "STRING",
+          "widget": {
+            "name": "expected_master_sha256"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "postprocessed_video",
+          "name": "postprocessed_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "master_video",
+          "name": "master_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "status",
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "saved_path",
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3PostprocessSaveEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "MiniMaxH3/Radar/crop",
+        false,
+        18,
+        ""
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "MiniMaxH3/Radar/crop",
+        "confirm_postprocess": false,
+        "crf": 18,
+        "expected_master_sha256": ""
+      }
+    },
+    {
+      "id": 5,
+      "type": "Note",
+      "pos": [
+        0,
+        550
+      ],
+      "size": [
+        900,
+        290
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Cold Master Crop · 接线与边界",
+      "properties": {
+        "text": "COLD：只读取你选择的完整已保存 master；无模型／采样／旧 Stage 依赖。\nLoadVideo 需选择自己的文件，默认占位不可直接运行。\nCROP：默认 1920×1088 →1920×1080，x0/y4；会裁掉上下内容。\n按 master 的实际尺寸调整控件，不修改 latent 或 MASK 坐标。\n已有 master 是真实接线依赖，不靠节点摆放保证先保存。\n完整 SDR、零起点 24fps，帧数不变；复制 master 音频包并核 PCM/PTS。\n确认开关默认 false；确认后只写新文件，不重跑生成或覆盖 master。\n失败：postprocess_failed，成片出口阻断；master_video 独立出口保留原片。\n预览和回执不代表人工画质／听感通过。"
+      },
+      "widgets_values": [
+        "RADAR r6 / v1.93.0: editable native-saved example.\nRead this folder README before queueing. Choose YOUR legal source, VAE, reference names and completed Stage/SHA.\nReference producers must match device/precision; the demonstrated reference sampling used --cpu-vae --fp32-vae.\nSampling saves complete stages; decode separately with normal GPU VAE. EAV is report_only; Relay remains external.\nFull LOW4/HIGH4 and its final separate decode were human accepted for one fixed 5-second case, not all materials.\nCold has no LOW sampler and was not additionally GPU sampled. Full/Contain master modules are templates.\nPartial LOW audio is NOT frozen. Voice/image anchors in the accepted test came from one source, not two independent people.\nExplicit new-file confirmation is OFF in public save templates; no source media/models/cache are distributed."
+      ],
+      "widgets_values_named": {
+        "text": "CPU画布定向验收：复用已通过的完整5秒4+4成片，不再采样。\nR6_Master_5s.mp4：512×288，24fps，120帧；裁切 x=0/y=4/512×280。\n本验收显式 confirm_postprocess=true，并绑定实际 master SHA256。\n公开模板默认1920×1088→1920×1080、确认false，用户按自己成片调整。\n后处理必须依赖已保存 master；只改最终RGB几何，不改latent／MASK／时间。\n音频逐包复制；检查PCM／PTS及原片SHA。失败阻断成片出口，master单独保留。\n技术验收不代表本次裁切片已获人工质量通过。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      1,
+      0,
+      4,
+      0,
+      "VIDEO"
+    ],
+    [
+      4,
+      3,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5653210847098312,
+      "offset": [
+        293.0250000000001,
+        231.8062500000001
+      ]
+    },
+    "workflow_title": "Master_Cold_Crop",
+    "t8_radar_r6_delivery": {
+      "release": "1.93.0",
+      "native_saved_source": true,
+      "public_asset_selectors_need_user_inputs": true,
+      "unchanged_sampling_geometry_time_audio_and_edges": true,
+      "accepted_scope": "five_fixed_cases_not_all_materials_templates_or_encoders",
+      "Cold_additional_GPU_run": false,
+      "EAV_mode": "report_only"
+    }
+  },
+  "version": 0.4
+}

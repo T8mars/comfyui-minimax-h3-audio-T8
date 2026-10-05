@@ -57,6 +57,26 @@ def dispatch(handler, body, *, length=1000, match_info=None):
     return response.status, json.loads(response.body)
 
 
+def test_recipe_card_route_is_explicit_bounded_and_never_saves_or_queues(radar_routes, monkeypatch):
+    from h3_audio_t8_pkg import model_recipe_cards
+
+    store, handlers = radar_routes
+    calls = []
+
+    def inspect(category, selection):
+        calls.append((category, selection))
+        return {"automatic_changes": False, "saved": False, "queued": False}
+
+    monkeypatch.setattr(model_recipe_cards, "inspect_installed_recipe", inspect)
+    handler = handlers[director_routes.PREFIX + "/model-recipe/inspect"]
+    assert dispatch(handler, {"category": "loras", "selection": "用户.safetensors"})[0] == 200
+    assert calls == [("loras", "用户.safetensors")]
+    assert dispatch(handler, {"category": "loras", "selection": "auto", "path": "C:/outside"})[0] == 400
+    assert dispatch(handler, {}, length=8193)[0] == 400
+    assert dispatch(handler, {}, length=None)[0] == 400
+    assert store.list() == [] and len(calls) == 1
+
+
 def test_session_relative_radar_module_has_actual_native_core_static_route(radar_routes):
     _store, handlers = radar_routes
     handler = handlers[director_routes.PREFIX + "/radar_state.mjs"]

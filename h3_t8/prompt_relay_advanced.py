@@ -1353,10 +1353,16 @@ def build_prompt_relay_conditioning(
     ref_video_audios=None,
     ref_audios=None,
     semantic_bridge=None,
+    *,
+    prepared_reference_set=None,
 ):
     plan = _validate_plan(prompt_relay_plan)
     if execution_mode not in EXECUTION_MODES:
         raise ValueError(f"Unknown Prompt Relay execution mode {execution_mode!r}")
+    # Preserve the ordinary call exactly. The separate reference adapter opts
+    # into the existing fresh factory; no editing already encoded embeddings.
+    prepared_options = ({} if prepared_reference_set is None else
+                        {"prepared_reference_set": prepared_reference_set})
     result = build_conditioning(
         clip,
         video_vae,
@@ -1383,6 +1389,7 @@ def build_prompt_relay_conditioning(
         ref_audios,
         return_details=True,
         semantic_bridge=semantic_bridge,
+        **prepared_options,
     )
     conditioning, latent, output_audio, conditioned_prompt, media_map, stable_report, details = result
     if details["audio_mode"] == "reference_only" and not bool(add_source_as_reference):

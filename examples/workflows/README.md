@@ -8,6 +8,8 @@ Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新
 
 | 目录 | 主要用途 |
 |---|---|
+| [75-radar-r6-reference](75-radar-r6-reference/README.md) | 10张原生保存来源图：参考包、独立Full/Cold采样、Full/Light解码、master模块与配方卡UI；须选自己的合法资产和实际缓存 |
+| [74-radar-r6-delivery](74-radar-r6-delivery/README.md) | 三张先保存master再裁切／留边的模块，原声逐包保持，失败保留原片 |
 | [73-temporal-dialogue-scope](73-temporal-dialogue-scope/README.md) | 8张v5／H16 Full-Cold；窗口对白新分支，外置EAV／Relay；固定v5通过、H16及效果模板仅CPU资格 |
 | [72-freevideo-split](72-freevideo-split/README.md) | FreeVideo FP8六张Full／Cold；基础8+2、外置EAV／Relay音频参考8+2、真正4+4，须独立环境 |
 | [71-kijai-experimental-split](71-kijai-experimental-split/README.md) | 九个Kijai非二步原件18张Full_Save／Cold_HIGH，独立MODEL／条件／Relay／EAV；须配对Full／Pruned与FL／Ref |

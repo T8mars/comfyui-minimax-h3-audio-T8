@@ -159,7 +159,9 @@ def resume_high_graph(artifact_path="REPLACE_WITH_SAVED_LOW_PATH/manifest.json",
 
 def load_live_info():
     snapshot = capture()
-    sys.path.insert(0, str(ROOT.parents[1]))
+    core_root = ROOT.parents[1] if len(ROOT.parents) > 1 else None
+    if core_root is not None and (core_root / "comfy").is_dir():
+        sys.path.insert(0, str(core_root))
     import nodes as core_nodes
     from comfy_extras.nodes_custom_sampler import BasicGuider, RandomNoise, SamplerCustomAdvanced
     from comfy_extras.nodes_video import CreateVideo, SaveVideo

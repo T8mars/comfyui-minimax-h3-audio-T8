@@ -1,6 +1,7 @@
 import { createModalAccess } from './modal_ui.mjs';
 import { directorUUID } from './session.mjs';
 import { sha256UTF8 } from './content_hash.mjs';
+import { fillContinuityRecipeForm } from './continuity_recipes.mjs';
 
 // Draft-only requests. No provider, uploads, queue, generation or automatic Save.
 export function createRadarDialog(root, ctx) {
@@ -29,6 +30,8 @@ export function createRadarDialog(root, ctx) {
       </details>
       <details open><summary>3 · 声明式 Prompt 规则（全片 → 本镜顺序）</summary>
         <label><input type="checkbox" data-radar-inherit checked>继承全片规则（可逐条在本镜禁用）</label><div data-radar-bindings></div>
+        <div class="o-row"><button type="button" data-radar-recipe="continuity">填写角色道具连续账本</button><button type="button" data-radar-recipe="offscreen">填写画内/画外对话</button></div>
+        <p class="o-tip">只填写空规则表单；请在参数声明中改本次值，再添加快照、编译和显式采用。默认本镜，不自动读取身份、改事件时钟或接线；声音锚不是驱动配音。</p>
         <label>规则名称<input data-radar-name maxlength="200"></label>
         <label>规则文字<textarea data-radar-rule rows="3" maxlength="32768" placeholder="只作提示词文字。参数仅 ${'${name}'} 一次字面替换，不执行代码/工具。"></textarea></label>
         <div class="o-row"><label>作用域<select data-radar-scope><option value="shot">本镜</option><option value="project">全片</option><option value="library">仅收藏快照</option></select></label><button type="button" data-radar-add>添加规则快照</button></div>
@@ -139,6 +142,14 @@ export function createRadarDialog(root, ctx) {
     dialog.addEventListener('click', event => {
         const button = event.target.closest('button');
         if (!button || busy) return;
+        if (button.dataset.radarRecipe) {
+            if (!dialog.open || origin !== ctx.context()) { close(); ctx.notify('工程已切换，旧规则表单不再编辑。'); return; }
+            try {
+                const name = fillContinuityRecipeForm({name: $('[data-radar-name]'), text: $('[data-radar-rule]'), scope: $('[data-radar-scope]'), parameter_schema: $('[data-radar-parameter-schema]'), parameters: $('[data-radar-parameters]')}, button.dataset.radarRecipe);
+                $('[data-radar-status]').textContent = `${name}已填入表单；未添加快照、未采用、未保存或排队。请先填写实际参数。`;
+            } catch (error) { $('[data-radar-status]').textContent = error.message; }
+            return;
+        }
         const shot = current(), project = ctx.snapshot(), scope = button.dataset.radarBindingScope;
         const id = button.dataset.radarMove || button.dataset.radarRemove;
         if (id) {

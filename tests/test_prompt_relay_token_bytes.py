@@ -16,7 +16,14 @@ def pair():
     slow = MiniMaxH3Tokenizer()
     fast = Qwen2TokenizerFast.from_pretrained(
         str(Path(qwen.__file__).parent / "qwen25_tokenizer"), local_files_only=True)
-    fast.add_special_tokens({"additional_special_tokens": slow.qwen3vl_32b.tokenizer.additional_special_tokens})
+    native_hf = slow.qwen3vl_32b.tokenizer
+    extras = getattr(native_hf, "additional_special_tokens", None)
+    if extras is None:
+        extras = native_hf.extra_special_tokens
+    assert isinstance(extras, list) and extras
+    fast.add_special_tokens({"additional_special_tokens": extras})
+    assert {str(token): fast.convert_tokens_to_ids(str(token)) for token in extras} == {
+        str(token): native_hf.convert_tokens_to_ids(str(token)) for token in extras}
     assert not hasattr(fast, "byte_decoder")
     return slow, fast
 

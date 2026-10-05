@@ -377,6 +377,7 @@ def build_conditioning(
     allow_above_reference_area: bool = False,
     semantic_bridge=None,
     return_text_recipe: bool = False,
+    prepared_reference_set=None,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -390,6 +391,14 @@ def build_conditioning(
     ref_video_values = [value for _, value in ref_video_entries]
     ref_audio_values = sorted_autogrow_values(ref_audios)
     ref_video_audio_by_ordinal = dict(sorted_autogrow_items(ref_video_audios))
+    prepared_refs = None
+    if prepared_reference_set is not None:
+        from .reference_runtime import ReferenceSet
+        if type(prepared_reference_set) is not ReferenceSet:
+            raise ValueError("Use an explicit T8 reference set, not supplied latent/producer labels")
+        if ref_image_values or ref_video_values or ref_audio_values or ref_video_audio_by_ordinal:
+            raise ValueError("Use one explicit ordered reference set; do not ambiguously merge raw refs")
+        prepared_refs = prepared_reference_set.conditioning_inputs(video_vae, audio_vae)
     if len(ref_image_values) > 9 or len(ref_video_values) > 3 or len(ref_audio_values) > 3:
         raise ValueError("MiniMax H3 reference limits are 9 pictures, 3 videos, and 3 standalone audios")
     video_ordinals = {ordinal for ordinal, _ in ref_video_entries}
@@ -490,6 +499,13 @@ def build_conditioning(
         )
         video_labels.append(f"ref_video_{video_ordinal}")
 
+    if prepared_refs is not None:
+        real_ref_blocks.extend(prepared_refs["refs"])
+        real_ref_items.extend(prepared_refs["qwen_ref_items"])
+        for item in prepared_refs["mapping"]:
+            label = f"role:{item['role_id']}/{item['member_id']}"
+            {"image": picture_labels, "video": video_labels, "audio": audio_labels}[item["kind"]].append(label)
+
     encoded_source = None
     source_audio_ordinal = 0
     if drive_audio is not None:
@@ -581,7 +597,18 @@ def build_conditioning(
     if bridge_report is not None:
         from .semantic_bridge import canonical
         report_lines.append("semantic_bridge=" + canonical(bridge_report))
+    if prepared_refs is not None:
+        from .reference_package import canonical
+        report_lines.append("reference_set=" + canonical({
+            "mapping": prepared_refs["mapping"],
+            "packed_reference_rows": prepared_refs["packed_reference_rows"],
+            "fresh_Qwen_encoding": True, "old_embedding_modified": False,
+            "latent_only_exp": prepared_refs["latent_only_exp"]}))
     output_audio = final_audio if final_audio is not None else drive_audio
+    if prepared_refs is not None:
+        current_refs = prepared_reference_set.conditioning_inputs(video_vae, audio_vae)
+        if current_refs["actual_producers"] != prepared_refs["actual_producers"]:
+            raise ValueError("Reference encoder changed while building fresh conditioning")
     result = (
         conditioning,
         latent,

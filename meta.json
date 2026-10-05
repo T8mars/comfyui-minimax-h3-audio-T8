@@ -664,7 +664,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.92.0",
+  "version": "1.93.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
@@ -917,5 +917,26 @@
       "MiniMaxH3TemporalH16ResumeSaveEXPT8",
       "MiniMaxH3TemporalH16ResumeLoadEXPT8"
     ]
+  },
+  "radar_r6_local": {
+    "status": "released_five_fixed_cases_native_workflows_v1_93_0",
+    "recipe_cards": "explicit_preview_confirm_native_reopen_unknown_loader_readonly_endpoint_verified_fixed_UI_human_accepted",
+    "reference_packages": "fresh32B_native_GPU_LOW4_HIGH4_external_Relay_EAV_report_only_exact_stage_CPU_reads_separate_GPU_decode_5s_fixed_media_human_accepted",
+    "reference_sampling_delivery": "native_saved_reopened_sample_only_Full_Cold_pinned_actual_LOW_matching_CPU_VAE_producers_Cold_not_GPU_rerun",
+    "reference_append_nodes": 6,
+    "light_vae": "user_license_confirmed_official_SHA_Core26_layer_strict_CPU_pass_native_GPU_decode_5s_0NFE_PCM_PTS_exact_fixed_decode_human_accepted",
+    "human_reviewed_cases": {
+      "N01": true,
+      "N03": true,
+      "N04": true,
+      "N05": true,
+      "N02": true
+    },
+    "postprocess": "three_templates_native_saved_cold_crop_canvas_packet_PCM_PTS_verified_fixed_crop_pair_human_accepted",
+    "postprocess_append_nodes": 1,
+    "old_registered_nodes": 656,
+    "continuity_recipes": "two_existing_Skill_recipes_CPU58_native_form_snapshot_candidate_revert_save_server_reopen_verified_fixed_UI_human_accepted",
+    "human_quality_accepted": true,
+    "human_acceptance_scope": "five_fixed_r6_cases_not_all_materials_templates_or_encoders"
   }
 }

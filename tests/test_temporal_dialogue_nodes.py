@@ -7,6 +7,8 @@ import torch
 
 import h3_audio_t8_pkg
 from h3_audio_t8_pkg.nodes import MiniMaxH3AudioConditioningT8
+from h3_audio_t8_pkg.nodes_postprocess import NODES as POSTPROCESS_NODES
+from h3_audio_t8_pkg.nodes_reference_package import NODES as REFERENCE_NODES
 from h3_audio_t8_pkg.nodes_temporal_dialogue import (
     NODES, MiniMaxH3TemporalDialoguePlanEXPT8, MiniMaxH3TemporalNativeRecipeEXPT8,
     MiniMaxH3TemporalV5JointPass2EXPT8, MiniMaxH3TemporalV5WindowEXPT8,
@@ -23,8 +25,15 @@ scoped_harness = _bank_fixture
 def test_appends_after_all_632_released_nodes_and_capture_does_not_mutate_schema():
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [cls.define_schema().node_id for cls in classes]
-    assert len(ids) == len(set(ids)) == 632+len(NODES)
-    assert classes[632:] == NODES
+    # Later RADAR additions are an explicit tail, never a relaxed >= count.
+    assert len(NODES) == 24 and len(POSTPROCESS_NODES) == 1 and len(REFERENCE_NODES) == 6
+    assert len(ids) == len(set(ids)) == 632+24+1+6
+    assert classes[632:656] == NODES
+    assert classes[656:] == [*POSTPROCESS_NODES, *REFERENCE_NODES]
+    assert ids[656:] == ["MiniMaxH3PostprocessSaveEXPT8", "MiniMaxH3ReferenceCreateEXPT8",
+        "MiniMaxH3ReferenceSaveEXPT8", "MiniMaxH3ReferenceLoadEXPT8",
+        "MiniMaxH3ReferenceRouteEXPT8", "MiniMaxH3ReferenceConditioningEXPT8",
+        "MiniMaxH3ReferenceRelayConditioningEXPT8"]
     before = asdict(MiniMaxH3AudioConditioningT8.define_schema().get_v1_info(MiniMaxH3AudioConditioningT8))
     new = asdict(MiniMaxH3TemporalNativeRecipeEXPT8.define_schema().get_v1_info(MiniMaxH3TemporalNativeRecipeEXPT8))
     assert new['input'] == before['input'] and new['input_order'] == before['input_order']

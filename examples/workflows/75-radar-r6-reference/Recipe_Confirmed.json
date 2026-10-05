@@ -1,0 +1,117 @@
+{
+  "id": "0a31786a-3b2a-47ff-b523-a5eddc50e882",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAELoader",
+      "pos": [
+        205,
+        401
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "vae名称",
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "Wan2.1_VAE.pth"
+      ],
+      "widgets_values_named": {
+        "vae_name": "Wan2.1_VAE.pth"
+      }
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "pos": [
+        605,
+        530
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "vae名称",
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_int8_convrot.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+      }
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 2.025,
+      "offset": [
+        -540,
+        -336.5925925925926
+      ]
+    },
+    "workflow_title": "Recipe_Confirmed",
+    "t8_radar_r6_delivery": {
+      "release": "1.93.0",
+      "native_saved_source": true,
+      "public_asset_selectors_need_user_inputs": true,
+      "unchanged_sampling_geometry_time_audio_and_edges": true,
+      "accepted_scope": "five_fixed_cases_not_all_materials_templates_or_encoders",
+      "Cold_additional_GPU_run": false,
+      "EAV_mode": "report_only"
+    }
+  },
+  "version": 0.4
+}

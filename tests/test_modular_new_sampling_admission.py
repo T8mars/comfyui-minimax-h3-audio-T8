@@ -141,8 +141,15 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
     assert {site[0] for site in curve_sites} == {
         "h3_t8/modular_sampling/hyperflow_curve.py", "h3_t8/nodes_hyperflow_curve_exp.py"}
     before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
-    live = {node["id"] for node in capture()["nodes"]}
-    assert len(live) == 656
+    captured = capture()["nodes"]
+    live = {node["id"] for node in captured}
+    assert len(live) == 663
+    assert [node["id"] for node in captured[656:]] == [
+        "MiniMaxH3PostprocessSaveEXPT8", "MiniMaxH3ReferenceCreateEXPT8",
+        "MiniMaxH3ReferenceSaveEXPT8", "MiniMaxH3ReferenceLoadEXPT8",
+        "MiniMaxH3ReferenceRouteEXPT8", "MiniMaxH3ReferenceConditioningEXPT8",
+        "MiniMaxH3ReferenceRelayConditioningEXPT8",
+    ]
     report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
     assert report["status"] == "pass" and report["new_sites"] == 3
     effective, _ = reviewed_layout_sites(ROOT, before_curve)

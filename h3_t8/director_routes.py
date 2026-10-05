@@ -1014,6 +1014,20 @@ def register_director_routes():
         """Return only installed H3-compatible models for the Director selectors."""
         return web.json_response(director_model_catalog())
 
+    @routes.post(PREFIX + "/model-recipe/inspect")
+    @guarded
+    async def model_recipe_inspect(request):
+        """Explicit read-only resource card, usable from any ordinary canvas."""
+        from .model_recipe_cards import inspect_installed_recipe
+
+        if request.content_length is None or not 0 < request.content_length <= 8192:
+            raise ValueError("Recipe inspection needs a bounded explicit request")
+        body = await request.json()
+        if type(body) is not dict or set(body) != {"category", "selection"}:
+            raise ValueError("Select exactly one resource; no auto replacement or model path")
+        return web.json_response(await asyncio.to_thread(
+            inspect_installed_recipe, body["category"], body["selection"]))
+
     @routes.get(PREFIX + "/d3/routes")
     @guarded
     async def d3_routes(_request):

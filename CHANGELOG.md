@@ -2,7 +2,16 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.92.0
+## 当前版本：1.93.0
+
+### RADAR r6：参考包与分离交付（EXP）
+
+- 新增六个可组合参考包节点和一个master后处理保存出口，当前663个ID，保留旧656的完整接口、默认与工作流。
+- 模型配方卡提供header证据与明确差异确认；导演台新增两条声明式连续性／画外对白规则，不自动保存或排队。
+- 普通VAELoader支持固定LightVAE解码图；公开10张原生保存来源的短名图及三张通用master模块，私有素材／缓存不随包。
+- 五项指定代表已获人工通过；Cold、模板、EAV report_only、参考producer和Light仅decode的边界明确，不承诺所有素材／身份／速度。详见[1.93.0说明](docs/RELEASE_1.93.0.md)。
+
+## 1.92.0
 
 ### Temporal Chunk 窗口对白作用域（EXP）
 

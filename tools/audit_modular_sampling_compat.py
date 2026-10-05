@@ -64,7 +64,11 @@ def capture(root: Path = ROOT) -> dict:
     # Set CPU before any Core/model imports. Do not mutate the user's server.
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     os.environ["OMP_NUM_THREADS"] = "1"
-    sys.path.insert(0, str(root.parents[1]))
+    # Installed custom_nodes layout is optional for isolated release clones.
+    # Otherwise use the caller's explicit Core PYTHONPATH, never a guessed drive.
+    core_root = root.parents[1] if len(root.parents) > 1 else None
+    if core_root is not None and (core_root / "comfy").is_dir():
+        sys.path.insert(0, str(core_root))
     from comfy.cli_args import args
     args.cpu = True
     package_name = "_t8_modular_compat_capture"

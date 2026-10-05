@@ -263,8 +263,17 @@ def test_real_dynamic_patcher_cpu_preparation_preserves_producer_identity(fault)
 @pytest.mark.parametrize('role', ['clip', 'video_vae', 'audio_vae'])
 def test_actual_core_load_does_not_invalidate_unchanged_producer(role):
     import comfy.model_management as mm
+    import comfy.ops
     from h3_audio_t8_pkg.long_video_dual_residency import release_stage_residency
     wrapper = component(role)
+    # Real Core layers inherit empty weight/bias function lists from the class.
+    # The legacy CPU loader materializes those same lists on the instance;
+    # a plain probe Parameter alone never exercises that residency transition.
+    layer = comfy.ops.manual_cast.Linear(4, 4)
+    with torch.no_grad():
+        layer.weight.fill_(.1)
+        layer.bias.zero_()
+    wrapper.patcher.model.add_module('fixture_linear', layer)
     if role == 'clip':
         wrapper.patcher.set_model_compute_dtype(torch.float32)
     first = native_producer_identity(wrapper, role)
@@ -298,3 +307,42 @@ def test_continuation_rechecks_actual_producers_before_and_after_preparation(acc
             native_flow_sigmas(8, 12.), **selected, producers=bound, prompt='test', length=124,
             upscaler_model='unused', seed=19)
     assert bool(prepared) == (fault == 'changed_during_prepare')
+
+
+@pytest.mark.parametrize('key', ['weight_function', 'bias_function'])
+def test_legacy_function_lists_are_not_ignored_when_execution_is_changed(key):
+    import comfy.ops
+    wrapper = component('video_vae')
+    layer = comfy.ops.manual_cast.Linear(4, 4)
+    with torch.no_grad():
+        layer.weight.fill_(.1)
+        layer.bias.zero_()
+    wrapper.first_stage_model.add_module('fixture_linear', layer)
+    first = native_producer_identity(wrapper, 'video_vae')
+    setattr(layer, key, [])
+    assert native_producer_identity(wrapper, 'video_vae') == first
+    setattr(layer, key, [lambda value: value + .1])
+    assert native_producer_identity(wrapper, 'video_vae') != first
+
+
+@pytest.mark.parametrize('key', ['comfy_cast_weights', 'prev_comfy_cast_weights'])
+def test_legacy_cast_alias_is_bound_to_real_class_default_and_selected_policy(key):
+    import comfy.model_management as mm
+    import comfy.ops
+    from h3_audio_t8_pkg.long_video_dual_residency import release_stage_residency
+    wrapper = component('clip')
+    layer = comfy.ops.manual_cast.Linear(4, 4)
+    with torch.no_grad():
+        layer.weight.fill_(.1)
+        layer.bias.zero_()
+    wrapper.patcher.model.add_module('fixture_linear', layer)
+    wrapper.patcher.set_model_compute_dtype(torch.float32)
+    before = native_producer_identity(wrapper, 'clip')
+    try:
+        mm.load_models_gpu([wrapper.patcher], force_full_load=True)
+        assert layer.comfy_cast_weights is layer.prev_comfy_cast_weights is True
+        assert native_producer_identity(wrapper, 'clip') == before
+        setattr(layer, key, False)
+        assert native_producer_identity(wrapper, 'clip') != before
+    finally:
+        release_stage_residency(wrapper)

@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 import struct
 
+from .model_recipe_cards import recipe_from_header
+
 
 def describe_h3_payload(keys, metadata=None):
     keys = sorted(str(key) for key in keys)
@@ -76,6 +78,7 @@ not a prohibition on a separately selected loader.
                     or not 0 <= offsets[0] <= offsets[1] <= size - length - 8):
                 raise ValueError(f"invalid tensor offsets: {key}")
         report.update(describe_h3_payload(header, metadata))
+        report["recipe_card"] = recipe_from_header(header, metadata)
         report.update(status="inspected", bytes_read=length + 8, file_size_bytes=size,
                       tensor_values_loaded=False)
     except (OSError, ValueError, UnicodeError, struct.error) as error:
