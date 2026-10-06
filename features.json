@@ -3573,7 +3573,15 @@
     "MiniMaxH3ReferenceLoadEXPT8",
     "MiniMaxH3ReferenceRouteEXPT8",
     "MiniMaxH3ReferenceConditioningEXPT8",
-    "MiniMaxH3ReferenceRelayConditioningEXPT8"
+    "MiniMaxH3ReferenceRelayConditioningEXPT8",
+    "MiniMaxH3FreeVideoQualityLoaderEXPT8",
+    "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+    "MiniMaxH3FreeVideoCommunityHIGH3EXPT8",
+    "MiniMaxH3FreeVideoQualityStageSaveEXPT8",
+    "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
+    "MiniMaxH3FreeVideoQualityLoRAEXPT8",
+    "MiniMaxH3FreeVideoQualityEAVEXPT8",
+    "MiniMaxH3FreeVideoQualityPromptRelayEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",
@@ -6145,5 +6153,40 @@
     "continuity_recipes": "two_existing_Skill_recipes_CPU58_native_form_snapshot_candidate_revert_save_server_reopen_verified_fixed_UI_human_accepted",
     "human_quality_accepted": true,
     "human_acceptance_scope": "five_fixed_r6_cases_not_all_materials_templates_or_encoders"
+  },
+  "freevideo_quality_1_94": {
+    "status": "v1.94.0_EXP_two_fixed_native_cases_human_accepted",
+    "source_revision": "e7eb66326a038344ba241fa31355c15b258b98cb",
+    "old_schema_prefix": 663,
+    "documentation": "docs/FREEVIDEO_QUALITY_EXP.md",
+    "workflow_directory": "examples/workflows/76-freevideo-quality",
+    "profiles": {
+      "light": "LOW8_then_independent_HIGH3",
+      "medium": "single12",
+      "high": "single16",
+      "max": "single20"
+    },
+    "external_EAV_Relay_LoRA": true,
+    "legacy_8plus2_and_true4plus4_retained": true,
+    "human_quality_accepted": true,
+    "human_acceptance_scope": "only_two_fixed_Light8plus3_and_Medium12_native_5s_cases",
+    "verification": {
+      "local_affected_CPU_passed": 121,
+      "new_native_GPU_cases": 2,
+      "complete_5s_movies": 2,
+      "saved_Full_Cold_graphs": 4,
+      "Cold_extra_GPU_cases": 0,
+      "High16_Max20_GPU_qualified": false
+    },
+    "new_nodes": [
+      "MiniMaxH3FreeVideoQualityLoaderEXPT8",
+      "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+      "MiniMaxH3FreeVideoCommunityHIGH3EXPT8",
+      "MiniMaxH3FreeVideoQualityStageSaveEXPT8",
+      "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
+      "MiniMaxH3FreeVideoQualityLoRAEXPT8",
+      "MiniMaxH3FreeVideoQualityEAVEXPT8",
+      "MiniMaxH3FreeVideoQualityPromptRelayEXPT8"
+    ]
   }
 }

@@ -20,7 +20,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v10.json"
+BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v11.json"
 SCHEMA = "t8.modular-sampling.new-sampling-admission.v1"
 SAMPLING_CALLEES = {"sample", "sample_custom", "sample_stage", "sample_low",
                     "sample_high", "run_worker", "_sample_one_segment",

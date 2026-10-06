@@ -2,7 +2,15 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.93.0
+## 当前版本：1.94.0
+
+### FreeVideo 新四档独立入口（EXP）
+
+- 新增8个Quality v2入口：四档加载／采样、Light独立HIGH3、Stage保存／冷载入、外置LoRA／EAV／Prompt Relay。保留旧663完整接口、默认、8+2、真正4+4和六张旧图。
+- Light为LOW8→外置放大→HIGH3；Medium／High／Max分别联合单采12／16／20，不强制双采、不混用旧MID。复用旧rowwise主体，按实际任务补采样表，不转换为普通UNET、不升级主Comfy环境。
+- Light 8+3与Medium 12两条5秒原生画布完整音画获人审通过；公开4张短名Full／Cold模板。16／20仅CPU结构支持，Cold无额外GPU，EAV本次仅report_only。详见[1.94.0说明](docs/RELEASE_1.94.0.md)。
+
+## 1.93.0
 
 ### RADAR r6：参考包与分离交付（EXP）
 

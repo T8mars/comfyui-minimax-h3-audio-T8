@@ -10,7 +10,7 @@ from h3_audio_t8_pkg.modular_sampling import catalogue
 from tools.audit_modular_new_sampling import SCHEMA, audit, discover, guard, reviewed_layout_sites
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v10.json"
+BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v11.json"
 PREVIOUS_RADAR_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v9.json"
 PREVIOUS_ENCODER_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v8.json"
 PREVIOUS_SAFETY_BASELINE = ROOT / "tests/fixtures/modular_new_sampling_baseline_v7.json"
@@ -49,6 +49,19 @@ def test_freevideo_finite_reviewed_sites_and_both_independent_resume_topologies(
 
 def test_current_production_sampler_sites_match_frozen_review_baseline():
     baseline = json.loads(BASELINE.read_text(encoding="utf8"))
+    previous_fvq = json.loads((ROOT / "tests/fixtures/modular_new_sampling_baseline_v10.json").read_text(encoding="utf8"))
+    assert len(previous_fvq["sites"]) == 123 and baseline["sites"][:123] == previous_fvq["sites"]
+    reviewed_fvq = json.loads((ROOT / "tests/fixtures/freevideo_quality_reviewed_admission_1_94.json").read_text(encoding="utf8"))
+    assert [list(row.values()) for row in baseline["sites"][123:]] == [entry["site"] for entry in reviewed_fvq["entries"]]
+    from tools.audit_modular_new_sampling import _admission_issues
+    live_fvq = set(json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"])
+    quality_ids = {name for name in live_fvq if "FreeVideoQuality" in name or "FreeVideoCommunityHIGH3" in name}
+    route_fvq = SimpleNamespace(public_nodes=tuple(quality_ids))
+    for entry in reviewed_fvq["entries"]:
+        assert _admission_issues({}, entry, ROOT, {entry["route"]: route_fvq}, live_fvq) == []
+        broken = {**entry, "external_effect_nodes": {}}
+        assert any(issue["kind"] == "missing_independent_effect_nodes" for issue in
+                   _admission_issues({}, broken, ROOT, {entry["route"]: route_fvq}, live_fvq))
     before_encoder = json.loads(PREVIOUS_ENCODER_BASELINE.read_text(encoding="utf8"))
     before_safety = json.loads(PREVIOUS_SAFETY_BASELINE.read_text(encoding="utf8"))
     if PRIVATE_BASELINE.is_file():
@@ -63,7 +76,7 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
     report = audit(ROOT, baseline, _admissions(), {route.id: route for route in catalogue.ROUTES})
     assert report["status"] == "pass"
     effective, omitted = reviewed_layout_sites(ROOT, baseline)
-    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 123
+    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 126
     assert report["baseline_sites"] == report["current_sites"] == len(effective)
     assert report["reviewed_absent_root_alias_sites"] == len(omitted)
     assert report["new_sites"] == report["removed_sites"] == 0
@@ -143,18 +156,27 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
     before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
     captured = capture()["nodes"]
     live = {node["id"] for node in captured}
-    assert len(live) == 663
-    assert [node["id"] for node in captured[656:]] == [
+    qwen = ["MiniMaxH3ReferenceQwenViewEXPT8"] if "MiniMaxH3ReferenceQwenViewEXPT8" in live else []
+    declared = json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"]
+    assert [node["id"] for node in captured] == declared
+    assert len(live) == 671 + len(qwen)
+    assert [node["id"] for node in captured[656:663]] == [
         "MiniMaxH3PostprocessSaveEXPT8", "MiniMaxH3ReferenceCreateEXPT8",
         "MiniMaxH3ReferenceSaveEXPT8", "MiniMaxH3ReferenceLoadEXPT8",
         "MiniMaxH3ReferenceRouteEXPT8", "MiniMaxH3ReferenceConditioningEXPT8",
         "MiniMaxH3ReferenceRelayConditioningEXPT8",
     ]
+    assert [node["id"] for node in captured[663:]] == qwen + [
+        "MiniMaxH3FreeVideoQualityLoaderEXPT8", "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+        "MiniMaxH3FreeVideoCommunityHIGH3EXPT8", "MiniMaxH3FreeVideoQualityStageSaveEXPT8",
+        "MiniMaxH3FreeVideoQualityStageLoadEXPT8", "MiniMaxH3FreeVideoQualityLoRAEXPT8",
+        "MiniMaxH3FreeVideoQualityEAVEXPT8", "MiniMaxH3FreeVideoQualityPromptRelayEXPT8",
+    ]
     report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
     assert report["status"] == "pass" and report["new_sites"] == 3
     effective, _ = reviewed_layout_sites(ROOT, before_curve)
     assert report["removed_sites"] == 0 and report["baseline_sites"] == len(effective)
-    assert report["declared_baseline_sites"] == 120
+    assert report["declared_baseline_sites"] == 123
     assert audit(ROOT, before_curve, _admissions(), {})["status"] == "fail"
 
 
@@ -164,12 +186,14 @@ def test_temporal_finite_delegate_sites_preserve121_and_real_full_cold_effect_to
     baseline = json.loads(BASELINE.read_text(encoding="utf8"))
     entries = review["entries"]
     assert len(entries) == 2
-    assert [list(site.values()) for site in baseline["sites"][121:]] == [entry["site"] for entry in entries]
+    assert [list(site.values()) for site in baseline["sites"][121:123]] == [entry["site"] for entry in entries]
     assert {entry["site"][1] for entry in entries} == {
         "MiniMaxH3TemporalV5JointPass2EXPT8.execute", "MiniMaxH3TemporalH16JointPass2EXPT8.execute"}
     live_ids = set(json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"])
     routes = {entry["route"]: SimpleNamespace(public_nodes=tuple(live_ids)) for entry in entries}
-    historical = {**baseline, "sites": baseline["sites"][:121]}
+    # The three later FVQ sites are already independently admitted. Remove
+    # only the exact two historical Temporal sites for this negative delta.
+    historical = {**baseline, "sites": baseline["sites"][:121] + baseline["sites"][123:]}
     report = audit(ROOT, historical, _admissions(*entries), routes, live_ids)
     assert report["status"] == "pass" and report["new_sites"] == 2 and report["removed_sites"] == 0
     for entry in entries:

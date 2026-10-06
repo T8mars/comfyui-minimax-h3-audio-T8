@@ -33,9 +33,17 @@ def test_append_only_registration_and_lazy_engine():
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [c.define_schema().node_id for c in classes]
     from h3_audio_t8_pkg.nodes_temporal_dialogue import NODES as scope_nodes
-    assert len(ids) == 632 + len(scope_nodes) and len(set(ids)) == len(ids)
+    from h3_audio_t8_pkg.nodes_postprocess import NODES as postprocess_nodes
+    from h3_audio_t8_pkg.nodes_reference_package import NODES as reference_nodes
+    qwen_nodes = []
+    if "MiniMaxH3ReferenceQwenViewEXPT8" in ids:
+        from h3_audio_t8_pkg.nodes_qwen_reference_view import NODES as qwen_nodes
+        assert [c.__name__ for c in qwen_nodes] == ["MiniMaxH3ReferenceQwenViewEXPT8"]
+    from h3_audio_t8_pkg.freevideo_quality.nodes import NODES as quality_nodes
+    appended = [*scope_nodes, *postprocess_nodes, *reference_nodes, *qwen_nodes, *quality_nodes]
+    assert len(ids) == 632 + len(appended) and len(set(ids)) == len(ids)
     assert ids[620:632] == [c.__name__ for c in NODES]
-    assert ids[632:] == [c.__name__ for c in scope_nodes]
+    assert ids[632:] == [c.__name__ for c in appended]
     features = json.loads((Path(__file__).parents[1] / "features.json").read_text(encoding="utf8"))
     assert ids[:len(features["nodes"])] == features["nodes"]
     assert not any(k == "freevideo_engine" or k.startswith("freevideo_engine.") for k in sys.modules)

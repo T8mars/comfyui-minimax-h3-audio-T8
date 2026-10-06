@@ -1,0 +1,140 @@
+{
+  "schema": "t8.modular-sampling.new-sampling-admission.v1",
+  "entries": [
+    {
+      "route": "freevideo_quality_v2",
+      "variant": "Light8plus3_split_and_single12_16_20_CPU_clocks",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+        "MiniMaxH3FreeVideoCommunityHIGH3EXPT8"
+      ],
+      "workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_8plus3.json",
+      "resume_workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_Cold_HIGH3.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 10,
+      "resume_source_id": 22,
+      "resume_source_type": "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 21,
+          "prompt_relay": 9
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_quality/nodes.py",
+        "MiniMaxH3FreeVideoCommunityHIGH3EXPT8.execute",
+        "fv.sample",
+        "d5ec7a7fcd738e8ec9b053bda556d64bb51b6a98bea84a9a3a7abf6380a336cc"
+      ]
+    },
+    {
+      "route": "freevideo_quality_v2",
+      "variant": "Light8plus3_split_and_single12_16_20_CPU_clocks",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+        "MiniMaxH3FreeVideoCommunityHIGH3EXPT8"
+      ],
+      "workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_8plus3.json",
+      "resume_workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_Cold_HIGH3.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 10,
+      "resume_source_id": 22,
+      "resume_source_type": "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 21,
+          "prompt_relay": 9
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_quality/nodes.py",
+        "MiniMaxH3FreeVideoQualitySamplerEXPT8.execute",
+        "fv.sample",
+        "827cdbdefdeb7db91d8f2689107315693a163346abcf1519d3ec6b9cab97437a"
+      ]
+    },
+    {
+      "route": "freevideo_quality_v2",
+      "variant": "Light8plus3_split_and_single12_16_20_CPU_clocks",
+      "stage_nodes": [
+        "MiniMaxH3FreeVideoQualitySamplerEXPT8",
+        "MiniMaxH3FreeVideoCommunityHIGH3EXPT8"
+      ],
+      "workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_8plus3.json",
+      "resume_workflow": "examples/workflows/76-freevideo-quality/FVQ_Light_Cold_HIGH3.json",
+      "workflow_stage_ids": [
+        6,
+        10
+      ],
+      "resume_stage_id": 10,
+      "resume_source_id": 22,
+      "resume_source_type": "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
+      "external_effects": {
+        "eav": "supported",
+        "prompt_relay": "supported"
+      },
+      "external_effect_nodes": {
+        "workflow": {
+          "eav": [
+            18,
+            21
+          ],
+          "prompt_relay": [
+            5,
+            9
+          ]
+        },
+        "resume_workflow": {
+          "eav": 21,
+          "prompt_relay": 9
+        }
+      },
+      "site": [
+        "h3_t8/freevideo_quality/worker.py",
+        "main",
+        "engine.sample",
+        "1d8d6e8d5059022732244bdbdb73ef7aad12cde8571d84125e671685fa2c9866"
+      ]
+    }
+  ],
+  "qualifications": {
+    "native_Light8plus3_and_Medium12_fixed_cases_human_accepted": true,
+    "High16_Max20_GPU_qualified": false,
+    "Cold_extra_GPU": false,
+    "provenance": "exact_new_nodes_worker_calls_native_saved_Full_Cold_external_EAV_Relay_topology"
+  }
+}

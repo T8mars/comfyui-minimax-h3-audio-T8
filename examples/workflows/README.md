@@ -81,4 +81,6 @@ Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新
 | `34-semantic-bridge` | Semantic Bridge／BUNNY 普通条件、Relay、内循环及独立双采；640×320→896×448两段8秒4+4配方已验收，其他路线仍按EXP说明 |
 | `36-avatar-voice` | 本地 Avatar 录音驱动4+4、可选TAEH3预览／定向取消、原生Ref2VA普通／情绪对白与双采／长视频接线；人审待、不发布 |
 
+新增入口：[FreeVideo 新四档 Full／Cold](76-freevideo-quality/README.md)。Light8+3／Medium12指定样片人审通过，16／20仅CPU结构支持；[旧8+2／4+4](72-freevideo-split/README.md)保持。
+
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。
