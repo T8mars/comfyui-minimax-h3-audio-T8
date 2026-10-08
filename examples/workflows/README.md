@@ -6,10 +6,11 @@ Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新
 
 分离式 S01–S29 / Veda 的保存位置见 [总索引](SEPARATED_WORKFLOWS.md)；最新 B8 / C1 / C2 音频修正版完整/恢复配对图见 [64-reviewed-audio-followup](64-reviewed-audio-followup/README.md)，不覆盖旧图。
 
-本次新增：[H05 11项已审短名工作流](83-h05-reviewed/README.md)，旧入口全部保留。
+本次新增：[VM01 视觉标记已审工作流与独立框选编辑器](84-visual-marker/README.md)；此前 [H05 11项已审短名工作流](83-h05-reviewed/README.md)及旧入口全部保留。
 
 | 目录 | 主要用途 |
 |---|---|
+| [84-visual-marker](84-visual-marker/README.md) | 已接受的干净图／整框图／显式clean-VAE与marked-Qwen分流三张4+4，以及不采样的独立框选编辑器；残框限制保留，无新权重 |
 | [75-radar-r6-reference](75-radar-r6-reference/README.md) | 10张原生保存来源图：参考包、独立Full/Cold采样、Full/Light解码、master模块与配方卡UI；须选自己的合法资产和实际缓存 |
 | [74-radar-r6-delivery](74-radar-r6-delivery/README.md) | 三张先保存master再裁切／留边的模块，原声逐包保持，失败保留原片 |
 | [73-temporal-dialogue-scope](73-temporal-dialogue-scope/README.md) | 8张v5／H16 Full-Cold；窗口对白新分支，外置EAV／Relay；固定v5通过、H16及效果模板仅CPU资格 |

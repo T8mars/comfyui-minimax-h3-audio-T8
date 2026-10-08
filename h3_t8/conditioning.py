@@ -378,6 +378,7 @@ def build_conditioning(
     semantic_bridge=None,
     return_text_recipe: bool = False,
     prepared_reference_set=None,
+    visual_marker_binding=None,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -391,6 +392,11 @@ def build_conditioning(
     ref_video_values = [value for _, value in ref_video_entries]
     ref_audio_values = sorted_autogrow_values(ref_audios)
     ref_video_audio_by_ordinal = dict(sorted_autogrow_items(ref_video_audios))
+    marker_observation = None
+    marker_receipt = None
+    if visual_marker_binding is not None:
+        from .visual_marker_binding import validate_raw_binding
+        validate_raw_binding(visual_marker_binding, ref_image_values, prepared_reference_set)
     prepared_refs = None
     if prepared_reference_set is not None:
         from .reference_runtime import ReferenceSet
@@ -442,8 +448,13 @@ def build_conditioning(
 
     for index, image in enumerate(ref_image_values, 1):
         resized, ref_width, ref_height = _resize_reference_image(image, width, height, ref_image_size)
+        qwen_image = resized
+        if visual_marker_binding is not None and index == visual_marker_binding.raw_image_index:
+            from .visual_marker_binding import marker_image_inputs
+            qwen_image, marker_observation = marker_image_inputs(
+                visual_marker_binding, image, resized, width, height, ref_image_size, _resize_reference_image)
         encoded = video_vae.encode(resized)
-        real_ref_items.append({"type": "image", "data": resized})
+        real_ref_items.append({"type": "image", "data": qwen_image})
         real_ref_blocks.append(
             {
                 "kind": "image",
@@ -531,6 +542,9 @@ def build_conditioning(
     has_refs = bool(real_ref_blocks)
     resolved_task = resolve_task_type(task_type, first_frame, last_frame, has_refs)
     counts = {"pictures": len(picture_labels), "videos": len(video_labels), "audios": len(audio_labels)}
+    if visual_marker_binding is not None:
+        from .visual_marker_binding import bind_native_prompt
+        prompt, marker_receipt = bind_native_prompt(visual_marker_binding, marker_observation, len(keyframes), prompt)
     conditioned_prompt, prompt_warnings = prepare_prompt(
         prompt,
         counts,
@@ -559,6 +573,8 @@ def build_conditioning(
 
     conditioning = clip.encode_from_tokens_scheduled(tokens)
     values = {}
+    if marker_receipt is not None:
+        values["t8_visual_marker_binding"] = marker_receipt
     if keyframes:
         values.update({"minimax_keyframes": keyframes, "minimax_frame_count": frame_count})
     if refs:
@@ -609,6 +625,11 @@ def build_conditioning(
             "fresh_Qwen_encoding": True, "old_embedding_modified": False,
             "latent_only_exp": prepared_refs["latent_only_exp"]}))
     output_audio = final_audio if final_audio is not None else drive_audio
+    if visual_marker_binding is not None:
+        from .visual_marker_binding import verify_consumed_binding
+        from .reference_package import canonical
+        verify_consumed_binding(visual_marker_binding, marker_receipt, real_ref_items)
+        report_lines.append("visual_marker_binding=" + canonical(marker_receipt))
     if prepared_refs is not None:
         current_refs = prepared_reference_set.conditioning_inputs(video_vae, audio_vae)
         if current_refs["actual_producers"] != prepared_refs["actual_producers"]:

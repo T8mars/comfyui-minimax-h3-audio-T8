@@ -1,17 +1,81 @@
 {
+  "vm01_visual_marker_exp": {
+    "status": "implemented_three_native_cases_human_accepted",
+    "source_repository": "RK-BoilingPoint/H3-Visual-Marker-Control",
+    "source_commit": "0f0274f5f07c0e8dda0bb8cd0286256587f4e959",
+    "documentation": "docs/VISUAL_MARKER_EXP.md",
+    "new_nodes": [
+      "MiniMaxH3VisualMarkerPrepareEXPT8",
+      "MiniMaxH3VisualMarkerPromptEXPT8",
+      "MiniMaxH3VisualMarkerConditioningEXPT8",
+      "MiniMaxH3VisualMarkerRelayConditioningEXPT8"
+    ],
+    "old_688_full_schema_prefix_exact": true,
+    "node_count": 692,
+    "old_workflows_and_defaults_retained": true,
+    "editor_actual_browser_validation_pending": false,
+    "editor_actual_drag_apply_save_close_reopen_and_CPU_run_verified": true,
+    "new_weights_required": false,
+    "SOLRICKS_required": false,
+    "raw_reference_binding_only": true,
+    "clean_vae_marked_qwen_explicit_experiment": true,
+    "relay_static_legend_derived_plan_events_preserved": true,
+    "hard_spatial_lock_or_marker_removal_guaranteed": false,
+    "native_GPU_or_quality_qualified": true,
+    "native_canvas_full_generation_completed": true,
+    "native_trial_count": 3,
+    "native_trial_duration_seconds": 5,
+    "native_LOW_HIGH_stage_load_and_consumed_binding_verified": true,
+    "split_actual_Qwen_tokens_match_marked_and_VAE_latent_matches_clean": true,
+    "review_browser_all_three_clips_played_to_end": true,
+    "marked_and_split_marker_residue_observed": true,
+    "human_quality_qualified": true,
+    "human_review_case_ids": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "human_review_revision": 3,
+    "human_review_date": "2026-10-08",
+    "human_qualification_scope": "Only the three exact accepted 5-second clips; marker residue retained, not guaranteed removal, hard spatial lock, multiwindow efficacy or arbitrary input quality.",
+    "accepted_public_workflow_templates_pending": false,
+    "workflow_directory": "examples/workflows/84-visual-marker",
+    "saved_generation_templates": 3,
+    "saved_CPU_only_editor_template": true,
+    "release_version": "1.96.0"
+  },
   "h05_release_1_95": {
     "status": "eleven_scoped_cases_human_accepted",
     "version": "1.95.0",
     "documentation": "docs/RELEASE_1.95.0.md",
     "workflow_directory": "examples/workflows/83-h05-reviewed",
-    "accepted_cases": ["A1", "A2", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "C1", "C2"],
+    "accepted_cases": [
+      "A1",
+      "A2",
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5",
+      "B6",
+      "B7",
+      "C1",
+      "C2"
+    ],
     "review_date": "2026-10-08",
     "old_671_schema_prefix_exact": true,
     "legacy_workflows_and_defaults_retained": true,
     "native_originals_preserved_locally_public_assets_are_placeholders": true,
     "B3_tau": 1.5,
-    "B3_video_progress": [0.1, 0.9],
-    "B3_measured_gain_min_mean_max": [1.0, 1.0, 1.0],
+    "B3_video_progress": [
+      0.1,
+      0.9
+    ],
+    "B3_measured_gain_min_mean_max": [
+      1.0,
+      1.0,
+      1.0
+    ],
     "nonzero_EAV_enhancement_approved": false,
     "all_H05_conditional_research_complete": false,
     "registry_activation_claimed": false
@@ -3615,7 +3679,11 @@
     "MiniMaxH3DenseTransferProviderEXPT8",
     "MiniMaxH3DenseLearnedUpscaleEXPT8",
     "MiniMaxH3ExternalReferenceVideoImportEXPT8",
-    "MiniMaxH3ExternalReferenceAudioImportEXPT8"
+    "MiniMaxH3ExternalReferenceAudioImportEXPT8",
+    "MiniMaxH3VisualMarkerPrepareEXPT8",
+    "MiniMaxH3VisualMarkerPromptEXPT8",
+    "MiniMaxH3VisualMarkerConditioningEXPT8",
+    "MiniMaxH3VisualMarkerRelayConditioningEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",

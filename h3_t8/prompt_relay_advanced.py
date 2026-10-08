@@ -1355,6 +1355,7 @@ def build_prompt_relay_conditioning(
     semantic_bridge=None,
     *,
     prepared_reference_set=None,
+    visual_marker_binding=None,
 ):
     plan = _validate_plan(prompt_relay_plan)
     if execution_mode not in EXECUTION_MODES:
@@ -1363,6 +1364,8 @@ def build_prompt_relay_conditioning(
     # into the existing fresh factory; no editing already encoded embeddings.
     prepared_options = ({} if prepared_reference_set is None else
                         {"prepared_reference_set": prepared_reference_set})
+    if visual_marker_binding is not None:
+        prepared_options.update(visual_marker_binding=visual_marker_binding, return_text_recipe=True)
     result = build_conditioning(
         clip,
         video_vae,
@@ -1392,6 +1395,13 @@ def build_prompt_relay_conditioning(
         **prepared_options,
     )
     conditioning, latent, output_audio, conditioned_prompt, media_map, stable_report, details = result
+    source_marker_plan_hash = None
+    if visual_marker_binding is not None:
+        from .visual_marker_binding import bind_marker_relay_plan
+        source_marker_plan_hash = plan["plan_hash"]
+        plan = bind_marker_relay_plan(plan, visual_marker_binding,
+                                     details["text_recipe"].metadata["t8_visual_marker_binding"],
+                                     conditioned_prompt)
     if details["audio_mode"] == "reference_only" and not bool(add_source_as_reference):
         raise ValueError(
             "Prompt Relay reference_only requires add_source_as_reference=true; "
@@ -1600,12 +1610,13 @@ def build_prompt_relay_conditioning(
         "stable_conditioning_report": stable_report,
         "warnings": warnings,
     }
-    return (
-        patched_model,
-        conditioning,
-        latent,
-        output_audio,
-        conditioned_prompt,
-        media_map,
-        json.dumps(report, ensure_ascii=False, indent=2),
-    )
+    if source_marker_plan_hash is not None:
+        report["marker_source_plan_hash"] = source_marker_plan_hash
+        report["marker_event_spans_preserved"] = True
+        report["marker_actions_appended_as_global"] = False
+    result = (patched_model, conditioning, latent, output_audio, conditioned_prompt, media_map,
+              json.dumps(report, ensure_ascii=False, indent=2))
+    if visual_marker_binding is not None:
+        from .reference_package import canonical
+        return (*result, details["text_recipe"], canonical(details["text_recipe"].metadata["t8_visual_marker_binding"]))
+    return result

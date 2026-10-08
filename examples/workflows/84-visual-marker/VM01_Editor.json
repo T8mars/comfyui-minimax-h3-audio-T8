@@ -1,0 +1,210 @@
+{
+  "id": "fb7a19d6-768d-4c06-a46e-8fbebf4d8a98",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        20
+      ],
+      "size": [
+        430,
+        600
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "localized_name": "图像",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "localized_name": "遮罩",
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Load Image",
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "YOUR_REFERENCE_IMAGE.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "YOUR_REFERENCE_IMAGE.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3VisualMarkerPrepareEXPT8",
+      "pos": [
+        460,
+        20
+      ],
+      "size": [
+        430,
+        600
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "marked_image",
+          "name": "marked_image",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "localized_name": "marker_plan",
+          "name": "marker_plan",
+          "type": "T8_H3_VISUAL_MARKER_PLAN",
+          "links": null
+        },
+        {
+          "localized_name": "report_json",
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VisualMarkerPrepareEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "render_rectangles",
+        "{\"markers\":[{\"marker_id\":\"actor_A\",\"kind\":\"actor\",\"role_id\":\"A\",\"color\":\"cyan\",\"description\":\"the woman in the red sweater\",\"xyxy\":[0.19371494703106917,0.0650647095959596,0.3333036588622808,0.9413273358585859]},{\"marker_id\":\"target_A\",\"kind\":\"target\",\"color\":\"yellow\",\"description\":\"the clear floor immediately in front of the closed door on the right\",\"xyxy\":[0.76,0.76,0.94,0.97]}],\"relations\":[{\"actor_marker_id\":\"actor_A\",\"target_marker_id\":\"target_A\",\"action\":\"walk calmly to that floor area and stop with both feet inside it\"}]}",
+        4,
+        "",
+        null
+      ],
+      "widgets_values_named": {
+        "mode": "render_rectangles",
+        "markers_json": "{\"markers\":[{\"marker_id\":\"actor_A\",\"kind\":\"actor\",\"role_id\":\"A\",\"color\":\"cyan\",\"description\":\"the woman in the red sweater\",\"xyxy\":[0.19371494703106917,0.0650647095959596,0.3333036588622808,0.9413273358585859]},{\"marker_id\":\"target_A\",\"kind\":\"target\",\"color\":\"yellow\",\"description\":\"the clear floor immediately in front of the closed door on the right\",\"xyxy\":[0.76,0.76,0.94,0.97]}],\"relations\":[{\"actor_marker_id\":\"actor_A\",\"target_marker_id\":\"target_A\",\"action\":\"walk calmly to that floor area and stop with both feet inside it\"}]}",
+        "line_width": 4,
+        "expected_source_sha256": "",
+        "框选编辑（不运行）": null
+      }
+    },
+    {
+      "id": 3,
+      "type": "PreviewImage",
+      "pos": [
+        960,
+        20
+      ],
+      "size": [
+        430,
+        600
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "图像",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Preview Image",
+      "properties": {
+        "Node name for S&R": "PreviewImage",
+        "cnr_id": "comfy-core"
+      }
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        0,
+        -390
+      ],
+      "size": [
+        740,
+        360
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "VM01 使用与已审范围",
+      "properties": {},
+      "widgets_values": [
+        "VM01独立框选编辑器：LoadImage → Prepare → PreviewImage，不含VAE、模型或扩散采样。\n选择自己的合法RGB底图，点击Prepare的“框选编辑（不运行）”，拖框并应用，另行保存工作流。\n模板已清空旧源图的expected_source_sha256；真实应用会写入新预览的RGB SHA。\n实际原生拖框/应用/保存关闭重开及CPU运行已验证，不把编辑器当作视频质量或去框保证。"
+      ],
+      "widgets_values_named": {
+        "text": "VM01独立框选编辑器：LoadImage → Prepare → PreviewImage，不含VAE、模型或扩散采样。\n选择自己的合法RGB底图，点击Prepare的“框选编辑（不运行）”，拖框并应用，另行保存工作流。\n模板已清空旧源图的expected_source_sha256；真实应用会写入新预览的RGB SHA。\n实际原生拖框/应用/保存关闭重开及CPU运行已验证，不把编辑器当作视频质量或去框保证。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        40,
+        80
+      ]
+    },
+    "workflow_title": "VM01_Editor"
+  },
+  "version": 0.4
+}
