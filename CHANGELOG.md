@@ -2,7 +2,17 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.94.0
+## 当前版本：1.95.0
+
+### H05 已审工作流与独立节点
+
+- 11项指定案例通过人工审核，保存短名公开图；旧一体／分离图、FreeVideo四档／8+2／4+4和原节点默认保留。
+- 新增Qwen独立参考视图、Source Clock／Conform／Control Map、独立LanPaint音频时钟适配、RES历史／完成态与外置EAV／Relay、独立FreeVideo视频解码、连续坐标learned放大、显式外部参考导入。
+- 导演台只读失效说明／参考槽／计划时长；配方卡区分未限定alpha；冷H3音频参考crop兼容和Windows自有输出flush修复。
+- A1仅扩大可见杯子＋握杯手回贴，blend5；B3为tau1.5／10%–90%，实际gain全1，不声称非零增强。失败实验不作推荐。
+- 无新增验收采样或重复旧CPU测试；不是H05全部许可／来源／硬件研究完成。详见[发布说明](docs/RELEASE_1.95.0.md)和[工作流索引](docs/H05_REVIEWED_WORKFLOWS.md)。
+
+## 1.94.0
 
 ### FreeVideo 新四档独立入口（EXP）
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+import math
 from pathlib import Path
 import re
 import shutil
@@ -20,6 +21,28 @@ PROVENANCE = {'external', 'local_mux', 'upscaled', 'repaired'}
 EXTENSIONS = {'.mp4', '.mov', '.mkv', '.webm'}
 MAX_BYTES = 1024**3
 _LOCK = threading.RLock()
+
+
+def browser_project_sha(project):
+    """Scope JSON Number equivalence to incoming external-take snapshots.
+
+    Browsers serialize Python's 5.0 as 5. Normalize only safe integral floats,
+    keeping booleans, large integers, all keys/content and array order distinct.
+    The general canonical function and existing persisted receipts are not
+    rewritten. This stable request hash also preserves exact UUID retries
+    after the project has subsequently been edited.
+    """
+    def numbers(value):
+        if (type(value) is float and abs(value) <= 2**53 - 1
+                and math.isfinite(value) and value.is_integer()):
+            return int(value)
+        if isinstance(value, dict):
+            return {key: numbers(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [numbers(item) for item in value]
+        return value
+
+    return sha(numbers(project))
 
 
 def _request(value):
@@ -101,7 +124,8 @@ def register_external_take(store, value, output_root):
 
     def saved_project():
         project = store.load(project_id)
-        if project['revision'] != request['expected_revision'] or sha(project) != request['project_sha256']:
+        if (project['revision'] != request['expected_revision']
+                or request['project_sha256'] not in (sha(project), browser_project_sha(project))):
             raise ProjectConflict('项目版本或内容已变化；保留草稿，请重新保存并登记take')
         shot = next((item for item in project['doc']['shots'] if item['id'] == shot_id), None)
         if shot is None:

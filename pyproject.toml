@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.94.0"
+version = "1.95.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,6 +21,21 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/RELEASE_1.95.0.md", "docs/H05_REVIEWED_WORKFLOWS.md",
+    "docs/SOURCE_CONFORM_EXP.md", "docs/QWEN_REFERENCE_VIEW_EXP.md",
+    "docs/FREEVIDEO_DECODER_EXP.md", "docs/H05_ATTENTION_STORAGE.md",
+    "docs/H05_CANDIDATE_DIAGNOSTICS.md", "docs/H05_DENSE_TRANSFER_EXP.md",
+    "docs/H05_EXTERNAL_AV_IMPORT_EXP.md", "docs/H05_EXTERNAL_IMAGE_IMPORT_EXP.md",
+    "docs/H05_EXTERNAL_REFERENCE_HEADER.md", "docs/H05_LANPAINT_CLOCK_EXP.md",
+    "docs/H05_LTX_SOURCE_EXP.md", "docs/H05_MV_MASTER_EXP.md",
+    "docs/H05_RES_EFFECTS_EXP.md", "docs/H05_RES_HISTORY_EXP.md",
+    "docs/H05_RES_QUALIFICATION.md", "docs/H05_RES_STAGE_EXP.md",
+    "docs/H05_STYLE_LORAS_EXP.md", "docs/H05_TIMED_GUIDE_EXP.md",
+    "tools/inspect_h3_attention_storage.py", "tools/inspect_h3_external_reference.py",
+    "tools/prepare_freevideo_decoder_assets.py", "tools/prepare_freevideo_decoder_config.py",
+    "tools/prepare_freevideo_decoder_workflows.py", "tools/prepare_h05_ltx_source_workflow.py",
+    "tools/prepare_h05_mv_master_workflow.py", "tools/prepare_h05_res_history_workflow.py",
+    "tools/prepare_h05_res_workflow.py", "tools/prepare_h05_timed_guide_workflow.py",
     "docs/FREEVIDEO_QUALITY_EXP.md", "docs/RELEASE_1.94.0.md",
     "tools/prepare_freevideo_quality_source.py", "tools/prepare_freevideo_quality_runtime.py",
     "tools/check_freevideo_quality_kernels.py", "tools/bind_freevideo_quality_probes.py",

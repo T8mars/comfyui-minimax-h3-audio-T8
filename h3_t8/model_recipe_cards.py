@@ -90,6 +90,11 @@ def recipe_from_header(header, metadata):
         "quantization_layouts": _evidence(layouts, "tensor_namespace_not_kernel_validation"),
         "training_rank": _evidence(sorted(set(ranks)) or None, "paired_factor_shapes"),
         "training_alpha": _evidence(alpha or None, "metadata_declaration" if alpha else "unknown"),
+        # Some canonical adapters carry a generic `alpha` string rather than a
+        # scoped network-alpha declaration. Show it without assigning a meaning
+        # or changing the native parser's scalar tensor/rank normalization.
+        "unscoped_alpha_metadata": _evidence(metadata.get("alpha"),
+            "unscoped_metadata_not_training_or_runtime" if "alpha" in metadata else "unknown"),
         "alpha_scalar_tensor_count": scalar_alpha_keys,
         "paired_factor_count": len(ranks), "incomplete_factor_count": incomplete,
         "runtime_strength": _evidence(None, "not_selected_by_header"),

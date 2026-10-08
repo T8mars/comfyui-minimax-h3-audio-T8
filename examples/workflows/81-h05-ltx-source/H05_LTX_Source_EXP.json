@@ -1,0 +1,3069 @@
+{
+  "id": "601e61a3-b105-45ed-bda3-304d5cdff9c8",
+  "revision": 0,
+  "last_node_id": 43,
+  "last_link_id": 86,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "User-selected external video, not a native H3 checkpoint",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        440,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            86
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "replace_with_legal_CFR_stereo.mp4"
+      ],
+      "widgets_values_named": {
+        "file": "replace_with_legal_CFR_stereo.mp4"
+      }
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SourceClockEXPT8",
+      "title": "Actual bounded source PTS and original audio",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            4,
+            6
+          ]
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            78
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceClockEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3SourceConformEXPT8",
+      "title": "One 24fps RGB conform, source origin 1 second",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        440,
+        448
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "link": 3,
+          "widget": {
+            "name": "source_fps"
+          }
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            7,
+            34,
+            51
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "frame_map",
+          "type": "T8_H3_SOURCE_FRAME_MAP",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            79
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceConformEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        24.0,
+        256,
+        448,
+        124,
+        1.0,
+        "strict",
+        "pad_silence"
+      ],
+      "widgets_values_named": {
+        "source_fps": 24.0,
+        "width": 256,
+        "height": 448,
+        "length": 124,
+        "start_seconds": 1.0,
+        "short_video_policy": "strict",
+        "short_audio_policy": "pad_silence"
+      }
+    },
+    {
+      "id": 4,
+      "type": "TrimAudioDuration",
+      "title": "Original-rate audio uses the SAME source origin",
+      "pos": [
+        1320,
+        300
+      ],
+      "size": [
+        440,
+        194
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            35,
+            52
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TrimAudioDuration",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        1.0,
+        5.166666666666667
+      ],
+      "widgets_values_named": {
+        "start_index": 1.0,
+        "duration": 5.166666666666667
+      }
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3SolEngineDraftToLTXT8Advanced",
+      "title": "Existing 8n+1 RGB preparation: 124 to121",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        440,
+        282
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ltx_encoder_frames",
+          "type": "IMAGE",
+          "links": [
+            8,
+            36,
+            53
+          ]
+        },
+        {
+          "name": "encoder_width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "encoder_height",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "kept_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "dropped_tail_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "output_duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            37,
+            54,
+            80
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolEngineDraftToLTXT8Advanced",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        256,
+        448,
+        "trim_to_8n_plus_1",
+        24.0
+      ],
+      "widgets_values_named": {
+        "target_width": 256,
+        "target_height": 448,
+        "frame_policy": "trim_to_8n_plus_1",
+        "fps": 24.0
+      }
+    },
+    {
+      "id": 6,
+      "type": "VAELoader",
+      "title": "Actual full LTX video VAE, not TAEHV encode",
+      "pos": [
+        0,
+        300
+      ],
+      "size": [
+        440,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            9,
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "ltx-2.5-video-vae-conv-bf16.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "ltx-2.5-video-vae-conv-bf16.safetensors"
+      }
+    },
+    {
+      "id": 7,
+      "type": "VAEEncode",
+      "title": "RGB re-encoding is NOT native H3 ancestry",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        440,
+        132
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEEncode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 8,
+      "type": "LatentUpscaleModelLoader",
+      "title": "Existing LTX x2 latent model",
+      "pos": [
+        0,
+        600
+      ],
+      "size": [
+        440,
+        124
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT_UPSCALE_MODEL",
+          "type": "LATENT_UPSCALE_MODEL",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LatentUpscaleModelLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"
+      ],
+      "widgets_values_named": {
+        "model_name": "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"
+      }
+    },
+    {
+      "id": 9,
+      "type": "LTXVLatentUpsampler",
+      "title": "Existing half-canvas to target LTX lift",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        440,
+        158
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 10
+        },
+        {
+          "name": "upscale_model",
+          "type": "LATENT_UPSCALE_MODEL",
+          "link": 11
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            16,
+            20,
+            24,
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LTXVLatentUpsampler",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 10,
+      "type": "UNETLoader",
+      "title": "Existing actual LTX-2.5 transformer",
+      "pos": [
+        0,
+        900
+      ],
+      "size": [
+        440,
+        168
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    {
+      "id": 11,
+      "type": "LoraLoaderModelOnly",
+      "title": "Existing refiner LoRA, unchanged 0.8",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        440,
+        194
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+        0.8
+      ],
+      "widgets_values_named": {
+        "lora_name": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+        "strength_model": 0.8
+      }
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+      "title": "Existing independent three-step Identity preset",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        440,
+        414
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            42
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            21,
+            25,
+            43
+          ]
+        },
+        {
+          "name": "refiner_lora_strength",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            44,
+            61
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolEngineLTXIdentityRefinerSetupT8Advanced",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        true,
+        "identity_preserve_0p5",
+        "0.5, 0.412, 0.350, 0",
+        "dense_reference",
+        4096,
+        "bf16_official",
+        false
+      ],
+      "widgets_values_named": {
+        "enabled": true,
+        "schedule_mode": "identity_preserve_0p5",
+        "manual_sigmas": "0.5, 0.412, 0.350, 0",
+        "attention_backend": "dense_reference",
+        "min_tokens": 4096,
+        "kernel_precision": "bf16_official",
+        "verbose": false
+      }
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3LTXLoadPolicyEXPT8",
+      "title": "Explicit load policy, no shared Core change",
+      "pos": [
+        1320,
+        600
+      ],
+      "size": [
+        440,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_LOAD_POLICY_RUNTIME",
+          "links": [
+            71
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXLoadPolicyEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "legacy_default"
+      ],
+      "widgets_values_named": {
+        "mode": "legacy_default"
+      }
+    },
+    {
+      "id": 14,
+      "type": "CLIPLoader",
+      "title": "Existing LTX Gemma encoder",
+      "pos": [
+        0,
+        1200
+      ],
+      "size": [
+        440,
+        212
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            17,
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+        "ltxv",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+        "type": "ltxv",
+        "device": "default"
+      }
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3LTXPromptRelayPlanEXPT8",
+      "title": "External Relay observes actual 121-frame LTX grid",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        440,
+        458
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "prompt_relay_events",
+          "type": "H3_T8_PROMPT_RELAY_EVENTS",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ltx_relay_plan",
+          "type": "T8_LTX_PROMPT_RELAY_PLAN",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "compiled_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "timeline_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXPromptRelayPlanEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "Preserve the adult subject, clothing, scene, camera and visible actions of the source video. Continuous natural motion.",
+        "Preserve the source performance and scene throughout.",
+        "seconds",
+        "0-5.041666666666667",
+        24.0,
+        0.1,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "global_prompt": "Preserve the adult subject, clothing, scene, camera and visible actions of the source video. Continuous natural motion.",
+        "local_prompts": "Preserve the source performance and scene throughout.",
+        "timing_mode": "seconds",
+        "time_ranges": "0-5.041666666666667",
+        "fps": 24.0,
+        "epsilon": 0.1,
+        "allow_gaps": false,
+        "allow_overlaps": false
+      }
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3LTXPromptRelayEncodeEXPT8",
+      "title": "Fresh global and event text",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        440,
+        176
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 17
+        },
+        {
+          "name": "ltx_relay_plan",
+          "type": "T8_LTX_PROMPT_RELAY_PLAN",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "text_binding",
+          "type": "T8_LTX_RELAY_TEXT_BINDING",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXPromptRelayEncodeEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        2048
+      ],
+      "widgets_values_named": {
+        "max_text_tokens": 2048
+      }
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3StageEAVConfigEXPT8",
+      "title": "External EAV, report only by default",
+      "pos": [
+        0,
+        1500
+      ],
+      "size": [
+        440,
+        344
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3StageEAVConfigEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "report_only",
+        4.0,
+        0.15,
+        0.9,
+        32,
+        1.5
+      ],
+      "widgets_values_named": {
+        "mode": "report_only",
+        "tau": 4.0,
+        "start_video_progress": 0.15,
+        "end_video_progress": 0.9,
+        "max_workspace_mib": 32,
+        "g_hard_limit": 1.5
+      }
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3LTXEAVApplyEXPT8",
+      "title": "External video-only EAV",
+      "pos": [
+        3080,
+        300
+      ],
+      "size": [
+        440,
+        184
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 19
+        },
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "link": 20
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 21
+        },
+        {
+          "name": "eav_config",
+          "type": "T8_STAGE_EAV_CONFIG",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_EAV_RUNTIME",
+          "links": [
+            65
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXEAVApplyEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3LTXPromptRelayApplyEXPT8",
+      "title": "External Relay, report only by default",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        440,
+        298
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 23
+        },
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "link": 24
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 25
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 26
+        },
+        {
+          "name": "text_binding",
+          "type": "T8_LTX_RELAY_TEXT_BINDING",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            31,
+            39,
+            56,
+            63,
+            66,
+            69
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            29
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_RELAY_RUNTIME",
+          "links": [
+            68
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXPromptRelayApplyEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "report_only",
+        32
+      ],
+      "widgets_values_named": {
+        "mode": "report_only",
+        "max_workspace_mib": 32
+      }
+    },
+    {
+      "id": 20,
+      "type": "CLIPTextEncode",
+      "title": "Original empty negative",
+      "pos": [
+        440,
+        300
+      ],
+      "size": [
+        440,
+        150
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "text": ""
+      }
+    },
+    {
+      "id": 21,
+      "type": "LTXVConditioning",
+      "title": "Actual LTX frame rate",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        440,
+        176
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 29
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            32
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LTXVConditioning",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        24.0
+      ],
+      "widgets_values_named": {
+        "frame_rate": 24.0
+      }
+    },
+    {
+      "id": 22,
+      "type": "CFGGuider",
+      "title": "Same final MODEL as stage audit",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        440,
+        202
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 31
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 32
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            41
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CFGGuider",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        1.0
+      ],
+      "widgets_values_named": {
+        "cfg": 1.0
+      }
+    },
+    {
+      "id": 23,
+      "type": "RandomNoise",
+      "title": "Independent fixed refiner seed",
+      "pos": [
+        0,
+        1800
+      ],
+      "size": [
+        440,
+        142
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            40
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        2610070501,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "noise_seed": 2610070501,
+        "control_after_generate": "fixed"
+      }
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3LTXRGBStageBindEXPT8",
+      "title": "Bind exact prepared RGB, original-rate audio and controls",
+      "pos": [
+        5280,
+        0
+      ],
+      "size": [
+        440,
+        366
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 34
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 35
+        },
+        {
+          "name": "prepared_frames",
+          "type": "IMAGE",
+          "link": 36
+        },
+        {
+          "name": "prep_report_json",
+          "type": "STRING",
+          "link": 37,
+          "widget": {
+            "name": "prep_report_json"
+          }
+        },
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "link": 38
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 39
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 40
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 41
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 42
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 43
+        },
+        {
+          "name": "setup_report_json",
+          "type": "STRING",
+          "link": 44,
+          "widget": {
+            "name": "setup_report_json"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "links": [
+            45,
+            57
+          ]
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "links": [
+            46,
+            58
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            47,
+            59
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            48,
+            60
+          ]
+        },
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "links": [
+            49,
+            55
+          ]
+        },
+        {
+          "name": "stage_boundary",
+          "type": "T8_LTX_RGB_STAGE_BOUNDARY",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXRGBStageBindEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "prep_report_json": "",
+        "setup_report_json": ""
+      }
+    },
+    {
+      "id": 25,
+      "type": "SamplerCustomAdvanced",
+      "title": "Separate actual three-step LTX sampler",
+      "pos": [
+        5720,
+        0
+      ],
+      "size": [
+        440,
+        210
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 45
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 46
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 47
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 48
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 49
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 26,
+      "type": "MiniMaxH3LTXRGBStageAuditEXPT8",
+      "title": "Candidate/source audit, not portable cache",
+      "pos": [
+        6160,
+        0
+      ],
+      "size": [
+        440,
+        418
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "stage_boundary",
+          "type": "T8_LTX_RGB_STAGE_BOUNDARY",
+          "link": 50
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 51
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 52
+        },
+        {
+          "name": "prepared_frames",
+          "type": "IMAGE",
+          "link": 53
+        },
+        {
+          "name": "prep_report_json",
+          "type": "STRING",
+          "link": 54,
+          "widget": {
+            "name": "prep_report_json"
+          }
+        },
+        {
+          "name": "ltx_latent",
+          "type": "LATENT",
+          "link": 55
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 56
+        },
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 57
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 58
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 59
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 60
+        },
+        {
+          "name": "setup_report_json",
+          "type": "STRING",
+          "link": 61,
+          "widget": {
+            "name": "setup_report_json"
+          }
+        },
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "link": 62
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "links": [
+            64
+          ]
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "links": [
+            75
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            81
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXRGBStageAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "prep_report_json": "",
+        "setup_report_json": ""
+      }
+    },
+    {
+      "id": 27,
+      "type": "MiniMaxH3LTXEAVAuditEXPT8",
+      "title": "Observe actual EAV calls",
+      "pos": [
+        6600,
+        0
+      ],
+      "size": [
+        440,
+        158
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 63
+        },
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "link": 64
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_EAV_RUNTIME",
+          "link": 65
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "links": [
+            67
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            82
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXEAVAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 28,
+      "type": "MiniMaxH3LTXPromptRelayAuditEXPT8",
+      "title": "Observe actual Relay calls",
+      "pos": [
+        7040,
+        0
+      ],
+      "size": [
+        440,
+        158
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 66
+        },
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "link": 67
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_RELAY_RUNTIME",
+          "link": 68
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "links": [
+            70
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            83
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXPromptRelayAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3LTXLoadPolicyAuditEXPT8",
+      "title": "Observe preparation, not completion",
+      "pos": [
+        7480,
+        0
+      ],
+      "size": [
+        440,
+        158
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 69
+        },
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "link": 70
+        },
+        {
+          "name": "runtime",
+          "type": "T8_LTX_LOAD_POLICY_RUNTIME",
+          "link": 71
+        }
+      ],
+      "outputs": [
+        {
+          "name": "candidate_latent",
+          "type": "LATENT",
+          "links": [
+            72
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            84
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LTXLoadPolicyAuditEXPT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 30,
+      "type": "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+      "title": "Existing approximate decoder",
+      "pos": [
+        0,
+        2100
+      ],
+      "size": [
+        440,
+        124
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "taehv",
+          "type": "T8_SOL_ENGINE_TAEHV",
+          "links": [
+            73
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolEngineTAEHVLoaderT8Advanced",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "taeltx2_3_wide.pth"
+      ],
+      "widgets_values_named": {
+        "model_name": "taeltx2_3_wide.pth"
+      }
+    },
+    {
+      "id": 31,
+      "type": "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+      "title": "Separate final video decode",
+      "pos": [
+        7920,
+        0
+      ],
+      "size": [
+        440,
+        220
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 72
+        },
+        {
+          "name": "taehv",
+          "type": "T8_SOL_ENGINE_TAEHV",
+          "link": 73
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            74
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolEngineTAEHVDecodeT8Advanced",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        "auto_official",
+        "bf16_official"
+      ],
+      "widgets_values_named": {
+        "execution_mode": "auto_official",
+        "precision": "bf16_official"
+      }
+    },
+    {
+      "id": 32,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "121 prepared frames to exactly120 /5s, original audio",
+      "pos": [
+        8360,
+        0
+      ],
+      "size": [
+        440,
+        264
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 74
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 75,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            76
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            77,
+            85
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8",
+        "cnr_id": "minimax-h3-audio-t8"
+      },
+      "widgets_values": [
+        0.0,
+        5.0,
+        24.0
+      ],
+      "widgets_values_named": {
+        "start_seconds": 0.0,
+        "duration_seconds": 5.0,
+        "fps": 24.0
+      }
+    },
+    {
+      "id": 33,
+      "type": "VHS_VideoCombine",
+      "title": "External float-PCM output (VHS), not H3 Safe AV certification",
+      "pos": [
+        8800,
+        0
+      ],
+      "size": [
+        440,
+        220
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 76
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 77
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 24.0,
+        "loop_count": 0,
+        "filename_prefix": "H05/Q05_LTX_Source",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 18,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      },
+      "widgets_values_named": {
+        "frame_rate": 24.0,
+        "loop_count": 0,
+        "filename_prefix": "H05/Q05_LTX_Source",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 18,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 34,
+      "type": "PreviewAny",
+      "title": "Observed source clock",
+      "pos": [
+        1320,
+        900
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 78
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 35,
+      "type": "PreviewAny",
+      "title": "Actual nearest map and conform facts",
+      "pos": [
+        1760,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 79
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 36,
+      "type": "PreviewAny",
+      "title": "Actual LTX trim and half-canvas",
+      "pos": [
+        2200,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 80
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 37,
+      "type": "PreviewAny",
+      "title": "Actual stage source boundary",
+      "pos": [
+        6600,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 81
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 38,
+      "type": "PreviewAny",
+      "title": "Actual EAV coverage",
+      "pos": [
+        7040,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 82
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 39,
+      "type": "PreviewAny",
+      "title": "Actual Relay coverage",
+      "pos": [
+        7480,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 83
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 40,
+      "type": "PreviewAny",
+      "title": "Actual load-policy observations",
+      "pos": [
+        7920,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "STRING",
+          "link": 84
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 41,
+      "type": "PreviewAudio",
+      "title": "Final original-rate audio",
+      "pos": [
+        8800,
+        300
+      ],
+      "size": [
+        440,
+        110
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 85
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAudio",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [],
+      "widgets_values_named": {}
+    },
+    {
+      "id": 42,
+      "type": "Video Slice",
+      "title": "Native lazy prefix trim BEFORE resident decode",
+      "pos": [
+        440,
+        600
+      ],
+      "size": [
+        440,
+        238
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 86
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Video Slice",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        0.0,
+        6.2,
+        true
+      ],
+      "widgets_values_named": {
+        "start_time": 0.0,
+        "duration": 6.2,
+        "strict_duration": true
+      }
+    },
+    {
+      "id": 43,
+      "type": "Note",
+      "pos": [
+        0,
+        -360
+      ],
+      "size": [
+        1440,
+        280
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "title": "External RGB source, not a native H3 ancestor or completed cache",
+      "widgets_values": [
+        "NEW independent template; no old graph or Core sampling math changes.\nUse a legal CFR video longer than6.2s, with real stereo source audio. Local test media are NOT distributed.\nNative Video Slice selects0-6.2s before resident decode; SourceClock observes actual PTS. Conform maps source origin1s to124 frames at24fps; LTX trims to121.\nFinal trim delivers120frames /5s at256x448. Full LTX VAE encodes half-canvas RGB; existing x2 latent lift then three independent Identity updates.\nThis selected VAE needs a32-pixel encoder grid, so the x2 target must be divisible by64; no silent rounding. Aspect-preserving preparation may center-crop.\nOriginal AUDIO uses the SAME origin1s and its original sample rate, bypassing the Conform32k and LTX audio paths. AAC is not PCM-exact.\nExplicit output backend: vhs_external. VHS preserves floating PCM input, including source AAC overshoot; it is NOT H3 Safe AV certification. No silent exporter fallback or normalization.\nSource SHA/geometry is evidence, not a native H3 teacher latent or Cold cache. Both external effects default report_only.\nLoad policy is explicit; actual trained GPU, picture/voice review and general VFR/audio-PTS sync qualification are separate."
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      42,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      2,
+      2,
+      3,
+      1,
+      "FLOAT"
+    ],
+    [
+      4,
+      2,
+      1,
+      3,
+      2,
+      "AUDIO"
+    ],
+    [
+      5,
+      2,
+      3,
+      3,
+      3,
+      "T8_H3_SOURCE_CLOCK"
+    ],
+    [
+      6,
+      2,
+      1,
+      4,
+      0,
+      "AUDIO"
+    ],
+    [
+      7,
+      3,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      5,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      9,
+      6,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      10,
+      7,
+      0,
+      9,
+      0,
+      "LATENT"
+    ],
+    [
+      11,
+      8,
+      0,
+      9,
+      1,
+      "LATENT_UPSCALE_MODEL"
+    ],
+    [
+      12,
+      6,
+      0,
+      9,
+      2,
+      "VAE"
+    ],
+    [
+      13,
+      10,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      11,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      15,
+      12,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      16,
+      9,
+      0,
+      15,
+      0,
+      "LATENT"
+    ],
+    [
+      17,
+      14,
+      0,
+      16,
+      0,
+      "CLIP"
+    ],
+    [
+      18,
+      15,
+      0,
+      16,
+      1,
+      "T8_LTX_PROMPT_RELAY_PLAN"
+    ],
+    [
+      19,
+      13,
+      0,
+      18,
+      0,
+      "MODEL"
+    ],
+    [
+      20,
+      9,
+      0,
+      18,
+      1,
+      "LATENT"
+    ],
+    [
+      21,
+      12,
+      2,
+      18,
+      2,
+      "SIGMAS"
+    ],
+    [
+      22,
+      17,
+      0,
+      18,
+      3,
+      "T8_STAGE_EAV_CONFIG"
+    ],
+    [
+      23,
+      18,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      24,
+      9,
+      0,
+      19,
+      1,
+      "LATENT"
+    ],
+    [
+      25,
+      12,
+      2,
+      19,
+      2,
+      "SIGMAS"
+    ],
+    [
+      26,
+      16,
+      0,
+      19,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      27,
+      16,
+      1,
+      19,
+      4,
+      "T8_LTX_RELAY_TEXT_BINDING"
+    ],
+    [
+      28,
+      14,
+      0,
+      20,
+      0,
+      "CLIP"
+    ],
+    [
+      29,
+      19,
+      1,
+      21,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      30,
+      20,
+      0,
+      21,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      31,
+      19,
+      0,
+      22,
+      0,
+      "MODEL"
+    ],
+    [
+      32,
+      21,
+      0,
+      22,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      33,
+      21,
+      1,
+      22,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      34,
+      3,
+      0,
+      24,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      4,
+      0,
+      24,
+      1,
+      "AUDIO"
+    ],
+    [
+      36,
+      5,
+      0,
+      24,
+      2,
+      "IMAGE"
+    ],
+    [
+      37,
+      5,
+      6,
+      24,
+      3,
+      "STRING"
+    ],
+    [
+      38,
+      9,
+      0,
+      24,
+      4,
+      "LATENT"
+    ],
+    [
+      39,
+      19,
+      0,
+      24,
+      5,
+      "MODEL"
+    ],
+    [
+      40,
+      23,
+      0,
+      24,
+      6,
+      "NOISE"
+    ],
+    [
+      41,
+      22,
+      0,
+      24,
+      7,
+      "GUIDER"
+    ],
+    [
+      42,
+      12,
+      1,
+      24,
+      8,
+      "SAMPLER"
+    ],
+    [
+      43,
+      12,
+      2,
+      24,
+      9,
+      "SIGMAS"
+    ],
+    [
+      44,
+      12,
+      4,
+      24,
+      10,
+      "STRING"
+    ],
+    [
+      45,
+      24,
+      0,
+      25,
+      0,
+      "NOISE"
+    ],
+    [
+      46,
+      24,
+      1,
+      25,
+      1,
+      "GUIDER"
+    ],
+    [
+      47,
+      24,
+      2,
+      25,
+      2,
+      "SAMPLER"
+    ],
+    [
+      48,
+      24,
+      3,
+      25,
+      3,
+      "SIGMAS"
+    ],
+    [
+      49,
+      24,
+      4,
+      25,
+      4,
+      "LATENT"
+    ],
+    [
+      50,
+      24,
+      5,
+      26,
+      0,
+      "T8_LTX_RGB_STAGE_BOUNDARY"
+    ],
+    [
+      51,
+      3,
+      0,
+      26,
+      1,
+      "IMAGE"
+    ],
+    [
+      52,
+      4,
+      0,
+      26,
+      2,
+      "AUDIO"
+    ],
+    [
+      53,
+      5,
+      0,
+      26,
+      3,
+      "IMAGE"
+    ],
+    [
+      54,
+      5,
+      6,
+      26,
+      4,
+      "STRING"
+    ],
+    [
+      55,
+      24,
+      4,
+      26,
+      5,
+      "LATENT"
+    ],
+    [
+      56,
+      19,
+      0,
+      26,
+      6,
+      "MODEL"
+    ],
+    [
+      57,
+      24,
+      0,
+      26,
+      7,
+      "NOISE"
+    ],
+    [
+      58,
+      24,
+      1,
+      26,
+      8,
+      "GUIDER"
+    ],
+    [
+      59,
+      24,
+      2,
+      26,
+      9,
+      "SAMPLER"
+    ],
+    [
+      60,
+      24,
+      3,
+      26,
+      10,
+      "SIGMAS"
+    ],
+    [
+      61,
+      12,
+      4,
+      26,
+      11,
+      "STRING"
+    ],
+    [
+      62,
+      25,
+      0,
+      26,
+      12,
+      "LATENT"
+    ],
+    [
+      63,
+      19,
+      0,
+      27,
+      0,
+      "MODEL"
+    ],
+    [
+      64,
+      26,
+      0,
+      27,
+      1,
+      "LATENT"
+    ],
+    [
+      65,
+      18,
+      1,
+      27,
+      2,
+      "T8_LTX_EAV_RUNTIME"
+    ],
+    [
+      66,
+      19,
+      0,
+      28,
+      0,
+      "MODEL"
+    ],
+    [
+      67,
+      27,
+      0,
+      28,
+      1,
+      "LATENT"
+    ],
+    [
+      68,
+      19,
+      2,
+      28,
+      2,
+      "T8_LTX_RELAY_RUNTIME"
+    ],
+    [
+      69,
+      19,
+      0,
+      29,
+      0,
+      "MODEL"
+    ],
+    [
+      70,
+      28,
+      0,
+      29,
+      1,
+      "LATENT"
+    ],
+    [
+      71,
+      13,
+      1,
+      29,
+      2,
+      "T8_LTX_LOAD_POLICY_RUNTIME"
+    ],
+    [
+      72,
+      29,
+      0,
+      31,
+      0,
+      "LATENT"
+    ],
+    [
+      73,
+      30,
+      0,
+      31,
+      1,
+      "T8_SOL_ENGINE_TAEHV"
+    ],
+    [
+      74,
+      31,
+      0,
+      32,
+      0,
+      "IMAGE"
+    ],
+    [
+      75,
+      26,
+      1,
+      32,
+      1,
+      "AUDIO"
+    ],
+    [
+      76,
+      32,
+      0,
+      33,
+      0,
+      "IMAGE"
+    ],
+    [
+      77,
+      32,
+      1,
+      33,
+      1,
+      "AUDIO"
+    ],
+    [
+      78,
+      2,
+      4,
+      34,
+      0,
+      "STRING"
+    ],
+    [
+      79,
+      3,
+      5,
+      35,
+      0,
+      "STRING"
+    ],
+    [
+      80,
+      5,
+      6,
+      36,
+      0,
+      "STRING"
+    ],
+    [
+      81,
+      26,
+      2,
+      37,
+      0,
+      "STRING"
+    ],
+    [
+      82,
+      27,
+      1,
+      38,
+      0,
+      "STRING"
+    ],
+    [
+      83,
+      28,
+      1,
+      39,
+      0,
+      "STRING"
+    ],
+    [
+      84,
+      29,
+      1,
+      40,
+      0,
+      "STRING"
+    ],
+    [
+      85,
+      32,
+      1,
+      41,
+      0,
+      "AUDIO"
+    ],
+    [
+      86,
+      1,
+      0,
+      42,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H05_External_RGB_LTX_Source"
+  },
+  "version": 0.4
+}

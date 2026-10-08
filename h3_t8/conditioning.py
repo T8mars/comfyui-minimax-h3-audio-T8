@@ -563,6 +563,10 @@ def build_conditioning(
         values.update({"minimax_keyframes": keyframes, "minimax_frame_count": frame_count})
     if refs:
         values["minimax_refs"] = refs
+    if prepared_refs is not None and "qwen_view" in prepared_refs:
+        # Opt-in receipt also binds native recipe/Stage content identities.
+        # It never changes the reference VAE blocks or the old default metadata.
+        values["t8_qwen_reference_view"] = prepared_refs["qwen_view"]
     if values:
         conditioning = node_helpers.conditioning_set_values(conditioning, values)
 
@@ -609,6 +613,17 @@ def build_conditioning(
         current_refs = prepared_reference_set.conditioning_inputs(video_vae, audio_vae)
         if current_refs["actual_producers"] != prepared_refs["actual_producers"]:
             raise ValueError("Reference encoder changed while building fresh conditioning")
+        if "qwen_view" in prepared_refs:
+            from .qwen_reference_view import observed_encoding, verify_view_inputs
+            verify_view_inputs(prepared_refs)
+            if current_refs.get("qwen_view") != prepared_refs["qwen_view"]:
+                raise ValueError("Qwen view source/strategy changed during fresh encoding")
+            report_lines.append("qwen_reference_view=" + canonical({
+                **prepared_refs["qwen_view"], "encoding_observation": observed_encoding(conditioning),
+                "native_picture_ordinals": [{"role_id": member["role_id"],
+                    "member_id": member["member_id"],
+                    "ordinal": len(keyframes) + member["routed_picture_ordinal"]}
+                    for member in prepared_refs["qwen_view"]["members"]]}))
     result = (
         conditioning,
         latent,

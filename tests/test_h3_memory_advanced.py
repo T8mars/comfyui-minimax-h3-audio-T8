@@ -415,13 +415,14 @@ def test_registration_is_append_only_and_features_match():
             encoding="utf-8"
         )
     )["nodes"]
-    assert len(ids) == len(set(ids)) == 343
+    assert len(ids) == len(set(ids)) == 676
     assert ids == feature_ids
     assert ids[334:336] == [
         "MiniMaxH3LowVRAMAttentionT8Advanced",
         "MiniMaxH3ChunkFeedForwardT8Advanced",
     ]
-    assert ids[339:] == ['SolAttnMiniMax', 'MiniMaxH3SemanticBridgeConfigT8',
+    # The original 343-node prefix stays in place as new nodes append.
+    assert ids[339:343] == ['SolAttnMiniMax', 'MiniMaxH3SemanticBridgeConfigT8',
                         'MiniMaxH3SemanticBridgeApplyT8', 'MiniMaxH3LTXLatentAdapterEXPT8']
 
 

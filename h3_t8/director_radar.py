@@ -18,6 +18,8 @@ from .director_project import canonical, identity, sha
 PACKET_SCHEMA = "t8.director.source_evidence.v1"
 SKILL_SCHEMA = "t8.director.prompt_skill.v1"
 CANDIDATE_SCHEMA = "t8.director.prompt_candidate.v1"
+CANDIDATE_COMPONENTS = {"schema", "global", "draft", "references", "assets", "evidence",
+                        "intent", "dependencies", "bindings", "options"}
 MAX_BYTES = 512 * 1024
 MAX_ITEMS = 256
 MAX_TEXT = 32768
@@ -625,7 +627,7 @@ def validate_fields(project):
                 raise ValueError("候选稿需要消费回执")
             _object(
                 candidate["receipt"],
-                {"binding_order", "claim_ids", "facts_revision", "intent_revision"},
+                {"binding_order", "claim_ids", "facts_revision", "intent_revision", "input_component_sha256"},
                 {"binding_order", "claim_ids", "facts_revision", "intent_revision"},
             )
             if not isinstance(
@@ -645,6 +647,11 @@ def validate_fields(project):
             for key in ("facts_revision", "intent_revision"):
                 if candidate["receipt"][key] is not None:
                     _integer(candidate["receipt"][key], key, 1)
+            components = candidate["receipt"].get("input_component_sha256")
+            if "input_component_sha256" in candidate["receipt"]:
+                _object(components, CANDIDATE_COMPONENTS, CANDIDATE_COMPONENTS)
+                for digest in components.values():
+                    _digest(digest)
     fingerprints = {}
     for skill in skills:
         key = (skill["id"], skill["version"])
@@ -820,6 +827,47 @@ def candidate_status(project, shot):
     return "active" if candidate["active"] else "pending"
 
 
+def candidate_diagnostics(project, shot):
+    """Read-only draft-signature explanation, never Stage/MODEL certification.
+
+    New candidates record component digests computed by create_candidate. Old
+    candidates have only the aggregate digest: do not invent the missing prior
+    values or change their compilation/adoption policy.
+    """
+    status = candidate_status(project, shot)
+    candidate = shot.get("promptCandidate")
+    result = {"schema": "t8.director.candidate_diagnostics.v1", "status": status,
+              "scope": "draft_signatures_not_runtime_MODEL_or_Stage_cache_certification",
+              "changed_components": None, "component_snapshot": "legacy_missing",
+              "saved": False, "queued": False, "adopted": False, "cache_hit_certified": False}
+    if candidate is None:
+        result.update(reason="no_candidate_original_author_draft", inputs_hash_match=None)
+        return result
+    actual_inputs = _inputs(project, shot, candidate["options"])
+    actual_sha = sha(actual_inputs)
+    match = actual_sha == candidate["inputs_sha256"]
+    result.update(expected_inputs_sha256=candidate["inputs_sha256"],
+                  actual_inputs_sha256=actual_sha, inputs_hash_match=match,
+                  reason="candidate_inputs_changed" if not match else
+                         "explicitly_adopted_current_draft" if candidate["active"] else
+                         "current_candidate_not_adopted")
+    old = candidate["receipt"].get("input_component_sha256")
+    if old is not None:
+        current = {key: sha(value) for key, value in actual_inputs.items()}
+        changed = sorted(key for key in CANDIDATE_COMPONENTS if old[key] != current[key])
+        # A caller can edit metadata; inconsistent declarations are not evidence
+        # of a specific changed input. Never silently repair/re-sign the receipt.
+        if bool(changed) == (not match):
+            result.update(changed_components=changed,
+                          component_snapshot="recorded_component_digest_comparison")
+        else:
+            result.update(component_snapshot="inconsistent_receipt_declaration",
+                          diagnostic="Aggregate and component declarations disagree; no exact field attribution.")
+    if result["component_snapshot"] == "legacy_missing":
+        result["diagnostic"] = "Old candidate has no component snapshot; aggregate staleness is known, exact prior values are unavailable."
+    return result
+
+
 def create_candidate(project, shot_id, *, facts=False, intent=True):
     validate_fields(project)
     _boolean(facts)
@@ -841,6 +889,7 @@ def create_candidate(project, shot_id, *, facts=False, intent=True):
         "claim_ids": [],
         "facts_revision": None,
         "intent_revision": None,
+        "input_component_sha256": {key: sha(value) for key, value in inputs.items()},
     }
     if facts and shot.get("sourceEvidence"):
         if evidence_status(project, shot) != "confirmed":

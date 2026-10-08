@@ -37,7 +37,17 @@ if __package__:
     from .nodes_temporal_dialogue import NODES as _temporal_dialogue_node_classes
     from .nodes_postprocess import NODES as _postprocess_node_classes
     from .nodes_reference_package import NODES as _reference_package_node_classes
+    from .nodes_qwen_reference_view import NODES as _qwen_view_node_classes
     from .freevideo_quality.nodes import NODES as _freevideo_quality_node_classes
+    from .nodes_source_conform import NODES as _source_conform_node_classes
+    from .freevideo_decoder.nodes import NODES as _freevideo_decoder_node_classes
+    from .nodes_res_history_exp import NODES as _res_history_node_classes
+    from .nodes_res_stage_exp import NODES as _res_stage_node_classes
+    from .nodes_res_effects_exp import NODES as _res_effects_node_classes
+    from .nodes_lanpaint_clock_exp import NODES as _lanpaint_clock_node_classes
+    from .nodes_external_reference_image_import import NODES as _external_image_node_classes
+    from .nodes_dense_transfer_exp import NODES as _dense_transfer_node_classes
+    from .nodes_external_reference_av_import import NODES as _external_av_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -115,7 +125,17 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _temporal_dialogue_node_classes = import_module(f"{_package_name}.nodes_temporal_dialogue").NODES
     _postprocess_node_classes = import_module(f"{_package_name}.nodes_postprocess").NODES
     _reference_package_node_classes = import_module(f"{_package_name}.nodes_reference_package").NODES
+    _qwen_view_node_classes = import_module(f"{_package_name}.nodes_qwen_reference_view").NODES
     _freevideo_quality_node_classes = import_module(f"{_package_name}.freevideo_quality.nodes").NODES
+    _source_conform_node_classes = import_module(f"{_package_name}.nodes_source_conform").NODES
+    _freevideo_decoder_node_classes = import_module(f"{_package_name}.freevideo_decoder.nodes").NODES
+    _res_history_node_classes = import_module(f"{_package_name}.nodes_res_history_exp").NODES
+    _res_stage_node_classes = import_module(f"{_package_name}.nodes_res_stage_exp").NODES
+    _res_effects_node_classes = import_module(f"{_package_name}.nodes_res_effects_exp").NODES
+    _lanpaint_clock_node_classes = import_module(f"{_package_name}.nodes_lanpaint_clock_exp").NODES
+    _external_image_node_classes = import_module(f"{_package_name}.nodes_external_reference_image_import").NODES
+    _dense_transfer_node_classes = import_module(f"{_package_name}.nodes_dense_transfer_exp").NODES
+    _external_av_node_classes = import_module(f"{_package_name}.nodes_external_reference_av_import").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -138,7 +158,11 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_mv_cast_node_classes, *_external_continuation_node_classes,
                 *_visible_face_mask_node_classes, *_face_observation_node_classes,
                 *_external_effect_node_classes, *_curve_node_classes, *_kijai_pdd_node_classes, *_freevideo_node_classes,
-                *_temporal_dialogue_node_classes, *_postprocess_node_classes, *_reference_package_node_classes, *_freevideo_quality_node_classes]
+                *_temporal_dialogue_node_classes, *_postprocess_node_classes, *_reference_package_node_classes,
+                *_freevideo_quality_node_classes, *_qwen_view_node_classes, *_source_conform_node_classes,
+                *_freevideo_decoder_node_classes, *_res_history_node_classes, *_res_stage_node_classes,
+                *_res_effects_node_classes, *_lanpaint_clock_node_classes, *_external_image_node_classes,
+                *_dense_transfer_node_classes, *_external_av_node_classes]
 
 
 def comfy_entrypoint():

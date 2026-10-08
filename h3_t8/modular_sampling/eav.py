@@ -55,6 +55,9 @@ class EAVConfig:
 
 
 def validate_stage(model, sigmas, av_latent, context):
+    from .. import res_stage_exp, res_effects_exp
+    if type(context) is StageContext and context.recipe == res_stage_exp.RECIPE:
+        return res_effects_exp.validate_stage(model, sigmas, av_latent, context)
     from . import hyperflow_curve_effects
     if type(context) is StageContext and context.recipe == hyperflow_curve_effects.RECIPE:
         return hyperflow_curve_effects.validate_stage(model, sigmas, av_latent, context)
@@ -244,6 +247,9 @@ def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase
     runtime.v2_runtime = v2_owner.runtime
     if config.mode == "disabled" or (stage_context.recipe == audio_refine_effects.RECIPE and stage_context.steps == 0):
         return model, runtime, json.dumps(runtime.snapshot(), ensure_ascii=False)
+    from .. import res_stage_exp, res_eav_memory
+    if stage_context.recipe == res_stage_exp.RECIPE:
+        model = res_eav_memory.prepare(model)
     if model.get_wrappers("diffusion_model", KEY):
         raise ValueError("Stage EAV already installed; use one config per stage branch")
     normalized = normalize_av_masks(av_latent.get("noise_mask"), video, audio)
@@ -307,6 +313,8 @@ def apply_stage_eav(model, sigmas, av_latent, stage_context, config, *, p7_phase
             route.update(mode=config.mode, tau=config.tau, max_workspace_mib=config.max_workspace_mib,
                          g_hard_limit=config.g_hard_limit, runtime=runtime.telemetry, forward_index=index)
             options[feta.EAV_RUNTIME_KEY] = route
+            if stage_context.recipe == res_stage_exp.RECIPE:
+                res_eav_memory.bind_runtime(model, route)
             if binding is not None:
                 relay_route = relay._runtime_route(payload["layout"], binding, x[0].device)
                 expected_relay_task = native_relay_task if long_video_contract is not None else route["task"].lower()

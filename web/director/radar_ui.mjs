@@ -2,6 +2,7 @@ import { createModalAccess } from './modal_ui.mjs';
 import { directorUUID } from './session.mjs';
 import { sha256UTF8 } from './content_hash.mjs';
 import { fillContinuityRecipeForm } from './continuity_recipes.mjs';
+import { candidateDiagnosticText } from './candidate_diagnostics.mjs';
 
 // Draft-only requests. No provider, uploads, queue, generation or automatic Save.
 export function createRadarDialog(root, ctx) {
@@ -43,6 +44,10 @@ export function createRadarDialog(root, ctx) {
         <p data-radar-candidate-state></p><textarea data-radar-candidate readonly rows="7" aria-label="待审候选稿"></textarea>
         <div class="o-row"><button type="button" data-radar-adopt>我已审阅，采用此候选</button><button type="button" data-radar-revert>退回原作者稿</button></div>
         <details><summary>快照 / 消费回执</summary><pre data-radar-receipt></pre></details>
+        <button type="button" data-radar-inspect>只读检查候选失效原因／参考编号／计划时长</button>
+        <pre data-radar-diagnostics aria-label="候选与参考只读检查"></pre>
+        <details><summary>检查的技术详情</summary><pre data-radar-diagnostics-raw></pre></details>
+        <p class="o-tip">这是当前草稿的输入检查，不是GPU执行或Stage缓存命中证明。旧候选未保存分字段快照时，不猜历史差异；检查不采用、不保存、不排队。</p>
         <details><summary>只读修订历史（观察 / 创作 / 候选）</summary><pre data-radar-history></pre><p class="o-tip">历史不参与当前采样，不自动确认或重签。保存后不能覆盖历史；需删除私密历史时另存新工程。工程包默认不带这些记录。</p></details>
       </section>`;
     root.append(dialog);
@@ -67,6 +72,8 @@ export function createRadarDialog(root, ctx) {
         $('[data-radar-candidate]').value = candidate?.text || '';
         $('[data-radar-candidate-state]').textContent = candidate ? (candidate.active ? '已显式采用；执行预检仍会核查依赖是否已失效。' : '待审候选 / 已回退；原作者稿仍生效。') : '无候选，原作者稿生效。';
         $('[data-radar-receipt]').textContent = candidate ? JSON.stringify(candidate, null, 2) : '';
+        $('[data-radar-diagnostics]').textContent = '尚未检查当前草稿。';
+        $('[data-radar-diagnostics-raw]').textContent = '';
         $('[data-radar-history]').textContent = JSON.stringify({evidence: shot.evidenceHistory || [], intent: shot.intentHistory || [], candidates: shot.candidateHistory || []}, null, 2);
     }
     async function operate(operation, value) {
@@ -86,6 +93,10 @@ export function createRadarDialog(root, ctx) {
             ctx.apply(result.project);
             timeMap = result.time_map;
             render();
+            if (result.candidate_diagnostics) {
+                $('[data-radar-diagnostics]').textContent = candidateDiagnosticText(result.candidate_diagnostics);
+                $('[data-radar-diagnostics-raw]').textContent = JSON.stringify(result.candidate_diagnostics, null, 2);
+            }
             $('[data-radar-status]').textContent = `草稿已更新，可撤销；证据 ${result.evidence_status}，候选 ${result.candidate_status}。请保存项目，没有排队。`;
         } catch (error) {
             if (ticket === sequence && dialog.open) $('[data-radar-status]').textContent = '未应用：' + error.message;
@@ -95,6 +106,30 @@ export function createRadarDialog(root, ctx) {
     }
     function close() { sequence++; busy = false; dialog.close(); }
     $('[data-radar-close]').addEventListener('click', close);
+    $('[data-radar-inspect]').addEventListener('click', async () => {
+        if (busy || !dialog.open) return;
+        if (origin !== ctx.context()) { close(); ctx.notify('工程已切换，未检查新工程。'); return; }
+        const project = ctx.snapshot(), baseJson = JSON.stringify(project), ticket = ++sequence;
+        busy = true;
+        dialog.querySelectorAll('button:not([data-radar-close])').forEach(button => button.disabled = true);
+        $('[data-radar-diagnostics]').textContent = '只读核对当前草稿…';
+        try {
+            const digest = await sha256UTF8(baseJson);
+            const response = await fetch('/minimax_h3_t8/director/radar/inspect', {method:'POST',
+                headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+                body:JSON.stringify({project, shot_id:project.current, base_json:baseJson, base_sha256:digest})});
+            const result = await response.json();
+            if (!response.ok) throw Error(result.error || `HTTP ${response.status}`);
+            if (ticket !== sequence || !dialog.open) return;
+            if (origin !== ctx.context() || baseJson !== JSON.stringify(ctx.snapshot())) throw Error('草稿已变化，旧报告未显示；请重新检查');
+            $('[data-radar-diagnostics]').textContent = candidateDiagnosticText(result);
+            $('[data-radar-diagnostics-raw]').textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+            if (ticket === sequence && dialog.open) $('[data-radar-diagnostics]').textContent = '未检查：' + error.message;
+        } finally {
+            if (ticket === sequence) { busy = false; dialog.querySelectorAll('button').forEach(button => button.disabled = false); }
+        }
+    });
     dialog.addEventListener('cancel', () => { sequence++; busy = false; });
     $('[data-radar-example]').addEventListener('click', async () => {
         const asset = ctx.snapshot().assets.find(row => row.id === $('[data-radar-source]').value);

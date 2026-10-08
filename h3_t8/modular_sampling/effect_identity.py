@@ -61,6 +61,9 @@ def _project_plain_relay(model, selector, binding, query_rows):
     """
     from . import hyperflow_effects, hyperflow_fresh, speed_effects, hyperflow_curve_effects
     native = native_dual.capture_owner(model) if model.get_attachment(native_dual.KEY) is not None else None
+    from .. import res_effects_exp
+    if native is None and model.get_attachment(res_effects_exp.KEY) is not None:
+        native = res_effects_exp.capture_owner(model)
     if native is None and model.get_attachment(speed_effects.KEY) is not None:
         native = speed_effects.capture_owner(model)
     if native is None and model.get_attachment(hyperflow_fresh.KEY) is not None:
@@ -101,7 +104,9 @@ def _project_plain_relay(model, selector, binding, query_rows):
             selected = state.get("optimized_attention")
             break
     router = _factory_closure(selected, relay._install_prompt_relay_model, "_attention_router")
-    _require(router is not None and router.get("relay_backend") is None
+    res_backend = (router.get("relay_backend") if router is not None
+                   and model.get_attachment(res_effects_exp.KEY) is not None else None)
+    _require(router is not None and (router.get("relay_backend") is None or res_backend is not None)
              and router.get("execution_observer") is None,
              "Relay attention backend/observer lacks its persistent owner adapter")
     _require(getattr(selector, "container_function", None) is None
@@ -116,7 +121,11 @@ def _project_plain_relay(model, selector, binding, query_rows):
                 "backend": "native_global_unbiased__pytorch_temporal_bias"}
     cloned = model.clone()
     options = cloned.model_options["transformer_options"]
-    options.pop("optimized_attention_override", None)
+    if res_backend is None:
+        options.pop("optimized_attention_override", None)
+    else:
+        from ..res_relay_identity import project_original_sol_delegate
+        cloned, contract["selected_delegate"] = project_original_sol_delegate(cloned, res_backend)
     if native is None:
         shadow = copy(runtime)
         shadow.override = None
@@ -165,7 +174,9 @@ def _project_standalone_relay(model):
     _require(len(wrappers) == 1, "Relay wrapper count is not its single native owner")
     contract = relay.prompt_relay_model_contract(model)
     wrapper = _factory_closure(wrappers[0], relay._install_prompt_relay_model, "_diffusion_wrapper")
-    _require(wrapper is not None and wrapper.get("relay_backend") is None
+    from .. import res_effects_exp
+    _require(wrapper is not None and (wrapper.get("relay_backend") is None
+             or model.get_attachment(res_effects_exp.KEY) is not None)
              and wrapper.get("execution_observer") is None and contract["attention_owner_verified"],
              "Relay wrapper/backend ownership is unverified")
     source = wrapper.get("source_plain_override")
@@ -230,9 +241,12 @@ def _project_stage_effects(model):
              "Stage EAV Relay runtime pairing changed")
     if binding is not None:
         _require(relay_contract.get("binding") == binding and relay_contract.get("attention_owner_verified") is True
-                 and relay_contract.get("attention_backend") is None,
+                 and (relay_contract.get("attention_backend") is None
+                      or model.get_attachment("t8_RES_external_effect_context_v1") is not None),
                  "Composed Relay backend/binding lacks its persistent owner adapter")
-    owner = (speed_effects.capture_owner(model) if runtime.context.recipe == speed_effects.RECIPE
+    from .. import res_effects_exp, res_stage_exp
+    owner = (res_effects_exp.capture_owner(model) if runtime.context.recipe == res_stage_exp.RECIPE
+             else speed_effects.capture_owner(model) if runtime.context.recipe == speed_effects.RECIPE
              else hyperflow_curve_effects.capture_owner(model) if runtime.context.recipe == hyperflow_curve_effects.RECIPE
              else hyperflow_fresh.capture_owner(model) if runtime.context.recipe in hyperflow_fresh.RECIPES
              else hyperflow_effects.capture_owner(model) if runtime.context.recipe == hyperflow_effects.RECIPE

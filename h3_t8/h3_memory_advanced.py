@@ -345,7 +345,7 @@ def _bind_runtime_guard(model: Any, record: _PatchRecord) -> Any:
 def inspect_t8_memory_composition(
     model: Any,
     *,
-    allowed_wrapper_keys: tuple[str, ...] = (),
+    allowed_wrapper_keys: tuple[str | None, ...] = (),
 ) -> dict[str, Any] | None:
     """Authenticate T8 memory-node ownership for cache/resume identities."""
 
@@ -381,7 +381,12 @@ def inspect_t8_memory_composition(
         for key, values in wrapper_type.items()
         if values
     }
-    allowed_keys = set(wrapper_keys) | {str(key) for key in allowed_wrapper_keys}
+    # Core's anonymous wrapper group uses None, NOT the string "None".
+    # Preserve that exact key; coercion both misses real Union2 composition
+    # and can accidentally authorize the distinct string-named group.
+    allowed_keys = set(wrapper_keys) | {
+        None if key is None else str(key) for key in allowed_wrapper_keys
+    }
     if active_wrappers != allowed_keys:
         warn_patch_stack('MiniMax H3 memory MODEL contains wrappers outside its authenticated receipt')
         return None

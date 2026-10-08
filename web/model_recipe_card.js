@@ -33,6 +33,7 @@ function showEvidence(output, data, node) {
     table.append(heading);
     for (const [name, key] of [["任务", "task"], ["剪枝结构", "structure"], ["存储dtype", "storage_dtypes"],
         ["量化布局", "quantization_layouts"], ["训练rank", "training_rank"], ["训练alpha", "training_alpha"],
+        ["文件中的未限定alpha（不自动套用）", "unscoped_alpha_metadata"],
         ["sigma／clock", "sigma_and_clock"], ["VAE像素倍率", "vae_pixel_multiplier"]]) {
         if (!card?.[key]) continue;
         const item = card[key], row = document.createElement("tr");

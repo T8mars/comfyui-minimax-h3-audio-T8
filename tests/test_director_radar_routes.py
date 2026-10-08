@@ -77,6 +77,40 @@ def test_recipe_card_route_is_explicit_bounded_and_never_saves_or_queues(radar_r
     assert store.list() == [] and len(calls) == 1
 
 
+def test_readonly_candidate_inspection_is_bound_to_the_current_draft_without_store_writes(radar_routes, monkeypatch):
+    from copy import deepcopy
+    import hashlib
+    from h3_audio_t8_pkg.director_radar import apply_operation
+
+    store, handlers = radar_routes
+    project = new_project()
+    project = apply_operation(project, project['current'], 'candidate_create', {'facts': False, 'intent': True})
+    before = deepcopy(project)
+    raw = json.dumps(project, ensure_ascii=False)
+    body = dict(project=project, shot_id=project['current'], base_json=raw,
+                base_sha256=hashlib.sha256(raw.encode('utf8')).hexdigest())
+    def no_store():
+        raise AssertionError('Read-only draft inspection must not read/write the store or prepare images')
+    monkeypatch.setattr(director_routes, 'get_store', no_store)
+    handler = handlers[director_routes.PREFIX + '/radar/inspect']
+    code, result = dispatch(handler, body)
+    assert code == 200
+    assert result['candidate']['status'] == 'pending'
+    assert result['candidate']['changed_components'] == []
+    assert result['saved'] is result['queued'] is result['project_modified'] is False
+    assert result['time_plan']['fps'] == 24
+    assert result['time_plan']['generated_seconds'] == result['time_plan']['aligned_frames'] / 24
+    assert project == before and store.list() == []
+    body['base_sha256'] = '0' * 64
+    assert dispatch(handler, body)[0] == 409
+    body['base_sha256'] = hashlib.sha256(raw.encode('utf8')).hexdigest()
+    body['base_json'] = '{}'
+    assert dispatch(handler, body)[0] == 409
+    assert dispatch(handler, body, length=None)[0] == 400
+    assert dispatch(handler, body, length=2 * 1024**2 + 1)[0] == 400
+    assert project == before and store.list() == []
+
+
 def test_session_relative_radar_module_has_actual_native_core_static_route(radar_routes):
     _store, handlers = radar_routes
     handler = handlers[director_routes.PREFIX + "/radar_state.mjs"]
@@ -87,6 +121,36 @@ def test_session_relative_radar_module_has_actual_native_core_static_route(radar
     session = (expected.parent / "session.mjs").read_text(encoding="utf8")
     assert "'./radar_state.mjs'" in session
     assert expected.read_bytes()
+
+
+def test_readonly_reference_plan_redacts_paths_and_separates_video_audio_ordinals(radar_routes, monkeypatch):
+    import hashlib
+    import uuid
+
+    _store, handlers = radar_routes
+    project = new_project()
+    aid = str(uuid.uuid4())
+    # Deliberately declared metadata only: this endpoint must not read files or
+    # grant actual encoding/file-content certification to this untrusted draft.
+    project['assets'] = [dict(id=aid, name='declared.mp4', kind='video', size=1,
+        server_path=f't8_director/{aid}/declared.mp4', sha256='a' * 64,
+        width=512, height=288, duration=5, has_audio=True)]
+    project['doc']['shots'][0].update(mode='refs', refs=[aid], simplePrompt='使用 @video1')
+    def no_store():
+        raise AssertionError('Plan inspector must not verify/read files or preprocess images')
+    monkeypatch.setattr(director_routes, 'get_store', no_store)
+    raw = json.dumps(project, ensure_ascii=False)
+    code, report = dispatch(handlers[director_routes.PREFIX + '/radar/inspect'],
+        dict(project=project, shot_id=project['current'], base_json=raw,
+             base_sha256=hashlib.sha256(raw.encode()).hexdigest()))
+    assert code == 200
+    assert [row['native'] for row in report['reference_slots']] == ['<Video 1>', '<Audio 1>']
+    assert [row['role'] for row in report['reference_slots']] == ['ref_video', 'ref_video_audio']
+    assert all(set(row) == {'asset_id', 'role', 'native', 'sha256'} for row in report['reference_slots'])
+    assert report['reference_aliases'] == [{'alias': '@video1', 'asset_id': aid, 'native': '<Video 1>'}]
+    assert report['scope'] == 'current_draft_plan_not_actual_encoding_or_runtime_cache'
+    assert report['source_time_map'] is None
+    assert report['saved'] is report['queued'] is report['project_modified'] is False
 
 
 def test_actual_guarded_radar_route_preserves_unsaved_draft_and_never_queues(

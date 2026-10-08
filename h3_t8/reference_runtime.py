@@ -103,6 +103,7 @@ class ReferenceSet:
     packages: tuple
     roles_json: str
     allow_missing_grounding: bool = False
+    qwen_view: object = None
 
     def routed(self):
         return route_packages(list(self.packages), json.loads(self.roles_json),
@@ -120,9 +121,17 @@ class ReferenceSet:
                     continue
                 role = member["producer"]["role"]
                 if role not in actual:
+                    if role == "audio_vae":
+                        # Create/import establishes this same H3-only boundary
+                        # before producer capture. A fresh directory-load Apply
+                        # must do so too; weights/config identity stays strict.
+                        ensure_h3_audio_vae_non_aligned_crop_compat(audio_vae)
                     actual[role] = portable_producer(video_vae if role == "video_vae" else audio_vae, role)
                 if member["producer"] != actual[role]:
                     raise ValueError("Reference package encoder differs from the actual selected VAE; rebuild this asset explicitly")
+        if self.qwen_view is not None:
+            from .qwen_reference_view import derive_inputs
+            routed = derive_inputs(self, routed)
         items = []
         for item in routed["qwen_ref_items"]:
             if item["type"] != "video":

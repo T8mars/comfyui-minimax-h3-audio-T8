@@ -102,3 +102,44 @@ def test_actual_route_rejects_generation_parameters_bad_identity_and_oversize(ex
         assert dispatch(handler, changed)[0] == 400
     assert dispatch(handler, body, length=2 * 1024**2 + 1)[0] == 400
     assert not list(output.rglob('*.mp4'))
+
+
+def test_actual_route_accepts_browser_integral_number_without_rewriting_saved_bytes(external_route):
+    from h3_audio_t8_pkg.director_project import sha
+    store, output, source, body, handlers = external_route
+    saved = deepcopy(body['project'])
+    saved['doc']['shots'][0]['duration'] = 4.0
+    saved = store.save(saved, saved['revision'])
+    project_file = store._path(saved['id'])
+    before = project_file.read_bytes()
+    body['project'] = deepcopy(saved)
+    body['project']['doc']['shots'][0]['duration'] = 4
+    assert sha(saved) != sha(body['project'])
+    code, result = register(body, handlers)
+    assert code == 200 and result['record']['decoded_clock']['fully_decoded']
+    assert project_file.read_bytes() == before and store.load(saved['id']) == saved
+    assert source.exists() and len(list(output.rglob('*.mp4'))) == 1
+    assert register(body, handlers) == (200, {**result, 'already_registered': True})
+
+
+@pytest.mark.parametrize('saved,submitted', [
+    ({'duration': 5.0}, {'duration': 5}),
+    ({'nested': [{'duration': 4.0, 'id': 'same'}]}, {'nested': [{'duration': 4, 'id': 'same'}]}),
+])
+def test_browser_snapshot_only_safe_integral_number_spelling_is_equivalent(saved, submitted):
+    from h3_audio_t8_pkg.director_external import browser_project_sha
+    assert browser_project_sha(saved) == browser_project_sha(submitted)
+
+
+@pytest.mark.parametrize('saved,submitted', [
+    ({'duration': 5.0}, {'duration': 6}),
+    ({'flag': True}, {'flag': 1}),
+    ({'seed': 2**53}, {'seed': float(2**53)}),
+    ({'seed': 2**53 + 1}, {'seed': float(2**53 + 1)}),
+    ({'duration': 5.0, 'other': None}, {'duration': 5}),
+    ({'media': ['a', 'b']}, {'media': ['b', 'a']}),
+    ({'duration': 5.25}, {'duration': 5}),
+])
+def test_browser_snapshot_preserves_type_content_order_and_large_integer_guards(saved, submitted):
+    from h3_audio_t8_pkg.director_external import browser_project_sha
+    assert browser_project_sha(saved) != browser_project_sha(submitted)

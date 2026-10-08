@@ -58,6 +58,8 @@ def prepare_source_media_window(
     short_video_policy: str,
     short_audio_policy: str,
     source_audio: Mapping | None = None,
+    *,
+    return_frame_map: bool = False,
 ):
     if not isinstance(frames, torch.Tensor) or frames.ndim != 4:
         shape = tuple(frames.shape) if isinstance(frames, torch.Tensor) else type(frames).__name__
@@ -179,13 +181,25 @@ def prepare_source_media_window(
             "arbitrary_video_supported": False,
         },
     }
-    return (
+    result = (
         selected,
         output_audio,
         frame_count,
         duration_seconds,
         json.dumps(report, ensure_ascii=False, indent=2),
     )
+    if not return_frame_map:
+        return result
+    # Capture the indices used above, not a second implementation of the
+    # selection/resize/audio rules. Legacy callers retain all five outputs.
+    return (*result, {
+        "source_indices": tuple(int(value) for value in source_indices.cpu().tolist()),
+        "target_times": tuple(float(value) for value in target_times.tolist()),
+        "facts": report["facts"],
+        "spatial_operation": "core.resize_image:lanczos:crop_disabled",
+        "rounding": "torch.round_float64_ties_to_even_then_clamp",
+        "audio_start_sample_32k": round(start_seconds * SOURCE_AUDIO_SAMPLE_RATE),
+    })
 
 
 def _require_latent(value: Mapping, name: str) -> tuple[Mapping, object]:

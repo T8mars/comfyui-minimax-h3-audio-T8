@@ -54,6 +54,11 @@ def save_h3_av_safe(images, audio, output, fps=24, crf=18):
         delivery._write_planar_audio_raw(raw_audio, audio_array)
         _mux_h3_world_audio(video, raw_audio, combined, sample_rate=rate, duration_seconds=count / fps)
         delivery._strict_validate_mp4(combined, require_audio=True)
+        # Flush our own completed private file before publishing its hard link.
+        # Windows cannot fsync a read-only handle; never open user masters for
+        # writing merely to bind a later postprocessing job.
+        with combined.open("r+b") as handle:
+            os.fsync(handle.fileno())
         # Same-volume publication must never replace a concurrently created file.
         os.link(combined, output)
     return {"schema": "t8.h3.safe_av_output.v1", "status": "pass",

@@ -283,6 +283,32 @@ def execution_identity(model, initial_sampling):
 
     identity = nonportable_model_identity(ReadOnlySelection(), "Stage within-run integrity snapshot",
                                           schema="t8.modular-sampling.execution-selection.v1")
+    # Core unpatch_model restores an inherited forward with set_attr. That
+    # leaves an instance alias of the SAME class method, not a new execution
+    # owner. Bind the actual class dispatch (including live code/defaults) on
+    # both sides, then normalize only that exact bound alias. Never omit a
+    # foreign method, different owner, hook, selected patch or class mutation.
+    # This is execution-local equivalence, not portable cache certification.
+    network = identity["execution_selection"]["network_execution"]
+    class_dispatch = {}
+    for module_path, module in model.model.named_modules():
+        native_forward = inspect.getattr_static(type(module), "forward")
+        class_dispatch[module_path] = _execution_selection({
+            "forward": native_forward, "code": getattr(native_forward, "__code__", None),
+            "defaults": getattr(native_forward, "__defaults__", None),
+            "kwdefaults": getattr(native_forward, "__kwdefaults__", None),
+        })
+        current = vars(module).get("forward")
+        if (type(current) is MethodType and current.__self__ is module
+                and current.__func__ is native_forward):
+            pre_hooks, hooks = module._forward_pre_hooks, module._forward_hooks
+            if pre_hooks or hooks:
+                network[module_path] = _execution_selection({
+                    "forward": None, "pre_hooks": pre_hooks, "hooks": hooks,
+                })
+            else:
+                network.pop(module_path, None)
+    identity["execution_selection"]["native_class_forward_dispatch"] = class_dispatch
     # Core installs selected T8 memory forwards only when the network first
     # loads. They are not a new user patch. Suppress only methods authenticated
     # by this MODEL's own memory receipt, after checking the exact live bound
@@ -303,7 +329,15 @@ def execution_identity(model, initial_sampling):
             if (not isinstance(current, MethodType) or current.__self__ is not module
                     or current.__func__ is not expected_method.__func__):
                 raise ValueError("Authenticated T8 memory forward changed during sampling")
-            network.pop(module_path)
+            # Only the authenticated forward is derived from load-time
+            # installation. Live hooks remain execution inputs even here.
+            pre_hooks, hooks = module._forward_pre_hooks, module._forward_hooks
+            if pre_hooks or hooks:
+                network[module_path] = _execution_selection({
+                    "forward": None, "pre_hooks": pre_hooks, "hooks": hooks,
+                })
+            else:
+                network.pop(module_path)
     identity["selected_native_sampling"] = sampling_contract
     if dynamic_contract is not None:
         identity["pdd_dynamic"] = dynamic_contract
@@ -341,6 +375,9 @@ class StageResult:
             raise ValueError("Stage result receipt integrity failed")
         from .hyperflow_fresh import verify_receipt
         verify_receipt(self, receipt)
+        if context.recipe == "h05_RES_history_complete_v1":
+            from ..res_stage_exp import verify_receipt as verify_res_receipt
+            verify_res_receipt(receipt)
         return receipt
 
 

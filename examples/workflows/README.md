@@ -6,6 +6,8 @@ Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新
 
 分离式 S01–S29 / Veda 的保存位置见 [总索引](SEPARATED_WORKFLOWS.md)；最新 B8 / C1 / C2 音频修正版完整/恢复配对图见 [64-reviewed-audio-followup](64-reviewed-audio-followup/README.md)，不覆盖旧图。
 
+本次新增：[H05 11项已审短名工作流](83-h05-reviewed/README.md)，旧入口全部保留。
+
 | 目录 | 主要用途 |
 |---|---|
 | [75-radar-r6-reference](75-radar-r6-reference/README.md) | 10张原生保存来源图：参考包、独立Full/Cold采样、Full/Light解码、master模块与配方卡UI；须选自己的合法资产和实际缓存 |

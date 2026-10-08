@@ -27,6 +27,14 @@ def test_actual_frontend_key_and_lan_hash_regression():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_actual_readonly_diagnostics_text_module():
+    node = shutil.which("node")
+    assert node, "Diagnostics text qualification requires actual Node.js"
+    result = subprocess.run([node, "--test", str(ROOT / "tests/director_diagnostics_text.mjs")],
+        capture_output=True, text=True, encoding="utf8", timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize("facts,intent", [(False, True), (True, True), (False, False)])
 def test_actual_python_js_candidate_consumption_parity(facts, intent):
     project, sid = cross_project()

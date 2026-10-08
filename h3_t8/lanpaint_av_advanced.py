@@ -124,6 +124,54 @@ def _video_mask_to_latent(mask, video: torch.Tensor, frame_count: int) -> torch.
     return value.to(device=video.device, dtype=video.dtype).expand_as(video)
 
 
+def video_mask_transport_report(mask, video: torch.Tensor, frame_count: int, actual_mask: torch.Tensor) -> dict:
+    """Describe the existing mask transport, not a new mask or VAE time model.
+
+    Adaptive max bins can extend a one-frame mark into adjacent latent cells;
+    this receipt never promises exact unmasked generated pixels/decoded PCM.
+    The bounded report does not impose a new duration gate on legacy execution.
+    """
+    if mask is None:
+        return {"method": "no_pixel_mask_zero_regeneration", "actual_latent_active_bins": [],
+                "VAE_receptive_field_certified": False, "mask_math_changed": False}
+    value = mask.float()
+    if value.ndim == 2:
+        value = value.unsqueeze(0)
+    if value.ndim == 4 and value.shape[1] == 1:
+        value = value[:, 0]
+    broadcast = value.shape[0] == 1
+    value = value.expand(frame_count, -1, -1) if broadcast else value[:frame_count]
+    source = tuple(value.shape)
+    target = tuple(video.shape[2:])
+    method = ("adaptive_max_pool3d" if all(source[index] >= target[index] for index in range(3))
+              else "nearest_interpolate3d")
+    report = {"schema": "h3_pixel_mask_transport_v1", "method": method,
+        "source_shape": list(source), "latent_shape": list(target), "single_frame_broadcast": broadcast,
+        "mask_math_changed": False, "VAE_receptive_field_certified": False,
+        "outside_generated_RGB_exact": False, "source_PCM_delivery_exact": False,
+        "boundary": "Describes actual mask transport only; raw generated candidate and optional final composite must be reviewed separately."}
+    if frame_count > 4096 or target[0] > 4096:
+        report["detail_status"] = "omitted_above_4096_report_budget_execution_unchanged"
+        return report
+    active = value.clamp(0, 1).reshape(frame_count, -1).gt(0).any(dim=1)
+    actual_active = actual_mask.gt(0).any(dim=(0, 1, 3, 4))
+    report["source_active_frames"] = torch.where(active)[0].cpu().tolist()
+    report["actual_latent_active_bins"] = torch.where(actual_active)[0].cpu().tolist()
+    bins = []
+    for index in range(target[0]):
+        if method == "adaptive_max_pool3d":
+            start = index * frame_count // target[0]
+            stop = ((index + 1) * frame_count + target[0] - 1) // target[0]
+        else:
+            start = index * frame_count // target[0]
+            stop = start + 1
+        bins.append({"latent_bin": index, "source_frame_range_half_open": [start, stop],
+                     "actually_active": bool(actual_active[index].item())})
+    report["temporal_bins"] = bins
+    report["detail_status"] = "actual_prepared_mask_observed"
+    return report
+
+
 def prepare_lanpaint_av_latent(
     frames: torch.Tensor,
     source_audio,
@@ -211,6 +259,7 @@ def prepare_lanpaint_av_latent(
         "audio_regenerate_fraction": float(audio_noise_mask.float().mean().item()),
         "audio_intervals": [list(item) for item in intervals],
         "mask_semantics": "1=regenerate, 0=preserve",
+        "video_mask_transport": video_mask_transport_report(video_mask, video, frame_count, video_noise_mask),
         "claims": {
             "lanpaint_sampler_bundled": False,
             "external_sampler_required": True,

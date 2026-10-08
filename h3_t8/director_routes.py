@@ -394,12 +394,46 @@ def register_director_routes():
         body = await request.json()
         return web.json_response({"project": validate_project(body["project"])})
 
+    @routes.post(PREFIX + '/radar/inspect')
+    @guarded
+    async def radar_inspect(request):
+        """Pure draft visibility; no image preprocessing, file write or queue."""
+        import hashlib
+        import json
+        from .director_project import canonical
+        from .director_radar import candidate_diagnostics
+        if request.content_length is None or request.content_length > 2 * 1024**2:
+            raise ValueError('只读检查请求需要已知长度且不超过2MiB')
+        body = await request.json()
+        if not isinstance(body, dict) or set(body) != {'project', 'shot_id', 'base_json', 'base_sha256'}:
+            raise ValueError('只读检查请求字段不正确')
+        project = validate_project(body['project'])
+        raw = body['base_json']
+        if (not isinstance(raw, str) or len(raw.encode('utf8')) > 2 * 1024**2
+                or canonical(json.loads(raw)) != canonical(project)
+                or hashlib.sha256(raw.encode('utf8')).hexdigest() != body['base_sha256']):
+            raise ProjectConflict('检查请求与当前草稿不一致，不应用旧报告')
+        shot = next((row for row in project['doc']['shots'] if row['id'] == body['shot_id']), None)
+        if shot is None:
+            raise ValueError('检查镜头不存在')
+        # Without a store this existing compiler does not prepare/write images.
+        # Slots/timing are a plan, not observed conditioning or generated clocks.
+        preview = compile_project(project, shot_id=shot['id'])
+        selected = next((row for row in preview['shots'] if row['id'] == shot['id']), {})
+        return web.json_response({'candidate': candidate_diagnostics(project, shot),
+            'reference_slots': [{key: row.get(key) for key in ('asset_id', 'role', 'native', 'sha256')}
+                                for row in selected.get('media_map', [])],
+            'reference_aliases': selected.get('aliases', []), 'time_plan': selected.get('time'),
+            'source_time_map': None, 'compilation_errors': preview['errors'],
+            'scope': 'current_draft_plan_not_actual_encoding_or_runtime_cache',
+            'saved': False, 'queued': False, 'project_modified': False})
+
     @routes.post(PREFIX + '/radar/operate')
     @guarded
     async def radar_operate(request):
         """Pure draft operation: no save/queue/provider/model or automatic adoption."""
         from .director_project import sha
-        from .director_radar import apply_operation, candidate_status, evidence_status, evidence_time_map
+        from .director_radar import apply_operation, candidate_status, candidate_diagnostics, evidence_status, evidence_time_map
         if request.content_length is not None and request.content_length > 2 * 1024**2:
             raise ValueError('证据/规则请求超过2MiB')
         body = await request.json()
@@ -452,6 +486,7 @@ def register_director_routes():
         shot = next(row for row in result['doc']['shots'] if row['id'] == body['shot_id'])
         return web.json_response({'project': result, 'evidence_status': evidence_status(result, shot),
                                   'candidate_status': candidate_status(result, shot), 'queued': False, 'saved': False,
+                                  'candidate_diagnostics': candidate_diagnostics(result, shot),
                                   'time_map': evidence_time_map(shot['sourceEvidence']['packet']) if shot.get('sourceEvidence') else None})
 
     @routes.get(PREFIX + '/radar/assets/{asset_id}/timing')
@@ -870,7 +905,7 @@ def register_director_routes():
     @routes.post(PREFIX + "/external-takes")
     @guarded
     async def register_external(request):
-        from .director_external import register_external_take, registration_absent
+        from .director_external import browser_project_sha, register_external_take, registration_absent
         import folder_paths
         if request.content_length is not None and request.content_length > 2 * 1024**2:
             raise ValueError('外片登记请求超过2MiB')
@@ -880,7 +915,7 @@ def register_director_routes():
         project = validate_project(body['project'])
         store, output_root = get_store(), folder_paths.get_output_directory()
         value = {key: body[key] for key in ('shot_id', 'asset_id', 'take_id', 'label', 'provenance_category')}
-        value.update(project_id=project['id'], expected_revision=project['revision'], project_sha256=sha(project))
+        value.update(project_id=project['id'], expected_revision=project['revision'], project_sha256=browser_project_sha(project))
         try:
             result = await asyncio.to_thread(register_external_take, store, value, output_root)
         except (ValueError, OSError) as error:

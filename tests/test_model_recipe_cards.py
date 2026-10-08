@@ -39,6 +39,31 @@ def test_unknown_and_malformed_pair_remain_diagnostic_not_a_load_blacklist():
     assert card["load_allowed_by_card"] is None and card["automatic_changes"] is False
 
 
+@pytest.mark.parametrize("metadata", [{"alpha": "32", "rank": "32", "qkv_layout": "comfy"},
+                                     {"alpha": "1", "lora_alpha": "16"},
+                                     {"alpha": "<script>untrusted</script>"}])
+def test_generic_alpha_stays_visible_but_does_not_become_strength_or_scoped_training_alpha(metadata):
+    header = {"a.lora_A.weight": {"shape": [32, 8]},
+              "a.lora_B.weight": {"shape": [8, 32]}}
+    before = copy.deepcopy(metadata)
+    card = recipe_from_header(header, metadata)
+    assert card["unscoped_alpha_metadata"] == {
+        "value": metadata["alpha"], "source": "unscoped_metadata_not_training_or_runtime"}
+    assert card["training_alpha"]["value"] == ({"lora_alpha": "16"} if "lora_alpha" in metadata else None)
+    assert card["runtime_strength"]["value"] is None
+    assert card["bridge_parameters"]["value"] is None
+    assert card["automatic_changes"] is False and card["load_allowed_by_card"] is None
+    assert metadata == before
+
+
+def test_missing_generic_alpha_stays_unknown_even_when_rank_is_known():
+    card = recipe_from_header({"a.lora_A.weight": {"shape": [16, 8]},
+                               "a.lora_B.weight": {"shape": [8, 16]}}, {})
+    assert card["training_rank"]["value"] == [16]
+    assert card["training_alpha"]["value"] is None
+    assert card["unscoped_alpha_metadata"] == {"value": None, "source": "unknown"}
+
+
 def test_pruned_basis_and_quant_namespace_are_observations_not_quality():
     card = recipe_from_header({"adaln_t_table": {"dtype": "F32", "shape": [2, 8]},
                                "layer.qweight": {"dtype": "I32", "shape": [2, 2]}}, {})

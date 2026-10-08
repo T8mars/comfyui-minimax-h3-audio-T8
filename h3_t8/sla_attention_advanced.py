@@ -393,6 +393,19 @@ def _validate_lora_header(path: str | Path) -> dict:
 def _required_parameters(function, required: set[str], label: str) -> list[str]:
     parameters = list(inspect.signature(function).parameters)
     missing = sorted(required - set(parameters))
+    if missing and label == "PackedLayout parameters" and function is PackedLayout.__init__:
+        # Original Sol forwards refs/keyframes through **kwargs while recording
+        # native spans. Inspect its already source-authenticated delegate; never
+        # replace the global constructor or accept an arbitrary **kwargs owner.
+        from .patch_stack_policy import UnverifiedModelStack
+        from .res_layout_identity import _constructor
+        from .res_kitchen_identity import _SourceAudit
+        try:
+            native = _constructor(_SourceAudit())
+        except UnverifiedModelStack:
+            native = function
+        parameters = list(inspect.signature(native).parameters)
+        missing = sorted(required - set(parameters))
     if missing:
         raise RuntimeError(f"H3 SLA core semantic contract lost {label}: {missing}")
     return parameters

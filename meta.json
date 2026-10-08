@@ -1,4 +1,21 @@
 {
+  "h05_release_1_95": {
+    "status": "eleven_scoped_cases_human_accepted",
+    "version": "1.95.0",
+    "documentation": "docs/RELEASE_1.95.0.md",
+    "workflow_directory": "examples/workflows/83-h05-reviewed",
+    "accepted_cases": ["A1", "A2", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "C1", "C2"],
+    "review_date": "2026-10-08",
+    "old_671_schema_prefix_exact": true,
+    "legacy_workflows_and_defaults_retained": true,
+    "native_originals_preserved_locally_public_assets_are_placeholders": true,
+    "B3_tau": 1.5,
+    "B3_video_progress": [0.1, 0.9],
+    "B3_measured_gain_min_mean_max": [1.0, 1.0, 1.0],
+    "nonzero_EAV_enhancement_approved": false,
+    "all_H05_conditional_research_complete": false,
+    "registry_activation_claimed": false
+  },
   "kijai_experimental_loras_1_90": {
     "version": "1.90.0",
     "documentation": "docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md",
@@ -664,7 +681,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.94.0",
+  "version": "1.95.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",

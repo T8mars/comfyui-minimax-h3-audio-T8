@@ -60,6 +60,14 @@ def test_prepare_builds_exact_nested_h3_av_masks_without_dropping_short_video_ev
     assert kept_frames is frames
     assert kept_audio is source_audio
     assert json.loads(report)["mask_semantics"] == "1=regenerate, 0=preserve"
+    transport = json.loads(report)["video_mask_transport"]
+    assert transport["method"] == "adaptive_max_pool3d"
+    assert transport["source_active_frames"] == [9]
+    assert transport["actual_latent_active_bins"] == [2, 3]
+    assert transport["temporal_bins"][2]["source_frame_range_half_open"] == [6, 10]
+    assert transport["temporal_bins"][3]["source_frame_range_half_open"] == [9, 13]
+    assert transport["VAE_receptive_field_certified"] is False
+    assert transport["mask_math_changed"] is False
 
 
 def test_prepare_requires_explicit_grid_policy():

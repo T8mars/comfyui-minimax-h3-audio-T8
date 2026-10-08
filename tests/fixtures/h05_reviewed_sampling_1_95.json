@@ -1,0 +1,36 @@
+{
+  "schema": "t8.h05.reviewed_sampling_delta.v1",
+  "previous_baseline": "modular_new_sampling_baseline_v11.json",
+  "new_baseline": "modular_new_sampling_baseline_v12.json",
+  "only_two_additions": true,
+  "old_sites_and_reviewed_layout_tripwire_retained": true,
+  "documentation": "docs/H05_REVIEWED_WORKFLOWS.md",
+  "entries": [
+    {
+      "site": ["h3_t8/lanpaint_clock_exp.py", "sample_lanpaint_clock", "backend.LanPaint_SamplerCustomAdvanced().sample", "219ac7df5ec9a7d254fdd43508aff384f27186db655a7acfa0d316ab2b7689a2"],
+      "node": "MiniMaxH3LanPaintClockSamplerEXPT8",
+      "scope": "separate opt-in single sampler, external noise/guider/sampler/sigmas; not a new LOW/HIGH engine or resumable solver",
+      "actual_native_saved_workflow_sha256": "57f7b61874f218d6a246960bf22a66f84216f65a60b4cebec0d9f05ad0d7ea35",
+      "actual_native_prompt_id": "ea68350d-9da6-4bfd-8b8b-958fb65684f0",
+      "actual_native_seconds": 260.179,
+      "clock_and_slope_calls_each": 20,
+      "external_configuration_preserved_and_exception_restoration_tested": true,
+      "approved_A1_final_composite_sha256": "07f19dfaec844fa2fb19b1fd5513613560dd34c1822ff4f52c685d171cd5fa08",
+      "raw_geometric_lock_claimed": false
+    },
+    {
+      "site": ["h3_t8/res_stage_exp.py", "sample_res_stage.ObservedGuider.sample", "guider.sample", "096e9ea03e74d6e6d5e67ed3efda2aa15f714b156a0339050a73a490d76045c7"],
+      "node": "MiniMaxH3RESStageSamplerEXPT8",
+      "scope": "observes existing full RES or same-track remaining updates; no second upscaled sampling clock",
+      "external_effects": ["MiniMaxH3RESEffectsBindEXPT8", "MiniMaxH3StageEAVApplyEXPT8", "MiniMaxH3PromptRelayConditioningT8Advanced"],
+      "recovery_nodes": ["MiniMaxH3RESHistoryEXPT8", "MiniMaxH3RESStageLoadEXPT8"],
+      "public_workflows": ["examples/workflows/83-h05-reviewed/B2_RES_Relay.json", "examples/workflows/83-h05-reviewed/B3_RES_EAV_Low.json"],
+      "actual_B2_full_and_independent_remaining4_tensors_and_AV_exact": true,
+      "actual_B3_native_prompt_id": "37e9792d-a940-4d2e-a29d-ab8fe56667f5",
+      "actual_B3_native_saved_sha256": "60446ed7abf06c5eb84c6b85c809d10351f824bcd0eef74b71884637616f5cd2",
+      "approved_B3_media_sha256": "0e423db76618b025ce3b3b7f58b950d9b6b9980a75677ae0724c716770779d95",
+      "nonzero_EAV_enhancement_approved": false,
+      "generic_MODEL_CUDA_qualification": false
+    }
+  ]
+}

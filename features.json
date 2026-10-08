@@ -1,4 +1,21 @@
 {
+  "h05_release_1_95": {
+    "status": "eleven_scoped_cases_human_accepted",
+    "version": "1.95.0",
+    "documentation": "docs/RELEASE_1.95.0.md",
+    "workflow_directory": "examples/workflows/83-h05-reviewed",
+    "accepted_cases": ["A1", "A2", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "C1", "C2"],
+    "review_date": "2026-10-08",
+    "old_671_schema_prefix_exact": true,
+    "legacy_workflows_and_defaults_retained": true,
+    "native_originals_preserved_locally_public_assets_are_placeholders": true,
+    "B3_tau": 1.5,
+    "B3_video_progress": [0.1, 0.9],
+    "B3_measured_gain_min_mean_max": [1.0, 1.0, 1.0],
+    "nonzero_EAV_enhancement_approved": false,
+    "all_H05_conditional_research_complete": false,
+    "registry_activation_claimed": false
+  },
   "kijai_experimental_loras_1_90": {
     "version": "1.90.0",
     "documentation": "docs/KIJAI_EXPERIMENTAL_LORAS_EXP.md",
@@ -3581,7 +3598,24 @@
     "MiniMaxH3FreeVideoQualityStageLoadEXPT8",
     "MiniMaxH3FreeVideoQualityLoRAEXPT8",
     "MiniMaxH3FreeVideoQualityEAVEXPT8",
-    "MiniMaxH3FreeVideoQualityPromptRelayEXPT8"
+    "MiniMaxH3FreeVideoQualityPromptRelayEXPT8",
+    "MiniMaxH3ReferenceQwenViewEXPT8",
+    "MiniMaxH3SourceClockEXPT8",
+    "MiniMaxH3SourceConformEXPT8",
+    "MiniMaxH3SourceControlDeriveEXPT8",
+    "MiniMaxH3SourceControlMapEXPT8",
+    "MiniMaxH3FreeVideoQualityVideoDecodeEXPT8",
+    "MiniMaxH3FreeVideoVideoDecodeEXPT8",
+    "MiniMaxH3RESHistoryEXPT8",
+    "MiniMaxH3RESStageSamplerEXPT8",
+    "MiniMaxH3RESStageLoadEXPT8",
+    "MiniMaxH3RESEffectsBindEXPT8",
+    "MiniMaxH3LanPaintClockSamplerEXPT8",
+    "MiniMaxH3ExternalReferenceImageImportEXPT8",
+    "MiniMaxH3DenseTransferProviderEXPT8",
+    "MiniMaxH3DenseLearnedUpscaleEXPT8",
+    "MiniMaxH3ExternalReferenceVideoImportEXPT8",
+    "MiniMaxH3ExternalReferenceAudioImportEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",
