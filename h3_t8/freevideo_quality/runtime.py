@@ -12,7 +12,7 @@ import uuid
 
 from ..freevideo_exp.runtime import (MODEL_REVISION, VDN_REVISION, FreeVideoModel, canonical,
     conditioning_transport, digest, geometry, tensor_record, verify_files, write_json_new)
-from .profiles import FREEVIDEO_REVISION, plan, profile, clock, validate_clock
+from .profiles import (LEGACY_RUNTIME, binding, receipt_binding, plan, profile, clock, validate_clock)
 
 
 @dataclass(frozen=True)
@@ -35,10 +35,12 @@ def from_facade(value):
     return QualityModel(value.config_path, value.config_sha256, value.loras, value.eav, value.relay)
 
 
-def load_model(path):
+def load_model(path, *, schema=LEGACY_RUNTIME):
     path = Path(path).resolve(strict=True)
     model = QualityModel(str(path), digest(path))
-    config_for(model)
+    config = config_for(model)
+    if schema is not None and config["schema"] != schema:
+        raise ValueError("Choose the loader for the explicit FreeVideo runtime producer family")
     return model
 
 
@@ -47,10 +49,11 @@ def config_for(model, full=False):
     if digest(model.config_path) != model.config_sha256:
         raise ValueError("Quality runtime/config content changed")
     value = json.loads(Path(model.config_path).read_text(encoding="utf8"))
-    if (value.get("schema") != "t8-freevideo-runtime-v2" or
+    producer = binding(value.get("schema"))
+    if (
         tuple(value.get(key) for key in ("freevideo_revision", "vdn_revision", "model_revision")) !=
-            (FREEVIDEO_REVISION, VDN_REVISION, MODEL_REVISION)):
-        raise ValueError("Quality Loader requires its independent v0.2.3 runtime-v2 configuration")
+            (producer["revision"], VDN_REVISION, MODEL_REVISION)):
+        raise ValueError("Quality runtime/source differs from its explicit pinned producer family")
     for name in ("python", "source_root", "vdn_root", "cache", "base", "checkpoint", "home", "sampling_root"):
         if not value.get(name) or not Path(value[name]).is_absolute():
             raise ValueError("Quality runtime requires an explicit absolute " + name)
@@ -74,6 +77,7 @@ def is_sha(value):
 
 
 def validate_completion(video, audio, receipt):
+    producer = receipt_binding(receipt.get("schema"))
     selected = plan(receipt.get("profile"), receipt.get("role"))
     canvas = geometry(**receipt["geometry"])
     vt = (canvas["frames"] - 5) // 17 * 5 + 2
@@ -81,11 +85,12 @@ def validate_completion(video, audio, receipt):
         raise ValueError("Quality video shape mismatch")
     if tuple(audio.shape) != (1, 32, 2, round(canvas["frames"] / 24 * 40)):
         raise ValueError("Quality audio shape mismatch")
-    if (receipt.get("schema") != "t8-freevideo-quality-stage-v2" or receipt.get("plan") != selected
-        or receipt.get("freevideo_revision") != FREEVIDEO_REVISION or receipt.get("vdn_revision") != VDN_REVISION
+    if (receipt.get("plan") != selected
+        or receipt.get("freevideo_revision") != producer["revision"] or receipt.get("vdn_revision") != VDN_REVISION
         or receipt.get("model_revision") != MODEL_REVISION):
         raise ValueError("Quality stage producer/profile mismatch")
-    validate_clock(receipt.get("clock"), selected["profile"], selected["role"], receipt.get("task"))
+    validate_clock(receipt.get("clock"), selected["profile"], selected["role"], receipt.get("task"),
+                   reference_audio_t=producer["reference_audio_t"])
     count = receipt.get("completed_nfe")
     seconds = receipt.get("sample", {}).get("step_seconds", [])
     if (type(count) is not int or count != selected["nfe"] or len(seconds) != count
@@ -98,7 +103,8 @@ def validate_completion(video, audio, receipt):
     from .profiles import table_identity
     tables = receipt.get("tables")
     roles = ["LOW", "HIGH"] if selected["role"] == "HIGH" else [selected["role"]]
-    identities = [table_identity(receipt["weight_identity"], selected["profile"], role, receipt["task"]) for role in roles]
+    identities = [table_identity(receipt["weight_identity"], selected["profile"], role, receipt["task"],
+                                reference_audio_t=producer["reference_audio_t"]) for role in roles]
     if (not isinstance(tables, list) or len(tables) != 50 * len(identities)
         or evidence_sha(tables) != receipt["tables_sha256"]
         or any(row.get("identity") not in identities or not is_sha(row.get("sha256"))
@@ -150,7 +156,7 @@ def save_stage(stage, directory):
     tensor_path = target / "latents.safetensors"
     temporary.rename(tensor_path)
     marker = target / "stage.json"
-    write_json_new(marker, dict(schema="t8-freevideo-quality-saved-v2", tensors="latents.safetensors",
+    write_json_new(marker, dict(schema=receipt_binding(receipt["schema"])["saved"], tensors="latents.safetensors",
                                tensor_sha256=digest(tensor_path), receipt=receipt))
     return str(marker), digest(marker)
 
@@ -163,7 +169,8 @@ def load_stage(path, sha256):
     if digest(path) != sha256.lower():
         raise ValueError("Saved quality manifest SHA mismatch")
     value = json.loads(path.read_text(encoding="utf8"))
-    if value.get("schema") != "t8-freevideo-quality-saved-v2" or value.get("tensors") != "latents.safetensors":
+    producer = receipt_binding(value.get("receipt", {}).get("schema"))
+    if value.get("schema") != producer["saved"] or value.get("tensors") != "latents.safetensors":
         raise ValueError("Wrong Quality Stage layout; legacy Stage and MID remain separate")
     payload = path.parent / "latents.safetensors"
     if payload.is_symlink() or payload.resolve().parent != path.parent or digest(payload) != value["tensor_sha256"]:
@@ -183,6 +190,7 @@ def sample(model, conditioning, width, height, frames, seed, *, quality="light",
     from ..freevideo_exp.effects import transport_effects
     from ..freevideo_exp.supervision import owned_process
     config = config_for(model, full=True)
+    producer = binding(config["schema"])
     quality = profile(quality)
     selected = plan(quality, "HIGH" if low is not None else None)
     canvas = geometry(width, height, frames)
@@ -194,6 +202,8 @@ def sample(model, conditioning, width, height, frames, seed, *, quality="light",
     if low is not None:
         from ..core import nested_av_parts
         low_receipt = validate_stage(low, "LOW")
+        if low_receipt["freevideo_revision"] != producer["revision"]:
+            raise ValueError("HIGH3 cannot mix old LOW and the new reference-audio producer family")
         video, audio = nested_av_parts(lifted)
         if (tuple(video.shape[:3]) != tuple(low.video.shape[:3]) or
             tuple(video.shape[-2:]) != (height // 16, width // 16) or tensor_record(audio) != tensor_record(low.audio)):
@@ -204,8 +214,9 @@ def sample(model, conditioning, width, height, frames, seed, *, quality="light",
     run = Path(config["home"]) / "quality-runs" / uuid.uuid4().hex
     run.mkdir(parents=True, exist_ok=False)
     save_file(tensors, str(run / "input.safetensors"))
-    request = dict(schema="t8-freevideo-quality-request-v2", plan=selected, geometry=canvas, seed=seed,
-                   clock=clock(quality, selected["role"], conditions["task"]), conditions=conditions, effects=effects,
+    request = dict(schema=producer["request"], plan=selected, geometry=canvas, seed=seed,
+                   clock=clock(quality, selected["role"], conditions["task"],
+                               reference_audio_t=producer["reference_audio_t"]), conditions=conditions, effects=effects,
                    loras=[json.loads(row) for row in model.loras], config_path=model.config_path,
                    config_sha256=model.config_sha256, input_sha256=digest(run / "input.safetensors"),
                    low_receipt_sha256=low.receipt_sha256 if low else None,
@@ -237,8 +248,8 @@ def sample(model, conditioning, width, height, frames, seed, *, quality="light",
     if result.get("request_sha256") != digest(run / "request.json") or result.get("output_sha256") != digest(run / "output.safetensors"):
         raise ValueError("Quality worker result identity mismatch")
     values = load_file(str(run / "output.safetensors"), device="cpu")
-    receipt = dict(result, schema="t8-freevideo-quality-stage-v2", plan=selected, role=selected["role"], profile=quality,
-                   geometry=canvas, task=conditions["task"], clock=request["clock"], freevideo_revision=FREEVIDEO_REVISION,
+    receipt = dict(result, schema=producer["stage"], plan=selected, role=selected["role"], profile=quality,
+                   geometry=canvas, task=conditions["task"], clock=request["clock"], freevideo_revision=producer["revision"],
                    vdn_revision=VDN_REVISION, model_revision=MODEL_REVISION, seed=seed,
                    completed_nfe=len(result["sample"]["step_seconds"]), low_receipt_sha256=request["low_receipt_sha256"],
                    low_audio=request["low_audio"], run_directory=str(run), condition_transport=conditions, lora_slots=request["loras"])

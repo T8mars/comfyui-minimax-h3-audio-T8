@@ -49,6 +49,9 @@ if __package__:
     from .nodes_dense_transfer_exp import NODES as _dense_transfer_node_classes
     from .nodes_external_reference_av_import import NODES as _external_av_node_classes
     from .nodes_visual_marker import NODES as _visual_marker_node_classes
+    from .freevideo_quality.audio_nodes import NODES as _freevideo_audio_node_classes
+    from .nodes_h07_reports import NODES as _h07_report_node_classes
+    from .nodes_h07_delivery import NODES as _h07_delivery_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -138,6 +141,9 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _dense_transfer_node_classes = import_module(f"{_package_name}.nodes_dense_transfer_exp").NODES
     _external_av_node_classes = import_module(f"{_package_name}.nodes_external_reference_av_import").NODES
     _visual_marker_node_classes = import_module(f"{_package_name}.nodes_visual_marker").NODES
+    _freevideo_audio_node_classes = import_module(f"{_package_name}.freevideo_quality.audio_nodes").NODES
+    _h07_report_node_classes = import_module(f"{_package_name}.nodes_h07_reports").NODES
+    _h07_delivery_node_classes = import_module(f"{_package_name}.nodes_h07_delivery").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -164,7 +170,8 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_freevideo_quality_node_classes, *_qwen_view_node_classes, *_source_conform_node_classes,
                 *_freevideo_decoder_node_classes, *_res_history_node_classes, *_res_stage_node_classes,
                 *_res_effects_node_classes, *_lanpaint_clock_node_classes, *_external_image_node_classes,
-                *_dense_transfer_node_classes, *_external_av_node_classes, *_visual_marker_node_classes]
+                *_dense_transfer_node_classes, *_external_av_node_classes, *_visual_marker_node_classes,
+                *_freevideo_audio_node_classes, *_h07_report_node_classes, *_h07_delivery_node_classes]
 
 
 def comfy_entrypoint():

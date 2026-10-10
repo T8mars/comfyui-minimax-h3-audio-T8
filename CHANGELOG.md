@@ -2,7 +2,16 @@
 
 [首页](README.md) · [English](README_EN.md)
 
-## 当前版本：1.96.0
+## 当前版本：1.97.0
+
+### H07 已审配方与独立诊断（EXP）
+
+- 保存七张正确原生工作流：新参考音频时钟、清唱、有限背景plate合成、姿态、同Stage X2、动作拟音、专用PDD7+1。
+- 追加可选FreeVideo音频t=1加载器、三个只读诊断和交付sidecar；旧692接口／默认／顺序保持，共697节点。
+- 复用已通过样片，不新增GPU或重跑旧CPU矩阵；背景效果限制与未获授权模型／高清接缝余账明确保留。
+- [1.97.0说明](docs/RELEASE_1.97.0.md) · [七项工作流](examples/workflows/85-h07-reviewed/README.md) · [拟音用法](docs/H07_FOLEY_USAGE.md)。
+
+## 1.96.0
 
 ### VM01 视觉标记空间引导（EXP）
 

@@ -2,7 +2,7 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.96.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.97.0** · [Changelog](CHANGELOG.md)
 
 ## Install
 
@@ -23,6 +23,7 @@ Replace placeholder models and media with your own before running.
 
 |Goal|Start here|
 |---|---|
+|Generate Foley for an existing video / reviewed H07 recipes (EXP)|[Seven workflows](examples/workflows/85-h07-reviewed/README.md) · [Foley usage](docs/H07_FOLEY_USAGE.md)|
 |Box-marked actors and targets in a reference image (EXP)|[Visual marker workflows](examples/workflows/84-visual-marker/README.md) · [Wiring and limits](docs/VISUAL_MARKER_EXP.md)|
 |First H3 generation / image-to-video|[Basic generation](examples/workflows/01-basic-generation)|
 |Audio references, talking or singing|[Audio control](examples/workflows/02-audio-control) · [Native voice/emotion and Avatar](examples/workflows/36-avatar-voice/README.md)|

@@ -2,6 +2,32 @@
 from __future__ import annotations
 
 FREEVIDEO_REVISION = "e7eb66326a038344ba241fa31355c15b258b98cb"
+AUDIO_FREEVIDEO_REVISION = "566251c88707322e4674ba1c6f587834e07a91b6"
+LEGACY_RUNTIME = "t8-freevideo-runtime-v2"
+AUDIO_RUNTIME = "t8-freevideo-runtime-audio-v3"
+
+
+def binding(schema=LEGACY_RUNTIME):
+    """Explicit producer family; defaults remain the original immutable v2."""
+    if schema == LEGACY_RUNTIME:
+        return dict(runtime=schema, revision=FREEVIDEO_REVISION, reference_audio_t=0.,
+                    request="t8-freevideo-quality-request-v2", stage="t8-freevideo-quality-stage-v2",
+                    saved="t8-freevideo-quality-saved-v2")
+    if schema == AUDIO_RUNTIME:
+        return dict(runtime=schema, revision=AUDIO_FREEVIDEO_REVISION, reference_audio_t=1.,
+                    request="t8-freevideo-quality-request-audio-v3", stage="t8-freevideo-quality-stage-audio-v3",
+                    saved="t8-freevideo-quality-saved-audio-v3")
+    raise ValueError("Unknown FreeVideo runtime producer family")
+
+
+def receipt_binding(schema):
+    for runtime in (LEGACY_RUNTIME, AUDIO_RUNTIME):
+        value = binding(runtime)
+        if schema == value["stage"]:
+            return value
+    raise ValueError("Unknown FreeVideo stage producer family")
+
+
 COMMUNITY = "community-sigma3-v1"
 PROFILES = {"light": 8, "medium": 12, "high": 16, "max": 20}
 LABELS = {
@@ -46,11 +72,13 @@ def plan(value, role=None):
                 clock_contract="published_20_FP32_raw_index9_v1" if base == 20 else "author_native_grid_v1")
 
 
-def clock(value, role=None, task="t2va"):
+def clock(value, role=None, task="t2va", *, reference_audio_t=0.):
     import torch
     selected = plan(value, role)
     if task not in TASKS:
         raise ValueError("Unsupported actual FreeVideo task")
+    if type(reference_audio_t) not in (int, float) or reference_audio_t not in (0., 1.):
+        raise ValueError("Reference audio clock must belong to an explicit producer family")
     if selected["role"] == "HIGH":
         # Exact author independent schedule. Leading sigma=1 is initialization only.
         video = torch.tensor((1., .9035, .6316, .3158, 0.), dtype=torch.float32, device="cpu")
@@ -70,19 +98,19 @@ def clock(value, role=None, task="t2va"):
         if visual:
             times.append(torch.maximum(vt, torch.tensor(.999, dtype=torch.float32)))
         if reference_audio:
-            times.append(torch.tensor(0., dtype=torch.float32))
+            times.append(torch.tensor(reference_audio_t, dtype=torch.float32))
         rows.append(torch.unique(torch.stack(times), sorted=True).tolist())
     return dict(video_sigmas=video.tolist(), audio_sigmas=audio.tolist(),
                 video_timesteps=video_t.tolist(), audio_timesteps=audio_t.tolist(), modulation_timesteps=rows,
                 convention="H3_t_equals_1_minus_sigma", leading_initialization_not_NFE=selected["role"] == "HIGH")
 
 
-def table_identity(weights, value, role, task):
+def table_identity(weights, value, role, task, *, reference_audio_t=0.):
     return dict(format="freevideo-adaln-v2", contract="minimax-h3-adaln-silu-linear-3x6-v1", weights=weights,
-                timesteps=clock(value, role, task)["modulation_timesteps"], channels=5376, dtype="BF16",
+                timesteps=clock(value, role, task, reference_audio_t=reference_audio_t)["modulation_timesteps"], channels=5376, dtype="BF16",
                 modality_rows=3, components=6)
 
 
-def validate_clock(observed, value, role, task):
-    if observed != clock(value, role, task):
+def validate_clock(observed, value, role, task, *, reference_audio_t=0.):
+    if observed != clock(value, role, task, reference_audio_t=reference_audio_t):
         raise ValueError("FreeVideo quality clock differs from the exact author profile/task")

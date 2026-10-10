@@ -12,7 +12,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from h3_t8.freevideo_quality.profiles import FREEVIDEO_REVISION, PROFILES  # noqa: E402 - explicit CLI project bootstrap
+from h3_t8.freevideo_quality.profiles import (PROFILES, binding, AUDIO_RUNTIME, LEGACY_RUNTIME)  # noqa: E402
 from h3_t8.freevideo_quality.assets import required, verify, table_path  # noqa: E402
 from h3_t8.freevideo_exp.runtime import canonical, digest, verify_files, write_json_new, MODEL_REVISION  # noqa: E402
 
@@ -57,12 +57,16 @@ def main():
     parser.add_argument("--profiles", nargs="+", choices=list(PROFILES), default=list(PROFILES))
     parser.add_argument("--task", default="t2va")
     parser.add_argument("--resources-only", action="store_true", help="Prepare/verify resources without freezing a runtime source epoch")
+    parser.add_argument("--audio-reference-v3", action="store_true", help="Independent author v0.3.5 audio t=1 runtime")
+    parser.add_argument("--relocate-t8-from", type=Path,
+                        help="Explicit former T8 root; unchanged borrowed helpers must still match their old SHA")
     args = parser.parse_args()
+    producer = binding(AUDIO_RUNTIME if args.audio_reference_v3 else LEGACY_RUNTIME)
     if args.output_config.exists():
         raise FileExistsError("Create a new v2 config; do not overwrite existing configurations")
     old = json.loads(args.legacy_config.read_text(encoding="utf8"))
     proof = json.loads((args.source_root / "t8-source-proof.json").read_text(encoding="utf8"))
-    if proof.get("commit") != FREEVIDEO_REVISION:
+    if proof.get("commit") != producer["revision"]:
         raise ValueError("New source proof revision mismatch")
     sys.path.insert(0, str(args.source_root))
     from freevideo_engine import adaln_assets as official
@@ -79,6 +83,17 @@ def main():
     reference_root = Path(old["audio_reference_cache"]) if old.get("audio_reference_cache") else None
     borrowed = [row for row in old["files"] if not Path(row["path"]).is_relative_to(Path(old["source_root"]))
                 and not (reference_root is not None and Path(row["path"]).is_relative_to(reference_root))]
+    if args.relocate_t8_from is not None:
+        relocated = []
+        for row in borrowed:
+            path = Path(row["path"])
+            if path.is_relative_to(args.relocate_t8_from):
+                relative = path.relative_to(args.relocate_t8_from)
+                if relative.is_relative_to(Path("h3_t8/freevideo_quality")):
+                    continue  # The explicitly updated adapter gets a fresh inventory below.
+                row = dict(row, path=str(ROOT / relative))
+            relocated.append(row)
+        borrowed = relocated
     print(f"Verifying {len(borrowed)} borrowed body/source assets once; old derived audio cache is not needed", flush=True)
     verify_files(borrowed)
     catalog = json.loads((args.source_root / "freevideo_engine/prepared_models.json").read_text(encoding="utf8"))
@@ -96,7 +111,8 @@ def main():
     selected = {}
     for quality in args.profiles:
         role = "HIGH" if quality == "light" else "SINGLE"
-        for table, location in required(manifest, catalog, quality, role, args.task):
+        for table, location in required(manifest, catalog, quality, role, args.task,
+                                       reference_audio_t=producer["reference_audio_t"]):
             selected[table["directory"]] = (table, location)
     print(f"Preparing {len(selected)} exact tables for task {args.task}", flush=True)
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -118,14 +134,14 @@ def main():
     verify_files([row for row in rows if row["kind"] != "weight"])
     args.home.mkdir(parents=True, exist_ok=True)
     config = {key: old[key] for key in ("python", "vdn_revision", "model_revision", "vdn_root", "cache", "base", "checkpoint")}
-    config.update(schema="t8-freevideo-runtime-v2", freevideo_revision=FREEVIDEO_REVISION,
+    config.update(schema=producer["runtime"], freevideo_revision=producer["revision"],
         source_root=str(args.source_root.resolve()), home=str(args.home.resolve()), sampling_root=str(args.sampling_root.resolve()),
         files=rows, inventory_sha256=hashlib.sha256(canonical(rows).encode()).hexdigest(),
         prepared_profiles=args.profiles, prepared_task=args.task,
-        boundary="Independent v0.2.3 worker, read-only exact table overlay, existing body. No implicit downloads.")
+        boundary="Independent pinned worker, read-only exact table overlay, existing body. No implicit downloads.")
     if not args.resources_only:
         write_json_new(args.output_config, config)
-    print(canonical(dict(config=str(args.output_config), sha256=digest(args.output_config),
+    print(canonical(dict(config=str(args.output_config), sha256=None if args.resources_only else digest(args.output_config),
         tables=len(selected), weight_identity=official.weight_identity(manifest))))
 
 

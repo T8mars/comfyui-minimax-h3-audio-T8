@@ -6,6 +6,7 @@ from .patch_stack_policy import UnverifiedModelStack
 from enum import Enum
 import hashlib
 import inspect
+import math
 from pathlib import Path
 
 import torch
@@ -18,16 +19,35 @@ from .video_outpaint_model_patches import inspect_outpaint_model_patches_advisor
 def value_identity(value, *, interrupt_check=None):
     """Hash tensor bytes in <=4MiB copies without repr/address-based identities."""
     if isinstance(value, torch.Tensor):
-        if (value.device.type == "meta" or value.layout != torch.strided or not value.is_contiguous()
-                or value.is_quantized):
+        if value.device.type == "meta" or value.layout != torch.strided or value.is_quantized:
             raise ValueError("execution tensor requires an unsupported materializing conversion")
         digest = hashlib.sha256()
-        flat = value.detach().reshape(-1)
-        stride = max(1, 4*1024*1024//value.element_size())
-        for start in range(0, flat.numel(), stride):
+        if value.is_contiguous():
+            # Preserve the original byte order and identity for every previously
+            # supported input; never reshape a non-contiguous whole checkpoint.
+            flat = value.detach().reshape(-1)
+            stride = max(1, 4*1024*1024//value.element_size())
+            chunks = (flat[start:start+stride] for start in range(0, flat.numel(), stride))
+        elif (type(value) in (torch.Tensor, torch.nn.Parameter) and value.ndim == 5
+                and value.dtype in (torch.float16, torch.bfloat16, torch.float32)
+                and value.is_contiguous(memory_format=torch.channels_last_3d)):
+            # Native Core CausalConv3d changes CUDA weight storage to NDHWC.
+            # Hash logical NCDHW values, not that transient physical ordering.
+            # Each leading-axis slab is <=4MiB before either CPU copy/reorder.
+            row_bytes = math.prod(value.shape[1:]) * value.element_size()
+            if not 0 < row_bytes <= 4*1024*1024:
+                raise ValueError("NDHWC identity row exceeds bounded materialization budget")
+            rows = max(1, 4*1024*1024 // row_bytes)
+            detached = value.detach()
+            chunks = (detached[start:start+rows] for start in range(0, value.shape[0], rows))
+        else:
+            # A transpose, arbitrary stride, quantized view or foreign tensor
+            # subclass still needs its own audited adapter, not this VAE case.
+            raise ValueError("execution tensor requires an unsupported materializing conversion")
+        for part in chunks:
             if interrupt_check:
                 interrupt_check()
-            chunk = flat[start:start+stride].cpu()
+            chunk = part.cpu().contiguous()
             if chunk.is_floating_point() and not torch.isfinite(chunk).all():
                 raise ValueError("execution tensor has nonfinite values")
             digest.update(chunk.view(torch.uint8).numpy().tobytes())

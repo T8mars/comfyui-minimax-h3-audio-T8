@@ -14,6 +14,7 @@
 本次发布未新增GPU采样或重跑已完成的功能测试；安装包另核对真实注册和全部旧接口。
 
 详见[接线与限制](VISUAL_MARKER_EXP.md)。方法参考 [H3-Visual-Marker-Control](https://github.com/RK-BoilingPoint/H3-Visual-Marker-Control)，固定 commit `0f0274f5f07c0e8dda0bb8cd0286256587f4e959`；本机模板及提示词独立编写。
+特别感谢原作者 **RK-BoilingPoint** 开源并分享视觉标记空间引导思路；这里是 T8 独立的 ComfyUI 适配，不代表原作者官方版本或背书。
 GitHub正式版本与Comfy Registry上传、审核和可安装状态分别核对，不等同。
 
 ## English
@@ -21,3 +22,4 @@ GitHub正式版本与Comfy Registry上传、审核和可安装状态分别核对
 Four additive experimental marker nodes plus a source-bound box editor, with explicit native image binding and external Relay support.
 Three exact native 5-second clips were accepted by the user; marker residue remains a documented limitation, not a removal or hard-control guarantee.
 All 688 legacy schemas/defaults and existing workflows are retained. The four public templates contain placeholders, not private media or model weights.
+Special thanks to **RK-BoilingPoint**, the original author of [H3-Visual-Marker-Control](https://github.com/RK-BoilingPoint/H3-Visual-Marker-Control), for openly sharing the visual-marker spatial-guidance approach. This is an independent T8 adaptation, not an official upstream release or endorsement.

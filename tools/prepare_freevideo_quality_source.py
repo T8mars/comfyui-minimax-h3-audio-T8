@@ -15,6 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "h3_t8"))
 from freevideo_quality.profiles import FREEVIDEO_REVISION
 from freevideo_exp.runtime import canonical, write_json_new
 
+AUDIO_REFERENCE_REVISION = "566251c88707322e4674ba1c6f587834e07a91b6"
+
 
 def fetch(url):
     request = urllib.request.Request(url, headers={"User-Agent": "T8-FreeVideo-Quality-Explicit-Preparation"})
@@ -28,21 +30,24 @@ def fetch(url):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--audio-reference-v3", action="store_true",
+                        help="Prepare independent pinned v0.3.5 source; never replace the v0.2.3 tree")
     args = parser.parse_args()
+    revision = AUDIO_REFERENCE_REVISION if args.audio_reference_v3 else FREEVIDEO_REVISION
     target = args.output.resolve()
     if target.exists():
         raise FileExistsError("Use a new dedicated source directory; existing bytes are never replaced")
     base = "https://api.github.com/repos/FlashML-org/FreeVideo/git/"
-    commit = json.loads(fetch(base + "commits/" + FREEVIDEO_REVISION))
-    if commit.get("sha") != FREEVIDEO_REVISION:
+    commit = json.loads(fetch(base + "commits/" + revision))
+    if commit.get("sha") != revision:
         raise ValueError("Official source commit mismatch")
     tree = json.loads(fetch(base + "trees/" + commit["tree"]["sha"] + "?recursive=1"))
     if tree.get("truncated") or tree.get("sha") != commit["tree"]["sha"]:
         raise ValueError("Incomplete official source tree")
     entries = [row for row in tree["tree"] if row["type"] == "blob" and
                (row["path"].startswith("freevideo_engine/") or row["path"].startswith(("LICENSE", "NOTICE", "THIRD_PARTY")))]
-    archive = zipfile.ZipFile(io.BytesIO(fetch("https://codeload.github.com/FlashML-org/FreeVideo/zip/" + FREEVIDEO_REVISION)))
-    prefix = "FreeVideo-" + FREEVIDEO_REVISION + "/"
+    archive = zipfile.ZipFile(io.BytesIO(fetch("https://codeload.github.com/FlashML-org/FreeVideo/zip/" + revision)))
+    prefix = "FreeVideo-" + revision + "/"
     checked, archive_exports = [], []
     for row in entries:
         name = row["path"]
@@ -71,11 +76,11 @@ def main():
             stream.write(data)
         inventory.append(dict(path=str(path), file=row["path"], bytes=len(data),
             sha256=hashlib.sha256(data).hexdigest(), kind="source", git_blob=row["sha"]))
-    proof = dict(schema="t8-freevideo-quality-source-v1", commit=FREEVIDEO_REVISION,
+    proof = dict(schema="t8-freevideo-quality-source-v1", commit=revision,
                  official_tree=tree["sha"], files=inventory, source_archive="codeload.github.com",
                  archive_export_paths_replaced_with_exact_Git_blobs=archive_exports, executed_setup=False)
     write_json_new(target / "t8-source-proof.json", proof)
-    print(canonical(dict(source_root=str(target), commit=FREEVIDEO_REVISION, files=len(inventory), executed=False)))
+    print(canonical(dict(source_root=str(target), commit=revision, files=len(inventory), executed=False)))
 
 
 if __name__ == "__main__":

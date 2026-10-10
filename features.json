@@ -1,4 +1,89 @@
 {
+  "h07_background_local": {
+    "status": "native0p4MP_existing_plate_correction_human_accepted_with_quality_limits_LanPaint_failure_retained",
+    "documentation": "docs/H07_BACKGROUND_EXP.md",
+    "reviewed_template": "examples/workflows/85-h07-reviewed/A3_Background_Plate.json",
+    "native_0p4MP_plate_human_accepted": true,
+    "native_0p4MP_plate_is_LanPaint_geometry_fix": false,
+    "costume_or_subject_lighting_qualified": false,
+    "targeted_human_review_revision": 10,
+    "targeted_human_note": "虽然效果还是不佳，不改了就这样， 看来是原本模型问题",
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_pose_assets_local": {
+    "status": "fixed_8wide_pose_and_visible_action_half_size_foley_human_accepted",
+    "documentation": "docs/H07_POSE_ASSETS_EXP.md",
+    "pose_human_accepted": true,
+    "pose_reviewed_template": "examples/workflows/85-h07-reviewed/A4_Hybrid_Pose.json",
+    "half_size_foley_recheck_human_accepted": true,
+    "half_size_foley_reviewed_template": "examples/workflows/85-h07-reviewed/A6_Foley_Half.json",
+    "half_size_foley_usage": "docs/H07_FOLEY_USAGE.md",
+    "half_size_foley_targeted_human_review_revision": 10,
+    "half_size_foley_quality_or_sixfold_speedup_qualified": false,
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_optional_x2_local": {
+    "status": "same_completed_HIGH_X2_and_corrected_PDD7plus1_human_accepted_old_Turbo_failure_retained",
+    "documentation": "docs/H07_X2_DECODE_EXP.md",
+    "human_accepted": true,
+    "reviewed_template": "examples/workflows/85-h07-reviewed/A5_SameStage_X2.json",
+    "independent_7plus1_correction_human_accepted": true,
+    "independent_7plus1_correction_reviewed_template": "examples/workflows/85-h07-reviewed/A7_PDD_7plus1.json",
+    "independent_7plus1_correction_human_review_revision": 10,
+    "HD_seam_or_7plus1_qualified": false,
+    "independent_7plus1_flash_root_cause_or_fix_proven": false,
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_song_master_local": {
+    "status": "single_real_CC0_song_native_5s_human_accepted",
+    "documentation": "docs/H07_SONG_MASTER_EXP.md",
+    "reviewed_template": "examples/workflows/85-h07-reviewed/A2_Song_4plus4.json",
+    "human_accepted": true,
+    "final_audio": "same_complete_CC0_human_acappella_recording_not_generated_voice",
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_reference_cost_local": {
+    "status": "single_CPU_Qwen_and_CPU_GPU_reference_cost_parity_pass",
+    "documentation": "docs/H07_REFERENCE_COSTS.md",
+    "new_cache_layer": false,
+    "whole_video_speedup_qualified": false,
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_delivery_local": {
+    "status": "new_contracts_and_saved_reopened_native_CPU_sidecar_pass",
+    "documentation": "docs/H07_DELIVERY_EXP.md",
+    "new_node": "MiniMaxH3TakeSidecarEXPT8",
+    "default_writes_files": false,
+    "automatic_upload": false,
+    "public_copy": "allowlisted_sidecar_not_MP4_metadata_scrubbing",
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_freevideo_audio_local": {
+    "status": "single_native_Ref2VA_AV_5s_8plus3_human_accepted",
+    "documentation": "docs/FREEVIDEO_AUDIO_CLOCK_EXP.md",
+    "reviewed_template": "examples/workflows/85-h07-reviewed/A1_AudioClock_8plus3.json",
+    "new_loader": "MiniMaxH3FreeVideoAudioClockLoaderEXPT8",
+    "reference_audio_t": 1,
+    "old_default_reference_audio_t": 0,
+    "body_weights_reused": true,
+    "human_accepted": true,
+    "source_commit": "566251c88707322e4674ba1c6f587834e07a91b6",
+    "table_revision": "b3a8dd8d4cf215b3a90bcc20b4362318f5f4f158",
+    "old_workflows_and_defaults_retained": true
+  },
+  "h07_readonly_diagnostics": {
+    "status": "new_contracts_and_saved_reopened_readonly_native_CPU_pass",
+    "documentation": "docs/H07_DIAGNOSTICS_EXP.md",
+    "scope": [
+      "N02_reference_execution_report",
+      "N03_continue_restore_card",
+      "N04_declared_prop_continuity"
+    ],
+    "automatic_queue": false,
+    "automatic_prompt_replacement": false,
+    "MP4_native_stage_recovery": false,
+    "old_workflows_and_defaults_retained": true
+  },
   "vm01_visual_marker_exp": {
     "status": "implemented_three_native_cases_human_accepted",
     "source_repository": "RK-BoilingPoint/H3-Visual-Marker-Control",
@@ -3683,7 +3768,12 @@
     "MiniMaxH3VisualMarkerPrepareEXPT8",
     "MiniMaxH3VisualMarkerPromptEXPT8",
     "MiniMaxH3VisualMarkerConditioningEXPT8",
-    "MiniMaxH3VisualMarkerRelayConditioningEXPT8"
+    "MiniMaxH3VisualMarkerRelayConditioningEXPT8",
+    "MiniMaxH3FreeVideoAudioClockLoaderEXPT8",
+    "MiniMaxH3ReferenceExecutionSummaryEXPT8",
+    "MiniMaxH3PropContinuityLintEXPT8",
+    "MiniMaxH3ContinuationCardEXPT8",
+    "MiniMaxH3TakeSidecarEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",

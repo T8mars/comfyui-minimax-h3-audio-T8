@@ -46,6 +46,7 @@
 
 参考方法：[RK-BoilingPoint/H3-Visual-Marker-Control](https://github.com/RK-BoilingPoint/H3-Visual-Marker-Control)，
 固定 commit `0f0274f5f07c0e8dda0bb8cd0286256587f4e959`；T8提示词/测试素材独立编写，不打包作者素材。
+特别感谢原作者 **RK-BoilingPoint** 开源并分享参考图视觉标记的空间引导思路；这些节点、编辑器和示例是 T8 独立适配，不代表原作者官方版本或背书。
 [source_map.tsv](source_map.tsv) 记录原生文件名、原SHA、模板SHA与变更范围。
 模板只改图片占位入口、非执行UUID/标题/NOTE和普通控件插槽序列化；编辑器额外清空旧源图绑定。
 实际具名/类型接线和所有其他执行控件逐项保留；收录于GitHub v1.96.0，Comfy Registry可安装状态独立核对。

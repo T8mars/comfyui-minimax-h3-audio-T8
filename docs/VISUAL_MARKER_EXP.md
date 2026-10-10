@@ -6,6 +6,10 @@
 上游固定参考 commit：`0f0274f5f07c0e8dda0bb8cd0286256587f4e959`。
 本地模板独立编写；不打包作者的参考图和视频。
 
+特别感谢原作者 **RK-BoilingPoint** 开源 [H3-Visual-Marker-Control](https://github.com/RK-BoilingPoint/H3-Visual-Marker-Control)，
+分享参考图视觉标记与空间语义引导的实验思路。T8 在此基础上独立实现 ComfyUI 节点、框选编辑器和外置 Relay 接线；
+不是原作者官方版本或合作背书，原方法来源与 T8 适配分别署名。
+
 ## 独立节点
 
 - `H3 Marker · Prepare / 标记图准备`：`render_rectangles` 从干净 IMAGE 绘制明确矩形；

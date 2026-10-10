@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.96.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.97.0** · [更新日志](CHANGELOG.md)
 
 ## 安装
 
@@ -23,6 +23,7 @@ Windows 更新提示 `Filename too long`？见[短路径与恢复说明](docs/WI
 
 |你想做什么|入口|
 |---|---|
+|给现有视频生成拟音／H07已审配方（EXP）|[七张工作流](examples/workflows/85-h07-reviewed/README.md) · [拟音用法](docs/H07_FOLEY_USAGE.md)|
 |第一次跑 H3／首帧图生视频|[基础生成](examples/workflows/01-basic-generation)|
 |音频参考、人物说话／唱歌|[音频控制](examples/workflows/02-audio-control) · [原生音色／情绪与 Avatar](examples/workflows/36-avatar-voice/README.md)|
 |双模型 4+4、分段长视频|[长视频](examples/workflows/04-long-video)|

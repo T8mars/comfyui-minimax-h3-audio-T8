@@ -1,4 +1,4 @@
-"""Owned v0.2.3 worker: exact profiles, offline constants, cleanup before receipt."""
+"""Owned pinned Quality worker: exact profiles, offline constants, cleanup before receipt."""
 from __future__ import annotations
 
 import json
@@ -24,19 +24,20 @@ def main():
     # -I removes the script directory. Import the sibling isolated packages
     # from h3_t8, not from the repository root; never import ComfyUI here.
     sys.path.insert(0, str(Path(__file__).parents[1]))
-    from freevideo_quality.profiles import plan, validate_clock, FREEVIDEO_REVISION
+    from freevideo_quality.profiles import plan, validate_clock, binding, LEGACY_RUNTIME, AUDIO_RUNTIME
     # Helpers are loaded as their original isolated package; no Core imported.
     from freevideo_exp.runtime import digest, verify_files
     from freevideo_quality.assets import required, verify, offline_binding, evidence_sha
     request_path = root / "request.json"
     request = json.loads(request_path.read_text(encoding="utf8"))
     selected = plan(request["plan"]["profile"], request["plan"]["role"])
-    if request.get("schema") != "t8-freevideo-quality-request-v2" or request["plan"] != selected:
+    if request.get("schema") not in [binding(s)["request"] for s in (LEGACY_RUNTIME, AUDIO_RUNTIME)] or request["plan"] != selected:
         raise ValueError("Quality request profile/role mismatch")
     if digest(request["config_path"]) != request["config_sha256"] or digest(root / "input.safetensors") != request["input_sha256"]:
         raise ValueError("Quality worker input/config identity mismatch")
     config = json.loads(Path(request["config_path"]).read_text(encoding="utf8"))
-    if config.get("schema") != "t8-freevideo-runtime-v2" or config.get("freevideo_revision") != FREEVIDEO_REVISION:
+    producer = binding(config.get("schema"))
+    if config.get("freevideo_revision") != producer["revision"] or request["schema"] != producer["request"]:
         raise ValueError("Wrong quality worker runtime")
     source_rows = [row for row in config["files"] if row["kind"] != "weight"]
     verify_files(source_rows)
@@ -78,14 +79,16 @@ def main():
     info = describe(value, **canvas)
     if info["task"] != request["conditions"]["task"]:
         raise ValueError("Actual packed conditioning task changed")
-    validate_clock(request["clock"], selected["profile"], selected["role"], info["task"])
+    validate_clock(request["clock"], selected["profile"], selected["role"], info["task"],
+                   reference_audio_t=producer["reference_audio_t"])
     cache = Path(config["cache"])
     manifest = json.loads((cache / "manifest.json").read_text(encoding="utf8"))
     validate_catalog(manifest, 50)
     weights = weight_identity(manifest)
     catalog = json.loads((Path(config["source_root"]) / "freevideo_engine/prepared_models.json").read_text(encoding="utf8"))
     tables = [(table, cache if location == "base" else Path(config["sampling_root"]))
-              for table, location in required(manifest, catalog, selected["profile"], selected["role"], info["task"])]
+              for table, location in required(manifest, catalog, selected["profile"], selected["role"], info["task"],
+                                               reference_audio_t=producer["reference_audio_t"])]
     for table, folder in tables:
         verify(table, folder)
     active_loras = [row for row in request["loras"] if row["strength"] != 0]

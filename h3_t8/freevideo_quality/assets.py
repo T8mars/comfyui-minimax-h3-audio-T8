@@ -12,6 +12,8 @@ from .profiles import table_identity, plan
 REVISIONS = {
     "community-sigma3-v1-20261005": "4bbe518a5b24aa596f1e262e5f1a08062790670b",
     "sampling-presets-v1-20261005": "0cd66b30a58021012def78b0340caf131e0df5c2",
+    "community-sigma3-v1-audio-20261007": "b3a8dd8d4cf215b3a90bcc20b4362318f5f4f158",
+    "sampling-presets-v1-audio-20261007": "b3a8dd8d4cf215b3a90bcc20b4362318f5f4f158",
 }
 
 
@@ -60,9 +62,10 @@ def banks(catalog):
     return result
 
 
-def select(manifest, catalog, quality, role, task):
+def select(manifest, catalog, quality, role, task, *, reference_audio_t=0.):
     from freevideo_engine import adaln_assets as official
-    expected = table_identity(official.weight_identity(manifest), quality, role, task)
+    expected = table_identity(official.weight_identity(manifest), quality, role, task,
+                              reference_audio_t=reference_audio_t)
     matches = [(table, "base") for table in manifest.get("adaln_tables", []) if table["identity"] == expected]
     matches += [(table, "sampling") for table in banks(catalog) if table["identity"] == expected]
     # The published eight-step visual/T2VA tables already reside in the base.
@@ -73,10 +76,10 @@ def select(manifest, catalog, quality, role, task):
     return table, location
 
 
-def required(manifest, catalog, quality, role, task):
+def required(manifest, catalog, quality, role, task, *, reference_audio_t=0.):
     selected = plan(quality, role)
     roles = ["LOW", "HIGH"] if selected["role"] == "HIGH" else [selected["role"]]
-    return [select(manifest, catalog, quality, stage, task) for stage in roles]
+    return [select(manifest, catalog, quality, stage, task, reference_audio_t=reference_audio_t) for stage in roles]
 
 
 def verify(table, root, finite=True):
