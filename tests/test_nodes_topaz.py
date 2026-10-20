@@ -10,7 +10,7 @@ from tests.test_topaz_contract import runtime  # noqa: F401
 
 def test_optional_nodes_have_no_license_checkbox_or_implicit_install():
     classes = nodes.TOPAZ_NODE_CLASSES
-    assert len(classes) == 3
+    assert len(classes) == 4
     for cls in classes:
         schema = cls.define_schema()
         assert schema.is_experimental and schema.is_output_node
