@@ -195,7 +195,7 @@ def _native_sigma_shift_factory(cls, core_sampling):
             or cls.__bases__ != (native_av, core_sampling.CONST)
             or cls.__module__ != "comfy_extras.nodes_minimax_h3"
             or cls.__qualname__ != "MiniMaxH3SigmaShift.execute.<locals>.ModelSamplingAdvanced"
-            or set(vars(cls)) - {"__module__", "__doc__"}):
+            or set(vars(cls)) - _PY313_CLASS_META - {"__module__", "__doc__"}):
         return None
     try:
         from comfy_extras import nodes_minimax_h3 as core_h3
@@ -252,6 +252,10 @@ def _native_sigma_shift_factory(cls, core_sampling):
             "bytecode_sha256": hashlib.sha256(json.dumps(live_payload, sort_keys=True).encode()).hexdigest()}
 
 
+# Python 3.13+ writes these into every class body; they are metadata, not execution members.
+_PY313_CLASS_META = {"__firstlineno__", "__static_attributes__"}
+
+
 def _v2_sampling_identity(value):
     """Audited inert T8 and native Core AV sampling surfaces only."""
     import comfy.model_sampling as core_sampling
@@ -261,14 +265,14 @@ def _v2_sampling_identity(value):
     native_factory = None
     native_av = getattr(core_sampling, "ModelSamplingAV", None)
     if cls is sampling.MiniMaxH3FlowSampling:
-        if set(vars(cls)) - {"__module__", "__doc__", "audio_scale"}:
+        if set(vars(cls)) - _PY313_CLASS_META - {"__module__", "__doc__", "audio_scale"}:
             raise UnverifiedModelStack("V2 sampling class contains unknown execution members")
         protocol = "t8_raw_audio_flow"
     elif (native_av is not None
           and cls.__bases__ == (native_av, core_sampling.CONST)
           and cls.__module__ == sampling.__name__
           and cls.__qualname__ == "_make_sampling.<locals>.MiniMaxH3NativeAVSampling"
-          and not (set(vars(cls)) - {"__module__", "__doc__"})):
+          and not (set(vars(cls)) - _PY313_CLASS_META - {"__module__", "__doc__"})):
         # _make_sampling creates a fresh empty subclass each time. Its class
         # identity is not stable, but its exact bases and empty executable
         # namespace are: no arbitrary subclass or repr-based exemption.
