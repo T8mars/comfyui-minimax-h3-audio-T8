@@ -1,0 +1,440 @@
+{
+  "1": {
+    "inputs": {
+      "file": "H21/Original40_RegionCrop/1_Background_Source.mp4"
+    },
+    "class_type": "LoadVideo"
+  },
+  "2": {
+    "inputs": {
+      "video": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SourceClockEXPT8"
+  },
+  "3": {
+    "inputs": {
+      "source_fps": [
+        "2",
+        2
+      ],
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "start_seconds": 0.0,
+      "short_video_policy": "hold_last_frame",
+      "short_audio_policy": "pad_silence",
+      "frames": [
+        "2",
+        0
+      ],
+      "source_audio": [
+        "2",
+        1
+      ],
+      "source_clock": [
+        "2",
+        3
+      ]
+    },
+    "class_type": "MiniMaxH3SourceConformEXPT8"
+  },
+  "4": {
+    "inputs": {
+      "batch_index": 0,
+      "length": 1,
+      "image": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "ImageFromBatch"
+  },
+  "5": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "H21/Original40_RegionCrop/5_Pose_Source_120.mp4"
+    }
+  },
+  "6": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 288,
+      "crop": "disabled",
+      "image": [
+        "25",
+        0
+      ]
+    },
+    "class_type": "ImageScale"
+  },
+  "7": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "8": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "9": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "10": {
+    "inputs": {
+      "unet_name": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "11": {
+    "inputs": {
+      "head_chunks": 4,
+      "model": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced"
+  },
+  "12": {
+    "inputs": {
+      "chunks": 2,
+      "seq_threshold": 4096,
+      "model": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced"
+  },
+  "13": {
+    "inputs": {
+      "prompt": "One continuous realistic studio shot of exactly the two adult women shown in the first frame. The curly dark-haired woman wears a grey cardigan over a pale pink top and holds her beige paper cup. The blonde woman wears glasses and a white blouse and holds her own beige paper cup. Keep both faces, clothing and original cups. Follow the supplied pose motion: the blonde turns, crosses in front of the other woman and briefly occludes her, then turns back. Preserve the occlusion order. No additional people, cuts, subtitles, duplicate cups or flashing light. The original source soundtrack remains the only final soundtrack; add no new dialogue or music.",
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "task_type": "I2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true,
+      "clip": [
+        "9",
+        0
+      ],
+      "video_vae": [
+        "7",
+        0
+      ],
+      "audio_vae": [
+        "8",
+        0
+      ],
+      "drive_audio": [
+        "3",
+        1
+      ],
+      "final_audio": [
+        "3",
+        1
+      ],
+      "first_frame": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3AudioConditioningT8"
+  },
+  "14": {
+    "inputs": {
+      "control_net_name": "minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors"
+    },
+    "class_type": "MiniMaxH3FunControlLoaderT8Advanced"
+  },
+  "15": {
+    "inputs": {
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "control_kind": "pose",
+      "fit_mode": "exact",
+      "strength": 1.0,
+      "start_percent": 0.0,
+      "end_percent": 0.6,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "13",
+        0
+      ],
+      "control_net": [
+        "14",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ],
+      "control_video": [
+        "26",
+        0
+      ],
+      "region_mask": [
+        "26",
+        1
+      ],
+      "crop_plan_json": [
+        "26",
+        2
+      ],
+      "stage": "SINGLE"
+    },
+    "class_type": "MiniMaxH3FunControlRegionApplyEXPT8"
+  },
+  "16": {
+    "inputs": {
+      "steps": 40,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": [
+        "15",
+        0
+      ],
+      "av_latent": [
+        "13",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8"
+  },
+  "17": {
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "conditioning": [
+        "15",
+        1
+      ]
+    },
+    "class_type": "BasicGuider"
+  },
+  "18": {
+    "inputs": {
+      "noise_seed": 2610091201
+    },
+    "class_type": "RandomNoise"
+  },
+  "19": {
+    "inputs": {
+      "noise": [
+        "18",
+        0
+      ],
+      "guider": [
+        "17",
+        0
+      ],
+      "sampler": [
+        "16",
+        1
+      ],
+      "sigmas": [
+        "16",
+        2
+      ],
+      "latent_image": [
+        "13",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced"
+  },
+  "20": {
+    "inputs": {
+      "filename_prefix": "MiniMaxH3/H21/Original40_RegionCrop",
+      "checkpoint_id": "H21_P1_p1_original40_region_crop",
+      "confirm_save": true,
+      "verify_after_write": true,
+      "hash_chunk_megabytes": 8,
+      "av_latent": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced"
+  },
+  "21": {
+    "inputs": {
+      "av_latent": [
+        "20",
+        0
+      ],
+      "video_vae": [
+        "7",
+        0
+      ],
+      "audio_vae": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8"
+  },
+  "22": {
+    "inputs": {
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frames": [
+        "21",
+        0
+      ],
+      "audio": [
+        "3",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3OutputTrimT8"
+  },
+  "23": {
+    "inputs": {
+      "filename_prefix": "MiniMaxH3/H21/Original40_RegionCrop",
+      "crf": 18,
+      "images": [
+        "22",
+        0
+      ],
+      "audio": [
+        "22",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced"
+  },
+  "24": {
+    "inputs": {
+      "source": [
+        "27",
+        1
+      ]
+    },
+    "class_type": "PreviewAny"
+  },
+  "25": {
+    "class_type": "GetVideoComponents",
+    "inputs": {
+      "video": [
+        "5",
+        0
+      ]
+    }
+  },
+  "26": {
+    "class_type": "MiniMaxH3DirectorControlSourceEXPT8",
+    "inputs": {
+      "control_video": [
+        "6",
+        0
+      ],
+      "spec_json": "{\"id\":\"c2100000-0000-4000-8000-000000004101\",\"asset_id\":\"c2100000-0000-4000-8000-000000004002\",\"control_net_name\":\"minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors\",\"control_kind\":\"pose\",\"fit_mode\":\"exact\",\"strength\":1,\"start_percent\":0,\"end_percent\":0.6,\"source\":{\"start_seconds\":0,\"short_video_policy\":\"hold_last_frame\"},\"region\":{\"mode\":\"rect\",\"xyxy_normalized\":[0,0,0.5,1]},\"crop\":{\"enabled\":true,\"xyxy_normalized\":[0,0,0.5,1],\"fit\":\"stretch\",\"flip_x\":false,\"flip_y\":false}}",
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "source_kind": "video",
+      "source_fps": [
+        "25",
+        2
+      ],
+      "stage": "SINGLE"
+    }
+  },
+  "27": {
+    "class_type": "MiniMaxH3ControlRegionAuditEXPT8",
+    "inputs": {
+      "region_state": [
+        "15",
+        2
+      ],
+      "after_sampling": [
+        "19",
+        0
+      ]
+    }
+  },
+  "28": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "26",
+        3
+      ]
+    }
+  },
+  "29": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "23",
+        2
+      ]
+    }
+  },
+  "30": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "22",
+        2
+      ]
+    }
+  },
+  "31": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "2",
+        4
+      ]
+    }
+  },
+  "32": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "3",
+        5
+      ]
+    }
+  },
+  "33": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        1
+      ]
+    }
+  }
+}

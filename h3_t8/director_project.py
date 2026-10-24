@@ -10,7 +10,11 @@ import os
 from pathlib import Path
 import re
 import threading
+import time
 import uuid
+
+from .director_keyframes import FIELD as KEYFRAME_FIELD, keyframe_asset_ids, resolve_keyframes, validate_keyframes
+from .director_controls import FIELD as CONTROL_FIELD, control_asset_ids, resolve_controls, validate_controls
 
 SCHEMA = "t8.minimax_h3.director_project"
 VERSION = 2
@@ -73,7 +77,18 @@ def atomic_json(path, value):
             stream.write(canonical(value))
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        # Windows readers can briefly deny DELETE sharing even though they do
+        # not modify the destination. Keep the same fsynced temporary payload
+        # and atomic replace; at most 250ms scheduled backoff, never an unlink
+        # or non-atomic write. Persistent ACL denials and other errors still fail.
+        for delay in (0.01, 0.02, 0.04, 0.08, 0.1, None):
+            try:
+                os.replace(temporary, path)
+                break
+            except OSError as error:
+                if delay is None or getattr(error, 'winerror', None) not in (5, 32, 33):
+                    raise
+                time.sleep(delay)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -286,6 +301,8 @@ def validate_project(value):
     ids = []
     for shot in doc["shots"]:
         ids.append(identity(shot.get("id")))
+        validate_keyframes(shot.get(KEYFRAME_FIELD), identity)
+        validate_controls(shot.get(CONTROL_FIELD), identity)
         effective_sampling(doc, shot)
         if shot.get("mode") not in {"text", "first", "ends", "refs"} or shot.get(
             "sound"
@@ -359,13 +376,20 @@ def validate_project(value):
     return project
 
 
-def referenced_assets(project, *, evidence_context=None):
+def referenced_assets(project, *, evidence_context=None, include_controls=True):
     result = set(project["doc"]["sharedRefs"])
     for shot in project["doc"]["shots"]:
         result.update(shot["tray"] + shot["refs"])
-        result.update(
-            shot[key] for key in ("first", "last", "audio", "selected") if shot.get(key)
-        )
+        result.update(keyframe_asset_ids(shot))
+        if include_controls:
+            result.update(control_asset_ids(shot))
+        result.update(shot[key] for key in ("first", "last", "audio") if shot.get(key))
+        selected = shot.get("selected")
+        # Previewing a control-only draft must not turn it into an ordinary
+        # generation dependency. Genuine first/ref/tray/audio uses above stay
+        # strict, and old projects without controls keep their exact behavior.
+        if selected and (include_controls or selected not in control_asset_ids(shot)):
+            result.add(selected)
         if shot.get('sourceEvidence'):
             from .director_radar import _packet_media
             result.update(row['asset_id'] for row in _packet_media(shot['sourceEvidence']['packet']))
@@ -567,7 +591,10 @@ class ProjectStore:
                 from .director_radar import validate_history_progress
                 validate_history_progress(previous, project)
             # Client metadata is never trusted as a filesystem or media authority.
-            referenced = referenced_assets(project)
+            # Control selections are editable drafts, not executable authority.
+            # Preserve missing control-only sources for explicit reconnection;
+            # a simultaneous first/ref/tray use retains its existing checks.
+            referenced = referenced_assets(project, include_controls=False)
 
             def saved_asset(asset):
                 try:
@@ -599,6 +626,21 @@ class ProjectStore:
         return project
 
 
+def _control_stages(doc, shot):
+    from .director_sampling_settings import effective_sampling
+    sampling = effective_sampling(doc, shot)
+    if sampling["mode"] == "single" or (
+        sampling["mode"] == "hyperflow" and sampling["variant"] == "single8"
+    ):
+        return ("single",)
+    if sampling["mode"] == "hyperflow" and sampling.get(
+        "stage_checkpoint", {}
+    ).get("mode") == "resume_tail":
+        # The frozen HEAD owns LOW; only the current TAIL is executed.
+        return ("high",)
+    return ("low", "high")
+
+
 def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
     from .director_sampling_settings import effective_sampling
     project = validate_project(value)
@@ -619,7 +661,10 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
         project["current"] = shot_id
     assets = {a["id"]: a for a in project["assets"]}
     errors, warnings, shots = [], [], []
-    referenced = referenced_assets(project, evidence_context=candidate_project)
+    referenced = referenced_assets(project, evidence_context=candidate_project, include_controls=False)
+    for selected_shot in project["doc"]["shots"]:
+        for stage in _control_stages(project["doc"], selected_shot):
+            referenced.update(control_asset_ids(selected_shot, active=True, stage=stage))
     for asset_id in assets:
         if store:
             try:
@@ -643,6 +688,12 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
             errors.append({"shot_id": sid, "shot_number": number, "shot_name": name, "field": field, "message": message})
 
         shared = list(dict.fromkeys(doc["sharedRefs"]))
+        middle = []
+        if shot.get(KEYFRAME_FIELD):
+            try:
+                middle = resolve_keyframes(shot, assets)
+            except ValueError as error:
+                fail(str(error), KEYFRAME_FIELD)
         tray = list(
             dict.fromkeys(
                 shared
@@ -650,6 +701,7 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                 + [x for x in (shot.get("first"), shot.get("last")) if x]
                 + shot["refs"]
                 + ([shot["audio"]] if shot.get("audio") else [])
+                + keyframe_asset_ids(shot)
             )
         )
         if any(x not in assets for x in tray):
@@ -670,6 +722,9 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
         )
         first = shot.get("first") if shot["mode"] in {"first", "ends"} else None
         last = shot.get("last") if shot["mode"] == "ends" else None
+        recording_middle = shot["sound"] == "record" and shot["mode"] == "first" and first
+        if middle and not (first and (last or recording_middle)):
+            fail("中间关键帧需要首尾模式的首帧和尾帧，或原音驱动的首帧模式；请补全端点或关闭中间图", KEYFRAME_FIELD)
         if shot["mode"] == "first" and not first:
             fail("请添加首帧")
         if shot["mode"] == "ends" and not last:
@@ -718,20 +773,19 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                     }
                 )
         media, id_to_native = [], {}
-        pictures = [x for x in (first, last) if x] + typed["image"]
-        for index, aid in enumerate(pictures, 1):
+        picture_entries = ([(first, "first_frame", None)] if first else [])
+        picture_entries += [(item["asset_id"], "middle_keyframe", item["id"]) for item in middle]
+        picture_entries += ([(last, "last_frame", None)] if last else [])
+        picture_entries += [(aid, "ref_image", None) for aid in typed["image"]]
+        pictures = [aid for aid, _, _ in picture_entries]
+        for index, (aid, role, keyframe_id) in enumerate(picture_entries, 1):
             if assets.get(aid, {}).get("kind") != "image":
                 fail("首尾或图片参考不是图片")
-            role = (
-                "first_frame"
-                if aid == first and index == 1
-                else "last_frame"
-                if aid == last and index <= int(bool(first)) + 1
-                else "ref_image"
-            )
             native = f"<Picture {index}>"
             id_to_native.setdefault(aid, native)
             media.append({"asset_id": aid, "role": role, "native": native})
+            if keyframe_id:
+                media[-1]["keyframe_id"] = keyframe_id
         audio_ordinal = 0
         for index, aid in enumerate(typed["video"], 1):
             native = f"<Video {index}>"
@@ -792,7 +846,7 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                 duration = max(e["end"] for e in active_events)
             elif shot["sound"] == "record" and selected_audio:
                 duration = shot["end"] - shot["start"]
-        if duration <= 0:
+        if duration <= 0 or not math.isfinite(duration * 24):
             fail("时长必须大于0", "timing")
             duration = 0.001
         requested = max(5, math.ceil(duration * 24))
@@ -926,6 +980,14 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
             if shot["sound"] == "voice"
             else "native_h3"
         )
+        controls = []
+        if shot.get(CONTROL_FIELD) is not None:
+            for stage in _control_stages(doc, shot):
+                try:
+                    controls.extend(resolve_controls(shot, assets, stage=stage,
+                        asset_root=store.input_root if store is not None else None))
+                except (ValueError, OSError) as error:
+                    fail(f"{stage.upper()}：{error}", CONTROL_FIELD)
         shots.append(
             {
                 "id": sid,
@@ -983,6 +1045,14 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                 ],
             }
         )
+        if shot.get(KEYFRAME_FIELD) is not None:
+            shots[-1]["middle_keyframes"] = middle
+            for item in middle:
+                if not item["visible_in_delivery"]:
+                    warnings.append({"shot_id": sid, "field": KEYFRAME_FIELD,
+                        "message": f"关键帧{item['id']}位于生成帧{item['frame_index']}，不在最终交付范围；保留显式生成时轴选择"})
+        if controls:
+            shots[-1]["control_regions"] = controls
         timeline_start += duration
     report = {
         "schema": "t8.minimax_h3.director_compilation.v1",
@@ -997,5 +1067,9 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
         "gpu_queued": False,
         "scope": "Project compilation contract; generation is submitted only by the explicit D2 route",
     }
+    if any("middle_keyframes" in shot for shot in shots):
+        report["extensions"] = {"middle_keyframes": 1}
+    if any(shot.get("control_regions") for shot in shots):
+        report.setdefault("extensions", {})["control_regions_v1"] = True
     report["compilation_sha256"] = sha(report)
     return report

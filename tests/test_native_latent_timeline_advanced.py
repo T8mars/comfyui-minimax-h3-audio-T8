@@ -133,6 +133,15 @@ def test_nested_noise_masks_follow_the_same_video_and_audio_phase():
     assert torch.all(audio_mask[..., 37:] == 22)
 
 
+def test_native_pixel_mask_checkpoint_allowance_does_not_enable_ambiguous_concat():
+    first = _latent(22, 1.0, mask=True)
+    _, audio_mask = first["noise_mask"].unbind()
+    first["noise_mask"] = comfy.nested_tensor.NestedTensor((
+        torch.ones(1, 1, 11, 13), audio_mask))
+    with pytest.raises(ValueError, match="noise_mask shapes do not match"):
+        concat_native_h3_av_latents(first, _latent(22, 2.0, mask=True))
+
+
 def test_proven_22_frame_long_video_context_is_removed_on_both_native_clocks():
     first = _latent(124, 1.0, mask=True)
     continuation = _latent(124, 2.0, mask=True)

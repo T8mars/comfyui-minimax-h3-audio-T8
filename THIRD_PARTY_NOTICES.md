@@ -1,5 +1,21 @@
 # Third-party notices
 
+## H21 independent runtime and sampling extensions
+
+Thanks to MiniMax, ComfyUI, PTD, FreeVideo / OpenVDN, Veda, HyperFlow and
+Kijai authors. The original-precision base converter retains the
+[Apache-2.0 license](THIRD_PARTY_NOTICES/H21-PTD-BASE-APACHE2.txt),
+[upstream NOTICE](THIRD_PARTY_NOTICES/H21-PTD-BASE-NOTICE.txt) and
+[fixed-source conversion boundaries](THIRD_PARTY_NOTICES/H21-PTD-BASE-SOURCES.md).
+The independent H21 FreeVideo adapter targets fixed commit
+`f2c25e6e4f82d5ad9ed966998423762503d98e5c`; source and model assets are
+separately prepared with their original licenses and notices. See
+[H21 FreeVideo](docs/H21_FREEVIDEO_RUNTIME_EXP.md),
+[PTD expert conversion](docs/H21_PTD_SAFE_CONVERSION.md) and
+[experimental MC operators](docs/H21_MC_SEAM_EXP.md) for provenance and limits.
+No model weights, personal input media or private integration probe is bundled.
+Source acknowledgement does not transfer weight licenses or certify all combinations.
+
 ## H14 token-row LoRA scope
 
 Thanks to baslack / Scriptorium for the original token-row LoRA idea and prototype,

@@ -14,6 +14,7 @@ import torch
 from comfy.ldm.minimax import model as minimax_model
 
 from .h3_core_compat import call_h3_block, call_h3_final_layer, prefetch_h3_block
+from .keyframe_positions import resolve_position
 
 from .conditioning import (
     HYBRID_KEYFRAME_SENTINEL,
@@ -83,9 +84,7 @@ def append_keyframe_plan(
     else:
         raise ValueError("previous_plan must be an H3 T8 keyframe plan")
     if len(entries) >= MAX_MIDDLE_KEYFRAMES:
-        raise ValueError(
-            f"MiniMax H3 Advanced supports at most {MAX_MIDDLE_KEYFRAMES} middle keyframes"
-        )
+        warn_patch_stack("More than seven middle keyframes: memory and quality are unverified; retaining every selected image.")
     if not isinstance(image, torch.Tensor) or image.ndim != 4 or image.shape[0] < 1:
         raise ValueError("image must be a non-empty ComfyUI IMAGE batch [B,H,W,C]")
     mode = str(position_mode).lower()
@@ -125,9 +124,7 @@ def resolve_keyframe_plan(plan, frame_count: int) -> list[dict]:
     if not isinstance(plan, Sequence) or isinstance(plan, (str, bytes)):
         raise ValueError("keyframe_plan must be an H3 T8 keyframe plan")
     if len(plan) > MAX_MIDDLE_KEYFRAMES:
-        raise ValueError(
-            f"MiniMax H3 Advanced supports at most {MAX_MIDDLE_KEYFRAMES} middle keyframes"
-        )
+        warn_patch_stack("More than seven middle keyframes: memory and quality are unverified; retaining every selected image.")
 
     resolved: list[dict] = []
     used: dict[int, int] = {}
@@ -142,31 +139,8 @@ def resolve_keyframe_plan(plan, frame_count: int) -> list[dict]:
         value = float(raw.get("position"))
         if not math.isfinite(value):
             raise ValueError(f"keyframe plan entry {fallback_ordinal} position must be finite")
-        if mode == "frame":
-            rounded = round(value)
-            if not math.isclose(value, rounded, abs_tol=1e-9):
-                raise ValueError(
-                    f"keyframe plan entry {fallback_ordinal} frame position must be an integer"
-                )
-            frame_index = int(rounded)
-        elif mode == "seconds":
-            if value < 0.0:
-                raise ValueError(
-                    f"keyframe plan entry {fallback_ordinal} seconds must be non-negative"
-                )
-            frame_index = _round_half_up(value * FPS)
-        else:
-            if not 0.0 <= value <= 100.0:
-                raise ValueError(
-                    f"keyframe plan entry {fallback_ordinal} percent must be between 0 and 100"
-                )
-            frame_index = _round_half_up((value / 100.0) * (frame_count - 1))
-
-        if frame_index <= 0 or frame_index >= frame_count - 1:
-            raise ValueError(
-                f"keyframe plan entry {fallback_ordinal} resolves to frame {frame_index}; "
-                f"middle keyframes must be in 1..{frame_count - 2}"
-            )
+        frame_index = resolve_position(mode, value, frame_count, fps=FPS,
+                                       label=f"keyframe plan entry {fallback_ordinal}")
         if frame_index in used:
             raise ValueError(
                 f"keyframe plan entries {used[frame_index]} and {fallback_ordinal} both resolve "
@@ -947,6 +921,9 @@ def _build_advanced_conditioning(
     ref_videos=None,
     ref_video_audios=None,
     ref_audios=None,
+    *,
+    return_details=False,
+    semantic_bridge=None,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -959,7 +936,9 @@ def _build_advanced_conditioning(
         value = float(value)
         if not math.isfinite(value) or not 0.0 <= value <= 1.0:
             raise ValueError(f"{label} must be finite and between 0 and 1")
-    if resolved_middle and (first_frame is None or last_frame is None):
+    recording_middle = bool(resolved_middle and first_frame is not None and last_frame is None
+                            and audio_mode.lower() == "lock_source")
+    if resolved_middle and (first_frame is None or last_frame is None) and not recording_middle:
         raise ValueError(
             "Advanced middle keyframes currently require both first_frame and last_frame; "
             "use the stable node for other task layouts"
@@ -1021,7 +1000,7 @@ def _build_advanced_conditioning(
         )
     keyframe_specs.sort(key=lambda item: item["frame_index"])
     if len(keyframe_specs) > 9:
-        raise ValueError("MiniMax H3 Advanced supports at most 9 total timeline keyframes")
+        warn_patch_stack("More than nine timeline images: memory and quality are unverified; retaining the requested timeline.")
 
     keyframes = []
     keyframe_images = []
@@ -1144,7 +1123,7 @@ def _build_advanced_conditioning(
 
     has_refs = bool(real_ref_blocks)
     resolved_task = resolve_task_type(task_type, first_frame, last_frame, has_refs)
-    if resolved_task not in {"fl2va", "hybrid"}:
+    if resolved_task not in {"fl2va", "hybrid"} and not (recording_middle and resolved_task == "i2va"):
         raise ValueError(
             "Multi-Keyframe Advanced only supports FL2VA with both endpoints or Hybrid "
             "with both endpoints plus references; use the stable Conditioning and optional "
@@ -1201,6 +1180,12 @@ def _build_advanced_conditioning(
         values["minimax_refs"] = refs
     conditioning = node_helpers.conditioning_set_values(conditioning, values)
 
+    bridge_report = None
+    if semantic_bridge is not None and semantic_bridge.active:
+        from .semantic_bridge import apply_bridge
+        conditioning, bridge_report = apply_bridge(conditioning, semantic_bridge,
+            encoding_source=f"native_h3:{resolved_task}:clip.encode_from_tokens_scheduled")
+
     if mode == "lock_source":
         latent = replace_audio_latent(latent, encoded_source, 0.0)
     elif mode == "remix_source":
@@ -1222,8 +1207,11 @@ def _build_advanced_conditioning(
             "and VRAM/runtime/OOM risk is owned by the user"
         )
     report_lines.extend(f"warning: {warning}" for warning in [*prompt_warnings, *reference_frame_warnings])
+    if bridge_report is not None:
+        from .semantic_bridge import canonical
+        report_lines.append("semantic_bridge=" + canonical(bridge_report))
     output_audio = final_audio if final_audio is not None else drive_audio
-    return (
+    result = (
         conditioning,
         latent,
         output_audio,
@@ -1234,6 +1222,11 @@ def _build_advanced_conditioning(
         visual_augs,
         native_layout,
     )
+    if return_details:
+        return (*result, {"tokens": tokens, "keyframes": keyframes, "refs": refs,
+            "resolved_task": resolved_task, "frame_count": frame_count, "audio_mode": mode,
+            "canvas_pixels": width * height, "multikeyframe_layout": True, "native_middle_layout": native_layout})
+    return result
 
 
 def build_multikeyframe_conditioning(
@@ -1265,6 +1258,9 @@ def build_multikeyframe_conditioning(
     ref_videos=None,
     ref_video_audios=None,
     ref_audios=None,
+    *,
+    return_details=False,
+    semantic_bridge=None,
 ):
     frame_count = temporal_shape(length)[0]
     resolved_middle = resolve_keyframe_plan(keyframe_plan, frame_count)
@@ -1277,6 +1273,11 @@ def build_multikeyframe_conditioning(
         )
     )
     if not resolved_middle and default_strengths:
+        options = {}
+        if return_details:
+            options["return_details"] = True
+        if semantic_bridge is not None:
+            options["semantic_bridge"] = semantic_bridge
         stable = build_conditioning(
             clip,
             video_vae,
@@ -1301,6 +1302,7 @@ def build_multikeyframe_conditioning(
             ref_videos,
             ref_video_audios,
             ref_audios,
+            **options,
         )
         keyframes = []
         if first_frame is not None:
@@ -1334,13 +1336,22 @@ def build_multikeyframe_conditioning(
             "stable_conditioning_report": stable[5],
             "warnings": [],
         }
-        return (
+        result = (
             model,
             *stable[:5],
             json.dumps(keyframes, ensure_ascii=False, indent=2),
             json.dumps(report, ensure_ascii=False, indent=2),
         )
+        return (*result, stable[6]) if return_details else result
 
+    built = _build_advanced_conditioning(
+        clip, video_vae, audio_vae, prompt, width, height, length, task_type,
+        audio_mode, audio_denoise_strength, add_source_as_reference,
+        prompt_primary_audio_ordinal, strict_prompt_tags, ref_image_size,
+        reference_video_policy, first_frame, last_frame, resolved_middle,
+        first_frame_noise_aug, last_frame_noise_aug, reference_visual_noise_aug,
+        drive_audio, final_audio, ref_images, ref_videos, ref_video_audios, ref_audios,
+        return_details=return_details, semantic_bridge=semantic_bridge)
     (
         conditioning,
         latent,
@@ -1351,35 +1362,7 @@ def build_multikeyframe_conditioning(
         keyframe_specs,
         visual_augs,
         native_layout,
-    ) = _build_advanced_conditioning(
-        clip,
-        video_vae,
-        audio_vae,
-        prompt,
-        width,
-        height,
-        length,
-        task_type,
-        audio_mode,
-        audio_denoise_strength,
-        add_source_as_reference,
-        prompt_primary_audio_ordinal,
-        strict_prompt_tags,
-        ref_image_size,
-        reference_video_policy,
-        first_frame,
-        last_frame,
-        resolved_middle,
-        first_frame_noise_aug,
-        last_frame_noise_aug,
-        reference_visual_noise_aug,
-        drive_audio,
-        final_audio,
-        ref_images,
-        ref_videos,
-        ref_video_audios,
-        ref_audios,
-    )
+    ) = built[:9]
     require_per_condition_forward = len({float(value) for value in visual_augs}) > 1
     patched_model = patch_multikeyframe_model(model, require_per_condition_forward)
     installed_forward = patched_model.get_model_object("diffusion_model._forward")
@@ -1459,7 +1442,7 @@ def build_multikeyframe_conditioning(
         "stable_conditioning_report": stable_report,
         "warnings": warnings,
     }
-    return (
+    result = (
         patched_model,
         conditioning,
         latent,
@@ -1469,3 +1452,4 @@ def build_multikeyframe_conditioning(
         json.dumps(keyframe_map, ensure_ascii=False, indent=2),
         json.dumps(report, ensure_ascii=False, indent=2),
     )
+    return (*result, built[9]) if return_details else result

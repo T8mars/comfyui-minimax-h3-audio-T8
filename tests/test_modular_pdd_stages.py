@@ -128,8 +128,13 @@ def test_own_contract_changes_cannot_be_certified(damage):
 
 
 def test_plain_model_or_truncated_input_is_not_mislabeled_pdd():
-    with pytest.raises(ValueError, match="existing PDD"):
-        split.build_stage(model(), source_latent(), pdd.pdd_runtime_sigmas())
+    # User-selected ordinary models may execute, but must not acquire a PDD
+    # recipe/cache identity. Actual sampler parity is covered independently.
+    bound, sampler, sigmas, context, report = split.build_stage(model(), source_latent(), pdd.pdd_runtime_sigmas())
+    assert json.loads(report)["pdd_head_contract_recognized"] is False
+    assert json.loads(context.profile)["pdd"]["mode"] == split.UNVERIFIED
+    assert not split.sampler_is_known(bound, sampler, context)
+    assert len(sigmas) == 5
     prepared, _, full, source, _ = prepared_inputs()
     with pytest.raises(ValueError, match="exactly 8"):
         split.build_stage(prepared, source, full[4:])
@@ -174,8 +179,8 @@ assert receipt['portable_identity'] and runtime.snapshot()['status']=='observed_
 assert not torch.cuda.is_initialized()
 print('RESULT='+json.dumps(receipt['outputs']))
 """
-    child = subprocess.run([sys.executable, "-c", code, str(tmp_path), path, digest, variant],
-        cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=45)
+    child = subprocess.run([sys.executable, "-X", "utf8", "-c", code, str(tmp_path), path, digest, variant],
+        cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, encoding="utf-8", timeout=45)
     assert child.returncode == 0, child.stderr
     actual = json.loads(next(line[7:] for line in child.stdout.splitlines() if line.startswith("RESULT=")))
     assert actual == expected

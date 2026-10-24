@@ -466,7 +466,8 @@ def test_director_hyperflow_explicit_graph_keeps_legacy_recipe_separate(tmp_path
     assert built["sampling"]["total_nfe"] == expected_nfe
     assert len(built["sampling"]["trained_grid_contract"]["raw_sigmas"]) == 9
     assert len(built["sampling"]["trained_grid_contract_sha256"]) == 64
-    assert types.count("MiniMaxH3HyperFlowLoaderT8Advanced") == (1 if variant == "single8" else 2)
+    assert types.count("MiniMaxH3HyperFlowFreshLoaderEXPT8") == (1 if variant == "single8" else 2)
+    assert "MiniMaxH3HyperFlowLoaderT8Advanced" not in types
     assert types.count("MiniMaxH3LoRACompatibilityLoaderT8Advanced") == (1 if variant == "single8" else 2)
     if variant in {"upscale8plus4", "upscale4plus4"}:
         assert graph["10"]["inputs"]["av_latent"] != ["9", 0]
@@ -840,7 +841,7 @@ def test_director_hyperflow_separate_real_core_tail_eav_edit_keeps_head_cached(t
     monkeypatch.setattr(TinyHyperBase, "execute", classmethod(lambda cls: io.NodeOutput(base)))
     graph["1"] = {"class_type": "TinyHyperBase", "inputs": {}}
     for key, node in list(graph.items()):
-        if node["class_type"] == "MiniMaxH3HyperFlowLoaderT8Advanced":
+        if node["class_type"] == "MiniMaxH3HyperFlowFreshLoaderEXPT8":
             graph[key] = {"class_type": "SyntheticHyperLoader", "inputs": {
                 "model": node["inputs"]["model"], "patch": 0.}}
         elif node["class_type"] == "MiniMaxH3AudioConditioningT8":
@@ -916,7 +917,7 @@ def test_director_hyperflow_separate_real_core_tail_eav_edit_keeps_head_cached(t
         "mode": "resume_tail", "artifact_path": path, "artifact_sha256": digest}
     resumed = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
     for key, node in list(resumed.items()):
-        if node["class_type"] == "MiniMaxH3HyperFlowLoaderT8Advanced":
+        if node["class_type"] == "MiniMaxH3HyperFlowFreshLoaderEXPT8":
             resumed[key] = {"class_type": "SyntheticHyperLoader", "inputs": {
                 "model": node["inputs"]["model"], "patch": 0.}}
         elif node["class_type"] == "MiniMaxH3AudioConditioningT8":

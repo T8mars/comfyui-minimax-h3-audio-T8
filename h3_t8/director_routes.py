@@ -52,9 +52,11 @@ _CORE_EPOCH = str(uuid.uuid4())
 _FILM_EXPORT_LOCK = asyncio.Lock()
 _FILM_EXPORT_TASKS = {}
 _DIRECTOR_UI_MODULES = frozenset((
-    "assets_ui.mjs", "bundle_ui.mjs", "candidate_diagnostics.mjs", "compare_ui.mjs",
+    "assets_ui.mjs", "bundle_ui.mjs", "candidate_diagnostics.mjs", "caption_ui.mjs", "compare_ui.mjs",
     "content_hash.mjs", "continuity_recipes.mjs", "creation_library.mjs", "creation_ui.mjs",
+    "control_state.mjs", "control_ui.mjs", "control_ui.css",
     "film_ui.mjs", "frame_ui.mjs", "layout_ui.mjs", "modal_ui.mjs", "preflight_ui.mjs",
+    "keyframes_state.mjs", "keyframes_ui.mjs", "keyframes_ui.css",
     "radar_state.mjs", "radar_ui.mjs", "references_ui.mjs", "sampling_ui.mjs", "session.mjs",
     "storyboard_ui.mjs", "tasks_ui.mjs", "trim_ui.mjs", "workbench.mjs", "workbench.css",
 ))
@@ -82,6 +84,10 @@ def _record_deleted_queue_receipt(store, prompt_id):
 
 
 def _resolve_director_resource(folder, name):
+    if folder == "fun_control_selection":
+        from .h3_fun_control_advanced import _resolve_fun_control_path
+
+        return _resolve_fun_control_path(name)[0]
     if folder == "hyperflow_selection":
         from .nodes_hyperflow_advanced import _resolve
 
@@ -854,6 +860,58 @@ def register_director_routes():
                                          request.match_info['film_id'], body['index'], body['frame'])
         return web.json_response(result)
 
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/captions/speech-track")
+    @guarded
+    async def film_caption_speech_track(request):
+        from .director_captions import INPUT_SCHEMA, _compile, track_from_speech_report
+        from .director_film import load_film
+        body = await request.json()
+        def prepare_track():
+            film = load_film(get_store(), request.match_info['project_id'], request.match_info['film_id'])
+            entry = next((entry for entry in film['entries'] if entry['shot_id'] == body['shot_id']), None)
+            if entry is None:
+                raise ValueError('请选择冻结整片中的镜头')
+            track = track_from_speech_report(entry, body['report'], confirmed_media_match=body.get('confirm_media_match'))
+            _compile(film, {'schema': INPUT_SCHEMA, 'film_sha256': film['sha256'], 'tracks': [track]})
+            return track
+        return web.json_response(await asyncio.to_thread(prepare_track))
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/captions/{caption_id}")
+    @guarded
+    async def film_caption_prepare(request):
+        from .director_captions import prepare_captions
+        body = await request.json()
+        result, created = await asyncio.to_thread(
+            prepare_captions, get_store(),
+            *(request.match_info[key] for key in ('project_id', 'film_id', 'caption_id')), body,
+        )
+        return web.json_response(result, status=201 if created else 200)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/captions/{caption_id}")
+    @guarded
+    async def film_caption_manifest(request):
+        from .director_captions import load_captions
+        result = await asyncio.to_thread(
+            load_captions, get_store(),
+            *(request.match_info[key] for key in ('project_id', 'film_id', 'caption_id')),
+        )
+        return web.json_response(result)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/captions/{caption_id}/file/{format}")
+    @guarded
+    async def film_caption_download(request):
+        from .director_captions import caption_file
+        format = request.match_info['format']
+        path = await asyncio.to_thread(
+            caption_file, get_store(),
+            *(request.match_info[key] for key in ('project_id', 'film_id', 'caption_id')), format,
+        )
+        mime = 'text/vtt' if format == 'vtt' else 'application/x-subrip'
+        return web.FileResponse(path, headers={
+            'Content-Type': mime + '; charset=utf-8',
+            'Content-Disposition': f'attachment; filename="director-captions.{format}"',
+        })
+
     @routes.post(PREFIX + "/films/{project_id}/{film_id}/exports/{job_id}")
     @guarded
     async def film_export_start(request):
@@ -868,10 +926,18 @@ def register_director_routes():
             job, created = await asyncio.to_thread(reserve_export, store, owner, film_id, job_id, body)
             if created:
                 async def work():
+                    failure = None
                     try:
                         await asyncio.to_thread(run_export, store, owner, film_id, job_id)
+                    except Exception as error:
+                        # A failed final JSON write cannot record its own error.
+                        # Retain only a small result on this completed task, not
+                        # an exception/traceback; GET still validates disk identity.
+                        failure = {'state': 'error', 'error': str(error), 'status_persisted': False}
+                        return failure
                     finally:
-                        _FILM_EXPORT_TASKS.pop(job_id, None)
+                        if failure is None:
+                            _FILM_EXPORT_TASKS.pop(job_id, None)
                 _FILM_EXPORT_TASKS[job_id] = asyncio.create_task(work())
         return web.json_response(job)
 
@@ -881,8 +947,14 @@ def register_director_routes():
         from .director_film_export import export_status
         args = tuple(request.match_info[key] for key in ('project_id', 'film_id', 'job_id'))
         job = await asyncio.to_thread(export_status, get_store(), *args)
-        if job['state'] in {'queued', 'running'} and args[2] not in _FILM_EXPORT_TASKS:
-            job = {**job, 'state': 'interrupted', 'error': 'Core 已重启或导出进程不在当前实例；未自动重新编码，请明确另起导出。'}
+        if job['state'] in {'queued', 'running'}:
+            task = _FILM_EXPORT_TASKS.get(args[2])
+            if task is None or task.cancelled():
+                job = {**job, 'state': 'interrupted', 'error': 'Core 已重启或导出进程不在当前实例；未自动重新编码，请明确另起导出。'}
+            elif task.done():
+                failure = task.result()
+                if isinstance(failure, dict) and failure.get('state') == 'error':
+                    job = {**job, 'state': 'error', 'error': failure['error'], 'status_persisted': False}
         return web.json_response(job)
 
     @routes.get(PREFIX + "/films/{project_id}/{film_id}/exports/{job_id}/file")
@@ -1047,6 +1119,13 @@ def register_director_routes():
         # must resolve here as well as under Core's /extensions directory.
         return web.FileResponse(
             Path(__file__).resolve().parents[1] / "web" / "director" / "radar_state.mjs"
+        )
+
+    @routes.get(PREFIX + "/keyframes_state.mjs")
+    async def keyframes_state(_request):
+        # session.mjs is served both at PREFIX and under /ui-modules/.
+        return web.FileResponse(
+            Path(__file__).resolve().parents[1] / "web" / "director" / "keyframes_state.mjs"
         )
 
     @routes.get(PREFIX + "/default")

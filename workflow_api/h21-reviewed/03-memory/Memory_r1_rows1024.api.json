@@ -1,0 +1,460 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader"
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader"
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader"
+  },
+  "5": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "H21/Memory_r1_rows1024/5_Background_Source.mp4"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "5",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "frames": [
+        "6",
+        0
+      ],
+      "source_fps": [
+        "6",
+        2
+      ],
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "start_seconds": 0.0,
+      "short_video_policy": "hold_last_frame",
+      "short_audio_policy": "pad_silence",
+      "source_audio": [
+        "6",
+        1
+      ],
+      "source_clock": [
+        "6",
+        3
+      ]
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ],
+      "prompt": "Use <Video 1> as the motion and scene reference and <Audio 1> as its matching soundtrack reference. Create one continuous coherent shot that preserves the reference movement rhythm and audiovisual atmosphere while keeping natural anatomy and stable detail. No cuts, duplicate subjects, frozen motion, blur, hiss, static, crackle or distortion.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true,
+      "ref_videos.ref_video_0": [
+        "7",
+        0
+      ],
+      "ref_video_audios.ref_video_audio_0": [
+        "7",
+        1
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3ReferenceTemporalPackEXPT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "8",
+        0
+      ],
+      "ratio": "0/5",
+      "phase": "SINGLE"
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3ReferenceStepCacheEXPT8",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ],
+      "positive": [
+        "9",
+        1
+      ],
+      "mode": "off",
+      "refresh_every": 2,
+      "include_text": false,
+      "phase": "SINGLE"
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "r12_int8",
+        0
+      ],
+      "av_latent": [
+        "8",
+        1
+      ],
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "12": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "conditioning": [
+        "10",
+        1
+      ]
+    }
+  },
+  "13": {
+    "inputs": {
+      "noise_seed": 2608102201
+    },
+    "class_type": "RandomNoise"
+  },
+  "14": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "13",
+        0
+      ],
+      "guider": [
+        "12",
+        0
+      ],
+      "sampler": [
+        "11",
+        1
+      ],
+      "sigmas": [
+        "11",
+        2
+      ],
+      "latent_image": [
+        "8",
+        1
+      ]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "14",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ]
+    }
+  },
+  "16": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "15",
+        0
+      ],
+      "audio": [
+        "15",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "16",
+        0
+      ],
+      "audio": [
+        "16",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Memory_r1_rows1024",
+      "crf": 18
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3ReferenceTemporalPackAuditEXPT8",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "after_sampling": [
+        "14",
+        0
+      ]
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3ReferenceStepCacheAuditEXPT8",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "after_sampling": [
+        "14",
+        0
+      ]
+    }
+  },
+  "20": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "6",
+        4
+      ]
+    }
+  },
+  "21": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "7",
+        5
+      ]
+    }
+  },
+  "22": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "8",
+        3
+      ]
+    }
+  },
+  "23": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "8",
+        4
+      ]
+    }
+  },
+  "24": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "8",
+        5
+      ]
+    }
+  },
+  "25": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "9",
+        2
+      ]
+    }
+  },
+  "26": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "10",
+        2
+      ]
+    }
+  },
+  "27": {
+    "class_type": "MiniMaxH3ReferenceExecutionSummaryEXPT8",
+    "inputs": {
+      "media_map_json": [
+        "8",
+        4
+      ],
+      "roles_json": "[]",
+      "sigmas": [
+        "11",
+        2
+      ]
+    }
+  },
+  "28": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "8",
+        0
+      ],
+      "conditioned_prompt": [
+        "8",
+        3
+      ],
+      "media_map_json": [
+        "8",
+        4
+      ],
+      "conditioning_report": [
+        "8",
+        5
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "29": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "28",
+        0
+      ]
+    }
+  },
+  "r12_projection": {
+    "class_type": "MiniMaxH3ProjectionChunksEXPT8",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "enabled": true,
+      "rows": 1024,
+      "query_rows": 1024,
+      "stage_queries": false,
+      "norm_qkv": true,
+      "output": true,
+      "embedding": true,
+      "final": true,
+      "phase": "SINGLE"
+    }
+  },
+  "r12_int8": {
+    "class_type": "MiniMaxH3Int8RowChunksEXPT8",
+    "inputs": {
+      "model": [
+        "r12_projection",
+        0
+      ],
+      "enabled": false,
+      "rows": 2048,
+      "targets": "all",
+      "phase": "SINGLE"
+    }
+  },
+  "r12_projection_audit": {
+    "class_type": "MiniMaxH3ProjectionChunksAuditEXPT8",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "after_sampling": [
+        "14",
+        0
+      ]
+    }
+  },
+  "r12_projection_preview": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "r12_projection_audit",
+        0
+      ]
+    }
+  },
+  "r12_int8_audit": {
+    "class_type": "MiniMaxH3Int8RowChunksAuditEXPT8",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "after_sampling": [
+        "14",
+        0
+      ]
+    }
+  },
+  "r12_int8_preview": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "r12_int8_audit",
+        0
+      ]
+    }
+  }
+}

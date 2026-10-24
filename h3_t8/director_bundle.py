@@ -22,6 +22,8 @@ from .director_project import (
     atomic_json, canonical, contained, file_sha, identity, referenced_assets, sha, validate_project,
 )
 from .director_film import inspect_media, prepare_film
+from .director_keyframes import FIELD as KEYFRAME_FIELD, portable_keyframes, remap_keyframes
+from .director_controls import FIELD as CONTROL_FIELD, portable_controls, remap_controls
 
 SCHEMA = 't8.director.bundle.v1'
 MAX_BYTES = 20 * 1024**3
@@ -65,6 +67,10 @@ def _library(value):
         if item['kind'] == 'template':
             clean['shot'] = _pick(item['shot'], TEMPLATE_FIELDS)
             clean['shot']['events'] = [_pick(event, ('id', 'start', 'end', 'text')) for event in item['shot']['events']]
+            if KEYFRAME_FIELD in item['shot']:
+                clean['shot'][KEYFRAME_FIELD] = portable_keyframes(item['shot'][KEYFRAME_FIELD])
+            if CONTROL_FIELD in item['shot']:
+                clean['shot'][CONTROL_FIELD] = portable_controls(item['shot'][CONTROL_FIELD])
         owner = clean['shot'] if item['kind'] == 'template' else clean
         for key, func in [('sampling', _sampling), ('d3', _d3)]:
             if owner.get(key) is not None:
@@ -107,6 +113,10 @@ def portable_project(value, *, include_radar=False):
         if seed is not None and (type(seed) is not int or not 0 <= seed <= 2**53-1):
             raise ValueError('镜头种子无法在页面精确表达，请先修正再打包')
         clean['events'] = [_pick(event, ('id', 'start', 'end', 'text')) for event in shot['events']]
+        if KEYFRAME_FIELD in shot:
+            clean[KEYFRAME_FIELD] = portable_keyframes(shot[KEYFRAME_FIELD])
+        if CONTROL_FIELD in shot:
+            clean[CONTROL_FIELD] = portable_controls(shot[CONTROL_FIELD])
         for key, func in [('d3', _d3), ('sampling', _sampling)]:
             if shot.get(key) is not None:
                 clean[key] = func(shot[key])
@@ -139,7 +149,7 @@ def portable_project(value, *, include_radar=False):
     def model_names(node):
         if isinstance(node, dict):
             for key, item in node.items():
-                if key in {'unet', 'clip', 'video_vae', 'audio_vae', 'upscaler', 'hyperflow_file', 'model_name', 'name', 'lora'}:
+                if key in {'unet', 'clip', 'video_vae', 'audio_vae', 'upscaler', 'hyperflow_file', 'model_name', 'control_net_name', 'name', 'lora'}:
                     for name in item if isinstance(item, list) else [item]:
                         if isinstance(name, str) and (':' in name or name.startswith(('/', '\\')) or '..' in name.replace('\\', '/').split('/')):
                             raise ValueError('模型配置包含本机绝对路径或网址；请先改用模型列表中的相对文件名')
@@ -150,7 +160,7 @@ def portable_project(value, *, include_radar=False):
                 model_names(item)
     library_owners = [item.get('shot', item) for item in target.get('creationLibrary', {}).get('items', [])]
     for owner in [target, *target['shots'], *library_owners]:
-        for field in ('generation', 'sampling', 'd3'):
+        for field in ('generation', 'sampling', 'd3', CONTROL_FIELD):
             model_names(owner.get(field))
     return validate_project(result)
 
@@ -528,6 +538,8 @@ def import_bundle(store, output_root, upload_id, new_project_id):
                     shot[key] = asset_map[shot[key]]
             for event in shot['events']:
                 event['id'] = fresh('event', old_id+':'+event['id'])
+            remap_keyframes(shot, asset_map, fresh)
+            remap_controls(shot, asset_map, lambda kind, row_id: fresh(kind, old_id+':'+row_id))
             if shot.get('adoptedResultId'):
                 external = any(row['role'] == 'result' and row['shot_id'] == old_id and 'external' in row for row in plan['manifest']['files'])
                 shot['adoptedResultId'] = ('external:' if external else '') + fresh('version', old_id)

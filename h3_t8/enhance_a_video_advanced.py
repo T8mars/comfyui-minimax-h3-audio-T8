@@ -100,6 +100,15 @@ def _source_sha256(function) -> str:
     return hashlib.sha256(inspect.getsource(function).encode("utf-8")).hexdigest()
 
 
+def _diagnostic_source_sha256(function):
+    try:
+        return _source_sha256(function)
+    except (OSError, TypeError, ValueError):
+        # Absence of readable Python source is not a MODEL execution ban and
+        # must not become a fabricated portable identity.
+        return None
+
+
 def _json(value) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
 
@@ -343,7 +352,7 @@ class EAVRuntime:
 
     def record_block_cache_decision(self, forward_index: int, decision: str):
         decision = str(decision)
-        if decision not in {"full", "hit"}:
+        if decision not in {"full", "hit", "bypassed"}:
             raise ValueError(f"Unknown H3 BlockCache decision {decision!r}")
         with self._lock:
             forward = self._forwards[int(forward_index)]
@@ -631,20 +640,29 @@ def _assert_block_cache_contract(model) -> dict:
     replacements = transformer.get("patches_replace", {})
     if not isinstance(replacements, Mapping) or set(replacements) != {"dit"}:
         warn_patch_stack('H3 EAV + BlockCache replacement scope is not exact')
-    dit_replacements = replacements.get("dit")
+    if not isinstance(replacements, Mapping):
+        raise TypeError("H3 block replacements must be a mapping")
+    dit_replacements = replacements.get("dit", {})
     expected_keys = {("double_block", 0), ("double_block", 49)}
     if not isinstance(dit_replacements, Mapping) or set(dit_replacements) != expected_keys:
         warn_patch_stack('H3 EAV + BlockCache requires only the boundary block 0/49 replacements')
+    if not isinstance(dit_replacements, Mapping):
+        raise TypeError("H3 DiT replacements must be a mapping")
+    cache_module = sys.modules.get(type(prototype).__module__)
+    cache_patch_type = getattr(cache_module, "H3BlockPatch", None)
     for key, patch in dit_replacements.items():
+        if cache_patch_type is None or type(patch) is not cache_patch_type:
+            warn_patch_stack(f'H3 EAV + BlockCache preserves external DiT owner at {key}; cache coverage is unverified')
+            continue
         if int(getattr(patch, "block_index", -1)) != int(key[1]):
             raise RuntimeError("H3 EAV + BlockCache boundary patch identity is invalid")
 
     hashes = {
-        "outer_wrapper": _source_sha256(outer_wrappers[0]),
-        "diffusion_wrapper": _source_sha256(diffusion_wrappers[0]),
-        "cache_class": _source_sha256(type(prototype)),
-        "patch_call": _source_sha256(type(next(iter(dit_replacements.values()))).__call__),
-        "config_class": _source_sha256(type(config)),
+        "outer_wrapper": _diagnostic_source_sha256(outer_wrappers[0]),
+        "diffusion_wrapper": _diagnostic_source_sha256(diffusion_wrappers[0]),
+        "cache_class": _diagnostic_source_sha256(type(prototype)),
+        "patch_call": _diagnostic_source_sha256(type(next(iter(dit_replacements.values()))).__call__) if dit_replacements else None,
+        "config_class": _diagnostic_source_sha256(type(config)),
     }
     expected_hashes = {
         "outer_wrapper": BLOCK_CACHE_OUTER_WRAPPER_SHA256S,
@@ -2432,16 +2450,11 @@ def build_eav_block_cache_model(
     patched.remove_wrappers_with_key(wrapper_type, EAV_WRAPPER_KEY)
     patched_transformer = patched.model_options.get("transformer_options", {}).copy()
     patched_transformer[BLOCK_CACHE_KEY] = cache_contract["prototype"]
+    replacements = dict(patched_transformer.get("patches_replace", {}))
+    dit = dict(replacements.get("dit", {}))
+    dit.update(cache_contract["replacements"])
+    patched_transformer["patches_replace"] = {**replacements, "dit": dit}
     patched.model_options["transformer_options"] = patched_transformer
-    for (block_name, block_index), replacement in cache_contract[
-        "replacements"
-    ].items():
-        patched.set_model_patch_replace(
-            replacement,
-            "dit",
-            block_name,
-            int(block_index),
-        )
 
     installed = patched.model_options["transformer_options"].get(
         "optimized_attention_override"
@@ -2529,7 +2542,7 @@ def build_eav_block_cache_model(
                 int(getattr(runtime_cache, "cache_hits", -1)),
             )
             result = block_cache_diffusion_wrapper(
-                cache_finalization_executor(executor, timestep, transformer_options),
+                cache_finalization_executor(executor, timestep, transformer_options, cache_wrapper=block_cache_diffusion_wrapper),
                 x,
                 timestep,
                 context,
@@ -2546,6 +2559,11 @@ def build_eav_block_cache_model(
                 decision = "full"
             elif delta == (1, 0, 1):
                 decision = "hit"
+            elif delta == (0, 0, 0):
+                # A retained user block owner need not invoke the cache hooks.
+                # Report the observed bypass, never a fabricated full/cache hit.
+                decision = "bypassed"
+                warn_patch_stack('H3 EAV + BlockCache hooks were bypassed by the retained execution path; cache optimization is not verified')
             else:
                 raise RuntimeError(
                     "H3 EAV + BlockCache observed an unauditable cache transition: "
@@ -2654,16 +2672,20 @@ def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
         else:
             forwards = report["forwards"]
             decisions = [forward.get("block_cache_decision") for forward in forwards]
-            if not decisions or any(value not in {"full", "hit"} for value in decisions):
+            if not decisions or any(value not in {"full", "hit", "bypassed"} for value in decisions):
                 raise RuntimeError(
                     "H3 EAV + BlockCache requires one audited full/hit decision per forward; "
                     f"observed {decisions}"
                 )
-            if decisions[0] != "full":
+            if decisions[0] not in {"full", "bypassed"}:
                 raise RuntimeError("H3 EAV + BlockCache first forward must warm with a full pass")
             consecutive_hits = 0
             max_observed_hits = 0
             for forward, decision in zip(forwards, decisions, strict=True):
+                if decision == "bypassed":
+                    warn_patch_stack('H3 EAV + BlockCache audit observed a bypassed cache owner; retained user computation is not cache/effect qualification')
+                    consecutive_hits = 0
+                    continue
                 expected_count = 0
                 if bool(forward["active"]):
                     expected_count = 1 if decision == "hit" else 50
@@ -2681,13 +2703,15 @@ def finalize_eav_runtime(av_latent, runtime: EAVRuntime):
                 )
             hit_count = decisions.count("hit")
             full_count = decisions.count("full")
+            bypassed_count = decisions.count("bypassed")
             report["block_cache"] = {
                 "model_forwards": len(decisions),
                 "full_forwards": full_count,
                 "cache_hits": hit_count,
+                "bypassed_forwards": bypassed_count,
                 "hit_rate": hit_count / len(decisions),
                 "max_consecutive_hits_observed": max_observed_hits,
-                "active_measurements_expected_from_decisions": sum(
+                "active_measurements_expected_from_decisions": None if bypassed_count else sum(
                     0
                     if not bool(forward["active"])
                     else (1 if decision == "hit" else 50)

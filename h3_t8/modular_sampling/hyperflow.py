@@ -33,10 +33,12 @@ def implementation():
     from .. import sampling
     from . import hyperflow_identity, hyperflow_effects, eav, effect_identity
     from .. import prompt_relay_advanced, enhance_a_video_advanced
+    from .. import multikeyframe_advanced, h3_core_compat, conditioning, keyframe_positions
     import comfy.samplers
     import comfy.model_patcher
     modules = (native, runtime, legacy, sampling, cleanup, comfy.sample, comfy.samplers, comfy.model_patcher,
-               hyperflow_identity, hyperflow_effects, eav, effect_identity, prompt_relay_advanced, enhance_a_video_advanced)
+               hyperflow_identity, hyperflow_effects, eav, effect_identity, prompt_relay_advanced, enhance_a_video_advanced,
+               multikeyframe_advanced, h3_core_compat, conditioning, keyframe_positions)
     paths = {Path(module.__file__).resolve() for module in modules} | {Path(__file__).resolve()}
     return {path.as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
@@ -101,6 +103,13 @@ class ContinuousBoundary:
     x_sigma: torch.Tensor
     scaffold: dict
     receipt_json: str
+    inpaint: dict | None = None
+
+    def state(self):
+        state = {"x_sigma": self.x_sigma, "scaffold": self.scaffold}
+        if self.inpaint is not None:
+            state["inpaint"] = self.inpaint
+        return state
 
     def verify(self):
         receipt = json.loads(self.receipt_json)
@@ -117,10 +126,29 @@ class ContinuousBoundary:
         _finite_av(self.scaffold)
         packed, _ = comfy.utils.pack_latents(self.scaffold["samples"].unbind())
         if (not isinstance(self.x_sigma, torch.Tensor) or self.x_sigma.shape != packed.shape
-                or self.x_sigma.dtype != torch.float32 or not bool(torch.isfinite(self.x_sigma).all())
-                or self.scaffold.get("noise_mask") is not None):
+                or self.x_sigma.dtype != torch.float32 or not bool(torch.isfinite(self.x_sigma).all())):
             raise ValueError("HyperFlow continuous raw state/scaffold changed")
-        if receipt["outputs"] != snapshot({"x_sigma": self.x_sigma, "scaffold": self.scaffold}):
+        legacy.validate_noise_mask(self.scaffold)
+        if self.inpaint is not None:
+            if type(self.inpaint) is not dict or set(self.inpaint) != {"source", "noise"}:
+                raise ValueError("HyperFlow inpaint boundary requires its original source and prepared noise")
+            source, noise = self.inpaint["source"], self.inpaint["noise"]
+            if type(source) is not dict:
+                raise ValueError("HyperFlow inpaint source must be the original AV LATENT dictionary")
+            expected_shapes = [tuple(part.shape) for part in _finite_av(self.scaffold)]
+            if (source.get("noise_mask") is None or self.scaffold.get("noise_mask") is None
+                    or [tuple(part.shape) for part in _finite_av(source)] != expected_shapes
+                    or [tuple(part.shape) for part in _finite_av({"samples": noise})] != expected_shapes
+                    or snapshot(source["noise_mask"]) != snapshot(self.scaffold["noise_mask"])):
+                raise ValueError("HyperFlow inpaint source/noise geometry or mask changed")
+            legacy.validate_noise_mask(source)
+            if receipt["request"].get("inpaint_reference") != snapshot(self.inpaint):
+                raise ValueError("HyperFlow inpaint state differs from the actual HEAD request")
+        elif self.scaffold.get("noise_mask") is not None:
+            raise ValueError("HyperFlow masked boundary is missing its original inpaint state")
+        elif "inpaint_reference" in receipt["request"]:
+            raise ValueError("HyperFlow boundary lost its original inpaint context")
+        if receipt["outputs"] != snapshot(self.state()):
             raise ValueError("HyperFlow boundary tensor or metadata contents changed")
         execution = receipt["execution"]
         if execution["callbacks"] != list(range(stop)) or execution["endpoint_captures"] != 1:
@@ -142,6 +170,7 @@ def _run(model, plan, source, positive, negative, noise, *, seed, cfg, reserve_v
          callback=None, x_sigma=None, capture_endpoint=False):
     _parameters(seed, cfg, reserve_vram_mib)
     _finite_av(source)
+    legacy.validate_noise_mask(source)
     if [tuple(x.shape) for x in _finite_av({"samples": noise})] != [tuple(x.shape) for x in source["samples"].unbind()]:
         raise ValueError("HyperFlow stage noise geometry changed")
     request = {"plan": plan.as_report(), "model": model_selection(model),
@@ -149,6 +178,8 @@ def _run(model, plan, source, positive, negative, noise, *, seed, cfg, reserve_v
         "seed": seed, "cfg": cfg, "reserve_vram_mib": reserve_vram_mib,
         "inputs": snapshot({"source": source, "positive": positive, "negative": negative, "noise": noise, "x_sigma": x_sigma}),
         "implementation": implementation()}
+    if source.get("noise_mask") is not None and plan.start_interval == 0:
+        request["inpaint_reference"] = snapshot({"source": source, "noise": noise})
     captured = {}
     execution = {"callbacks": [], "actual_apply_intervals": [], "endpoint_captures": 0,
         "resource_snapshots": [], "portable_identity": False}
@@ -191,6 +222,7 @@ def _run(model, plan, source, positive, negative, noise, *, seed, cfg, reserve_v
             resources()
             result = cleanup._native_stage(branch, sampler, sigmas, source["samples"], noise,
                 positive, negative, cfg, seed, progress,
+                denoise_mask=source.get("noise_mask"),
                 preview_phase="low" if plan.start_interval == 0 else "high",
                 preview_offset=plan.start_interval, preview_total=8)
         if effects is not None:
@@ -222,10 +254,14 @@ def sample_head(model, source, positive, negative, noise, *, seed, split_interva
         seed=seed, cfg=cfg, callback=callback, reserve_vram_mib=reserve_vram_mib, capture_endpoint=True)
     if "x_sigma" not in captured:
         raise RuntimeError("HyperFlow HEAD returned without its exact x_sigma")
+    inpaint = {"source": dict(source), "noise": noise} if source.get("noise_mask") is not None else None
+    state = {"x_sigma": captured["x_sigma"], "scaffold": output}
+    if inpaint is not None:
+        state["inpaint"] = inpaint
     receipt = {"schema": SCHEMA, "request": request, "request_sha256": sha(request),
-        "outputs": snapshot({"x_sigma": captured["x_sigma"], "scaffold": output}), "execution": execution}
+        "outputs": snapshot(state), "execution": execution}
     receipt["receipt_sha256"] = sha(receipt)
-    boundary = ContinuousBoundary(captured["x_sigma"], output, canonical(receipt))
+    boundary = ContinuousBoundary(captured["x_sigma"], output, canonical(receipt), inpaint)
     boundary.verify()
     return boundary
 
@@ -258,8 +294,10 @@ def sample_tail(boundary, model, positive, negative, *, seed, cfg=1., callback=N
     for field in ("video_sigmas", "audio_sigmas"):
         if list(getattr(plan, field)) != low["request"]["plan"][field]:
             raise ValueError("HyperFlow continuous AV clocks changed")
-    empty_noise = comfy.sample.prepare_empty_noise(boundary.scaffold["samples"])
-    output, _, request, execution = _run(model, plan, boundary.scaffold, positive, negative, empty_noise,
+    source = boundary.scaffold if boundary.inpaint is None else boundary.inpaint["source"]
+    noise = (comfy.sample.prepare_empty_noise(boundary.scaffold["samples"]) if boundary.inpaint is None
+             else boundary.inpaint["noise"])
+    output, _, request, execution = _run(model, plan, source, positive, negative, noise,
         seed=seed, cfg=cfg, callback=callback, reserve_vram_mib=reserve_vram_mib, x_sigma=boundary.x_sigma)
     boundary.verify()
     report = {"schema": "t8.modular-sampling.hyperflow-continuous-tail.v1", "request": request,

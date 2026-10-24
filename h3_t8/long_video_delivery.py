@@ -30,6 +30,8 @@ from .long_video import (
     FRAME_RESCALE,
     LONG_VIDEO_SCHEMA,
     STATE_FOLDER,
+    _context_audio_overhang,
+    _validate_context_tail_values,
     pixel_frames_from_latent_t,
     sanitize_chain_id,
 )
@@ -814,6 +816,7 @@ def _write_context_candidate(
 
     video_tail = video[:1, :, -video_steps:].detach().cpu().contiguous()
     audio_tail = audio[:1, :, :, -audio_steps:].detach().cpu().contiguous()
+    _validate_context_tail_values(video_tail, audio_tail)
     audio_overhang = int(audio.shape[-1]) - FRAME_RESCALE * total_frames
     if not 0.0 <= audio_overhang < 1.0:
         audio_overhang = 0.0
@@ -868,6 +871,7 @@ def _load_accepted_context_file(
             raise ValueError(f"Invalid H3 T8 context tensor keys in {path}: {sorted(keys)}")
         video_tail = handle.get_tensor("video_tail")
         audio_tail = handle.get_tensor("audio_tail")
+    _validate_context_tail_values(video_tail, audio_tail)
     required = {
         "schema", "chain_id", "source_segment_index", "fps", "source_total_frames",
         "max_context_frames", "video_shape", "audio_shape", "video_dtype", "audio_dtype",
@@ -907,7 +911,7 @@ def _load_accepted_context_file(
         "fps": FPS,
         "source_total_frames": int(metadata["source_total_frames"]),
         "max_context_frames": max_context_frames,
-        "audio_overhang": float(metadata["audio_overhang"]),
+        "audio_overhang": _context_audio_overhang(metadata),
         "model_id": metadata.get("model_id", "unknown"),
         "sampling_summary": metadata.get("sampling_summary", "unknown"),
         "path": str(path),

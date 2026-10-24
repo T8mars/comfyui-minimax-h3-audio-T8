@@ -48,7 +48,12 @@ def native_layout():
 
 def test_append_only_three_isolated_nodes_and_safe_defaults():
     all_nodes = asyncio.run(package.comfy_entrypoint().get_node_list())
-    assert all_nodes[-3:] == nodes.NODES
+    # These were the tail when R2VA shipped; later append-only node groups must
+    # not make the original contiguous registration contract fail forever.
+    predecessor = package._h07_delivery_node_classes[-1]
+    start = all_nodes.index(predecessor) + 1
+    assert all_nodes[start:start + 3] == nodes.NODES
+    assert start > all_nodes.index(package._veda_sparse_node_classes[-1])
     assert len({n.__name__ for n in all_nodes}) == len(all_nodes)
     info = nodes.MiniMaxH3VedaR2VAApplyEXPT8.define_schema().get_v1_info(nodes.MiniMaxH3VedaR2VAApplyEXPT8)
     assert info.input["required"]["mode"][1]["default"] == "report_only"

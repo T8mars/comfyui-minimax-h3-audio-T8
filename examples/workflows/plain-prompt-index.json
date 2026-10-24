@@ -1,6 +1,6 @@
 {
   "schema": "t8.ordinary-prompt-examples.v1",
-  "source_count": 918,
+  "source_count": 924,
   "rows": [
     {
       "source": "examples/workflows/04-long-video/2026-08-20_H3_Prompt_Relay_Long_Video_Turbo8_Advanced_EXP.json",
@@ -7703,6 +7703,426 @@
       "links": 201
     },
     {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "e08f79570237bdc63899348e70e66b63a60d30c11e637a2abad5abdf718f2bf0",
+      "ordinary_sha256": "a7aa49d4537e36302bea7e61e353c071743c3d7a8f5d00dda74730bd8eed29f2",
+      "source_title": "S24_Face_anime_combined_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 24,
+      "links": 53
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "dc5c6f51cd975ae5bded4a4cc5a84a9f861397bc657ba2da3cefc272da168b70",
+      "ordinary_sha256": "4e545ace19f1b87693139929113c7c6bafeb271afe634c0e358d9a8ab559885c",
+      "source_title": "S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 17,
+      "links": 30
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "fe38a5fe72b9af3c6d42fc1cb54e6866bcdf92cf05623477ad3749b286e96483",
+      "ordinary_sha256": "42225a7e1bbd4bd0026d15bb531caca22eea869f555d90ef0fc523b485d34752",
+      "source_title": "S24_Face_anime_combined_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 25,
+      "links": 54
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "1e42d5c3af6a1c39eb294f3f110ec9b80a7c49d989278b2acb0f66dc97aa86ab",
+      "ordinary_sha256": "f597acdf4bafae086a4e4f2b40871099d5a42a321503387df665a0778703da16",
+      "source_title": "S24_Face_anime_relay_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 21,
+      "links": 46
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "9706ba2c06d3ec9e17525533279b455f33bb80aa7f32963ee88f71fd23d63c81",
+      "ordinary_sha256": "e7506847a642c932df3d95e31bbb5aa002982cb91ff251d8d548f1af5225d78b",
+      "source_title": "S24_Face_anime_relay_cold_delivery_Separate_Stage_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 17,
+      "links": 30
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "7b208dc3c2219c706bf7301bf7635c1deabefb07428ea669582c6495725f307b",
+      "ordinary_sha256": "4fd9901a54599a08ac6e9e9ab123a472c0fe89eda112ba81685f014c29f464dc",
+      "source_title": "S24_Face_anime_relay_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 22,
+      "links": 47
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "d9db018d2d4ba39c81ab8bb79b24417e1f0d5fc63030006629fd6a7feea7559e",
+      "ordinary_sha256": "45e809e693cc14b44a09386a59c4ae63483863ba1daef3d17fb59225552580d3",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 58,
+      "links": 132
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "2a160ab3d2095cb97a85201027452c15d5e6927c9ced25598a33be54167a5a71",
+      "ordinary_sha256": "63e45b0ae50c23ece89b29976c2c5d8a56c1167c62ed3b8586f3a23bc9ab7e5a",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 40,
+      "links": 82
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "ce1c4b4056713e7b2e1d73ed70e4edecf897967a8a68d89252109dcae34fb405",
+      "ordinary_sha256": "5136a6427d7745ff78264a23a6febf0f0b9adf4341b843b0b33a760327393875",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 60,
+      "links": 134
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "af4df5cda677462b6c225474f62e7214112a3c63118dbf57289f417099cc5637",
+      "ordinary_sha256": "0c7b5228847710c86c56f8cfd483ed2ed8ce98fab9c484c3a4428f566decbf19",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 52,
+      "links": 118
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "ed4c904c55a6c72a00c42e43a25c8f02fb879d3e096e26081e59f8a411b3e9f5",
+      "ordinary_sha256": "c2581b588fc32d33c90247f233449844cdb6810c6896d9f17bfd78215bf94284",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 40,
+      "links": 82
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "f3edc8dd481d7b39d29ede5eae08c8bd30fdd0b6686a4fb6b11249438325ebaa",
+      "ordinary_sha256": "862f633f8e54f3b089031a5e6b2f1ad6c79db72690ac8f32de887ea6834399d7",
+      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 54,
+      "links": 120
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "f5c9094f9df65546e11c5552a42cdf7cb129e52516fa448c3e6a2433e944317f",
+      "ordinary_sha256": "b3c484fbb63cca98939a825c06efc6ae8c6022f9ff754cc11d91908b6618308e",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 19,
+      "nodes": 80,
+      "links": 193
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "c671bab98b782b71764fc42b6f7436b70c97dcfc5941298678cf22b6e09f88a6",
+      "ordinary_sha256": "ccdfb537134ed2659e7468c5ee796bde2b505ca4b367b236b01751fd9517196c",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 53,
+      "links": 118
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "3a04639bacc64d435da84328943826e282fd94c983e269694533119babb441c9",
+      "ordinary_sha256": "f73ff00020fe98b396e1d7e2ddf1310ef9a52d5e3d1d69b0de275732a0bb26ad",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 19,
+      "nodes": 83,
+      "links": 196
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "12c256fd30dec872c20748afe5982419bbe89a264bbd2dfb1ab98eac2f3526ee",
+      "ordinary_sha256": "c2e20e946ca69272cfd16bb6e642cf452c50caed71d1417bd2e53ff9e2a9eb8a",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 19,
+      "nodes": 71,
+      "links": 172
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "e7fc907ee6dc2f3674080085d966b53581fea6a8d6fbd8736c2ccb21cb9092de",
+      "ordinary_sha256": "772e65bafe635b2ad68ea0eef5e8d6180b7cff24da7e29a464d9e9e8c61c4010",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 53,
+      "links": 118
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "b57baa57b50e916498cfc16ad8a8b4d61ab35ba9edd9eea88e69a53ac6ecbce0",
+      "ordinary_sha256": "8632ba29a840243b663f15e53afa62a56a55d1142f8cc4ef81afe14f52ed8083",
+      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
+      "critical_nodes_preserved": 19,
+      "nodes": 74,
+      "links": 175
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "0dc9332c9a256afc4656f9d7552c2c4879d4c389f2ac63570c89ab414adeb378",
+      "ordinary_sha256": "a9d9f05b4900af25e739d5a4330d38d124fcdddc75d789055c00e00044193364",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 32,
+      "links": 66
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "71efc9dbe553b3d848bfc34492a7d1e26f00b5834097098b933889b5108a1c57",
+      "ordinary_sha256": "8b4c2c5df5fb2da2cfee4bab6a9e4149fe49dbf099f3b371d6926ba8e65a4a7f",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 6,
+      "nodes": 24,
+      "links": 44
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "dd397c3b10c8083f8c0c035e0762249cb0b18ce4c589c356d5f63d85cf146893",
+      "ordinary_sha256": "3c7c9ae897df521c2a8aa32127a1c7584a51f4ea8ea6b34e706a6c7e55ffed2d",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 33,
+      "links": 67
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "87cdc2ff5f197610185878475c679aa646920df2b2a933dffc979b85bd166591",
+      "ordinary_sha256": "17b71b112c89cab27eeaae3acadb53c62abf1810f5e1ffb5a384335e90f0ea8e",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 29,
+      "links": 59
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "e49e191c92d33645c90d05e50b6904f2aa68c4943238b132df8c69c2a77db420",
+      "ordinary_sha256": "8381021109a5fe317e68067e8a39db06279743cc1b4a7213fc7e7f5d14bd2776",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 6,
+      "nodes": 24,
+      "links": 44
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "af461a356c16a9eedabe49eaed898c9802ba28c1778d814767081f236a4589fe",
+      "ordinary_sha256": "79e99c9db8fe17e81826f887aa9df9d2f36ecd2bf487fbd3e7ae09369ed5aad7",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 30,
+      "links": 60
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "84aa39fdbed36dffbe01a0832796dec17c3ada9480655ef88a8e6d8ae2d7fc30",
+      "ordinary_sha256": "312ec3f55dee45900592fc2cb6c9eca1e332590021dd0fef0c94860483f76510",
+      "source_title": "S24_Face_standard_combined_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 24,
+      "links": 53
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "c1cdd195b2b0747a5e1ef3786959e7d37a9de910498d6428b1b98fc735243079",
+      "ordinary_sha256": "9e64ccb18b4c02127ad00e5b581c7d9e2ab2ce9637c603151e0cccf941eca61e",
+      "source_title": "S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 17,
+      "links": 30
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "995693944030c48e4c9ad3c70ffca60562368958fe404e196b2cd1c4aa00bb32",
+      "ordinary_sha256": "f417bda41a3dd481a995f2cf0aba0930a9389f29ea04f5bddf99d5185900cd75",
+      "source_title": "S24_Face_standard_combined_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 25,
+      "links": 54
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "cbaaa8a27a235b335cfbcc24d55e4f420dc979df8f2a650b2bc39b702dfea35f",
+      "ordinary_sha256": "c7d83f9ce702298081950c50b643d3c7e68cd71afb182c2c36306e6f42681b84",
+      "source_title": "S24_Face_standard_relay_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 21,
+      "links": 46
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "5e4af2eacf43330843f4c8ddf84499fa65b5a23ff98d425fd6d4140f6209cbef",
+      "ordinary_sha256": "429eb5b610e9bf9a459cb252d2caeb4e7638ad88ff0ed2e6826e5bceb968e4dc",
+      "source_title": "S24_Face_standard_relay_cold_delivery_Separate_Stage_EXP",
+      "critical_nodes_preserved": 4,
+      "nodes": 17,
+      "links": 30
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "cd1f9abe14e8b08d618dbc62557a1c693be280d5aa1ca58ba7ec1a9b323bc1eb",
+      "ordinary_sha256": "4e8604c5438373d8565d6b31e11ca3d2a24466b6d34a996d3889c9ebf69a57b6",
+      "source_title": "S24_Face_standard_relay_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 22,
+      "links": 47
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "dbf1fd2776ebc8bc324e1a5e79ec0408c0e1cc1753a926f42664afda39c9be80",
+      "ordinary_sha256": "443a4e946e8dc366e674c84cc0b15476161be5c8aed9fbf342a62e304f8d2308",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 35,
+      "links": 84
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "c8be2c3754819e81ea5bf4be635022f1a0cb14812161c73f6308fb71d1068c79",
+      "ordinary_sha256": "139b08646a08381ece3d4867e22ce1806066ae9f66ab983b9da3fc2788326eef",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 9,
+      "nodes": 27,
+      "links": 57
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "4f5f6cc5a3e08c23d6962e5e773ea25795a7f6245f32c2d99409169e458b0444",
+      "ordinary_sha256": "1640282597388377dff2f4e55e300b16e5afc7e40ad0176aecaa2e7504404357",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 36,
+      "links": 85
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "c6eeeb970cf2a147eff171e86c18490d98e2838fb0482d495fde2eaca84ff4fe",
+      "ordinary_sha256": "7983f69900dc2c5efde173f949c6311eb5240847a0647291247ce273974ddf47",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 32,
+      "links": 77
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "fc56715b63771bdd04f8d67410fdd307a90a0c76c9f47e4e4753288408a97814",
+      "ordinary_sha256": "7f64edb6d4ba9076d4cc52bde7d52b9a60c3ea2fede6e3a0ddab2a065e7088d1",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 9,
+      "nodes": 27,
+      "links": 57
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "3c16d9fd8820d3f3bfd27666e2fa515c7f51049877d4068ed4125e03209f95cf",
+      "ordinary_sha256": "9bc8d2762a4f0ccb4a0b11361a8f5838bb98a82890199ab9b383b78aa26428ed",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 14,
+      "nodes": 33,
+      "links": 78
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "1fe34bc92e6c32244ee5eeb0ecaa96c97d6796817557d3c83cf079b88e37b7b9",
+      "ordinary_sha256": "56a62798415a99f3352b314c318c00183e908698d0b8c552e30e270fc4b7c268",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 17,
+      "nodes": 37,
+      "links": 92
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "69c1d5fd8eb76234ab97a27947a73f65a2368eff46dfe513096737335f50a14d",
+      "ordinary_sha256": "894219a5a1347aa976b9867813a8d8e67037db37c7a9bf7ca3b98b9398ff014c",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 12,
+      "nodes": 29,
+      "links": 65
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "5c48d2aba2f6a7e9b6b0ecf11f724cd9118d29bf15e55aac1d981f0c73882b9c",
+      "ordinary_sha256": "37d664939599dbd76167af66b3036a8cbc89a42a76297a8a9c8bcf4e1b7b86d9",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 17,
+      "nodes": 38,
+      "links": 93
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "b79d5e3f0ae6af7d68d18b48b6492fe65b9d6d04aae721b8b3e563f08caf24af",
+      "ordinary_sha256": "7145ef067c6f9b0e9d24a205e09be08084d2604e61c7ec6da5af04437ce43f0d",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 17,
+      "nodes": 34,
+      "links": 85
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_cold_delivery_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_cold_delivery_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "ba054a31ad9bffc05a65e1e6b9f2655b495535a736cff8da9d92604f0cb6f5e7",
+      "ordinary_sha256": "8905efd5177d9db4d77b050ebd75a7b0669a3f87476ac412a17e3ccd86b0b0c4",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 12,
+      "nodes": 29,
+      "links": 65
+    },
+    {
+      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "53b77caa58766f814652342072c9d164432c0cbeb316dd6c4d87299edf348cd6",
+      "ordinary_sha256": "34bd31f491366e0d4a03344a5a70241635bd5f6dcc4ae0859cab7c0078bfcdd1",
+      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
+      "critical_nodes_preserved": 17,
+      "nodes": 35,
+      "links": 86
+    },
+    {
       "source": "examples/workflows/56-face-refine-split/frozen-multiface-source-exp/S24_Face_multiface2_combined_full_save_Frozen_Source_EXP.json",
       "ordinary": "examples/workflows/56-face-refine-split/frozen-multiface-source-exp/S24_Face_multiface2_combined_full_save_Frozen_Source_EXP_普通提示词.json",
       "source_sha256": "2f98786721465f7e26df7c5881724feb531c75fa28c41edef4dcd669657d0d80",
@@ -7743,426 +8163,6 @@
       "links": 55
     },
     {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "dc5c6f51cd975ae5bded4a4cc5a84a9f861397bc657ba2da3cefc272da168b70",
-      "ordinary_sha256": "4e545ace19f1b87693139929113c7c6bafeb271afe634c0e358d9a8ab559885c",
-      "source_title": "S24_Face_anime_combined_cold_delivery_Separate_Stage_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 17,
-      "links": 30
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "fe38a5fe72b9af3c6d42fc1cb54e6866bcdf92cf05623477ad3749b286e96483",
-      "ordinary_sha256": "42225a7e1bbd4bd0026d15bb531caca22eea869f555d90ef0fc523b485d34752",
-      "source_title": "S24_Face_anime_combined_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 25,
-      "links": 54
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "e08f79570237bdc63899348e70e66b63a60d30c11e637a2abad5abdf718f2bf0",
-      "ordinary_sha256": "a7aa49d4537e36302bea7e61e353c071743c3d7a8f5d00dda74730bd8eed29f2",
-      "source_title": "S24_Face_anime_combined_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 24,
-      "links": 53
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "9706ba2c06d3ec9e17525533279b455f33bb80aa7f32963ee88f71fd23d63c81",
-      "ordinary_sha256": "e7506847a642c932df3d95e31bbb5aa002982cb91ff251d8d548f1af5225d78b",
-      "source_title": "S24_Face_anime_relay_cold_delivery_Separate_Stage_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 17,
-      "links": 30
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "7b208dc3c2219c706bf7301bf7635c1deabefb07428ea669582c6495725f307b",
-      "ordinary_sha256": "4fd9901a54599a08ac6e9e9ab123a472c0fe89eda112ba81685f014c29f464dc",
-      "source_title": "S24_Face_anime_relay_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 22,
-      "links": 47
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_anime_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_anime_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "1e42d5c3af6a1c39eb294f3f110ec9b80a7c49d989278b2acb0f66dc97aa86ab",
-      "ordinary_sha256": "f597acdf4bafae086a4e4f2b40871099d5a42a321503387df665a0778703da16",
-      "source_title": "S24_Face_anime_relay_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 21,
-      "links": 46
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "2a160ab3d2095cb97a85201027452c15d5e6927c9ced25598a33be54167a5a71",
-      "ordinary_sha256": "63e45b0ae50c23ece89b29976c2c5d8a56c1167c62ed3b8586f3a23bc9ab7e5a",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 40,
-      "links": 82
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "ce1c4b4056713e7b2e1d73ed70e4edecf897967a8a68d89252109dcae34fb405",
-      "ordinary_sha256": "5136a6427d7745ff78264a23a6febf0f0b9adf4341b843b0b33a760327393875",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 60,
-      "links": 134
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "d9db018d2d4ba39c81ab8bb79b24417e1f0d5fc63030006629fd6a7feea7559e",
-      "ordinary_sha256": "45e809e693cc14b44a09386a59c4ae63483863ba1daef3d17fb59225552580d3",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 58,
-      "links": 132
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "ed4c904c55a6c72a00c42e43a25c8f02fb879d3e096e26081e59f8a411b3e9f5",
-      "ordinary_sha256": "c2581b588fc32d33c90247f233449844cdb6810c6896d9f17bfd78215bf94284",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 40,
-      "links": 82
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "f3edc8dd481d7b39d29ede5eae08c8bd30fdd0b6686a4fb6b11249438325ebaa",
-      "ordinary_sha256": "862f633f8e54f3b089031a5e6b2f1ad6c79db72690ac8f32de887ea6834399d7",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 54,
-      "links": 120
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface2_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface2_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "af4df5cda677462b6c225474f62e7214112a3c63118dbf57289f417099cc5637",
-      "ordinary_sha256": "0c7b5228847710c86c56f8cfd483ed2ed8ce98fab9c484c3a4428f566decbf19",
-      "source_title": "H3_SAM31_2Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 52,
-      "links": 118
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "c671bab98b782b71764fc42b6f7436b70c97dcfc5941298678cf22b6e09f88a6",
-      "ordinary_sha256": "ccdfb537134ed2659e7468c5ee796bde2b505ca4b367b236b01751fd9517196c",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 53,
-      "links": 118
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "3a04639bacc64d435da84328943826e282fd94c983e269694533119babb441c9",
-      "ordinary_sha256": "f73ff00020fe98b396e1d7e2ddf1310ef9a52d5e3d1d69b0de275732a0bb26ad",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 19,
-      "nodes": 83,
-      "links": 196
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "f5c9094f9df65546e11c5552a42cdf7cb129e52516fa448c3e6a2433e944317f",
-      "ordinary_sha256": "b3c484fbb63cca98939a825c06efc6ae8c6022f9ff754cc11d91908b6618308e",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 19,
-      "nodes": 80,
-      "links": 193
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "e7fc907ee6dc2f3674080085d966b53581fea6a8d6fbd8736c2ccb21cb9092de",
-      "ordinary_sha256": "772e65bafe635b2ad68ea0eef5e8d6180b7cff24da7e29a464d9e9e8c61c4010",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 53,
-      "links": 118
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "b57baa57b50e916498cfc16ad8a8b4d61ab35ba9edd9eea88e69a53ac6ecbce0",
-      "ordinary_sha256": "8632ba29a840243b663f15e53afa62a56a55d1142f8cc4ef81afe14f52ed8083",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 19,
-      "nodes": 74,
-      "links": 175
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_multiface3_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_multiface3_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "12c256fd30dec872c20748afe5982419bbe89a264bbd2dfb1ab98eac2f3526ee",
-      "ordinary_sha256": "c2e20e946ca69272cfd16bb6e642cf452c50caed71d1417bd2e53ff9e2a9eb8a",
-      "source_title": "H3_SAM31_3Person_Face_Refine_Advanced_EXP",
-      "critical_nodes_preserved": 19,
-      "nodes": 71,
-      "links": 172
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "71efc9dbe553b3d848bfc34492a7d1e26f00b5834097098b933889b5108a1c57",
-      "ordinary_sha256": "8b4c2c5df5fb2da2cfee4bab6a9e4149fe49dbf099f3b371d6926ba8e65a4a7f",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 6,
-      "nodes": 24,
-      "links": 44
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "dd397c3b10c8083f8c0c035e0762249cb0b18ce4c589c356d5f63d85cf146893",
-      "ordinary_sha256": "3c7c9ae897df521c2a8aa32127a1c7584a51f4ea8ea6b34e706a6c7e55ffed2d",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 33,
-      "links": 67
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "0dc9332c9a256afc4656f9d7552c2c4879d4c389f2ac63570c89ab414adeb378",
-      "ordinary_sha256": "a9d9f05b4900af25e739d5a4330d38d124fcdddc75d789055c00e00044193364",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 32,
-      "links": 66
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "e49e191c92d33645c90d05e50b6904f2aa68c4943238b132df8c69c2a77db420",
-      "ordinary_sha256": "8381021109a5fe317e68067e8a39db06279743cc1b4a7213fc7e7f5d14bd2776",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 6,
-      "nodes": 24,
-      "links": 44
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "af461a356c16a9eedabe49eaed898c9802ba28c1778d814767081f236a4589fe",
-      "ordinary_sha256": "79e99c9db8fe17e81826f887aa9df9d2f36ecd2bf487fbd3e7ae09369ed5aad7",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 30,
-      "links": 60
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_parity_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_parity_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "87cdc2ff5f197610185878475c679aa646920df2b2a933dffc979b85bd166591",
-      "ordinary_sha256": "17b71b112c89cab27eeaae3acadb53c62abf1810f5e1ffb5a384335e90f0ea8e",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 29,
-      "links": 59
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "c1cdd195b2b0747a5e1ef3786959e7d37a9de910498d6428b1b98fc735243079",
-      "ordinary_sha256": "9e64ccb18b4c02127ad00e5b581c7d9e2ab2ce9637c603151e0cccf941eca61e",
-      "source_title": "S24_Face_standard_combined_cold_delivery_Separate_Stage_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 17,
-      "links": 30
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "995693944030c48e4c9ad3c70ffca60562368958fe404e196b2cd1c4aa00bb32",
-      "ordinary_sha256": "f417bda41a3dd481a995f2cf0aba0930a9389f29ea04f5bddf99d5185900cd75",
-      "source_title": "S24_Face_standard_combined_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 25,
-      "links": 54
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "84aa39fdbed36dffbe01a0832796dec17c3ada9480655ef88a8e6d8ae2d7fc30",
-      "ordinary_sha256": "312ec3f55dee45900592fc2cb6c9eca1e332590021dd0fef0c94860483f76510",
-      "source_title": "S24_Face_standard_combined_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 24,
-      "links": 53
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "5e4af2eacf43330843f4c8ddf84499fa65b5a23ff98d425fd6d4140f6209cbef",
-      "ordinary_sha256": "429eb5b610e9bf9a459cb252d2caeb4e7638ad88ff0ed2e6826e5bceb968e4dc",
-      "source_title": "S24_Face_standard_relay_cold_delivery_Separate_Stage_EXP",
-      "critical_nodes_preserved": 4,
-      "nodes": 17,
-      "links": 30
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "cd1f9abe14e8b08d618dbc62557a1c693be280d5aa1ca58ba7ec1a9b323bc1eb",
-      "ordinary_sha256": "4e8604c5438373d8565d6b31e11ca3d2a24466b6d34a996d3889c9ebf69a57b6",
-      "source_title": "S24_Face_standard_relay_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 22,
-      "links": 47
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_standard_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_standard_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "cbaaa8a27a235b335cfbcc24d55e4f420dc979df8f2a650b2bc39b702dfea35f",
-      "ordinary_sha256": "c7d83f9ce702298081950c50b643d3c7e68cd71afb182c2c36306e6f42681b84",
-      "source_title": "S24_Face_standard_relay_Separate_Stage_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 21,
-      "links": 46
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "c8be2c3754819e81ea5bf4be635022f1a0cb14812161c73f6308fb71d1068c79",
-      "ordinary_sha256": "139b08646a08381ece3d4867e22ce1806066ae9f66ab983b9da3fc2788326eef",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 9,
-      "nodes": 27,
-      "links": 57
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "4f5f6cc5a3e08c23d6962e5e773ea25795a7f6245f32c2d99409169e458b0444",
-      "ordinary_sha256": "1640282597388377dff2f4e55e300b16e5afc7e40ad0176aecaa2e7504404357",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 36,
-      "links": 85
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "dbf1fd2776ebc8bc324e1a5e79ec0408c0e1cc1753a926f42664afda39c9be80",
-      "ordinary_sha256": "443a4e946e8dc366e674c84cc0b15476161be5c8aed9fbf342a62e304f8d2308",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 35,
-      "links": 84
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "fc56715b63771bdd04f8d67410fdd307a90a0c76c9f47e4e4753288408a97814",
-      "ordinary_sha256": "7f64edb6d4ba9076d4cc52bde7d52b9a60c3ea2fede6e3a0ddab2a065e7088d1",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 9,
-      "nodes": 27,
-      "links": 57
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "3c16d9fd8820d3f3bfd27666e2fa515c7f51049877d4068ed4125e03209f95cf",
-      "ordinary_sha256": "9bc8d2762a4f0ccb4a0b11361a8f5838bb98a82890199ab9b383b78aa26428ed",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 33,
-      "links": 78
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_manual_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_manual_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "c6eeeb970cf2a147eff171e86c18490d98e2838fb0482d495fde2eaca84ff4fe",
-      "ordinary_sha256": "7983f69900dc2c5efde173f949c6311eb5240847a0647291247ce273974ddf47",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 14,
-      "nodes": 32,
-      "links": 77
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "69c1d5fd8eb76234ab97a27947a73f65a2368eff46dfe513096737335f50a14d",
-      "ordinary_sha256": "894219a5a1347aa976b9867813a8d8e67037db37c7a9bf7ca3b98b9398ff014c",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 12,
-      "nodes": 29,
-      "links": 65
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "5c48d2aba2f6a7e9b6b0ecf11f724cd9118d29bf15e55aac1d981f0c73882b9c",
-      "ordinary_sha256": "37d664939599dbd76167af66b3036a8cbc89a42a76297a8a9c8bcf4e1b7b86d9",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 17,
-      "nodes": 38,
-      "links": 93
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_combined_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "1fe34bc92e6c32244ee5eeb0ecaa96c97d6796817557d3c83cf079b88e37b7b9",
-      "ordinary_sha256": "56a62798415a99f3352b314c318c00183e908698d0b8c552e30e270fc4b7c268",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 17,
-      "nodes": 37,
-      "links": 92
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_cold_delivery_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_cold_delivery_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "ba054a31ad9bffc05a65e1e6b9f2655b495535a736cff8da9d92604f0cb6f5e7",
-      "ordinary_sha256": "8905efd5177d9db4d77b050ebd75a7b0669a3f87476ac412a17e3ccd86b0b0c4",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 12,
-      "nodes": 29,
-      "links": 65
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "53b77caa58766f814652342072c9d164432c0cbeb316dd6c4d87299edf348cd6",
-      "ordinary_sha256": "34bd31f491366e0d4a03344a5a70241635bd5f6dcc4ae0859cab7c0078bfcdd1",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 17,
-      "nodes": 35,
-      "links": 86
-    },
-    {
-      "source": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_relay_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/56-face-refine-split/S24_Face_window_studio_serial_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "b79d5e3f0ae6af7d68d18b48b6492fe65b9d6d04aae721b8b3e563f08caf24af",
-      "ordinary_sha256": "7145ef067c6f9b0e9d24a205e09be08084d2604e61c7ec6da5af04437ce43f0d",
-      "source_title": "H3 Single Person Face Refine MANUAL512 REL Recommended Advanced EXP",
-      "critical_nodes_preserved": 17,
-      "nodes": 34,
-      "links": 85
-    },
-    {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_cold_second_Separate_Stage_EXP.json",
       "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_cold_second_Separate_Stage_EXP_普通提示词.json",
       "source_sha256": "a9fb23585b019e360dd2e434ba3a4aa64dac4e8e175337fed32226f17a39b27b",
@@ -8171,16 +8171,6 @@
       "critical_nodes_preserved": 7,
       "nodes": 28,
       "links": 72
-    },
-    {
-      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "422b9363d389bcff0b7494ec9ed93f0b31cce3d39bf50252a28d7f3fef723c5e",
-      "ordinary_sha256": "78a1a4417790d8f7a194b6fb0c80eb7d419697451aa9c92e139ffb481eb864cf",
-      "source_title": "S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 32,
-      "links": 83
     },
     {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_full_Separate_Stage_EXP.json",
@@ -8193,6 +8183,16 @@
       "links": 84
     },
     {
+      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "422b9363d389bcff0b7494ec9ed93f0b31cce3d39bf50252a28d7f3fef723c5e",
+      "ordinary_sha256": "78a1a4417790d8f7a194b6fb0c80eb7d419697451aa9c92e139ffb481eb864cf",
+      "source_title": "S25_Motion_Fullclip_combined_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 32,
+      "links": 83
+    },
+    {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_relay_cold_second_Separate_Stage_EXP.json",
       "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_cold_second_Separate_Stage_EXP_普通提示词.json",
       "source_sha256": "7450fb2ed4007ac4ce4d175f4b3e484c5cd95c1a9516e5102110ea48e6a58286",
@@ -8201,16 +8201,6 @@
       "critical_nodes_preserved": 7,
       "nodes": 25,
       "links": 65
-    },
-    {
-      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_relay_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "717abca006bf5b757972a7d44d4d16a18de237d336169fef8a76979e1ef368e0",
-      "ordinary_sha256": "63a57bb3946a61a1b2fde6a84debc7faa5316edbaef069070542837b404b52fa",
-      "source_title": "S25_Motion_Fullclip_relay_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 10,
-      "nodes": 29,
-      "links": 76
     },
     {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_relay_full_Separate_Stage_EXP.json",
@@ -8223,6 +8213,16 @@
       "links": 77
     },
     {
+      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_relay_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Fullclip_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "717abca006bf5b757972a7d44d4d16a18de237d336169fef8a76979e1ef368e0",
+      "ordinary_sha256": "63a57bb3946a61a1b2fde6a84debc7faa5316edbaef069070542837b404b52fa",
+      "source_title": "S25_Motion_Fullclip_relay_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 10,
+      "nodes": 29,
+      "links": 76
+    },
+    {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_cold_second_Separate_Stage_EXP.json",
       "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_cold_second_Separate_Stage_EXP_普通提示词.json",
       "source_sha256": "e487085e13948004d50d1bc52fba1a376ed8dba7be4ef6bf09e74d3f14c2961f",
@@ -8231,16 +8231,6 @@
       "critical_nodes_preserved": 8,
       "nodes": 30,
       "links": 86
-    },
-    {
-      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "3251c1e59fe0f946ab17eae93a8013b7a102e630f8057a21e1748e3c2026586f",
-      "ordinary_sha256": "463b87dbe4286e7257654aaa3186f8d7b7fa58079e02b8e1e639baa5d123f808",
-      "source_title": "S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP",
-      "critical_nodes_preserved": 11,
-      "nodes": 34,
-      "links": 97
     },
     {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_full_Separate_Stage_EXP.json",
@@ -8253,6 +8243,16 @@
       "links": 98
     },
     {
+      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "3251c1e59fe0f946ab17eae93a8013b7a102e630f8057a21e1748e3c2026586f",
+      "ordinary_sha256": "463b87dbe4286e7257654aaa3186f8d7b7fa58079e02b8e1e639baa5d123f808",
+      "source_title": "S25_Motion_Windowed_combined_full_save_Separate_Stage_EXP",
+      "critical_nodes_preserved": 11,
+      "nodes": 34,
+      "links": 97
+    },
+    {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_relay_cold_second_Separate_Stage_EXP.json",
       "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_cold_second_Separate_Stage_EXP_普通提示词.json",
       "source_sha256": "ea1993be86b9373b958f93c07b8ad9f2c3b8ce6f0066b52e12b805da94f79c0a",
@@ -8261,6 +8261,16 @@
       "critical_nodes_preserved": 8,
       "nodes": 27,
       "links": 79
+    },
+    {
+      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_relay_full_Separate_Stage_EXP.json",
+      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_full_Separate_Stage_EXP_普通提示词.json",
+      "source_sha256": "566701dc9ae7c79cda70c24648c72ab68dbb2d234527c10a06615afeba2b86f8",
+      "ordinary_sha256": "52788e03b36e790f6297ea81ce6686efe602f5b815ffb67549122a5373a7b13c",
+      "source_title": "S25_Motion_Windowed_relay_full_Separate_Stage_EXP",
+      "critical_nodes_preserved": 11,
+      "nodes": 31,
+      "links": 91
     },
     {
       "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_relay_full_save_Separate_Stage_EXP.json",
@@ -8273,14 +8283,44 @@
       "links": 90
     },
     {
-      "source": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_relay_full_Separate_Stage_EXP.json",
-      "ordinary": "examples/workflows/57-motion-recovery-split/S25_Motion_Windowed_full_Separate_Stage_EXP_普通提示词.json",
-      "source_sha256": "566701dc9ae7c79cda70c24648c72ab68dbb2d234527c10a06615afeba2b86f8",
-      "ordinary_sha256": "52788e03b36e790f6297ea81ce6686efe602f5b815ffb67549122a5373a7b13c",
-      "source_title": "S25_Motion_Windowed_relay_full_Separate_Stage_EXP",
-      "critical_nodes_preserved": 11,
-      "nodes": 31,
-      "links": 91
+      "source": "examples/workflows/59-audio-refine-split/S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_freeze_video_Separate_EXP.json",
+      "ordinary": "examples/workflows/59-audio-refine-split/S26_Audio_Refine_Turbo8_EXP_freeze_video_Separate_EXP_普通提示词.json",
+      "source_sha256": "690b0ff22234cf0061c79da9df4b24a5c813f3b67a5c7912246d85a16d29c4ae",
+      "ordinary_sha256": "9d5b51b2c8a2a8ef816bd61c010ec615fb191e49db2ae41fede986cc36e29f21",
+      "source_title": "S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_freeze_video_Separate_EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 14,
+      "links": 16
+    },
+    {
+      "source": "examples/workflows/59-audio-refine-split/S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_resume_audio_Separate_EXP.json",
+      "ordinary": "examples/workflows/59-audio-refine-split/S26_Audio_Refine_Turbo8_EXP_resume_audio_Separate_EXP_普通提示词.json",
+      "source_sha256": "de4b9df8b0ad902d5a7133a8e4e0dd97ef02ce1741c8539e5334fdacfe410bef",
+      "ordinary_sha256": "e6c61f3aada3c9d68b094d1bc852ec988b50b8f22ae36c110f72b80c848cbad7",
+      "source_title": "S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_resume_audio_Separate_EXP",
+      "critical_nodes_preserved": 5,
+      "nodes": 26,
+      "links": 62
+    },
+    {
+      "source": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_freeze_video_Separate_EXP.json",
+      "ordinary": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_freeze_video_Separate_EXP_普通提示词.json",
+      "source_sha256": "4a99fc23361e169d772d49a830bfd851044c4e337d0931ec6dc27fee6565620b",
+      "ordinary_sha256": "163064fdf59f8b7381727b750931ce754895d809323a5475cae81f9dbfc9fd80",
+      "source_title": "Prompt Relay Long Video Turbo8 Advanced EXP",
+      "critical_nodes_preserved": 7,
+      "nodes": 19,
+      "links": 34
+    },
+    {
+      "source": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_resume_audio_Separate_EXP.json",
+      "ordinary": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_resume_audio_Separate_EXP_普通提示词.json",
+      "source_sha256": "00841c9cb3a88a15d743f6e82145f715f92a43f258900fdb620a18121c1f5c61",
+      "ordinary_sha256": "07eb819c3c1f81bab563410e9e520a4b0d842edcf19a0439206576f918bef749",
+      "source_title": "Prompt Relay Long Video Turbo8 Advanced EXP",
+      "critical_nodes_preserved": 5,
+      "nodes": 29,
+      "links": 78
     },
     {
       "source": "examples/workflows/59-audio-refine-split/effects/S26_EAV_Turbo8_resume_audio_Separate_EXP_combined_TailEffects.json",
@@ -8461,46 +8501,6 @@
       "critical_nodes_preserved": 5,
       "nodes": 29,
       "links": 84
-    },
-    {
-      "source": "examples/workflows/59-audio-refine-split/S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_freeze_video_Separate_EXP.json",
-      "ordinary": "examples/workflows/59-audio-refine-split/S26_Audio_Refine_Turbo8_EXP_freeze_video_Separate_EXP_普通提示词.json",
-      "source_sha256": "690b0ff22234cf0061c79da9df4b24a5c813f3b67a5c7912246d85a16d29c4ae",
-      "ordinary_sha256": "9d5b51b2c8a2a8ef816bd61c010ec615fb191e49db2ae41fede986cc36e29f21",
-      "source_title": "S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_freeze_video_Separate_EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 14,
-      "links": 16
-    },
-    {
-      "source": "examples/workflows/59-audio-refine-split/S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_resume_audio_Separate_EXP.json",
-      "ordinary": "examples/workflows/59-audio-refine-split/S26_Audio_Refine_Turbo8_EXP_resume_audio_Separate_EXP_普通提示词.json",
-      "source_sha256": "de4b9df8b0ad902d5a7133a8e4e0dd97ef02ce1741c8539e5334fdacfe410bef",
-      "ordinary_sha256": "e6c61f3aada3c9d68b094d1bc852ec988b50b8f22ae36c110f72b80c848cbad7",
-      "source_title": "S26_2026-08-29_H3_Audio_Refine_Prompt_Relay_Turbo8_Advanced_EXP_resume_audio_Separate_EXP",
-      "critical_nodes_preserved": 5,
-      "nodes": 26,
-      "links": 62
-    },
-    {
-      "source": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_freeze_video_Separate_EXP.json",
-      "ordinary": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_freeze_video_Separate_EXP_普通提示词.json",
-      "source_sha256": "4a99fc23361e169d772d49a830bfd851044c4e337d0931ec6dc27fee6565620b",
-      "ordinary_sha256": "163064fdf59f8b7381727b750931ce754895d809323a5475cae81f9dbfc9fd80",
-      "source_title": "Prompt Relay Long Video Turbo8 Advanced EXP",
-      "critical_nodes_preserved": 7,
-      "nodes": 19,
-      "links": 34
-    },
-    {
-      "source": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_resume_audio_Separate_EXP.json",
-      "ordinary": "examples/workflows/59-audio-refine-split/S26_LongRelay_Turbo8_resume_audio_Separate_EXP_普通提示词.json",
-      "source_sha256": "00841c9cb3a88a15d743f6e82145f715f92a43f258900fdb620a18121c1f5c61",
-      "ordinary_sha256": "07eb819c3c1f81bab563410e9e520a4b0d842edcf19a0439206576f918bef749",
-      "source_title": "Prompt Relay Long Video Turbo8 Advanced EXP",
-      "critical_nodes_preserved": 5,
-      "nodes": 29,
-      "links": 78
     },
     {
       "source": "examples/workflows/60-ltx-rgb-stage-split/native-load-policy-exp/S27_LTX25_Identity_Preserve_full_save_eav_relay_native_EXP.json",
@@ -9181,6 +9181,66 @@
       "critical_nodes_preserved": 5,
       "nodes": 22,
       "links": 35
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/01-control/record_relay_HF_Split4plus4_RegionCrop.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/01-control/record_HF_Split4plus4_RegionCrop_普通提示词.json",
+      "source_sha256": "367afe72444e0288a5c833aeab363665e6ea7116115241913836b8e6a760f24a",
+      "ordinary_sha256": "fec9696be76b15c2f6eea14ea2f746ca3f478e721be0828cf1ff4d401148a4a2",
+      "source_title": "H21 · record_relay_HF_Split4plus4_RegionCrop",
+      "critical_nodes_preserved": 7,
+      "nodes": 43,
+      "links": 85
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/01-control/record_relay_Native8_RegionCrop.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/01-control/record_Native8_RegionCrop_普通提示词.json",
+      "source_sha256": "4f80b41513ddb8cb3764cb6a690bdc59b9c037e7dccc7ed4861fa744f08ee185",
+      "ordinary_sha256": "23b35b102b3125fa23db555de5f8d3fe811837c1569312c72158c27ced6653e7",
+      "source_title": "H21 · record_relay_Native8_RegionCrop",
+      "critical_nodes_preserved": 8,
+      "nodes": 26,
+      "links": 39
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/01-control/relay_HF_Split4plus4_RegionCrop.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/01-control/HF_Split4plus4_RegionCrop_普通提示词.json",
+      "source_sha256": "c84af6aebf57c91f6fd728f975b6cb5404d5c9430d96668e77eddaf3101b4fe9",
+      "ordinary_sha256": "c1f06fbd9547791ae394f50f1f5aeb09ccf828cdf29d34d3d6907dadcd0b86ea",
+      "source_title": "H21 · relay_HF_Split4plus4_RegionCrop",
+      "critical_nodes_preserved": 6,
+      "nodes": 42,
+      "links": 81
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/01-control/relay_Native8_RegionCrop.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/01-control/Native8_RegionCrop_普通提示词.json",
+      "source_sha256": "e7fa0f0679c2fdf748fdd1b8c668e4ae40d97a0b40284efd39d24174c156ccff",
+      "ordinary_sha256": "43256e21d213c7676297481633c6349b4cfd07c57d76438b34a6019d909c2eca",
+      "source_title": "H21 · relay_Native8_RegionCrop",
+      "critical_nodes_preserved": 7,
+      "nodes": 25,
+      "links": 36
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/01-control/relay_Standard4plus4_RegionCrop.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/01-control/Standard4plus4_RegionCrop_普通提示词.json",
+      "source_sha256": "fdfce127d09cf762f44f9f8d1ae74a7e1e28e941e8e265f9510282dc92916cbe",
+      "ordinary_sha256": "c6fbe33e11af64f86cffdf06ca0dc615b8e98bf8eaedfe7c366391624946a2d8",
+      "source_title": "H21 · relay_Standard4plus4_RegionCrop",
+      "critical_nodes_preserved": 13,
+      "nodes": 40,
+      "links": 77
+    },
+    {
+      "source": "examples/workflows/90-h21-reviewed/07-ending/Ending_TwoEvents_Native8.json",
+      "ordinary": "examples/workflows/90-h21-reviewed/07-ending/Ending_TwoEvents_Native8_普通提示词.json",
+      "source_sha256": "cc53bb6f65836597da20c5e55ef9a8092aa6a8ab4ac872d803835f869a6166c3",
+      "ordinary_sha256": "3d6752a6bde1362d8a542926719d9095cef2f40961cee641d6e40a68888a8242",
+      "source_title": "H21 · Ending_TwoEvents_Native8",
+      "critical_nodes_preserved": 7,
+      "nodes": 17,
+      "links": 23
     }
   ],
   "scope": "source/schema/wiring preservation; not new GPU quality acceptance"

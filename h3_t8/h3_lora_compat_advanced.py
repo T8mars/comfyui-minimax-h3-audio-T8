@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from pathlib import Path
 from typing import Any
 
@@ -29,15 +30,17 @@ def add_minimax_h3_direct_lora_keys(model, key_map: dict | None = None) -> dict:
 
     The alias is purely structural: ``diffusion_model.blocks.0...weight`` maps
     from ``blocks.0...``.  No filename, file size, hash or metadata identity is
-    required.  Other model families retain the normal ComfyUI key map.
+    required. An alternate MODEL class exposing the same real parameter paths
+    receives the same aliases; existing Core mappings always keep priority.
     """
 
     result = {} if key_map is None else dict(key_map)
-    if not isinstance(model, comfy.model_base.MiniMaxH3):
-        return result
-    for key in model.state_dict().keys():
+    state_dict = getattr(model, "state_dict", None)
+    if not callable(state_dict):
+        return result  # optional aliases must not invalidate the Core key map
+    for key in state_dict().keys():
         if key.startswith("diffusion_model.") and key.endswith(".weight"):
-            result[key[len("diffusion_model.") : -len(".weight")]] = key
+            result.setdefault(key[len("diffusion_model.") : -len(".weight")], key)
     return result
 
 
@@ -59,6 +62,19 @@ def _format_hint(keys: list[str]) -> str:
     return "unknown_or_mixed"
 
 
+def _fastvideo_qkv_scopes(state: dict[str, torch.Tensor]) -> list[str]:
+    scopes: dict[str, set[str]] = {}
+    for key in state:
+        if not key.startswith(("transformer_blocks.", "token_refiner.refiner_blocks.")):
+            continue
+        for projection in ("q", "k", "v"):
+            for factor in ("A", "B"):
+                suffix = f".attn.to_{projection}.lora_{factor}.weight"
+                if key.endswith(suffix):
+                    scopes.setdefault(key[:-len(suffix)], set()).add(projection)
+    return sorted(scope for scope, projections in scopes.items() if projections == {"q", "k", "v"})
+
+
 def _fastvideo_h3_layout(state: dict[str, torch.Tensor]) -> bool:
     """Detect FastVideo's published H3 adapter layout structurally.
 
@@ -67,13 +83,9 @@ def _fastvideo_h3_layout(state: dict[str, torch.Tensor]) -> bool:
     the FastVideo/Diffusers H3 split-QKV layout.
     """
 
-    required = {
-        "transformer_blocks.0.attn.to_q.lora_A.weight",
-        "transformer_blocks.0.attn.to_q.lora_B.weight",
-        "transformer_blocks.0.attn.to_k.lora_A.weight",
-        "transformer_blocks.0.attn.to_v.lora_A.weight",
-    }
-    return required.issubset(state)
+    # Recognition must not require a valid pair: otherwise a missing Q.B makes
+    # a clearly known, damaged Q/K/V group silently bypass its validation.
+    return bool(_fastvideo_qkv_scopes(state))
 
 
 def _extract_fastvideo_vsa_gate_weights(
@@ -200,14 +212,16 @@ def _fastvideo_direct_target(module: str) -> str:
 
 def convert_fastvideo_h3_adapter(
     state: dict[str, torch.Tensor],
-) -> tuple[dict[str, torch.Tensor], dict[str, int | str]]:
+) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
     """Convert a FastVideo H3 adapter to ComfyUI's fused H3 module layout.
 
     FastVideo publishes Diffusers-style split Q/K/V factors while ComfyUI H3
     owns one fused ``qkv_proj``.  The block-diagonal construction below is an
     exact algebraic representation of the three original low-rank updates.
     Dense ``.diff``/``.diff_b`` payloads are renamed onto ComfyUI's H3 module
-    names and remain additive patches.
+    names and remain additive patches. Unknown extensions retain their original
+    keys and objects for the Core parser and its unused-key diagnostics; a
+    recognized QKV group does not make the rest of the file a closed schema.
     """
 
     if not _fastvideo_h3_layout(state):
@@ -221,17 +235,22 @@ def convert_fastvideo_h3_adapter(
 
     output: dict[str, torch.Tensor] = {}
     consumed: set[str] = set()
-    qkv_scopes = sorted(
-        {
-            key[: -len(".attn.to_q.lora_A.weight")]
-            for key in state
-            if key.endswith(".attn.to_q.lora_A.weight")
-            and key.startswith(("transformer_blocks.", "token_refiner.refiner_blocks."))
-        }
-    )
+
+    def scalar_alpha(key: str) -> float:
+        value = state[key]
+        if not isinstance(value, torch.Tensor) or value.numel() != 1:
+            raise ValueError(f"FastVideo H3 alpha must be a finite scalar: {key}")
+        result = float(value.item())
+        if not math.isfinite(result):
+            raise ValueError(f"FastVideo H3 alpha must be a finite scalar: {key}")
+        return result
+
+    qkv_scopes = _fastvideo_qkv_scopes(state)
     fused_count = 0
     for scope in qkv_scopes:
         factors: list[tuple[torch.Tensor, torch.Tensor]] = []
+        scales: list[float] = []
+        has_alpha = False
         keys: list[str] = []
         for projection in ("q", "k", "v"):
             a_key = f"{scope}.attn.to_{projection}.lora_A.weight"
@@ -240,30 +259,51 @@ def convert_fastvideo_h3_adapter(
                 raise ValueError(f"incomplete FastVideo H3 QKV group under {scope}")
             a = state[a_key]
             b = state[b_key]
-            if a.ndim != 2 or b.ndim != 2 or b.shape[1] != a.shape[0]:
+            if a.ndim != 2 or b.ndim != 2 or a.shape[0] < 1 or b.shape[1] != a.shape[0]:
                 raise ValueError(f"invalid FastVideo H3 LoRA pair {a_key}/{b_key}")
             factors.append((a, b))
             keys.extend((a_key, b_key))
+            alpha_key = f"{scope}.attn.to_{projection}.alpha"
+            if alpha_key in state:
+                scales.append(scalar_alpha(alpha_key) / int(a.shape[0]))
+                keys.append(alpha_key)
+                has_alpha = True
+            else:
+                scales.append(1.0)
         input_widths = {int(a.shape[1]) for a, _ in factors}
         if len(input_widths) != 1:
             raise ValueError(f"FastVideo H3 Q/K/V input widths differ under {scope}")
         ranks = [int(a.shape[0]) for a, _ in factors]
         output_widths = [int(b.shape[0]) for _, b in factors]
+        unequal_scales = len(set(scales)) > 1
+        promoted_dtype = factors[0][1].dtype
+        for _, b in factors[1:]:
+            promoted_dtype = torch.promote_types(promoted_dtype, b.dtype)
         fused_a = torch.cat([a for a, _ in factors], dim=0).contiguous()
         fused_b = torch.zeros(
             (sum(output_widths), sum(ranks)),
-            dtype=factors[0][1].dtype,
+            # Unequal source alpha/rank scales cannot be represented by one
+            # fused alpha. Keep scaled B in FP32 rather than rounding it back
+            # to low-precision storage. Alpha-free legacy conversion is intact.
+            dtype=torch.promote_types(promoted_dtype, torch.float32) if unequal_scales else promoted_dtype,
             device=factors[0][1].device,
         )
         row = 0
         col = 0
-        for (_, b), out_width, rank in zip(factors, output_widths, ranks):
-            fused_b[row : row + out_width, col : col + rank] = b
+        for (_, b), out_width, rank, scale in zip(factors, output_widths, ranks, scales):
+            fused_b[row : row + out_width, col : col + rank] = (
+                b.to(fused_b.dtype) * scale if unequal_scales else b
+            )
             row += out_width
             col += rank
         target = f"{_fastvideo_scope_target(scope)}.attn.qkv_proj"
         output[f"{target}.lora_A.weight"] = fused_a
         output[f"{target}.lora_B.weight"] = fused_b.contiguous()
+        if has_alpha and not unequal_scales:
+            # Core divides alpha by the new, summed rank, not an old Q/K/V rank.
+            output[f"{target}.alpha"] = torch.tensor(
+                scales[0] * sum(ranks), dtype=torch.float64, device=fused_a.device
+            )
         consumed.update(keys)
         fused_count += 1
 
@@ -287,13 +327,15 @@ def convert_fastvideo_h3_adapter(
             target = "final_layer.adaln_proj.linear"
         else:
             matched = next((item for item in direct_suffixes if module.endswith(item)), None)
-            if matched is None:
-                raise ValueError(f"unsupported FastVideo H3 LoRA module: {module}")
+            if matched is None or not module.startswith((
+                "transformer_blocks.", "token_refiner.refiner_blocks."
+            )):
+                continue
             scope = module[: -len(matched)]
             target = _fastvideo_scope_target(scope) + direct_suffixes[matched]
         a = state[key]
         b = state[b_key]
-        if a.ndim != 2 or b.ndim != 2 or b.shape[1] != a.shape[0]:
+        if a.ndim != 2 or b.ndim != 2 or a.shape[0] < 1 or b.shape[1] != a.shape[0]:
             raise ValueError(f"invalid FastVideo H3 LoRA pair {key}/{b_key}")
         if matched == ".ff.net.0.proj":
             if b.shape[0] % 2:
@@ -304,6 +346,11 @@ def convert_fastvideo_h3_adapter(
         output[f"{target}.lora_A.weight"] = a
         output[f"{target}.lora_B.weight"] = b
         consumed.update((key, b_key))
+        alpha_key = module + ".alpha"
+        if alpha_key in state:
+            scalar_alpha(alpha_key)
+            output[f"{target}.alpha"] = state[alpha_key]
+            consumed.add(alpha_key)
         direct_count += 1
 
     dense_count = 0
@@ -312,22 +359,34 @@ def convert_fastvideo_h3_adapter(
             continue
         suffix = next((value for value in (".diff_b", ".diff") if key.endswith(value)), None)
         if suffix is None:
-            raise ValueError(f"unsupported FastVideo H3 adapter tensor: {key}")
+            continue
         module = key[: -len(suffix)]
-        target = _fastvideo_direct_target(module)
+        try:
+            target = _fastvideo_direct_target(module)
+        except ValueError:
+            # An unrecognized namespace is the selected Core parser's concern,
+            # not a reason to reject otherwise usable user-selected patches.
+            continue
         output[f"{target}{suffix}"] = state[key]
         consumed.add(key)
         dense_count += 1
 
-    if consumed != set(state):
-        raise ValueError("FastVideo H3 conversion did not consume every source tensor")
-    return output, {
+    preserved = sorted(set(state) - consumed)
+    for key in preserved:
+        if key in output:
+            raise ValueError(f"ambiguous FastVideo H3 conversion target collision: {key}")
+        output[key] = state[key]
+    report = {
         "conversion": "fastvideo_h3_diffusers_to_comfyui_fused",
         "fused_qkv_groups": fused_count,
         "direct_lora_modules": direct_count,
         "dense_delta_tensors": dense_count,
         "swiglu_half_swaps": swiglu_swaps,
     }
+    if preserved:
+        report["preserved_source_keys"] = preserved
+        report["unknown_payload_policy"] = "preserve_for_core_parser_and_unused_diagnostics"
+    return output, report
 
 
 def load_minimax_h3_lora_model(

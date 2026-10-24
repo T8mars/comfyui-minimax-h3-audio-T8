@@ -53,7 +53,19 @@ def test_changed_or_unknown_sol_is_not_authenticated(installed_sol, monkeypatch,
     else:
         monkeypatch.setattr(installed_sol, "sol_attn", lambda *a, **k: pytest.fail("foreign kernel ran"))
     fn = installed_sol._make_override(**params)
-    assert sol.capture_composed_backend(fn) is None
+    # Strict authentication must fail, but the user-selected callable stays
+    # delegated under the existing advisory policy, never certified or invoked
+    # by inspection. Invalid arguments/kernel failures propagate if later used.
+    assert sol.capture_sol_relay_backend(fn) is None
+    backend = sol.capture_composed_backend(fn)
+    assert type(backend) is sol.UserSelectedBackend
+    assert backend.override is fn
+    assert backend.report() == {
+        "kind": "user_selected_unverified_delegate",
+        "portable_cache_reuse": False,
+        "completed_calls": {},
+        "kernel_verified": False,
+    }
 
 
 @pytest.mark.parametrize("variant", ["bias", "short_query", "cpu"])

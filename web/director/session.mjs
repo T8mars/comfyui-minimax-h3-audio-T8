@@ -1,5 +1,7 @@
 // Persistent D1 services; UI drafts are separate from saved server revisions.
 import { radarCandidateInputState } from './radar_state.mjs';
+import {middleAssetIds,middleInputState,remapMiddleAsset,requiresMiddleProtocol,assertMiddleProtocol,validateMiddleDraft} from './keyframes_state.mjs';
+import {controlAssetIds,controlInputState,controlSamplingMode,remapControlAsset,requiresControlProtocol,assertControlProtocol,validateControlProject} from './control_state.mjs';
 export function directorServiceBase(moduleURL) {
     const local = new URL('.', moduleURL);
     return /^\/(?:api\/)?minimax_h3_t8\/director\/$/.test(local.pathname)
@@ -85,7 +87,8 @@ export function directorShotInputKey(doc, shot, assets = []) {
     }
     if(activeSampling.lora_mode==='none')activeSampling.loras=[];
     if(generation.lora_mode==='none')generation.loras=[];
-    const ids = [...new Set([...(doc.sharedRefs || []),...(shot.tray || []),shot.first,shot.last,...(shot.refs || []),shot.audio].filter(Boolean))];
+    const controlMode=controlSamplingMode(doc,shot);
+    const ids = [...new Set([...(doc.sharedRefs || []),...(shot.tray || []),shot.first,shot.last,...(shot.refs || []),shot.audio,...middleAssetIds(shot,true),...controlAssetIds(shot,true,controlMode)].filter(Boolean))];
     const media = new Map(assets.map(item=>[item.id,item]));
     const value = {
         global:doc.global || '', sharedRefs:doc.sharedRefs || [], mode:shot.mode, sound:shot.sound,
@@ -102,6 +105,10 @@ export function directorShotInputKey(doc, shot, assets = []) {
         assets:ids.map(id=>{const a=media.get(id)||{};return {id,sha256:a.sha256,kind:a.kind,width:a.width,height:a.height,duration:a.duration,has_audio:a.has_audio};}),
     };
     const candidate = radarCandidateInputState(doc, shot, assets);
+    const middle = middleInputState(shot);
+    if (middle !== undefined) value.middleKeyframes = middle;
+    const controls=controlInputState(shot,controlMode);
+    if(controls!==undefined)value.controlRegions=controls;
     if (candidate !== undefined) value.radarCandidate = candidate;
     const sorted=v=>Array.isArray(v)?v.map(sorted):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(key=>[key,sorted(v[key])])):v;
     return JSON.stringify(sorted(value));
@@ -346,6 +353,8 @@ export function makeDirectorServices(ctx) {
     }
     function hydrate(p) {
         if (p.schema !== "t8.minimax_h3.director_project" || ![0, 1, 2].includes(p.version) || !Array.isArray(p.doc?.shots) || !p.doc.shots.length) throw Error("不是支持的导演台项目，保留原文件");
+        p.doc.shots.forEach(validateMiddleDraft);
+        validateControlProject(p);
         // Never use client-supplied URLs, filesystem paths or executable code.
         projectEpoch++;
         completedResults.clear();
@@ -480,6 +489,8 @@ export function makeDirectorServices(ctx) {
         const result = await request("compile", { project: p, shot_id: p.current });
         // Changing project, shot or draft invalidates this preview, not the new context.
         if (epoch !== projectEpoch || sequence !== compileRequest || snapshot !== JSON.stringify(envelope())) return result;
+        assertMiddleProtocol(p,result,[p.current]);
+        assertControlProtocol(p,result,[p.current]);
         const shot = result.shots?.find(s => s.id === p.current);
         if (!shot?.canvas) throw Error("预检响应缺少请求镜头的画布信息，请重试。");
         latest = result;
@@ -705,6 +716,43 @@ export function makeDirectorServices(ctx) {
         if(origin!==contextToken())return null;
         return {...job,target,download_url:new URL(path+'/file',base).href};
     }
+    const captionRequests=new Map();
+    function captionUrls(result,target) {
+        const path=`films/${encodeURIComponent(result.project_id)}/${encodeURIComponent(result.film_id)}/captions/${encodeURIComponent(result.id)}`;
+        return {...result,target,manifest_url:new URL(path,base).href,
+            srt_url:new URL(path+'/file/srt',base).href,vtt_url:new URL(path+'/file/vtt',base).href};
+    }
+    async function prepareFilmCaptions(film,payload) {
+        if(film.project_id!==projectId)throw Error('字幕属于之前的项目，请回到对应项目再保存');
+        const origin=contextToken(),key='t8director.filmCaption:'+projectId;
+        const input=structuredClone(payload);
+        let target=captionRequests.get(key);
+        if(!target)try{target=JSON.parse(storageRead('localStorage',key)||'null');}catch{target=null;}
+        if(!target||target.project_id!==projectId||target.film_id!==film.id||stableJSON(target.input)!==stableJSON(input)){
+            target={project_id:projectId,film_id:film.id,caption_id:id(),input};
+            captionRequests.set(key,target);
+            if(!storageWrite('localStorage',key,JSON.stringify(target)))notify('浏览器无法记住字幕任务，请下载字幕稿保留输入；任务 ID：'+target.caption_id);
+        }
+        const path=`films/${encodeURIComponent(target.project_id)}/${encodeURIComponent(target.film_id)}/captions/${encodeURIComponent(target.caption_id)}`;
+        const result=await request(path,input);
+        if(origin!==contextToken())return null;
+        return captionUrls(result,target);
+    }
+    async function filmCaptionStatus(target=null) {
+        if(!target){target=captionRequests.get('t8director.filmCaption:'+projectId);if(!target)try{target=JSON.parse(storageRead('localStorage','t8director.filmCaption:'+projectId)||'null');}catch{return null;}}
+        if(!target||target.project_id!==projectId)return null;
+        const origin=contextToken(),path=`films/${encodeURIComponent(target.project_id)}/${encodeURIComponent(target.film_id)}/captions/${encodeURIComponent(target.caption_id)}`;
+        const result=await request(path);
+        if(origin!==contextToken())return null;
+        return captionUrls(result,target);
+    }
+    async function importFilmSpeechTrack(film,shotId,report,confirmed) {
+        if(film.project_id!==projectId)throw Error('冻结整片不属于当前项目');
+        const origin=contextToken();
+        const result=await request(`films/${encodeURIComponent(projectId)}/${encodeURIComponent(film.id)}/captions/speech-track`,
+            {shot_id:shotId,report,confirm_media_match:confirmed});
+        return origin===contextToken()?result:null;
+    }
     async function showVersion(record) {
         const sequence = ++versionRequest;
         versionCopy=null;
@@ -771,6 +819,7 @@ export function makeDirectorServices(ctx) {
         }finally{button.disabled=false;}
     }
     async function submitGenerate(project, shotId, seed) {
+        const submissionOrigin=contextToken();
         const input = {project, shot_id:shotId, seed};
         const encoded = JSON.stringify(input);
         const fingerprintBytes = crypto.subtle ? await crypto.subtle.digest('SHA-256', new TextEncoder().encode(encoded)) : null;
@@ -803,6 +852,12 @@ export function makeDirectorServices(ctx) {
         const cached = storageWrite('sessionStorage',key,JSON.stringify(pending));
         if (!cached) notify('无法持久保护生成请求；本页内仍可安全重试，请勿刷新，任务 ID 将在响应后显示。');
         try {
+            if(requiresMiddleProtocol(pending.input.project,[shotId])||requiresControlProtocol(pending.input.project,[shotId])){
+                const report=await request('compile',{project:pending.input.project,shot_id:shotId});
+                assertMiddleProtocol(pending.input.project,report,[shotId]);
+                assertControlProtocol(pending.input.project,report,[shotId]);
+                if(submissionOrigin!==contextToken())throw Error('项目已切换，没有提交原关键帧任务；原请求身份保留。');
+            }
             const data = await request('generate', {...pending.input,client_id:tab,request_id:pending.request_id});
             pendingRequests.delete(key); storageRemove('sessionStorage',key);
             return data;
@@ -962,6 +1017,8 @@ export function makeDirectorServices(ctx) {
             const seed_map=Object.fromEntries(shots.map(shot=>[shot.id,directorSeed(shot)]));
             const report = scope==='all' ? await request("compile", { project: batch }) : await request("compile", { project: batch, shot_ids });
             if(origin!==contextToken()){notify('项目已切换，尚未提交批次。');return;}
+            assertMiddleProtocol(batch,report,shot_ids);
+            assertControlProtocol(batch,report,shot_ids);
             if (!report.ready) {
                 const issues = report.errors.map(error => {
                     const index = batch.doc.shots.findIndex(shot => shot.id === error.shot_id);
@@ -1220,6 +1277,8 @@ export function makeDirectorServices(ctx) {
             for (const s of doc.shots) {
                 for (const key of ["first", "last", "audio", "selected"]) if (s[key] === target.id) s[key] = next.id;
                 for (const key of ["refs", "tray"]) s[key] = (s[key] || []).map(a => a === target.id ? next.id : a);
+                remapMiddleAsset(s,target.id,next.id);
+                remapControlAsset(s,target.id,next.id);
                 if (s.audio === next.id) { s.start = 0; s.end = next.duration; }
                 s.rev++;
             }
@@ -1274,5 +1333,13 @@ export function makeDirectorServices(ctx) {
         catch (error) { notify("节点快照未载入，原JSON保留：" + error.message); }
     });
     const checkedCanvas = () => latest && latestSnapshot === JSON.stringify(envelope()) ? latest.shots?.find(shot=>shot.id===ctx.current())?.canvas : null;
-    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, contextToken, checkedCanvas, cancelUpload: () => activeUpload?.abort() };
+    async function refreshControlCanvas(){
+        const project=envelope(),epoch=projectEpoch,snapshot=JSON.stringify(project),sequence=++compileRequest;
+        const report=await request('compile',{project,shot_id:project.current});
+        if(epoch!==projectEpoch||sequence!==compileRequest||snapshot!==JSON.stringify(envelope()))return null;
+        const canvas=report.shots?.find(row=>row.id===project.current)?.canvas;
+        if(!Number.isInteger(canvas?.width)||!Number.isInteger(canvas?.height)||canvas.width<=0||canvas.height<=0)throw Error('服务端未返回有效画布，暂用比例示意；请重新预检。');
+        latest=report;latestSnapshot=snapshot;ctx.refreshSummary?.();return canvas;
+    }
+    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, prepareFilmCaptions, filmCaptionStatus, importFilmSpeechTrack, contextToken, checkedCanvas, refreshControlCanvas, cancelUpload: () => activeUpload?.abort() };
 }

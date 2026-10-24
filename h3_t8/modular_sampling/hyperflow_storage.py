@@ -70,9 +70,11 @@ def _decode(payload, tensors):
         raise ValueError("HyperFlow artifact tensor inventory differs from its typed state")
     kind = payload["kind"]
     if kind == "head":
-        if set(state) != {"x_sigma", "scaffold"}:
+        if set(state) not in ({"x_sigma", "scaffold"}, {"x_sigma", "scaffold", "inpaint"}):
             raise ValueError("HyperFlow HEAD requires raw state and a separate scaffold")
-        result = ContinuousBoundary(state["x_sigma"], state["scaffold"], payload["receipt_json"])
+        if "inpaint" in state and type(state["inpaint"]) is not dict:
+            raise ValueError("HyperFlow masked HEAD requires a typed inpaint context")
+        result = ContinuousBoundary(state["x_sigma"], state["scaffold"], payload["receipt_json"], state.get("inpaint"))
     else:
         if set(state) != {"output"}:
             raise ValueError("HyperFlow TAIL requires completed AV")
@@ -89,7 +91,7 @@ def _save(result, storage_root, prefix, kind):
     execution = receipt["execution"] if kind == "head" else receipt["sampling"]["execution"]
     if execution.get("actual_forward_coverage") is not True:
         raise ValueError("HyperFlow artifact needs actual completed stage forward evidence")
-    state = ({"x_sigma": result.x_sigma, "scaffold": result.scaffold} if kind == "head"
+    state = (result.state() if kind == "head"
              else {"output": result.output})
     tensors = {}
     encoded = _encode_metadata_value(state, tensors, path="hyperflow.state")

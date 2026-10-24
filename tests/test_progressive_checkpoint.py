@@ -308,9 +308,10 @@ def test_continuation_relay_eav_fresh_process_resumes_noisy_audio_boundary(
     env = {**os.environ, 'CUDA_VISIBLE_DEVICES': '-1', 'T8_PROGRESSIVE_CHECKPOINT_CHILD': json.dumps(
         {'root': str(accepted.root), 'request': accepted.request, 'cache': str(cache),
          'output': str(tmp_path / 'child'), 'backend': backend})}
-    code = ("import sys;sys.argv=['cpu','--cpu'];import comfy.options;comfy.options.enable_args_parsing();"
-            f"import comfy.cli_args;import torch;torch.set_num_threads({torch.get_num_threads()});import pytest;"
-            "raise SystemExit(pytest.main(['-q','tests/test_progressive_checkpoint.py::test_fresh_process_worker','--tb=short']))")
+    code = ("import runpy;runpy.run_path('tools/check_director_d1_cpu.py',run_name='config');"
+            f"import torch;torch.set_num_threads({torch.get_num_threads()});import pytest;"
+            "result=pytest.main(['-q','tests/test_progressive_checkpoint.py::test_fresh_process_worker','--tb=short']);"
+            "assert not torch.cuda.is_initialized();raise SystemExit(result)")
     result = subprocess.run([sys.executable, '-c', code], cwd=Path(__file__).parents[1],
                             env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr

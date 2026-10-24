@@ -140,9 +140,9 @@ def validate_stage(model, sigmas, source, context):
         raise ValueError("HyperFlow effect geometry/interval differs from the bound stage")
     expected = native.build_hyperflow_plan(model, context.start, context.end).video_segment
     if (type(sigmas) is not torch.Tensor or sigmas.dtype != torch.float32
-            or sigmas.shape != expected.shape or not torch.equal(sigmas.cpu(), expected)
-            or source.get("noise_mask") is not None):
-        raise ValueError("HyperFlow effects cannot change the continuous grid or no-mask contract")
+            or sigmas.shape != expected.shape or not torch.equal(sigmas.cpu(), expected)):
+        raise ValueError("HyperFlow effects cannot change the continuous grid")
+    legacy.validate_noise_mask(source)
     return video, audio, owner
 
 

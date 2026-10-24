@@ -1,0 +1,300 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3DirectorKeyframeConditioningEXPT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "FL2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame": [
+        "900000",
+        0
+      ],
+      "last_frame": [
+        "900003",
+        0
+      ],
+      "model": [
+        "1",
+        0
+      ],
+      "keyframe_plan": [
+        "17",
+        0
+      ],
+      "first_frame_noise_aug": 0.999,
+      "last_frame_noise_aug": 0.999,
+      "reference_visual_noise_aug": 0.999,
+      "execution_mode": "report_only",
+      "query_chunk_rows": 256
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "av_latent": [
+        "5",
+        2
+      ],
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "7": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "5",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "9": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "7",
+        0
+      ],
+      "sampler": [
+        "6",
+        1
+      ],
+      "sigmas": [
+        "6",
+        2
+      ],
+      "latent_image": [
+        "5",
+        2
+      ]
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "9",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/native8_middle_ON",
+      "crf": 18
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3KeyframePlanT8Advanced",
+    "inputs": {
+      "image": [
+        "900002",
+        0
+      ],
+      "position_mode": "frame",
+      "position": 59.0,
+      "visual_noise_aug": 0.999,
+      "resize_mode": "center_crop",
+      "enabled": true
+    }
+  },
+  "900000": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/native8_middle_ON/900000_fit_1024_576.png"
+    }
+  },
+  "900001": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/native8_middle_ON/900001_fit_512_288.png"
+    }
+  },
+  "900002": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/native8_middle_ON/900002_source.png"
+    }
+  },
+  "900003": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/native8_middle_ON/900003_fit_1024_576.png"
+    }
+  },
+  "900004": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/native8_middle_ON/900004_fit_512_288.png"
+    }
+  },
+  "900005": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "5",
+        1
+      ],
+      "conditioned_prompt": [
+        "5",
+        4
+      ],
+      "media_map_json": [
+        "5",
+        5
+      ],
+      "conditioning_report": [
+        "5",
+        6
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "900006": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        6
+      ]
+    }
+  },
+  "900007": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        4
+      ]
+    }
+  },
+  "900008": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        5
+      ]
+    }
+  },
+  "900009": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "900005",
+        0
+      ]
+    }
+  },
+  "900010": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "900005",
+        2
+      ]
+    }
+  }
+}

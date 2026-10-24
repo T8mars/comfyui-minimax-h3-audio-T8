@@ -10,8 +10,7 @@ from comfy.ldm.modules import attention as core_attention
 from comfy.model_patcher import ModelPatcher
 
 
-@functools.lru_cache(maxsize=16)
-def _supports_attention_override(function):
+def _probe_attention_override(function):
     import torch
     sentinel = object()
     def probe(*args, **kwargs):
@@ -19,6 +18,19 @@ def _supports_attention_override(function):
     q = torch.zeros(1, 1, 8)
     result = function(q, q, q, 1, transformer_options={"optimized_attention_override": probe})
     return result is sentinel
+
+
+@functools.lru_cache(maxsize=16)
+def _cached_attention_override(function):
+    return _probe_attention_override(function)
+
+
+def _supports_attention_override(function):
+    # Callable owners may deliberately be unhashable or expose a live signature.
+    # Only immutable function identities participate in our optional cache.
+    if isinstance(function, (types.FunctionType, types.BuiltinFunctionType)):
+        return _cached_attention_override(function)
+    return _probe_attention_override(function)
 
 
 def _set_legacy_attention_backend(model, optimized_attention):
@@ -82,10 +94,23 @@ def plain_attention_backend(override) -> str | None:
     return None
 
 
-@functools.lru_cache(maxsize=32)
 def _final_layer_schedule_parameters(forward):
-    parameters = inspect.signature(forward).parameters
+    parameters = _parameters(forward)
     names = {"sigma", "sample_sigmas", "shifts"}
+    if not names.intersection(parameters):
+        # HyperFlow's own remap closure accepts *args/**kwargs to support both
+        # Core FinalLayer ABIs. Inspect its proven delegate's interface only;
+        # the actual call must still enter the wrapper and perform the remap.
+        # User wrappers with similar marker names are not this source closure.
+        from . import hyperflow_runtime_advanced as hyperflow
+        from .vdn_attention_compat import _factory_closure
+
+        state = _factory_closure(forward, hyperflow._install_two_time, "final_forward")
+        if (state is not None and set(state) == {"owner", "final_original", "remap"}
+                and set(vars(forward)) == {"_t8_hyperflow_owner", "_t8_hyperflow_inner"}
+                and forward._t8_hyperflow_owner == state["owner"]
+                and forward._t8_hyperflow_inner is state["final_original"]):
+            parameters = _parameters(state["final_original"])
     present = names.intersection(parameters)
     if present and present != names:
         raise RuntimeError("Unsupported partial H3 FinalLayer schedule interface")
@@ -102,8 +127,32 @@ def call_h3_final_layer(layer, x, t_emb, video_seg, audio_seg, *, sigma, sample_
 
 
 @functools.lru_cache(maxsize=64)
+def _cached_function_signature(function):
+    return inspect.signature(function)
+
+
+def _signature(function):
+    if isinstance(function, (types.FunctionType, types.BuiltinFunctionType)):
+        return _cached_function_signature(function)
+    return inspect.signature(function)
+
+
 def _parameters(function):
-    return frozenset(inspect.signature(function).parameters)
+    return frozenset(_signature(function).parameters)
+
+
+def cleanup_h3_prefetched_modules(module, comfy_modules):
+    """Bind a known one/two-argument Core ABI before executing it exactly once."""
+    import comfy.model_prefetch
+
+    function = comfy.model_prefetch.cleanup_prefetched_modules
+    signature = _signature(function)
+    try:
+        signature.bind(module, comfy_modules)
+    except TypeError:
+        signature.bind(comfy_modules)
+        return function(comfy_modules)
+    return function(module, comfy_modules)
 
 
 def call_h3_block(block, args):

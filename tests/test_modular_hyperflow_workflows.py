@@ -40,7 +40,16 @@ def test_candidate_every_output_serialization_and_independent_tail(info, split):
 def test_public_registration_reviews_all420_schemas_without_rewriting_baseline(info):
     baseline = json.loads((builder.ROOT / "artifacts/development/modular-sampling-m3-hyperflow-20260923/before-registration.json").read_text(encoding="utf-8"))
     assert len(baseline["nodes"]) == 420
-    assert_reviewed_legacy_schemas(baseline["nodes"], info)
+    # The 2026-09 snapshot includes models the user has since removed. Review
+    # actual filesystem drift explicitly; installed choices/order, all defaults,
+    # old sockets/static enums and the original baseline remain protected. The
+    # named D contract permits only the two exact HIGH CONDITIONING appends.
+    before = deepcopy((baseline, info))
+    reviewed = assert_reviewed_legacy_schemas(baseline["nodes"], info, review_missing_files=True)
+    assert (baseline, info) == before
+    high = [row for row in reviewed if row["review"] == "exact_D_HIGH_conditioning_append"]
+    assert high == [{"id": "MiniMaxH3HyperFlowSplitT8Advanced", "review": "exact_D_HIGH_conditioning_append",
+                     "optional_appended": ["positive_high", "negative_high"]}]
     assert len(nodes.NODES) == 2
     assert all(node.__name__ in info for node in nodes.NODES)
 

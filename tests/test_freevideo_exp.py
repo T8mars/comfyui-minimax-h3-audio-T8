@@ -29,23 +29,28 @@ def conditioning(extra=None):
     return [[torch.zeros(1, 3, 5120), {"minimax_token_tags": torch.ones(3, dtype=torch.int64), **(extra or {})}]]
 
 
-def test_append_only_registration_and_lazy_engine():
-    classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
-    ids = [c.define_schema().node_id for c in classes]
+def assert_original_exp_registry_blocks(ids, declared):
     from h3_audio_t8_pkg.nodes_temporal_dialogue import NODES as scope_nodes
     from h3_audio_t8_pkg.nodes_postprocess import NODES as postprocess_nodes
     from h3_audio_t8_pkg.nodes_reference_package import NODES as reference_nodes
-    qwen_nodes = []
-    if "MiniMaxH3ReferenceQwenViewEXPT8" in ids:
-        from h3_audio_t8_pkg.nodes_qwen_reference_view import NODES as qwen_nodes
-        assert [c.__name__ for c in qwen_nodes] == ["MiniMaxH3ReferenceQwenViewEXPT8"]
+    from h3_audio_t8_pkg.nodes_qwen_reference_view import NODES as qwen_nodes
+    assert [c.__name__ for c in qwen_nodes] == ["MiniMaxH3ReferenceQwenViewEXPT8"]
     from h3_audio_t8_pkg.freevideo_quality.nodes import NODES as quality_nodes
-    appended = [*scope_nodes, *postprocess_nodes, *reference_nodes, *qwen_nodes, *quality_nodes]
-    assert len(ids) == 632 + len(appended) and len(set(ids)) == len(ids)
+    from h3_audio_t8_pkg.nodes_source_conform import NODES as conform_nodes
+    from h3_audio_t8_pkg.freevideo_decoder.nodes import NODES as decoder_nodes
+    assert ids == declared and len(set(ids)) == len(ids)
     assert ids[620:632] == [c.__name__ for c in NODES]
-    assert ids[632:] == [c.__name__ for c in appended]
+    cursor = 632
+    for block in (scope_nodes, postprocess_nodes, reference_nodes, quality_nodes, qwen_nodes, conform_nodes, decoder_nodes):
+        assert ids[cursor:cursor + len(block)] == [c.__name__ for c in block]
+        cursor += len(block)
+
+
+def test_append_only_registration_and_lazy_engine():
+    classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
+    ids = [c.define_schema().node_id for c in classes]
     features = json.loads((Path(__file__).parents[1] / "features.json").read_text(encoding="utf8"))
-    assert ids[:len(features["nodes"])] == features["nodes"]
+    assert_original_exp_registry_blocks(ids, features["nodes"])
     assert not any(k == "freevideo_engine" or k.startswith("freevideo_engine.") for k in sys.modules)
     assert ids[619] == "MiniMaxH3KijaiPDD8StepSetupEXPT8"
 

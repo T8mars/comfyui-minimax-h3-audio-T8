@@ -1434,14 +1434,16 @@ def test_audio_refine_registration_appends_after_current_non_audio_prefix():
         )
     )["nodes"]
 
-    assert len(ids) == len(set(ids)) == 343
-    assert ids[336:] == [
+    # Keep the historic 343-node prefix exact while permitting separately
+    # registered later features. A hard global 343 rejected all newer releases.
+    assert len(ids) == len(set(ids))
+    assert ids[336:343] == [
         'MiniMaxH3FastH3V2SetupEXPT8', 'MiniMaxH3FastH3V2RuntimeAuditEXPT8',
         'MiniMaxH3FastH3V2DualModelLongVideoEXPT8', 'SolAttnMiniMax',
         'MiniMaxH3SemanticBridgeConfigT8', 'MiniMaxH3SemanticBridgeApplyT8',
         'MiniMaxH3LTXLatentAdapterEXPT8',
     ]
-    assert ids == feature_ids
+    assert ids[:len(feature_ids)] == feature_ids
     assert ids[208:211] == [
         "MiniMaxH3SkinFinishSpecularFrequencyT8Advanced",
         "MiniMaxH3SkinFinishSurfaceT8Advanced",

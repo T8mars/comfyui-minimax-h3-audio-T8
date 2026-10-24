@@ -15,7 +15,7 @@ WINDOWS = (
     '[data-dialog]', '[data-model-zone]', '[data-film-dialog]',
     '[data-compare-dialog]', '[data-bundle-dialog]', '[data-creation-dialog]',
     '[data-storyboard-dialog]', '[data-frame-dialog]', '[data-trim-dialog]',
-    '[data-task-drawer]',
+    '[data-task-drawer]', '[data-radar-dialog]',
 )
 
 
@@ -38,7 +38,7 @@ def assert_centered(dialog):
     (2560, 1440), (1920, 1080), (1366, 768), (1280, 720),
     (1093, 614), (911, 512), (390, 640), (320, 480),
 ])
-def test_all_ten_windows_center_short_long_and_after_resize(audit_page, width, height):
+def test_all_eleven_windows_center_short_long_and_after_resize(audit_page, width, height):
     page = audit_page
     page.set_viewport_size({'width': width, 'height': height})
     # Fail when a newly added dialog has not been included in this inventory.

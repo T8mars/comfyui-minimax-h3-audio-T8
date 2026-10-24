@@ -22,7 +22,9 @@ PRODUCER_SCOPE = "actual_native_weights_tokenizer_configuration_and_implementati
 def portable_producer(component, role):
     identity = native_producer_identity(component, role)
     if identity.get("portable_cache_reuse") is False or identity.get("scope") != PRODUCER_SCOPE:
-        raise ValueError("This encoder has no portable reference-asset identity; use ordinary native refs instead")
+        detail = identity.get("identity_unavailable_reason", "")
+        raise ValueError("This encoder has no portable reference-asset identity; use ordinary native refs instead"
+                         + (". " + detail if detail else ""))
     return {"role": role, "sha256": identity["sha256"], "scope": PRODUCER_SCOPE}
 
 

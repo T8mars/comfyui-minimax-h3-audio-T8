@@ -1,12 +1,14 @@
 // Project-owned snapshots; plans are pure until the editor confirms one transaction.
+import {middleAssetIds,duplicateMiddleRows,remapMiddleAsset} from './keyframes_state.mjs';
+import {controlAssetIds,duplicateControlRows,remapControlAsset,portableControls} from './control_state.mjs';
 const clone=value=>structuredClone(value);
 const pick=(value,keys)=>Object.fromEntries(keys.filter(key=>Object.hasOwn(value,key)).map(key=>[key,clone(value[key])]));
-const TEMPLATE_FIELDS='name mode sound writingMode simplePrompt prompt simpleInitialized advancedInitialized refs tray first last audio start end duration manualDuration autoDuration ratio ownRatio events'.split(' ');
+const TEMPLATE_FIELDS='name mode sound writingMode simplePrompt prompt simpleInitialized advancedInitialized refs tray first last audio start end duration manualDuration autoDuration ratio ownRatio events middleKeyframes controlRegions'.split(' ');
 export const CREATION_KINDS={snippet:'提示词片段',template:'镜头模板',recipe:'采样配方',group:'素材组合'};
 const unique=values=>[...new Set(values.filter(Boolean))];
 export function creationTokens(doc,shot,assets){
     const media=new Map(assets.map(item=>[item.id,item])),count={image:0,video:0,audio:0};
-    return new Map(unique([...(doc.sharedRefs||[]),...(shot.tray||[]),shot.first,shot.last,...(shot.refs||[]),shot.audio]).filter(id=>media.has(id)).map(id=>[id,'@'+media.get(id).kind+(++count[media.get(id).kind])]));
+    return new Map(unique([...(doc.sharedRefs||[]),...(shot.tray||[]),shot.first,shot.last,...(shot.refs||[]),shot.audio,...middleAssetIds(shot)]).filter(id=>media.has(id)).map(id=>[id,'@'+media.get(id).kind+(++count[media.get(id).kind])]));
 }
 export function savedCreationText(text,bindings,tokens){
     const missing=[];
@@ -57,6 +59,7 @@ export function captureCreation({doc,shot,assets,kind,name,id,target,d3}){
     }
     if(kind==='template'){
         const saved=pick(shot,TEMPLATE_FIELDS);
+        if(saved.controlRegions!=null)saved.controlRegions=portableControls(saved.controlRegions);
         saved.tray=[...tokens.keys()];saved.refs=unique([...(doc.sharedRefs||[]),...(shot.mode==='text'?[]:saved.refs)]);
         if(saved.mode==='text'&&saved.refs.length)saved.mode='refs';
         saved.samplingInherit=false;saved.sampling=creationSampling(doc,shot);saved.d3Inherit=false;saved.d3=clone(d3);
@@ -100,10 +103,13 @@ export function planCreation({doc,shotId,assets,item,target,fields=[],targets=[s
         else{shot[target.kind==='simplePrompt'?'simpleInitialized':'advancedInitialized']=true;shot.rev++;}
         notes.push('在记住的光标处插入文字，不替换选中文字、不改变素材用途。');
     }else if(item.kind==='template'){
-        const saved=clone(item.shot),ids=unique([...saved.tray,...saved.refs,saved.first,saved.last,saved.audio]);
+        const saved=clone(item.shot),ids=unique([...saved.tray,...saved.refs,saved.first,saved.last,saved.audio,...middleAssetIds(saved),...controlAssetIds(saved)]);
+        if(saved.controlRegions!=null)saved.controlRegions=portableControls(saved.controlRegions);
         const lost=ids.filter(id=>!media.has(id)||media.get(id).missing);
         if(lost.length)throw Error('模板有 '+lost.length+' 项素材不可用，请先重连或重新收藏。不会只套用部分素材。');
         saved.id=uuid();saved.events=saved.events.map(event=>({...event,id:uuid()}));saved.rev=1;saved.name=item.name;
+        duplicateMiddleRows(saved,uuid);
+        duplicateControlRows(saved,uuid);
         saved.ratio=next.sharedRatio?next.ratio:saved.ownRatio;
         const tokens=creationTokens(next,saved,assets);
         for(const field of ['simplePrompt','prompt']){const value=savedCreationText(saved[field],item.bindings,tokens);saved[field]=value.text;missing.push(...value.missing);}
@@ -143,6 +149,8 @@ export function remapCreationAsset(doc,oldId,newId){
         if(item.kind==='template'){
             for(const key of ['tray','refs'])item.shot[key]=unique(item.shot[key].map(id=>id===oldId?newId:id));
             for(const key of ['first','last','audio'])if(item.shot[key]===oldId)item.shot[key]=newId;
+            remapMiddleAsset(item.shot,oldId,newId);
+            remapControlAsset(item.shot,oldId,newId);
         }
     }
 }

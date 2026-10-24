@@ -63,7 +63,7 @@ class ReviewedINT8Delta(unittest.TestCase):
             result = gate.guard(ROOT, new)
             self.assertEqual(result["status"], "pass", result["issues"])
             self.assertEqual((result["declared_baseline_sites"], result["current_sites"],
-                              result["reviewed_absent_root_alias_sites"]), (131, 110, 21))
+                              result["reviewed_absent_root_alias_sites"]), (131, 113, 21))
             before = gate.guard(ROOT, old)
             self.assertEqual((before["status"], before["new_sites"], before["removed_sites"]),
                              ("fail", 3, 0))

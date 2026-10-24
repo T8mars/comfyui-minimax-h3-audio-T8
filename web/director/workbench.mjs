@@ -14,6 +14,8 @@ import { createStoryboardDialog } from './storyboard_ui.mjs';
 import { createCreationLibrary } from './creation_ui.mjs';
 import { createRadarDialog } from './radar_ui.mjs';
 import { directorTaskLabel } from './session.mjs';
+import {middleAssetIds,middleRows} from './keyframes_state.mjs';
+import {controlAssetIds} from './control_state.mjs';
 export function createDirectorWorkbench(ctx) {
     const { root, doc, shot, assets, results, videos } = ctx;
     const $ = selector => root.querySelector(selector);
@@ -165,7 +167,7 @@ export function createDirectorWorkbench(ctx) {
     const compareButton=document.createElement('button');compareButton.type='button';compareButton.dataset.compareOpen='';compareButton.textContent='A/B 对比';
     compareButton.addEventListener('click',()=>comparison.open(ctx.resultKey(results().get(shot().id))));versionBar.querySelector('.o-row').append(compareButton);
     const tabs = $('.o-viewbar .o-tabs');
-    const film=createFilmViewer({root,prepare:ctx.prepareFilm,notify:ctx.notify,locate:ctx.locateShot,escape:ctx.esc,startExport:ctx.startFilmExport,exportStatus:ctx.filmExportStatus});
+    const film=createFilmViewer({root,prepare:ctx.prepareFilm,notify:ctx.notify,locate:ctx.locateShot,escape:ctx.esc,startExport:ctx.startFilmExport,exportStatus:ctx.filmExportStatus,saveCaptions:ctx.prepareFilmCaptions,captionStatus:ctx.filmCaptionStatus,importSpeechTrack:ctx.importFilmSpeechTrack});
     const filmButton=document.createElement('button');filmButton.type='button';filmButton.dataset.filmOpen='';filmButton.textContent='整片串播';filmButton.addEventListener('click',()=>film.open());tabs.append(filmButton);
     tabs.prepend($('[data-view="output"]'));
     $('[data-view="input"]').textContent = '输入预览';
@@ -229,7 +231,8 @@ export function createDirectorWorkbench(ctx) {
         const seedField=$('[data-shot-seed]');
         if(document.activeElement!==seedField){seedField.value=String(s.seed??26091901);seedField.setCustomValidity('');}
         $('[data-workbench-heading]').textContent='第 '+String(doc().shots.indexOf(s)+1).padStart(2,'0')+' 镜';
-        const mode={text:'文字',first:'首帧',ends:'首尾',refs:'参考素材'}[s.mode];
+        const count=middleRows(s,true).length;
+        const mode={text:'文字',first:'首帧',ends:'首尾',refs:'参考素材'}[s.mode]+(count?` · ${count} 中间帧`:'');
         const audio={native:'模型生成声音',record:'音频驱动',voice:'参考音色'}[s.sound];
         const samplingSummary=directorSamplingSummary(doc(),s);
         const tiles=[['source','画面来源',mode],['audio','声音',audio],['timing','时长',s.duration+' 秒'],['timing','画幅',s.ratio+(doc().sharedRatio?' · 全片共用':' · 本镜')]];
@@ -338,7 +341,11 @@ export function createDirectorWorkbench(ctx) {
     }
     function focusIssue(field) {
         let target;
-        if(['source','audio','timing','d3'].includes(field)){
+        if(field==='controlRegions'){
+            activePanel='source';syncPanels();target=$('[data-control-editor]');
+        }else if(field==='middleKeyframes'){
+            activePanel='source';syncPanels();target=$('[data-middle-editor]');
+        }else if(['source','audio','timing','d3'].includes(field)){
             activePanel=field;syncPanels();
             target=$(`[data-workbench-section="${field}"]`);
         }else if(field==='global')target=$('[data-global-zone]');
@@ -352,6 +359,6 @@ export function createDirectorWorkbench(ctx) {
     createDirectorLayout(root,layoutMenu.querySelector('.w-menu-body'));
     createReferenceCandidates(root,{context:ctx.referenceContext,choices:ctx.referenceChoices,insert:ctx.insertReference});
     const tasks=createTaskDrawer(root,{context:ctx.taskContext,load:ctx.loadTasks,shots:()=>doc().shots,escape:ctx.esc,label:directorTaskLabel,notify:ctx.notify,locate:ctx.locateTask});
-    function filterLibrary(){createLibraryFilters($('[data-dialog]'),{assets,shared:()=>doc().sharedRefs||[],bound:()=>[...new Set([...(doc().sharedRefs||[]),...(shot().tray||[]),...(shot().refs||[]),shot().first,shot().last,shot().audio].filter(Boolean))]});}
+    function filterLibrary(){createLibraryFilters($('[data-dialog]'),{assets,shared:()=>doc().sharedRefs||[],bound:()=>[...new Set([...(doc().sharedRefs||[]),...(shot().tray||[]),...(shot().refs||[]),shot().first,shot().last,shot().audio,...middleAssetIds(shot()),...controlAssetIds(shot())].filter(Boolean))]});}
     return {syncInspector,syncSummary,syncAssets,syncShots,syncPreview,focusIssue,filterLibrary,openTasks:tasks.open};
 }

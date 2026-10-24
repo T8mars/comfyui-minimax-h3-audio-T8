@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.101.0"
+version = "1.102.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,6 +21,18 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/RELEASE_1.102.0.md",
+    "docs/H3_CONTROL_REGIONS_EXP.md", "docs/DIRECTOR_MIDDLE_KEYFRAMES_EXP.md",
+    "docs/H3_PROJECTION_CHUNKS_EXP.md", "docs/H3_INT8_ROW_CHUNK_EXP.md",
+    "docs/H21_PTD_EXP.md", "docs/H21_PTD_CONTINUOUS_EXP.md",
+    "docs/H21_PTD_BASE_CONVERSION.md", "docs/H21_PTD_SAFE_CONVERSION.md",
+    "docs/H21_REFERENCE_TEMPORAL_PACK_EXP.md", "docs/H21_REFERENCE_STEP_CACHE_EXP.md",
+    "docs/H21_FREEVIDEO_RUNTIME_EXP.md", "docs/H21_MC_SEAM_EXP.md", "docs/H21_ENDING_BEATS_EXP.md",
+    "tools/convert_h21_ptd_base.py", "tools/convert_h21_ptd_safe.py",
+    "tools/prepare_h21_freevideo_source.py", "tools/prepare_h21_freevideo_runtime.py",
+    "tools/prepare_h21_pose_source.py", "tools/prepare_h21_control_media.py",
+    "THIRD_PARTY_NOTICES/H21-PTD-BASE-APACHE2.txt", "THIRD_PARTY_NOTICES/H21-PTD-BASE-NOTICE.txt",
+    "THIRD_PARTY_NOTICES/H21-PTD-BASE-SOURCES.md",
     "docs/RELEASE_1.101.0.md", "docs/H14_TOKEN_SCOPE.md",
     "THIRD_PARTY_NOTICES/H14-SOURCES.md", "THIRD_PARTY_NOTICES/H14-Scriptorium-LICENSE.txt",
     "docs/RELEASE_1.100.0.md", "docs/H13_AUDIO_FIRST_HYBRID.md", "THIRD_PARTY_NOTICES/H13-SOURCES.md",

@@ -231,8 +231,9 @@ def test_saved_workflow_is_nonpdd_exact4plus4_and_wiring_correct():
     assert edges[26][1:5] == [9,1,15,5]   # unmodified original refine4
     assert edges[37][1:5] == [9,2,14,0]   # parity report handshake
     assert edges[39][1:5] == [12,1,14,1]  # actual partial source geometry
-    assert edges[40][1:5] == [14,2,13,7]  # synchronized HIGH width
-    assert edges[41][1:5] == [14,3,13,8]  # synchronized HIGH height
+    high_inputs = {entry['name']: index for index, entry in enumerate(nodes[13]['inputs'])}
+    assert edges[40][1:5] == [14,2,13,high_inputs['width']]  # synchronized HIGH width
+    assert edges[41][1:5] == [14,3,13,high_inputs['height']]  # synchronized HIGH height
     assert edges[24][1] == 24 and edges[11][1] == 11
     for eid, source, slot, target, target_slot, _ in w['links']:
         assert nodes[target]['inputs'][target_slot]['link'] == eid

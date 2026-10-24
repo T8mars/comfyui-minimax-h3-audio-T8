@@ -1,0 +1,208 @@
+{
+  "1": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "4": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "5": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Core_pdd_native8/5_reference.png"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3PDD8StepSetupT8Advanced",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "av_latent": [
+        "7",
+        1
+      ],
+      "pdd_lora_name": "MiniMax-H3-Ref2VA-Acc-8Step_comfyui_pdd.safetensors",
+      "base_variant": "Ref2VA",
+      "strength": 1.0
+    }
+  },
+  "9": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 2608270801
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "8",
+        0
+      ],
+      "conditioning": [
+        "7",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "9",
+        0
+      ],
+      "guider": [
+        "10",
+        0
+      ],
+      "sampler": [
+        "8",
+        1
+      ],
+      "sigmas": [
+        "8",
+        2
+      ],
+      "latent_image": [
+        "7",
+        1
+      ]
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "20",
+        0
+      ],
+      "video_vae": [
+        "1",
+        0
+      ],
+      "audio_vae": [
+        "2",
+        0
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "21",
+        0
+      ],
+      "audio": [
+        "21",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Core_pdd_native8",
+      "crf": 18
+    }
+  },
+  "14": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "8",
+        3
+      ]
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "3",
+        0
+      ],
+      "video_vae": [
+        "1",
+        0
+      ],
+      "audio_vae": [
+        "2",
+        0
+      ],
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "prompt": "Use <Picture 1> as the visual identity and appearance reference. In one continuous natural cinematic portrait, the same adult woman turns gently toward the camera and blinks once. Preserve facial structure, hairstyle, skin tone and realistic proportions. She clearly says in Mandarin: \"你在干嘛呢，我在这里呀，看看效果如何。\" Synchronized speech and quiet room ambience, no music, subtitles, cuts or additional people.",
+      "task_type": "Ref2VA",
+      "ref_images.ref_image_0": [
+        "5",
+        0
+      ]
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "11",
+        0
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Core_pdd_native8",
+      "checkpoint_id": "H22_A3_raw_AV",
+      "confirm_save": true,
+      "verify_after_write": true,
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "22": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "20",
+        4
+      ]
+    }
+  }
+}

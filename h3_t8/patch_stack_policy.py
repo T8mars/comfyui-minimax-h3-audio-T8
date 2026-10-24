@@ -74,9 +74,27 @@ def nonportable_model_identity(model, reason, *, schema):
         raise ValueError("MODEL has no loaded tensor state")
     # Validate actual tensor bytes too; opaque hooks are not a way around NaN,
     # missing tensors or malformed weight storage checks.
-    from .long_video_dual_identity import content_identity, _original_state
-    state_digest = hashlib.sha256(
-        repr(content_identity(_original_state(model, state))).encode("utf-8")
+    from .long_video_dual_identity import (
+        content_identity, _original_state, _original_buffers, UnknownBufferBackupSchema,
+    )
+    unknown_buffers = False
+    known_digest = None
+    try:
+        original = _original_state(model, state)
+    except UnknownBufferBackupSchema as error:
+        # An unsupported future/foreign backup record is not a ban on normal
+        # execution, and not a reason to forge an original-weight SHA. Validate
+        # all known live/original tensors and preserve only process-local scope.
+        warn_patch_stack(str(error))
+        content_identity(state)
+        original = _original_state(model, state, allow_unknown_buffers=True)
+        known_digest = hashlib.sha256(repr(content_identity({
+            "known_state": original,
+            "known_original_buffers": _original_buffers(model, allow_unknown=True),
+        })).encode("utf-8")).hexdigest()
+        unknown_buffers = True
+    state_digest = None if unknown_buffers else hashlib.sha256(
+        repr(content_identity(original)).encode("utf-8")
     ).hexdigest()
     selected = {name: _execution_selection(getattr(model, name, None)) for name in (
         "patches", "object_patches", "wrappers", "callbacks", "injections",
@@ -94,7 +112,7 @@ def nonportable_model_identity(model, reason, *, schema):
             if "forward" in vars(module) or getattr(module, "_forward_pre_hooks", {})
             or getattr(module, "_forward_hooks", {})
         }
-    return {
+    result = {
         "schema": schema, "sha256": hashlib.sha256(uuid.uuid4().bytes).hexdigest(),
         "backend": {"kind": "user_selected_unverified"},
         "memory": None, "composition": {"kind": "user_selected_unverified"},
@@ -104,10 +122,36 @@ def nonportable_model_identity(model, reason, *, schema):
         "opaque_internal_state_verified": False,
         "tensor_count": len(state), "lora_target_count": len(getattr(model, "patches", {})),
     }
+    if unknown_buffers:
+        result["execution_weight_content_verified"] = False
+        result["execution_known_tensor_sha256"] = known_digest
+        selected["unverified_buffer_backups"] = _execution_selection(getattr(model, "backup_buffers", None))
+    return result
 
 
 def nonportable_component_identity(component, reason, *, schema):
-    result = nonportable_model_identity(component.patcher, reason, schema=schema)
+    patcher = getattr(component, "patcher", None)
+    inspectable = callable(getattr(patcher, "model_state_dict", None)) or (
+        not hasattr(patcher, "model_state_dict")
+        and callable(getattr(getattr(patcher, "model", None), "state_dict", None))
+    )
+    if not inspectable:
+        # Executable encoders need not expose Core's optional inspection API.
+        # A process-local opaque selection is not a weight/content proof, but
+        # lack of that proof must not turn ordinary encoding into AttributeError.
+        warn_patch_stack(f"{reason}; no native CLIP/VAE patcher to inspect, portable cache reuse disabled")
+        result = {
+            "schema": schema, "sha256": hashlib.sha256(uuid.uuid4().bytes).hexdigest(),
+            "portable_cache_reuse": False, "model_filename_trusted": False,
+            "execution_weight_sha256": None, "execution_weight_content_verified": False,
+            "opaque_internal_state_verified": False, "tensor_count": None,
+            "lora_target_count": None,
+            "identity_unavailable_reason": "No native CLIP/VAE weight-inspection API is available for portable content identity",
+            "execution_selection": {"component_object": _execution_selection(component),
+                                    "opaque_patcher": _execution_selection(patcher)},
+        }
+    else:
+        result = nonportable_model_identity(patcher, reason, schema=schema)
     result["execution_selection"]["component"] = _execution_selection({
         "tokenizer": getattr(component, "tokenizer", None),
         "tokenizer_options": getattr(component, "tokenizer_options", None),

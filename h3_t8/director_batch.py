@@ -87,6 +87,8 @@ _MODEL_INPUTS = {
     "MiniMaxH3LearnedLatentUpscaleT8Advanced": ("model_name", "latent_upscale_models"),
     "MiniMaxH3SemanticBridgeConfigT8": ("model_name", "semantic_bridge"),
     "MiniMaxH3HyperFlowLoaderT8Advanced": ("hyperflow_file", "hyperflow_selection"),
+    "MiniMaxH3HyperFlowFreshLoaderEXPT8": ("hyperflow_file", "hyperflow_selection"),
+    "MiniMaxH3FunControlLoaderT8Advanced": ("control_net_name", "fun_control_selection"),
 }
 
 
@@ -113,7 +115,10 @@ def capture_resources(store, project, built, resolve_model, *, evidence_context=
             models[key] = {"folder": folder, "name": name, "path": str(path),
                            "size": path.stat().st_size, "sha256": file_sha(path)}
     assets = {}
-    for aid in sorted(referenced_assets(project, evidence_context=evidence_context)):
+    active_assets = referenced_assets(project, evidence_context=evidence_context, include_controls=False)
+    for plan in built:
+        active_assets.update(row["asset_id"] for row in plan.get("shot", {}).get("control_regions", ()))
+    for aid in sorted(active_assets):
         item = store.asset(aid, verify=True)
         assets[aid] = {"sha256": item["sha256"], "server_path": item["server_path"]}
     return {"models": models, "assets": assets}

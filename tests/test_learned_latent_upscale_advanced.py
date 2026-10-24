@@ -576,15 +576,21 @@ def test_new_nodes_append_without_changing_existing_order():
 
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [node.define_schema().node_id for node in classes]
+    legacy = asyncio.run(h3_audio_t8_pkg._HyperFlowLongVideoExtension().get_node_list())
+    legacy_ids = [node.define_schema().node_id for node in legacy]
+    modular_ids = [node.define_schema().node_id for node in h3_audio_t8_pkg._modular_node_classes()]
     # 1.83.0 appended three FastH3 V2 nodes; historical positions below
-    # still verify the original registry prefix, not a stale total count.
-    assert len(ids) == len(set(ids)) == 343
+    # still verify the original registry prefix as later modules are appended.
+    assert len(ids) == len(set(ids))
+    assert ids[:len(legacy_ids)] == legacy_ids
+    assert ids[len(legacy_ids):len(legacy_ids) + len(modular_ids)] == modular_ids
+    assert ids[-1] == "MiniMaxH3HyperVAE2xLoaderEXPT8"
     assert ids[336:339] == [
         'MiniMaxH3FastH3V2SetupEXPT8',
         'MiniMaxH3FastH3V2RuntimeAuditEXPT8',
         'MiniMaxH3FastH3V2DualModelLongVideoEXPT8',
     ]
-    assert ids[339:] == ['SolAttnMiniMax', 'MiniMaxH3SemanticBridgeConfigT8', 'MiniMaxH3SemanticBridgeApplyT8',
+    assert ids[339:343] == ['SolAttnMiniMax', 'MiniMaxH3SemanticBridgeConfigT8', 'MiniMaxH3SemanticBridgeApplyT8',
                         'MiniMaxH3LTXLatentAdapterEXPT8']
     assert ids[266] == "MiniMaxH3ChunkedTwoPassMaskedLowSigmaPlanT8Advanced"
     assert ids[267] == "MiniMaxH3SubjectSafeRGBCompositeT8Advanced"

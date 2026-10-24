@@ -240,6 +240,54 @@ def reviewed_model_choice_sites(root, sites):
     return [dict(new) if _key(site) == _key(old) else site for site in sites]
 
 
+def reviewed_h21_sites(root, sites):
+    """Finite human-reviewed release delta; never recapture a passing baseline.
+
+    PTD same-canvas HEAD/TAIL has no invented cold/upscale contract. New source
+    identities are admitted only by an explicit per-release ledger, full source
+    hashes and saved approved-source workflows. Future/altered calls still fail.
+    This is a source tripwire, not universal GPU/effect/performance certification.
+    """
+    root = Path(root).resolve()
+    path = root / 'tests/fixtures/h21_reviewed_sampling_1_102.json'
+    if not path.is_file():
+        return sites
+    review = json.loads(path.read_text(encoding='utf8'))
+    required = {'schema', 'previous_sites', 'reviewed_sites', 'files', 'accepted_media_sha256',
+                'accepted_video_groups', 'registered_nodes', 'scope', 'unverified'}
+    if (set(review) != required or review['schema'] != 't8.h21.reviewed_sampling_release.v1'
+            or review['accepted_video_groups'] != 94 or review['registered_nodes'] != 768
+            or not review['scope'] or not review['unverified']):
+        raise ValueError('Invalid bounded H21 release review')
+    previous, selected = review['previous_sites'], review['reviewed_sites']
+    if len(previous) != 6 or len(selected) != 9:
+        raise ValueError('H21 reviewed site delta differs')
+    for rows in (previous, selected):
+        if len({_key(row) for row in rows}) != len(rows):
+            raise ValueError('Duplicate H21 reviewed sampling identity')
+        for row in rows:
+            if (set(row) != {'path', 'symbol', 'callee', 'call_sha256'}
+                    or not re.fullmatch(r'[0-9a-f]{64}', row['call_sha256'])):
+                raise ValueError('Malformed H21 sampling identity')
+    if (not isinstance(review['files'], dict) or not review['files']
+            or not review['accepted_media_sha256']
+            or any(not re.fullmatch(r'[0-9a-f]{64}', value) for value in review['accepted_media_sha256'])):
+        raise ValueError('Missing H21 source/media binding')
+    for relative, expected in review['files'].items():
+        target = root / relative
+        if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()
+                or not target.resolve().is_relative_to(root) or not target.is_file()
+                or not re.fullmatch(r'[0-9a-f]{64}', expected)
+                or hashlib.sha256(target.read_bytes()).hexdigest() != expected):
+            raise ValueError('Reviewed H21 source/workflow changed: ' + relative)
+    if not {row['path'] for row in selected} <= set(review['files']):
+        raise ValueError('H21 sampling module lacks a full source binding')
+    old_keys = {_key(row) for row in previous}
+    if not old_keys <= {_key(row) for row in sites}:
+        raise ValueError('H21 release review cannot relabel a different baseline')
+    return [row for row in sites if _key(row) not in old_keys] + selected
+
+
 def _reaches(edges, source, target):
     pending, seen = [source], set()
     while pending:
@@ -353,6 +401,7 @@ def audit(root, baseline, admissions, routes, live_ids=None):
     current = discover(root)
     baseline_sites, layout_omissions = reviewed_layout_sites(root, baseline)
     baseline_sites = reviewed_model_choice_sites(root, baseline_sites)
+    baseline_sites = reviewed_h21_sites(root, baseline_sites)
     old = Counter(_key(site) for site in baseline_sites)
     now = Counter(_key(site) for site in current)
     new = now - old

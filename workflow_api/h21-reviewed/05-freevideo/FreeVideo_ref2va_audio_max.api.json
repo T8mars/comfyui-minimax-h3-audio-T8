@@ -1,0 +1,269 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3FreeVideoH21LoaderEXPT8",
+    "inputs": {
+      "runtime_config": ""
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "H21/FreeVideo_ref2va_audio_max/5_Background_Source.mp4"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "5",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ],
+      "prompt": "Use <Audio 1> only as an audio reference for the scene's acoustic character; generate new synchronized audio instead of copying or locking the recording. A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true,
+      "ref_audios.ref_audio_0": [
+        "6",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3FreeVideoH21SamplerEXPT8",
+    "inputs": {
+      "freevideo_model": [
+        "1",
+        0
+      ],
+      "conditioning": [
+        "7",
+        0
+      ],
+      "tier": "max",
+      "role": "FULL",
+      "width": 1024,
+      "height": 576,
+      "frames": 124,
+      "seed": 26092137,
+      "clip_to_offload": [
+        "2",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "8",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "9",
+        0
+      ],
+      "audio": [
+        "9",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/FreeVideo_ref2va_audio_max",
+      "crf": 18
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3FreeVideoH21StageSaveEXPT8",
+    "inputs": {
+      "completed_stage": [
+        "8",
+        1
+      ]
+    }
+  },
+  "13": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "8",
+        2
+      ]
+    }
+  },
+  "14": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "1",
+        1
+      ]
+    }
+  },
+  "15": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "6",
+        4
+      ]
+    }
+  },
+  "16": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "7",
+        3
+      ]
+    }
+  },
+  "17": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "7",
+        4
+      ]
+    }
+  },
+  "18": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "7",
+        5
+      ]
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "7",
+        0
+      ],
+      "conditioned_prompt": [
+        "7",
+        3
+      ],
+      "media_map_json": [
+        "7",
+        4
+      ],
+      "conditioning_report": [
+        "7",
+        5
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "20": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "19",
+        0
+      ]
+    }
+  },
+  "21": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "19",
+        2
+      ]
+    }
+  },
+  "22": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "12",
+        1
+      ]
+    }
+  },
+  "23": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "12",
+        2
+      ]
+    }
+  }
+}

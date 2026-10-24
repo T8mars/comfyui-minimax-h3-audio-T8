@@ -12,12 +12,36 @@ import math
 import time
 
 import comfy.sample
+import comfy.utils
 import torch
 
 from .core import nested_av_parts
 from .hyperflow_runtime_advanced import ATTACHMENT_KEY, HyperFlowBinding
 from .hyperflow_sampling_advanced import build_hyperflow_plan, setup_hyperflow_sampler
 from .progressive_sampling_runtime import _restore_stage_objects
+
+
+def validate_noise_mask(av_latent):
+    """Check real Core resize geometry without allocating a second AV mask.
+
+    Core supports resized video-only masks as well as nested video/audio masks.
+    Keep its interpolation and default all-one audio mask, not a new mask policy.
+    """
+    mask = av_latent.get("noise_mask")
+    if mask is None:
+        return
+    latents = nested_av_parts(av_latent)
+    masks = mask.unbind() if getattr(mask, "is_nested", False) else [mask]
+    for part, latent in zip(masks, latents):
+        if (not isinstance(part, torch.Tensor) or part.is_complex() or not part.numel()
+                or not bool(torch.isfinite(part).all()) or bool((part < 0).any()) or bool((part > 1).any())):
+            raise ValueError("HyperFlow noise mask must contain finite real values in [0,1]")
+        try:
+            resized = comfy.utils.reshape_mask(torch.empty(part.shape, dtype=part.dtype, device="meta"), latent.shape)
+        except (IndexError, RuntimeError, ValueError, TypeError) as error:
+            raise ValueError(f"HyperFlow noise mask cannot be resized to native AV geometry: {error}") from error
+        if resized.shape != latent.shape:
+            raise ValueError("HyperFlow noise mask channels/batch do not match native AV geometry")
 
 
 def _validate_pair(model_low, model_high, av_latent, split_interval: int) -> tuple[HyperFlowBinding, HyperFlowBinding]:
@@ -33,25 +57,24 @@ def _validate_pair(model_low, model_high, av_latent, split_interval: int) -> tup
         raise ValueError("Continuous split must leave at least one absolute interval in each stage")
     if not isinstance(av_latent, dict) or "samples" not in av_latent:
         raise ValueError("Expected native AV LATENT dictionary")
-    if av_latent.get("noise_mask") is not None:
-        raise ValueError("HyperFlow split with denoise masks needs a separate boundary-state proof")
     video, audio = nested_av_parts(av_latent)
     if video.shape[1] != 24 or audio.shape[1] != 32 or audio.shape[2] != 2:
         raise ValueError("HyperFlow split expects native packed MiniMax H3 video/audio latent")
+    validate_noise_mask(av_latent)
     return low, high
 
 
 @torch.inference_mode()
 def sample_hyperflow_split(model_low, model_high, positive, av_latent: dict, *,
                            seed: int, split_interval: int = 4, cfg: float = 1.0,
-                           negative=None, callback=None) -> tuple[dict, str]:
+                           negative=None, callback=None, positive_high=None, negative_high=None) -> tuple[dict, str]:
     """Run 4+4 (or another 1..7 split) with exact x_sigma handoff.
 
     The LOW sampler captures its exact model-space endpoint x_sigma before
     Core's nonterminal clean-latent conversion. The HIGH typed sampler injects
-    that state directly. Its zero-noise Core initialization is only a shape and
-    conditioning scaffold; no inverse-scaling round trip or audio rebase can
-    change the captured trajectory.
+    that state directly. Unmasked Core initialization is only a shape scaffold;
+    masked continuation retains the original inpaint source and prepared noise.
+    Neither path rebases the captured trajectory or draws new noise for HIGH.
     """
     low_binding, high_binding = _validate_pair(model_low, model_high, av_latent, split_interval)
     if type(seed) is not int or not 0 <= seed < 2**64:
@@ -81,19 +104,26 @@ def sample_hyperflow_split(model_low, model_high, positive, av_latent: dict, *,
         model_high, av_latent, plan_high, internal_continuation=True,
         x_sigma_override=continuation_state)
     negative = [] if negative is None else negative
+    positive_high = positive if positive_high is None else positive_high
+    negative_high = negative if negative_high is None else negative_high
+    mask = av_latent.get("noise_mask")
     started = time.perf_counter()
     stage_times = {}
+    observed_callbacks = {"LOW": [], "HIGH": []}
     try:
         noise = comfy.sample.prepare_noise(av_latent["samples"], seed)
         low_started = time.perf_counter()
 
         def low_callback(index, prediction, state, count):
+            observed_callbacks["LOW"].append({
+                "local_index": index, "absolute_interval": index, "local_total": count,
+            })
             if callback is not None:
                 callback(index, prediction, state, 8)
 
         boundary_latent = comfy.sample.sample_custom(
             branch_low, noise, cfg, sampler_low, schedule_low, positive, negative,
-            av_latent["samples"], callback=low_callback, disable_pbar=True, seed=seed)
+            av_latent["samples"], noise_mask=mask, callback=low_callback, disable_pbar=True, seed=seed)
         stage_times["low_seconds"] = time.perf_counter() - low_started
     finally:
         _restore_stage_objects(branch_low)
@@ -106,15 +136,22 @@ def sample_hyperflow_split(model_low, model_high, positive, av_latent: dict, *,
         # Core returns a clean-latent view at nonterminal sigma. Keep that for
         # spatial/conditioning shape, but inject the exact captured x_sigma into
         # the typed high sampler. No inverse-scaling round-trip or new RNG.
-        empty_noise = comfy.sample.prepare_empty_noise(boundary_latent)
+        # Inpaint uses the original clean source and the *same* prepared noise
+        # at every sigma. Replacing either with the HEAD's clean view/zeros
+        # changes known regions, even though the generated x_sigma is exact.
+        tail_source = boundary_latent if mask is None else av_latent["samples"]
+        tail_noise = comfy.sample.prepare_empty_noise(boundary_latent) if mask is None else noise
 
         def high_callback(index, prediction, state, count):
+            observed_callbacks["HIGH"].append({
+                "local_index": index, "absolute_interval": split_interval + index, "local_total": count,
+            })
             if callback is not None:
                 callback(split_interval + index, prediction, state, 8)
 
         output = comfy.sample.sample_custom(
-            branch_high, empty_noise, cfg, sampler_high, schedule_high,
-            positive, negative, boundary_latent, callback=high_callback,
+            branch_high, tail_noise, cfg, sampler_high, schedule_high,
+            positive_high, negative_high, tail_source, noise_mask=mask, callback=high_callback,
             disable_pbar=True, seed=seed)
         stage_times["high_seconds"] = time.perf_counter() - high_started
     finally:
@@ -132,6 +169,13 @@ def sample_hyperflow_split(model_low, model_high, positive, av_latent: dict, *,
         "absolute_intervals": [[0, split_interval], [split_interval, 8]],
         "stage_nfe": [split_interval, 8 - split_interval],
         "total_nfe": 8,
+        "observed_sampler_callbacks": observed_callbacks,
+        "nfe_evidence": {
+            "legacy_nfe_fields": "declared_trained_intervals",
+            "callback_source": "actual_Core_sample_custom_callback",
+            "actual_DiT_forward_count_qualified": False,
+            "scope": "Sampler callbacks do not count extra forwards inside user MODEL or CFG wrappers",
+        },
         "video_boundary_sigma": plan_low.video_sigmas[split_interval],
         "audio_boundary_sigma": plan_low.audio_sigmas[split_interval],
         "noise_handoff": "direct_captured_x_sigma_no_new_noise_no_audio_rebase",

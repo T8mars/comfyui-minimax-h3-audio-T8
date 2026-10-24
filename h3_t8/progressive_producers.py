@@ -14,7 +14,7 @@ from types import FunctionType, MethodType
 
 import torch
 
-from .long_video_dual_identity import content_identity
+from .long_video_dual_identity import content_identity, _original_state, _original_buffers
 from .nodes_long_video_dual_model import _component_identity
 from .patch_stack_policy import UnverifiedModelStack, nonportable_component_identity, model_identity_matches
 
@@ -208,11 +208,16 @@ def _native_producer_description(component, role):
     component_identity = _component_identity(component)
     if component_identity.get('portable_cache_reuse') is False:
         raise UnverifiedModelStack('Progressive producer uses an unverified component stack')
+    # Core Dynamic keeps pre-cast parameter/buffer storage in its backups.
+    # Residency must not change the logical producer; do not unpatch the live
+    # encoder, nor invent persistent keys for registered nonpersistent buffers.
+    component_identity = {**component_identity, 'state': content_identity(
+        _original_state(component.patcher, component.patcher.model_state_dict()))}
     description = {'role': role, 'component': component_identity, 'settings': settings,
                    'network': configs, 'classes': classes,
                    # state_dict omits native H3 pixel_mean/pixel_std. They still
                    # change encode/decode and must invalidate cached work.
-                   'buffers': content_identity(dict(network.named_buffers())),
+                   'buffers': content_identity(_original_buffers(component.patcher)),
                    'methods': {name: _configuration(getattr(type(component), name), references) for name in methods},
                    'placement': content_identity({'load': component.patcher.load_device,
                                                   'offload': component.patcher.offload_device,

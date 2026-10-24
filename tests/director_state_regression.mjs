@@ -6,6 +6,8 @@ import vm from 'node:vm';
 import { setTimeout as realDelay } from 'node:timers/promises';
 import { makeDirectorServices } from '../web/director/session.mjs';
 import { createSamplingDialog } from '../web/director/sampling_ui.mjs';
+import {middleRows,middleAssetIds} from '../web/director/keyframes_state.mjs';
+import {controlRows,controlAssetIds,controlSamplingMode} from '../web/director/control_state.mjs';
 
 const copy = structuredClone;
 for(const mode of ['simple','advanced'])for(const flags of ['present','legacy'])for(const empty of [false,true])test(`writing drafts survive portable mode switching: ${mode}/${flags}/empty=${empty}`,()=>{
@@ -1005,7 +1007,7 @@ for(const selection of [null,'removed','pending'])test(`stage, selected card and
     const zoom=html.slice(html.indexOf("case 'zoom':"),html.indexOf("case 'pair':"));
     const s={id:'shot',mode:'first',first:null,last:null,refs:[],tray:['pending'],selected:selection};
     const nodes=new Map(),opened=[],notices=[];
-    const state={doc:{sharedRefs:[],shots:[s]},assets:new Map(['pending','removed'].map(id=>[id,{id,kind:'image',name:id+'.png',url:id+'.png',width:100,height:200}])),sh:()=>s,s,view:'input',pair:false,esc:String,tokenMap:()=>new Map([['pending','@image1']]),$:selector=>{if(!nodes.has(selector))nodes.set(selector,{});return nodes.get(selector)},notify:t=>notices.push(t),fullPreview:id=>opened.push(id)};
+    const state={middleRows,middleAssetIds,controlRows,controlAssetIds,controlSamplingMode,doc:{sharedRefs:[],shots:[s]},assets:new Map(['pending','removed'].map(id=>[id,{id,kind:'image',name:id+'.png',url:id+'.png',width:100,height:200}])),sh:()=>s,s,view:'input',pair:false,esc:String,tokenMap:()=>new Map([['pending','@image1']]),$:selector=>{if(!nodes.has(selector))nodes.set(selector,{});return nodes.get(selector)},notify:t=>notices.push(t),fullPreview:id=>opened.push(id)};
     vm.createContext(state);vm.runInContext(['refIds','bindings','trayItems','previewAssetId','imageTag','renderThumbs'].map(line).join('\n')+'\n'+stage,state);
     vm.runInContext("renderStage();renderThumbs();switch('zoom'){"+zoom+'}',state);
     assert.match(nodes.get('[data-stage]').innerHTML,/pending\.png/);assert.match(nodes.get('[data-thumbs]').innerHTML,/data-selected="true"/);

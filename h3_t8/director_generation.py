@@ -12,6 +12,7 @@ from .director_project import ProjectStore, compile_project, validate_project
 from .director_sampling_settings import effective_sampling
 from .director_two_pass import apply_two_pass_graph
 from .director_hyperflow import apply_hyperflow_graph
+from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
 from .ffmpeg_utils import resolve_ffmpeg
 from .h3_weight_diagnostics import inspect_h3_weight_file
 
@@ -112,10 +113,12 @@ def director_model_catalog() -> dict[str, list[dict[str, str]]]:
         return result
 
     from .nodes_hyperflow_advanced import _weight_options
+    from .h3_fun_control_advanced import _available_fun_control_names
 
     hyperflow = [name for name in _weight_options() if name != "missing_hyperflow_weights"]
     return {
         "hyperflow": [{"value": name, "label": name} for name in hyperflow],
+        "fun_control_names": [{"value": name, "label": name} for name in _available_fun_control_names()],
         "unet": [{"value": "auto", "label": "自动（按镜头类型）"}] + entries(
             "diffusion_models", lambda n: n.lower().endswith(".safetensors") and ("minimax_h3" in n.lower() or "fasth3" in n.lower())
         ),
@@ -228,9 +231,19 @@ def _relay_plan_inputs(shot: Mapping[str, Any]) -> dict[str, Any]:
         timing_mode = "auto_equal"
     else:
         local_prompts = "\n".join(str(event["text"]) for event in events)
-        time_ranges = "\n".join(
-            f"{int(event['start_frame'])}-{int(event['end_frame']) - 1}" for event in events
-        )
+        visible_frames = int(shot["time"].get("delivery_trim_frames",
+            shot["time"].get("requested_frames", shot["time"]["aligned_frames"])))
+        generated_frames = int(shot["time"]["aligned_frames"])
+        ranges = []
+        for index, event in enumerate(events):
+            end = int(event["end_frame"])
+            # The complete native grid includes hidden alignment frames after
+            # delivery. Only inherit an event that actually reaches the visible
+            # endpoint; do not fill a user's gap, drop events or edit their draft.
+            if index == len(events) - 1 and end == visible_frames < generated_frames:
+                end = generated_frames
+            ranges.append(f"{int(event['start_frame'])}-{end - 1}")
+        time_ranges = "\n".join(ranges)
         timing_mode = "frames"
     return {
         "global_prompt": global_prompt,
@@ -304,8 +317,9 @@ def build_director_generation_prompt(
     fast_enabled = bool(fast_cfg.get("enabled", False))
     low_vram_enabled = bool(memory_cfg.get("low_vram", False))
     chunk_ffn_enabled = bool(memory_cfg.get("chunk_ffn", False))
-    if fast_enabled and task != "t2va":
-        raise ValueError("导演台 FastH3 V2 当前只允许 T2VA；首尾/参考/原音请先关闭 FastH3 V2")
+    if fast_enabled and (task != "t2va" or shot["audio_mode"] != "native" or shot.get("middle_keyframes")):
+        report["warnings"].append({"shot_id": shot_id,
+            "message": "FastH3 V2 保留所选模型及首尾/参考/原音/中间图条件；非文字组合属于 EXP，训练资格仍为 T2VA，效果须单独验证。不会自动换模型、移除条件或更改采样路线。"})
     relay_events = []
     if relay_enabled and str(relay_cfg.get("execution_mode", "apply_exp")) == "apply_exp":
         from .prompt_relay_advanced import _local_prompt_lines
@@ -316,11 +330,20 @@ def build_director_generation_prompt(
     if sampling["mode"] == "two_pass" and fast_enabled:
         raise ValueError("标准 4+4 双采不能与 FastH3 V2 的独立 8 步模型同时启用")
     if sampling["mode"] == "hyperflow":
-        if fast_enabled or (relay_enabled and sampling["variant"] != "continuous4plus4separate"):
-            raise ValueError("HyperFlow EXP 尚未实现 D3 Relay/FastH3 的条件/模型接线；请关闭该路线或使用原采样方式")
+        if fast_enabled:
+            raise ValueError("HyperFlow 的两时钟训练网格与 FastH3 V2 的独立采样器同时占用 SAMPLER/SIGMAS；当前没有联合采样协议。保留配置，请显式选择其中一条采样路线，不会静默覆盖")
         if bridge_enabled or low_vram_enabled or chunk_ffn_enabled:
             report["warnings"].append({"shot_id": shot_id,
                 "message": "HyperFlow EXP 保留已启用的 Bridge/分块注意力/FFN 路线，但此叠加尚未完成真实 GPU 组合验收；请检查实际输出。"})
+        if task != "t2va" or shot["audio_mode"] != "native" or relay_enabled or shot.get("middle_keyframes"):
+            report["warnings"].append({"shot_id": shot_id,
+                "message": "HyperFlow 将按各阶段实际 MODEL 配对首尾/参考/中间图及声音条件；这些 EXP 组合仍需独立 GPU 成片和人审，不借用文字单采资格。"})
+        if sampling.get("stage_checkpoint", {}).get("mode") == "resume_tail" and sound == "record":
+            recording = _asset_for_role(shot, "drive_audio") or {}
+            report["warnings"].append({"shot_id": shot_id,
+                "frozen_head_sha256": sampling["stage_checkpoint"]["artifact_sha256"],
+                "current_recording_sha256": recording.get("sha256"),
+                "message": "仅TAIL恢复保持冻结HEAD的原素材、遮罩与噪声；当前录音用于TAIL条件与最终交付，不证明它与历史HEAD同源。若更换录音并需要全片按新录音生成，请重新生成HEAD；不会静默替换冻结状态。"})
         if sampling["variant"] != "single8":
             from comfy.cli_args import args
             import comfy.memory_management
@@ -666,6 +689,62 @@ def build_director_generation_prompt(
             graph["11"]["inputs"]["start_seconds"] = [str(next_id), 2]
         if not relay_enabled:
             graph[condition_id]["inputs"]["length"] = [str(next_id), 1]
+        next_id += 1  # Reserve AudioWindow before appending middle-image nodes.
+
+    if shot.get("middle_keyframes"):
+        # Reuse the existing native inputs and downstream graph, with explicit
+        # MODEL/positive pairing. Ordinary prompts do not acquire Relay.
+        previous = None
+        for keyframe in shot["middle_keyframes"]:
+            media = next(item for item in shot["media_map"] if item.get("keyframe_id") == keyframe["id"])
+            image_id = str(next_id)
+            graph[image_id] = {"class_type": "LoadImage", "inputs": {"image": media["server_path"]}}
+            next_id += 1
+            plan_id = str(next_id)
+            inputs = {"image": [image_id, 0], "position_mode": "frame", "position": keyframe["frame_index"],
+                "visual_noise_aug": keyframe["visual_noise_aug"], "resize_mode": keyframe["resize_mode"], "enabled": True}
+            if previous is not None:
+                inputs["previous_plan"] = [previous, 0]
+            graph[plan_id] = {"class_type": "MiniMaxH3KeyframePlanT8Advanced", "inputs": inputs}
+            previous = plan_id
+            next_id += 1
+        if not relay_enabled:
+            # Stable AudioConditioning omits MODEL; this additive entry puts it
+            # first, shifting its other outputs by one. Rewire exact links only.
+            for node in graph.values():
+                for key, value in node["inputs"].items():
+                    if isinstance(value, list) and len(value) == 2 and value[0] == condition_id and type(value[1]) is int:
+                        node["inputs"][key] = [condition_id, value[1] + 1]
+            graph[fast_setup_id or "6"]["inputs"]["model"] = [condition_id, 0]
+            graph[condition_id]["inputs"]["model"] = [model_id, 0]
+        else:
+            graph[condition_id]["inputs"].update(prompt=shot["prompt"], length=shot["time"]["aligned_frames"])
+        graph[condition_id]["class_type"] = "MiniMaxH3DirectorKeyframeConditioningEXPT8"
+        graph[condition_id]["inputs"]["keyframe_plan"] = [previous, 0]
+        for key, default in {"first_frame_noise_aug": .999, "last_frame_noise_aug": .999,
+                "reference_visual_noise_aug": .999, "execution_mode": "report_only", "query_chunk_rows": 256}.items():
+            graph[condition_id]["inputs"].setdefault(key, default)
+        report["warnings"].append({"shot_id": shot_id,
+            "message": "中间关键帧已按明确时轴接入实际条件；保持原采样和声音路由，GPU画质与组合效果仍需单独验收。"})
+
+    if sampling["mode"] == "single" and shot.get("control_regions"):
+        def add_control(kind, inputs):
+            nonlocal next_id
+            node_id = str(next_id)
+            next_id += 1
+            graph[node_id] = {"class_type": kind, "inputs": inputs}
+            return node_id
+
+        selected_model = graph[fast_setup_id or "6"]["inputs"]["model"]
+        condition_inputs = graph[condition_id]["inputs"]
+        controls = append_director_controls(graph, shot, stage="SINGLE",
+            model=selected_model, positive=graph["7"]["inputs"]["conditioning"],
+            width=condition_inputs["width"], height=condition_inputs["height"],
+            length=control_condition_length(graph, condition_inputs), video_vae=["2", 0], add=add_control)
+        graph[fast_setup_id or "6"]["inputs"]["model"] = controls["model"]
+        graph["7"]["inputs"]["conditioning"] = controls["positive"]
+        graph["10"]["inputs"]["av_latent"] = audit_control_latent(
+            add_control, graph["10"]["inputs"]["av_latent"], controls["states"])
 
     two_pass = None
     if sampling["mode"] == "two_pass":

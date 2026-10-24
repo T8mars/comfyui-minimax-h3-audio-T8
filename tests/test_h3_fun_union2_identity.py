@@ -232,3 +232,34 @@ def test_no_attachment_has_exact_legacy_projection_identity(control):
     base, _, _, _ = scene(control)
     view, contract = identity.project(base)
     assert view is base and contract is None
+
+
+def test_actual_union_anonymous_group_and_all_150_memory_forwards_keep_within_run_identity(control):
+    from h3_audio_t8_pkg.h3_memory_advanced import (
+        configure_low_vram_attention, configure_chunk_feed_forward,
+        inspect_t8_memory_composition,
+    )
+    from h3_audio_t8_pkg.patch_stack_policy import model_identity_matches
+    _, patched, owner, _ = scene(control)
+    patched = configure_low_vram_attention(patched, 1)[0]
+    patched = configure_chunk_feed_forward(patched, 2, 256)[0]
+    from test_fast_h3_v2_core_sampler import model as native_model
+    # The old structural scene deliberately has a sigma-only namespace.
+    # Execution identity requires a real native sampling module/state dict.
+    patched.model.model_sampling = native_model().model.model_sampling
+    patched.add_object_patch('model_sampling', patched.model.model_sampling)
+    initial = patched.model.model_sampling
+    groups = tuple(key for entries in patched.wrappers.values()
+                   for key, values in entries.items() if values)
+    assert None in groups
+    memory = inspect_t8_memory_composition(patched, allowed_wrapper_keys=groups)
+    assert memory is not None and len(memory['methods']) == 150
+    before = results.execution_identity(patched, initial)
+    wrappers = patched.get_all_wrappers(WrappersMP.DIFFUSION_MODEL)
+    patched.patch_model(torch.device('cpu'), load_weights=False)
+    after = results.execution_identity(patched, initial)
+    assert model_identity_matches(before, after)
+    assert patched.get_all_wrappers(WrappersMP.DIFFUSION_MODEL) == wrappers
+    assert owner is wrappers[0].__self__
+    assert before['portable_cache_reuse'] is after['portable_cache_reuse'] is False
+    assert not torch.cuda.is_initialized()

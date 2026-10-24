@@ -1,4 +1,4 @@
-// N04: two plain-text recipes for the existing snapshot/candidate workflow.
+// Plain-text recipes for the existing snapshot/candidate workflow.
 // No asset database, inferred evidence, timing transform, queue or provider.
 const string = (value) => ({type: 'string', max_length: 4096, default: value});
 const recipes = {
@@ -25,6 +25,19 @@ const recipes = {
             audio_policy: {type: 'string', choices: ['native_joint_exp', 'completed_master_lock_source'], default: 'native_joint_exp'},
             master: string('无既有配音；原生联合生成。若改master策略须填写实际来源与完成态回执'),
             dialogue_events: string('待填：说话人ID、全片起止/样本范围、各一次对白；不从观察事实猜台词'),
+        },
+    },
+    ending_beats: {
+        name: '明确结局与局部节拍 · 本镜声明', scope: 'shot',
+        text: '[用户创作声明；不是已观察事实、规则引擎或硬时间控制]\n本镜在全片中的位置与时间单位：${global_timeline}\n角色、参考与起始已知状态：${start_state}\n本镜必须清楚呈现的结局：${visible_ending}\n为达成结局允许出现的可见动作：${allowed_changes}\n本镜局部节拍（逐段写起止、动作起落与收势）：${local_beats}\n各只说一次的字面对白与说话人：${literal_dialogue}\n禁止凭空新增或转移的角色/道具：${preserve}\n先呈现所填的明确结果，不仅复述抽象规则；不要从未知状态猜测钥匙、武器、人物归属或胜负。节拍是提示词中的创作要求，不自动裁音频、改事件/sigma/采样时钟，也不强制Prompt Relay；已选普通提示词仍走原路线。不要把规则、节拍标签或说明文字念成台词；只有字面对白栏明确要求的内容才作为对白。声明不会自动成为sourceEvidence或已采用成片末态，实际结局、同步和道具连续性仍需看成片。',
+        parameter_schema: {
+            global_timeline: string('待填：全片0点、单位、本镜全片起止和本镜局部0点；不要混写'),
+            start_state: string('待填：稳定role_id、真实Picture/Audio标签、画面与道具起始状态；未知写未知'),
+            visible_ending: string('待填：最后画面里谁在哪里、持有什么、完成或没有完成什么；只写本镜明确选择的一个结局'),
+            allowed_changes: string('待填：本镜确实允许的动作与状态转移；不增造道具'),
+            local_beats: string('待填：本镜局部0–起点/中段/结束的时间及可见动作；音乐片段同时核实际所用Audio裁切段'),
+            literal_dialogue: string('无对白；若需要对白，逐行填写说话人ID、局部时段与只说一次的原文'),
+            preserve: string('待填：稳定人物、服装、道具数量与归属；下一镜应承接的实际可见末态'),
         },
     },
 };

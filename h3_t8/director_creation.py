@@ -3,7 +3,7 @@ from copy import deepcopy
 import math
 import re
 
-TEMPLATE_FIELDS = set('name mode sound writingMode simplePrompt prompt simpleInitialized advancedInitialized refs tray first last audio start end duration manualDuration autoDuration ratio ownRatio samplingInherit sampling d3Inherit d3 events'.split())
+TEMPLATE_FIELDS = set('name mode sound writingMode simplePrompt prompt simpleInitialized advancedInitialized refs tray first last audio start end duration manualDuration autoDuration ratio ownRatio samplingInherit sampling d3Inherit d3 events middleKeyframes controlRegions'.split())
 KINDS = {'snippet': {'text', 'bindings'}, 'template': {'shot', 'bindings'},
          'recipe': {'sampling', 'd3', 'ratio', 'duration'}, 'group': {'asset_ids', 'note'}}
 
@@ -86,6 +86,12 @@ def remap_library(value, asset_map, fresh):
                     shot[field] = asset(shot[field])
             for event in shot['events']:
                 event['id'] = fresh('collection-event', old_id+':'+event['id'])
+            from .director_keyframes import keyframe_asset_ids, remap_keyframes
+            remap_keyframes(shot, {aid: asset(aid) for aid in keyframe_asset_ids(shot)},
+                            lambda kind, uid: fresh('collection-'+kind, old_id+':'+uid))
+            from .director_controls import control_asset_ids, remap_controls
+            remap_controls(shot, {aid: asset(aid) for aid in control_asset_ids(shot)},
+                           lambda kind, uid: fresh('collection-'+kind, old_id+':'+uid))
 
 
 def validate_project_library(project, validate_project, new_project):

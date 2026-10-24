@@ -92,7 +92,10 @@ class WindowsJob:
             self.handle = None
 
 
-# -I -S avoids user startup hooks before the gate. Site packages are enabled
+# -I -S avoids user startup hooks before the gate. -B prevents a trusted
+# worker importing siblings from adding __pycache__ to a frozen source tree;
+# -I ignores PYTHONDONTWRITEBYTECODE, so an environment flag is insufficient.
+# Site packages are enabled
 # only after ownership is established; no arbitrary task runs before assignment.
 BOOTSTRAP = (
     "import sys; gate=sys.stdin.buffer.readline(); "
@@ -136,7 +139,7 @@ def run_isolated(script, arguments=(), *, timeout=180, cancel=None, check=None):
     receipt = {'status': 'incomplete', 'pid': None, 'job_assigned_before_task': False}
     started = time.monotonic()
     try:
-        process = subprocess.Popen([sys.executable, '-I', '-S', '-u', '-c', BOOTSTRAP, str(script), *arguments],
+        process = subprocess.Popen([sys.executable, '-I', '-S', '-B', '-u', '-c', BOOTSTRAP, str(script), *arguments],
             cwd=script.parent, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             creationflags=subprocess.CREATE_NO_WINDOW, bufsize=0, close_fds=True)
         receipt['pid'] = process.pid

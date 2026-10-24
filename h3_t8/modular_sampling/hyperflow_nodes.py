@@ -24,8 +24,9 @@ class MiniMaxH3HyperFlowHeadStageEXPT8(io.ComfyNode):
             category=CATEGORY, is_experimental=True,
             description="Only absolute0:split, capturing the exact raw model-space AV x_sigma. Independent "
                 "MODEL/content LoRAs/conditions/NOISE. No TAIL or upscale. Requires dedicated HyperFlow Loader. "
-                "No denoise masks in this continuous contract. Boundary is not clean x0 or a Progressive boundary. "
-                "Current identity is process-local; disk resume and stage EAV/Relay adapters remain pending.",
+                "Valid native masks retain the original source and prepared noise in the boundary, separately "
+                "from raw x_sigma. This is not clean x0 or a Progressive boundary. Disk resume requires an "
+                "authenticated portable owner; unknown user owners can execute live without that qualification.",
             inputs=[io.Model.Input("model"), io.Latent.Input("av_latent"), io.Noise.Input("noise"),
                 io.Conditioning.Input("positive"), io.Conditioning.Input("negative"),
                 io.Int.Input("split_interval", default=4, min=1, max=7),

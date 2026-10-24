@@ -1,0 +1,20 @@
+PTD inference for MiniMax-H3
+
+The upstream MiniMax-H3 inference code comes from MiniMax. MiniMax-H3 components
+used through Hugging Face Diffusers retain their MiniMax and Hugging Face
+copyright notices in the source files.
+
+EPFL VITA Lab made minor PTD-specific adaptations to support the PTD checkpoints,
+including hop-routed adapters, sampling recipes, checkpoint loading and condition
+caching. The repository also includes supporting scripts and tests for these
+adaptations. EPFL VITA Lab's notices apply to these changes and supporting code;
+the upstream notices remain applicable to the upstream components.
+
+The PTD checkpoints in https://huggingface.co/epfl-vita/PTD-weights were trained by
+EPFL VITA Lab based on the paper "Parametric Trajectory Distillation for Few-Step
+Video Generation" (arXiv:2610.11498): https://arxiv.org/abs/2610.11498.
+
+Source code is distributed under the Apache License, Version 2.0; see LICENSE.
+The MiniMax-H3 base model, PTD checkpoint derivatives and model outputs are
+separately covered by the MiniMax H3 Community License Agreement supplied with
+the model weights. This code attribution does not change those license terms.

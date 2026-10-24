@@ -1,0 +1,210 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "3",
+        0
+      ],
+      "video_vae": [
+        "4",
+        0
+      ],
+      "audio_vae": [
+        "5",
+        0
+      ],
+      "prompt": "Night, one continuous cinematic shot on a rain-wet neon street. An adult woman in a red coat raises one hand, turns, then runs away from camera while the camera pulls rapidly upward until she becomes a small full-body figure in the street. Preserve her identity, natural anatomy, stable limbs, crisp clothing and smooth large-amplitude motion. No dialogue. Synchronized footsteps, coat movement, wind, traffic and distant city ambience.",
+      "width": 736,
+      "height": 416,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s"
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "av_latent": [
+        "6",
+        1
+      ],
+      "steps": 20,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "8": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "13",
+        0
+      ],
+      "conditioning": [
+        "6",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 2608217001
+    }
+  },
+  "10": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "9",
+        0
+      ],
+      "guider": [
+        "8",
+        0
+      ],
+      "sampler": [
+        "7",
+        1
+      ],
+      "sigmas": [
+        "7",
+        2
+      ],
+      "latent_image": [
+        "6",
+        1
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3EnhanceAVideoT8Advanced",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "sigmas": [
+        "7",
+        2
+      ],
+      "mode": "report_only",
+      "tau": 4.0,
+      "start_video_progress": 0.0,
+      "end_video_progress": 1.0,
+      "max_workspace_mib": 32,
+      "g_hard_limit": 1.5,
+      "sampling_profile": "stock20"
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3EnhanceAVideoAuditT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "10",
+        0
+      ],
+      "runtime": [
+        "13",
+        1
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "14",
+        0
+      ],
+      "video_vae": [
+        "4",
+        0
+      ],
+      "audio_vae": [
+        "5",
+        0
+      ]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "15",
+        0
+      ],
+      "audio": [
+        "15",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Core_A2_cache_off_native20",
+      "crf": 18
+    }
+  },
+  "16": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        1
+      ]
+    }
+  }
+}

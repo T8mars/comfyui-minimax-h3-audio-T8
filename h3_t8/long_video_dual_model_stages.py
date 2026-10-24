@@ -5,6 +5,7 @@ The first stage must export denoised x0, not its nonzero-sigma noisy output.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 import logging
 import time
@@ -39,6 +40,18 @@ class _NativePytorchObserver:
         return {'kind': 'native_core_pytorch_selector',
             'completed_calls': {'pytorch:completed': self.completed},
             'scope': 'completed calls to the authenticated native Core selector; no numerical replacement'}
+
+
+def _stage_backend_call_deltas(after, before):
+    """Read-only per-stage counts, including nested fallback delegates."""
+    report = deepcopy(after)
+    for key, value in report.items():
+        previous = before.get(key, {})
+        if key == 'completed_calls' and isinstance(value, dict) and isinstance(previous, dict):
+            report[key] = {name: count - previous.get(name, 0) for name, count in value.items()}
+        elif isinstance(value, dict) and isinstance(previous, dict):
+            report[key] = _stage_backend_call_deltas(value, previous)
+    return report
 
 
 def bind_stage_conditioning(model, builder, **kwargs):
@@ -150,19 +163,27 @@ def _sample_model_stage(model, positive, av_latent, *, sampler, sigmas, seed,
         }
     )
     relay_counts_before = None
-    override = observed.model_options.get("transformer_options", {}).get("optimized_attention_override")
-    backend = capture_composed_backend(override)
-    if backend is None and plain_attention_backend(override) == 'pytorch':
-        backend = _NativePytorchObserver()
+    relay_contract = None
     if PROMPT_RELAY_WRAPPER_KEY in diffusion_groups:
         relay_contract = prompt_relay_model_contract(observed)
         relay_counts_before = relay_contract["execution_counts"]
-        if backend is None:
-            # Read the authenticated owner's existing backend, never replace
-            # the Relay router or infer ownership from a public marker.
+    preserve_relay_owner = (v2_owner is None and relay_contract is not None
+        and relay_contract["attention_owner_verified"])
+    override = observed.model_options.get("transformer_options", {}).get("optimized_attention_override")
+    if preserve_relay_owner:
+        # This is the authenticated captured owner, not the callable's public
+        # tag. Observe its existing delegate without wrapping the Relay router.
+        backend = relay_contract["attention_backend"]
+    else:
+        # Later user-selected delegates and FastH3V2 keep their original path.
+        backend = capture_composed_backend(override)
+        if backend is None and plain_attention_backend(override) == 'pytorch':
+            backend = _NativePytorchObserver()
+        if relay_contract is not None and backend is None:
             backend = relay_contract["attention_backend"]
-    if backend is not None and v2_owner is None:
-        set_h3_attention_backend(observed, backend.attention)
+        if backend is not None and v2_owner is None:
+            set_h3_attention_backend(observed, backend.attention)
+    backend_counts_before = deepcopy(backend.report()) if preserve_relay_owner and backend is not None else None
     completed_forwards = 0
     timings = WallTimings()
 
@@ -225,6 +246,9 @@ def _sample_model_stage(model, positive, av_latent, *, sampler, sigmas, seed,
         if backend is not None
         else {"status": "not_measured_by_plain_selector_observer"}
     )
+    if backend_counts_before is not None:
+        backend_report = _stage_backend_call_deltas(backend_report, backend_counts_before)
+        backend_report['counter_scope'] = 'this stage; captured Relay delegate delta, not end-to-end speed'
     if memory_report is not None:
         backend_report["memory_composition"] = memory_report
     if v2_owner is not None:

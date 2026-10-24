@@ -1,0 +1,341 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_original.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true
+    }
+  },
+  "7": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "5",
+        0
+      ]
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3PTDSetupEXPT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "checkpoint": "PTD-H3-6step.safetensors"
+    }
+  },
+  "24": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "6",
+        3
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3PTDContinuousHEAD_EXPT8",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "7",
+        0
+      ],
+      "av_latent": [
+        "5",
+        1
+      ]
+    }
+  },
+  "16": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "5",
+        0
+      ]
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3PTDContinuousTAIL_EXPT8",
+    "inputs": {
+      "guider": [
+        "16",
+        0
+      ],
+      "head": [
+        "9",
+        0
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3PTDContinuousAuditEXPT8",
+    "inputs": {
+      "stage": [
+        "17",
+        1
+      ]
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3PTDContinuousAuditEXPT8",
+    "inputs": {
+      "stage": [
+        "9",
+        0
+      ]
+    }
+  },
+  "25": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "9",
+        1
+      ]
+    }
+  },
+  "26": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "17",
+        2
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "17",
+        0
+      ],
+      "filename_prefix": "MiniMaxH3/PTD/Latent/ptd6_continuous3plus3",
+      "checkpoint_id": "h21_ptd_comparison",
+      "confirm_save": true,
+      "verify_after_write": true,
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "14",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/PTD/ptd6_continuous3plus3",
+      "crf": 18
+    }
+  },
+  "20": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        2
+      ]
+    }
+  },
+  "21": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        3
+      ]
+    }
+  },
+  "22": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        4
+      ]
+    }
+  },
+  "23": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "14",
+        5
+      ]
+    }
+  },
+  "27": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        3
+      ]
+    }
+  },
+  "28": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        4
+      ]
+    }
+  },
+  "29": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        5
+      ]
+    }
+  },
+  "30": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "5",
+        0
+      ],
+      "conditioned_prompt": [
+        "5",
+        3
+      ],
+      "media_map_json": [
+        "5",
+        4
+      ],
+      "conditioning_report": [
+        "5",
+        5
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "31": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "30",
+        0
+      ]
+    }
+  },
+  "32": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "30",
+        2
+      ]
+    }
+  }
+}

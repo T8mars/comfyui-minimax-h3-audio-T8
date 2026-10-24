@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import hashlib
 import json
+import math
 from typing import Any
 
 import torch
@@ -621,8 +622,13 @@ def concat_native_h3_av_continuation(
         timeline_start_seconds = float(planner["timeline_start_seconds"])
         timeline_end_seconds = float(planner["timeline_end_seconds"])
         trim_start_seconds = float(planner["trim_start_seconds"])
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
         raise ValueError("planner_report_json is missing required numeric continuation fields") from exc
+    for name, value in (("timeline_start_seconds", timeline_start_seconds),
+                        ("timeline_end_seconds", timeline_end_seconds),
+                        ("trim_start_seconds", trim_start_seconds)):
+        if not math.isfinite(value):
+            raise ValueError(f"Planner {name} must be finite")
     chain_id = str(planner.get("chain_id", "")).strip()
     if not chain_id:
         raise ValueError("planner_report_json is missing chain_id")

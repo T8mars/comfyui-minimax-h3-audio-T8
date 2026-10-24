@@ -1,0 +1,550 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": [
+        "910002",
+        1
+      ],
+      "height": [
+        "910002",
+        2
+      ],
+      "length": 124,
+      "task_type": "FL2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame": [
+        "900000",
+        0
+      ],
+      "last_frame": [
+        "900003",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "av_latent": [
+        "18",
+        1
+      ],
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "7": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "18",
+        0
+      ]
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "9": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "7",
+        0
+      ],
+      "sampler": [
+        "6",
+        1
+      ],
+      "sigmas": [
+        "19",
+        0
+      ],
+      "latent_image": [
+        "18",
+        1
+      ]
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "25",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Standard4plus4_middle_OFF",
+      "crf": 18
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "task_type": "FL2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame": [
+        "900001",
+        0
+      ],
+      "last_frame": [
+        "900004",
+        0
+      ]
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3LearnedTwoPassParityPlanT8Advanced",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "base_steps": 8,
+      "coarse_steps": 4,
+      "refine_steps": 4
+    }
+  },
+  "910002": {
+    "class_type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "9",
+        1
+      ],
+      "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "size_mode": "target_megapixels",
+      "scale_by": 2.0,
+      "target_megapixels": 0.589824,
+      "target_width": 1024,
+      "target_height": 576,
+      "aspect_policy": "preserve_source",
+      "max_anisotropy": 1.05,
+      "precision": "fp16",
+      "release_policy": "offload_after"
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+    "inputs": {
+      "learned_latent": [
+        "910002",
+        0
+      ],
+      "highres_template": [
+        "5",
+        1
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "audio_policy": "auto",
+      "second_pass_audio_source": "legacy_policy",
+      "second_pass_audio_strength": 0.0
+    }
+  },
+  "22": {
+    "class_type": "MiniMaxH3TwoPassDetailMixerT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "av_latent": [
+        "21",
+        0
+      ],
+      "refine_sigmas": [
+        "19",
+        1
+      ],
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "enable_tail": false,
+      "extra_tail_steps": 3,
+      "tail_spacing": "video_sigma_linear",
+      "enable_model_time_bias": false,
+      "bias": -0.025,
+      "bias_start_progress": 0.7,
+      "bias_end_progress": 0.95,
+      "bias_domain": "video_sigma",
+      "enable_stg": false,
+      "stg_scale": 0.35,
+      "stg_double_blocks": "25",
+      "stg_start_progress": 0.25,
+      "stg_end_progress": 0.85,
+      "enable_restart": false,
+      "restart_video_sigma": 0.15,
+      "restart_steps": 3,
+      "restart_seed": 26092137
+    }
+  },
+  "23": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ],
+      "conditioning": [
+        "21",
+        1
+      ]
+    }
+  },
+  "24": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "25": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "24",
+        0
+      ],
+      "guider": [
+        "23",
+        0
+      ],
+      "sampler": [
+        "22",
+        1
+      ],
+      "sigmas": [
+        "22",
+        2
+      ],
+      "latent_image": [
+        "21",
+        0
+      ]
+    }
+  },
+  "900000": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Standard4plus4_middle_OFF/900000_fit_1024_576.png"
+    }
+  },
+  "900001": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Standard4plus4_middle_OFF/900001_fit_512_288.png"
+    }
+  },
+  "900002": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Standard4plus4_middle_OFF/900002_source.png"
+    }
+  },
+  "900003": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Standard4plus4_middle_OFF/900003_fit_1024_576.png"
+    }
+  },
+  "900004": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Standard4plus4_middle_OFF/900004_fit_512_288.png"
+    }
+  },
+  "910003": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "5",
+        0
+      ],
+      "conditioned_prompt": [
+        "5",
+        3
+      ],
+      "media_map_json": [
+        "5",
+        4
+      ],
+      "conditioning_report": [
+        "5",
+        5
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "910004": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        5
+      ]
+    }
+  },
+  "910005": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        3
+      ]
+    }
+  },
+  "910006": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "5",
+        4
+      ]
+    }
+  },
+  "910007": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "910003",
+        0
+      ]
+    }
+  },
+  "910008": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "910003",
+        2
+      ]
+    }
+  },
+  "910009": {
+    "class_type": "MiniMaxH3NFERunContractT8Advanced",
+    "inputs": {
+      "positive": [
+        "18",
+        0
+      ],
+      "conditioned_prompt": [
+        "18",
+        3
+      ],
+      "media_map_json": [
+        "18",
+        4
+      ],
+      "conditioning_report": [
+        "18",
+        5
+      ],
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "910010": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "18",
+        5
+      ]
+    }
+  },
+  "910011": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "18",
+        3
+      ]
+    }
+  },
+  "910012": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "18",
+        4
+      ]
+    }
+  },
+  "910013": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "910009",
+        0
+      ]
+    }
+  },
+  "910014": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "910009",
+        2
+      ]
+    }
+  },
+  "910015": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "19",
+        2
+      ]
+    }
+  },
+  "910016": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "910002",
+        3
+      ]
+    }
+  },
+  "910017": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "21",
+        2
+      ]
+    }
+  },
+  "910018": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "22",
+        5
+      ]
+    }
+  }
+}

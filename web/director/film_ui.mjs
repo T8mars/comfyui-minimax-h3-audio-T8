@@ -1,4 +1,5 @@
 import { createModalAccess } from './modal_ui.mjs';
+import { createFilmCaptionEditor, captionResultHTML } from './caption_ui.mjs';
 
 // Playlist playback is intentionally separate from encoding a deliverable MP4.
 export function filmClipTimes(entry) {
@@ -9,16 +10,18 @@ export function filmClipTimes(entry) {
     if(!Number.isFinite(offset))throw Error('外片源时钟无效');
     return {start:offset+entry.in_frame/fps,end:offset+entry.out_frame/fps,duration:(entry.out_frame-entry.in_frame)/fps};
 }
-export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExport,exportStatus}) {
+export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExport,exportStatus,saveCaptions,captionStatus,importSpeechTrack}) {
     const dialog=document.createElement('dialog');dialog.className='w-film-dialog';dialog.dataset.filmDialog='';
-    dialog.innerHTML='<div class="o-row o-between"><h3>整片串播</h3><div class="o-row"><button type="button" data-film-last-export>上次导出</button><button type="button" data-film-close>关闭</button></div></div><p data-film-state role="status"></p><p data-film-export-status role="status"></p><div data-film-body></div>';
+    dialog.innerHTML='<div class="o-row o-between"><h3>整片串播</h3><div class="o-row"><button type="button" data-film-last-caption>上次字幕</button><button type="button" data-film-last-export>上次导出</button><button type="button" data-film-close>关闭</button></div></div><p data-film-state role="status"></p><p data-film-export-status role="status"></p><p data-film-caption-status role="status"></p><div data-film-body></div>';
     root.append(dialog);
     const modal=createModalAccess(dialog,{root});
-    let manifest=null,index=0,sequence=0,exportSequence=0,advancing=false,finished=false;
+    let manifest=null,index=0,sequence=0,exportSequence=0,captionSequence=0,captionEditor=null,advancing=false,finished=false;
     const body=dialog.querySelector('[data-film-body]'),status=dialog.querySelector('[data-film-state]');
-    function close(){sequence++;body.querySelectorAll('video').forEach(video=>video.pause());dialog.close();}
+    function mayClose(){return !captionEditor?.isDirty()||confirm('字幕稿尚未保存。关闭会丢失此处未保存的稿件；可取消后先添加文字框里的字幕，再下载字幕稿 JSON。仍要关闭？');}
+    function cleanup(){sequence++;captionEditor?.dispose();captionEditor=null;body.querySelectorAll('video').forEach(video=>video.pause());}
+    function close(){if(!mayClose())return false;cleanup();dialog.close();return true;}
     dialog.querySelector('[data-film-close]').addEventListener('click',close);
-    dialog.addEventListener('cancel',()=>{sequence++;body.querySelectorAll('video').forEach(video=>video.pause());});
+    dialog.addEventListener('cancel',event=>{if(!mayClose()){event.preventDefault();return;}cleanup();});
     async function followExport(target,ticket,exportTicket){
         const host=dialog.querySelector('[data-film-export-status]');
         while(dialog.open&&ticket===sequence&&exportTicket===exportSequence){
@@ -37,6 +40,12 @@ export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExp
         }
     }
     dialog.querySelector('[data-film-last-export]').addEventListener('click',()=>followExport(null,sequence,++exportSequence));
+    dialog.querySelector('[data-film-last-caption]').addEventListener('click',async()=>{
+        const ticket=sequence,captionTicket=++captionSequence,host=dialog.querySelector('[data-film-caption-status]');
+        host.textContent='正在只读核对上次字幕，不会重新生成或套用到当前整片。';
+        try{const result=await captionStatus();if(!dialog.open||ticket!==sequence||captionTicket!==captionSequence)return;host.innerHTML=result?captionResultHTML(result,esc):'当前项目没有可读取的字幕附件。';}
+        catch(error){if(ticket===sequence&&captionTicket===captionSequence)host.textContent='未能读取上次字幕：'+error.message+'；没有自动重发。';}
+    });
     function drawCurrent(autoplay=false){
         const player=body.querySelector('video'),entry=manifest.entries[index],times=filmClipTimes(entry),ticket=sequence;
         advancing=true;finished=false;
@@ -75,7 +84,7 @@ export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExp
     }
     dialog.addEventListener('click',event=>{
         const button=event.target.closest('button');if(!button)return;
-        if(button.dataset.filmLocate){close();locate(button.dataset.filmLocate);}
+        if(button.dataset.filmLocate&&close())locate(button.dataset.filmLocate);
         if(button.dataset.filmShot!==undefined){index=Number(button.dataset.filmShot);drawCurrent(false);}
         if(button.hasAttribute('data-film-previous')&&index>0){index--;drawCurrent(false);}
         if(button.hasAttribute('data-film-next')){advancing=false;next(false);}
@@ -90,8 +99,11 @@ export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExp
         }
     });
     async function open(){
+        if(!mayClose())return;
+        captionEditor?.dispose();captionEditor=null;
         const ticket=++sequence;manifest=null;index=0;
         exportSequence++;dialog.querySelector('[data-film-export-status]').textContent='';
+        captionSequence++;dialog.querySelector('[data-film-caption-status]').textContent='';
         root.querySelectorAll('video,audio').forEach(media=>media.pause());
         body.replaceChildren();status.textContent='正在核对采用版本、解码并固定媒体副本；不加载模型、不提交生成…';
         modal.show();
@@ -109,6 +121,8 @@ export function createFilmViewer({root,prepare,notify,locate,escape:esc,startExp
             body.querySelector('[data-film-manifest]').href=result.manifest_url;
             const first=manifest.entries[0].media;
             body.insertAdjacentHTML('beforeend',`<details class="w-film-export"><summary>导出整片 MP4</summary><p class="o-tip">独立 CPU 编码：24fps H.264、48kHz 双声道 AAC。按固定帧范围硬切，等比缩放＋黑边；不裁切、不加转场或音量处理。原片保留。只支持 24fps 成片。</p><div class="o-grid"><label>输出宽度<input type="number" data-film-width value="${first.width}" min="32" max="4096" step="2" required></label><label>输出高度<input type="number" data-film-height value="${first.height}" min="32" max="4096" step="2" required></label></div><label class="o-check"><input type="checkbox" data-film-encoding required>我确认以上画面与音频编码规格</label><label class="o-check"><input type="checkbox" data-film-silence>允许为没有音轨的镜头补静音</label><button type="button" data-film-export>开始导出 MP4</button></details>`);
+            const captions=document.createElement('details');captions.className='w-film-captions';body.append(captions);
+            captionEditor=createFilmCaptionEditor({host:captions,film:manifest,save:saveCaptions,importSpeech:importSpeechTrack,escape:esc});
             drawCurrent(false);
         }catch(error){if(ticket===sequence&&dialog.open)status.textContent='整片准备失败：'+error.message;else notify('整片准备未完成：'+error.message);}
     }

@@ -16,7 +16,7 @@ def test_all_frontend_workflows_have_publication_date_prefix():
     paths = sorted(root.rglob("*.json"))
     categories = sorted(path for path in root.iterdir() if path.is_dir())
     publication_name = re.compile(r"^\d{4}-\d{2}-\d{2}_.+\.json$")
-    assert len(paths) == 291
+    assert len(paths) == 293
     # Released Topaz FI and the wired upscale->FI graph must survive the
     # SelfLift and the dual T8 memory-loop integration; older totals predate
     # these append-only workflows.
@@ -81,22 +81,20 @@ def test_all_frontend_workflows_have_publication_date_prefix():
         "31-topaz",
         "32-prepared-generation",
         "33-selflift-taomate",
+        "34-fasth3-v2",
         "34-semantic-bridge",
         "35-h3-ltx-latent",
         "36-avatar-voice",
         "37-meridian",
         "38-diagnostics-preview",
         "39-director-console",
-        "58-hypervae-2x",
     ]
     assert (root / "README.md").is_file()
     assert all((category / "README.md").is_file() for category in categories)
     assert list(root.glob("*.json")) == []
-    # These seven names predate the date-prefix policy and remain stable public
-    # download links. New workflows must still carry a publication date.
-    assert {
-        path.name for path in paths if not publication_name.fullmatch(path.name)
-    } == {
+    # These historical names remain stable public download links; new files
+    # must still have date-prefixed names.
+    assert {path.name for path in paths if not publication_name.fullmatch(path.name)} == {
         "FastH3_V2_Dense_Relay_Dual_4plus4_8s_EXP.json",
         "FastH3_V2_Dense_Sol_Audio_Protected_73f_EXP.json",
         "FastH3_V2_Official_Comfy_Template_124f_EXP.json",
@@ -677,6 +675,24 @@ def test_frontend_workflows_do_not_serialize_unlinked_widgets_as_inputs():
     assert failures == []
 
 
+def test_formal_chunked_workflow_repair_keeps_prompt_and_widget_values():
+    root = Path(__file__).resolve().parents[1] / "examples" / "workflows" / "13-latent-upscale"
+    cases = (
+        ("2026-09-17_H3_NonPDD_Standard_4plus4_Chunked_EXP.json", 13, 896, 448, "One continuous"),
+        ("2026-09-17_H3_Chunked_4plus4_接线修正版（低显存双分块双采样）.json", 13, 896, 448, "女人对着镜头说话"),
+    )
+    for filename, node_id, width, height, prompt_start in cases:
+        workflow = json.loads((root / filename).read_text(encoding="utf-8"))
+        node = next(item for item in workflow["nodes"] if item["id"] == node_id)
+        values = node["widgets_values"]
+        assert len(values) == 13
+        assert values[0].startswith(prompt_start)
+        assert values[1:4] == [width, height, 192]
+    h16 = json.loads((root / "2026-09-20_H3_H16_3_Chunked_PASS2_I2VA_Advanced_EXP.json").read_text(encoding="utf-8"))
+    sampler = next(item for item in h16["nodes"] if item["id"] == 19)
+    assert sampler["widgets_values"] == ["guarded_overlap_exp", 34, 17, 0.999, "refined_exp"]
+
+
 def test_frontend_workflow_links_are_reciprocal_and_target_current_slots():
     root = Path(__file__).resolve().parents[1] / "examples" / "workflows"
     failures = []
@@ -705,8 +721,7 @@ def test_frontend_workflow_links_are_reciprocal_and_target_current_slots():
                 item.strip() for item in str(target_type).split(",") if item.strip()
             }
             if "*" not in {source_type, target_type, link_type} and not (
-                source_type == link_type
-                and source_type in accepted_target_types
+                source_type == link_type and source_type in accepted_target_types
             ):
                 failures.append(
                     f"{path.relative_to(root)}:link{link_id}:type "

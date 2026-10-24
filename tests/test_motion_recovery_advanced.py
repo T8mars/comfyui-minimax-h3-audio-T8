@@ -25,6 +25,9 @@ from h3_audio_t8_pkg.nodes_motion_recovery_advanced import (
     MOTION_RECOVERY_ADVANCED_NODE_CLASSES,
     MiniMaxH3MotionAutoGateT8Advanced,
 )
+from h3_audio_t8_pkg.modular_sampling.legacy_pass_through_nodes import (
+    MiniMaxH3MotionOverloadAnalyzePassThroughEXPT8,
+)
 from helpers import FakeAudioVAE, FakeVideoVAE, make_audio
 
 
@@ -437,6 +440,12 @@ def test_append_only_motion_recovery_node_schemas_are_safe_by_default():
     assert collect_inputs["store_dtype"].default == "float32_exact"
     assert schemas[4].is_output_node is False
     assert schemas[5].is_output_node is False
+    pass_through = MiniMaxH3MotionOverloadAnalyzePassThroughEXPT8.define_schema()
+    assert pass_through.is_output_node is False
+    assert [item.id for item in pass_through.inputs] == [
+        item.id for item in schemas[0].inputs]
+    assert [item.id for item in pass_through.outputs] == [
+        item.id for item in schemas[0].outputs]
     assert gate_inputs["repaired_frames"].lazy is True
     assert gate_inputs["repaired_audio"].lazy is True
 

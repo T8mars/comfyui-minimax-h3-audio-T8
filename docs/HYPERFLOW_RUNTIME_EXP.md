@@ -1,5 +1,21 @@
 # HyperFlow independent runtime — EXP acceptance (2026-09-22)
 
+## Continuous split execution reports
+
+The combined split now records actual Core sampler callbacks separately for
+LOW and HIGH, including local indices, absolute intervals and each callback's
+local total. The existing `stage_nfe` and `total_nfe` fields remain compatible
+but describe trained intervals; they are not counters of extra DiT forwards
+inside CFG or user wrappers. `nfe_evidence` makes that distinction explicit.
+Callback recording does not change sampling, noise, AV clocks or the exact
+`x_sigma` handoff. The owned qualification controller also consumes existing
+HyperFlow and Stage `report_json` outputs without changing producer inputs.
+
+Actual tiny native 50+2 CPU tests cover 1+7, 4+4 and 7+1, exact AV equality
+with and without an external callback, and all twelve real report schemas.
+Earlier frozen probe runs are unchanged; a missing callback report in those
+runs cannot be retroactively treated as observed execution.
+
 This is an opt-in MiniMax-H3 pathway, not a generic acceleration LoRA and not
 the existing Director `standard_4plus4_v1`. The old single and 4+4 recipes
 remain the default for projects without HyperFlow settings. Earlier development

@@ -186,6 +186,11 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .w-film-shots button{white-space:nowrap}
 #t8-obsidian-lab[data-workbench] .w-film-shots button[aria-current="true"]{border-color:var(--o-gold);color:var(--o-gold)}
 #t8-obsidian-lab[data-workbench] .w-film-issues li{padding:8px 0}
+#t8-obsidian-lab[data-workbench] .w-film-captions{margin-top:12px;border-top:1px solid var(--o-line);padding-top:10px}
+#t8-obsidian-lab[data-workbench] .w-film-captions [data-caption-rows]{display:grid;gap:8px;padding-left:24px;max-height:240px;overflow:auto}
+#t8-obsidian-lab[data-workbench] .w-film-captions [data-caption-rows] li{padding:8px;border:1px solid var(--o-line);border-radius:7px}
+#t8-obsidian-lab[data-workbench] .w-film-captions .w-caption-cue-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:96px;overflow:auto;margin-top:4px;line-height:1.5}
+#t8-obsidian-lab[data-workbench] .w-film-captions [data-caption-remove]{min-height:30px;padding:4px 8px;font-size:12px}
 #t8-obsidian-lab[data-workbench] .w-asset-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0;font-size:12px}
 #t8-obsidian-lab[data-workbench] .w-asset-filters input[type="search"]{flex:1 1 150px;min-width:100px}
 #t8-obsidian-lab[data-workbench] .w-asset-filters select{width:auto;max-width:130px}

@@ -1,0 +1,261 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Veda_tiles97/1_VR01_Ref.png"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "6": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "lora_name": "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+      "strength_model": 1.0
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "chunks": 2,
+      "seq_threshold": 4096
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3VedaR2VABundleEXPT8",
+    "inputs": {
+      "bundle_name": "minimax_h3_r2va_veda_preview_fp8.safetensors"
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3VedaR2VAApplyEXPT8",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "bundle": [
+        "8",
+        0
+      ],
+      "mode": "apply_exp",
+      "plan_mode": "nearest_exp",
+      "generated_budget": "97",
+      "reference_budget": "97",
+      "max_copy_mib": 64
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A continuous realistic medium shot of the adult woman in <ref_image_1>, in a quiet sunlit garden. Preserve her face, hairstyle and clothes. She looks directly at the camera, smiles naturally, and clearly says once in Mandarin Chinese: \"你好，今天天气不错。\" Natural clear female voice, realistic lip synchronization, soft outdoor ambience. No extra dialogue, music, cuts, subtitles, flashes or duplicate people.",
+      "width": 864,
+      "height": 480,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": false,
+      "ref_images.ref_image_0": [
+        "1",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ],
+      "av_latent": [
+        "10",
+        1
+      ],
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "12": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "conditioning": [
+        "10",
+        0
+      ]
+    }
+  },
+  "13": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 2610213201
+    }
+  },
+  "14": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "13",
+        0
+      ],
+      "guider": [
+        "12",
+        0
+      ],
+      "sampler": [
+        "11",
+        1
+      ],
+      "sigmas": [
+        "11",
+        2
+      ],
+      "latent_image": [
+        "10",
+        1
+      ]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3VedaR2VAAuditEXPT8",
+    "inputs": {
+      "av_latent": [
+        "14",
+        0
+      ],
+      "runtime": [
+        "9",
+        1
+      ]
+    }
+  },
+  "16": {
+    "class_type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "15",
+        0
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Veda_tiles97",
+      "checkpoint_id": "H21_Veda_tiles97",
+      "confirm_save": true,
+      "verify_after_write": true,
+      "hash_chunk_megabytes": 8
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "16",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "17",
+        0
+      ],
+      "audio": [
+        "17",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "18",
+        0
+      ],
+      "audio": [
+        "18",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Veda_tiles97",
+      "crf": 18
+    }
+  },
+  "20": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "15",
+        1
+      ]
+    }
+  }
+}

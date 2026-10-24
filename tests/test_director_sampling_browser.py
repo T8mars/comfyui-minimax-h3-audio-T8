@@ -266,6 +266,7 @@ def test_live_director_recovers_completed_video_when_requested():
     import json
     from urllib.request import urlopen
     from urllib.parse import urlsplit, urlunsplit, urlencode, parse_qs
+    from h3_audio_t8_pkg.director_film import result_key
 
     parsed = urlsplit(url)
     base = urlunsplit((parsed.scheme, parsed.netloc, parsed.path.removesuffix('/ui'), '', ''))
@@ -274,7 +275,7 @@ def test_live_director_recovers_completed_video_when_requested():
     with urlopen(base+'/results/'+project_id, timeout=20) as response:
         records = json.load(response)['results']
     shot = next(item for item in project['doc']['shots'] if item['id'] == project['current'])
-    adopted = next(item for item in records if item['shot_id'] == shot['id'] and item['prompt_id'] == shot['adoptedResultId'])
+    adopted = next(item for item in records if item['shot_id'] == shot['id'] and result_key(item) == shot['adoptedResultId'])
     assert adopted['state'] == 'success'
     expected_files = [media['filename'] for output in adopted['outputs'].values()
                       for field in ('images', 'gifs', 'videos') for media in output.get(field, [])
@@ -295,6 +296,9 @@ def test_live_director_recovers_completed_video_when_requested():
         frozen_src = player.get_attribute('src')
         assert parse_qs(urlsplit(frozen_src).query)['filename'] == expected_files
         expect(page.locator(f'[data-shot="{shot["id"]}"]')).to_contain_text('有成片')
+        # preload=metadata can stay at HAVE_METADATA for a real long movie.
+        # Request actual decode/playback instead of assuming a short-fixture preload.
+        player.evaluate('v=>{v.muted=true;return v.play()}')
         page.wait_for_function("document.querySelector('video.o-output-player')?.readyState >= 2")
         assert player.evaluate('v=>v.videoWidth>0 && v.videoHeight>0 && v.duration>0')
         page.reload(wait_until='networkidle')

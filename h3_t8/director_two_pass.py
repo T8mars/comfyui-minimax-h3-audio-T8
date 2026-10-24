@@ -7,6 +7,8 @@ from typing import Any
 
 import folder_paths
 
+from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
+
 
 UPSCALE_CANDIDATES = ("minimax_h3_latent_upscaler_3d_fp16.safetensors",)
 
@@ -72,25 +74,28 @@ def apply_two_pass_graph(
 
     low_model, high_model = stage_model("low"), stage_model("high")
     relay = bool(d3["prompt_relay"].get("enabled"))
+    middle = bool(shot.get("middle_keyframes"))
+    returns_model = relay or middle
     bridge = bool(d3["semantic_bridge"].get("enabled"))
     high_condition = next(
         (node_id for node_id, node in graph.items()
-         if node["class_type"] == ("MiniMaxH3PromptRelayConditioningT8Advanced" if relay else "MiniMaxH3AudioConditioningT8")),
+         if node["class_type"] == ("MiniMaxH3DirectorKeyframeConditioningEXPT8" if middle else
+                                   "MiniMaxH3PromptRelayConditioningT8Advanced" if relay else "MiniMaxH3AudioConditioningT8")),
         None,
     )
     if high_condition is None:
         raise ValueError("双采未找到 HIGH 条件节点")
     high_inputs = graph[high_condition]["inputs"]
-    if relay:
+    if returns_model:
         high_inputs["model"] = [high_model, 0]
     high_bridge = next(
         (node_id for node_id, node in graph.items()
-         if node["class_type"] == "MiniMaxH3SemanticBridgeApplyT8" and node["inputs"].get("conditioning") == [high_condition, 0]),
+         if node["class_type"] == "MiniMaxH3SemanticBridgeApplyT8" and node["inputs"].get("conditioning") == [high_condition, 1 if returns_model else 0]),
         None,
     ) if bridge and not relay else None
     low_inputs = deepcopy(high_inputs)
     low_inputs["width"], low_inputs["height"] = plan["low_width"], plan["low_height"]
-    if relay:
+    if returns_model:
         low_inputs["model"] = [low_model, 0]
     for key, role in (("first_frame", "first_frame"), ("last_frame", "last_frame")):
         if key not in low_inputs:
@@ -103,14 +108,19 @@ def apply_two_pass_graph(
     low_positive = low_condition
     if high_bridge:
         bridge_inputs = deepcopy(graph[high_bridge]["inputs"])
-        bridge_inputs["conditioning"] = [low_condition, 0]
+        bridge_inputs["conditioning"] = [low_condition, 1 if returns_model else 0]
         low_positive = add("MiniMaxH3SemanticBridgeApplyT8", bridge_inputs)
-    low_model_output = [low_condition, 0] if relay else [low_model, 0]
-    high_model_output = [high_condition, 0] if relay else [high_model, 0]
-    low_latent = [low_condition, 2 if relay else 1]
-    high_latent = [high_condition, 2 if relay else 1]
-    low_positive_output = [low_positive, 1 if relay else 0]
-    high_positive_output = [high_bridge or high_condition, 1 if relay else 0]
+    low_model_output = [low_condition, 0] if returns_model else [low_model, 0]
+    high_model_output = [high_condition, 0] if returns_model else [high_model, 0]
+    low_latent = [low_condition, 2 if returns_model else 1]
+    high_latent = [high_condition, 2 if returns_model else 1]
+    low_positive_output = [low_positive, 1 if returns_model and not high_bridge else 0]
+    high_positive_output = [high_bridge or high_condition, 1 if returns_model and not high_bridge else 0]
+    low_controls = append_director_controls(graph, shot, stage="LOW",
+        model=low_model_output, positive=low_positive_output,
+        width=low_inputs["width"], height=low_inputs["height"], length=control_condition_length(graph, low_inputs),
+        video_vae=["2", 0], add=add)
+    low_model_output, low_positive_output = low_controls["model"], low_controls["positive"]
 
     graph["6"]["inputs"].update({
         "model": low_model_output, "av_latent": low_latent,
@@ -126,7 +136,7 @@ def apply_two_pass_graph(
         "latent_image": low_latent,
     })
     upscaler = add("MiniMaxH3LearnedLatentUpscaleT8Advanced", {
-        "av_latent": ["9", 1], "model_name": upscaler_name,
+        "av_latent": audit_control_latent(add, ["9", 1], low_controls["states"]), "model_name": upscaler_name,
         "size_mode": "target_megapixels", "scale_by": 2.0,
         "target_megapixels": plan["actual_megapixels"],
         "target_width": plan["width"], "target_height": plan["height"],
@@ -142,8 +152,12 @@ def apply_two_pass_graph(
         "second_pass_audio_source": "legacy_policy",
         "second_pass_audio_strength": 0.0,
     })
+    high_controls = append_director_controls(graph, shot, stage="HIGH",
+        model=high_model_output, positive=[reconciled, 1],
+        width=high_inputs["width"], height=high_inputs["height"], length=control_condition_length(graph, high_inputs),
+        video_vae=["2", 0], add=add)
     mixer = add("MiniMaxH3TwoPassDetailMixerT8Advanced", {
-        "model": high_model_output, "av_latent": [reconciled, 0],
+        "model": high_controls["model"], "av_latent": [reconciled, 0],
         "refine_sigmas": [parity, 1], "shift_video": 12.0, "shift_audio": 3.0,
         "enable_tail": False, "extra_tail_steps": 3,
         "tail_spacing": "video_sigma_linear",
@@ -155,16 +169,16 @@ def apply_two_pass_graph(
         "restart_video_sigma": 0.15, "restart_steps": 3,
         "restart_seed": int(seed),
     })
-    high_guider = add("BasicGuider", {"model": [mixer, 0], "conditioning": [reconciled, 1]})
+    high_guider = add("BasicGuider", {"model": [mixer, 0], "conditioning": high_controls["positive"]})
     high_noise = add("RandomNoise", {"noise_seed": int(seed)})
     high_sampler = add("SamplerCustomAdvanced", {
         "noise": [high_noise, 0], "guider": [high_guider, 0],
         "sampler": [mixer, 1], "sigmas": [mixer, 2],
         "latent_image": [reconciled, 0],
     })
-    graph["10"]["inputs"]["av_latent"] = [high_sampler, 0]
+    graph["10"]["inputs"]["av_latent"] = audit_control_latent(add, [high_sampler, 0], high_controls["states"])
     if shot["delivery_audio"] == "original_selected_recording":
-        graph["11"]["inputs"]["audio"] = [high_condition, 3 if relay else 2]
+        graph["11"]["inputs"]["audio"] = [high_condition, 3 if returns_model else 2]
     return {
         "mode": "two_pass", "preset": sampling["preset"],
         "low": {"width": plan["low_width"], "height": plan["low_height"],

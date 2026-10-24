@@ -1,4 +1,5 @@
 // Opt-in candidate inputs only; histories and unadopted drafts are not execution.
+import {controlAssetIds,controlInputState,controlSamplingMode} from './control_state.mjs';
 export function radarCandidateInputState(doc, shot, assets) {
     const candidate = shot.promptCandidate;
     if (!candidate?.active) return undefined;
@@ -14,7 +15,10 @@ export function radarCandidateInputState(doc, shot, assets) {
         return !row.review ? 'unreviewed' : row.review.packet_sha256 === row.packet.sha256 ? 'confirmed' : 'review_stale';
     };
     const referenced = new Set([...(doc.sharedRefs || []), ...(shot.tray || []), ...(shot.refs || []),
-        ...['first', 'last', 'audio'].map(key => shot[key]).filter(Boolean)]);
+        ...['first', 'last', 'audio'].map(key => shot[key]).filter(Boolean),...controlAssetIds(shot,true,controlSamplingMode(doc,shot))]);
+    const control=controlInputState(shot,controlSamplingMode(doc,shot));
+    const draft=Object.fromEntries(['writingMode','simplePrompt','prompt','events','first','last','audio','mode','sound'].map(key=>[key,shot[key]??null]));
+    if(control!==undefined)draft.controlRegions=control;
     if (evidence) for (const source of packetMedia(evidence.packet)) referenced.add(source.asset_id);
     const disabled = new Set(shot.skillDisabled || []);
     const bindings = [...(shot.skillInherit === false ? [] : doc.sharedSkills || []), ...(shot.skillBindings || [])]
@@ -23,8 +27,7 @@ export function radarCandidateInputState(doc, shot, assets) {
         candidate: Object.fromEntries(Object.entries(candidate).filter(([key]) => key !== 'active')),
         inputs: {
             schema: 't8.director.prompt_inputs.v1', global: doc.global || '',
-            draft: Object.fromEntries(['writingMode', 'simplePrompt', 'prompt', 'events', 'first', 'last', 'audio', 'mode', 'sound']
-                .map(key => [key, shot[key] ?? null])),
+            draft,
             references: {shared: doc.sharedRefs || [], tray: shot.tray || [], refs: shot.refs || []},
             assets: Object.fromEntries([...referenced].sort().map(id => [id, media.get(id) ?? null])),
             evidence, intent,

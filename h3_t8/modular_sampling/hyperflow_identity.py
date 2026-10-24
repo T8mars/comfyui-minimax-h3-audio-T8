@@ -7,11 +7,12 @@ Opaque user owners are classified by the caller, never stripped or prohibited.
 """
 from dataclasses import asdict
 from copy import copy
+import ast
 import hashlib
 import inspect
 from pathlib import Path
 import sys
-from types import FunctionType, MethodType
+from types import CodeType, FunctionType, MethodType
 
 import comfy.lora
 import comfy.patcher_extension
@@ -19,6 +20,8 @@ import torch
 
 from .. import hyperflow_runtime_advanced as runtime
 from .. import long_video
+from .. import multikeyframe_advanced as advanced
+from .. import h3_core_compat, conditioning
 from ..hyperflow_weights_advanced import HyperFlowMetadata, HyperFlowWeights
 from ..long_video_dual_identity import content_identity, _original_state, _audited_stage_model_identity
 from ..vdn_attention_compat import _factory_closure
@@ -306,6 +309,123 @@ def _project_long_video_patch(inspection, live_model):
     return inspection, descriptor, original
 
 
+def _source_functions(module, names):
+    """Bind actual source helpers, including replaced in-memory globals.
+
+    A file SHA alone cannot detect monkeypatching an imported helper. Compile
+    for comparison only; never execute source or replace the live functions.
+    These helpers have literal defaults, which must match their source too.
+    """
+    path = Path(module.__file__).resolve()
+    source = path.read_bytes()
+    compiled = compile(source, str(path), "exec", dont_inherit=True)
+    definitions = {item.name: item for item in ast.parse(source).body
+                   if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    codes = {item.co_name: item for item in compiled.co_consts if type(item) is CodeType}
+    functions, constants = {}, {}
+    for name in names:
+        function = getattr(module, name)
+        _require(type(function) is FunctionType and function.__globals__ is vars(module)
+                 and function.__closure__ is None and not vars(function)
+                 and name in codes and name in definitions
+                 and _code_identity(function.__code__) == _code_identity(codes[name]),
+                 f"HyperFlow Advanced helper {name} has an unknown executable owner")
+        args = definitions[name].args
+        defaults = tuple(ast.literal_eval(value) for value in args.defaults) or None
+        kwdefaults = {arg.arg: ast.literal_eval(value)
+                      for arg, value in zip(args.kwonlyargs, args.kw_defaults) if value is not None} or None
+        _require(function.__defaults__ == defaults and function.__kwdefaults__ == kwdefaults,
+                 f"HyperFlow Advanced helper {name} defaults differ from source")
+        functions[name] = function_identity(function)
+        pending = [function.__code__]
+        while pending:
+            code = pending.pop()
+            pending.extend(item for item in code.co_consts if type(item) is CodeType)
+            for key in code.co_names:
+                if key.isupper() and key in vars(module):
+                    constants[key] = content_identity(vars(module)[key])
+    return {"source_sha256": hashlib.sha256(source).hexdigest(),
+            "functions": functions, "constants": constants}
+
+
+def _advanced_method(selected, owner, name, closure_name, captured):
+    _require(type(selected) is MethodType and selected.__self__ is owner,
+             f"HyperFlow Advanced {name} has another MODEL owner")
+    function = selected.__func__
+    state = _factory_closure(function, advanced.patch_multikeyframe_model, closure_name)
+    _require(type(function) is FunctionType and state is not None and set(state) == {captured}
+             and function.__defaults__ is None and function.__kwdefaults__ is None
+             and set(vars(function)) == {"_t8_multikeyframe_patch_version"}
+             and function._t8_multikeyframe_patch_version == advanced.MULTIKEYFRAME_PATCH_VERSION,
+             f"HyperFlow Advanced {name} needs its exact T8 factory")
+    original = state[captured]
+    _require(type(original) is MethodType and original.__self__ is owner
+             and original.__func__ is _class_method(type(owner), name),
+             f"HyperFlow Advanced {name} does not restore its native delegate")
+    return original, {"closure": sha(_code_identity(function.__code__)),
+                      "original": function_identity(original.__func__)}
+
+
+def _project_advanced_patch(inspection, live_model):
+    """Recognize own middle-frame methods without unpatching shared Core."""
+    selected = inspection.object_patches.get("extra_conds")
+    if selected is None:
+        return inspection, None, None
+    original, extra = _advanced_method(selected, live_model.model, "extra_conds",
+                                      "_patched_extra_conds", "original_extra_conds")
+    methods = [("extra_conds", selected, original, live_model.model,
+                "_patched_extra_conds", "original_extra_conds")]
+    descriptor = {"version": advanced.MULTIKEYFRAME_PATCH_VERSION, "extra_conds": extra}
+    forward = inspection.object_patches.get("diffusion_model._forward")
+    diffusion = live_model.model.diffusion_model
+    if forward is not None:
+        original_forward, forward_contract = _advanced_method(
+            forward, diffusion, "_forward", "_patched_forward", "original_forward")
+        methods.append(("diffusion_model._forward", forward, original_forward, diffusion,
+                        "_patched_forward", "original_forward"))
+        descriptor["per_condition_forward"] = forward_contract
+    else:
+        native_forward = getattr(diffusion, "_forward")
+        _require(type(native_forward) is MethodType and native_forward.__self__ is diffusion
+                 and native_forward.__func__ is _class_method(type(diffusion), "_forward"),
+                 "HyperFlow Advanced native _forward has another execution owner")
+    # A genuine sibling can remain installed until Core loads this MODEL.
+    # Every such method must restore the same actual class-native delegate.
+    for path, chosen, delegate, owner, closure, captured in methods:
+        name = path.rsplit(".", 1)[-1]
+        live = getattr(owner, name)
+        if live != delegate and live is not chosen:
+            sibling, _ = _advanced_method(live, owner, name, closure, captured)
+            _require(sibling == delegate, "HyperFlow Advanced sibling delegate changed")
+    names = ("patch_multikeyframe_model", "repair_multikeyframe_payload", "_keyframes_for_core",
+             "_repair_layout_positions", "_ref_advance", "_pixel_frames_from_latent_t",
+             "_visual_condition_count", "_multikeyframe_forward", "_condition_rows_with_augs",
+             "_segment_timestep_plan", "_target_mask_timestep_rows", "_mask_row_values_compat")
+    descriptor["helpers"] = _source_functions(advanced, names)
+    descriptor["layout_helper"] = _source_functions(conditioning, ("build_packed_layout",))
+    descriptor["core_helpers"] = _source_functions(h3_core_compat, (
+        "call_h3_block", "call_h3_final_layer", "prefetch_h3_block",
+        "_final_layer_schedule_parameters", "_parameters", "_signature"))
+    for name in ("call_h3_block", "call_h3_final_layer", "prefetch_h3_block"):
+        _require(getattr(advanced, name) is getattr(h3_core_compat, name),
+                 f"HyperFlow Advanced imported {name} has another owner")
+    _require(advanced.build_packed_layout is conditioning.build_packed_layout,
+             "HyperFlow Advanced imported layout helper has another owner")
+    base = copy(inspection.model)
+    base._modules = dict(inspection.model._modules)
+    if "extra_conds" in vars(base):
+        del base.extra_conds
+    if forward is not None and "_forward" in vars(base.diffusion_model):
+        projected_diffusion = copy(base.diffusion_model)
+        projected_diffusion._modules = dict(base.diffusion_model._modules)
+        del projected_diffusion._forward
+        base._modules["diffusion_model"] = projected_diffusion
+    inspection.model = base
+    for path, *_ in methods:
+        inspection.object_patches.pop(path)
+    return inspection, descriptor, original
+
+
 def model_identity(model):
     from .effect_identity import project_stage_effects
     from .hyperflow_effects import project_owner
@@ -321,7 +441,16 @@ def model_identity(model):
         # remains common identity. Projection only: never mutate shared network.
         original = {key: value for key, value in original.items() if not key.startswith("model_sampling.")}
         original.update({"model_sampling." + key: value for key, value in inspection.model.model_sampling.state_dict().items()})
-    inspection, long_video_patch, original_extra_conds = _project_long_video_patch(inspection, view)
+    chosen_extra = inspection.object_patches.get("extra_conds")
+    chosen_function = getattr(chosen_extra, "__func__", None)
+    advanced_closure = _factory_closure(chosen_function, advanced.patch_multikeyframe_model,
+                                        "_patched_extra_conds")
+    advanced_patch = None
+    if advanced_closure is not None:
+        inspection, advanced_patch, original_extra_conds = _project_advanced_patch(inspection, view)
+        long_video_patch = None
+    else:
+        inspection, long_video_patch, original_extra_conds = _project_long_video_patch(inspection, view)
     # Unknown remaining object patches, callbacks, wrappers, attachments and
     # attention backends must fail classification, not disappear on this clone.
     selected = _audited_stage_model_identity(inspection)
@@ -360,6 +489,8 @@ def model_identity(model):
                 "stage_effects": effects, "effect_stage": effect_stage, "fresh_stage": fresh_stage}
     if long_video_patch is not None:
         contract["long_video_patch"] = long_video_patch
+    if advanced_patch is not None:
+        contract["advanced_patch"] = advanced_patch
     binding = asdict(model.get_attachment(runtime.ATTACHMENT_KEY))
     binding.pop("owner")
     binding.pop("model_identity")
@@ -369,4 +500,6 @@ def model_identity(model):
             "selected": selected, "stage_effects": effects, "effect_stage": effect_stage, "fresh_stage": fresh_stage}
     if long_video_patch is not None:
         result["long_video_patch"] = long_video_patch
+    if advanced_patch is not None:
+        result["advanced_patch"] = advanced_patch
     return result

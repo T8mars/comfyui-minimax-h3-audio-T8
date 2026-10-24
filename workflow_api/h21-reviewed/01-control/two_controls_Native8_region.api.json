@@ -1,0 +1,393 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "FL2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame": [
+        "14",
+        0
+      ],
+      "last_frame": [
+        "15",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ],
+      "av_latent": [
+        "5",
+        1
+      ],
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "7": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "22",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "9": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "7",
+        0
+      ],
+      "sampler": [
+        "6",
+        1
+      ],
+      "sigmas": [
+        "6",
+        2
+      ],
+      "latent_image": [
+        "5",
+        1
+      ]
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "24",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/two_controls_Native8_region",
+      "crf": 18
+    }
+  },
+  "14": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/two_controls_Native8_region/14_fit_1024_576.png"
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/two_controls_Native8_region/15_fit_1024_576.png"
+    }
+  },
+  "16": {
+    "class_type": "MiniMaxH3FunControlLoaderT8Advanced",
+    "inputs": {
+      "control_net_name": "MiniMax-H3-Fun-Controlnet-Union.safetensors"
+    }
+  },
+  "17": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "H21/two_controls_Native8_region/17_source.mp4"
+    }
+  },
+  "18": {
+    "class_type": "GetVideoComponents",
+    "inputs": {
+      "video": [
+        "17",
+        0
+      ]
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3DirectorControlSourceEXPT8",
+    "inputs": {
+      "control_video": [
+        "18",
+        0
+      ],
+      "spec_json": "{\"asset_id\":\"c2100000-0000-4000-8000-000000000001\",\"control_kind\":\"pose\",\"control_net_name\":\"MiniMax-H3-Fun-Controlnet-Union.safetensors\",\"crop\":{\"enabled\":false,\"fit\":\"stretch\",\"flip_x\":false,\"flip_y\":false,\"xyxy_normalized\":[0,0,1,1]},\"enabled\":true,\"end_percent\":0.75,\"fit_mode\":\"stretch\",\"id\":\"c2100000-0000-4000-8000-000000000101\",\"region\":{\"mode\":\"rect\",\"xyxy_normalized\":[0,0,0.5,1]},\"source\":{\"short_video_policy\":\"hold_last_frame\",\"start_seconds\":0},\"stages\":{\"high\":true,\"low\":true},\"start_percent\":0,\"strength\":0.35}",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "source_kind": "video",
+      "source_fps": [
+        "18",
+        2
+      ],
+      "stage": "SINGLE"
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3FunControlRegionApplyEXPT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "control_net": [
+        "16",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ],
+      "control_video": [
+        "19",
+        0
+      ],
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "control_kind": "pose",
+      "fit_mode": "stretch",
+      "strength": 0.35,
+      "start_percent": 0.0,
+      "end_percent": 0.75,
+      "region_mask": [
+        "19",
+        1
+      ],
+      "crop_plan_json": [
+        "19",
+        2
+      ],
+      "stage": "SINGLE"
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3DirectorControlSourceEXPT8",
+    "inputs": {
+      "control_video": [
+        "18",
+        0
+      ],
+      "spec_json": "{\"asset_id\":\"c2100000-0000-4000-8000-000000000001\",\"control_kind\":\"pose\",\"control_net_name\":\"MiniMax-H3-Fun-Controlnet-Union.safetensors\",\"crop\":{\"enabled\":false,\"fit\":\"stretch\",\"flip_x\":false,\"flip_y\":false,\"xyxy_normalized\":[0,0,1,1]},\"enabled\":true,\"end_percent\":0.75,\"fit_mode\":\"stretch\",\"id\":\"c2100000-0000-4000-8000-000000000102\",\"region\":{\"mode\":\"rect\",\"xyxy_normalized\":[0.5,0,1,1]},\"source\":{\"short_video_policy\":\"hold_last_frame\",\"start_seconds\":0},\"stages\":{\"high\":true,\"low\":true},\"start_percent\":0,\"strength\":0.35}",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "source_kind": "video",
+      "source_fps": [
+        "18",
+        2
+      ],
+      "stage": "SINGLE"
+    }
+  },
+  "22": {
+    "class_type": "MiniMaxH3FunControlRegionApplyEXPT8",
+    "inputs": {
+      "model": [
+        "20",
+        0
+      ],
+      "positive": [
+        "20",
+        1
+      ],
+      "control_net": [
+        "16",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ],
+      "control_video": [
+        "21",
+        0
+      ],
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "control_kind": "pose",
+      "fit_mode": "stretch",
+      "strength": 0.35,
+      "start_percent": 0.0,
+      "end_percent": 0.75,
+      "region_mask": [
+        "21",
+        1
+      ],
+      "crop_plan_json": [
+        "21",
+        2
+      ],
+      "stage": "SINGLE"
+    }
+  },
+  "23": {
+    "class_type": "MiniMaxH3ControlRegionAuditEXPT8",
+    "inputs": {
+      "region_state": [
+        "20",
+        2
+      ],
+      "after_sampling": [
+        "9",
+        0
+      ]
+    }
+  },
+  "24": {
+    "class_type": "MiniMaxH3ControlRegionAuditEXPT8",
+    "inputs": {
+      "region_state": [
+        "22",
+        2
+      ],
+      "after_sampling": [
+        "23",
+        0
+      ]
+    }
+  },
+  "h21_report_11": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "11",
+        2
+      ]
+    }
+  },
+  "h21_report_12": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "12",
+        2
+      ]
+    }
+  },
+  "h21_report_19": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "19",
+        3
+      ]
+    }
+  },
+  "h21_report_21": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "21",
+        3
+      ]
+    }
+  }
+}

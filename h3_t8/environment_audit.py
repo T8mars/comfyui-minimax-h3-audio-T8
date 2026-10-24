@@ -11,6 +11,7 @@ import sys
 from typing import Any
 
 from .vram_policy import runtime_snapshot
+from .h3_runtime_diagnostics import collect_h3_runtime_contracts
 
 
 ENVIRONMENT_AUDIT_SCHEMA = "t8.minimax_h3.environment_audit.v1"
@@ -690,6 +691,7 @@ def collect_environment_snapshot(model: Any = None, positive: Any = None) -> dic
         "model_patch_stack": _model_patch_snapshot(model),
         "conditioning": _conditioning_snapshot(positive),
         "loaded_models": _loaded_model_snapshot(),
+        "runtime_contracts": collect_h3_runtime_contracts(),
     }
 
 

@@ -195,6 +195,8 @@ def _project_standalone_relay(model):
 
 
 def project_stage_effects(model):
+    from .control_owner_identity import project as project_control
+    model, control_contract = project_control(model)
     from . import vdn_relay
     model, vdn_contract = vdn_relay.project(model)
     model, contract = _project_stage_effects(model)
@@ -204,6 +206,8 @@ def project_stage_effects(model):
     model, external = project_scope(model)
     if external is not None:
         contract = {**(contract or {}), 'external_motion_scope': external}
+    if control_contract is not None:
+        contract = {**(contract or {}), 'regional_control': control_contract}
     return model, contract
 
 

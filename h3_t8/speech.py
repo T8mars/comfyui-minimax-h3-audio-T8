@@ -715,11 +715,8 @@ def _fade_curve(length: int, device, dtype, fade_in: bool) -> torch.Tensor:
 
 
 def _srt_timestamp(seconds: float, separator: str = ",") -> str:
-    total_ms = max(0, round(seconds * 1000))
-    hours, remainder = divmod(total_ms, 3_600_000)
-    minutes, remainder = divmod(remainder, 60_000)
-    secs, millis = divmod(remainder, 1000)
-    return f"{hours:02d}:{minutes:02d}:{secs:02d}{separator}{millis:03d}"
+    from .subtitle_text import subtitle_timestamp
+    return subtitle_timestamp(seconds, separator)
 
 
 def assemble_speech_audio(
@@ -801,8 +798,6 @@ def assemble_speech_audio(
     output *= limiter_gain
 
     timeline = []
-    srt_blocks = []
-    vtt_blocks = ["WEBVTT", ""]
     for index, (segment, start, end) in enumerate(zip(segments, starts, ends, strict=True)):
         item = {
             "index": index,
@@ -814,21 +809,6 @@ def assemble_speech_audio(
             "end_seconds": end / output_sample_rate,
         }
         timeline.append(item)
-        srt_blocks.extend(
-            [
-                str(index + 1),
-                f"{_srt_timestamp(item['start_seconds'])} --> {_srt_timestamp(item['end_seconds'])}",
-                f"{item['speaker_id']}: {item['text']}",
-                "",
-            ]
-        )
-        vtt_blocks.extend(
-            [
-                f"{_srt_timestamp(item['start_seconds'], '.')} --> {_srt_timestamp(item['end_seconds'], '.')}",
-                f"{item['speaker_id']}: {item['text']}",
-                "",
-            ]
-        )
 
     result_audio = {"waveform": output, "sample_rate": output_sample_rate}
     report = {
@@ -843,7 +823,9 @@ def assemble_speech_audio(
         "timeline": timeline,
         "subtitle_status": "actual_audio_boundaries_with_planned_text_not_asr_verified",
     }
-    return result_audio, _json(report), "\n".join(srt_blocks), "\n".join(vtt_blocks)
+    from .subtitle_text import render_subtitles
+    subtitle_cues = [{**item, "text": f"{item['speaker_id']}: {item['text']}"} for item in timeline]
+    return result_audio, _json(report), render_subtitles(subtitle_cues, "srt"), render_subtitles(subtitle_cues, "vtt")
 
 
 def _dialogue_profile_map(profiles: Mapping | None) -> tuple[list[dict], dict[str, dict]]:

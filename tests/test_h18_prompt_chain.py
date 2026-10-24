@@ -89,13 +89,6 @@ def test_formal_dual_recipe_full_cpu_chain_and_stage_pairing(
 
 def _exercise_chain(weight_file, tmp_path, monkeypatch, alphas=(0.1, 0.2)):
     _allow_fixture_core_contract(monkeypatch)
-    # Installed Core may select xFormers globally; this is an explicit CPU
-    # mechanics test, so keep the unmasked delegate on Core's PyTorch path.
-    monkeypatch.setattr(
-        relay.attention_module,
-        "optimized_attention",
-        relay.attention_module.attention_pytorch,
-    )
     classes = {
         c.define_schema().node_id: c
         for c in asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())

@@ -16,15 +16,29 @@ def describe_h3_payload(keys, metadata=None):
     keys = sorted(str(key) for key in keys)
     metadata = dict(metadata or {})
     requirements = []
+    native_pdd_steps = None
+    try:
+        config = json.loads(metadata.get("config", "null"))
+        transformer = config.get("transformer") if isinstance(config, dict) else None
+        steps = transformer.get("pdd_steps") if isinstance(transformer, dict) else None
+        if type(steps) is int and steps > 1:
+            native_pdd_steps = steps
+    except (TypeError, ValueError):
+        # Malformed or unrelated metadata is not a model selection gate.
+        pass
     if (str(metadata.get("hyperflow", "")).lower() == "true"
             or "hyperflow_sigmas" in metadata
             or any("endpoint_time_embedder" in key for key in keys)):
         requirements.append({"kind": "hyperflow", "runtime": "two_time_embedder_and_trained_sigma_grid",
                              "ordinary_lora_is_complete": False})
     if (metadata.get("adapter_type") == "MiniMax-H3-PDD"
-            or any(key.startswith("pdd.final_layer.") for key in keys)):
-        requirements.append({"kind": "pdd", "runtime": "dynamic_av_heads_and_pdd_schedule",
-                             "ordinary_lora_is_complete": False})
+            or any(key.startswith("pdd.final_layer.") for key in keys) or native_pdd_steps is not None):
+        requirement = {"kind": "pdd", "runtime": "dynamic_av_heads_and_pdd_schedule",
+                       "ordinary_lora_is_complete": False}
+        if native_pdd_steps is not None:
+            requirement.update(representation="native_stacked_heads_metadata", declared_pdd_steps=native_pdd_steps,
+                               verified=False, evidence="explicit_config_metadata_not_weight_or_execution_validation")
+        requirements.append(requirement)
     if any(key.endswith(".attn.to_gate_compress.set_weight") for key in keys):
         requirements.append({"kind": "fastvideo_vsa", "runtime": "vsa_compression_gate_attention",
                              "ordinary_lora_is_complete": False})

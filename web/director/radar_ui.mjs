@@ -31,7 +31,7 @@ export function createRadarDialog(root, ctx) {
       </details>
       <details open><summary>3 · 声明式 Prompt 规则（全片 → 本镜顺序）</summary>
         <label><input type="checkbox" data-radar-inherit checked>继承全片规则（可逐条在本镜禁用）</label><div data-radar-bindings></div>
-        <div class="o-row"><button type="button" data-radar-recipe="continuity">填写角色道具连续账本</button><button type="button" data-radar-recipe="offscreen">填写画内/画外对话</button></div>
+        <div class="o-row"><button type="button" data-radar-recipe="continuity">填写角色道具连续账本</button><button type="button" data-radar-recipe="offscreen">填写画内/画外对话</button><button type="button" data-radar-recipe="ending_beats">填写明确结局与局部节拍</button></div>
         <p class="o-tip">只填写空规则表单；请在参数声明中改本次值，再添加快照、编译和显式采用。默认本镜，不自动读取身份、改事件时钟或接线；声音锚不是驱动配音。</p>
         <label>规则名称<input data-radar-name maxlength="200"></label>
         <label>规则文字<textarea data-radar-rule rows="3" maxlength="32768" placeholder="只作提示词文字。参数仅 ${'${name}'} 一次字面替换，不执行代码/工具。"></textarea></label>

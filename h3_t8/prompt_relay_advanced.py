@@ -1356,6 +1356,8 @@ def build_prompt_relay_conditioning(
     *,
     prepared_reference_set=None,
     visual_marker_binding=None,
+    keyframe_plan=None,
+    keyframe_options=None,
 ):
     plan = _validate_plan(prompt_relay_plan)
     if execution_mode not in EXECUTION_MODES:
@@ -1366,7 +1368,23 @@ def build_prompt_relay_conditioning(
                         {"prepared_reference_set": prepared_reference_set})
     if visual_marker_binding is not None:
         prepared_options.update(visual_marker_binding=visual_marker_binding, return_text_recipe=True)
-    result = build_conditioning(
+    condition_builder = build_conditioning
+    middle_report = None
+    if keyframe_plan is not None:
+        if prepared_reference_set is not None or visual_marker_binding is not None:
+            raise ValueError("Middle-keyframe Relay needs its own fresh image inputs; prepared-reference/marker text-recipe adaptation is not connected")
+        def condition_builder(*native_args, **native_kwargs):
+            nonlocal model, middle_report
+            from .multikeyframe_advanced import build_multikeyframe_conditioning
+            built = build_multikeyframe_conditioning(model, *native_args[:15],
+                drive_audio=native_args[15], final_audio=native_args[16],
+                first_frame=native_args[17], last_frame=native_args[18],
+                keyframe_plan=keyframe_plan, ref_images=native_args[19], ref_videos=native_args[20],
+                ref_video_audios=native_args[21], ref_audios=native_args[22], **native_kwargs,
+                **(keyframe_options or {}))
+            model, middle_report = built[0], json.loads(built[6])
+            return (*built[1:6], built[7], built[8])
+    result = condition_builder(
         clip,
         video_vae,
         audio_vae,
@@ -1426,16 +1444,25 @@ def build_prompt_relay_conditioning(
             "audio latent is locked, so use video_only_paper and mux_audio instead"
         )
     video, audio = nested_av_parts(latent)
+    layout_keyframes = details["keyframes"]
+    if details.get("multikeyframe_layout"):
+        from .multikeyframe_advanced import _keyframes_for_core
+        layout_keyframes = _keyframes_for_core(layout_keyframes, details["frame_count"], details["native_middle_layout"])
     layout = build_packed_layout(
         binding["text_len"],
         int(video.shape[2]),
         int(video.shape[3]),
         int(video.shape[4]),
         int(audio.shape[-1]),
-        keyframes=details["keyframes"],
+        keyframes=layout_keyframes,
         refs=details["refs"],
         frame_count=details["frame_count"],
     )
+    if details.get("multikeyframe_layout"):
+        # Bind the same physical RoPE positions repaired by patched extra_conds,
+        # not merely the intermediate Core layout or keyframe count.
+        from .multikeyframe_advanced import _repair_layout_positions
+        _repair_layout_positions(layout, details["keyframes"], details["refs"], details["frame_count"])
     binding = _bind_layout_contract(
         binding,
         layout,
@@ -1614,6 +1641,9 @@ def build_prompt_relay_conditioning(
         report["marker_source_plan_hash"] = source_marker_plan_hash
         report["marker_event_spans_preserved"] = True
         report["marker_actions_appended_as_global"] = False
+    if middle_report is not None:
+        report["middle_keyframes"] = middle_report
+        report["single_fresh_multikeyframe_encoding"] = True
     result = (patched_model, conditioning, latent, output_audio, conditioned_prompt, media_map,
               json.dumps(report, ensure_ascii=False, indent=2))
     if visual_marker_binding is not None:

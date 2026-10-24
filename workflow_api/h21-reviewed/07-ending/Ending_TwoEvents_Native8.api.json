@@ -1,0 +1,210 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3PromptRelayPlanT8Advanced",
+    "inputs": {
+      "global_prompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+      "local_prompts": "In the opening phase, each woman holds her beige cup in front of her while making small relaxed hand movements.\nIn the later phase, the women turn toward one another while continuing to handle the cups naturally.",
+      "length": 124,
+      "timing_mode": "frames",
+      "time_ranges": "0-59\n60-123",
+      "math_profile": "paper_v1",
+      "epsilon": 0.1,
+      "allow_gaps": false,
+      "allow_overlaps": false
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3PromptRelayConditioningT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt_relay_plan": [
+        "13",
+        0
+      ],
+      "width": 1024,
+      "height": 576,
+      "task_type": "FL2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "execution_mode": "apply_exp",
+      "query_chunk_rows": 256,
+      "first_frame": [
+        "15",
+        0
+      ],
+      "last_frame": [
+        "16",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "14",
+        0
+      ],
+      "av_latent": [
+        "14",
+        2
+      ],
+      "steps": 8,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    }
+  },
+  "7": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "conditioning": [
+        "14",
+        1
+      ]
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    }
+  },
+  "9": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "7",
+        0
+      ],
+      "sampler": [
+        "6",
+        1
+      ],
+      "sigmas": [
+        "6",
+        2
+      ],
+      "latent_image": [
+        "14",
+        2
+      ]
+    }
+  },
+  "10": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "9",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "10",
+        0
+      ],
+      "audio": [
+        "10",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "audio": [
+        "11",
+        1
+      ],
+      "filename_prefix": "MiniMaxH3/H21/Ending_TwoEvents_Native8",
+      "crf": 18
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Ending_TwoEvents_Native8/15_fit_1024_576.png"
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H21/Ending_TwoEvents_Native8/16_fit_1024_576.png"
+    }
+  }
+}

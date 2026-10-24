@@ -1,0 +1,1271 @@
+{
+  "id": "ba2dc5a1-9c7f-4b4d-a9d0-9dc30131dee7",
+  "revision": 0,
+  "last_node_id": 21,
+  "last_link_id": 28,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        430
+      ],
+      "size": [
+        450,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "H21/Veda_tiles97/1_VR01_Ref.png"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        649
+      ],
+      "size": [
+        450,
+        124
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            6,
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        868
+      ],
+      "size": [
+        450,
+        124
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            7,
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        1087
+      ],
+      "size": [
+        450,
+        212
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        0,
+        1394
+      ],
+      "size": [
+        450,
+        168
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoraLoaderModelOnly",
+      "title": "LoraLoaderModelOnly",
+      "pos": [
+        540,
+        430
+      ],
+      "size": [
+        450,
+        194
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+        1.0
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+      "title": "MiniMax H3 Chunk FeedForward / 分块前馈 (Advanced EXP/T8)",
+      "pos": [
+        1080,
+        430
+      ],
+      "size": [
+        450,
+        194
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkFeedForwardT8Advanced"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3VedaR2VABundleEXPT8",
+      "title": "H3 Veda R2VA · Bundle (EXP)",
+      "pos": [
+        0,
+        1657
+      ],
+      "size": [
+        450,
+        124
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "bundle",
+          "type": "T8_VEDA_R2VA_BUNDLE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VedaR2VABundleEXPT8"
+      },
+      "widgets_values": [
+        "minimax_h3_r2va_veda_preview_fp8.safetensors"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3VedaR2VAApplyEXPT8",
+      "title": "H3 Veda R2VA · Apply Flex Sparse (EXP)",
+      "pos": [
+        1620,
+        430
+      ],
+      "size": [
+        450,
+        352
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 3
+        },
+        {
+          "name": "bundle",
+          "type": "T8_VEDA_R2VA_BUNDLE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "runtime",
+          "type": "T8_VEDA_R2VA_RUNTIME",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VedaR2VAApplyEXPT8"
+      },
+      "widgets_values": [
+        "apply_exp",
+        "nearest_exp",
+        "97",
+        "97",
+        64
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        540,
+        719
+      ],
+      "size": [
+        450,
+        756
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 5
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 6
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "ref_images.ref_image_0",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            10,
+            17
+          ]
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "A continuous realistic medium shot of the adult woman in <ref_image_1>, in a quiet sunlit garden. Preserve her face, hairstyle and clothes. She looks directly at the camera, smiles naturally, and clearly says once in Mandarin Chinese: \"你好，今天天气不错。\" Natural clear female voice, realistic lip synchronization, soft outdoor ambience. No extra dialogue, music, cuts, subtitles, flashes or duplicate people.",
+        864,
+        480,
+        124,
+        "Ref2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        false
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        2160,
+        430
+      ],
+      "size": [
+        450,
+        352
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 9
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        8,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        2700,
+        430
+      ],
+      "size": [
+        450,
+        132
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 11
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1876
+      ],
+      "size": [
+        450,
+        142
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2610213201,
+        "fixed"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        3240,
+        430
+      ],
+      "size": [
+        450,
+        210
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 13
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 14
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 15
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 16
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3VedaR2VAAuditEXPT8",
+      "title": "H3 Veda R2VA · Audit After Sample (EXP)",
+      "pos": [
+        3780,
+        430
+      ],
+      "size": [
+        450,
+        132
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 18
+        },
+        {
+          "name": "runtime",
+          "type": "T8_VEDA_R2VA_RUNTIME",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3VedaR2VAAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced",
+      "title": "MiniMax H3 Native AV Latent Checkpoint Save / 原生音画Latent检查点保存 (Advanced EXP/T8)",
+      "pos": [
+        4320,
+        430
+      ],
+      "size": [
+        450,
+        326
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            21
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "checkpoint_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "file_sha256",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3NativeLatentCheckpointSaveT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMaxH3/H21/Veda_tiles97",
+        "H21_Veda_tiles97",
+        true,
+        true,
+        8
+      ]
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        4860,
+        430
+      ],
+      "size": [
+        450,
+        158
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 21
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 22
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        5400,
+        430
+      ],
+      "size": [
+        450,
+        264
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 24
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 25,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            27
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0.0,
+        5.0,
+        24.0
+      ]
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        5940,
+        430
+      ],
+      "size": [
+        450,
+        220
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMaxH3/H21/Veda_tiles97",
+        18
+      ]
+    },
+    {
+      "id": 20,
+      "type": "PreviewAny",
+      "title": "PreviewAny",
+      "pos": [
+        4320,
+        851
+      ],
+      "size": [
+        450,
+        110
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 21,
+      "type": "MarkdownNote",
+      "title": "使用前先配置资源 · 已审来源",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        1100,
+        350
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "已审来源：Veda · 原97/97预算\n\n保留实际采样参数、模型与LoRA顺序、原生声音和接线。只将个人素材/缓存/配置路径改为可配置入口，输出改为本例目录。请在对应加载节点选择自己的首尾/中间帧、控制视频与模型，素材和模型不随仓库分发。更换素材后需自行确认效果。\n\n竖屏8秒放大双采使用LOW448×800→学习型3D→576×1024；不是288×512旧失败配方。FreeVideo H21独立v4须先准备自己的runtime_config；High保留20步近似缓存而不是Max。PTD是独立专家加载，总4/6步及同画布2+2/3+3，不是通用LoRA或4+4放大。\n\n冷恢复示例须选择同源HEAD/Stage文件与对应SHA；不要使用他人回执或普通MP4代替latent。本次只保存并CPU核验图，未重新采样；人工通过限定于来源成片，不是任意组合/设备或提速保证。"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      5,
+      0,
+      6,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      6,
+      0,
+      7,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      7,
+      0,
+      9,
+      0,
+      "MODEL"
+    ],
+    [
+      4,
+      8,
+      0,
+      9,
+      1,
+      "T8_VEDA_R2VA_BUNDLE"
+    ],
+    [
+      5,
+      4,
+      0,
+      10,
+      0,
+      "CLIP"
+    ],
+    [
+      6,
+      2,
+      0,
+      10,
+      1,
+      "VAE"
+    ],
+    [
+      7,
+      3,
+      0,
+      10,
+      2,
+      "VAE"
+    ],
+    [
+      8,
+      1,
+      0,
+      10,
+      7,
+      "IMAGE"
+    ],
+    [
+      9,
+      9,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      10,
+      10,
+      1,
+      11,
+      1,
+      "LATENT"
+    ],
+    [
+      11,
+      11,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      12,
+      10,
+      0,
+      12,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      13,
+      0,
+      14,
+      0,
+      "NOISE"
+    ],
+    [
+      14,
+      12,
+      0,
+      14,
+      1,
+      "GUIDER"
+    ],
+    [
+      15,
+      11,
+      1,
+      14,
+      2,
+      "SAMPLER"
+    ],
+    [
+      16,
+      11,
+      2,
+      14,
+      3,
+      "SIGMAS"
+    ],
+    [
+      17,
+      10,
+      1,
+      14,
+      4,
+      "LATENT"
+    ],
+    [
+      18,
+      14,
+      0,
+      15,
+      0,
+      "LATENT"
+    ],
+    [
+      19,
+      9,
+      1,
+      15,
+      1,
+      "T8_VEDA_R2VA_RUNTIME"
+    ],
+    [
+      20,
+      15,
+      0,
+      16,
+      0,
+      "LATENT"
+    ],
+    [
+      21,
+      16,
+      0,
+      17,
+      0,
+      "LATENT"
+    ],
+    [
+      22,
+      2,
+      0,
+      17,
+      1,
+      "VAE"
+    ],
+    [
+      23,
+      3,
+      0,
+      17,
+      2,
+      "VAE"
+    ],
+    [
+      24,
+      17,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      25,
+      17,
+      1,
+      18,
+      1,
+      "AUDIO"
+    ],
+    [
+      26,
+      18,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      18,
+      1,
+      19,
+      1,
+      "AUDIO"
+    ],
+    [
+      28,
+      15,
+      1,
+      20,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        120,
+        120
+      ]
+    },
+    "workflow_title": "H21 · Veda_tiles97",
+    "t8_reviewed_source": {
+      "schema": "t8.h21.reviewed_source.v1",
+      "date": "2026-10-23",
+      "accepted_media_sha256": "3bdecdcd8bf7a3dde3473e92bea804fe7f718eb5491fd6fac4b7b35ef9c80ff6",
+      "source_api_sha256": "1afc1ea86eed5e4724c278dbe9ddc48f266661abca0eed18eecd736c380bc522",
+      "explicit_parameters_and_edges_preserved": true,
+      "portable_resource_adaptations_not_reexecuted": true,
+      "universal_quality_or_speed_claim": false
+    }
+  },
+  "version": 0.4
+}

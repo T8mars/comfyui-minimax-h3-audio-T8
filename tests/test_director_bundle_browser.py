@@ -23,8 +23,13 @@ def test_ui_package_export_preview_download_import_new_project_and_recover(tmp_p
     store, output, project, records, _plan, source_zip = bundle_fixture(tmp_path, draft_flags=not legacy_flags)
 
     class Quiet(SimpleHTTPRequestHandler):
+        def api_path(self):
+            # Production download/XHR use the full same-origin service base.
+            # Playwright renderer routes do not intercept browser downloads.
+            return urlparse(self.path).path.removeprefix('/api/minimax_h3_t8/director')
+
         def do_POST(self):
-            if self.path == '/bundle-imports':
+            if self.api_path() == '/bundle-imports':
                 body = self.rfile.read(int(self.headers['Content-Length']))
                 message = BytesParser(policy=default).parsebytes(('Content-Type: '+self.headers['Content-Type']+'\r\n\r\n').encode()+body)
                 part = next(message.iter_parts())
@@ -40,7 +45,7 @@ def test_ui_package_export_preview_download_import_new_project_and_recover(tmp_p
                 self.send_error(404)
 
         def do_GET(self):
-            parts = urlparse(self.path).path.split('/')
+            parts = self.api_path().split('/')
             if len(parts) == 5 and parts[1] == 'bundles' and parts[-1] == 'file':
                 data = build_bundle(store, parts[2], parts[3]).read_bytes()
                 self.send_response(200)

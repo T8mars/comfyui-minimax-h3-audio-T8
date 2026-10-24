@@ -5,14 +5,15 @@ Rebuild only the native sampler geometry, keep its actual nine-point table,
 and retain all head banks, LoRAs and injections on a new MODEL branch.
 """
 from dataclasses import dataclass
+from collections.abc import Mapping
 import json
 
 import torch
 import comfy.samplers
 
 from .. import pdd_advanced as pdd, sampling
-from ..long_video_dual_identity import _v2_sampling_identity, content_identity
-from ..patch_stack_policy import UnverifiedModelStack
+from ..long_video_dual_identity import _original_state, _v2_sampling_identity, content_identity
+from ..patch_stack_policy import UnverifiedModelStack, warn_patch_stack
 from . import native_dual
 from .contracts import StageContext, clear_native_stage_descriptors
 
@@ -22,6 +23,8 @@ STAGES = ("pdd_low_0_4", "pdd_high_4_8")
 NATIVE = "comfyui_native_pdd_final_layer_plus_backbone_lora"
 DYNAMIC = "comfyui_dynamic_model_only_bypass_plus_final_forward_injection"
 RELATIVE = "comfyui_native_kijai_pdd_relative_heads_plus_backbone"
+BAKED = "comfyui_native_baked_pdd_stacked_heads"
+UNVERIFIED = "user_selected_heads_not_pdd_qualified"
 
 
 @dataclass(frozen=True)
@@ -29,8 +32,36 @@ class PDDStageOwner(native_dual.NativeDualOwner):
     pass
 
 
+def _loaded_head_contract(model):
+    """Observe Core-loaded baked heads without inventing a LoRA/setup receipt."""
+    diffusion = model.get_model_object("diffusion_model")
+    final = model.get_model_object("diffusion_model.final_layer")
+    config = getattr(getattr(model.model, "model_config", None), "unet_config", {})
+    declared_steps = config.get("pdd_steps") if isinstance(config, Mapping) else None
+    if type(declared_steps) is not int or declared_steps != pdd.PDD_NUM_STEPS:
+        warn_patch_stack('PDD absolute windows retain the selected MODEL without a recognized 32-head setup; execution is not PDD recipe qualification')
+        return {"mode": UNVERIFIED, "execution_owner": id(final), "portable_identity": False,
+                "loader_receipt": None, "metadata": None}
+    state = _original_state(model, model.model_state_dict())
+    banks = {}
+    for stream, width in (("video", final.video_dim), ("audio", diffusion.audio_latents_dim)):
+        head = getattr(final, stream + "_out")
+        rows = pdd.PDD_NUM_STEPS * width
+        for field in ("weight", "bias"):
+            key = f"diffusion_model.final_layer.{stream}_out.{field}"
+            value = state[key]
+            expected = (rows, head.in_features) if field == "weight" else (rows,)
+            if not isinstance(value, torch.Tensor) or tuple(value.shape) != expected or not bool(torch.isfinite(value).all()):
+                raise ValueError(f"Core-loaded baked PDD {stream} {field} has invalid shape or values")
+            banks[key] = content_identity(value)
+    return {"mode": BAKED, "heads": banks, "loader_receipt": None,
+            "metadata": {"pdd_steps": pdd.PDD_NUM_STEPS, "source": "actual_Core_model_config_and_loaded_tensors"}}
+
+
 def _head_contract(model):
     receipt = model.get_attachment(pdd.PDD_ATTACHMENT_KEY)
+    if receipt is None:
+        return _loaded_head_contract(model)
     if not isinstance(receipt, dict) or receipt.get("schema") != "t8_minimax_h3_pdd_8step_setup_v2":
         raise ValueError("Connect MODEL from the existing PDD 8-Step Setup")
     mode = receipt.get("lora", {}).get("application_mode")
@@ -158,6 +189,8 @@ def build_stage(model, av_latent, full_sigmas, stage=STAGES[0]):
         native_dual._canonical(_v2_sampling_identity(selected)), sampling.model_uses_raw_audio_velocity(model)))
     report = {"schema": "t8.modular-sampling.pdd-stage.v1", "stage_context": context.to_dict(),
         "absolute_head_groups": list(range(start, end)), "sampled": False,
+        "native_baked_heads_content_bound": contract["mode"] == BAKED,
+        "pdd_head_contract_recognized": contract["mode"] != UNVERIFIED,
         "legacy_dynamic_persistent_identity_adapted": contract.get("dynamic") is not None,
         "boundary": "Original PDD heads and actual nine-point schedule retained. Independent MODEL/LoRA, "
                     "condition and NOISE per pass. LOW denoised -> existing learned3D -> original joint-audio "
@@ -185,6 +218,8 @@ def validate_stage(model, sigmas, source, context):
 
 def sampler_is_known(model, sampler, context):
     owner = capture_owner(model)
+    if json.loads(owner.context.profile)["pdd"]["mode"] == UNVERIFIED:
+        return False
     if context.stage == STAGES[1]:
         return native_dual.sampler_is_known(model, sampler, context, owner=owner)
     expected = comfy.samplers.sampler_object(pdd.PDD_SAMPLER)
@@ -194,6 +229,8 @@ def sampler_is_known(model, sampler, context):
 
 def project_identity(model):
     owner = capture_owner(model)
+    if json.loads(owner.context.profile)["pdd"]["mode"] == UNVERIFIED:
+        raise UnverifiedModelStack("Selected MODEL has no content-bound PDD head recipe; retain execution without portable PDD cache identity")
     view, contract = native_dual.project_identity(model, owner=owner, key=KEY)
     if json.loads(owner.context.profile)["pdd"]["mode"] == DYNAMIC:
         from . import pdd_dynamic

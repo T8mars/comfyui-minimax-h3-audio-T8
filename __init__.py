@@ -68,6 +68,17 @@ if __package__:
     from .nodes_audio_first import NODES as _audio_first_node_classes
     from .nodes_token_lora import NODES as _token_lora_node_classes
     from .nodes_plain_prompt import NODES as _plain_prompt_node_classes
+    from .nodes_control_region import NODES as _control_region_node_classes
+    from .nodes_director_keyframes import NODES as _director_keyframe_node_classes
+    from .nodes_director_controls import NODES as _director_control_node_classes
+    from .nodes_projection_chunks import NODES as _projection_chunk_node_classes
+    from .nodes_reference_temporal_pack import NODES as _reference_temporal_pack_node_classes
+    from .nodes_int8_row_chunk import NODES as _int8_row_chunk_node_classes
+    from .nodes_ptd_advanced import NODES as _ptd_node_classes
+    from .nodes_reference_step_cache import NODES as _reference_step_cache_node_classes
+    from .freevideo_h21.nodes import NODES as _freevideo_h21_node_classes
+    from .nodes_mc_seam_experimental import NODES as _mc_seam_node_classes
+    from .nodes_ptd_continuous import NODES as _ptd_continuous_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -176,6 +187,17 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _audio_first_node_classes = import_module(f"{_package_name}.nodes_audio_first").NODES
     _token_lora_node_classes = import_module(f"{_package_name}.nodes_token_lora").NODES
     _plain_prompt_node_classes = import_module(f"{_package_name}.nodes_plain_prompt").NODES
+    _control_region_node_classes = import_module(f"{_package_name}.nodes_control_region").NODES
+    _director_keyframe_node_classes = import_module(f"{_package_name}.nodes_director_keyframes").NODES
+    _director_control_node_classes = import_module(f"{_package_name}.nodes_director_controls").NODES
+    _projection_chunk_node_classes = import_module(f"{_package_name}.nodes_projection_chunks").NODES
+    _reference_temporal_pack_node_classes = import_module(f"{_package_name}.nodes_reference_temporal_pack").NODES
+    _int8_row_chunk_node_classes = import_module(f"{_package_name}.nodes_int8_row_chunk").NODES
+    _ptd_node_classes = import_module(f"{_package_name}.nodes_ptd_advanced").NODES
+    _reference_step_cache_node_classes = import_module(f"{_package_name}.nodes_reference_step_cache").NODES
+    _freevideo_h21_node_classes = import_module(f"{_package_name}.freevideo_h21.nodes").NODES
+    _mc_seam_node_classes = import_module(f"{_package_name}.nodes_mc_seam_experimental").NODES
+    _ptd_continuous_node_classes = import_module(f"{_package_name}.nodes_ptd_continuous").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -209,11 +231,52 @@ class _ModularSamplingExtension(_HyperFlowLongVideoExtension):
                 *_prompt_provider_node_classes, *_h11_spark_node_classes,
                 *_h11_wuli_node_classes, *_h11_bridge_node_classes, *_h11_audio_reference_node_classes,
                 *_h11_phase_node_classes, *_h11_prompt_ticket_node_classes, *_audio_first_node_classes,
-                *_token_lora_node_classes, *_plain_prompt_node_classes]
+                *_token_lora_node_classes, *_plain_prompt_node_classes, *_control_region_node_classes,
+                *_director_keyframe_node_classes, *_director_control_node_classes]
+
+
+class _ProjectionChunkExtension(_ModularSamplingExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_projection_chunk_node_classes]
+
+
+class _ReferenceTemporalPackExtension(_ProjectionChunkExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_reference_temporal_pack_node_classes]
+
+
+class _Int8RowChunkExtension(_ReferenceTemporalPackExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_int8_row_chunk_node_classes]
+
+
+class _PTDExtension(_Int8RowChunkExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_ptd_node_classes]
+
+
+class _ReferenceStepCacheExtension(_PTDExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_reference_step_cache_node_classes]
+
+
+class _FreeVideoH21Extension(_ReferenceStepCacheExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_freevideo_h21_node_classes]
+
+
+class _MCSeamExtension(_FreeVideoH21Extension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_mc_seam_node_classes]
+
+
+class _PTDContinuousExtension(_MCSeamExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_ptd_continuous_node_classes]
 
 
 def comfy_entrypoint():
-    return _ModularSamplingExtension()
+    return _PTDContinuousExtension()
 
 
 WEB_DIRECTORY = "./web"

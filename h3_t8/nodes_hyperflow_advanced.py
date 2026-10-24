@@ -146,16 +146,27 @@ class MiniMaxH3HyperFlowSplitT8Advanced(io.ComfyNode):
                 io.Int.Input("split_interval", default=4, min=1, max=7),
                 io.Float.Input("cfg", default=1.0, min=0.0, max=100.0, step=0.1),
                 io.Conditioning.Input("negative", optional=True),
+                io.Conditioning.Input("positive_high", optional=True),
+                io.Conditioning.Input("negative_high", optional=True),
             ],
             outputs=[io.Latent.Output("av_latent"), io.String.Output("report_json")],
         )
 
     @classmethod
-    def execute(cls, model_low, model_high, positive, av_latent, seed, split_interval, cfg, negative=None):
+    def execute(cls, model_low, model_high, positive, av_latent, seed, split_interval, cfg,
+                negative=None, positive_high=None, negative_high=None):
         from .hyperflow_two_pass_advanced import sample_hyperflow_split
+        from comfy.utils import ProgressBar
+        progress = ProgressBar(8)
+
+        def callback(index, _prediction, _state, _total):
+            progress.update_absolute(index + 1, 8)
+
         return io.NodeOutput(*sample_hyperflow_split(
             model_low, model_high, positive, av_latent, seed=seed,
             split_interval=split_interval, cfg=cfg, negative=negative,
+            positive_high=positive_high, negative_high=negative_high,
+            callback=callback,
         ))
 
 

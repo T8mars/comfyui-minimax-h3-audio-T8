@@ -38,10 +38,12 @@ def test_isolated_registration_tracks_current_legacy_source_scan_and_preserves_s
     from h3_audio_t8_pkg import nodes as legacy_nodes
     old = asyncio.run(legacy_nodes.comfy_entrypoint().get_node_list())
     new = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
-    assert new[:-2] == old
-    assert new[-2] is nodes.MiniMaxH3HyperFlowLongVideoEXPT8
-    assert new[-1] is single8_node.MiniMaxH3HyperFlowSingle8LongVideoEXPT8
-    assert [cls.define_schema().node_id for cls in new[:-2]] == [
+    from h3_audio_t8_pkg.modular_sampling import node_classes
+    assert new[:len(old)] == old
+    assert new[len(old)] is nodes.MiniMaxH3HyperFlowLongVideoEXPT8
+    assert new[len(old) + 1] is single8_node.MiniMaxH3HyperFlowSingle8LongVideoEXPT8
+    assert new[len(old) + 2:] == node_classes()
+    assert [cls.define_schema().node_id for cls in new[:len(old)]] == [
         cls.define_schema().node_id for cls in old]
     assert _legacy_source_digest() == source_before
 

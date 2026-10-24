@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import importlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -708,6 +709,8 @@ def _apply_official_model_patch(
     strength: float,
     start_percent: float,
     end_percent: float,
+    *,
+    region_runtime=None,
 ):
     modules = _official_model_patch_fun_control_modules()
     if modules is None:
@@ -717,6 +720,13 @@ def _apply_official_model_patch(
             "ComfyUI after updating the core."
         )
     _controlnet_module, _control_class, patch_class = modules
+    if region_runtime is not None:
+        control = getattr(bundle.control, "model", None)
+        if all(callable(getattr(control, name, None)) for name in ("init_stream", "step")) and callable(getattr(patch_class, "after_block", None)):
+            from .control_region_runtime import official_region_patch
+            patch_class = official_region_patch(patch_class, region_runtime)
+        else:
+            region_runtime.retain("official_residual_API_unavailable_region_not_applied")
     patched = model.clone()
     model_sampling = model.get_model_object("model_sampling")
     patch = patch_class(
@@ -730,6 +740,14 @@ def _apply_official_model_patch(
         float(model_sampling.percent_to_sigma(end_percent)),
     )
     patch.register(patched)
+    if region_runtime is not None and callable(getattr(patch, "verify_derived", None)):
+        from .modular_sampling.control_owner_identity import capture_official
+        blocks = patched.model_options["transformer_options"]["patches_replace"]["dit"]
+        hooks = [(layer, blocks[("double_block", layer)], blocks[("double_block", layer)].previous)
+                 for layer in bundle.control.model.injection_layers]
+        wrapper = next(value for values in patched.wrappers["diffusion_model"].values() for value in values
+                       if getattr(value, "__self__", None) is patch)
+        capture_official(region_runtime, patch, hooks, wrapper)
     return patched
 
 
@@ -740,6 +758,8 @@ def _apply_compatibility(
     strength: float,
     start_percent: float,
     end_percent: float,
+    *,
+    region_runtime=None,
 ):
     patched = model.clone()
     transformer = patched.model_options.get("transformer_options", {})
@@ -800,6 +820,8 @@ def _apply_compatibility(
                 )
             stream = state.get("stream")
             if stream is None:
+                if region_runtime is not None:
+                    region_runtime.reasons["first_control_seed_not_consumed"] += 1
                 return output
             index = control.injection_layers.index(layer)
             block = control.control_blocks[index]
@@ -813,6 +835,8 @@ def _apply_compatibility(
             )
             state["stream"] = stream
             skip = block.after_proj(stream[start:stop]) * strength
+            if region_runtime is not None:
+                skip = region_runtime.consume(skip, args, span=(start, stop))
             image[start:stop] += skip.to(image.dtype)
             return {"img": image}
 
@@ -820,16 +844,39 @@ def _apply_compatibility(
         hook._t8_h3_fun_control_layer = layer
         return hook
 
+    selected_hooks = []
     for layer in control.injection_layers:
         inner = existing.get(("double_block", layer))
+        hook = make_hook(layer, inner)
         patched.set_model_patch_replace(
-            make_hook(layer, inner), "dit", "double_block", layer
+            hook, "dit", "double_block", layer
         )
+        selected_hooks.append((layer, hook, inner))
     additional = list(
         patched.get_additional_models_with_key(FUN_CONTROL_ADDITIONAL_MODEL_KEY)
     )
     additional.append(control_patcher)
     patched.set_additional_models(FUN_CONTROL_ADDITIONAL_MODEL_KEY, additional)
+    if region_runtime is not None:
+        def clear_stream():
+            state["stream"] = None
+        region_runtime.cleanup_callbacks.append(clear_stream)
+        if callable(getattr(patched, "add_wrapper", None)):
+            from comfy.patcher_extension import WrappersMP
+            def isolated_control_forward(executor, *args, **kwargs):
+                clear_stream()
+                try:
+                    return executor(*args, **kwargs)
+                except Exception as error:
+                    region_runtime.errors.append(f"{type(error).__name__}: {error}")
+                    raise
+                finally:
+                    clear_stream()
+            patched.add_wrapper(WrappersMP.DIFFUSION_MODEL, isolated_control_forward)
+            from .modular_sampling.control_owner_identity import capture_compat
+            capture_compat(region_runtime, control_patcher, rows, selected_hooks, [isolated_control_forward])
+        else:
+            region_runtime.retain("forward_scope_API_unavailable_execution_local_only")
     return patched
 
 
@@ -847,12 +894,21 @@ def apply_h3_fun_control(
     strength: float,
     start_percent: float,
     end_percent: float,
+    *,
+    region_mask=None,
+    crop_plan_json="",
+    region_runtime=None,
 ):
     if not isinstance(control_bundle, H3FunControlBundle):
         raise TypeError("control_bundle must come from the T8 H3 Fun Control loader")
     if not 0.0 <= start_percent <= end_percent <= 1.0:
         raise ValueError("start_percent and end_percent must satisfy 0 <= start <= end <= 1")
+    if (region_runtime is not None or region_mask is not None or str(crop_plan_json).strip()) and not math.isfinite(float(strength)):
+        raise ValueError("Regional control strength must be finite")
     if strength == 0.0:
+        if region_runtime is not None:
+            region_runtime.backend = control_bundle.backend
+            region_runtime.bypass = "strength_zero"
         report = {
             "schema": "t8_minimax_h3_fun_control_apply_v1",
             "status": "bypass",
@@ -867,13 +923,19 @@ def apply_h3_fun_control(
         warn_patch_stack(
             "H3 Fun Control requires raster-order video rows; disable Sol-Attn morton."
         )
-    frames = _fit_control_video(
-        control_video,
-        width=width,
-        height=height,
-        length=length,
-        fit_mode=fit_mode,
-    )
+    if region_runtime is not None or region_mask is not None or str(crop_plan_json).strip():
+        from .control_regions import prepare_control_geometry
+        from .control_region_runtime import ControlRegionRuntime
+        if region_runtime is None:
+            region_runtime = ControlRegionRuntime()
+        region_runtime.backend = control_bundle.backend
+        frames, gate, geometry = prepare_control_geometry(
+            control_video, width=width, height=height, length=length, fit_mode=fit_mode,
+            fit_video=_fit_control_video, region_mask=region_mask, crop_plan_json=crop_plan_json)
+        region_runtime.gate, region_runtime.geometry = gate, geometry
+    else:
+        frames = _fit_control_video(
+            control_video, width=width, height=height, length=length, fit_mode=fit_mode)
     adaln_report = _assert_compatible_adaln_pair(model, control_bundle)
     prior = model.get_attachment(FUN_CONTROL_ATTACHMENT_KEY) if hasattr(model, "get_attachment") else None
     prior_controls = list(prior.get("controls", ())) if isinstance(prior, Mapping) else []
@@ -884,7 +946,11 @@ def apply_h3_fun_control(
         "end_percent": float(end_percent),
         "filename": control_bundle.filename,
     }
+    if region_runtime is not None:
+        entry["geometry_sha256"] = region_runtime.geometry["geometry_sha256"]
     if control_bundle.backend == "native":
+        if region_runtime is not None:
+            region_runtime.retain("native_classic_residual_API_unqualified_region_not_applied")
         conditioned = _apply_native(
             positive,
             control_bundle,
@@ -899,6 +965,7 @@ def apply_h3_fun_control(
         # the native ControlNet chain; the clone exists for isolation/reporting.
         patched = model.clone()
     elif control_bundle.backend == "official_model_patch":
+        region_options = {} if region_runtime is None else {"region_runtime": region_runtime}
         patched = _apply_official_model_patch(
             model,
             control_bundle,
@@ -907,10 +974,12 @@ def apply_h3_fun_control(
             strength,
             start_percent,
             end_percent,
+            **region_options,
         )
         conditioned = positive
     else:
         latent = vae.encode(frames)
+        region_options = {} if region_runtime is None else {"region_runtime": region_runtime}
         patched = _apply_compatibility(
             model,
             control_bundle,
@@ -918,6 +987,7 @@ def apply_h3_fun_control(
             strength,
             start_percent,
             end_percent,
+            **region_options,
         )
         conditioned = positive
     controls = prior_controls + [entry]
@@ -932,6 +1002,11 @@ def apply_h3_fun_control(
     }
     if hasattr(patched, "set_attachments"):
         patched.set_attachments(FUN_CONTROL_ATTACHMENT_KEY, attachment)
+    if region_runtime is not None:
+        from .control_region_runtime import register_runtime
+        register_runtime(patched, region_runtime)
+        from .modular_sampling.control_owner_identity import bind
+        bind(patched, model, region_runtime, frames)
     report = {
         "schema": "t8_minimax_h3_fun_control_apply_v1",
         "status": "applied",

@@ -1,0 +1,218 @@
+{
+  "schema": "t8.minimax_h3.director_project",
+  "version": 2,
+  "id": "9522526f-bac2-4337-9c3c-38b74acabd37",
+  "title": "H21 C extension middle",
+  "revision": 0,
+  "current": "10b26232-6c56-4785-8886-325091550689",
+  "assets": [
+    {
+      "id": "c2100000-0000-4000-8000-000000000001",
+      "name": "control_pose_cfr_rgb_lossless.mp4",
+      "server_path": "t8_director/c2100000-0000-4000-8000-000000000001/source.mp4",
+      "sha256": "71a337213634d2dd70bf11d393e7365dcdf82009093b5760a1291f869e8fc4bd",
+      "size": 234424,
+      "width": 256,
+      "height": 144,
+      "duration": 5,
+      "has_audio": false,
+      "kind": "video"
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000002",
+      "name": "rgb_first.png",
+      "server_path": "t8_director/c2100000-0000-4000-8000-000000000002/source.png",
+      "sha256": "c8bb25287875216478ecac85fc29cabd192e0d237714d4698324e737c6467f45",
+      "size": 112260,
+      "width": 512,
+      "height": 288,
+      "duration": 0,
+      "has_audio": false,
+      "kind": "image",
+      "source_frame": {
+        "media_sha256": "7917c92c4c0c80d6cb6aceed52ee1fa441907fc2f732639bc49c5ea74bfee9b6",
+        "frame": 0,
+        "fps": 24
+      }
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000003",
+      "name": "rgb_middle.png",
+      "server_path": "t8_director/c2100000-0000-4000-8000-000000000003/source.png",
+      "sha256": "75b370d51eb8d6b29860fd4ad021fd51169755d9f7d77958993c32953a363131",
+      "size": 100707,
+      "width": 512,
+      "height": 288,
+      "duration": 0,
+      "has_audio": false,
+      "kind": "image",
+      "source_frame": {
+        "media_sha256": "7917c92c4c0c80d6cb6aceed52ee1fa441907fc2f732639bc49c5ea74bfee9b6",
+        "frame": 59,
+        "fps": 24
+      }
+    },
+    {
+      "id": "c2100000-0000-4000-8000-000000000004",
+      "name": "rgb_last.png",
+      "server_path": "t8_director/c2100000-0000-4000-8000-000000000004/source.png",
+      "sha256": "50a8a042bfe186c6511f7947f98e3a9235a39a1a7a80e670eb6ea8fbe103bb05",
+      "size": 80638,
+      "width": 512,
+      "height": 288,
+      "duration": 0,
+      "has_audio": false,
+      "kind": "image",
+      "source_frame": {
+        "media_sha256": "7917c92c4c0c80d6cb6aceed52ee1fa441907fc2f732639bc49c5ea74bfee9b6",
+        "frame": 119,
+        "fps": 24
+      }
+    }
+  ],
+  "doc": {
+    "global": "",
+    "sharedRefs": [],
+    "sharedRatio": true,
+    "ratio": "16:9",
+    "d3": {
+      "semantic_bridge": {
+        "enabled": false
+      },
+      "prompt_relay": {
+        "enabled": false
+      },
+      "fast_h3_v2": {
+        "enabled": false
+      },
+      "memory": {
+        "low_vram": false,
+        "chunk_ffn": false
+      }
+    },
+    "generation": {
+      "unet": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "clip": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "video_vae": "minimax_h3_video_vae_fp16.safetensors",
+      "audio_vae": "minimax_h3_audio_vae_fp32.safetensors",
+      "lora_mode": "none",
+      "loras": [],
+      "resolution_mp": 0.6
+    },
+    "sampling": {
+      "mode": "single"
+    },
+    "shots": [
+      {
+        "id": "10b26232-6c56-4785-8886-325091550689",
+        "name": "双人端杯 · pose完整时轴",
+        "mode": "ends",
+        "samplingInherit": false,
+        "sound": "native",
+        "writingMode": "simple",
+        "simplePrompt": "A natural continuous live-action shot of the two adult women against a soft bright plain white interior background. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve their clothing, identity, cup count, stable soft daylight and steady medium-shot camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, colored markers, boxes, diagrams, text or overlays in the final photographic video.",
+        "prompt": "",
+        "events": [],
+        "refs": [],
+        "tray": [
+          "c2100000-0000-4000-8000-000000000002",
+          "c2100000-0000-4000-8000-000000000004"
+        ],
+        "first": "c2100000-0000-4000-8000-000000000002",
+        "last": "c2100000-0000-4000-8000-000000000004",
+        "audio": null,
+        "start": 0,
+        "end": 0,
+        "duration": 5,
+        "manualDuration": 5,
+        "autoDuration": false,
+        "ratio": "16:9",
+        "ownRatio": "16:9",
+        "d3": {
+          "semantic_bridge": {
+            "enabled": false
+          },
+          "prompt_relay": {
+            "enabled": false
+          },
+          "fast_h3_v2": {
+            "enabled": false
+          },
+          "memory": {
+            "low_vram": false,
+            "chunk_ffn": false
+          }
+        },
+        "d3Inherit": true,
+        "rev": 1,
+        "selected": "c2100000-0000-4000-8000-000000000002",
+        "controlRegions": {
+          "version": 1,
+          "items": [
+            {
+              "id": "c2100000-0000-4000-8000-000000000101",
+              "asset_id": "c2100000-0000-4000-8000-000000000001",
+              "enabled": true,
+              "control_net_name": "MiniMax-H3-Fun-Controlnet-Union.safetensors",
+              "control_kind": "pose",
+              "fit_mode": "stretch",
+              "strength": 0.7,
+              "start_percent": 0,
+              "end_percent": 0.75,
+              "stages": {
+                "low": true,
+                "high": true
+              },
+              "source": {
+                "start_seconds": 0,
+                "short_video_policy": "hold_last_frame"
+              },
+              "region": {
+                "mode": "rect",
+                "xyxy_normalized": [
+                  0,
+                  0,
+                  0.5,
+                  1
+                ]
+              },
+              "crop": {
+                "enabled": true,
+                "xyxy_normalized": [
+                  0,
+                  0,
+                  0.5,
+                  1
+                ],
+                "fit": "stretch",
+                "flip_x": false,
+                "flip_y": false
+              }
+            }
+          ]
+        },
+        "sampling": {
+          "mode": "single",
+          "resolution_mp": 0.6,
+          "lora_mode": "none",
+          "loras": []
+        },
+        "middleKeyframes": {
+          "version": 1,
+          "time_basis": "visible_delivery",
+          "items": [
+            {
+              "id": "c2100000-0000-4000-8000-000000000201",
+              "asset_id": "c2100000-0000-4000-8000-000000000003",
+              "position_mode": "frame",
+              "position": 59,
+              "visual_noise_aug": 0.999,
+              "resize_mode": "stretch",
+              "enabled": true
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

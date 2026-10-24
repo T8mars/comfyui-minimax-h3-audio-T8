@@ -91,19 +91,24 @@ def test_strength_zero_is_true_identity_and_does_not_encode():
     assert json.loads(report_json)["status"] == "bypass"
 
 
-def test_sol_morton_is_rejected_before_control_encode():
+def test_sol_morton_is_advisory_and_execution_errors_still_propagate(caplog):
     class _Model:
         model_options = {"transformer_options": {"sol_morton": True}}
 
     bundle = fun.H3FunControlBundle(
         "compatibility", {}, "control.safetensors", "control.safetensors", {}
     )
-    with pytest.raises(RuntimeError, match="raster-order"):
+    class _VAE:
+        def encode(self, frames):
+            assert frames.shape == (5, 32, 32, 3)
+            raise RuntimeError("actual encoder failure, not combination gate")
+
+    with pytest.raises(RuntimeError, match="actual encoder failure"):
         fun.apply_h3_fun_control(
             _Model(),
             [],
             bundle,
-            object(),
+            _VAE(),
             torch.zeros(5, 32, 32, 3),
             32,
             32,
@@ -114,6 +119,7 @@ def test_sol_morton_is_rejected_before_control_encode():
             0.0,
             0.75,
         )
+    assert "raster-order" in caplog.text and "continuing" in caplog.text
 
 
 def test_native_multi_control_chains_previous_control_and_reports_budget():

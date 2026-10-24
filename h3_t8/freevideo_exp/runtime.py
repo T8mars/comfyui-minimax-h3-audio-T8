@@ -123,9 +123,11 @@ def tensor_record(tensor):
                 sha256=hashlib.sha256(value.view(torch.uint8).numpy().tobytes()).hexdigest())
 
 
-def conditioning_transport(conditioning, canvas):
+def conditioning_transport(conditioning, canvas, *, text_dim=5120):
     """Export raw native H3 inputs, not a Core-transformed minimax_payload."""
     import torch
+    if type(text_dim) is not int or text_dim < 1:
+        raise ValueError("Actual selected H3 text_dim must be a positive integer")
     if not isinstance(conditioning, (list, tuple)) or len(conditioning) != 1:
         raise ValueError("FreeVideo requires one native H3 conditioning sequence")
     embeds, extra = conditioning[0]
@@ -134,8 +136,8 @@ def conditioning_transport(conditioning, canvas):
         raise ValueError("FreeVideo does not silently ignore conditioning modifiers: " + str(sorted(set(extra) - allowed)))
     if extra.get("minimax_frame_count", canvas["frames"]) != canvas["frames"]:
         raise ValueError("Conditioning frame count differs from FreeVideo sampling")
-    if tuple(embeds.shape[:1]) != (1,) or embeds.ndim != 3 or embeds.shape[-1] != 5120 or not embeds.shape[1]:
-        raise ValueError("Expected native H3 layer-50 [1,L,5120] embeddings")
+    if tuple(embeds.shape[:1]) != (1,) or embeds.ndim != 3 or embeds.shape[-1] != text_dim or not embeds.shape[1]:
+        raise ValueError("Expected native H3 layer-50 [1,L," + str(text_dim) + "] embeddings")
     tensor_record(embeds)
     tags = extra.get("minimax_token_tags")
     if not isinstance(tags, torch.Tensor) or tags.ndim != 1 or tags.numel() != embeds.shape[1] or not bool(((tags == 0) | (tags == 1)).all()):

@@ -5,6 +5,7 @@ from .patch_stack_policy import warn_patch_stack
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -223,6 +224,33 @@ def _empty_context(chain_id: str, segment_index: int) -> dict:
     }
 
 
+def _validate_context_tail_values(video, audio) -> None:
+    """Check actual saved/consumed AV values, not model compatibility names."""
+    if not isinstance(video, torch.Tensor) or video.ndim != 5:
+        raise ValueError("H3 T8 context video tail must be [B,C,T,H,W]")
+    if not isinstance(audio, torch.Tensor) or audio.ndim != 4:
+        raise ValueError("H3 T8 context audio tail must be [B,C,stereo,T]")
+    if video.shape[0] != 1 or video.shape[1] != 24:
+        raise ValueError("H3 T8 context video tail must use batch 1 and 24 channels")
+    if audio.shape[0] != 1 or audio.shape[1:3] != (32, 2):
+        raise ValueError("H3 T8 context audio tail must use [1,32,2,T]")
+    for name, value in (("video", video), ("audio", audio)):
+        if not value.is_floating_point() or any(size <= 0 for size in value.shape):
+            raise ValueError(f"H3 T8 context {name} tail needs nonempty floating-point latent values")
+        if not bool(torch.isfinite(value).all()):
+            raise ValueError(f"H3 T8 context {name} tail must contain only finite values")
+
+
+def _context_audio_overhang(metadata) -> float:
+    try:
+        value = float(metadata.get("audio_overhang", 0.0))
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("H3 T8 context audio_overhang must be a finite phase in [0, 1)") from error
+    if not math.isfinite(value) or not 0.0 <= value < 1.0:
+        raise ValueError("H3 T8 context audio_overhang must be a finite phase in [0, 1)")
+    return value
+
+
 def save_context_state(
     av_latent: dict,
     chain_id: str,
@@ -264,6 +292,7 @@ def save_context_state(
 
     video_tail = video[:1, :, -video_steps:].detach().cpu().contiguous()
     audio_tail = audio[:1, :, :, -audio_steps:].detach().cpu().contiguous()
+    _validate_context_tail_values(video_tail, audio_tail)
     audio_overhang = int(audio.shape[-1]) - FRAME_RESCALE * total_frames
     if not 0.0 <= audio_overhang < 1.0:
         audio_overhang = 0.0
@@ -344,6 +373,7 @@ def load_context_state(chain_id: str, segment_index: int) -> tuple[dict, bool, s
         video_tail = handle.get_tensor("video_tail")
         audio_tail = handle.get_tensor("audio_tail")
 
+    _validate_context_tail_values(video_tail, audio_tail)
     required = {
         "schema", "chain_id", "source_segment_index", "fps", "source_total_frames",
         "max_context_frames", "video_shape", "audio_shape", "video_dtype", "audio_dtype",
@@ -387,7 +417,7 @@ def load_context_state(chain_id: str, segment_index: int) -> tuple[dict, bool, s
         "fps": FPS,
         "source_total_frames": int(metadata["source_total_frames"]),
         "max_context_frames": max_context_frames,
-        "audio_overhang": float(metadata["audio_overhang"]),
+        "audio_overhang": _context_audio_overhang(metadata),
         "model_id": metadata.get("model_id", "unknown"),
         "sampling_summary": metadata.get("sampling_summary", "unknown"),
         "path": str(path),
@@ -448,14 +478,8 @@ def _validate_context(
         raise ValueError("Saved H3 T8 context does not contain the requested frame window")
     video = context.get("video_tail")
     audio = context.get("audio_tail")
-    if not isinstance(video, torch.Tensor) or video.ndim != 5:
-        raise ValueError("H3 T8 context video tail must be [B,C,T,H,W]")
-    if not isinstance(audio, torch.Tensor) or audio.ndim != 4:
-        raise ValueError("H3 T8 context audio tail must be [B,C,stereo,T]")
-    if video.shape[0] != 1 or video.shape[1] != 24:
-        raise ValueError("H3 T8 context video tail must use batch 1 and 24 channels")
-    if audio.shape[0] != 1 or audio.shape[1:3] != (32, 2):
-        raise ValueError("H3 T8 context audio tail must use [1,32,2,T]")
+    _validate_context_tail_values(video, audio)
+    _context_audio_overhang(metadata)
     if tuple(video.shape[-2:]) != (height // 16, width // 16):
         raise ValueError(
             "Long-video continuation requires the same canvas as the previous segment: "
@@ -473,6 +497,8 @@ def _motion_context_blocks(
     context_frames: int,
     continue_audio: bool,
 ) -> tuple[list[dict], dict | None]:
+    _validate_context_tail_values(context.get("video_tail"), context.get("audio_tail"))
+    overhang = _context_audio_overhang(context["metadata"])
     latent_steps = CONTEXT_FRAME_STEPS[int(context_frames)]
     video = context["video_tail"][:, :, -latent_steps:].contiguous()
     offsets = step_offsets(latent_steps)
@@ -493,7 +519,6 @@ def _motion_context_blocks(
         audio = context["audio_tail"]
         if audio_steps > int(audio.shape[-1]):
             raise ValueError("Saved H3 T8 context does not contain enough audio tail")
-        overhang = float(context["metadata"].get("audio_overhang", 0.0))
         audio_ref = {
             "kind": "audio",
             "ref_audio_t": audio_steps,
@@ -975,6 +1000,16 @@ def repair_long_video_layout(
 ):
     if layout is None:
         raise RuntimeError("Long-video MiniMax H3 payload has no PackedLayout")
+    # Validate before any in-place coordinate updates. A checksum-valid metadata
+    # string such as "nan" must not poison otherwise finite native position IDs.
+    for ref in refs:
+        if ref.get(MOTION_AUDIO_END_FRAME) is not None:
+            try:
+                end_frame = float(ref[MOTION_AUDIO_END_FRAME])
+            except (TypeError, ValueError, OverflowError) as error:
+                raise ValueError("Long-video audio end-frame marker must be finite") from error
+            if not math.isfinite(end_frame):
+                raise ValueError("Long-video audio end-frame marker must be finite")
     text_len, latent_t = int(layout.signature[0]), int(layout.signature[1])
     ref_offset = sum(_ref_advance(ref) for ref in refs)
 

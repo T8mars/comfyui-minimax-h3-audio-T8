@@ -34,12 +34,16 @@ def test_actual_native_four_plus_four_uses_distinct_sources_and_completed_high_p
     calls, payloads = [], []
     original_stage, original_repair = runtime._native_stage, long_video.repair_long_video_payload
 
-    def stage(model, sampler, sigmas, latent, noise, positive, negative, cfg, seed, callback, denoise_mask=None):
+    def stage(model, sampler, sigmas, latent, noise, positive, negative, cfg, seed, callback,
+              denoise_mask=None, *, preview_phase=None, preview_offset=0, preview_total=None):
         parts = tuple(p.clone() for p in latent.unbind())
         masks = None if denoise_mask is None else tuple(p.clone() for p in denoise_mask.unbind())
+        assert (preview_phase, preview_offset, preview_total) == (
+            ("low", 0, 8) if not calls else ("high", 4, 8))
         calls.append((model.model, parts, masks))
         return original_stage(model, sampler, sigmas, latent, noise, positive, negative, cfg, seed,
-                              callback, denoise_mask=denoise_mask)
+                              callback, denoise_mask=denoise_mask, preview_phase=preview_phase,
+                              preview_offset=preview_offset, preview_total=preview_total)
 
     def repair(out, kwargs):
         result = original_repair(out, kwargs)

@@ -2,6 +2,7 @@
 import importlib
 import importlib.util
 import hashlib
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -21,7 +22,9 @@ from test_prompt_relay_core_compat import model_fixture, sparse
 
 @pytest.fixture(scope='module')
 def cache_nodes(record_testsuite_property):
-    path = Path(__file__).resolve().parents[2] / 'comfyui-minimax-h3-blockcache-T8'
+    path = Path(os.environ.get('T8_BLOCKCACHE_ROOT') or
+                (Path(importlib.util.find_spec('folder_paths').origin).resolve().parent /
+                 'custom_nodes/comfyui-minimax-h3-blockcache-T8'))
     if not (path / 'nodes.py').is_file():
         pytest.skip('separately installed BlockCache is unavailable')
     name = 't8_block_cache_actual_core_probe'
@@ -68,7 +71,7 @@ def executor_for(patched):
 
 
 @pytest.mark.parametrize('mutation', ['copied_marker', 'boundary', 'attn_hook'])
-def test_unknown_runtime_owner_rejected_before_cache_or_payload(cache_nodes, mutation):
+def test_unknown_runtime_owner_preserved_before_real_outer_state_error(cache_nodes, mutation, caplog):
     patched, _, _ = compose(cached_model(cache_nodes))
     options = patched.model_options['transformer_options']
     def foreign(*args, **kwargs):
@@ -81,20 +84,31 @@ def test_unknown_runtime_owner_rejected_before_cache_or_payload(cache_nodes, mut
         options['patches_replace']['dit'][('double_block', 0)] = foreign
     else:
         options.setdefault('patches', {})['attn1_patch'] = [foreign]
-    with pytest.raises(RuntimeError, match='override was replaced|blocks were replaced|incompatible attention hooks'):
+    # Unknown user owners are advisory. This intentionally incomplete invocation
+    # must still report its actual missing execution-scoped cache state.
+    with pytest.raises(RuntimeError, match='execution-scoped outer sample wrapper'):
         executor_for(patched).execute(None, None, None, options)
+    assert 'continuing' in caplog.text
+    if mutation == 'copied_marker':
+        assert options['optimized_attention_override'] is foreign
+    elif mutation == 'boundary':
+        assert options['patches_replace']['dit'][('double_block', 0)] is foreign
+    else:
+        assert options['patches']['attn1_patch'] == [foreign]
 
 
-def test_sparse_after_composer_restores_exact_boundary_owners_repeatedly(cache_nodes):
+def test_sparse_after_composer_keeps_current_sparse_owners_repeatedly(cache_nodes):
     patched, _, _ = compose(cached_model(cache_nodes))
-    expected = dict(patched.model_options['transformer_options']['patches_replace']['dit'])
     downstream = sparse(patched)
     for _ in range(2):
         downstream.prepare_state(torch.tensor(.5), downstream.model_options)
         options = downstream.model_options['transformer_options']
+        expected = dict(options['patches_replace']['dit'])
+        assert len(expected) == 50
         with pytest.raises(RuntimeError, match='execution-scoped outer sample wrapper'):
             executor_for(downstream).execute(None, None, None, options)
         assert options['patches_replace']['dit'] == expected
+        assert all(options['patches_replace']['dit'][key] is value for key, value in expected.items())
 
 
 @pytest.mark.parametrize('mode', ['disabled', 'report_only', 'apply_exp'])
@@ -110,12 +124,12 @@ def test_sparse_between_cache_and_composer_is_scoped_and_keeps_disabled_identity
     else:
         assert patched is not original
         dit = patched.model_options['transformer_options']['patches_replace']['dit']
-        assert set(dit) == {('double_block', 0), ('double_block', 49)}
-        assert all(type(patch) is cache_nodes.H3BlockPatch and patch.block_index == key[1] for key, patch in dit.items())
+        assert len(dit) == 50 and dit == original_dit
+        assert all(dit[key] is value for key, value in original_dit.items())
 
 
 @pytest.mark.parametrize('mutation', ['wrapper', 'unknown_block'])
-def test_sparse_recovery_never_reconstructs_unknown_cache_or_erases_foreign_blocks(cache_nodes, mutation):
+def test_sparse_composition_preserves_foreign_wrapper_or_block_without_reconstruction(cache_nodes, mutation):
     model = sparse(cached_model(cache_nodes))
     def foreign(*args, **kwargs):
         pytest.fail('foreign hook must not execute')
@@ -123,10 +137,13 @@ def test_sparse_recovery_never_reconstructs_unknown_cache_or_erases_foreign_bloc
         model.wrappers['diffusion_model'][eav.BLOCK_CACHE_WRAPPER_KEY] = [foreign]
     else:
         model.model_options['transformer_options']['patches_replace']['dit'][('double_block', 25)] = foreign
-    with pytest.raises(RuntimeError, match='unknown cache module|boundary block'):
-        compose(model)
+    patched, _, _ = compose(model)
+    assert patched is not model
     if mutation == 'unknown_block':
         assert model.model_options['transformer_options']['patches_replace']['dit'][('double_block', 25)] is foreign
+        assert patched.model_options['transformer_options']['patches_replace']['dit'][('double_block', 25)] is foreign
+    else:
+        assert model.wrappers['diffusion_model'][eav.BLOCK_CACHE_WRAPPER_KEY] == [foreign]
 
 
 def real_case(cache_nodes, monkeypatch, mode, sparse_position='none'):
@@ -171,9 +188,10 @@ def test_real_cache_full_then_hit_matches_identical_input_control(cache_nodes, m
     for a, b in zip(full, hit):
         torch.testing.assert_close(a, b, rtol=1e-5, atol=1e-6)
     assert diffusion.final_layer is original_final
-    assert [row['block_cache_decision'] for row in runtime.snapshot(consume=False)['forwards']] == ['full', 'hit']
+    expected = ['full', 'hit'] if sparse_position == 'none' else ['bypassed', 'bypassed']
+    assert [row['block_cache_decision'] for row in runtime.snapshot(consume=False)['forwards']] == expected
     assert eav.EAV_RUNTIME_KEY not in options
-    assert options[eav.BLOCK_CACHE_KEY].cache_hits == 1
+    assert options[eav.BLOCK_CACHE_KEY].cache_hits == (1 if sparse_position == 'none' else 0)
 
 
 @pytest.mark.parametrize('exception', [RuntimeError, InterruptProcessingException])

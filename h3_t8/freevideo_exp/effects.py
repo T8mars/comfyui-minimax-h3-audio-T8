@@ -61,10 +61,11 @@ def validate_binding(value):
     return value
 
 
-def condition_identity(conditioning, canvas):
+def condition_identity(conditioning, canvas, *, text_dim=5120):
     import torch
     from .runtime import conditioning_transport
-    tensors, meta = conditioning_transport(conditioning, canvas)
+    tensors, meta = (conditioning_transport(conditioning, canvas) if text_dim == 5120 else
+                     conditioning_transport(conditioning, canvas, text_dim=text_dim))
     rows = {}
     for name, value in tensors.items():
         rows[name] = dict(shape=list(value.shape), dtype=str(value.dtype),
@@ -72,7 +73,7 @@ def condition_identity(conditioning, canvas):
     return hashlib.sha256(canonical(dict(tensors=rows, transport=meta)).encode()).hexdigest()
 
 
-def transport_effects(model, conditioning, canvas):
+def transport_effects(model, conditioning, canvas, *, text_dim=5120):
     eav = validate_eav(json.loads(model.eav)) if model.eav is not None else None
     supplied = conditioning[0][1].get(RELAY_KEY)
     if (supplied is None) != (model.relay is None):
@@ -81,7 +82,9 @@ def transport_effects(model, conditioning, canvas):
     if binding is not None:
         if supplied != binding or binding["geometry"] != canvas or tensor_record(conditioning[0][0]) != binding["embeddings"]:
             raise ValueError("FreeVideo Relay conditioning/geometry differs from its bound branch")
-        if condition_identity(conditioning, canvas) != binding.get("conditions_sha256"):
+        current = (condition_identity(conditioning, canvas) if text_dim == 5120 else
+                   condition_identity(conditioning, canvas, text_dim=text_dim))
+        if current != binding.get("conditions_sha256"):
             raise ValueError("FreeVideo Relay reference/keyframe/conditioning identity changed")
         tags = conditioning[0][1]["minimax_token_tags"].detach().cpu().contiguous()
         if hashlib.sha256(tags.view(__import__("torch").uint8).numpy().tobytes()).hexdigest() != binding["tags_sha256"]:
@@ -89,7 +92,8 @@ def transport_effects(model, conditioning, canvas):
     return dict(eav=eav, relay=binding)
 
 
-def build_relay_conditioning(freevideo_model, prompt_relay_plan, execution_mode="report_only", query_chunk_rows=256, relay_workspace_mib=64, **kwargs):
+def build_relay_conditioning(freevideo_model, prompt_relay_plan, execution_mode="report_only", query_chunk_rows=256, relay_workspace_mib=64,
+                             *, text_dim=5120, **kwargs):
     from ..conditioning import build_conditioning
     from ..prompt_relay_advanced import _validate_plan, build_prompt_relay_binding
     import torch
@@ -109,14 +113,18 @@ def build_relay_conditioning(freevideo_model, prompt_relay_plan, execution_mode=
         query_chunk_rows=query_chunk_rows, workspace_mib=relay_workspace_mib, events=native["events"], native_binding=native,
         geometry=geometry(kwargs["width"], kwargs["height"], details["frame_count"]),
         embeddings=tensor_record(conditioning[0][0]), tags_sha256=hashlib.sha256(tags.view(torch.uint8).numpy().tobytes()).hexdigest())
-    binding["conditions_sha256"] = condition_identity(conditioning, binding["geometry"])
+    binding["conditions_sha256"] = (condition_identity(conditioning, binding["geometry"]) if text_dim == 5120 else
+                                    condition_identity(conditioning, binding["geometry"], text_dim=text_dim))
     binding["sha256"] = hashlib.sha256(canonical(binding).encode()).hexdigest()
     validate_binding(binding)
     paired = [[conditioning[0][0], dict(conditioning[0][1], **{RELAY_KEY: binding})]]
     model = replace(freevideo_model, relay=canonical(binding))
     # Validate native task/reference shapes before an engine can be dispatched.
     from .runtime import conditioning_transport
-    conditioning_transport(paired, binding["geometry"])
+    if text_dim == 5120:
+        conditioning_transport(paired, binding["geometry"])
+    else:
+        conditioning_transport(paired, binding["geometry"], text_dim=text_dim)
     return model, paired, latent, output_audio, text, media, canonical(dict(binding_sha256=binding["sha256"],
         mode=execution_mode, native_report=report, events=len(binding["events"]),
         linear_profile="beta_weighted_text_seed_exp_v1", quality_approved=False))

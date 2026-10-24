@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 from safetensors import safe_open
@@ -28,6 +29,9 @@ from h3_audio_t8_pkg.native_latent_timeline_advanced import (
 from h3_audio_t8_pkg.nodes_native_latent_checkpoint_advanced import (
     MiniMaxH3NativeLatentCheckpointLoadT8Advanced,
     MiniMaxH3NativeLatentCheckpointSaveT8Advanced,
+)
+from h3_audio_t8_pkg.modular_sampling.legacy_pass_through_nodes import (
+    MiniMaxH3NativeLatentCheckpointPassThroughSaveEXPT8,
 )
 
 
@@ -158,6 +162,87 @@ def test_exact_roundtrip_preserves_av_masks_dtypes_and_metadata(tmp_path):
     assert fingerprint_native_h3_checkpoint_file(store, relative) == file_sha
 
 
+def test_single_channel_video_mask_roundtrip_is_exact_and_content_bound(tmp_path):
+    source = _latent()
+    video_mask, audio_mask = source["noise_mask"].unbind()
+    compact_mask = video_mask[:, :1].clone()
+    source["noise_mask"] = comfy.nested_tensor.NestedTensor((compact_mask, audio_mask))
+    saved = save_native_h3_av_checkpoint(
+        source, tmp_path / "store", checkpoint_id="masked_chunked_v4",
+        confirm_save=True, verify_after_write=True,
+    )
+    assert saved[1] == "SAVED_VERIFIED"
+    loaded = load_native_h3_av_checkpoint(
+        tmp_path / "store", saved[2], expected_manifest_json=saved[4],
+        expected_file_sha256=saved[3],
+    )
+    assert loaded[1:3] == ("MATCH_EXTERNAL", True)
+    loaded_video_mask, loaded_audio_mask = loaded[0]["noise_mask"].unbind()
+    assert loaded_video_mask.shape == compact_mask.shape
+    assert torch.equal(loaded_video_mask, compact_mask)
+    assert torch.equal(loaded_audio_mask, audio_mask)
+    widened = _latent()
+    widened["noise_mask"] = comfy.nested_tensor.NestedTensor((
+        compact_mask.expand_as(video_mask).clone(), audio_mask))
+    assert audit_native_h3_av_latent_resume_manifest(
+        widened, checkpoint_id="masked_chunked_v4")[2] != json.loads(saved[4])["content_sha256"]
+
+
+def test_native_pixel_frame_video_mask_roundtrip_is_exact(tmp_path):
+    source = _latent(frames=22)
+    _, audio_mask = source["noise_mask"].unbind()
+    pixel_mask = torch.linspace(0, 1, 11 * 13).reshape(1, 1, 11, 13)
+    source["noise_mask"] = comfy.nested_tensor.NestedTensor((pixel_mask, audio_mask))
+    saved = save_native_h3_av_checkpoint(
+        source, tmp_path / "store", checkpoint_id="masked_native_pixel",
+        confirm_save=True, verify_after_write=True,
+    )
+    assert saved[1] == "SAVED_VERIFIED"
+    loaded = load_native_h3_av_checkpoint(
+        tmp_path / "store", saved[2], expected_manifest_json=saved[4],
+        expected_file_sha256=saved[3],
+    )
+    assert loaded[1:3] == ("MATCH_EXTERNAL", True)
+    loaded_video_mask, loaded_audio_mask = loaded[0]["noise_mask"].unbind()
+    assert loaded_video_mask.shape == (1, 1, 11, 13)
+    assert torch.equal(loaded_video_mask, pixel_mask)
+    assert torch.equal(loaded_audio_mask, audio_mask)
+    changed = _latent(frames=22)
+    changed["noise_mask"] = comfy.nested_tensor.NestedTensor((
+        pixel_mask.clone().index_fill(2, torch.tensor([1]), 0), audio_mask))
+    assert audit_native_h3_av_latent_resume_manifest(
+        changed, checkpoint_id="masked_native_pixel")[2] != json.loads(saved[4])["content_sha256"]
+
+
+@pytest.mark.parametrize("bad_shape", ((0, 1, 3, 4), (22, 2, 3, 4),
+                                         (22, 1, 3, 0)))
+def test_native_pixel_frame_mask_rejects_wrong_shape(bad_shape):
+    source = _latent(frames=22)
+    _, audio_mask = source["noise_mask"].unbind()
+    source["noise_mask"] = comfy.nested_tensor.NestedTensor((
+        torch.zeros(bad_shape), audio_mask))
+    with pytest.raises(ValueError, match="noise_mask shapes do not match"):
+        audit_native_h3_av_latent_resume_manifest(source)
+
+
+@pytest.mark.parametrize("bad_shape", ("two_channels", "wrong_time", "wrong_spatial", "wrong_audio"))
+def test_single_channel_mask_acceptance_still_rejects_invalid_shapes(bad_shape):
+    source = _latent()
+    video_mask, audio_mask = source["noise_mask"].unbind()
+    video_mask = video_mask[:, :1].clone()
+    if bad_shape == "two_channels":
+        video_mask = video_mask.expand(-1, 2, -1, -1, -1).clone()
+    elif bad_shape == "wrong_time":
+        video_mask = video_mask[:, :, :-1]
+    elif bad_shape == "wrong_spatial":
+        video_mask = video_mask[:, :, :, :, :-1]
+    else:
+        audio_mask = audio_mask[..., :-1]
+    source["noise_mask"] = comfy.nested_tensor.NestedTensor((video_mask, audio_mask))
+    with pytest.raises(ValueError, match="noise_mask shapes do not match"):
+        audit_native_h3_av_latent_resume_manifest(source)
+
+
 def test_self_verified_load_and_external_sha_or_manifest_mismatch_fail_closed(tmp_path):
     store = tmp_path / "store"
     result = save_native_h3_av_checkpoint(
@@ -259,9 +344,17 @@ def test_write_failure_removes_temporary_and_never_exposes_checkpoint(tmp_path, 
 
 def test_node_schemas_append_safe_defaults_and_load_fingerprint_tracks_file(tmp_path, monkeypatch):
     save_schema = MiniMaxH3NativeLatentCheckpointSaveT8Advanced.define_schema()
+    pass_through_schema = MiniMaxH3NativeLatentCheckpointPassThroughSaveEXPT8.define_schema()
     load_schema = MiniMaxH3NativeLatentCheckpointLoadT8Advanced.define_schema()
     save_inputs = {item.id: item for item in save_schema.inputs}
     assert save_schema.is_experimental is True and save_schema.is_output_node is True
+    assert pass_through_schema.is_experimental is True
+    assert pass_through_schema.is_output_node is False
+    assert pass_through_schema.not_idempotent is True
+    assert [item.id for item in pass_through_schema.inputs] == [
+        item.id for item in save_schema.inputs]
+    assert [item.id for item in pass_through_schema.outputs] == [
+        item.id for item in save_schema.outputs]
     assert save_inputs["confirm_save"].default is False
     assert save_inputs["verify_after_write"].default is True
     assert load_schema.is_experimental is True
@@ -285,6 +378,41 @@ def test_node_schemas_append_safe_defaults_and_load_fingerprint_tracks_file(tmp_
         relative, "", "", 8
     )
     assert saved[3] in fingerprint
+
+
+def test_pass_through_save_deduplicates_only_identical_av_in_one_core_execution(
+    tmp_path, monkeypatch,
+):
+    import h3_audio_t8_pkg.nodes_native_latent_checkpoint_advanced as nodes_checkpoint
+
+    monkeypatch.setattr(nodes_checkpoint.folder_paths, "get_output_directory",
+                        lambda: str(tmp_path))
+    writer = MiniMaxH3NativeLatentCheckpointPassThroughSaveEXPT8
+    first_execution = SimpleNamespace()
+    monkeypatch.setattr(writer, "hidden", SimpleNamespace(
+        execution_list=first_execution, unique_id="37"), raising=False)
+    latent = _latent()
+    options = {"av_latent": latent, "filename_prefix": "motion/first",
+               "checkpoint_id": "motion_first", "confirm_save": True,
+               "verify_after_write": True, "hash_chunk_megabytes": 8}
+    first = writer.execute(**options).result
+    repeated = writer.execute(**options).result
+    assert first[1:5] == repeated[1:5]
+    assert first[0] is latent and repeated[0] is latent
+    assert json.loads(repeated[5])["reused_within_execution"] is True
+    assert json.loads(repeated[5])["files_written"] is False
+    store = tmp_path / "MiniMaxH3" / "latent_checkpoints"
+    assert len(list(store.rglob(f"*{CHECKPOINT_EXTENSION}"))) == 1
+
+    with pytest.raises(ValueError, match="differs from its saved checkpoint"):
+        writer.execute(**{**options, "av_latent": _latent(frames=39)})
+    assert len(list(store.rglob(f"*{CHECKPOINT_EXTENSION}"))) == 1
+
+    monkeypatch.setattr(writer, "hidden", SimpleNamespace(
+        execution_list=SimpleNamespace(), unique_id="37"), raising=False)
+    next_run = writer.execute(**options).result
+    assert next_run[2] != first[2]
+    assert len(list(store.rglob(f"*{CHECKPOINT_EXTENSION}"))) == 2
 
 
 def test_frontend_checkpoint_workflow_has_both_nodes_and_multiple_notes():

@@ -1,0 +1,9 @@
+#t8-obsidian-lab .k-editor {margin-top:12px;min-width:0}
+#t8-obsidian-lab .k-editor > summary {font-weight:600}
+#t8-obsidian-lab .k-row {padding:10px;border:1px solid var(--o-line,#394044);border-radius:8px;margin:10px 0;min-width:0}
+#t8-obsidian-lab .k-image {display:flex;gap:8px;align-items:center;margin:8px 0;min-width:0}
+#t8-obsidian-lab .k-image img {width:64px;height:56px;object-fit:contain;background:#090c0d;border-radius:4px}
+#t8-obsidian-lab .k-image label {flex:1;min-width:0}
+#t8-obsidian-lab .k-row select,#t8-obsidian-lab .k-row input[type=number] {width:100%;min-width:0}
+#t8-obsidian-lab .k-editor .o-tip {overflow-wrap:anywhere}
+@media(max-width:520px){#t8-obsidian-lab .k-image{flex-wrap:wrap}#t8-obsidian-lab .k-image label{min-width:140px}}

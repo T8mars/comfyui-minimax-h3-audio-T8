@@ -12,5 +12,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Verify the bounded reviewed INT8 delta and unknown-call rejection
         run: python3 tests/test_h09_sampling_admission_ci.py
+      - name: Verify the reviewed H21 source delta and reject changed or future calls
+        run: python3 tests/test_h21_sampling_admission_ci.py
       - name: Reject unreviewed sampling or Director graph-builder changes
         run: python3 tools/audit_modular_new_sampling.py guard

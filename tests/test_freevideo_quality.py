@@ -119,17 +119,25 @@ def test_new_effects_do_not_inherit_finalized_legacy_return_type_cache():
     assert OLD_NODES[6].GET_SCHEMA().get_v1_info(OLD_NODES[6]).input["required"]["start"][1]["default"] == .15
 
 
+def assert_original_quality_registry_blocks(ids, declared):
+    # Preserve every original block and its order, not an obsolete global
+    # tail length: later append-only nodes do not move any of these entries.
+    from h3_audio_t8_pkg.nodes_source_conform import NODES as conform
+    from h3_audio_t8_pkg.freevideo_decoder.nodes import NODES as decoder
+    assert ids == declared and len(ids) == len(set(ids))
+    assert ids[663:671] == [node.__name__ for node in NODES]
+    assert ids[620:632] == [node.__name__ for node in OLD_NODES]
+    assert ids[671] == "MiniMaxH3ReferenceQwenViewEXPT8"
+    assert ids[672:672 + len(conform)] == [node.__name__ for node in conform]
+    start = 672 + len(conform)
+    assert ids[start:start + len(decoder)] == [node.__name__ for node in decoder]
+
+
 def test_append_order_all_nodes_and_features():
     classes = asyncio.run(h3_audio_t8_pkg.comfy_entrypoint().get_node_list())
     ids = [cls.GET_SCHEMA().node_id for cls in classes]
     features = json.loads((Path(__file__).parents[1] / "features.json").read_text(encoding="utf8"))
-    # The local paused H05 family is not shipped by this independent release.
-    # Both exact deployment layouts remain checked, with no skipped assertions.
-    qwen = ["MiniMaxH3ReferenceQwenViewEXPT8"] if "MiniMaxH3ReferenceQwenViewEXPT8" in ids else []
-    assert ids == features["nodes"] and len(ids) == len(set(ids)) == 671 + len(qwen)
-    assert ids[663:] == qwen + [node.__name__ for node in NODES]
-    assert ids[-8:] == [node.__name__ for node in NODES]
-    assert ids[620:632] == [node.__name__ for node in OLD_NODES]
+    assert_original_quality_registry_blocks(ids, features["nodes"])
 
 
 def test_quality_descriptor_cannot_enter_legacy_or_wrong_config(tmp_path):
