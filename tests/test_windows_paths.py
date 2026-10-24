@@ -49,8 +49,22 @@ class WindowsPathsTests(unittest.TestCase):
         ordinary = json.loads((ROOT / "examples/workflows/plain-prompt-index.json").read_text(encoding="utf-8"))["rows"]
         numbered = [row for row in rows if re.fullmatch(r"Plain_\d{3,}\.json", Path(row["old_path"]).name)]
         self.assertEqual(len(rows) - len(numbered), 37)  # Preserve all original long-path migrations.
-        self.assertEqual(len(numbered), len(ordinary))
-        self.assertEqual({row["new_path"] for row in numbered}, {row["ordinary"] for row in ordinary})
+        # This table records actual historical renames, not every future new
+        # ordinary example. Never invent Plain_919 aliases for newly authored
+        # workflows merely to make the old migration counts equal.
+        migrated = {row['new_path'] for row in numbered}
+        self.assertEqual(len(numbered), 918)
+        self.assertTrue(migrated <= {row['ordinary'] for row in ordinary})
+        authored = [row for row in ordinary if row['ordinary'] not in migrated]
+        declared = json.loads((ROOT / 'examples/workflows/90-h21-reviewed/index.json').read_text(encoding='utf8'))
+        self.assertEqual(len(authored), declared['ordinary_companions'])
+        for row in authored:
+            source, target = ROOT / row['source'], ROOT / row['ordinary']
+            self.assertEqual(public_workflow_path(target), target)
+            self.assertEqual(legacy_workflow_path(target), target)
+            self.assertFalse(re.fullmatch(r'Plain_\d{3,}\.json', target.name))
+            self.assertEqual(workflow_sha256(source.read_bytes()), row['source_sha256'])
+            self.assertEqual(workflow_sha256(target.read_bytes()), row['ordinary_sha256'])
         self.assertEqual(validate_paths([row["new_path"] for row in rows]), [])
         for row in rows:
             with self.subTest(path=row["new_path"]):
