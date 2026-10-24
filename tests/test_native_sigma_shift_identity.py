@@ -123,6 +123,22 @@ def test_existing_T8_identity_format_and_new_core_content_binding():
     assert identity._v2_sampling_identity(selected) != second
 
 
+@pytest.mark.parametrize("sampler_name", (sampling.DEFAULT_SAMPLER_NAME, "er_sde"))
+def test_t8_sampling_carriers_ignore_interpreter_class_metadata(sampler_name, monkeypatch):
+    # Python 3.13 writes __firstlineno__/__static_attributes__ into every class body.
+    t8_model, _, _ = sampling.setup_dual_clock_sampling(model(), _locked_av(), 8, 12., 3., sampler_name, "simple")
+    selected = t8_model.get_model_object("model_sampling")
+    cls = type(selected)
+    for name, value in (("__firstlineno__", 1), ("__static_attributes__", ())):
+        if name not in vars(cls):
+            monkeypatch.setattr(cls, name, value, raising=False)
+    expected = "t8_raw_audio_flow" if sampler_name == sampling.DEFAULT_SAMPLER_NAME else "native_av_carrier"
+    assert identity._v2_sampling_identity(selected)["protocol"] == expected
+    monkeypatch.setattr(cls, "sigma", lambda self, value: value, raising=False)
+    with pytest.raises(UnverifiedModelStack):
+        identity._v2_sampling_identity(selected)
+
+
 @pytest.mark.parametrize("mutation", ("parameters", "buffer", "clock", "replacement"))
 def test_bound_native_shift_owner_rejects_changed_selected_state(mutation):
     latent, bind = _job("parity")
