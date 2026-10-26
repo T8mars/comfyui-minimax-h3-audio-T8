@@ -1,0 +1,120 @@
+{
+  "schema": "t8.h24.reviewed_sampling_source.v1",
+  "previous_sites": [
+    {
+      "path": "h3_t8/director_generation.py",
+      "symbol": "build_director_generation_prompt",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "1e893e7783a2804aa77e259c77edeac486d721c8d9fa9098ae7e1d0915ec09e8"
+    },
+    {
+      "path": "h3_t8/director_hyperflow.py",
+      "symbol": "apply_hyperflow_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "11153d520a5d299200885d7655e87921532dd0cd7ca5ad37263b4806f6a0dbcf"
+    },
+    {
+      "path": "h3_t8/director_two_pass.py",
+      "symbol": "apply_two_pass_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "b04162b4822faf2abaa2e826510b49b3899ca347f4279632519e5da6b8a336e4"
+    }
+  ],
+  "reviewed_sites": [
+    {
+      "path": "h3_t8/director_generation.py",
+      "symbol": "build_director_generation_prompt",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "9b2a784c3876c42205210b566ecc8981459d42da3cad6d39fb258060631bbbcf"
+    },
+    {
+      "path": "h3_t8/director_hyperflow.py",
+      "symbol": "apply_hyperflow_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "33e29491a71853e43b98435acc8438bc6e96b9f8963eb38193e1475bf745c15b"
+    },
+    {
+      "path": "h3_t8/director_two_pass.py",
+      "symbol": "apply_two_pass_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "8a5591becb8382cfe4ba838c726cd4fc79a86b4b565951d08d80b82dfc883d0a"
+    }
+  ],
+  "previous_files": {
+    "h3_t8/director_generation.py": "535b0ca0c7340372f6d43e35c45759e45a18dad8f854bfd797a58002304e2598",
+    "h3_t8/director_hyperflow.py": "13e53c5d9134a98bbb45eaa930cd17f4a6b173f30eecdf729239670a2fbf26b2",
+    "h3_t8/director_two_pass.py": "f91799fe5fbcf5ff1ece45dfe6f0c45f2e6f3bdfd61f507434758efd39785f2c",
+    "tests/test_h21_append_registry.py": "175c2d8c4432992ee902fd5f86fc66af471c302cf9f9678172997f6cbd157e0f",
+    "tests/test_h21_sampling_admission_ci.py": "6f31b9ad00834f9afeed752a327d4807f6729cedb1c0527c96edcdcc1d36a0e4"
+  },
+  "files": {
+    "__init__.py": "f484ae4c98fdd4958475f479d510509107143e4d5309de3bf206cea555027284",
+    "examples/workflows/91-h24-reviewed/H24_Compact_PTD_4步.json": "9864e89a4798610e30b4d282b6604333a931d1a801aff02fd52c0d6b5a0e1599",
+    "examples/workflows/91-h24-reviewed/H24_Solar_结构重渲染_4步_原声.json": "0e12b29e7e36fbe2c122272510e0b688b59cacf442acf283a87b1cc1e7dcfc6f",
+    "examples/workflows/91-h24-reviewed/H24_周期音画循环_4步.json": "6be5c0cb2ff06c20f9df51d0d58070341de3ab5ddffce1cbe97f9ae0239d4b9a",
+    "examples/workflows/91-h24-reviewed/index.json": "e69b2edf1b81a6ad029536496dbad9e780fb7a6603704c55c66ad9b6904c4878",
+    "h3_t8/av_loop_clock.py": "2bd25887e3e4c2b2d94d0148a1d3a1a142c797db9dcb4b04afdea31161aeaa03",
+    "h3_t8/av_loop_runtime.py": "e2bb0f0127048c93096ba41524414b3d0f4abe67fb338dfa8ca08275adfd1bef",
+    "h3_t8/director_batch.py": "6ed7e6a3eda55e40e356d9e4a408578e27f014c78742c4ec1842cb53b24c32fb",
+    "h3_t8/director_film_export.py": "a937184835a819c0fab04873ddd3f3ed3194fde2f98db26557e3c7e682b6dca5",
+    "h3_t8/director_generation.py": "7392f34b38f32cfa555b768ed60957b74f9768d7ad1a5b9a2338f7780b381188",
+    "h3_t8/director_hyperflow.py": "5e4ff550cba05094eb073958e6758b5e2eb82ccadd561e7acae1be3367c4005d",
+    "h3_t8/director_outcomes.py": "92190b59950d4b0f9730b04224e863e0dec8611fdb3e9184d615a6e5b330f29c",
+    "h3_t8/director_project.py": "e31a6fd5b4a295581234793c4c69101ac351a45231807fb7084d6a0da1dc6fce",
+    "h3_t8/director_radar.py": "08a8cf5e9dd07d8d7c8f5c7f0c23519a0de4b6eb665159078d4149dda209b451",
+    "h3_t8/director_routes.py": "f2dd2c84b89a192f635c7115067910f1673fcbf61014aa29d7a2b0c70a73d1f9",
+    "h3_t8/director_sampling_settings.py": "4816fd1be050ffc10161a08d18f344d28e7357b88db253cb931166e90c59b817",
+    "h3_t8/director_two_pass.py": "095b43531b241580177dd9a4a95dd3cb74d7c3e655d9b095338abe9d26a42023",
+    "h3_t8/face_refine_window_advanced.py": "e8fc16891f55377278b56e2924d8600d2a9e5f3fed8f5dc2a9b6f8867a170703",
+    "h3_t8/face_refine_window_studio_advanced.py": "7817b28b4271250ce46f6bebd5f5d95201efbf09fee0fb501d1f8d83448078ed",
+    "h3_t8/h3_lora_compat_advanced.py": "da3c92f307bc384cadcddeb46bf6df44e99e2ea9832572daf4b7876f2db16d44",
+    "h3_t8/h3_world_advanced.py": "49125bffa26d1baca1e2740723a75b19f291b40afca6d6131a5b75f90f08c82e",
+    "h3_t8/long_video_dual_identity.py": "e80241a0e5c7a0bd491b31cbffc84d96a3633e860d08bfc62c0c1d6301d61bc5",
+    "h3_t8/nodes_av_loop.py": "1a85f3fbf36ecde45f675d1ade856fd1984dd36b844b4346083f3377fbcdb78a",
+    "h3_t8/nodes_face_refine_window_advanced.py": "c34a05ac7e597d2d530d865bf01f497de3e4494feade414caa8f1231d59ebcb7",
+    "h3_t8/nodes_h3_lora_compat_advanced.py": "b3cc7fe1fb1fd46ecbdbdce9defe6176f02e6fae22228b07b84c7652fd31abcf",
+    "h3_t8/nodes_ptd_advanced.py": "02b0e8c7433dc46d3b2a75d1d415a015768240a9a28ad9553509e9b4f631be9c",
+    "h3_t8/nodes_solar_structural.py": "cb0bd9a03ff52784ca69657cafa0f76bc745bc44c13551e41f60d7be3e809d5f",
+    "h3_t8/person_removal.py": "c265a539c7a635ff0688124156b0df445929c5a196fbb4260fc4e3c393c392c4",
+    "h3_t8/ptd_advanced.py": "d1e9ff5b877460c4ddd1d78f545d7b2b8e4602cf6ab12feb1640ebc378ff81f3",
+    "h3_t8/ptd_compact.py": "d12206a62a354e354e9c6d602f4195df7ee151fd2b585abdb41eb296d389f317",
+    "h3_t8/ptd_compact_checkpoint.py": "e67352e01e9ebf6b8117ec08ff91ef00be32936204c090a8ef89bf6d89df15d5",
+    "h3_t8/ptd_continuous.py": "36e5f48ce93eed0fe26fb83f50a7434a3b99519c0ffc886c7867a576053fae11",
+    "h3_t8/solar_structural.py": "f96268e48d2090142e5c8c9767dc9b8611932ab9ba34e9c7428a98f915bc668f",
+    "h3_t8/solar_structural_sampling.py": "890d9bd3221e21ae387623cae780b3a3ebf6d5898a8b3181470d5a7a80389d87",
+    "h3_t8/timing.py": "ee9525df84f1baa52361f30f26f0f49067d5edd1f494d05588f89c064f5fa467",
+    "tests/test_h21_append_registry.py": "965f5197647fa2b18faafa80f3800f9575a642b5aeb826f9b9a41bc90d17b66f",
+    "workflow_api/h24-reviewed/H24_Compact_PTD_4步.api.json": "9019165af9eb46618c6e47295311622d07f4e00e9a8be7d0f501d7b06291b330",
+    "workflow_api/h24-reviewed/H24_Solar_结构重渲染_4步_原声.api.json": "407a2dbd59afd6da4f025cea3b0299e5031273973dc989c8a97156ea1abaca11",
+    "workflow_api/h24-reviewed/H24_周期音画循环_4步.api.json": "d6b0b5b2d8bba0e854c36994413a908929de428f5520970ec2ee896a8f5c4ef3",
+    "tests/test_h21_sampling_admission_ci.py": "f7aa350160b116ca952c3ca854f34c15c1e1b3e4270f4ffe6bdeaec2df7329ae"
+  },
+  "workflow_files": [
+    "examples/workflows/91-h24-reviewed/index.json",
+    "examples/workflows/91-h24-reviewed/H24_Compact_PTD_4步.json",
+    "workflow_api/h24-reviewed/H24_Compact_PTD_4步.api.json",
+    "examples/workflows/91-h24-reviewed/H24_周期音画循环_4步.json",
+    "workflow_api/h24-reviewed/H24_周期音画循环_4步.api.json",
+    "examples/workflows/91-h24-reviewed/H24_Solar_结构重渲染_4步_原声.json",
+    "workflow_api/h24-reviewed/H24_Solar_结构重渲染_4步_原声.api.json"
+  ],
+  "accepted_media_sha256": [
+    "02cb4a867e528271f974dc8afe3cab8d1ba3d9fbad9104b0f73f1af9256a994a",
+    "303515c9292e75a0ba69a445071119a2ee0f2861967fba67b6b201a0bbaf211a",
+    "912f8daf18c88b66ca703be180361ab42017a7584eb110afe25e03b7fb209121",
+    "98df53ff8fcdcc4adf30373fe49235729bef9f7c06dc15f8a1f1c095e54f53ea",
+    "a12f06952cb3c12e3abe8dadcaea0611b4c8f928dd7cd7f90613939746f32ed5",
+    "fb7ebd09a53b94e5502b30bdc2e79c9f49fca5563193b3ccf9bbd19b4c9f46c1"
+  ],
+  "human_feedback_sha256": "c76bc8cd6be2dee658c639293b11a9d493c09a2194497d9f91d6ccf1f33cdba6",
+  "accepted_video_groups": 3,
+  "registered_nodes": 774,
+  "scope": "Exact H24 source successor to immutable H21: the three already-reviewed Director builders retain sampling route topology while fixing ordered LoRA policy and audio bindings. Bind the approved runtime, UI/API recipes and the explicit three-case human feedback; no baseline recapture or new arbitrary-call admission.",
+  "unverified": [
+    "Arbitrary model/LoRA/control combinations and fair performance",
+    "Compact continuous HEAD/TAIL and learned upscale",
+    "Nonempty RegionalGate periodic time mapping",
+    "Solar causal/Reactor and other resolutions/durations",
+    "Public resource-path adaptations were not requeued on GPU"
+  ]
+}

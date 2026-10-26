@@ -35,9 +35,12 @@ class H21ReleaseAdmission(unittest.TestCase):
     def test_missing_or_changed_full_source_never_borrows_release_acceptance(self):
         old, _ = gate.reviewed_layout_sites(ROOT, self.baseline)
         old = gate.reviewed_model_choice_sites(ROOT, old)
+        successor_path = 'tests/fixtures/h24_reviewed_sampling_source.json'
+        successor = json.loads((ROOT / successor_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in [*self.review['files'], 'tests/fixtures/h21_reviewed_sampling_1_102.json']:
+            for relative in set([*self.review['files'], *successor['files'], successor_path,
+                                 'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(ROOT / relative, target)
