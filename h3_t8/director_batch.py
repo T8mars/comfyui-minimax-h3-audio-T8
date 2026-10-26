@@ -13,6 +13,7 @@ from pathlib import Path
 import uuid
 
 from .director_project import atomic_json, contained, file_sha, identity, referenced_assets, sha, compile_project
+from .director_outcomes import receipt_owner, require_unique_prompt, scan_request_receipts, terminal_payload
 
 
 SCHEMA = "t8.minimax_h3.director_batch.v1"
@@ -357,34 +358,43 @@ def _refresh_cached_media(evidence, paths, output_root, expected):
 def batch_status(store, batch_id, status_lookup, output_root, *, core_epoch=None):
     """Reconcile receipts against Core and media, with no queue side effect."""
     batch = load_batch(store, batch_id)
+    receipts, prompts = scan_request_receipts(store)
     records = []
     for item in batch["items"]:
         receipt_path = contained(store.root, f"requests/{item['request_id']}.json")
         row = {key: value for key, value in item.items() if key != "built"}
         row.update(state="not_submitted", prompt_id=None, retry_available=False)
-        if receipt_path.exists():
+        pending_write, prompt_ambiguous = None, False
+        if receipt_path in receipts:
             receipt = {}
             try:
-                receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                receipt = receipts[receipt_path]
                 if not isinstance(receipt, dict):
                     raise ValueError("生成回执顶层形状已损坏")
+                prompt_id = identity(receipt["prompt_id"])
+                row["prompt_id"] = prompt_id
+                prompt_ambiguous = prompts.get(prompt_id, 0) != 1
+                require_unique_prompt(prompts, prompt_id)
                 expected = sha({"project": {**batch["project"], "current": item["shot_id"]}, "seed": item["seed"], "shot_id": item["shot_id"]})
                 if receipt.get("fingerprint") != expected:
                     raise ValueError("生成回执与冻结批次不一致")
-                prompt_id = identity(receipt["prompt_id"])
-                row["prompt_id"] = prompt_id
+                if receipt_owner(receipt) != (batch["project_id"], item["shot_id"]):
+                    raise ValueError("生成回执归属与冻结批次不一致")
                 if receipt.get("state") not in {"queued", "submitting"}:
                     raise ValueError("生成回执状态已损坏")
                 terminal = receipt.get("terminal")
-                observed = terminal or status_lookup(prompt_id)
+                observed = terminal if terminal is not None else status_lookup(prompt_id)
                 if not isinstance(observed, dict):
                     raise ValueError("生成回执终态形状已损坏")
                 state = observed.get("state", "unknown")
+                terminal_states = {"success", "error", "cancelled"}
+                if terminal is not None and (not isinstance(state, str) or state not in terminal_states):
+                    raise ValueError("已保存的生成终态已损坏")
+                outputs = observed.get("outputs", {})
+                if isinstance(state, str) and state in terminal_states and not isinstance(outputs, dict):
+                    raise ValueError("生成输出形状已损坏")
                 if state == "success":
                     expected_delivery = _delivery_contract(item)
-                    outputs = observed.get("outputs") or {}
-                    if not isinstance(outputs, dict):
-                        raise ValueError("生成输出形状已损坏")
                     paths = _video_paths(outputs, output_root)
                     if not paths or not all(path.is_file() and path.stat().st_size > 0 for path in paths):
                         row["state"] = "needs_review"
@@ -410,15 +420,16 @@ def batch_status(store, batch_id, status_lookup, output_root, *, core_epoch=None
                             row["state"] = "success"
                             row["media"] = media
                             if terminal is None or frozen is None or digest is None or legacy_upgrade:
-                                receipt["terminal"] = {"state": "success", "outputs": observed.get("outputs") or {}}
+                                if terminal is None:
+                                    receipt["terminal"] = terminal_payload(observed)
                                 receipt["media_evidence"] = media
                                 receipt["media_evidence_digest"] = sha(media)
-                                atomic_json(receipt_path, receipt)
+                                pending_write = receipt
                 elif state in {"queued", "running", "error", "cancelled"}:
                     row["state"] = state
                     if state in {"error", "cancelled"} and terminal is None:
-                        receipt["terminal"] = {"state": state, "outputs": observed.get("outputs") or {}}
-                        atomic_json(receipt_path, receipt)
+                        receipt["terminal"] = terminal_payload(observed)
+                        pending_write = receipt
                 else:
                     # Queue/history can disappear after a Core restart; do not
                     # turn an ambiguous submission into a new request.
@@ -430,7 +441,7 @@ def batch_status(store, batch_id, status_lookup, output_root, *, core_epoch=None
                 row["state"] = "needs_review"
             if row["state"] in {"error", "cancelled"}:
                 row["retry_available"] = True
-            elif row["state"] == "needs_review":
+            elif row["state"] == "needs_review" and not prompt_ambiguous:
                 # A damaged receipt must not permit an in-flight job to be
                 # queued again merely because the parser could not read it.
                 try:
@@ -445,6 +456,9 @@ def batch_status(store, batch_id, status_lookup, output_root, *, core_epoch=None
                     )
                 except (ValueError, KeyError, TypeError, OSError):
                     row["retry_available"] = False
+        if pending_write is not None:
+            # IO failure is not a parser error or permission to retry a job.
+            atomic_json(receipt_path, pending_write)
         records.append(row)
     next_index = next((i for i, row in enumerate(records) if row["state"] != "success"), None)
     return {

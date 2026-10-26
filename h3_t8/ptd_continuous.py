@@ -180,6 +180,7 @@ def _report(controller, start, stop, *, warnings=()):
 @torch.no_grad()
 def _range(model, x, sigmas, extra_args=None, callback=None, disable=None, *, controller,
            start, stop, capture, previous=None):
+    _require_stage_protocol(controller)
     clocks.validate_grid(sigmas, controller.recipe)
     extra = {} if extra_args is None else dict(extra_args)
     if extra.get("denoise_mask") is not None:
@@ -226,11 +227,23 @@ def _range(model, x, sigmas, extra_args=None, callback=None, disable=None, *, co
     return state
 
 
+def _require_stage_protocol(controller):
+    from .ptd_compact import CompactPTDController
+
+    if type(controller) is CompactPTDController:
+        raise ValueError(
+            "Compact PTD HEAD/TAIL needs a checkpoint-derived grid, absolute-head bank identity, "
+            "and per-range head-consumption receipt; this continuous Stage protocol is not implemented. "
+            "Use its complete Compact PTD sampler and sigmas."
+        )
+    return controller
+
+
 def _controller(guider):
     model = getattr(guider, "model_patcher", None)
     if model is None:
         raise TypeError("PTD stage guider must expose its selected model_patcher")
-    return get_controller(model)
+    return _require_stage_protocol(get_controller(model))
 
 
 def _sampler(controller, start, stop, capture, previous=None):

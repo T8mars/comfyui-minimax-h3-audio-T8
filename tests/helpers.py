@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 
 import torch
 
@@ -21,6 +22,7 @@ def plugin_widget_map(node, node_class):
 
     info = node_class.define_schema().get_v1_info(node_class)
     widget_names = []
+    optional_defaults = {}
     for section in ("required", "optional"):
         for name, spec in info.input.get(section, {}).items():
             if not isinstance(spec, (list, tuple)) or not spec:
@@ -30,12 +32,20 @@ def plugin_widget_map(node, node_class):
                 continue
             if isinstance(spec[0], list) or spec[0] in _PRIMITIVE_WIDGET_TYPES:
                 widget_names.append(name)
+                if section == "optional" and options.get("default") is not None:
+                    optional_defaults[name] = options["default"]
 
     values = node.get("widgets_values", [])
     result = {}
     cursor = 0
     for name in widget_names:
         if cursor >= len(values):
+            if name in optional_defaults:
+                # A newly appended optional widget is absent from old saves.
+                # Only its declared default is admissible; required values and
+                # optional fields without a default remain strict below.
+                result[name] = deepcopy(optional_defaults[name])
+                continue
             raise AssertionError(f"widget values ended before schema input {name!r}")
         result[name] = values[cursor]
         cursor += 1

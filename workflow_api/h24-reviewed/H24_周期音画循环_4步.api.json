@@ -1,0 +1,241 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "01 · 选择底模"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "02 · 视频解码器"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "03 · 音频解码器"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "04 · 提示词编码器"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    },
+    "_meta": {
+      "title": "EMA B · 保留所选强度"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "A locked-off cinematic medium-wide shot of a small candle burning on a wooden desk. The flame gently sways and flickers, a thin thread of smoke curls slowly upward. Warm amber lighting, stable composition and background. Seamlessly recurring motion. Quiet natural room ambience and a gentle continuous flame crackle. No speech or music.",
+      "width": 832,
+      "height": 480,
+      "length": 107,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true
+    },
+    "_meta": {
+      "title": "提示词 · 画面与声音"
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "av_latent": [
+        "6",
+        1
+      ],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow"
+    },
+    "_meta": {
+      "title": "原生采样 · 4 步完整网格"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3PeriodicAVSetupEXPT8",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "av_latent": [
+        "6",
+        1
+      ],
+      "enabled": true,
+      "pad_clips": 1,
+      "views": 2
+    },
+    "_meta": {
+      "title": "循环设置 · 本例明确开启"
+    }
+  },
+  "9": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26102631
+    },
+    "_meta": {
+      "title": "固定种子 · 26102631"
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "8",
+        0
+      ],
+      "conditioning": [
+        "6",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "使用循环 MODEL 与原提示"
+    }
+  },
+  "11": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "9",
+        0
+      ],
+      "guider": [
+        "10",
+        0
+      ],
+      "sampler": [
+        "7",
+        1
+      ],
+      "sigmas": [
+        "7",
+        2
+      ],
+      "latent_image": [
+        "6",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "生成完整音画"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3PeriodicAVDecodeEXPT8",
+    "inputs": {
+      "av_latent": [
+        "11",
+        0
+      ],
+      "loop_plan": [
+        "8",
+        1
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "循环解码 · 107 → 102 帧"
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3PeriodicAVAuditEXPT8",
+    "inputs": {
+      "model": [
+        "8",
+        0
+      ],
+      "after_sampling": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "实际运行报告 · 采样后读取"
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "filename_prefix": "H24_Candidate/Periodic_AV_Candle",
+      "crf": 18
+    },
+    "_meta": {
+      "title": "保存一圈 · 含原生音轨"
+    }
+  }
+}

@@ -136,7 +136,11 @@ def run_export(store, project_id, film_id, job_id):
             final = work/'film.mp4'
             _run([executable, '-hide_banner', '-loglevel', 'error', '-nostdin', '-y', '-f', 'concat', '-safe', '1',
                   '-i', str(concat), '-map', '0:v:0', '-map', '0:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
-                  '-ar', '48000', '-ac', '2', '-threads', '1', '-video_track_timescale', '24000', '-movflags', '+faststart', str(final)], log)
+                  '-ar', '48000', '-ac', '2', '-threads', '1', '-video_track_timescale', '24000',
+                  # The MP4 movie/edit-list clock must represent both 24fps
+                  # frames and 48k samples. Its 1000-tick default rounds a
+                  # 41-frame soundtrack to 81984 rather than 82000 samples.
+                  '-movie_timescale', '48000', '-movflags', '+faststart', str(final)], log)
             evidence = inspect_media(final)
             if evidence['frames'] != frames_total or (evidence['width'], evidence['height']) != (width, height):
                 raise ValueError('最终整片帧数或尺寸不一致')

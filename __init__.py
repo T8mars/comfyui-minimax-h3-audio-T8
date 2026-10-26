@@ -79,6 +79,8 @@ if __package__:
     from .freevideo_h21.nodes import NODES as _freevideo_h21_node_classes
     from .nodes_mc_seam_experimental import NODES as _mc_seam_node_classes
     from .nodes_ptd_continuous import NODES as _ptd_continuous_node_classes
+    from .nodes_av_loop import NODES as _periodic_av_node_classes
+    from .nodes_solar_structural import NODES as _solar_structural_node_classes
 else:  # Allows direct test collection from a hyphenated custom-node directory.
     import importlib.util
     import sys
@@ -198,6 +200,8 @@ else:  # Allows direct test collection from a hyphenated custom-node directory.
     _freevideo_h21_node_classes = import_module(f"{_package_name}.freevideo_h21.nodes").NODES
     _mc_seam_node_classes = import_module(f"{_package_name}.nodes_mc_seam_experimental").NODES
     _ptd_continuous_node_classes = import_module(f"{_package_name}.nodes_ptd_continuous").NODES
+    _periodic_av_node_classes = import_module(f"{_package_name}.nodes_av_loop").NODES
+    _solar_structural_node_classes = import_module(f"{_package_name}.nodes_solar_structural").NODES
 
 
 class _HyperFlowLongVideoExtension(_BaseExtension):
@@ -275,8 +279,18 @@ class _PTDContinuousExtension(_MCSeamExtension):
         return [*(await super().get_node_list()), *_ptd_continuous_node_classes]
 
 
+class _PeriodicAVExtension(_PTDContinuousExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_periodic_av_node_classes]
+
+
+class _SolarStructuralExtension(_PeriodicAVExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_solar_structural_node_classes]
+
+
 def comfy_entrypoint():
-    return _PTDContinuousExtension()
+    return _SolarStructuralExtension()
 
 
 WEB_DIRECTORY = "./web"

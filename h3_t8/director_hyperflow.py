@@ -13,6 +13,7 @@ from pathlib import Path
 
 import folder_paths
 
+from .director_sampling_settings import lora_interpretation
 from .director_two_pass import _pick_upscaler
 from .h3_weight_diagnostics import inspect_h3_weight_file
 from .nodes_hyperflow_advanced import _resolve
@@ -35,6 +36,7 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
         raise ValueError("HyperFlow 原始权重未安装")
     variant = sampling["variant"]
     next_id = max(map(int, graph)) + 1
+    lora_loaders = []
 
     def add(kind, inputs):
         nonlocal next_id
@@ -45,7 +47,7 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
 
     def stage_model(stage):
         model = "1"
-        for row in sampling[f"{stage}_loras"]:
+        for row_index, row in enumerate(sampling[f"{stage}_loras"], 1):
             if not row["enabled"]:
                 continue
             name = row["name"]
@@ -62,7 +64,10 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
                     or any(item.get("kind") == "hyperflow" for item in special)):
                 raise ValueError("HyperFlow 原始权重不能放在一采/二采内容 LoRA 列表；请只在专用 HyperFlow 权重栏选择")
             model = add("MiniMaxH3LoRACompatibilityLoaderT8Advanced", {
-                "model": [model, 0], "lora_name": name, "strength_model": row["strength"]})
+                "model": [model, 0], "lora_name": name, "strength_model": row["strength"],
+                **lora_interpretation(row)})
+            lora_loaders.append({"node_id": model, "stage": stage.upper(),
+                "row_index": row_index, "row_id": row.get("id"), "source": "sampling_rows"})
         memory = d3["memory"]
         if memory.get("low_vram"):
             model = add("MiniMaxH3LowVRAMAttentionT8Advanced", {
@@ -316,4 +321,4 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
             "grid_identity_note": "expected_v1_contract; runtime loader validates selected file metadata; frozen batches separately hash model bytes",
             "low_loras": [] if resume_tail else [row for row in sampling["low_loras"] if row["enabled"]],
             "high_loras": [row for row in sampling["high_loras"] if row["enabled"]] if variant != "single8" else [],
-            "quality_status": "experimental_not_human_reviewed"}
+            "quality_status": "experimental_not_human_reviewed", "lora_loaders": lora_loaders}

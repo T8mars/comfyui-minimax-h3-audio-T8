@@ -42,6 +42,23 @@ def _validate_signed(payload: dict, schema: str, hash_key: str, name: str) -> di
     return payload
 
 
+def _source_content_sha256(frames: torch.Tensor) -> str:
+    """Bind fine details too; the scene-detection proxy is not a source identity.
+
+    Read one frame at a time instead of making a second full video on CPU.
+    Keep old signed plans readable with their explicitly weaker proxy binding.
+    """
+    from comfy.model_management import throw_exception_if_processing_interrupted
+
+    digest = hashlib.sha256()
+    digest.update(canonical_json({"shape": list(frames.shape), "dtype": str(frames.dtype)}).encode("utf8"))
+    for frame in frames.detach():
+        throw_exception_if_processing_interrupted()
+        block = frame.to(device="cpu").contiguous().view(torch.uint8).numpy()
+        digest.update(memoryview(block).cast("B"))
+    return digest.hexdigest()
+
+
 def _legal_h3_length_at_least(value: int, maximum: int) -> int:
     value = max(1, int(value))
     n = max(1, math.ceil((value - 5) / 17))
@@ -177,6 +194,7 @@ def build_face_refine_window_plan(
         "dtype": str(base_frames.dtype),
         "fps": float(fps),
         "proxy_sha256": source_proxy_sha256(base_frames),
+        "content_sha256": _source_content_sha256(base_frames),
     }
 
     windows: list[dict] = []
@@ -316,6 +334,8 @@ def _validate_source_binding(frames: torch.Tensor, source: dict, name: str) -> N
         raise ValueError(f"{name} shape {actual} does not match plan source {expected}")
     if source_proxy_sha256(frames) != source.get("proxy_sha256"):
         raise ValueError(f"{name} does not match the source-bound plan")
+    if "content_sha256" in source and _source_content_sha256(frames) != source["content_sha256"]:
+        raise ValueError(f"{name} content differs from the source-bound plan")
 
 
 def _window_base_frames(base_frames: torch.Tensor, window: dict) -> torch.Tensor:
@@ -673,6 +693,7 @@ def apply_face_refine_manual_review(
         "final_full_source_audio_required": True,
         "mapping_sha256": mapping["mapping_sha256"],
         "window_plan_sha256": mapping["window_plan_sha256"],
+        "source_identity": "full_content" if "content_sha256" in mapping["source"] else "legacy_proxy_only",
         "automatic_accept": False,
         "quality_guaranteed": False,
         "identity_verified": False,

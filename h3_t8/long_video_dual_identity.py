@@ -257,6 +257,23 @@ CORE_SIGMA_SHIFT_SOURCE_SHA256 = "5999ed8c22b13c8251084c0629fd82137d2fb52b55106a
 CORE_SIGMA_SHIFT_EXECUTE_SHA256 = "ef0b67d716bab7cd65c83f86ac8067859d8f8712b64dba88a3d7b84356a710a3"
 
 
+def _sampling_class_members(cls):
+    """Ignore only inert CPython 3.13 metadata, never executable members.
+
+    Read the raw namespace without invoking descriptors or coercing subclasses.
+    Either key may be absent (setting __module__ removes __firstlineno__). The
+    names *inside* __static_attributes__ do not grant any member an exemption.
+    """
+    namespace = vars(cls)
+    if "__firstlineno__" in namespace and type(namespace["__firstlineno__"]) is not int:
+        raise UnverifiedModelStack("Sampling class line metadata is not an inert integer")
+    if "__static_attributes__" in namespace:
+        names = namespace["__static_attributes__"]
+        if type(names) is not tuple or any(type(name) is not str for name in names):
+            raise UnverifiedModelStack("Sampling class attribute metadata is not an inert string tuple")
+    return set(namespace) - {"__firstlineno__", "__static_attributes__"}
+
+
 def _native_sigma_shift_factory(cls, core_sampling):
     """Recognize one audited empty Core carrier, never arbitrary subclasses.
 
@@ -273,7 +290,7 @@ def _native_sigma_shift_factory(cls, core_sampling):
             or cls.__bases__ != (native_av, core_sampling.CONST)
             or cls.__module__ != "comfy_extras.nodes_minimax_h3"
             or cls.__qualname__ != "MiniMaxH3SigmaShift.execute.<locals>.ModelSamplingAdvanced"
-            or set(vars(cls)) - {"__module__", "__doc__"}):
+            or _sampling_class_members(cls) - {"__module__", "__doc__"}):
         return None
     try:
         from comfy_extras import nodes_minimax_h3 as core_h3
@@ -339,14 +356,14 @@ def _v2_sampling_identity(value):
     native_factory = None
     native_av = getattr(core_sampling, "ModelSamplingAV", None)
     if cls is sampling.MiniMaxH3FlowSampling:
-        if set(vars(cls)) - {"__module__", "__doc__", "audio_scale"}:
+        if _sampling_class_members(cls) - {"__module__", "__doc__", "audio_scale"}:
             raise UnverifiedModelStack("V2 sampling class contains unknown execution members")
         protocol = "t8_raw_audio_flow"
     elif (native_av is not None
           and cls.__bases__ == (native_av, core_sampling.CONST)
           and cls.__module__ == sampling.__name__
           and cls.__qualname__ == "_make_sampling.<locals>.MiniMaxH3NativeAVSampling"
-          and not (set(vars(cls)) - {"__module__", "__doc__"})):
+          and not (_sampling_class_members(cls) - {"__module__", "__doc__"})):
         # _make_sampling creates a fresh empty subclass each time. Its class
         # identity is not stable, but its exact bases and empty executable
         # namespace are: no arbitrary subclass or repr-based exemption.

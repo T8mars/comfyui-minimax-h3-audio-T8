@@ -111,8 +111,12 @@ export function createSamplingDialog({ root, doc, shot, catalog, apply, notify }
                 ${rows.map((row, index) => `<div class="o-sampling-row" data-stage="${key}" data-index="${index}">
                     <label class="o-check"><input type="checkbox" data-sampling-field="enabled" ${row.enabled ? "checked" : ""}><span>启用</span></label>
                     <label><span>LoRA 文件</span><select data-sampling-field="name"><option value="">选择文件</option>${options("lora", row.name, false, filters[key])}</select></label>
-                    <label><span>强度</span><input type="number" min="-2" max="2" step="0.05" data-sampling-field="strength" value="${clean(row.strength)}"></label>
+                    <label><span>强度</span><input type="number" step="0.05" data-sampling-field="strength" value="${clean(row.strength)}"></label>
                     <div class="o-row"><button type="button" data-sampling-action="up" aria-label="上移第 ${index + 1} 条">↑</button><button type="button" data-sampling-action="down" aria-label="下移第 ${index + 1} 条">↓</button><button type="button" data-sampling-action="remove" aria-label="移除第 ${index + 1} 条">×</button></div>
+                    <details class="o-lora-interpretation"><summary>高级解析${row.file_alpha_policy === 'metadata_alpha_per_rank' || row.prefix_policy === 'unique_double_prefix' ? ' · 已自定义' : ' · 保持旧行为'}</summary><div class="o-two">
+                        <label><span>文件级 alpha</span><select data-sampling-field="file_alpha_policy">${[["legacy_tensor_only","旧行为：仅逐键 alpha"],["metadata_alpha_per_rank","显式使用文件 alpha / 实际 rank"]].map(([value,label])=>`<option value="${value}" ${(row.file_alpha_policy ?? "legacy_tensor_only")===value?"selected":""}>${label}</option>`).join("")}</select></label>
+                        <label><span>双重模型前缀</span><select data-sampling-field="prefix_policy">${[["legacy","旧行为：不补别名"],["unique_double_prefix","只补无歧义的双前缀别名"]].map(([value,label])=>`<option value="${value}" ${(row.prefix_policy ?? "legacy")===value?"selected":""}>${label}</option>`).join("")}</select></label>
+                    </div><p class="o-tip">默认不改变旧文件解释。仅在确认训练格式时修改；不改强度或顺序，最终命中／跳过原因以实际加载报告为准。</p></details>
                 </div>`).join("")}</section>`;
         };
         const relaySection = () => `<section class="o-sampling-shared o-gap"><h3>分阶段 Prompt Relay 文本</h3><p class="o-tip">仅在 D3 Prompt Relay 已启用时执行。每阶段可沿用镜头 Plan，或单独覆盖全局/局部事件文本；留空的局部事件表示只用全局提示。保存 HEAD 后，仅 TAIL 恢复不会重算 HEAD 文本。</p><div class="o-sampling-columns">${(target.stage_checkpoint.mode === "resume_tail" ? ["tail"] : ["head", "tail"]).map(stage => {
@@ -203,6 +207,12 @@ export function createSamplingDialog({ root, doc, shot, catalog, apply, notify }
         if (field === "enabled") row.enabled = el.checked;
         else if (field === "name") row.name = el.value;
         else if (field === "strength") row.strength = el.value.trim() === "" ? null : Number(el.value);
+        else if (field === "file_alpha_policy" || field === "prefix_policy") {
+            row[field] = el.value;
+            const summary = el.closest('.o-lora-interpretation')?.querySelector?.('summary');
+            if(summary)summary.textContent='高级解析'+(row.file_alpha_policy==='metadata_alpha_per_rank'||row.prefix_policy==='unique_double_prefix'?' · 已自定义':' · 保持旧行为');
+            return; // Keep the open advanced editor and keyboard focus alive.
+        }
         render();
     });
     function filterLoras(field) {
@@ -297,14 +307,14 @@ export function createSamplingDialog({ root, doc, shot, catalog, apply, notify }
             const stages = holder.mode === "single" ? ["loras"] : holder.mode === "hyperflow" && holder.hyperflow?.variant === "single8" ? ["low_loras"] : holder.mode === "hyperflow" && holder.hyperflow?.variant === "continuous4plus4separate" && holder.hyperflow?.stage_checkpoint?.mode === "resume_tail" ? ["high_loras"] : ["low_loras", "high_loras"];
             for (const key of stages) {
                 const rows = holder[holder.mode]?.[key] || [];
-                const invalidStrength = row => !Number.isFinite(row.strength) || row.strength < -2 || row.strength > 2;
+                const invalidStrength = row => !Number.isFinite(row.strength);
                 // The server inspects the resolved file and its metadata. A
                 // filename alone cannot prove that a content LoRA is HyperFlow.
                 const index = rows.findIndex(row => invalidStrength(row) || (row.enabled && !row.name));
                 if (index < 0) continue;
                 scope = owner; mode = holder.mode; render();
                 const strengthError = invalidStrength(rows[index]);
-                const message = `${owner === "global" ? "全片默认" : "当前镜头"} · ${{loras:"单采",low_loras:"一采",high_loras:"二采"}[key]}第 ${index + 1} 条：${strengthError ? "LoRA 强度必须是 -2–2 的有限数字（禁用行也需有效）" : "已启用的 LoRA 必须选择文件"}`;
+                const message = `${owner === "global" ? "全片默认" : "当前镜头"} · ${{loras:"单采",low_loras:"一采",high_loras:"二采"}[key]}第 ${index + 1} 条：${strengthError ? "LoRA 强度必须是有限数字（禁用行也需有效）" : "已启用的 LoRA 必须选择文件"}`;
                 const rowSelector = `[data-stage="${key}"][data-index="${index}"]`;
                 const field = dialog.querySelector(`${rowSelector} [data-sampling-field="${strengthError ? "strength" : "name"}"]`);
                 const errorId = `sampling-error-${key}-${index}`;

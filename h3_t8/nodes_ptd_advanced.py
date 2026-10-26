@@ -4,8 +4,7 @@ import json
 from pathlib import Path
 import folder_paths
 from comfy_api.latest import io
-from .ptd_advanced import get_controller, load_ptd_setup
-from .ptd_sampling import make_sampler, ptd_sigmas
+from .ptd_advanced import get_controller, load_ptd_setup, sampler_and_sigmas
 
 CATEGORY = "T8/MiniMax H3/Performance/Experimental"
 
@@ -35,7 +34,7 @@ class MiniMaxH3PTDSetupEXPT8(io.ComfyNode):
             display_name="H3 PTD 专家加载与采样 · Hop Setup (EXP/T8)",
             category=CATEGORY,
             is_experimental=True,
-            description="独立 PTD 4／6 步逐 hop 专家，不是普通 LoRA、PDD 或 4+4。只读可信已转换 safetensors，不执行 DCP/pickle。原用户底模和 LoRA 保留，未知组合风险见报告；训练模型/GPU/画质未验。",
+            description="读取文件元数据选择 EPFL 4／6 步或 stacked-hop Compact PTD 完整网格；Compact 支持 schema1 行量化存储，加载时还原 BF16，不代表 INT8 推理。只读 safetensors，不执行 DCP/pickle。原用户底模和 LoRA 保留，实际覆盖见报告；指定 Compact 4 步已完成本地实跑，其他组合与完整画质需另验。",
             inputs=[
                 io.Model.Input("model"),
                 io.String.Input(
@@ -59,6 +58,17 @@ class MiniMaxH3PTDSetupEXPT8(io.ComfyNode):
         )
         return io.NodeOutput(selected, sampler, sigmas, _json(report))
 
+    @classmethod
+    def fingerprint_inputs(cls, checkpoint, **_kwargs):
+        # Cache invalidation only: this stat identity is not a content receipt.
+        # Full file SHA/format validation remains in load_ptd_setup on reload.
+        # Do not read multi-GB checkpoint contents just because seed changed.
+        from .hybrid_model import file_stat_fingerprint
+
+        return "ptd-checkpoint-stat-v1:" + file_stat_fingerprint(
+            (checkpoint_path(checkpoint),)
+        )
+
 
 class MiniMaxH3PTDSamplerEXPT8(io.ComfyNode):
     @classmethod
@@ -68,7 +78,7 @@ class MiniMaxH3PTDSamplerEXPT8(io.ComfyNode):
             display_name="H3 PTD 采样器与完整网格 (EXP/T8)",
             category=CATEGORY,
             is_experimental=True,
-            description="从 PTD MODEL 取得匹配的完整 4／6 步网格。不可切半、接普通 Euler 或冒充旧 4+4。",
+            description="从 PTD MODEL 取得对应 EPFL 或 Compact 合同的采样器和完整网格。不可切半、接普通 Euler 或冒充旧 4+4。Compact 暂无连续 HEAD/TAIL 状态交接协议。",
             inputs=[io.Model.Input("model")],
             outputs=[io.Sampler.Output("sampler"), io.Sigmas.Output("sigmas")],
         )
@@ -76,7 +86,7 @@ class MiniMaxH3PTDSamplerEXPT8(io.ComfyNode):
     @classmethod
     def execute(cls, model):
         controller = get_controller(model)
-        return io.NodeOutput(make_sampler(controller), ptd_sigmas(controller.recipe))
+        return io.NodeOutput(*sampler_and_sigmas(controller))
 
 
 class MiniMaxH3PTDAuditEXPT8(io.ComfyNode):

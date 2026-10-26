@@ -19,9 +19,9 @@ class MiniMaxH3FaceRefineWindowPlanT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3FaceRefineWindowPlanT8Advanced",
-            display_name="MiniMax H3 Face Refine Window Plan / 局部修脸窗口规划 (Advanced)",
+            display_name="MiniMax H3 Face / Object Window Plan · 局部返工窗口规划 (Advanced)",
             description=(
-                "Plans explicit shot-local 24fps H3 windows around 0-based inclusive repair "
+                "Plans face or non-face object work with explicit shot-local 24fps H3 windows around 0-based inclusive repair "
                 "ranges. It binds the source, rejects hard-cut crossings and overlap ambiguity, "
                 "and never loads a model or accepts a candidate automatically. Empty or disabled "
                 "plans are exact no-op routes."
@@ -77,7 +77,7 @@ class MiniMaxH3FaceRefineWindowExtractT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3FaceRefineWindowExtractT8Advanced",
-            display_name="MiniMax H3 Face Refine Window Extract / 合法窗口提取 (Advanced)",
+            display_name="MiniMax H3 Face / Object Window Extract · 局部返工窗口提取 (Advanced)",
             description=(
                 "Extracts one contiguous 17n+5 IMAGE window without resizing. Explicit edge "
                 "padding repeats only the boundary image while the corresponding AUDIO samples "
@@ -115,9 +115,9 @@ class MiniMaxH3FaceRefineManualReviewT8Advanced(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="MiniMaxH3FaceRefineManualReviewT8Advanced",
-            display_name="MiniMax H3 Face Refine Manual Review / 人工选择回贴 (Advanced)",
+            display_name="MiniMax H3 Face / Object Review · 局部返工选择回贴 (Advanced)",
             description=(
-                "Shows the source window beside the candidate and keeps the complete source "
+                "Accepts a per-frame MASK for faces, objects or other regions. Shows the source window beside the candidate and keeps the complete source "
                 "timeline by default. Acceptance requires an explicit confirmation and can only "
                 "touch selected source repair frames inside the supplied changed mask. Context, "
                 "padding and candidate audio are never accepted automatically."

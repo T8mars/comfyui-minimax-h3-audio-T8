@@ -4,6 +4,8 @@ MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-v
 
 [简体中文](README.md) | English · Current version: **1.102.0** · [Changelog](CHANGELOG.md)
 
+[Latest source update](docs/H24_SOURCE_UPDATE.md): Director fixes, Compact PTD, periodic AV and Solar; [three reviewed workflows](examples/workflows/91-h24-reviewed/README.md).
+
 ## Install
 
 Requires recent native ComfyUI H3 support. Manual installation:

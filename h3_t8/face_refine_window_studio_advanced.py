@@ -16,6 +16,7 @@ from .face_refine_window_advanced import (
     WINDOW_MAPPING_SCHEMA,
     WINDOW_PLAN_SCHEMA,
     _validate_signed,
+    _validate_source_binding,
     apply_face_refine_manual_review,
 )
 from .long_video import sanitize_chain_id
@@ -485,6 +486,7 @@ def compose_face_refine_window_studio(
     manifest = load_face_refine_window_studio(chain_id)
     if manifest is None:
         raise ValueError("Face Refine Studio manifest does not exist")
+    _validate_source_binding(base_frames, plan["source"], "base_frames")
     if (
         manifest["window_plan_sha256"] != plan["plan_sha256"]
         or manifest["source"] != plan["source"]
@@ -537,5 +539,6 @@ def compose_face_refine_window_studio(
         "source_preserved_outside_accepted_mask_bit_exact": True,
         "source_overwritten": False,
         "final_full_source_audio_required": True,
+        "source_identity": "full_content" if "content_sha256" in plan["source"] else "legacy_proxy_only",
     }
     return result, combined_mask, complete, canonical_json(report)

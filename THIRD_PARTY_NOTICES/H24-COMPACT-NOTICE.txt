@@ -1,0 +1,15 @@
+ComfyUI-PTD-Compact
+Copyright 2026 Nynxz. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+THIRD-PARTY CODE
+
+pdd.py follows ComfyUI-MiniMaxH3-PTD by taobao-content-ai
+(https://huggingface.co/taobao-content-ai/MiniMax-H3-PTD-LoRAs, comfyui_node/ComfyUI-MiniMaxH3-PTD),
+licensed under the Apache License, Version 2.0: the PDD hop grid and head plans (schedule.py), the
+per-hop fusion of the PDD output-head bank (heads.py), the audio chord / tangent correction
+(schedule.audio_head_corrections), the stacked-hop key mapping (mapping.py, loader.py) and the
+model-level patches applied with the bank (patcher.py).
+
+This pack runs on, and subclasses, ComfyUI-PTD (https://github.com/vita-epfl/PTD-inference),
+Copyright (c) 2026 EPFL VITA Lab, licensed under the Apache License, Version 2.0. Its code is
+imported at runtime, not copied; compact.py replaces its ``_residual`` with an in-place equivalent.

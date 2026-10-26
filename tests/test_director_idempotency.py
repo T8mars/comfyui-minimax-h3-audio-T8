@@ -133,7 +133,9 @@ def test_results_recover_existing_receipt_and_cache_terminal_media(tmp_path):
         }},
     }), encoding="utf-8")
     other = store.root / "requests" / "b.json"
-    other.write_text(json.dumps({"state": "queued", "prompt_id": prompt_id,
+    # This positive recovery case uses an unrelated task. Incomplete duplicate
+    # prompt receipts are explicitly rejected by the H24 first-observer tests.
+    other.write_text(json.dumps({"state": "queued", "prompt_id": "4eb5f3d2-6a98-43b4-b4e8-063e51d41205",
                                  "project_id": "316378f7-18b0-456d-bc84-ac089e141fc7"}), encoding="utf-8")
     media = {"12": {"images": [{"filename": "film_00001_.mp4", "subfolder": "T8_Director\\abc", "type": "output"}]}}
     calls = []

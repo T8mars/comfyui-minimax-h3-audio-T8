@@ -1,0 +1,57 @@
+{
+  "schema": "t8.h24.reviewed-workflows.v1",
+  "human_review_date": "2026-10-27",
+  "human_feedback_sha256": "c76bc8cd6be2dee658c639293b11a9d493c09a2194497d9f91d6ccf1f33cdba6",
+  "workflows": [
+    {
+      "name": "H24_Compact_PTD_4步",
+      "case_id": "r2-compact",
+      "workflow": "H24_Compact_PTD_4步.json",
+      "api": "workflow_api/h24-reviewed/H24_Compact_PTD_4步.api.json",
+      "workflow_sha256": "9864e89a4798610e30b4d282b6604333a931d1a801aff02fd52c0d6b5a0e1599",
+      "api_sha256": "9019165af9eb46618c6e47295311622d07f4e00e9a8be7d0f501d7b06291b330",
+      "source_media_sha256": [
+        "fb7ebd09a53b94e5502b30bdc2e79c9f49fca5563193b3ccf9bbd19b4c9f46c1",
+        "98df53ff8fcdcc4adf30373fe49235729bef9f7c06dc15f8a1f1c095e54f53ea"
+      ],
+      "sampling_and_links_preserved": true,
+      "resource_adaptations_GPU_reexecuted": false,
+      "execution_nodes": 13,
+      "links": 19
+    },
+    {
+      "name": "H24_周期音画循环_4步",
+      "case_id": "r3-loop",
+      "workflow": "H24_周期音画循环_4步.json",
+      "api": "workflow_api/h24-reviewed/H24_周期音画循环_4步.api.json",
+      "workflow_sha256": "6be5c0cb2ff06c20f9df51d0d58070341de3ab5ddffce1cbe97f9ae0239d4b9a",
+      "api_sha256": "d6b0b5b2d8bba0e854c36994413a908929de428f5520970ec2ee896a8f5c4ef3",
+      "source_media_sha256": [
+        "912f8daf18c88b66ca703be180361ab42017a7584eb110afe25e03b7fb209121",
+        "303515c9292e75a0ba69a445071119a2ee0f2861967fba67b6b201a0bbaf211a"
+      ],
+      "sampling_and_links_preserved": true,
+      "resource_adaptations_GPU_reexecuted": false,
+      "execution_nodes": 14,
+      "links": 23
+    },
+    {
+      "name": "H24_Solar_结构重渲染_4步_原声",
+      "case_id": "r4-structure",
+      "workflow": "H24_Solar_结构重渲染_4步_原声.json",
+      "api": "workflow_api/h24-reviewed/H24_Solar_结构重渲染_4步_原声.api.json",
+      "workflow_sha256": "0e12b29e7e36fbe2c122272510e0b688b59cacf442acf283a87b1cc1e7dcfc6f",
+      "api_sha256": "407a2dbd59afd6da4f025cea3b0299e5031273973dc989c8a97156ea1abaca11",
+      "source_media_sha256": [
+        "02cb4a867e528271f974dc8afe3cab8d1ba3d9fbad9104b0f73f1af9256a994a",
+        "a12f06952cb3c12e3abe8dadcaea0611b4c8f928dd7cd7f90613939746f32ed5"
+      ],
+      "sampling_and_links_preserved": true,
+      "resource_adaptations_GPU_reexecuted": false,
+      "execution_nodes": 21,
+      "links": 30
+    }
+  ],
+  "models_or_personal_media_bundled": false,
+  "new_graph_GPU_qualification": false
+}

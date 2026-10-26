@@ -100,6 +100,13 @@ def test_readonly_candidate_inspection_is_bound_to_the_current_draft_without_sto
     assert result['saved'] is result['queued'] is result['project_modified'] is False
     assert result['time_plan']['fps'] == 24
     assert result['time_plan']['generated_seconds'] == result['time_plan']['aligned_frames'] / 24
+    config = result['effective_config']
+    assert config['shot_id'] == project['current']
+    assert config['scope'] == 'draft_plan_not_runtime_evidence'
+    assert config['generation']['unet'] == 'auto'
+    assert config['sampling'] == {'mode': 'single'}
+    from h3_audio_t8_pkg.director_project import compile_project
+    assert config['prompt'] == compile_project(project, shot_id=project['current'])['shots'][0]['prompt']
     assert project == before and store.list() == []
     body['base_sha256'] = '0' * 64
     assert dispatch(handler, body)[0] == 409
@@ -121,6 +128,30 @@ def test_session_relative_radar_module_has_actual_native_core_static_route(radar
     session = (expected.parent / "session.mjs").read_text(encoding="utf8")
     assert "'./radar_state.mjs'" in session
     assert expected.read_bytes()
+
+
+@pytest.mark.parametrize('name', ['candidate_diagnostics.mjs', 'content_hash.mjs', 'control_state.mjs'])
+def test_session_new_relative_dependencies_have_native_routes(radar_routes, name):
+    _store, handlers = radar_routes
+    response = asyncio.run(handlers[director_routes.PREFIX + '/' + name](types.SimpleNamespace()))
+    expected = Path(director_routes.__file__).resolve().parents[1] / 'web/director' / name
+    assert response.status == 200 and response._path.resolve() == expected.resolve()
+
+
+def test_all_direct_session_relative_module_dependencies_have_native_routes(radar_routes):
+    import re
+    _store, handlers = radar_routes
+    root = Path(director_routes.__file__).resolve().parents[1] / 'web/director'
+    pending, seen = ['session.mjs'], set()
+    while pending:
+        name = pending.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        assert director_routes.PREFIX + '/' + name in handlers, name
+        source = (root / name).read_text(encoding='utf8')
+        pending.extend(re.findall(r"from\s+['\"]\./([^'\"?#]+\.mjs)", source))
+    assert {'session.mjs', 'control_state.mjs', 'candidate_diagnostics.mjs', 'content_hash.mjs'} <= seen
 
 
 def test_ui_modules_are_directory_name_independent_and_allowlisted(radar_routes):
@@ -163,6 +194,8 @@ def test_readonly_reference_plan_redacts_paths_and_separates_video_audio_ordinal
     assert [row['native'] for row in report['reference_slots']] == ['<Video 1>', '<Audio 1>']
     assert [row['role'] for row in report['reference_slots']] == ['ref_video', 'ref_video_audio']
     assert all(set(row) == {'asset_id', 'role', 'native', 'sha256'} for row in report['reference_slots'])
+    assert report['effective_config']['references'] == report['reference_slots']
+    assert 'server_path' not in json.dumps(report['effective_config'])
     assert report['reference_aliases'] == [{'alias': '@video1', 'asset_id': aid, 'native': '<Video 1>'}]
     assert report['scope'] == 'current_draft_plan_not_actual_encoding_or_runtime_cache'
     assert report['source_time_map'] is None

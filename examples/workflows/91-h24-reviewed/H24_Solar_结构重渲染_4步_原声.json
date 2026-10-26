@@ -1,0 +1,1367 @@
+{
+  "id": "d5620f25-b55e-4249-b686-fe9217e3d2d1",
+  "revision": 0,
+  "last_node_id": 22,
+  "last_link_id": 30,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "01 · 选择底模",
+      "pos": [
+        0,
+        150
+      ],
+      "size": [
+        410,
+        150
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "title": "02 · 视频解码器",
+      "pos": [
+        0,
+        350
+      ],
+      "size": [
+        410,
+        140
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            24
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_int8_convrot.safetensors"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VAELoader",
+      "title": "03 · 音频解码器",
+      "pos": [
+        0,
+        540
+      ],
+      "size": [
+        410,
+        140
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CLIPLoader",
+      "title": "04 · 提示词编码器",
+      "pos": [
+        0,
+        730
+      ],
+      "size": [
+        410,
+        180
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+      "title": "fewstep LoRA · 独立强度",
+      "pos": [
+        470,
+        150
+      ],
+      "size": [
+        450,
+        230
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LoRACompatibilityLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "solarrenderer_4step_lora.safetensors",
+        1.0,
+        "legacy_tensor_only",
+        "legacy"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+      "title": "control LoRA · 独立强度",
+      "pos": [
+        470,
+        430
+      ],
+      "size": [
+        450,
+        230
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LoRACompatibilityLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "solarrenderer_control_lora.safetensors",
+        1.0,
+        "legacy_tensor_only",
+        "legacy"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadVideo",
+      "title": "24fps源结构 · 实际准备片",
+      "pos": [
+        980,
+        150
+      ],
+      "size": [
+        430,
+        230
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "H24_Solar_RGB.mov"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "GetVideoComponents",
+      "title": "结构帧与实际帧率",
+      "pos": [
+        980,
+        430
+      ],
+      "size": [
+        430,
+        170
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "LoadImage",
+      "title": "同源首帧 · 外观",
+      "pos": [
+        980,
+        650
+      ],
+      "size": [
+        430,
+        280
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "H24_Solar_First.png"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "LoadAudio",
+      "title": "同源完整原声 · 只用于最终保存",
+      "pos": [
+        980,
+        980
+      ],
+      "size": [
+        430,
+        220
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "H24_Solar_Original.mp4"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3SolarStructureEncodeEXPT8",
+      "title": "完整158帧 · 结构与首帧",
+      "pos": [
+        1470,
+        150
+      ],
+      "size": [
+        600,
+        950
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 4
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "structure",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 7,
+          "widget": {
+            "name": "fps"
+          }
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": 8,
+          "shape": 7
+        },
+        {
+          "name": "structure_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 9,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            11,
+            14,
+            22
+          ]
+        },
+        {
+          "name": "actual_frames",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolarStructureEncodeEXPT8"
+      },
+      "widgets_values": [
+        "A continuous natural live-action full-body portrait shot of the adult woman in the supplied source. Preserve the same face, dark hair, black cropped jacket, black top and shorts, patterned tights and tall black boots. Keep the source room, doorway, furniture, lighting and camera framing. Follow the source dance precisely: the arm, hand, shoulder, torso and leg movements, their direction and timing, and the changes of weight and body orientation. Match the supplied first frame's appearance. Stable anatomy and clothing, no extra people, no body or face replacement, no camera cuts, no text or overlays.",
+        480,
+        832,
+        158,
+        0,
+        24.0,
+        0
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "原生LCM · 完整4步 · 12/3",
+      "pos": [
+        2130,
+        150
+      ],
+      "size": [
+        440,
+        300
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 10
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            20
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        4,
+        12.0,
+        3.0,
+        "lcm",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3SolarSilenceSetupEXPT8",
+      "title": "本草稿显式开启 · silence_158f",
+      "pos": [
+        2130,
+        500
+      ],
+      "size": [
+        440,
+        380
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 12
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "link": 13,
+          "widget": {
+            "name": "seed"
+          }
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 14,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            16,
+            28
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolarSilenceSetupEXPT8"
+      },
+      "widgets_values": [
+        true,
+        "h3_silence_153_158_170.safetensors",
+        "silence_158f",
+        0,
+        "fixed"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "RandomNoise",
+      "title": "随机噪声 · 使用共享种子",
+      "pos": [
+        2630,
+        930
+      ],
+      "size": [
+        470,
+        150
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise_seed",
+          "type": "INT",
+          "link": 15,
+          "widget": {
+            "name": "noise_seed"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        0,
+        "fixed"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "BasicGuider",
+      "title": "最终MODEL与结构条件",
+      "pos": [
+        2630,
+        150
+      ],
+      "size": [
+        470,
+        150
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 16
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "SamplerCustomAdvanced",
+      "title": "完整音画采样 · 尚未执行本图",
+      "pos": [
+        2630,
+        350
+      ],
+      "size": [
+        470,
+        250
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 18
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 19
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 20
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 21
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            23,
+            29
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "实际视频与音频VAE解码",
+      "pos": [
+        2630,
+        650
+      ],
+      "size": [
+        470,
+        200
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 23
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 24
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            26
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 18,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "完整画面＋原声（−1dB）",
+      "pos": [
+        3160,
+        390
+      ],
+      "size": [
+        500,
+        250
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "H24_Candidate/Solar_158_Source_Audio",
+        18
+      ]
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3SolarAuditEXPT8",
+      "title": "实际作用域报告 · 采样后",
+      "pos": [
+        3160,
+        700
+      ],
+      "size": [
+        500,
+        230
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 28
+        },
+        {
+          "name": "after_sampling",
+          "type": "*",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SolarAuditEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "PrimitiveInt",
+      "title": "共享种子 · 只在这里修改",
+      "pos": [
+        2130,
+        930
+      ],
+      "size": [
+        440,
+        180
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            13,
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveInt"
+      },
+      "widgets_values": [
+        26102641,
+        "fixed"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "AudioAdjustVolume",
+      "title": "原声交付 · 显式降低1dB防过载",
+      "pos": [
+        3160,
+        150
+      ],
+      "size": [
+        500,
+        180
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AudioAdjustVolume"
+      },
+      "widgets_values": [
+        -1
+      ],
+      "color": "#665032",
+      "bgcolor": "#33291c"
+    },
+    {
+      "id": 22,
+      "type": "MarkdownNote",
+      "title": "未注册私有草稿 · 接线说明",
+      "pos": [
+        0,
+        -180
+      ],
+      "size": [
+        3660,
+        250
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "# Solar · 158帧完整私有草稿（未注册）\n\n480×832 / 24fps；原图、原声来自actual-v1显式准备文件。fewstep→control两份LoRA各自强度1。LCM 4步、shift12/3、silence_158f；本图明确开启，节点默认仍OFF。\n\n原声切片仅在保存前显式降低1dB，防止源AAC解码峰值过载；PCM数值有变化，不称原样。采样输入不变。共享种子固定26102641，只在一处修改。\n\n仅CPU schema与序列化校验；未采样、未浏览器往返、未发布。新节点只在私有进程绑定，普通Core尚不能加载；私有LoRA目录须按随附配置显式绑定。训练GPU独立worker与本节点图的执行证据分开。"
+      ],
+      "color": "#244856",
+      "bgcolor": "#142a33"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      5,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      5,
+      0,
+      6,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      7,
+      0,
+      8,
+      0,
+      "VIDEO"
+    ],
+    [
+      4,
+      4,
+      0,
+      11,
+      0,
+      "CLIP"
+    ],
+    [
+      5,
+      2,
+      0,
+      11,
+      1,
+      "VAE"
+    ],
+    [
+      6,
+      8,
+      0,
+      11,
+      2,
+      "IMAGE"
+    ],
+    [
+      7,
+      8,
+      2,
+      11,
+      3,
+      "FLOAT"
+    ],
+    [
+      8,
+      9,
+      0,
+      11,
+      4,
+      "IMAGE"
+    ],
+    [
+      9,
+      10,
+      0,
+      11,
+      6,
+      "AUDIO"
+    ],
+    [
+      10,
+      6,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      11,
+      11,
+      1,
+      12,
+      1,
+      "LATENT"
+    ],
+    [
+      12,
+      12,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      13,
+      20,
+      0,
+      13,
+      1,
+      "INT"
+    ],
+    [
+      14,
+      11,
+      1,
+      13,
+      2,
+      "LATENT"
+    ],
+    [
+      15,
+      20,
+      0,
+      14,
+      0,
+      "INT"
+    ],
+    [
+      16,
+      13,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      17,
+      11,
+      0,
+      15,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      14,
+      0,
+      16,
+      0,
+      "NOISE"
+    ],
+    [
+      19,
+      15,
+      0,
+      16,
+      1,
+      "GUIDER"
+    ],
+    [
+      20,
+      12,
+      1,
+      16,
+      2,
+      "SAMPLER"
+    ],
+    [
+      21,
+      12,
+      2,
+      16,
+      3,
+      "SIGMAS"
+    ],
+    [
+      22,
+      11,
+      1,
+      16,
+      4,
+      "LATENT"
+    ],
+    [
+      23,
+      16,
+      0,
+      17,
+      0,
+      "LATENT"
+    ],
+    [
+      24,
+      2,
+      0,
+      17,
+      1,
+      "VAE"
+    ],
+    [
+      25,
+      3,
+      0,
+      17,
+      2,
+      "VAE"
+    ],
+    [
+      26,
+      17,
+      0,
+      18,
+      0,
+      "IMAGE"
+    ],
+    [
+      27,
+      21,
+      0,
+      18,
+      1,
+      "AUDIO"
+    ],
+    [
+      28,
+      13,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      29,
+      16,
+      0,
+      19,
+      1,
+      "*"
+    ],
+    [
+      30,
+      11,
+      3,
+      21,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "1 · 用户模型",
+      "bounding": [
+        -30,
+        90,
+        470,
+        1130
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "2 · 独立LoRA",
+      "bounding": [
+        440,
+        90,
+        510,
+        1130
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "3 · 结构、首帧、原声",
+      "bounding": [
+        950,
+        90,
+        1150,
+        1140
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "4 · 明确采样配方",
+      "bounding": [
+        2100,
+        90,
+        510,
+        1140
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "5 · 完整采样与解码",
+      "bounding": [
+        2600,
+        90,
+        530,
+        1140
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "6 · 原声交付与实际报告",
+      "bounding": [
+        3130,
+        90,
+        560,
+        1140
+      ],
+      "color": "#4c7c6d",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.42,
+      "offset": [
+        70,
+        230
+      ]
+    },
+    "workflow_title": "H24 · Solar 158帧 · 共享种子＋原声−1dB",
+    "h24_candidate": {
+      "registered": false,
+      "published": false,
+      "human_reviewed": false,
+      "graph_GPU_executed": false,
+      "browser_roundtrip": false
+    },
+    "t8_reviewed_source": {
+      "case_id": "r4-structure",
+      "accepted_media_sha256": [
+        "02cb4a867e528271f974dc8afe3cab8d1ba3d9fbad9104b0f73f1af9256a994a",
+        "a12f06952cb3c12e3abe8dadcaea0611b4c8f928dd7cd7f90613939746f32ed5"
+      ],
+      "human_review_date": "2026-10-27",
+      "original_workflow_sha256": "af2745e585e588379107c6e18538e2a62b32b29fd79dfe2fc8dfd10335d5ed00",
+      "original_api_sha256": "1087ed5a12d0fdfb5abf66fbc68ff1551c5dec95021ceca5056012cb2cf6e44f",
+      "resource_path_adaptations_only": true,
+      "resource_adaptations_GPU_reexecuted": false
+    }
+  },
+  "version": 0.4
+}

@@ -7,6 +7,7 @@ from typing import Any
 
 import folder_paths
 
+from .director_sampling_settings import lora_interpretation
 from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
 
 
@@ -41,6 +42,7 @@ def apply_two_pass_graph(
         raise ValueError("双采缺少实际 LOW/HIGH 尺寸计划")
     upscaler_name = _pick_upscaler(sampling["upscaler"])
     next_id = max(map(int, graph)) + 1
+    lora_loaders = []
 
     def add(kind: str, inputs: dict[str, Any]) -> str:
         nonlocal next_id
@@ -51,7 +53,7 @@ def apply_two_pass_graph(
 
     def stage_model(stage: str) -> str:
         model = "1"
-        for row in sampling[f"{stage}_loras"]:
+        for row_index, row in enumerate(sampling[f"{stage}_loras"], 1):
             if not row["enabled"]:
                 continue
             name = row["name"]
@@ -59,7 +61,10 @@ def apply_two_pass_graph(
                 raise ValueError(f"{'一采' if stage == 'low' else '二采'}找不到 LoRA：{name}")
             model = add("MiniMaxH3LoRACompatibilityLoaderT8Advanced", {
                 "model": [model, 0], "lora_name": name, "strength_model": row["strength"],
+                **lora_interpretation(row),
             })
+            lora_loaders.append({"node_id": model, "stage": stage.upper(),
+                "row_index": row_index, "row_id": row.get("id"), "source": "sampling_rows"})
         memory = d3["memory"]
         if memory.get("low_vram"):
             model = add("MiniMaxH3LowVRAMAttentionT8Advanced", {
@@ -186,4 +191,5 @@ def apply_two_pass_graph(
         "high": {"width": plan["width"], "height": plan["height"],
                  "loras": [row for row in sampling["high_loras"] if row["enabled"]]},
         "upscaler": upscaler_name, "high_output_node": high_sampler,
+        "lora_loaders": lora_loaders,
     }

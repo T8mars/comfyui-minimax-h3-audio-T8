@@ -18,6 +18,36 @@ DEFAULT_TWO_PASS = {
 }
 
 
+LORA_INTERPRETATION_OPTIONS = {
+    "file_alpha_policy": ("legacy_tensor_only", "metadata_alpha_per_rank"),
+    "prefix_policy": ("legacy", "unique_double_prefix"),
+}
+
+
+def lora_strength(value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("LoRA 强度必须是有限数字")
+    try:
+        strength = float(value)
+    except OverflowError as error:
+        raise ValueError("LoRA 强度无法表示为有限浮点数") from error
+    if not math.isfinite(strength):
+        raise ValueError("LoRA 强度必须是有限数字")
+    return strength
+
+
+def lora_interpretation(row: Mapping[str, Any]) -> dict[str, str]:
+    """Only explicit choices travel; old projects/graphs acquire no new keys."""
+    result = {}
+    for key, choices in LORA_INTERPRETATION_OPTIONS.items():
+        if key in row:
+            value = row[key]
+            if not isinstance(value, str) or value not in choices:
+                raise ValueError(f"LoRA {key} 无效：请选择支持的解析方式")
+            result[key] = value
+    return result
+
+
 def _lora_rows(value: Any, stage: str) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise ValueError(f"{stage} LoRA 必须是列表")
@@ -27,11 +57,9 @@ def _lora_rows(value: Any, stage: str) -> list[dict[str, Any]]:
             raise ValueError(f"{stage} 第 {index + 1} 条 LoRA 无效")
         name = row.get("name")
         enabled = row.get("enabled", True)
-        strength = row.get("strength", 1.0)
+        strength = lora_strength(row.get("strength", 1.0))
         if not isinstance(name, str) or not isinstance(enabled, bool):
             raise ValueError(f"{stage} LoRA 需要文件名与启用状态")
-        if isinstance(strength, bool) or not isinstance(strength, (int, float)) or not math.isfinite(strength) or not -2 <= strength <= 2:
-            raise ValueError(f"{stage} LoRA 强度必须是 -2–2 的有限数字")
         if enabled and not name:
             raise ValueError(f"{stage} 已启用 LoRA 必须选择文件")
         result.append({
@@ -40,6 +68,7 @@ def _lora_rows(value: Any, stage: str) -> list[dict[str, Any]]:
             "strength": float(strength),
             "enabled": enabled,
             "source": str(row.get("source") or "user"),
+            **lora_interpretation(row),
         })
     if len({row["id"] for row in result}) != len(result):
         raise ValueError(f"{stage} LoRA 行 ID 重复")

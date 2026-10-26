@@ -19,6 +19,15 @@ from .h3_weight_diagnostics import describe_h3_payload, lora_mapping_diagnostics
 LOG = logging.getLogger(__name__)
 SCHEMA = "t8.minimax_h3.lora_compat.v1"
 FAST_H3_VSA_GATE_ATTACHMENT_KEY = "t8_fast_h3_vsa_gate_contract_v1"
+FILE_ALPHA_POLICIES = ("legacy_tensor_only", "metadata_alpha_per_rank")
+PREFIX_POLICIES = ("legacy", "unique_double_prefix")
+LINEAR_LORA_FORMATS = ((".lora_down.weight", ".lora_up.weight"),
+                       ("_lora.down.weight", "_lora.up.weight"),
+                       (".lora_A.weight", ".lora_B.weight"),
+                       (".lora.down.weight", ".lora.up.weight"),
+                       (".lora_A", ".lora_B"),
+                       (".lora_linear_layer.down.weight", ".lora_linear_layer.up.weight"),
+                       (".lora_A.default.weight", ".lora_B.default.weight"))
 
 
 def _json(value: object) -> str:
@@ -389,25 +398,202 @@ def convert_fastvideo_h3_adapter(
     return output, report
 
 
+def explicit_prefix_aliases(state, key_map, model, policy):
+    """Add a unique whole-pair alias without rewriting or splicing source keys."""
+    if policy not in PREFIX_POLICIES:
+        raise ValueError(f"Unknown prefix_policy: {policy!r}")
+    report = {"requested_policy": policy, "added_aliases": [], "not_applied": [],
+              "source_keys_rewritten": False, "execution_verified": False}
+    result = dict(key_map)
+    if policy == "legacy":
+        return result, report
+    complete = {}
+    for key in state:
+        for down, up in LINEAR_LORA_FORMATS:
+            if key.endswith(down):
+                module = key[:-len(down)]
+                if module + up in state:
+                    complete.setdefault(module, []).append((down, up))
+    # Check the existing *converted* consumer graph: split-QKV and Core's other
+    # format conversions can occupy a target absent from the raw key namespace.
+    # Release this temporary conversion before building the selected final one.
+    baseline, _ = convert_fastvideo_h3_adapter(state)
+    baseline = comfy.lora_convert.convert_lora(baseline)
+    occupied = set(comfy.lora.load_lora(baseline, key_map, log_missing=False))
+    del baseline
+    weights = model.state_dict()
+    for module in sorted(complete):
+        if module in key_map or not module.startswith("diffusion_model.diffusion_model."):
+            continue
+        canonical = module[len("diffusion_model."):]
+        target = key_map.get(canonical)
+        if not isinstance(target, str):
+            report["not_applied"].append({"module": module, "reason": "no_unique_existing_target"})
+            continue
+        if target in occupied or len(complete[module]) != 1:
+            report["not_applied"].append({"module": module, "reason": "ambiguous_target_or_pair_formats"})
+            continue
+        weight = weights.get(target)
+        if not isinstance(weight, torch.Tensor) or weight.ndim != 2:
+            report["not_applied"].append({"module": module, "reason": "not_a_known_linear_target"})
+            continue
+        down, up = complete[module][0]
+        a, b = state[module + down], state[module + up]
+        if (not isinstance(a, torch.Tensor) or not isinstance(b, torch.Tensor)
+                or a.ndim != 2 or b.ndim != 2 or a.shape[0] < 1
+                or b.shape[1] != a.shape[0] or (b.shape[0], a.shape[1]) != tuple(weight.shape)):
+            raise ValueError(f"Repeated-prefix linear pair does not match actual target {target}: {module}")
+        result[module] = target
+        occupied.add(target)
+        report["added_aliases"].append({"source_module": module, "target": target})
+    return result, report
+
+
+def _file_alpha_target(module, state, key_map, weights):
+    """Resolve existing linear mappings; no invented alias or model-name gate."""
+    target = key_map.get(module)
+    split = False
+    if target is None and _fastvideo_h3_layout(state):
+        for scope in _fastvideo_qkv_scopes(state):
+            if module in {f"{scope}.attn.to_{part}" for part in ("q", "k", "v")}:
+                target = key_map.get(_fastvideo_scope_target(scope) + ".attn.qkv_proj")
+                split = True
+                break
+    if target is None and _fastvideo_h3_layout(state):
+        for suffix, replacement in ((".attn.to_out.0", ".attn.out_proj"),
+                                    (".ff.net.0.proj", ".mlp.fc1"),
+                                    (".ff.net.2", ".mlp.fc2"),
+                                    (".adaln_proj.linear", ".adaln_proj.linear")):
+            if (module.endswith(suffix)
+                    and module.startswith(("transformer_blocks.", "token_refiner.refiner_blocks."))):
+                target = key_map.get(_fastvideo_scope_target(module[:-len(suffix)]) + replacement)
+                break
+        if module == "norm_out.linear":
+            target = key_map.get("final_layer.adaln_proj.linear")
+    weight = weights.get(target) if isinstance(target, str) else None
+    return (target, weight, split) if isinstance(weight, torch.Tensor) and weight.ndim == 2 else None
+
+
+def interpret_file_alpha(state, metadata, policy, model, key_map):
+    """Explicit literal alpha/rank fallback, before any QKV rank fusion.
+
+    Metadata can describe a configured rather than effective training alpha.
+    Never auto-enable this interpretation, rescale factors, or alter strength.
+    Only complete mapped 2D linear pairs without their own alpha participate.
+    """
+    if policy not in FILE_ALPHA_POLICIES:
+        raise ValueError(f"Unknown file_alpha_policy: {policy!r}")
+    report = {"requested_policy": policy, "injected_module_count": 0,
+              "injected_modules": [], "per_key_alpha_modules": [],
+              "skipped_modules": [], "training_scale_verified": False,
+              "meaning": "explicit literal file alpha / actual tensor rank; not producer provenance"}
+    result = dict(state)
+    if policy == "legacy_tensor_only" or not metadata or metadata.get("ss_network_alpha") is None:
+        report["status"] = "legacy_tensor_only" if policy == "legacy_tensor_only" else "no_file_alpha"
+        return result, report
+    weights = model.state_dict()
+    formats = LINEAR_LORA_FORMATS
+    native_patches = comfy.lora.load_lora(state, key_map, log_missing=False)
+    modules = {key[:-len(down)] for key in state for down, _ in formats if key.endswith(down)}
+    resolved = {module: _file_alpha_target(module, state, key_map, weights) for module in modules}
+    native_sources = {}
+    for module, target in resolved.items():
+        if target is not None and not target[2] and any(
+                module + down in state and module + up in state for down, up in formats):
+            native_sources.setdefault(target[0], set()).add(module)
+    candidates = []
+    for module in sorted(modules):
+        target = resolved[module]
+        if target is not None and not target[2] and len(native_sources.get(target[0], ())) > 1:
+            report["skipped_modules"].append({"module": module, "reason": "ambiguous_target_aliases_not_interpreted"})
+            continue
+        if module + ".alpha" in state:
+            report["per_key_alpha_modules"].append(module)
+            continue
+        # Core has a format priority. Do not validate an unused second format
+        # or combine factors from different namespaces. Ambiguity leaves Core's
+        # original payload/priority unchanged rather than guessing an alpha.
+        complete = [(down, up) for down, up in formats
+                    if module + down in state and module + up in state]
+        up_markers = (".lora_up.weight", "_lora.up.weight", ".lora_B.weight",
+                      ".lora.up.weight", ".lora_B", ".lora_linear_layer.up.weight",
+                      ".lora_B.default.weight")
+        if (len(complete) != 1 or sum(module + suffix in state for suffix in up_markers) != 1
+                or sum(module + down in state for down, _ in formats) != 1):
+            report["skipped_modules"].append({"module": module, "reason": "ambiguous_or_incomplete_pair_not_interpreted"})
+            continue
+        a, b = (state[module + suffix] for suffix in complete[0])
+        special = any(module + suffix in state for suffix in (
+            ".dora_scale", ".lora_magnitude_vector", ".lora_mid.weight", ".reshape_weight",
+            ".diff", ".w_norm", ".set_weight"))
+        if (target is None or special or not isinstance(a, torch.Tensor) or a.ndim != 2
+                or not isinstance(b, torch.Tensor) or b.ndim != 2):
+            report["skipped_modules"].append({"module": module, "reason": "not_a_complete_mapped_plain_linear_pair"})
+            continue
+        if module in key_map:
+            adapter = native_patches.get(target[0])
+            pair_keys = {module + suffix for suffix in complete[0]}
+            if (type(adapter) is not comfy.lora.weight_adapter.LoRAAdapter
+                    or not pair_keys.issubset(adapter.loaded_keys)):
+                report["skipped_modules"].append({"module": module, "reason": "not_the_actual_native_linear_consumer"})
+                continue
+        _, weight, split = target
+        if (a.shape[0] < 1 or b.shape[1] != a.shape[0] or a.shape[1] != weight.shape[1]
+                or (not split and b.shape[0] != weight.shape[0])):
+            raise ValueError(f"File alpha metadata cannot interpret mismatched linear pair: {module}")
+        candidates.append((module, a))
+    if candidates:
+        try:
+            alpha = float(metadata["ss_network_alpha"])
+        except (TypeError, ValueError) as error:
+            raise ValueError("File metadata alpha must be a finite number for the selected interpretation") from error
+        if not math.isfinite(alpha):
+            raise ValueError("File metadata alpha must be finite for the selected interpretation")
+        declared_rank = metadata.get("ss_network_dim")
+        if declared_rank is not None:
+            try:
+                rank = float(declared_rank)
+            except (TypeError, ValueError) as error:
+                raise ValueError("File metadata rank must be a positive integer") from error
+            if not math.isfinite(rank) or not rank.is_integer() or rank <= 0:
+                raise ValueError("File metadata rank must be a positive integer")
+            if any(int(a.shape[0]) != int(rank) for _, a in candidates):
+                raise ValueError("File metadata rank disagrees with actual alpha-free linear tensor rank; cannot infer its training scale")
+        for module, a in candidates:
+            result[module + ".alpha"] = torch.tensor(alpha, dtype=torch.float64, device=a.device)
+            report["injected_modules"].append({"module": module, "actual_rank": int(a.shape[0]),
+                                                "alpha": alpha, "scale": alpha / int(a.shape[0])})
+        report.update(file_alpha=alpha, declared_rank=declared_rank)
+    report["injected_module_count"] = len(candidates)
+    report["status"] = "applied_explicit_interpretation" if candidates else "no_eligible_alpha_free_pair"
+    return result, report
+
+
 def load_minimax_h3_lora_model(
     model,
     lora_path: str | Path,
     strength_model: float = 1.0,
+    *,
+    file_alpha_policy: str = "legacy_tensor_only",
+    prefix_policy: str = "legacy",
 ) -> tuple[Any, str]:
     path = Path(lora_path)
     strength = float(strength_model)
-    if not strength == strength or not -100.0 <= strength <= 100.0:
-        raise ValueError("strength_model must be finite and within [-100, 100]")
+    if not math.isfinite(strength):
+        raise ValueError("strength_model must be finite")
 
     raw, metadata = comfy.utils.load_torch_file(
         str(path), safe_load=True, return_metadata=True
     )
     vsa_gates, adapter_state = _extract_fastvideo_vsa_gate_weights(raw)
+    key_map, direct_alias_count = build_minimax_h3_lora_key_map(model.model)
+    key_map, prefix_interpretation = explicit_prefix_aliases(adapter_state, key_map, model.model, prefix_policy)
+    adapter_state, alpha_interpretation = interpret_file_alpha(
+        adapter_state, metadata, file_alpha_policy, model.model, key_map)
     converted, conversion = convert_fastvideo_h3_adapter(adapter_state)
     converted = comfy.lora_convert.convert_lora(converted)
     source_keys = sorted(str(key) for key in raw.keys())
     payload_diagnostics = describe_h3_payload(source_keys, metadata)
-    key_map, direct_alias_count = build_minimax_h3_lora_key_map(model.model)
     patches = comfy.lora.load_lora(converted, key_map, log_missing=False)
 
     patched = model.clone()
@@ -425,6 +611,10 @@ def load_minimax_h3_lora_model(
     status = "applied" if applied_targets or gate_count else "no_compatible_patches"
     mapping = lora_mapping_diagnostics(converted, key_map, patches, applied)
     warnings = []
+    if alpha_interpretation["skipped_modules"]:
+        warnings.append("File alpha interpretation was not applied to ambiguous, unmapped or non-plain-linear payloads; the original payload is retained for Core. See alpha_interpretation.skipped_modules.")
+    if prefix_interpretation["not_applied"]:
+        warnings.append("Repeated-prefix interpretation was not applied to ambiguous or unknown targets; original payload and Core mappings were retained. See prefix_interpretation.not_applied.")
     for requirement in payload_diagnostics["special_runtime_requirements"]:
         warnings.append(f"{requirement['kind']} requires {requirement['runtime']}; ordinary weight patches do not establish the full algorithm.")
     if mapping["converted_unmapped_tensor_count"]:
@@ -455,6 +645,8 @@ def load_minimax_h3_lora_model(
         "input_tensor_count": len(raw),
         "converted_tensor_count": len(converted),
         "structural_conversion": conversion,
+        "alpha_interpretation": alpha_interpretation,
+        "prefix_interpretation": prefix_interpretation,
         "payload_diagnostics": payload_diagnostics,
         "mapping_diagnostics": mapping,
         "warnings": warnings,

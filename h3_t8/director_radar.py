@@ -827,6 +827,31 @@ def candidate_status(project, shot):
     return "active" if candidate["active"] else "pending"
 
 
+def configuration_plan(project, selected):
+    """Project/compiler declarations only; never resolve files, weights or NFE."""
+    from .director_project import generation_settings
+
+    generation = generation_settings(project["doc"])
+    sampling = selected.get("sampling", {"mode": "single"})
+    if sampling["mode"] == "single":
+        for key in ("loras", "lora_mode", "resolution_mp"):
+            if key in sampling:
+                generation[key] = deepcopy(sampling[key])
+    fields = ("prompt", "global_prompt", "local_prompt", "events", "task_type", "audio_mode",
+              "audio_selection", "delivery_audio", "time", "canvas", "sampling", "two_pass_canvas")
+    result = {key: deepcopy(selected.get(key)) for key in fields}
+    # The existing compiler also carries server paths for generation. A draft
+    # explanation needs content declarations/roles, never filesystem paths.
+    if result.get("canvas"):
+        result["canvas"].pop("preprocessing", None)
+    result.update(schema="t8.director.configuration_plan.v1", scope="draft_plan_not_runtime_evidence",
+                  project_id=project["id"], shot_id=selected.get("id"), revision=project["revision"],
+                  generation=generation,
+                  references=[{key: row.get(key) for key in ("asset_id", "role", "native", "sha256")}
+                              for row in selected.get("media_map", [])])
+    return result
+
+
 def candidate_diagnostics(project, shot):
     """Read-only draft-signature explanation, never Stage/MODEL certification.
 

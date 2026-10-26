@@ -2,6 +2,8 @@
 import { radarCandidateInputState } from './radar_state.mjs';
 import {middleAssetIds,middleInputState,remapMiddleAsset,requiresMiddleProtocol,assertMiddleProtocol,validateMiddleDraft} from './keyframes_state.mjs';
 import {controlAssetIds,controlInputState,controlSamplingMode,remapControlAsset,requiresControlProtocol,assertControlProtocol,validateControlProject} from './control_state.mjs';
+import {sha256UTF8} from './content_hash.mjs';
+import {configurationEvidenceText} from './candidate_diagnostics.mjs';
 export function directorServiceBase(moduleURL) {
     const local = new URL('.', moduleURL);
     return /^\/(?:api\/)?minimax_h3_t8\/director\/$/.test(local.pathname)
@@ -75,6 +77,12 @@ export function directorShotInputKey(doc, shot, assets = []) {
     const mode = sampling?.mode || 'single';
     const activeSampling = Object.fromEntries(Object.entries(sampling || {mode:'single'}).filter(([key])=>!['single','two_pass','hyperflow'].includes(key)));
     if(mode==='hyperflow' && sampling.variant==='single8')delete activeSampling.high_loras;
+    if(mode==='hyperflow' && sampling.variant==='continuous4plus4separate' && sampling.stage_checkpoint?.mode==='resume_tail'){
+        delete activeSampling.low_loras;
+        for(const key of ['stage_relay','stage_eav'])if(activeSampling[key]){
+            activeSampling[key]={...activeSampling[key]};delete activeSampling[key].head;
+        }
+    }
     const generation = {...doc.generation};
     if(mode!=='single')for(const key of ['resolution_mp','lora','loras','lora_mode','lora_strength'])delete generation[key];
     else if(sampling){
@@ -83,7 +91,12 @@ export function directorShotInputKey(doc, shot, assets = []) {
     }
     // Row IDs/source labels and disabled drafts are editing metadata, not sampling inputs.
     for(const holder of [activeSampling,generation])for(const key of ['loras','low_loras','high_loras']){
-        if(Array.isArray(holder[key]))holder[key]=holder[key].filter(row=>row.enabled!==false).map(row=>({name:row.name,strength:row.strength??1}));
+        if(Array.isArray(holder[key]))holder[key]=holder[key].filter(row=>row.enabled!==false).map(row=>{
+            const input={name:row.name,strength:row.strength??1};
+            for(const [field,legacy] of [['file_alpha_policy','legacy_tensor_only'],['prefix_policy','legacy']])
+                if(row[field]!==undefined&&row[field]!==legacy)input[field]=row[field];
+            return input;
+        });
     }
     if(activeSampling.lora_mode==='none')activeSampling.loras=[];
     if(generation.lora_mode==='none')generation.loras=[];
@@ -147,7 +160,7 @@ export function makeDirectorServices(ctx) {
     let projectEpoch = 0;
     let resultRequest = 0, compileRequest = 0, d3Request = 0, projectLoadRequest = 0, editEpoch = 0;
     let reconnectTarget = null, lastJobDialog = null;
-    let activeBatch = null, pauseBatch = false, versionRequest = 0, tasksRequest = 0, versionCopy = null;
+    let activeBatch = null, pauseBatch = false, versionRequest = 0, tasksRequest = 0, versionCopy = null, configurationRequest = 0;
     let externalTakeDialog = null;
     const completedResults = new Map();
     const contextToken = () => `${projectId}:${projectEpoch}`;
@@ -547,11 +560,25 @@ export function makeDirectorServices(ctx) {
                     return;
                 }
                 unknownPolls = 0;
-                if (state && data.state !== "success" && data.state !== "error") {
+                if (data.state === "needs_review") {
+                    finish("needs_review");
+                    activeJobId = null;
+                    forgetJob(promptId);
+                    const belongsHere = owner === projectId && ctx.doc().shots.some(shot => shot.id === shotId);
+                    if (belongsHere) ctx.recordResult({project_id:owner,shot_id:shotId,prompt_id:promptId,
+                        state:"needs_review",outputs:{},recipe,integrity_error:data.integrity_error,submitted_at:Date.now()/1000});
+                    const body=`<p>${esc(data.integrity_error || "原请求回执或输出需要核对。")}</p><p>已停止跟踪；没有自动重采样、覆盖已接受成片或修改草稿。</p><details><summary>任务详情</summary><pre>${esc(JSON.stringify({prompt_id:promptId,state:data.state,integrity_error:data.integrity_error},null,2))}</pre></details>`;
+                    lastJobDialog=[promptId,"任务回执需要核对",body];
+                    $("[data-service=\"job-status\"]").hidden=false;
+                    showJobDialog(...lastJobDialog);
+                    notify(belongsHere?"任务回执需要核对；原记录和编辑保留，没有自动重采样。":"原项目任务回执需要核对；当前项目未改动，没有自动重采样。");
+                    return;
+                }
+                if (state && !["success", "error", "cancelled"].includes(data.state)) {
                     const progress = data.progress?.fraction == null ? "" : ` · ${Math.round(data.progress.fraction * 100)}%`;
                     state.textContent = "Core 状态：" + directorTaskLabel(data.state) + progress + " · 任务 ID " + promptId;
                 }
-                if (data.state === "success" || data.state === "error") {
+                if (["success", "error", "cancelled"].includes(data.state)) {
                     finish(data.state);
                     activeJobId = null;
                     forgetJob(promptId);
@@ -559,9 +586,17 @@ export function makeDirectorServices(ctx) {
                     const belongsHere = owner === projectId && ctx.doc().shots.some(shot => shot.id === shotId);
                     if (belongsHere) {
                         const record = { project_id: owner, shot_id: shotId, prompt_id: promptId, state: data.state, outputs: data.outputs || {}, recipe, submitted_at: Date.now() / 1000 };
-                        if (videos.length) completedResults.set(shotId, record);
+                        if (data.state === "success" && videos.length) completedResults.set(shotId, record);
                         ctx.recordResult(record);
-                        loadResults(owner, false).catch(error => notify("成片已在当前页面，跨次打开的记录暂无法同步：" + error.message));
+                        loadResults(owner, false).catch(error => notify("任务记录已在当前页面，跨次打开的记录暂无法同步：" + error.message));
+                    }
+                    if (data.state === "cancelled") {
+                        const body=`<p>Core 已取消此任务；原记录与编辑保留，没有自动重采样。</p><details><summary>任务详情</summary><pre>${esc(JSON.stringify({prompt_id:promptId,state:data.state,status:data.status},null,2))}</pre></details>`;
+                        lastJobDialog=[promptId,"导演台任务已取消",body];
+                        $("[data-service=\"job-status\"]").hidden=false;
+                        showJobDialog(...lastJobDialog);
+                        notify(belongsHere?"任务已取消；原记录和编辑保留，没有自动重采样。":"原项目任务已取消；当前项目未改动，没有自动重采样。");
+                        return;
                     }
                     const failure = (data.status?.messages || []).filter(item => item[0] === "execution_error").at(-1)?.[1];
                     const reason = failure ? `<div class="o-warn"><strong>失败节点：${esc(failure.node_type || failure.node_id || "未知")}</strong><p>${esc(failure.exception_message || "请展开任务详情查看错误")}</p></div>` : "";
@@ -753,6 +788,27 @@ export function makeDirectorServices(ctx) {
             {shot_id:shotId,report,confirm_media_match:confirmed});
         return origin===contextToken()?result:null;
     }
+    async function configurationEvidence(record) {
+        const project=envelope(),baseJSON=JSON.stringify(project),context=contextToken(),current=ctx.current();
+        const sequence=++configurationRequest,key=directorResultKey(record);
+        const selected=()=>typeof ctx.selectedResultKey==='function'?ctx.selectedResultKey():key;
+        const fresh=()=>context===contextToken()&&current===ctx.current()&&sequence===configurationRequest&&
+            baseJSON===JSON.stringify(envelope())&&selected()===key;
+        const completed=record?structuredClone(record):null;
+        let draft=null,frozen=null,draft_error=null,frozen_error=null;
+        try{
+            const digest=await sha256UTF8(baseJSON);
+            if(!fresh())return null;
+            draft=await request('radar/inspect',{project,shot_id:current,base_json:baseJSON,base_sha256:digest});
+        }catch(error){draft_error=error.message;}
+        if(!fresh())return null;
+        if(completed?.snapshot_available&&completed.request_id&&completed.origin!=='external'){
+            try{frozen=await request(`snapshots/${encodeURIComponent(project.id)}/${encodeURIComponent(completed.request_id)}`);}
+            catch(error){frozen_error=error.message;}
+            if(!fresh())return null;
+        }
+        return {draft,frozen,completed,draft_error,frozen_error};
+    }
     async function showVersion(record) {
         const sequence = ++versionRequest;
         versionCopy=null;
@@ -769,7 +825,7 @@ export function makeDirectorServices(ctx) {
         if (context !== contextToken() || current !== ctx.current() || sequence !== versionRequest) return;
         if ($('[data-dialog]').open||otherModalOpen()) { notify('版本配置已读取；请关闭当前编辑窗口后再次查看。'); return; }
         showDialog("版本配置快照", result.complete
-            ? `<p>生成时保存的只读配置，不是当前草稿。种子：${esc(result.snapshot.seed)}；配方：${esc(result.snapshot.recipe)}。</p><button data-service="copy-version">复制此版设置为新草稿</button><p>新建独立工程，不覆盖当前页；只还原此镜实际种子，其它镜头保留当时草稿。模型文件或环境变化可能使结果不同。</p><details><summary>完整项目、素材身份与实际编译图</summary><pre>${esc(JSON.stringify(result.snapshot, null, 2))}</pre></details>`
+            ? `<p>生成时保存的只读配置，不是当前草稿。种子：${esc(result.snapshot.seed)}；配方：${esc(result.snapshot.recipe)}。</p><pre>${esc(configurationEvidenceText({frozen:result,completed:record}))}</pre><button data-service="copy-version">复制此版设置为新草稿</button><p>新建独立工程，不覆盖当前页；只还原此镜实际种子，其它镜头保留当时草稿。模型文件或环境变化可能使结果不同。</p><details><summary>完整项目、素材身份与实际编译图</summary><pre>${esc(JSON.stringify(result.snapshot, null, 2))}</pre></details>`
             : `<p>${esc(result.reason)}</p>`);
         if(result.complete)versionCopy={owner:projectId,request:record.request_id,target:id(),context,sequence};
     }
@@ -1341,5 +1397,5 @@ export function makeDirectorServices(ctx) {
         if(!Number.isInteger(canvas?.width)||!Number.isInteger(canvas?.height)||canvas.width<=0||canvas.height<=0)throw Error('服务端未返回有效画布，暂用比例示意；请重新预检。');
         latest=report;latestSnapshot=snapshot;ctx.refreshSummary?.();return canvas;
     }
-    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, prepareFilmCaptions, filmCaptionStatus, importFilmSpeechTrack, contextToken, checkedCanvas, refreshControlCanvas, cancelUpload: () => activeUpload?.abort() };
+    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, configurationEvidence, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, prepareFilmCaptions, filmCaptionStatus, importFilmSpeechTrack, contextToken, checkedCanvas, refreshControlCanvas, cancelUpload: () => activeUpload?.abort() };
 }

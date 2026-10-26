@@ -1,0 +1,326 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "01 · 选择底模"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "02 · 视频解码器"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "03 · 音频解码器"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "04 · 提示词编码器"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "solarrenderer_4step_lora.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    },
+    "_meta": {
+      "title": "fewstep LoRA · 独立强度"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "lora_name": "solarrenderer_control_lora.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    },
+    "_meta": {
+      "title": "control LoRA · 独立强度"
+    }
+  },
+  "7": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "H24_Solar_RGB.mov"
+    },
+    "_meta": {
+      "title": "24fps源结构 · 实际准备片"
+    }
+  },
+  "8": {
+    "class_type": "GetVideoComponents",
+    "inputs": {
+      "video": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "结构帧与实际帧率"
+    }
+  },
+  "9": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H24_Solar_First.png"
+    },
+    "_meta": {
+      "title": "同源首帧 · 外观"
+    }
+  },
+  "10": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": "H24_Solar_Original.mp4"
+    },
+    "_meta": {
+      "title": "同源完整原声 · 只用于最终保存"
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3SolarStructureEncodeEXPT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "structure": [
+        "8",
+        0
+      ],
+      "prompt": "A continuous natural live-action full-body portrait shot of the adult woman in the supplied source. Preserve the same face, dark hair, black cropped jacket, black top and shorts, patterned tights and tall black boots. Keep the source room, doorway, furniture, lighting and camera framing. Follow the source dance precisely: the arm, hand, shoulder, torso and leg movements, their direction and timing, and the changes of weight and body orientation. Match the supplied first frame's appearance. Stable anatomy and clothing, no extra people, no body or face replacement, no camera cuts, no text or overlays.",
+      "width": 480,
+      "height": 832,
+      "length": 158,
+      "source_start": 0,
+      "fps": [
+        "8",
+        2
+      ],
+      "first_frame": [
+        "9",
+        0
+      ],
+      "first_frame_source_index": 0,
+      "source_audio": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "完整158帧 · 结构与首帧"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "av_latent": [
+        "11",
+        1
+      ],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "lcm",
+      "scheduler": "native_flow"
+    },
+    "_meta": {
+      "title": "原生LCM · 完整4步 · 12/3"
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3SolarSilenceSetupEXPT8",
+    "inputs": {
+      "model": [
+        "12",
+        0
+      ],
+      "enabled": true,
+      "silence_file": "h3_silence_153_158_170.safetensors",
+      "tensor_key": "silence_158f",
+      "seed": [
+        "20",
+        0
+      ],
+      "av_latent": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "本草稿显式开启 · silence_158f"
+    }
+  },
+  "14": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": [
+        "20",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "随机噪声 · 使用共享种子"
+    }
+  },
+  "15": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "13",
+        0
+      ],
+      "conditioning": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "最终MODEL与结构条件"
+    }
+  },
+  "16": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "14",
+        0
+      ],
+      "guider": [
+        "15",
+        0
+      ],
+      "sampler": [
+        "12",
+        1
+      ],
+      "sigmas": [
+        "12",
+        2
+      ],
+      "latent_image": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "完整音画采样 · 尚未执行本图"
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "16",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "实际视频与音频VAE解码"
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "17",
+        0
+      ],
+      "audio": [
+        "21",
+        0
+      ],
+      "filename_prefix": "H24_Candidate/Solar_158_Source_Audio",
+      "crf": 18
+    },
+    "_meta": {
+      "title": "完整画面＋原声（−1dB）"
+    }
+  },
+  "19": {
+    "class_type": "MiniMaxH3SolarAuditEXPT8",
+    "inputs": {
+      "model": [
+        "13",
+        0
+      ],
+      "after_sampling": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "实际作用域报告 · 采样后"
+    }
+  },
+  "20": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 26102641
+    },
+    "_meta": {
+      "title": "共享种子 · 只在这里修改"
+    }
+  },
+  "21": {
+    "class_type": "AudioAdjustVolume",
+    "inputs": {
+      "audio": [
+        "11",
+        3
+      ],
+      "volume": -1
+    },
+    "_meta": {
+      "title": "原声交付 · 显式降低1dB防过载"
+    }
+  }
+}

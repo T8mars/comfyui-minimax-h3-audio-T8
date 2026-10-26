@@ -3,6 +3,48 @@ import test from 'node:test';
 import {harness,project,flush} from './director_audit20_harness.mjs';
 globalThis.confirm=()=>true;
 
+for(const switched of [false,true])test(`needs-review ends tracking without success or automatic resubmission, switched=${switched}`,async()=>{
+ const b=project('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');let state='running',submitted=0,finished=false;
+ let acknowledge;const submittedOnce=new Promise(resolve=>{acknowledge=resolve});
+ const h=harness({route:(r,response)=>{
+  if(r.path.endsWith('/projects/'+b.id))return response(b);
+  if(r.path.endsWith('/generate')){submitted++;acknowledge();return response({prompt_id:'damaged-receipt'});}
+  if(r.path.includes('/jobs/'))return response({state,outputs:{},integrity_error:'Original receipt needs review'});
+ }});
+ await h.service.restore();const original=JSON.stringify(h.doc());
+ const run=h.click({action:'generate'}).then(()=>{finished=true});await submittedOnce;await flush();
+ if(switched)await h.click({openProject:b.id});
+ assert.equal(h.intervals.size,1,JSON.stringify({notices:h.notices,requests:h.requests,finished}));
+ state='needs_review';await [...h.intervals.values()][0]();await flush();
+ assert.equal(h.intervals.size,0);assert.equal(finished,true);assert.equal(submitted,1);
+ assert.equal(h.session.getItem('t8director.activeJob:audit'),null);
+ assert.ok(h.notices.some(x=>x.includes('核对')));
+ if(switched){assert.equal(h.service.envelope().id,b.id);assert.equal(h.versions().length,0);}
+ else {assert.equal(h.displayed().state,'needs_review');assert.equal(JSON.stringify(h.doc()),original);}
+ assert.ok(!h.notices.some(x=>x.includes('已生成')));
+ await run;await h.click({action:'generate'});assert.equal(submitted,2);
+});
+
+test('Core cancellation ends tracking, releases generation and never auto-resubmits',async()=>{
+ let state='running',submitted=0,finished=false;
+ let acknowledge;const submittedOnce=new Promise(resolve=>{acknowledge=resolve});
+ const h=harness({route:(r,response)=>{
+  if(r.path.endsWith('/generate')){submitted++;acknowledge();return response({prompt_id:'cancelled-elsewhere'});}
+  if(r.path.includes('/jobs/'))return response({state,outputs:{}});
+ }});
+ await h.service.restore();
+ const run=h.click({action:'generate'}).then(()=>{finished=true});await submittedOnce;await flush();
+ state='cancelled';await [...h.intervals.values()][0]();await flush();
+ assert.equal(h.intervals.size,0);assert.equal(finished,true);
+ assert.equal(h.session.getItem('t8director.activeJob:audit'),null);
+ assert.equal(submitted,1);assert.equal(h.displayed().state,'cancelled');
+ assert.ok(h.notices.some(text=>text.includes('已取消')&&!text.includes('失败')));
+ assert.ok(!h.notices.some(text=>text.startsWith('生成失败')));
+ await run;
+ // Only a fresh explicit click may submit again, proving busy was released.
+ await h.click({action:'generate'});assert.equal(submitted,2);
+});
+
 for(const roundtrip of [false,true])test(`batch invalidates old context after project switch, roundtrip=${roundtrip}`,async()=>{
  const a=project(),b=project('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');let release,blocked=false,continues=0;
  const status={id:'batch-roundtrip',project_id:a.id,complete:false,next_index:0,items:[{shot_id:a.current,state:'not_submitted'}]};
@@ -21,12 +63,13 @@ for(const roundtrip of [false,true])test(`batch invalidates old context after pr
 
 for(const kind of ['error','noop'])test(`unconfirmed cancellation ${kind} keeps tracking unknown`,async()=>{
  let state='running';
+ let acknowledge;const submittedOnce=new Promise(resolve=>{acknowledge=resolve});
  const h=harness({route:(r,response)=>{
-  if(r.path.endsWith('/generate'))return response({prompt_id:'cancel-test'});
+  if(r.path.endsWith('/generate')){acknowledge();return response({prompt_id:'cancel-test'});}
   if(r.path.endsWith('/cancel')){if(kind==='error')throw Error('Network failed');return response({deleted_from_queue:false,interrupted:false});}
   if(r.path.includes('/jobs/'))return response({state});
  }});
- await h.service.restore();const running=h.click({action:'generate'});await flush();
+ await h.service.restore();const running=h.click({action:'generate'});await submittedOnce;await flush();
  await h.click({service:'cancel-job'});state='unknown';await [...h.intervals.values()][0]();
  assert.ok(h.session.getItem('t8director.activeJob:audit'));
  assert.ok(!h.notices.some(x=>x.startsWith('已取消当前任务')));

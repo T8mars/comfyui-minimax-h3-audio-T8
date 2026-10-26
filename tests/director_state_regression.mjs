@@ -56,7 +56,7 @@ function serviceHarness({local=null, specific=null, pending=false, state='runnin
     const appended=[],nodes=new Map(),listeners={},requests=[],notices=[],dialogs=[],records=[],results=[];
     const $=selector=>{if(!nodes.has(selector))nodes.set(selector,node());return nodes.get(selector)};
     const root={...node(),querySelectorAll:()=>openDialogs,append:n=>appended.push(n),addEventListener:(event,fn)=>listeners[event]=fn};
-    let doc=project().doc,current='shot-1',jobState=state,assets=new Map();
+    let doc=project().doc,current='shot-1',jobState=state,assets=new Map(),selectedResultKey=null;
     globalThis.fetch=async(url,opts)=>{
         const path=new URL(url).pathname; requests.push({path,method:opts.method,body:opts.body&&JSON.parse(opts.body)});
         let value={};
@@ -74,13 +74,64 @@ function serviceHarness({local=null, specific=null, pending=false, state='runnin
         return {ok:true,json:async()=>value};
     };
     const showDialog=(...args)=>{dialogs.push(args);const dialog=$('[data-dialog]');delete dialog.dataset.jobId;dialog.open=true;};
-    const service=makeDirectorServices({root,$,esc:String,notify:t=>notices.push(t),showDialog,tokenMap:()=>new Map(),checkpoint(){},doc:()=>doc,assets:()=>assets,current:()=>current,versions:()=>versions,selectedShotIds:()=>selected,replace:(d,c,a)=>{doc=d;current=c;assets=a},setResults:value=>results.push(value),recordResult:value=>records.push(value),resetHistory(){},render(){}});
+    const service=makeDirectorServices({root,$,esc:String,notify:t=>notices.push(t),showDialog,tokenMap:()=>new Map(),checkpoint(){},doc:()=>doc,assets:()=>assets,current:()=>current,versions:()=>versions,selectedResultKey:()=>selectedResultKey,selectedShotIds:()=>selected,replace:(d,c,a)=>{doc=d;current=c;assets=a},setResults:value=>results.push(value),recordResult:value=>records.push(value),resetHistory(){},render(){}});
     const click=dataset=>listeners.click({target:{closest:()=>({dataset,disabled:false})},preventDefault(){},stopImmediatePropagation(){}});
-    return {appended,assets:()=>assets,input:target=>listeners.input({target}),service,requests,notices,dialogs,timers,intervals,click,$,records,results,messages,doc:()=>doc,setCurrent:value=>{current=value},setState:value=>{jobState=value}};
+    return {appended,assets:()=>assets,input:target=>listeners.input({target}),service,requests,notices,dialogs,timers,intervals,click,$,records,results,messages,doc:()=>doc,setCurrent:value=>{current=value},setState:value=>{jobState=value},setSelectedResultKey:value=>{selectedResultKey=value}};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 const waitFor=async predicate=>{const deadline=Date.now()+2000;while(!predicate()&&Date.now()<deadline)await realDelay(1);assert.ok(predicate(),'Expected asynchronous test state before timeout');};
 const response=(data,ok=true,status=200)=>({ok,status,json:async()=>data});
+
+test('configuration evidence reads only the bound draft and selected snapshot without saving or queueing',async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();
+    const prior=fetch,seen=[];h.setSelectedResultKey('prompt-a');
+    globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;seen.push({path,method:opts.method,body:opts.body&&JSON.parse(opts.body)});
+        if(path.endsWith('/radar/inspect'))return Promise.resolve(response({effective_config:{prompt:'draft'}}));
+        if(path.includes('/snapshots/'))return Promise.resolve(response({complete:true,snapshot:{seed:42}}));
+        return prior(url,opts);
+    };
+    const record={prompt_id:'prompt-a',request_id:'request-a',snapshot_available:true,state:'success'};
+    const before=structuredClone(h.service.envelope()),result=await h.service.configurationEvidence(record);
+    assert.equal(result.draft.effective_config.prompt,'draft');assert.equal(result.frozen.snapshot.seed,42);
+    assert.deepEqual(result.completed,record);assert.notEqual(result.completed,record);
+    assert.deepEqual(h.service.envelope(),before);
+    assert.equal(seen.length,2);assert.match(seen[1].path,/snapshots\/project-a\/request-a$/);
+    assert.equal(seen[0].body.base_json,JSON.stringify(before));assert.match(seen[0].body.base_sha256,/^[a-f0-9]{64}$/);
+});
+
+for(const broken of ['draft','frozen'])test(`configuration keeps independent evidence when ${broken} read fails`,async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id});await h.service.restore();h.setSelectedResultKey('prompt-a');
+    const prior=fetch;globalThis.fetch=(url,opts)=>{
+        const path=new URL(url).pathname;
+        if(path.endsWith('/radar/inspect'))return Promise.resolve(broken==='draft'?response({error:'草稿格式无效'},false,400):response({effective_config:{prompt:'valid draft'}}));
+        if(path.includes('/snapshots/'))return Promise.resolve(broken==='frozen'?response({error:'快照SHA校验失败'},false,400):response({complete:true,snapshot:{seed:42}}));
+        return prior(url,opts);
+    };
+    const result=await h.service.configurationEvidence({prompt_id:'prompt-a',request_id:'a',snapshot_available:true,state:'success'});
+    assert.equal(result.completed.state,'success');
+    if(broken==='draft'){assert.equal(result.draft,null);assert.equal(result.draft_error,'草稿格式无效');assert.equal(result.frozen.snapshot.seed,42);}
+    else{assert.equal(result.frozen,null);assert.equal(result.frozen_error,'快照SHA校验失败');assert.equal(result.draft.effective_config.prompt,'valid draft');}
+});
+
+for(const change of ['version','removed-version','draft','project-ABA','new-inspection'])test(`late configuration response is discarded after ${change}`,async()=>{
+    const p=project(),h=serviceHarness({local:p,specific:p.id,server:p});await h.service.restore();
+    const prior=fetch;let finish;h.setSelectedResultKey('prompt-a');
+    globalThis.fetch=(url,opts)=>new URL(url).pathname.endsWith('/radar/inspect')
+        ?new Promise(resolve=>{finish=()=>resolve(response({effective_config:{prompt:'old'}}));}):prior(url,opts);
+    const reading=h.service.configurationEvidence({prompt_id:'prompt-a',request_id:'a',snapshot_available:true});
+    await waitFor(()=>finish);
+    if(change==='version')h.setSelectedResultKey('prompt-b');
+    else if(change==='removed-version')h.setSelectedResultKey(null);
+    else if(change==='draft')h.doc().shots[0].simplePrompt='changed';
+    else if(change==='project-ABA'){globalThis.confirm=()=>true;await h.click({openProject:'project-a'});}
+    else{
+        const first=finish,second=h.service.configurationEvidence({prompt_id:'prompt-a'});
+        await waitFor(()=>finish!==first);finish();await second;finish=first;
+    }
+    finish();assert.equal(await reading,null);
+    assert.equal(h.requests.some(row=>row.path.includes('/snapshots/')),false);
+});
 
 for(const specific of ['project-a',null])test(`local recovery does not falsely claim server equality or unsaved changes: ${specific}`,async()=>{
     const h=serviceHarness({local:project(),specific});await h.service.restore();
@@ -615,6 +666,26 @@ function samplingHarness(catalog={}) {
 }
 const hyperflowCatalog={hyperflow:[{value:'hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors',label:'HyperFlow original'}],lora:[{value:'loras/portrait.safetensors',label:'Portrait'},{value:'loras/motion.safetensors',label:'Motion'}]};
 const chooseHyperFlow=h=>{h.click({samplingMode:'hyperflow'});h.select('data-sampling-hyperflow-file',hyperflowCatalog.hyperflow[0].value)};
+
+test('LoRA advanced choices cancel without changes, copy LOW to HIGH, apply and reopen',()=>{
+    const h=samplingHarness();h.data.sampling={mode:'two_pass',output_mp:.4,low_loras:[{id:'l',name:'a',strength:.4,enabled:true}],high_loras:[]};
+    h.api.open();assert.match(h.body.innerHTML,/data-sampling-field="file_alpha_policy"/);
+    h.rowField('low_loras','file_alpha_policy','metadata_alpha_per_rank');h.api.close();
+    assert.equal(h.applied.length,0);assert.equal(h.data.sampling.low_loras[0].file_alpha_policy,undefined);
+    h.api.open();h.rowField('low_loras','file_alpha_policy','metadata_alpha_per_rank');h.rowField('low_loras','prefix_policy','unique_double_prefix');
+    h.click({samplingAction:'copy-low'});h.api.commit();
+    const saved=h.applied[0].global;
+    for(const key of ['low_loras','high_loras']){assert.equal(saved[key][0].file_alpha_policy,'metadata_alpha_per_rank');assert.equal(saved[key][0].prefix_policy,'unique_double_prefix');}
+    assert.notEqual(saved.low_loras[0].id,saved.high_loras[0].id);
+    h.data.sampling=structuredClone(saved);h.api.open();h.api.commit();assert.deepEqual(h.applied[1].global,saved);
+});
+
+test('inactive sampling drafts and disabled LoRA retain advanced choices transactionally',()=>{
+    const h=samplingHarness();h.data.sampling={mode:'two_pass',output_mp:.4,low_loras:[{id:'l',name:'',strength:1,enabled:false,prefix_policy:'unique_double_prefix'}],high_loras:[]};
+    h.api.open();h.click({samplingMode:'single'});h.api.commit();
+    assert.equal(h.applied[0].global.two_pass.low_loras[0].prefix_policy,'unique_double_prefix');
+    assert.equal(h.applied[0].global.two_pass.low_loras[0].enabled,false);
+});
 test('local sampling explicitly warns about shared model changes',()=>{
     const h=samplingHarness();h.data.shots.push({samplingInherit:false});
     h.api.open();h.click({samplingScope:'local'});
@@ -819,13 +890,13 @@ test('explicit scope choice after error can still switch back to global',()=>{
     h.click({samplingScope:'global'});h.api.commit();assert.equal(h.applied[0].inherited,true);
 });
 for(const [mode,stage] of [['single','loras'],['two_pass','low_loras'],['two_pass','high_loras']]) {
-    for(const strength of ['99','-2.01','','NaN','Infinity'])test(`${stage} rejects invalid strength ${JSON.stringify(strength)} even disabled`,()=>{
+    for(const strength of ['','NaN','Infinity','-Infinity'])test(`${stage} rejects invalid strength ${JSON.stringify(strength)} even disabled`,()=>{
         const h=samplingHarness();h.api.open();h.click({samplingMode:mode});h.click({samplingAction:'add',stage});h.rowField(stage,'strength',strength);h.api.commit();
-        assert.equal(h.applied.length,0);assert.equal(h.dialog.open,true);assert.match(h.body.innerHTML,/强度必须是 -2–2/);
+        assert.equal(h.applied.length,0);assert.equal(h.dialog.open,true);assert.match(h.body.innerHTML,/强度必须是有限数字/);
         h.rowField(stage,'strength','0.35');h.api.commit();assert.equal(h.applied[0].global[stage][0].strength,0.35);
     });
 }
-for(const strength of ['-2','0','2'])test(`valid LoRA boundary ${strength} retained`,()=>{
+for(const strength of ['-2','0','2','99','-2.01','-101'])test(`finite user LoRA strength ${strength} retained`,()=>{
     const h=samplingHarness();h.api.open();h.click({samplingAction:'add',stage:'loras'});h.rowField('loras','strength',strength);h.api.commit();assert.equal(h.applied[0].global.loras[0].strength,Number(strength));
 });
 test('search preserves installed selected label but still marks actually missing file',()=>{

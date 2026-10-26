@@ -177,6 +177,7 @@ html:has([data-workbench="parallel"]),body:has([data-workbench="parallel"]){heig
 #t8-obsidian-lab[data-workbench] .w-readiness summary{cursor:pointer}
 #t8-obsidian-lab[data-workbench] .w-readiness li{margin:6px 0}
 #t8-obsidian-lab[data-workbench] .w-readiness button{font-size:12px;padding:5px 8px;min-height:30px}
+#t8-obsidian-lab[data-workbench] .w-configuration pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:26rem;overflow:auto;font-size:12px}
 #t8-obsidian-lab[data-workbench] .w-task-list{list-style:none;padding:0}
 #t8-obsidian-lab[data-workbench] .w-task-list li{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--o-line);flex-wrap:wrap}
 #t8-obsidian-lab[data-workbench] .w-task-list small{color:var(--o-muted);margin-left:auto}

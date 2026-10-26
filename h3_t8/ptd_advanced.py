@@ -665,10 +665,23 @@ class PTDModelWrapper:
 
 
 def get_controller(model):
+    from .ptd_compact import CompactPTDController
+
     value = model.model_options.get(KEY)
-    if type(value) is not PTDController:
+    if type(value) not in (PTDController, CompactPTDController):
         raise ValueError("Connect the MODEL returned by the PTD expert loader")
     return value
+
+
+def sampler_and_sigmas(controller):
+    """Dispatch only the two implemented PTD integrator protocols."""
+    from .ptd_compact import CompactPTDController, compact_sigmas, make_compact_sampler
+
+    if type(controller) is CompactPTDController:
+        return make_compact_sampler(controller), compact_sigmas(controller)
+    if type(controller) is not PTDController:
+        raise ValueError("PTD sampler needs an implemented expert-controller protocol")
+    return make_sampler(controller), ptd_sigmas(controller.recipe)
 
 
 def configure_ptd(model, tensors, metadata, *, file_report=None):
@@ -701,7 +714,10 @@ def configure_ptd(model, tensors, metadata, *, file_report=None):
             )
         return value
 
-    preprocessor = network.preprocess_text_embeds
+    # A previously sampled clone can leave its object patch resident on the
+    # shared network. Resolve this input branch's patch/backup, not that clone's
+    # currently installed callable, when rebuilding a checkpoint selection.
+    preprocessor = model.get_model_object("diffusion_model.preprocess_text_embeds")
     if _source_exact(
         getattr(preprocessor, "__func__", preprocessor),
         native,
@@ -723,6 +739,15 @@ def configure_ptd(model, tensors, metadata, *, file_report=None):
 
 
 def load_ptd_setup(model, path, *, recipe=None):
+    from .ptd_compact import load_compact_setup
+    from .ptd_compact_checkpoint import is_compact_file
+
+    if is_compact_file(path):
+        if recipe is not None:
+            raise ValueError(
+                "Stacked PTD derives its hop grid from checkpoint metadata; an EPFL recipe override has no mapping to its absolute head bank"
+            )
+        return load_compact_setup(model, path)
     tensors, metadata, file_report = load_ptd_file(path, recipe=recipe)
     selected, report = configure_ptd(model, tensors, metadata, file_report=file_report)
     controller = get_controller(selected)

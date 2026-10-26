@@ -1,0 +1,207 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "01 · 选择底模"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "_meta": {
+      "title": "02 · 视频解码器"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "03 · 音频解码器"
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "04 · 提示词编码器"
+    }
+  },
+  "5": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "H24_Compact_rgb_first.png"
+    },
+    "_meta": {
+      "title": "已授权参考图 · 保持原人物"
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ],
+      "prompt": "<Image 1> shows the two adult women and is the appearance reference. A natural continuous live-action medium shot in the same soft bright plain white interior. The dark-haired woman on the left wears a grey cardigan over a light top and holds a beige cup; the blonde woman on the right wears glasses and a white cardigan and holds a beige cup. They turn toward one another and move their arms naturally while handling the cups. Preserve identity, clothing, cup count, soft daylight and a steady camera. Natural quiet indoor ambience and subtle cloth and cup handling sounds, no speech and no music. No skeleton lines, markers, boxes, diagrams, text or overlays.",
+      "width": 832,
+      "height": 480,
+      "length": 56,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "model_minimum",
+      "allow_above_reference_area": true,
+      "ref_images.ref_image_1": [
+        "5",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "提示词 · 画面与声音"
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3PTDSetupEXPT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "checkpoint": "ptd_h3_ref2va_4step_int8.safetensors"
+    },
+    "_meta": {
+      "title": "Compact PTD · 由实际元数据选完整网格"
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 26092137
+    },
+    "_meta": {
+      "title": "固定种子 · 26092137"
+    }
+  },
+  "9": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "conditioning": [
+        "6",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PTD MODEL · 与条件配对"
+    }
+  },
+  "10": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "8",
+        0
+      ],
+      "guider": [
+        "9",
+        0
+      ],
+      "sampler": [
+        "7",
+        1
+      ],
+      "sigmas": [
+        "7",
+        2
+      ],
+      "latent_image": [
+        "6",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Compact 完整采样 · 不切半"
+    }
+  },
+  "11": {
+    "class_type": "MiniMaxH3PTDAuditEXPT8",
+    "inputs": {
+      "model": [
+        "7",
+        0
+      ],
+      "after_sampling": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "实际专家与时钟 · 采样后审计"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "10",
+        0
+      ],
+      "video_vae": [
+        "2",
+        0
+      ],
+      "audio_vae": [
+        "3",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "完整视频与音频解码"
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "filename_prefix": "H24_Candidate/Compact_PTD_4hop",
+      "crf": 18
+    },
+    "_meta": {
+      "title": "保存完整声画"
+    }
+  }
+}

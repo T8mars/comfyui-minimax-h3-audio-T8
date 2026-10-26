@@ -173,6 +173,11 @@ def _mux_h3_world_audio(
                 duration,
                 "-movflags",
                 "+faststart",
+                # A millisecond mvhd/edit-list clock rounds non-millisecond
+                # scene ends. Use the existing Reel policy: exact frame and
+                # source-sample ticks, without changing encoding options.
+                "-movie_timescale",
+                str(math.lcm(24, int(sample_rate))),
                 "-f",
                 "mp4",
                 str(output_path),

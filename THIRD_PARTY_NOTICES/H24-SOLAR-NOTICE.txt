@@ -1,0 +1,32 @@
+SolarRenderer
+Copyright 2026 SolarRenderer authors
+
+The code in this repository is licensed under the Apache License, Version 2.0 (see LICENSE). It builds on the SolarWM
+training framework (https://github.com/Junchao-cs/SolarWM, Apache-2.0).
+
+--------------------------------------------------------------------------------
+MiniMax-H3
+--------------------------------------------------------------------------------
+
+MiniMax H3 is licensed under the MiniMax H3 Community License Agreement, Copyright © 2026 MiniMax. All Rights Reserved.
+
+SolarRenderer runs on MiniMax-H3, which is not distributed here; obtain it from its publisher
+(https://huggingface.co/MiniMaxAI/MiniMax-H3) under its own license and Acceptable Use Policy.
+
+--------------------------------------------------------------------------------
+Third-party source included in this repository
+--------------------------------------------------------------------------------
+
+  PRoPE: Projective Positional Encoding for Multiview Transformers, MIT
+    Copyright (c) the PRoPE authors.
+    Adapted as src/solarwm/backends/minimax_h3/torch_prope.py.
+
+Each adapted file keeps its upstream copyright header and states that it was modified.
+
+--------------------------------------------------------------------------------
+Evaluation dependencies (not included; fetched by eval/setup.sh)
+--------------------------------------------------------------------------------
+
+  DOVER (github.com/VQAssessment/DOVER), CoTracker3 (github.com/facebookresearch/co-tracker), the LAION aesthetic
+  predictor (github.com/christophschuhmann/improved-aesthetic-predictor) and VideoScore2 (TIGER-Lab/VideoScore2) keep
+  their own licenses; DOVER's is non-commercial.

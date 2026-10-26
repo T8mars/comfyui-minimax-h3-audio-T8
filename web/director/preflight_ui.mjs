@@ -12,7 +12,7 @@ export function directorDraftIssues(doc, shot, assets = []) {
     const last = shot.mode === 'ends' ? shot.last : null;
     if (shot.mode === 'first' && !first) add('source','请添加首帧。');
     if (shot.mode === 'ends' && !last) add('source','请添加尾帧；仅尾帧模式可以不设首帧。');
-    if (shot.mode === 'refs' && !refs.length && shot.sound !== 'voice') add('source','请分配参考素材，或添加全片共享参考。');
+    if (shot.mode === 'refs' && !refs.length && !['voice','record'].includes(shot.sound)) add('source','请分配参考素材，或添加全片共享参考。');
     const active = [...refs, first, last, ...(shot.sound === 'native' ? [] : [shot.audio])].filter(Boolean);
     if (active.some(id => !media.has(id) || media.get(id).missing)) add('source','生效素材未就绪，请检查上传或重连。');
     for (const [id, label] of [[first,'首帧'],[last,'尾帧']]) {
@@ -23,7 +23,6 @@ export function directorDraftIssues(doc, shot, assets = []) {
         if (audio?.kind !== 'audio') add('audio','请选择本镜使用的音频素材。');
         else if (!Number.isFinite(shot.start) || !Number.isFinite(shot.end) || shot.start < 0 || shot.end <= shot.start || shot.end > audio.duration + 0.001) add('audio','音频选区无效，请检查起止时间。');
     }
-    if (shot.sound === 'record' && (!first || last || refs.some(id => id !== first && id !== shot.audio))) add('source','原音驱动需一张首帧，不叠加尾帧或其他参考。');
     const middle=middleRows(shot,true),frames=new Set();
     const recordingMiddle=shot.sound==='record'&&shot.mode==='first'&&first;
     if(middle.length&&(!first||(!last&&!recordingMiddle)))add('middleKeyframes','中间关键帧需要首尾模式的首帧、尾帧，或原音驱动的首帧模式；草稿保留，不自动切换。');

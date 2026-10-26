@@ -226,7 +226,9 @@ def test_d2c_reference_voice_uses_audio_reference_not_delivery_audio(tmp_path):
     built = build_director_generation_prompt(project, shot["id"], store)
     graph = built["prompt"]
     assert graph["5"]["inputs"]["task_type"] == "Ref2VA"
-    assert graph["5"]["inputs"]["ref_audios.ref_audio_0"] == ["14", 0]
+    assert graph["5"]["inputs"]["ref_audios.ref_audio_0"] == ["15", 0]
+    assert graph["15"] == {"class_type": "TrimAudioDuration", "inputs": {
+        "audio": ["14", 0], "start_index": 0, "duration": 4}}
     assert graph["11"]["inputs"]["audio"] == ["10", 1]
 
 
@@ -419,9 +421,9 @@ def test_hyperflow_single_ignores_inactive_high_draft_but_dual_validates_it():
     from h3_audio_t8_pkg.director_sampling_settings import normalize_sampling
 
     raw = {"mode": "hyperflow", "variant": "single8", "hyperflow_file": "hyperflow/weight.safetensors",
-           "high_loras": [{"id": "draft", "name": "", "strength": 200, "enabled": True}]}
+           "high_loras": [{"id": "draft", "name": "", "strength": float("inf"), "enabled": True}]}
     assert normalize_sampling(raw)["high_loras"] == []
-    assert raw["high_loras"][0]["strength"] == 200
+    assert raw["high_loras"][0]["strength"] == float("inf")
     raw["variant"] = "continuous4plus4"
     with pytest.raises(ValueError, match="LoRA 强度"):
         normalize_sampling(raw)
@@ -558,7 +560,8 @@ def test_director_hyperflow_separate_head_tail_validates_in_core(tmp_path, monke
         }
     graph = build_director_generation_prompt(project, project["current"], _store(tmp_path))["prompt"]
     root = Path(__file__).resolve().parents[1]
-    core = root.parents[1]
+    import comfy.model_sampling
+    core = Path(comfy.model_sampling.__file__).resolve().parents[1]
     script = """
 import asyncio
 import importlib.util
@@ -567,7 +570,7 @@ from pathlib import Path
 import sys
 
 root = Path(sys.argv[1])
-sys.path.insert(0, str(root.parents[1]))
+sys.path.insert(0, sys.argv[2])
 from comfy.cli_args import args
 args.cpu = True
 import folder_paths
@@ -601,7 +604,7 @@ print(json.dumps({'valid': valid[0], 'errors': valid[1]}, default=str))
 """
     env = os.environ.copy()
     env["PYTHONPATH"] = str(core) + os.pathsep + env.get("PYTHONPATH", "")
-    result = subprocess.run([sys.executable, "-c", script, str(root)], input=json.dumps(graph),
+    result = subprocess.run([sys.executable, "-c", script, str(root), str(core)], input=json.dumps(graph),
                             text=True, capture_output=True, env=env, cwd=root, timeout=60, check=True)
     validation = json.loads(result.stdout.splitlines()[-1])
     assert validation["valid"], validation["errors"]
@@ -795,7 +798,7 @@ def test_director_hyperflow_separate_real_core_tail_eav_edit_keeps_head_cached(t
     from test_progressive_relay import paired
     from tools import build_modular_hyperflow_workflow as builder
 
-    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[3]))
+    monkeypatch.syspath_prepend(str(Path(comfy.nested_tensor.__file__).resolve().parents[1]))
     import execution
     import nodes
     from comfy_extras.nodes_custom_sampler import RandomNoise

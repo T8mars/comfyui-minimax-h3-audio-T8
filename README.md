@@ -4,6 +4,8 @@
 
 简体中文 | [English](README_EN.md) · 当前版本：**1.102.0** · [更新日志](CHANGELOG.md)
 
+[最新源码更新](docs/H24_SOURCE_UPDATE.md)：导演台修复、Compact、音画循环与Solar；[三套已审工作流](examples/workflows/91-h24-reviewed/README.md)。
+
 ## 安装
 
 需要较新的 ComfyUI 原生 H3 支持。手动安装：

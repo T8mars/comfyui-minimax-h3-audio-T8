@@ -19,6 +19,10 @@ class TimingPlan:
     final_duration_seconds: float
     main_prompt_start_seconds: float
     main_prompt_end_seconds: float
+    # Retain the caller's original float rather than reconstructing a half-
+    # sample boundary through subtractive context/padding arithmetic. Optional
+    # for callers that still construct a plan from the historical report keys.
+    scene_start_seconds: float | None = None
 
     def report(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False, indent=2)
@@ -75,15 +79,24 @@ def make_timing_plan(
         final_duration_seconds=scene_duration_seconds,
         main_prompt_start_seconds=trim_start,
         main_prompt_end_seconds=trim_start + scene_duration_seconds,
+        scene_start_seconds=scene_start_seconds,
     )
 
 
 def window_audio(audio: dict, plan: TimingPlan) -> dict:
     waveform, sample_rate = validate_audio(audio)
-    start = round(plan.source_slice_start_seconds * sample_rate)
-    count = round(plan.source_slice_duration_seconds * sample_rate)
+    scene_start = plan.scene_start_seconds
+    if scene_start is None:
+        scene_start = (plan.source_slice_start_seconds + plan.final_trim_start_seconds
+                       - plan.left_pad_seconds)
+    # OutputTrim rounds its local start. Anchor this window to the same integer
+    # sample so separate rounding cannot shift the user's selected source by 1.
+    origin = round(scene_start * sample_rate) - round(plan.final_trim_start_seconds * sample_rate)
+    start = max(0, origin)
+    source_end = round((plan.source_slice_start_seconds + plan.source_slice_duration_seconds) * sample_rate)
+    count = max(0, source_end - start)
     sliced = waveform[..., start : start + count]
-    left_count = round(plan.left_pad_seconds * sample_rate)
+    left_count = max(0, -origin)
     target_count = round(plan.render_duration_seconds * sample_rate)
     output = waveform.new_zeros((waveform.shape[0], waveform.shape[1], target_count))
     writable = min(sliced.shape[-1], max(0, target_count - left_count))

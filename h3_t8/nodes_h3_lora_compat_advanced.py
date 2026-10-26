@@ -5,7 +5,7 @@ import json
 import folder_paths
 from comfy_api.latest import io
 
-from .h3_lora_compat_advanced import load_minimax_h3_lora_model
+from .h3_lora_compat_advanced import FILE_ALPHA_POLICIES, PREFIX_POLICIES, load_minimax_h3_lora_model
 
 
 CATEGORY = "T8/MiniMax H3/Model/Advanced"
@@ -38,9 +38,21 @@ class MiniMaxH3LoRACompatibilityLoaderT8Advanced(io.ComfyNode):
                 io.Float.Input(
                     "strength_model",
                     default=1.0,
-                    min=-10.0,
-                    max=10.0,
                     step=0.01,
+                ),
+                io.Combo.Input(
+                    "file_alpha_policy", options=list(FILE_ALPHA_POLICIES),
+                    default="legacy_tensor_only", optional=True, advanced=True,
+                    tooltip=("Default keeps old tensor-only scaling. Explicit metadata_alpha_per_rank "
+                             "uses literal ss_network_alpha / actual rank only for mapped linear pairs "
+                             "without per-key alpha. Metadata is not proof of the training scale; "
+                             "zero means zero here. User strength and order remain unchanged."),
+                ),
+                io.Combo.Input(
+                    "prefix_policy", options=list(PREFIX_POLICIES), default="legacy", optional=True, advanced=True,
+                    tooltip=("Default keeps existing Core mappings. Explicit unique_double_prefix adds an alias "
+                             "only for a complete matching linear pair with exactly one known target. "
+                             "No key rewriting, cross-namespace pair joining or collision overwriting."),
                 ),
             ],
             outputs=[
@@ -50,7 +62,7 @@ class MiniMaxH3LoRACompatibilityLoaderT8Advanced(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, model, lora_name, strength_model=1.0):
+    def execute(cls, model, lora_name, strength_model=1.0, file_alpha_policy="legacy_tensor_only", prefix_policy="legacy"):
         if lora_name == DISABLED_LORA:
             report = {
                 "schema": "t8.minimax_h3.lora_compat.v1",
@@ -59,11 +71,14 @@ class MiniMaxH3LoRACompatibilityLoaderT8Advanced(io.ComfyNode):
                 "model_class": model.model.__class__.__name__,
                 "contract": "No LoRA file was opened and the input MODEL was returned unchanged.",
             }
-            return io.NodeOutput(model, json.dumps(report, ensure_ascii=False, indent=2))
+            text = json.dumps(report, ensure_ascii=False, indent=2)
+            return io.NodeOutput(model, text, ui={"t8_lora_loader": [
+                {"selected_lora_name": lora_name, "report_json": text}]})
         path = folder_paths.get_full_path_or_raise("loras", lora_name)
-        return io.NodeOutput(
-            *load_minimax_h3_lora_model(model, path, strength_model)
-        )
+        patched, text = load_minimax_h3_lora_model(model, path, strength_model,
+            file_alpha_policy=file_alpha_policy, prefix_policy=prefix_policy)
+        return io.NodeOutput(patched, text, ui={"t8_lora_loader": [
+            {"selected_lora_name": lora_name, "report_json": text}]})
 
 
 H3_LORA_COMPAT_ADVANCED_NODE_CLASSES = [

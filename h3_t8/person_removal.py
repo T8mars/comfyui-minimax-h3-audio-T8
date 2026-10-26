@@ -33,6 +33,15 @@ def _rgb(value, name):
         raise ValueError(f"{name} RGB must be in [0,1]")
 
 
+def _grow_square(value, radius):
+    """Bitwise-qualified CPU square dilation; other devices retain their path."""
+    kernel = 2 * radius + 1
+    if value.device.type == "cpu":
+        horizontal = F.max_pool2d(value, (1, kernel), stride=1, padding=(0, radius))
+        return F.max_pool2d(horizontal, (kernel, 1), stride=1, padding=(radius, 0))
+    return F.max_pool2d(value, kernel, stride=1, padding=radius)
+
+
 def prepare_mask(frames, mask, grow=5, feather=0, frame_map=None, lineage=None):
     """Manual/external masks remain usable without a fabricated origin claim."""
     _rgb(frames, "Conformed frames")
@@ -59,7 +68,7 @@ def prepare_mask(frames, mask, grow=5, feather=0, frame_map=None, lineage=None):
     for item in mask:
         value = item[None, None].float()
         if grow:
-            value = F.max_pool2d(value, 2 * grow + 1, stride=1, padding=grow)
+            value = _grow_square(value, grow)
         if feather:
             value = F.avg_pool2d(value, 2 * feather + 1, stride=1,
                                  padding=feather, count_include_pad=False)

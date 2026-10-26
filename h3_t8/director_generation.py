@@ -9,7 +9,7 @@ from typing import Any, Mapping
 import folder_paths
 
 from .director_project import ProjectStore, compile_project, validate_project
-from .director_sampling_settings import effective_sampling
+from .director_sampling_settings import effective_sampling, lora_interpretation
 from .director_two_pass import apply_two_pass_graph
 from .director_hyperflow import apply_hyperflow_graph
 from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
@@ -84,7 +84,10 @@ def _director_generation_settings(project: Mapping[str, Any]) -> dict[str, Any]:
         rows = [{"name": name, "strength": raw.get("lora_strength", 1.0), "enabled": True} for name in legacy if name not in ("auto", "none")]
     if not isinstance(rows, list):
         raise ValueError("LoRA 必须是列表")
-    lora_rows = [{"name": str(row["name"]), "strength": float(row.get("strength", 1.0)), "enabled": bool(row.get("enabled", True))} for row in rows]
+    lora_rows = [{"name": str(row["name"]), "strength": float(row.get("strength", 1.0)),
+                  "enabled": bool(row.get("enabled", True)),
+                  **({"id": row["id"]} if "id" in row else {}),
+                  **lora_interpretation(row)} for row in rows]
     resolution = raw.get("resolution_mp", "auto")
     if resolution != "auto":
         try:
@@ -304,10 +307,12 @@ def build_director_generation_prompt(
     d3 = _director_d3_settings(checked, raw_shot)
     sampling = effective_sampling(checked["doc"], raw_shot)
     generation = _director_generation_settings(checked)
+    lora_source = "generation_rows"
     if sampling["mode"] == "single" and "loras" in sampling:
         generation["loras"] = sampling["loras"]
         generation["lora_mode"] = sampling["lora_mode"]
         generation["resolution_mp"] = sampling.get("resolution_mp", generation["resolution_mp"])
+        lora_source = "sampling_rows"
     bridge_cfg = d3["semantic_bridge"]
     relay_cfg = d3["prompt_relay"]
     fast_cfg = d3["fast_h3_v2"]
@@ -395,33 +400,44 @@ def build_director_generation_prompt(
     next_id = 13
     # FastH3 V2 is already a trained 8-step diffusion checkpoint; applying the
     # ordinary H3 Turbo LoRA on top changes its learned-gate contract.
-    lora_names = []
+    lora_entries = []
     legacy_turbo_route = task in {"t2va", "i2va"} and sound == "native" and not relay_enabled and not fast_enabled
     if sampling["mode"] in {"two_pass", "hyperflow"}:
         pass  # Stage-specific LoRA stacks are built from the unpatched base below.
     elif legacy_turbo_route:
-        requested_rows = [row for row in generation["loras"] if row["enabled"]]
+        requested_rows = [(index, row) for index, row in enumerate(generation["loras"], 1) if row["enabled"]]
         if generation["lora_mode"] == "auto" and not requested_rows:
             selected = _optional_turbo_lora()
             if selected and not merged_acceleration.get("declared"):
-                lora_names = [(selected, 1.0)]
+                lora_entries = [{"name": selected, "strength": 1.0}]
         elif generation["lora_mode"] != "none":
-            lora_names = [
-                (_pick_requested("loras", row["name"], (row["name"],), "LoRA"), row["strength"])
-                for row in requested_rows
+            lora_entries = [
+                {"name": _pick_requested("loras", row["name"], (row["name"],), "LoRA"),
+                 "strength": row["strength"], "row_index": index, "row_id": row.get("id"),
+                 "source": lora_source, **lora_interpretation(row)}
+                for index, row in requested_rows
             ]
     elif generation["lora_mode"] == "manual" and any(row["enabled"] for row in generation["loras"]):
-        lora_names = [
-            (_pick_requested("loras", row["name"], (row["name"],), "LoRA"), row["strength"])
-            for row in generation["loras"] if row["enabled"]
+        lora_entries = [
+            {"name": _pick_requested("loras", row["name"], (row["name"],), "LoRA"),
+             "strength": row["strength"], "row_index": index, "row_id": row.get("id"),
+             "source": lora_source, **lora_interpretation(row)}
+            for index, row in enumerate(generation["loras"], 1) if row["enabled"]
         ]
         report["warnings"].append({"shot_id": shot_id,
             "message": "保留手动 LoRA 及顺序；本路线组合未经效果验证，风险由用户承担，不据此自动缩短采样步数。"})
-    for lora, strength in lora_names:
+    # Keep the old public tuple report and graph IDs, not a second LoRA chain.
+    lora_names = [(row["name"], row["strength"]) for row in lora_entries]
+    lora_loaders = []
+    for row in lora_entries:
         graph[str(next_id)] = {
             "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
-            "inputs": {"model": [model_id, 0], "lora_name": lora, "strength_model": strength},
+            "inputs": {"model": [model_id, 0], "lora_name": row["name"],
+                       "strength_model": row["strength"], **lora_interpretation(row)},
         }
+        lora_loaders.append({"node_id": str(next_id), "stage": "SINGLE",
+            "row_index": row.get("row_index", 1), "row_id": row.get("row_id"),
+            "source": row.get("source", "automatic")})
         model_id = str(next_id)
         next_id += 1
 
@@ -490,7 +506,10 @@ def build_director_generation_prompt(
             "audio_mode": "lock_source" if shot["audio_mode"] == "lock_source" else "native",
             "audio_denoise_strength": 0.0 if shot["audio_mode"] == "lock_source" else 1.0,
             "add_source_as_reference": shot["audio_mode"] == "lock_source",
-            "prompt_primary_audio_ordinal": 1 if sound != "native" else 0,
+            # Director has already resolved stable asset aliases to their
+            # native audio slots. Do not redirect a video's Audio1 to the
+            # separately selected drive recording after that compilation.
+            "prompt_primary_audio_ordinal": 1 if sound == "voice" else 0,
             "strict_prompt_tags": True,
             "ref_image_size": "match",
             "reference_video_policy": "official_2_to_15s",
@@ -522,7 +541,7 @@ def build_director_generation_prompt(
                 "audio_mode": "lock_source" if shot["audio_mode"] == "lock_source" else "native",
                 "audio_denoise_strength": 0.0 if shot["audio_mode"] == "lock_source" else 1.0,
                 "add_source_as_reference": shot["audio_mode"] == "lock_source",
-                "prompt_primary_audio_ordinal": 1 if sound != "native" else 0,
+                "prompt_primary_audio_ordinal": 1 if sound == "voice" else 0,
                 "strict_prompt_tags": True,
                 "ref_image_size": "match",
                 "reference_video_policy": "official_2_to_15s",
@@ -660,8 +679,21 @@ def build_director_generation_prompt(
 
     for index, item in enumerate(_assets_for_role(shot, "ref_audio")):
         graph[str(next_id)] = {"class_type": "LoadAudio", "inputs": {"audio": item["server_path"]}}
-        graph[condition_id]["inputs"][f"ref_audios.ref_audio_{index}"] = [str(next_id), 0]
+        reference_audio = [str(next_id), 0]
         next_id += 1
+        selection = shot.get("audio_selection") or {}
+        if sound == "voice" and item["asset_id"] == selection.get("asset_id"):
+            # The voice picker exposes a source selection too. Use that
+            # exact range as the reference without locking the generated
+            # audio or changing the requested video duration.
+            graph[str(next_id)] = {
+                "class_type": "TrimAudioDuration",
+                "inputs": {"audio": reference_audio, "start_index": selection["start"],
+                           "duration": selection["end"] - selection["start"]},
+            }
+            reference_audio = [str(next_id), 0]
+            next_id += 1
+        graph[condition_id]["inputs"][f"ref_audios.ref_audio_{index}"] = reference_audio
 
     drive = _asset_for_role(shot, "drive_audio")
     if drive:
@@ -751,6 +783,7 @@ def build_director_generation_prompt(
         two_pass = apply_two_pass_graph(graph, shot, sampling, store, int(seed), d3)
     elif sampling["mode"] == "hyperflow":
         two_pass = apply_hyperflow_graph(graph, shot, sampling, store, int(seed), d3)
+    report["lora_loaders"] = two_pass.pop("lora_loaders") if two_pass else lora_loaders
 
     enabled_d3_routes = []
     if bridge_enabled:
@@ -839,9 +872,20 @@ def director_job_status(prompt_id: str) -> dict[str, Any]:
 
     record = server.prompt_queue.get_history(prompt_id=prompt_id).get(prompt_id)
     if record is not None:
-        status = record.get("status") or {}
-        status_str = status.get("status_str", "success")
-        return {"prompt_id": prompt_id, "state": "success" if status_str == "success" else "error", "status": status, "outputs": record.get("outputs", {}), "progress": progress_payload()}
+        status = record.get("status") if isinstance(record, dict) else None
+        status_str = status.get("status_str") if isinstance(status, dict) else None
+        if not isinstance(status_str, str) or status_str not in {"success", "error"}:
+            return {"prompt_id": prompt_id, "state": "unknown", "outputs": {}, "progress": progress_payload()}
+        state = "success" if status_str == "success" else "error"
+        if state == "error":
+            messages = status.get("messages")
+            events = {entry[0] for entry in (messages if isinstance(messages, (tuple, list)) else ())
+                      if isinstance(entry, (tuple, list)) and len(entry) == 2
+                      and isinstance(entry[0], str) and isinstance(entry[1], dict)
+                      and str(entry[1].get("prompt_id")) == prompt_id}
+            if "execution_interrupted" in events and "execution_error" not in events:
+                state = "cancelled"
+        return {"prompt_id": prompt_id, "state": state, "status": status, "outputs": record.get("outputs", {}), "progress": progress_payload()}
     running = server.prompt_queue.get_current_queue()
     if any(str(item[1]) == prompt_id for item in running[0]):
         return {"prompt_id": prompt_id, "state": "running", "progress": progress_payload()}

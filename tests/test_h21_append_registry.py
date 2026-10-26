@@ -12,6 +12,8 @@ from h3_audio_t8_pkg import nodes_reference_step_cache as cached
 from h3_audio_t8_pkg.freevideo_h21 import nodes as freevideo
 from h3_audio_t8_pkg import nodes_mc_seam_experimental as seam
 from h3_audio_t8_pkg import nodes_ptd_continuous as continuous
+from h3_audio_t8_pkg import nodes_av_loop as periodic
+from h3_audio_t8_pkg import nodes_solar_structural as solar
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +74,24 @@ def test_continuous_ptd_append_keeps_complete765_prefix_and_old_full_sampler():
     assert selected[749:752] == ptd.NODES
 
 
+def test_periodic_av_append_keeps_complete768_prefix_and_off_default():
+    previous = asyncio.run(package._PTDContinuousExtension().get_node_list())
+    selected = asyncio.run(package._PeriodicAVExtension().get_node_list())
+    assert len(previous) == 768 and selected[:-3] == previous
+    assert selected[-3:] == periodic.NODES and len(selected) == 771
+    enabled, = [item for item in periodic.NODES[0].define_schema().inputs if item.id == "enabled"]
+    assert enabled.default is False
+
+
+def test_solar_append_keeps_complete771_prefix_and_off_default():
+    previous = asyncio.run(package._PeriodicAVExtension().get_node_list())
+    selected = asyncio.run(package._SolarStructuralExtension().get_node_list())
+    assert len(previous) == 771 and selected[:-3] == previous
+    assert selected[-3:] == solar.NODES and len(selected) == 774
+    enabled, = [item for item in solar.NODES[1].define_schema().inputs if item.id == "enabled"]
+    assert enabled.default is False
+
+
 def test_live_registry_all_actual_schemas_are_unique_and_match_feature_metadata():
     classes = asyncio.run(package.comfy_entrypoint().get_node_list())
     ids = [cls.GET_SCHEMA().node_id for cls in classes]
@@ -81,9 +101,19 @@ def test_live_registry_all_actual_schemas_are_unique_and_match_feature_metadata(
     assert ids == features["nodes"]
     for value in (features, metadata):
         selected = value["h21_working_tree_development"]
-        assert selected["registered_nodes"] == len(ids)
+        assert selected["registered_nodes"] == 768
         assert selected["registered_nodes"] == selected["preserved_registered_prefix"] + selected["appended_nodes"]
         assert selected["whole_scope_completed"] is False
+        current = value["h24_working_tree_development"]
+        assert current["registered_nodes"] == len(ids)
+        assert current["preserved_registered_prefix"] == selected["registered_nodes"]
+        assert current["registered_nodes"] == current["preserved_registered_prefix"] + current["appended_nodes"]
+        reviewed = json.loads((ROOT / "examples/workflows/91-h24-reviewed/index.json").read_text(encoding="utf-8"))
+        assert current["published"] is True and current["human_quality_accepted"] is True
+        assert current["publication_kind"] == "github_source"
+        assert current["production_deployed"] is False
+        assert current["human_feedback_sha256"] == reviewed["human_feedback_sha256"]
+        assert set(current["human_review_case_ids"]) == {row["case_id"] for row in reviewed["workflows"]}
     expected = asyncio.run(package._ReferenceTemporalPackExtension().get_node_list())
     assert classes[:747] == expected
-    assert len(classes) == 768
+    assert len(classes) == 774

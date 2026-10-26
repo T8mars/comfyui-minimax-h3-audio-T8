@@ -93,6 +93,13 @@ receipt／运行时token／不可变缓存资产损坏。需要的内核未安�
 
 ### 已审查源码的 Python 调试元数据差异
 
+采样身份兼容 CPython 3.13 的 `__firstlineno__` 与 `__static_attributes__`：
+仅从原始类 namespace 忽略确切内置 int 和 tuple[str] 类型的这两个惰性字段名，
+不执行描述符、不转换子类、不把 tuple 内的名字加入执行成员白名单。两项可各自缺省。
+T8 raw-flow、native AV carrier 及 Core SigmaShift 三条路径保持原方法、实例、hook、
+工厂源码／字节码和 sigma／时钟校验；不认证未知执行状态，也不禁止其普通采样。
+此兼容不授予跨 Python 版本的工厂字节码缓存等价保证。
+
 当前 KJ／Sol 适配器只忽略 live `.pyc` 与同一原源码新编译结果的调试行／列范围表差异。
 源码／AST／内核 pin、执行指令、递归带类型常量、异常表、flags、参数与闭包布局、
 源码路径和位置仍严格匹配；原 globals、默认参数、实际 callable owner 检查不变。

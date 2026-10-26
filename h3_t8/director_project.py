@@ -15,6 +15,7 @@ import uuid
 
 from .director_keyframes import FIELD as KEYFRAME_FIELD, keyframe_asset_ids, resolve_keyframes, validate_keyframes
 from .director_controls import FIELD as CONTROL_FIELD, control_asset_ids, resolve_controls, validate_controls
+from .director_sampling_settings import lora_interpretation, lora_strength
 
 SCHEMA = "t8.minimax_h3.director_project"
 VERSION = 2
@@ -195,12 +196,12 @@ def generation_settings(doc):
     for row in rows:
         if not isinstance(row, dict) or not isinstance(row.get("name"), str) or not isinstance(row.get("enabled", True), bool):
             raise ValueError("LoRA 条目需要模型名称、强度和启用开关")
-        strength = _number(row.get("strength", 1.0), "LoRA 强度", -2)
-        if strength > 2:
-            raise ValueError("LoRA 强度必须在 -2–2 之间")
+        strength = lora_strength(row.get("strength", 1.0))
         if mode == "manual" and row.get("enabled", True) and not row["name"]:
             raise ValueError("请选择已启用条目的 LoRA 文件")
-        result["loras"].append({"name": row["name"], "strength": strength, "enabled": row.get("enabled", True)})
+        result["loras"].append({"name": row["name"], "strength": strength, "enabled": row.get("enabled", True),
+                                **({"id": deepcopy(row["id"])} if "id" in row else {}),
+                                **lora_interpretation(row)})
     mp = raw.get("resolution_mp", "auto")
     if mp != "auto":
         try:
@@ -292,9 +293,7 @@ def validate_project(value):
             if not isinstance(value, (str, list)) or (isinstance(value, list) and not all(isinstance(item, str) for item in value)):
                 raise ValueError("模型配置 lora 必须是文字或文字列表")
         if "lora_strength" in generation:
-            _number(generation["lora_strength"], "lora_strength", 0)
-            if generation["lora_strength"] > 2:
-                raise ValueError("lora_strength 必须 ≤ 2")
+            lora_strength(generation["lora_strength"])
         generation_settings(doc)
     from .director_sampling_settings import effective_sampling, normalize_sampling
     normalize_sampling(doc.get("sampling"))
@@ -729,7 +728,7 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
             fail("请添加首帧")
         if shot["mode"] == "ends" and not last:
             fail("请添加尾帧（首帧可留空作仅尾帧）")
-        if shot["mode"] == "refs" and not refs and shot["sound"] != "voice":
+        if shot["mode"] == "refs" and not refs and shot["sound"] not in {"voice", "record"}:
             fail("请分配参考素材")
         selected_audio = shot.get("audio") if shot["sound"] != "native" else None
         if shot["sound"] != "native" and (
@@ -749,10 +748,9 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
             refs.append(selected_audio)
         if shot["sound"] == "record":
             refs = [aid for aid in refs if aid != first]
-            if not first or last or refs:
-                fail(
-                    "原音驱动使用已验收的Avatar单段首帧配方；需一张首帧，不叠加尾帧或其他参考。复杂组合请回高级画布"
-                )
+            # The native factory accepts source audio alongside exact frames
+            # and reference media. Visual-mode endpoints and actual media
+            # contracts remain checked independently of this audio choice.
         typed = {"image": [], "video": [], "audio": []}
         for aid in refs:
             kind = assets.get(aid, {}).get("kind")
@@ -975,6 +973,8 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
         )
         recipe = (
             "avatar_single_segment_progressive_lock_source"
+            if shot["sound"] == "record" and first and not last and not refs
+            else "native_reference_lock_source"
             if shot["sound"] == "record"
             else "native_ref_voice_stock20"
             if shot["sound"] == "voice"

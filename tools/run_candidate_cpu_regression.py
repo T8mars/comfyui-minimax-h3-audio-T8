@@ -69,7 +69,7 @@ def source_snapshot(project):
     paths.update(project / name for name in ('pyproject.toml', 'meta.json', 'features.json', '.comfyignore'))
     for directory in ('h3_t8', 'tools', 'tests', 'web', 'examples'):
         paths.update(path for path in (project / directory).rglob('*')
-                     if path.is_file() and path.suffix.lower() in {'.py', '.js', '.json', '.html'})
+                     if path.is_file() and path.suffix.lower() in {'.py', '.js', '.mjs', '.css', '.json', '.html'})
     return {path.relative_to(project).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in sorted(paths)}
 

@@ -14,6 +14,7 @@ import { createStoryboardDialog } from './storyboard_ui.mjs';
 import { createCreationLibrary } from './creation_ui.mjs';
 import { createRadarDialog } from './radar_ui.mjs';
 import { directorTaskLabel } from './session.mjs';
+import { configurationEvidenceText } from './candidate_diagnostics.mjs';
 import {middleAssetIds,middleRows} from './keyframes_state.mjs';
 import {controlAssetIds} from './control_state.mjs';
 export function createDirectorWorkbench(ctx) {
@@ -123,6 +124,31 @@ export function createDirectorWorkbench(ctx) {
     readiness.innerHTML='<summary data-draft-status></summary><p class="o-tip">自动检查仅看当前草稿，不读取模型、不提交任务。文件与尺寸请手动预检；依赖另查。</p><ul data-draft-issues></ul><div class="o-row"><button type="button" data-action="check">文件与尺寸预检</button><button type="button" data-service="d3-preflight">依赖检查</button></div>';
     readiness.querySelector('[data-draft-issues]').addEventListener('click',e=>{const button=e.target.closest('[data-draft-field]');if(button)focusIssue(button.dataset.draftField);});
     editor.append(readiness);
+    const configuration=document.createElement('details');
+    configuration.className='w-readiness w-configuration';
+    configuration.innerHTML='<summary>本镜配置与证据</summary><p class="o-tip">分开查看草稿计划、选中版本冻结配置和结果记录。只读，不保存、不采用、不排队。</p><button type="button" data-configuration-refresh>更新只读摘要</button><pre data-configuration-text role="status">点击更新，读取当前镜头及选中版本。</pre>';
+    let configurationSequence=0,configurationSignature=null;
+    const configurationIdentity=()=>JSON.stringify([ctx.radar.context(),ctx.radar.snapshot(),ctx.resultKey(results().get(shot().id)),results().get(shot().id)]);
+    const configurationText=configuration.querySelector('[data-configuration-text]');
+    function invalidateConfiguration(){
+        if(configurationSignature!==null&&configurationSignature!==configurationIdentity()){
+            configurationSequence++;configurationSignature=null;
+            configurationText.textContent='草稿或所选版本已变化，请更新只读摘要；旧报告未沿用。';
+        }
+    }
+    configuration.addEventListener('toggle',()=>{
+        if(!configuration.open){configurationSequence++;configurationSignature=null;configurationText.textContent='点击更新，读取当前镜头及选中版本。';}
+    });
+    configuration.querySelector('[data-configuration-refresh]').addEventListener('click',async()=>{
+        const sequence=++configurationSequence,signature=configurationIdentity();configurationSignature=signature;
+        configurationText.textContent='读取当前草稿与所选版本…';
+        try{
+            const report=await ctx.configurationEvidence(results().get(shot().id));
+            if(sequence!==configurationSequence||!configuration.open||signature!==configurationIdentity())return;
+            configurationText.textContent=report?configurationEvidenceText(report):'上下文已变化，请重新更新；旧报告未显示。';
+        }catch(error){if(sequence===configurationSequence&&configuration.open&&signature===configurationIdentity())configurationText.textContent='未读取：'+error.message;}
+    });
+    editor.append(configuration);
     workspace.prepend(shots, editor);
 
     const mediaWorkbench = $('.o-media-workbench');
@@ -227,6 +253,7 @@ export function createDirectorWorkbench(ctx) {
         syncSummary(); syncPanels();
     }
     function syncSummary() {
+        invalidateConfiguration();
         const s=shot();
         const seedField=$('[data-shot-seed]');
         if(document.activeElement!==seedField){seedField.value=String(s.seed??26091901);seedField.setCustomValidity('');}
@@ -306,6 +333,7 @@ export function createDirectorWorkbench(ctx) {
         const button=$('[data-service="generate-selected"]');button.textContent='生成选中镜头（'+count+'）';button.disabled=!count;
     }
     function syncPreview() {
+        invalidateConfiguration();
         const view=ctx.view();
         $$('[data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));
         // Background completions update only the result pane, not the prompt editor.
@@ -315,7 +343,7 @@ export function createDirectorWorkbench(ctx) {
         const select=versionBar.querySelector('[data-result-version]');
         const options=records.map((item,index)=>{
             const date=item.submitted_at?new Date(item.submitted_at*1000).toLocaleString():'时间未记录';
-            const state=item.origin==='external'&&item.state==='success'?'外部成片 · 不可重采样':({success:'已生成',error:'失败',pending:'生成中',cancelled:'已取消'}[item.state]||'待核对');
+            const state=item.origin==='external'&&item.state==='success'?'外部成片 · 不可重采样':(item.state==='success'?'已生成':directorTaskLabel(item.state));
             return `<option value="${ctx.esc(ctx.resultKey(item))}">${ctx.esc(`${records.length-index} · ${date} · ${state}`)}</option>`;
         }).join('');
         if(select.dataset.options!==options){select.innerHTML='<option value="" disabled>选择一个版本</option>'+options;select.dataset.options=options;}
