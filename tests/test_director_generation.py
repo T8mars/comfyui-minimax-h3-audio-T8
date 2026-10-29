@@ -210,7 +210,8 @@ def test_d2c_record_uses_windowed_drive_audio_as_delivery_track(tmp_path):
     assert graph["5"]["inputs"]["drive_audio"] == ["16", 0]
     assert graph["5"]["inputs"]["final_audio"] == ["16", 0]
     assert graph["5"]["inputs"]["length"] == ["16", 1]
-    assert graph["11"]["inputs"]["audio"] == ["5", 2]
+    assert graph["5"]["class_type"] == "MiniMaxH3DirectorKeyframeConditioningEXPT8"
+    assert graph["11"]["inputs"]["audio"] == ["5", 3]
     assert graph["11"]["inputs"]["start_seconds"] == ["16", 2]
     assert graph["16"]["class_type"] == "MiniMaxH3AudioWindowT8"
 
@@ -1040,7 +1041,7 @@ def test_two_pass_rebuilds_first_frame_from_source_and_keeps_recording(tmp_path,
     project["doc"]["sampling"] = {"mode": "two_pass", "output_mp": 0.4}
     built = build_director_generation_prompt(project, shot["id"], store)
     graph = built["prompt"]
-    conditions = [(key, node) for key, node in graph.items() if node["class_type"] == "MiniMaxH3AudioConditioningT8"]
+    conditions = [(key, node) for key, node in graph.items() if node["class_type"] in {"MiniMaxH3AudioConditioningT8", "MiniMaxH3DirectorKeyframeConditioningEXPT8"}]
     assert len(conditions) == 2
     high = graph["5"]["inputs"]
     low_id, low_node = next((key, node) for key, node in conditions if key != "5")
@@ -1049,7 +1050,8 @@ def test_two_pass_rebuilds_first_frame_from_source_and_keeps_recording(tmp_path,
     assert low["drive_audio"] == high["drive_audio"]
     assert low["final_audio"] == high["final_audio"]
     assert low["length"] == high["length"]
-    assert graph["11"]["inputs"]["audio"] == ["5", 2]
+    assert graph["5"]["class_type"] == "MiniMaxH3DirectorKeyframeConditioningEXPT8"
+    assert graph["11"]["inputs"]["audio"] == ["5", 3]
     window_id = high["drive_audio"][0]
     assert graph["11"]["inputs"]["start_seconds"] == [window_id, 2]
     assert graph["10"]["inputs"]["av_latent"] == [built["sampling"]["high_output_node"], 0]

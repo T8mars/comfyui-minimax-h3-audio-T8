@@ -193,7 +193,7 @@ export function createDirectorWorkbench(ctx) {
     const compareButton=document.createElement('button');compareButton.type='button';compareButton.dataset.compareOpen='';compareButton.textContent='A/B 对比';
     compareButton.addEventListener('click',()=>comparison.open(ctx.resultKey(results().get(shot().id))));versionBar.querySelector('.o-row').append(compareButton);
     const tabs = $('.o-viewbar .o-tabs');
-    const film=createFilmViewer({root,prepare:ctx.prepareFilm,notify:ctx.notify,locate:ctx.locateShot,escape:ctx.esc,startExport:ctx.startFilmExport,exportStatus:ctx.filmExportStatus,saveCaptions:ctx.prepareFilmCaptions,captionStatus:ctx.filmCaptionStatus,importSpeechTrack:ctx.importFilmSpeechTrack});
+    const film=createFilmViewer({root,prepare:ctx.prepareFilm,notify:ctx.notify,locate:ctx.locateShot,escape:ctx.esc,startExport:ctx.startFilmExport,exportStatus:ctx.filmExportStatus,saveCaptions:ctx.prepareFilmCaptions,captionStatus:ctx.filmCaptionStatus,importSpeechTrack:ctx.importFilmSpeechTrack,captionASR:ctx.captionASR,maskAuthor:ctx.maskAuthor});
     const filmButton=document.createElement('button');filmButton.type='button';filmButton.dataset.filmOpen='';filmButton.textContent='整片串播';filmButton.addEventListener('click',()=>film.open());tabs.append(filmButton);
     tabs.prepend($('[data-view="output"]'));
     $('[data-view="input"]').textContent = '输入预览';

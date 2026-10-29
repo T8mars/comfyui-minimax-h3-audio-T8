@@ -104,13 +104,18 @@ def mix_audio(
     return {"waveform": mixed, "sample_rate": target_rate}
 
 
-def trim_av_output(frames: torch.Tensor, start_seconds: float, duration_seconds: float, audio=None, fps: float = 24.0):
+def trim_av_output(frames: torch.Tensor, start_seconds: float, duration_seconds: float, audio=None,
+                   fps: float = 24.0, frame_count: int = 0):
     if frames.ndim != 4:
         raise ValueError(f"frames must be IMAGE [N,H,W,C], got {tuple(frames.shape)}")
     if start_seconds < 0 or duration_seconds <= 0 or fps <= 0:
         raise ValueError("trim start must be nonnegative; duration and fps must be positive")
+    if type(frame_count) is not int or frame_count < 0:
+        raise ValueError("frame_count must be a nonnegative integer; 0 keeps legacy duration rounding")
     start_frame = round(start_seconds * fps)
-    frame_count = max(1, round(duration_seconds * fps))
+    # A compiler's discrete video endpoint is independent of the requested
+    # audio interval. Keep old callers' rounding and PCM coordinates unchanged.
+    frame_count = frame_count or max(1, round(duration_seconds * fps))
     end_frame = start_frame + frame_count
     if end_frame > frames.shape[0]:
         raise ValueError(

@@ -79,7 +79,7 @@ def apply_two_pass_graph(
 
     low_model, high_model = stage_model("low"), stage_model("high")
     relay = bool(d3["prompt_relay"].get("enabled"))
-    middle = bool(shot.get("middle_keyframes"))
+    middle = any(node["class_type"] == "MiniMaxH3DirectorKeyframeConditioningEXPT8" for node in graph.values())
     returns_model = relay or middle
     bridge = bool(d3["semantic_bridge"].get("enabled"))
     high_condition = next(

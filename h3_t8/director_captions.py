@@ -111,8 +111,15 @@ def _compile(film, payload):
         track = selected.get(entry["shot_id"])
         if track is not None:
             source, clock = track.get("source"), track.get("clock")
-            if not isinstance(source, dict) or source.get("kind") not in {"manual_planned_text", "speech_planned_text"}:
-                raise ValueError("字幕只能使用明确的计划文本来源，不自动提取提示词")
+            if not isinstance(source, dict) or source.get("kind") not in {"manual_planned_text", "speech_planned_text", "recognized_audio"}:
+                raise ValueError("字幕须有明确的手写、计划或实际识别来源，不自动提取提示词")
+            if source['kind'] == 'recognized_audio':
+                identity(source.get('asr_job_id'))
+                if (source.get('binding') != 'actual_frozen_soundtrack_full_source_zero'
+                        or any(not isinstance(source.get(key), str) or len(source[key]) != 64
+                               or any(c not in '0123456789abcdef' for c in source[key])
+                               for key in ('report_sha256', 'audio_sha256'))):
+                    raise ValueError('识别字幕缺少实际音轨与识别回执绑定')
             if source["kind"] == "speech_planned_text":
                 if (not entry["media"].get("has_audio")
                         or source.get("binding") != "user_declared_media_match_not_independently_verified"
@@ -177,6 +184,8 @@ def _build(film, caption_id, payload):
               "serializer": "literal_text_v1", "formats": {
                   format: {"sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
                            "bytes": len(text.encode("utf-8"))} for format, text in texts.items()}}
+    if any(track['source']['kind'] == 'recognized_audio' for track in payload['tracks']):
+        result['text_status'] = 'recognized_audio_draft_editable_not_speaker_or_lipsync_verified'
     result["sha256"] = sha(result)
     return result, texts
 
@@ -193,6 +202,7 @@ def load_captions(store, project_id, film_id, caption_id):
             or result.get("project_id") != identity(project_id) or result.get("film_id") != identity(film_id)
             or result.get("film_sha256") != film["sha256"]):
         raise ValueError("字幕附件身份或冻结整片不一致")
+    _verify_recognized_tracks(store, film, result.get('input'))
     expected, _ = _build(film, caption_id, result.get("input"))
     if result != expected:
         raise ValueError("字幕附件内容或校验已损坏")
@@ -208,6 +218,7 @@ def load_captions(store, project_id, film_id, caption_id):
 def prepare_captions(store, project_id, film_id, caption_id, payload):
     film = load_film(store, project_id, film_id)
     caption_id = identity(caption_id)
+    _verify_recognized_tracks(store, film, payload)
     result, texts = _build(film, caption_id, payload)
     for index in range(len(film["entries"])):
         film_media(store, project_id, film_id, index)
@@ -239,6 +250,15 @@ def prepare_captions(store, project_id, film_id, caption_id, payload):
                     raise ValueError("字幕任务身份已用于另一份稿件") from None
                 created = False
         return load_captions(store, project_id, film_id, caption_id), created
+
+
+def _verify_recognized_tracks(store, film, payload):
+    if not isinstance(payload, dict) or not isinstance(payload.get('tracks'), list):
+        raise ValueError('字幕输入缺少tracks列表')
+    for track in payload['tracks']:
+        if isinstance(track, dict) and isinstance(track.get('source'), dict) and track['source'].get('kind') == 'recognized_audio':
+            from .director_caption_asr import verify_track_source
+            verify_track_source(store, film, track)
 
 
 def caption_file(store, project_id, film_id, caption_id, format):

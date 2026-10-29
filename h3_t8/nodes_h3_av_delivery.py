@@ -16,11 +16,13 @@ class MiniMaxH3SafeAVSaveT8Advanced(io.ComfyNode):
                          category="T8/MiniMax H3/Output/Advanced", is_experimental=True, is_output_node=True,
                          inputs=[io.Image.Input("images"), io.Audio.Input("audio"),
                                  io.String.Input("filename_prefix", default="MiniMaxH3/VDN_Refine"),
-                                 io.Int.Input("crf", default=18, min=0, max=51, advanced=True)],
+                                 io.Int.Input("crf", default=18, min=0, max=51, advanced=True),
+                                 io.Boolean.Input("preserve_audio_length", default=False, optional=True, advanced=True,
+                                                  tooltip="Preserve an already trimmed audio interval instead of padding it to the video endpoint.")],
                          outputs=[io.Video.Output("video"), io.String.Output("saved_path"), io.String.Output("report_json")])
 
     @classmethod
-    def execute(cls, images, audio, filename_prefix, crf=18):
+    def execute(cls, images, audio, filename_prefix, crf=18, preserve_audio_length=False):
         if getattr(images, "ndim", None) != 4:
             raise ValueError("IMAGE must be [frames,height,width,channels]")
         root = Path(folder_paths.get_output_directory()).resolve()
@@ -30,6 +32,6 @@ class MiniMaxH3SafeAVSaveT8Advanced(io.ComfyNode):
         output = (Path(folder) / name).resolve()
         if not output.is_relative_to(root):
             raise ValueError("H3 safe output must stay inside ComfyUI output")
-        report = save_h3_av_safe(images, audio, output, crf=crf)
+        report = save_h3_av_safe(images, audio, output, crf=crf, preserve_audio_length=preserve_audio_length)
         return io.NodeOutput(InputImpl.VideoFromFile(str(output)), str(output), json.dumps(report, ensure_ascii=False, indent=2),
                              ui=ui.PreviewVideo([ui.SavedResult(name, subfolder, io.FolderType.output)]))

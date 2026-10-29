@@ -634,10 +634,14 @@ def configure_low_vram_attention(model: Any, head_chunks: int):
         block_path = f"diffusion_model.blocks.{index}.forward"
         attention_path = f"diffusion_model.blocks.{index}.attn.forward"
         foreign = any(path in model.object_patches for path in (block_path, attention_path))
+        # Another clone may still be physically active on the shared network.
+        # Core's getter resolves this selected MODEL's own patches/backups;
+        # reading module.forward here can mistake the other stage for a user
+        # override and incorrectly omit this stage's head grouping.
+        getter = getattr(model, "get_model_object", None)
         foreign = foreign or any(
-            getattr(module, "__dict__", {}).get("forward") is not None
-            and getattr(module.forward, "__func__", None) is not type(module).forward
-            for module in (block, block.attn)
+            getattr(getter(path) if callable(getter) else module.forward, "__func__", None) is not type(module).forward
+            for path, module in ((block_path, block), (attention_path, block.attn))
         )
         if foreign:
             warn_patch_stack(f"Low VRAM Attention retains foreign block/attention {index}; head grouping may be bypassed")
@@ -767,7 +771,10 @@ def configure_chunk_feed_forward(model: Any, chunks: int, seq_threshold: int):
     delegated_mlp_paths = []
     for index, block in enumerate(blocks):
         path = f"diffusion_model.blocks.{index}.mlp.forward"
-        previous = model.object_patches.get(path, block.mlp.forward)
+        getter = getattr(model, "get_model_object", None)
+        # Do not wrap a prior active clone's chunker a second time. The logical
+        # source also retains an explicitly selected user MLP override.
+        previous = getter(path) if callable(getter) else model.object_patches.get(path, block.mlp.forward)
         native = (
             getattr(previous, "__self__", None) is block.mlp
             and getattr(previous, "__func__", None) is core_h3.MLP.forward

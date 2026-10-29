@@ -201,7 +201,7 @@ def test_import_validation_and_speech_explicit_binding_preserve_original(caption
     page, state, _, _ = caption_page
     page.locator('.w-film-captions > summary').click()
     add_text(page, '保留原稿')
-    page.locator('.w-film-captions details > summary').click()
+    page.locator('.w-film-captions [data-caption-import-panel] > summary').click()
     page.once('dialog', lambda dialog: dialog.accept())
     page.locator('[data-caption-import]').set_input_files({'name': 'wrong-film.json', 'mimeType': 'application/json',
         'buffer': json.dumps({'schema': INPUT_SCHEMA, 'film_sha256': '0'*64, 'tracks': []}).encode()})
@@ -258,7 +258,7 @@ def test_caption_draft_json_roundtrip_preserves_added_multiline_text(caption_pag
     page.once('dialog', lambda dialog: dialog.accept())
     page.locator('[data-caption-clear]').click()
     expect(page.locator('[data-caption-rows] li')).to_have_count(0)
-    page.locator('.w-film-captions details > summary').click()
+    page.locator('.w-film-captions [data-caption-import-panel] > summary').click()
     page.locator('[data-caption-import]').set_input_files({'name': 'saved-draft.json', 'mimeType': 'application/json', 'buffer': b'\xef\xbb\xbf'+raw})
     expect(page.locator('[data-caption-rows] li')).to_have_count(1)
     page.locator('[data-caption-save]').click()

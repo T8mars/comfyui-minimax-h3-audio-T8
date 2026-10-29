@@ -13,7 +13,7 @@ import threading
 import time
 import uuid
 
-from .director_keyframes import FIELD as KEYFRAME_FIELD, keyframe_asset_ids, resolve_keyframes, validate_keyframes
+from .director_keyframes import FIELD as KEYFRAME_FIELD, keyframe_asset_ids, resolve_keyframes, shot_clock, validate_keyframes
 from .director_controls import FIELD as CONTROL_FIELD, control_asset_ids, resolve_controls, validate_controls
 from .director_sampling_settings import lora_interpretation, lora_strength
 
@@ -686,11 +686,18 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
             number, name = shot_positions[sid]
             errors.append({"shot_id": sid, "shot_number": number, "shot_name": name, "field": field, "message": message})
 
+        try:
+            clock = shot_clock(shot, assets)
+        except ValueError as error:
+            fail(str(error), "timing")
+            clock = shot_clock({**shot, "manualDuration": .001, "autoDuration": False, "sound": "native"})
+        duration = clock["requested_seconds"]
+        active_events = shot["events"] if shot["writingMode"] == "advanced" else []
         shared = list(dict.fromkeys(doc["sharedRefs"]))
         middle = []
         if shot.get(KEYFRAME_FIELD):
             try:
-                middle = resolve_keyframes(shot, assets)
+                middle = resolve_keyframes(shot, assets, clock=clock)
             except ValueError as error:
                 fail(str(error), KEYFRAME_FIELD)
         tray = list(
@@ -771,9 +778,11 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                     }
                 )
         media, id_to_native = [], {}
-        picture_entries = ([(first, "first_frame", None)] if first else [])
-        picture_entries += [(item["asset_id"], "middle_keyframe", item["id"]) for item in middle]
-        picture_entries += ([(last, "last_frame", None)] if last else [])
+        timeline_images = ([(first, "first_frame", None, clock["delivery_start_frame"])] if first else [])
+        timeline_images += [(item["asset_id"], "middle_keyframe", item["id"], item["frame_index"]) for item in middle]
+        timeline_images += ([(last, "last_frame", None, clock["delivery_end_frame"] - 1)] if last else [])
+        timeline_images.sort(key=lambda item: item[3])
+        picture_entries = [(aid, role, uid) for aid, role, uid, _ in timeline_images]
         picture_entries += [(aid, "ref_image", None) for aid in typed["image"]]
         pictures = [aid for aid, _, _ in picture_entries]
         for index, (aid, role, keyframe_id) in enumerate(picture_entries, 1):
@@ -837,18 +846,6 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                     fail(f"{match.group(0)} 没有对应的生效素材槽，请核对引用", "prompt")
             return translated
 
-        duration = shot["manualDuration"]
-        active_events = shot["events"] if shot["writingMode"] == "advanced" else []
-        if shot["autoDuration"]:
-            if active_events:
-                duration = max(e["end"] for e in active_events)
-            elif shot["sound"] == "record" and selected_audio:
-                duration = shot["end"] - shot["start"]
-        if duration <= 0 or not math.isfinite(duration * 24):
-            fail("时长必须大于0", "timing")
-            duration = 0.001
-        requested = max(5, math.ceil(duration * 24))
-        frames = requested + ((5 - requested) % 17)
         events = []
         for event in active_events:
             if event["end"] <= event["start"] or event["end"] > duration:
@@ -1005,14 +1002,7 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                 "events": events,
                 "timeline_start": timeline_start,
                 "timeline_end": timeline_start + duration,
-                "time": {
-                    "fps": 24,
-                    "requested_seconds": duration,
-                    "requested_frames": requested,
-                    "aligned_frames": frames,
-                    "generated_seconds": frames / 24,
-                    "delivery_trim_frames": math.ceil(duration * 24),
-                },
+                "time": dict(clock),
                 "canvas": {
                     "ratio": ratio,
                     "requested_megapixels": resolution_mp,
@@ -1045,6 +1035,10 @@ def compile_project(value, store=None, *, shot_id=None, candidate_context=None):
                 ],
             }
         )
+        if first or last:
+            shots[-1]["keyframe_endpoints"] = {
+                "first_frame_index": clock["delivery_start_frame"] if first else -1,
+                "last_frame_index": clock["delivery_end_frame"] - 1 if last else -1}
         if shot.get(KEYFRAME_FIELD) is not None:
             shots[-1]["middle_keyframes"] = middle
             for item in middle:

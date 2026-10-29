@@ -1370,7 +1370,8 @@ def build_prompt_relay_conditioning(
         prepared_options.update(visual_marker_binding=visual_marker_binding, return_text_recipe=True)
     condition_builder = build_conditioning
     middle_report = None
-    if keyframe_plan is not None:
+    if keyframe_plan is not None or (keyframe_options and any(
+            keyframe_options.get(key, -1) != -1 for key in ("first_frame_index", "last_frame_index"))):
         if prepared_reference_set is not None or visual_marker_binding is not None:
             raise ValueError("Middle-keyframe Relay needs its own fresh image inputs; prepared-reference/marker text-recipe adaptation is not connected")
         def condition_builder(*native_args, **native_kwargs):

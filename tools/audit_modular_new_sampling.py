@@ -274,11 +274,13 @@ def reviewed_h21_sites(root, sites):
             or any(not re.fullmatch(r'[0-9a-f]{64}', value) for value in review['accepted_media_sha256'])):
         raise ValueError('Missing H21 source/media binding')
     h24 = _h24_review(root)
+    h27 = _h27_review(root)
     for relative, expected in review['files'].items():
         if h24 is not None and relative in h24['previous_files']:
             if h24['previous_files'][relative] != expected:
                 raise ValueError('H24 review cannot replace a different H21 source binding')
             expected = h24['files'][relative]
+        expected = _h27_expected(h27, relative, expected)
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()
                 or not target.resolve().is_relative_to(root) or not target.is_file()
@@ -328,7 +330,9 @@ def _h24_review(root):
     if (not set(review['previous_files']) <= set(review['files'])
             or not {row['path'] for row in review['reviewed_sites']} <= set(review['files'])):
         raise ValueError('H24 source binding is incomplete')
+    h27 = _h27_review(root)
     for relative, expected in review['files'].items():
+        expected = _h27_expected(h27, relative, expected)
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()
                 or not target.resolve().is_relative_to(root) or not target.is_file()
@@ -358,6 +362,88 @@ def reviewed_h24_sites(root, sites):
     old_keys = {_key(row) for row in review['previous_sites']}
     if not old_keys <= {_key(row) for row in sites}:
         raise ValueError('H24 source review cannot relabel a different baseline')
+    return [row for row in sites if _key(row) not in old_keys] + review['reviewed_sites']
+
+
+def _h27_expected(review, relative, expected):
+    if review is not None and relative in review['previous_files']:
+        if review['previous_files'][relative] != expected:
+            raise ValueError('H27 review cannot replace a different prior source binding')
+        return review['files'][relative]
+    return expected
+
+
+def _h27_review(root):
+    """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
+    root = Path(root).resolve()
+    path = root / 'tests/fixtures/h27_reviewed_sampling_source.json'
+    if not path.is_file():
+        return None
+    review = json.loads(path.read_text(encoding='utf8'))
+    required = {'schema', 'previous_sites', 'reviewed_sites', 'previous_files', 'files',
+                'workflow_files', 'accepted_media_sha256', 'human_feedback_sha256',
+                'accepted_video_groups', 'registered_nodes', 'scope', 'unverified'}
+    if (set(review) != required or review['schema'] != 't8.h27.reviewed_sampling_source.v1'
+            or review['accepted_video_groups'] != 7 or review['registered_nodes'] != 778
+            or not review['scope'] or not review['unverified']):
+        raise ValueError('Invalid bounded H27 source review')
+    h21 = json.loads((root / 'tests/fixtures/h21_reviewed_sampling_1_102.json').read_text(encoding='utf8'))
+    h24 = json.loads((root / 'tests/fixtures/h24_reviewed_sampling_source.json').read_text(encoding='utf8'))
+    prior = {**h21['files'], **h24['files']}
+    expected_previous = {'__init__.py', 'h3_t8/director_generation.py', 'h3_t8/director_two_pass.py',
+                         'h3_t8/director_project.py', 'h3_t8/director_routes.py', 'h3_t8/timing.py',
+                         'tests/test_h21_sampling_admission_ci.py'}
+    if (set(review['previous_files']) != expected_previous
+            or any(prior.get(name) != value for name, value in review['previous_files'].items())):
+        raise ValueError('H27 review cannot replace a different prior source binding')
+    expected_builders = {('h3_t8/director_generation.py', 'build_director_generation_prompt', '<director_graph_builder>'),
+                         ('h3_t8/director_two_pass.py', 'apply_two_pass_graph', '<director_graph_builder>')}
+    for rows in (review['previous_sites'], review['reviewed_sites']):
+        if len(rows) != 2 or {_key(row)[:3] for row in rows} != expected_builders:
+            raise ValueError('H27 may only replace the two reviewed Director builders')
+        if any(set(row) != {'path', 'symbol', 'callee', 'call_sha256'}
+               or not re.fullmatch(r'[0-9a-f]{64}', row['call_sha256']) for row in rows):
+            raise ValueError('Malformed H27 sampling identity')
+    if not {_key(row) for row in review['previous_sites']} <= {_key(row) for row in h24['reviewed_sites']}:
+        raise ValueError('H27 cannot relabel different H24 callsites')
+    if (not set(review['previous_files']) <= set(review['files'])
+            or not set(review['workflow_files']) <= set(review['files'])):
+        raise ValueError('H27 source/workflow binding incomplete')
+    for relative, expected in review['files'].items():
+        target = root / relative
+        if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()
+                or not target.resolve().is_relative_to(root) or not target.is_file()
+                or not re.fullmatch(r'[0-9a-f]{64}', expected)
+                or hashlib.sha256(target.read_bytes()).hexdigest() != expected):
+            raise ValueError('Reviewed H27 source/workflow changed: ' + relative)
+    if (len(set(review['accepted_media_sha256'])) != 8
+            or len(set(review['human_feedback_sha256'])) != 2
+            or any(not re.fullmatch(r'[0-9a-f]{64}', value)
+                   for value in [*review['accepted_media_sha256'], *review['human_feedback_sha256']])):
+        raise ValueError('H27 human/media binding incomplete')
+    index_name = 'examples/workflows/93-director-reviewed/index.json'
+    if index_name not in review['workflow_files']:
+        raise ValueError('H27 workflow index missing')
+    index = json.loads((root / index_name).read_text(encoding='utf8'))
+    rows = index['workflows']
+    if ({row['case_id'] for row in rows} != {'single', 'two_pass', 'hyperflow-v2', 'record',
+                                          'author3', 'custom8', 'hyperflow8_refine3'}
+            or len(rows) != 7
+            or {value for row in rows for value in row['source_media_sha256']} != set(review['accepted_media_sha256'])
+            or {row['human_feedback_sha256'] for row in rows} != set(review['human_feedback_sha256'])
+            or any(row['path'] not in review['workflow_files']
+                   or row['workflow_sha256'] != review['files'].get(row['path']) for row in rows)):
+        raise ValueError('H27 workflows refer to different human media or saved graph')
+    return review
+
+
+def reviewed_h27_sites(root, sites):
+    review = _h27_review(root)
+    if review is None:
+        return sites
+    old_keys = {_key(row) for row in review['previous_sites']}
+    if not old_keys <= {_key(row) for row in sites}:
+        raise ValueError('H27 source review cannot relabel a different baseline')
     return [row for row in sites if _key(row) not in old_keys] + review['reviewed_sites']
 
 
@@ -476,6 +562,7 @@ def audit(root, baseline, admissions, routes, live_ids=None):
     baseline_sites = reviewed_model_choice_sites(root, baseline_sites)
     baseline_sites = reviewed_h21_sites(root, baseline_sites)
     baseline_sites = reviewed_h24_sites(root, baseline_sites)
+    baseline_sites = reviewed_h27_sites(root, baseline_sites)
     old = Counter(_key(site) for site in baseline_sites)
     now = Counter(_key(site) for site in current)
     new = now - old

@@ -37,9 +37,11 @@ class H21ReleaseAdmission(unittest.TestCase):
         old = gate.reviewed_model_choice_sites(ROOT, old)
         successor_path = 'tests/fixtures/h24_reviewed_sampling_source.json'
         successor = json.loads((ROOT / successor_path).read_text(encoding='utf8'))
+        h27_path = 'tests/fixtures/h27_reviewed_sampling_source.json'
+        h27 = json.loads((ROOT / h27_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in set([*self.review['files'], *successor['files'], successor_path,
+            for relative in set([*self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
                                  'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

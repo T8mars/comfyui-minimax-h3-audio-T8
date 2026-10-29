@@ -924,6 +924,8 @@ def _build_advanced_conditioning(
     *,
     return_details=False,
     semantic_bridge=None,
+    first_frame_index=-1,
+    last_frame_index=-1,
 ):
     if width % 32 or height % 32:
         raise ValueError("MiniMax H3 width and height must be divisible by 32")
@@ -977,11 +979,11 @@ def _build_advanced_conditioning(
             {
                 "source": "first_frame",
                 "image": first_frame,
-                "frame_index": 0,
+                "frame_index": 0 if first_frame_index == -1 else first_frame_index,
                 "visual_noise_aug": float(first_frame_noise_aug),
                 "resize_mode": "stretch",
                 "requested_mode": "frame",
-                "requested_value": 0,
+                "requested_value": 0 if first_frame_index == -1 else first_frame_index,
             }
         )
     for item in resolved_middle:
@@ -991,11 +993,11 @@ def _build_advanced_conditioning(
             {
                 "source": "last_frame",
                 "image": last_frame,
-                "frame_index": frame_count - 1,
+                "frame_index": frame_count - 1 if last_frame_index == -1 else last_frame_index,
                 "visual_noise_aug": float(last_frame_noise_aug),
                 "resize_mode": "center_crop",
                 "requested_mode": "frame",
-                "requested_value": frame_count - 1,
+                "requested_value": frame_count - 1 if last_frame_index == -1 else last_frame_index,
             }
         )
     keyframe_specs.sort(key=lambda item: item["frame_index"])
@@ -1261,8 +1263,15 @@ def build_multikeyframe_conditioning(
     *,
     return_details=False,
     semantic_bridge=None,
+    first_frame_index=-1,
+    last_frame_index=-1,
 ):
     frame_count = temporal_shape(length)[0]
+    for label, value in (("first_frame_index", first_frame_index), ("last_frame_index", last_frame_index)):
+        if type(value) is not int or value < -1 or value >= frame_count:
+            raise ValueError(f"{label} must be -1 (native endpoint) or an actual frame in 0..{frame_count - 1}")
+    endpoint_override = ((first_frame is not None and first_frame_index not in (-1, 0))
+                         or (last_frame is not None and last_frame_index not in (-1, frame_count - 1)))
     resolved_middle = resolve_keyframe_plan(keyframe_plan, frame_count)
     default_strengths = all(
         math.isclose(float(value), DEFAULT_VISUAL_NOISE_AUG, abs_tol=0.0)
@@ -1272,7 +1281,7 @@ def build_multikeyframe_conditioning(
             reference_visual_noise_aug,
         )
     )
-    if not resolved_middle and default_strengths:
+    if not resolved_middle and default_strengths and not endpoint_override:
         options = {}
         if return_details:
             options["return_details"] = True
@@ -1351,7 +1360,8 @@ def build_multikeyframe_conditioning(
         reference_video_policy, first_frame, last_frame, resolved_middle,
         first_frame_noise_aug, last_frame_noise_aug, reference_visual_noise_aug,
         drive_audio, final_audio, ref_images, ref_videos, ref_video_audios, ref_audios,
-        return_details=return_details, semantic_bridge=semantic_bridge)
+        return_details=return_details, semantic_bridge=semantic_bridge,
+        first_frame_index=first_frame_index, last_frame_index=last_frame_index)
     (
         conditioning,
         latent,

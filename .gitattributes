@@ -5,5 +5,9 @@
 *.py text eol=lf
 *.toml text eol=lf
 
+# Keep the reviewed browser exports byte-identical to their recorded hashes.
+examples/workflows/92-open-regenerate/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+examples/workflows/93-director-reviewed/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
 # Preserve pinned third-party source bytes; audit hashes cover this exact vendored tree.
 h3_t8/vendor/vretoucher_upstream/** -whitespace

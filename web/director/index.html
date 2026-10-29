@@ -398,6 +398,7 @@ apply:(id,key,range)=>{const s=doc.shots.find(row=>row.id===id);if(!s||s!==sh()|
  prepareFilm:()=>services.prepareFilm(),prepareComparison:keys=>services.prepareComparison(keys),notify,locateShot:id=>{if(!doc.shots.some(s=>s.id===id)){notify('镜头已不在当前草稿。');return;}current=id;view='output';render();persist();},
  startFilmExport:(film,options)=>services.startFilmExport(film,options),filmExportStatus:target=>services.filmExportStatus(target),
  prepareFilmCaptions:(film,input)=>services.prepareFilmCaptions(film,input),filmCaptionStatus:()=>services.filmCaptionStatus(),importFilmSpeechTrack:(film,shotId,report,confirmed)=>services.importFilmSpeechTrack(film,shotId,report,confirmed),
+ captionASR:services.captionASR,maskAuthor:services.maskAuthor,
  checkedCanvas:()=>services.checkedCanvas(),selectedShotIds:()=>[...selectedShots],selectShot:(id,checked)=>{if(checked)selectedShots.add(id);else selectedShots.delete(id);},
  moveShot:(id,target)=>{const next=moveDirectorShot(doc.shots,id,target);if(next===doc.shots)return;checkpoint();doc.shots=next;persist();render();notify('已调整镜头顺序；已有成片仍跟随原镜头，运行中的冻结批次顺序不变。');},
  versions:()=>resultVersions.filter(item=>item.shot_id===current),resultKey:directorResultKey,

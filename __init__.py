@@ -8,6 +8,7 @@ _runtime_root = _package_root / "h3_t8"
 if __package__:
     __path__ = [str(_runtime_root), str(_package_root)]
     from .nodes import MiniMaxH3AudioT8Extension as _BaseExtension
+    from .nodes_authored_mask import NODES as _authored_mask_node_classes
     from .hyperflow_long_video_exp.nodes import MiniMaxH3HyperFlowLongVideoEXPT8 as _HyperFlowLongVideoNode
     from .hyperflow_long_video_exp.single8_node import MiniMaxH3HyperFlowSingle8LongVideoEXPT8 as _HyperFlowSingle8LongVideoNode
     from .modular_sampling import node_classes as _modular_node_classes
@@ -289,8 +290,19 @@ class _SolarStructuralExtension(_PeriodicAVExtension):
         return [*(await super().get_node_list()), *_solar_structural_node_classes]
 
 
+class _AuthoredMaskExtension(_SolarStructuralExtension):
+    async def get_node_list(self):
+        return [*(await super().get_node_list()), *_authored_mask_node_classes]
+
+
+class _OpenRegenerateExtension(_AuthoredMaskExtension):
+    async def get_node_list(self):
+        from .nodes_open_regenerate import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _SolarStructuralExtension()
+    return _OpenRegenerateExtension()
 
 
 WEB_DIRECTORY = "./web"

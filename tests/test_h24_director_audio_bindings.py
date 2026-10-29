@@ -39,13 +39,13 @@ def _tone(store, hz):
     return store.register_asset(path, aid, f'{hz}.wav')
 
 
-def _video(store, color, sound):
+def _video(store, color, sound, hz=431):
     aid = str(uuid.uuid4())
     path = store.input_root / 't8_director' / aid / 'source.mp4'
     path.parent.mkdir(parents=True)
     arguments = ['-f', 'lavfi', '-i', f'color=c={color}:s=64x64:r=24:d=2']
     if sound:
-        arguments += ['-f', 'lavfi', '-i', 'sine=frequency=431:sample_rate=32000:duration=2']
+        arguments += ['-f', 'lavfi', '-i', f'sine=frequency={hz}:sample_rate=32000:duration=2']
     arguments += ['-map', '0:v', '-c:v', 'libx264', '-pix_fmt', 'yuv420p']
     if sound:
         arguments += ['-map', '1:a', '-c:a', 'aac', '-ar', '32000', '-ac', '2']
@@ -234,9 +234,10 @@ def test_switch_record_voice_native_preserves_draft_and_final_track_for_each_sta
         before = deepcopy(project)
         graph = build_director_generation_prompt(project, shot['id'], store)['prompt']
         condition_ids = [key for key, node in graph.items() if node['class_type'] in {
-            'MiniMaxH3AudioConditioningT8', 'MiniMaxH3PromptRelayConditioningT8Advanced'}]
+            'MiniMaxH3AudioConditioningT8', 'MiniMaxH3PromptRelayConditioningT8Advanced',
+            'MiniMaxH3DirectorKeyframeConditioningEXPT8'}]
         assert len(condition_ids) == (2 if two_pass else 1)
-        assert any(graph[key]['class_type'].startswith('MiniMaxH3PromptRelay') for key in condition_ids) is relay
+        assert any('prompt_relay_plan' in graph[key]['inputs'] for key in condition_ids) is relay
         for key in condition_ids:
             inputs = graph[key]['inputs']
             assert ('drive_audio' in inputs) is (sound == 'record')
@@ -269,3 +270,54 @@ def test_draft_preflight_accepts_computable_record_combinations_but_requires_sel
     assert check() == []
     shot['audio'] = None
     assert any(row['field'] == 'audio' for row in check())
+
+
+@pytest.mark.parametrize('order', [('a', 'b'), ('b', 'a')])
+@pytest.mark.parametrize('sound', ['native', 'voice', 'record'])
+def test_two_sounding_videos_keep_pcm_and_ordinals_across_actual_consumers(sources, order, sound):
+    store, assets = sources
+    assets['b'] = _video(store, 'blue', True, hz=659)
+    project, shot = _project(assets, sound=sound, mode='refs', order=order)
+    selected = 'd' if sound == 'record' else 'v'
+    alias = '@audio2' if sound == 'record' else '@audio1'
+    shot['simplePrompt'] = '<Audio 1> and <Audio 2> are the two motion soundtracks.'
+    if sound != 'native':
+        shot['simplePrompt'] += f' {alias} supplies the selected voice.'
+    saved = store.save(project, 0)
+    reopened = ProjectStore(store.root.parent, store.input_root).load(saved['id'])
+    before = deepcopy(reopened)
+    built = build_director_generation_prompt(reopened, shot['id'], store)
+    graph, read = built['prompt'], _load_media(built['prompt'])
+    (_, latent, final, prompt, mapping, _), inputs, vae = _consume(graph, read)
+    audio_rows = [row for row in built['shot']['media_map'] if 'audio' in row['role']]
+    assert [(row['asset_id'], row['native']) for row in audio_rows] == [
+        (assets[order[0]]['id'], '<Audio 1>'), (assets[order[1]]['id'], '<Audio 2>'),
+        *([(assets[selected]['id'], '<Audio 3>')] if sound != 'native' else [])]
+    refs = inputs['ref_video_audios']
+    waveforms = []
+    for index, key in enumerate(order):
+        actual = refs[f'ref_video_audio_{index}']
+        expected = GetVideoComponents.execute(LoadVideo.execute(assets[key]['server_path']).result[0]).result[1]
+        assert actual['sample_rate'] == expected['sample_rate'] == 32000
+        assert torch.equal(actual['waveform'], expected['waveform'])
+        waveforms.append(actual['waveform'])
+        assert torch.equal(vae.encode_calls[index], actual['waveform'].movedim(1, -1))
+    assert not torch.equal(*waveforms)
+    if sound == 'native':
+        assert len(vae.encode_calls) == 2 and final is None
+    else:
+        assert '<Audio 3> supplies' in prompt and len(vae.encode_calls) == 3
+        expected = LoadAudio.execute(assets[selected]['server_path']).result[0]['waveform'][..., 8000:72000]
+        if sound == 'voice':
+            assert torch.equal(inputs['ref_audios']['ref_audio_0']['waveform'], expected)
+            assert torch.equal(vae.encode_calls[-1], expected.movedim(1, -1))
+            assert final is None
+        else:
+            assert json.loads(mapping)['source_audio_ordinal'] == 3
+            trim = graph['11']['inputs']
+            _, delivered, _ = MiniMaxH3OutputTrimT8.execute(
+                torch.zeros(inputs['length'], 32, 32, 3), read(trim['start_seconds']),
+                trim['duration_seconds'], 24, final).result
+            assert torch.equal(delivered['waveform'], expected)
+            assert torch.count_nonzero(latent['noise_mask'].unbind()[1]) == 0
+    assert reopened == before

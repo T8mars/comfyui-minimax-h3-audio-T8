@@ -21,6 +21,10 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/OPEN_REGENERATE_2K.md",
+    "THIRD_PARTY_NOTICES/OPEN-REGENERATE-SOURCES.md",
+    "docs/H27_DIRECTOR_WORK.md",
+    "docs/H27_TARA_EXP.md",
     "docs/H24_SOURCE_UPDATE.md",
     "docs/H24_AV_LOOP_EXP.md", "docs/H24_SOLAR_STRUCTURAL_EXP.md", "docs/LOCAL_REWORK.md",
     "THIRD_PARTY_NOTICES/H24-SOURCES.md", "THIRD_PARTY_NOTICES/H24-APACHE2.txt",

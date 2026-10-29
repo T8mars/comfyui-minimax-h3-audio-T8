@@ -12,7 +12,7 @@ from . import long_video_delivery as delivery
 from .h3_world_advanced import _normalize_output_audio, _mux_h3_world_audio
 
 
-def save_h3_av_safe(images, audio, output, fps=24, crf=18):
+def save_h3_av_safe(images, audio, output, fps=24, crf=18, preserve_audio_length=False):
     if not isinstance(images, torch.Tensor) or images.ndim != 4:
         raise ValueError("IMAGE must be [frames,height,width,channels]")
     count, height, width, channels = images.shape
@@ -30,7 +30,18 @@ def save_h3_av_safe(images, audio, output, fps=24, crf=18):
     rate = audio.get("sample_rate")
     if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
         raise ValueError("invalid AUDIO sample rate")
-    audio_array, rate, audio_report = _normalize_output_audio(audio, expected_samples=math.ceil(count * rate / fps))
+    if type(preserve_audio_length) is not bool:
+        raise ValueError("preserve_audio_length must be a boolean")
+    expected_samples = math.ceil(count * rate / fps)
+    if preserve_audio_length:
+        waveform = audio.get("waveform")
+        if not isinstance(waveform, torch.Tensor) or waveform.ndim != 3:
+            raise ValueError("AUDIO waveform must be [batch,channels,samples]")
+        samples = int(waveform.shape[-1])
+        if not 0 < samples <= expected_samples:
+            raise ValueError("Preserved AUDIO must be nonempty and fit inside the video interval")
+        expected_samples = samples
+    audio_array, rate, audio_report = _normalize_output_audio(audio, expected_samples=expected_samples)
     if audio_report["clipped_sample_values"]:
         raise ValueError("H3 safe output refuses clipped source audio")
     output.parent.mkdir(parents=True, exist_ok=True)

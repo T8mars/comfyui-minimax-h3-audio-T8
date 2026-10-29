@@ -1,0 +1,72 @@
+{
+  "schema": "t8.h27_and_open_regenerate.reviewed_workflows.v1",
+  "date": "2026-10-29",
+  "registered_nodes": 778,
+  "workflows": [
+    {
+      "case_id": "single",
+      "path": "examples/workflows/93-director-reviewed/可见首尾_单采.json",
+      "workflow_sha256": "0effc26cafd7a4b6f631f9e000b48719f8631b3ca9e00627a118dc57cceb02ea",
+      "source_media_sha256": [
+        "55fbdf298bec6d6c1cb2d24291bc814f3e3386e963e7082a06c62c25cefd578e"
+      ],
+      "human_feedback_sha256": "9629804f98cc0a9a085bfbbe358d31f59a36b116bb460296450aebff4e9d7899"
+    },
+    {
+      "case_id": "two_pass",
+      "path": "examples/workflows/93-director-reviewed/可见首尾_双采4加4.json",
+      "workflow_sha256": "099593072646ba9014a5a2cbb87297db955f0db0cd9263baafa3668be14bb390",
+      "source_media_sha256": [
+        "e34fe11f010431629382d726a68fadf8f60baa122abccfbf4adf3ccc2b6e094e"
+      ],
+      "human_feedback_sha256": "9629804f98cc0a9a085bfbbe358d31f59a36b116bb460296450aebff4e9d7899"
+    },
+    {
+      "case_id": "hyperflow-v2",
+      "path": "examples/workflows/93-director-reviewed/可见首尾_HyperFlow4加4.json",
+      "workflow_sha256": "07eacdceb0f8756a0a4e075bbf13f35d7c48cb0c332c895f5769ade5e071a544",
+      "source_media_sha256": [
+        "96d939337f4351417b5f050fb7dfe702e34b170b3ea6eec6e70c64408db47d81"
+      ],
+      "human_feedback_sha256": "9629804f98cc0a9a085bfbbe358d31f59a36b116bb460296450aebff4e9d7899"
+    },
+    {
+      "case_id": "record",
+      "path": "examples/workflows/93-director-reviewed/锁原声_双采4加4.json",
+      "workflow_sha256": "543623960a06a61153d7ba7646f6a35cff96485d7fd3904de77e9633d1c32f90",
+      "source_media_sha256": [
+        "56013b5235b4464e10e9525a6fa8e7392dfc5f9d1b08f92dfcd147bf595fe01b"
+      ],
+      "human_feedback_sha256": "9629804f98cc0a9a085bfbbe358d31f59a36b116bb460296450aebff4e9d7899"
+    },
+    {
+      "case_id": "author3",
+      "path": "examples/workflows/92-open-regenerate/CompleteRecipe_ExistingVideo_2K_EXP.json",
+      "workflow_sha256": "83a6243b39cb195ce2edecfeecfab84abbbcff02c9cf9d3a200b3afa87d3c243",
+      "source_media_sha256": [
+        "e580da5b542a49fb313b5c3fd1ea466791c69bbcffc50e7d6d3332d899843bf7"
+      ],
+      "human_feedback_sha256": "7626e3f73628ab8d8e39fa280a10ce3d4a4d014f0361b4d576c7f3f6c4a044d0"
+    },
+    {
+      "case_id": "custom8",
+      "path": "examples/workflows/92-open-regenerate/CompleteRecipe_Custom8_LowNoise_2K_EXP.json",
+      "workflow_sha256": "86aab144983bcaf69500649397fe980e86765712db7da3fa8aab2def12698b9b",
+      "source_media_sha256": [
+        "20d7246b2e73cbb5885c6aaba6761f254bb60c78d86c123212cb1c9c5616a92b"
+      ],
+      "human_feedback_sha256": "7626e3f73628ab8d8e39fa280a10ce3d4a4d014f0361b4d576c7f3f6c4a044d0"
+    },
+    {
+      "case_id": "hyperflow8_refine3",
+      "path": "examples/workflows/92-open-regenerate/CompleteRecipe_HyperFlow8_Refine3_2K_EXP.json",
+      "workflow_sha256": "7279d19184a9662b07aa420134bbc84765da6f76e74bb1dd7c758fc5adf99c2b",
+      "source_media_sha256": [
+        "b450b08aaee3dfd999b943bb95a02b389275fa899fbb11ab4b79c7925441a2d6",
+        "223d4fc2546dab27e83badb5d60a20f0c4b79436cb1d2e7b0d0f38541145608c"
+      ],
+      "human_feedback_sha256": "7626e3f73628ab8d8e39fa280a10ce3d4a4d014f0361b4d576c7f3f6c4a044d0"
+    }
+  ],
+  "boundaries": "Seven selected cases;TARA rejected andnot registered;custom8 is lower-start experiment,not author default;pure-refiner failure not withdrawn."
+}

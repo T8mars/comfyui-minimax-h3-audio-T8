@@ -631,12 +631,14 @@ def build_director_generation_prompt(
             "audio": ["10", 1],
             "start_seconds": 0.0,
             "duration_seconds": shot["time"]["requested_seconds"],
+            "frame_count": shot["time"]["delivery_trim_frames"],
             "fps": 24.0,
         },
     }
     graph["12"] = {
         "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
-        "inputs": {"images": ["11", 0], "audio": ["11", 1], "filename_prefix": f"T8_Director/{project['id'][:8]}/{shot_id[:8]}", "crf": 18},
+        "inputs": {"images": ["11", 0], "audio": ["11", 1], "filename_prefix": f"T8_Director/{project['id'][:8]}/{shot_id[:8]}", "crf": 18,
+                   "preserve_audio_length": True},
     }
 
     # For an audio-drive shot the conditioning node's mux_audio is the selected
@@ -723,11 +725,14 @@ def build_director_generation_prompt(
             graph[condition_id]["inputs"]["length"] = [str(next_id), 1]
         next_id += 1  # Reserve AudioWindow before appending middle-image nodes.
 
-    if shot.get("middle_keyframes"):
+    endpoints = shot.get("keyframe_endpoints", {})
+    endpoint_override = (endpoints.get("first_frame_index", -1) not in (-1, 0)
+                         or endpoints.get("last_frame_index", -1) not in (-1, shot["time"]["aligned_frames"] - 1))
+    if shot.get("middle_keyframes") or endpoint_override:
         # Reuse the existing native inputs and downstream graph, with explicit
         # MODEL/positive pairing. Ordinary prompts do not acquire Relay.
         previous = None
-        for keyframe in shot["middle_keyframes"]:
+        for keyframe in shot.get("middle_keyframes", []):
             media = next(item for item in shot["media_map"] if item.get("keyframe_id") == keyframe["id"])
             image_id = str(next_id)
             graph[image_id] = {"class_type": "LoadImage", "inputs": {"image": media["server_path"]}}
@@ -752,12 +757,14 @@ def build_director_generation_prompt(
         else:
             graph[condition_id]["inputs"].update(prompt=shot["prompt"], length=shot["time"]["aligned_frames"])
         graph[condition_id]["class_type"] = "MiniMaxH3DirectorKeyframeConditioningEXPT8"
-        graph[condition_id]["inputs"]["keyframe_plan"] = [previous, 0]
+        if previous is not None:
+            graph[condition_id]["inputs"]["keyframe_plan"] = [previous, 0]
+        graph[condition_id]["inputs"].update(endpoints)
         for key, default in {"first_frame_noise_aug": .999, "last_frame_noise_aug": .999,
                 "reference_visual_noise_aug": .999, "execution_mode": "report_only", "query_chunk_rows": 256}.items():
             graph[condition_id]["inputs"].setdefault(key, default)
         report["warnings"].append({"shot_id": shot_id,
-            "message": "中间关键帧已按明确时轴接入实际条件；保持原采样和声音路由，GPU画质与组合效果仍需单独验收。"})
+            "message": "关键帧已按实际交付位置接入条件；保持原采样和声音路由，GPU画质与组合效果仍需单独验收。"})
 
     if sampling["mode"] == "single" and shot.get("control_regions"):
         def add_control(kind, inputs):

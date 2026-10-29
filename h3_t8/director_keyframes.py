@@ -8,6 +8,8 @@ from copy import deepcopy
 import math
 
 from .keyframe_positions import resolve_position
+from .frame_grid import FPS, align_frame_count
+from .timing_plan import make_timing_plan
 
 
 FIELD = "middleKeyframes"
@@ -57,11 +59,8 @@ def keyframe_asset_ids(shot):
     return [item["asset_id"] for item in value["items"] if item.get("asset_id")] if value else []
 
 
-def resolve_keyframes(shot, assets):
-    """Resolve each explicit request afresh; do not clamp after a duration edit."""
-    value = shot.get(FIELD)
-    if not value or not any(item.get("enabled", True) for item in value["items"]):
-        return []
+def shot_clock(shot, assets=None):
+    """The same requested/AudioWindow clock used by the actual graph consumers."""
     duration = shot["manualDuration"]
     events = shot["events"] if shot["writingMode"] == "advanced" else []
     if shot["autoDuration"]:
@@ -69,12 +68,32 @@ def resolve_keyframes(shot, assets):
             duration = max(item["end"] for item in events)
         elif shot["sound"] == "record" and shot.get("audio"):
             duration = shot["end"] - shot["start"]
-    _number(duration, "关键帧镜头时长")
-    if duration <= 0:
-        raise ValueError("关键帧镜头时长必须大于0")
-    visible = math.ceil(_number(duration * 24, "关键帧交付帧数"))
+    _number(duration, "镜头时长")
+    if duration <= 0 or not math.isfinite(duration * FPS):
+        raise ValueError("镜头时长必须大于0且形成有限帧数")
+    visible = math.ceil(duration * FPS)
     requested = max(5, visible)
-    generated = requested + ((5 - requested) % 17)
+    generated, trim_start = align_frame_count(requested), 0.0
+    if shot["sound"] == "record" and shot.get("audio"):
+        audio = (assets or {}).get(shot["audio"], {})
+        plan = make_timing_plan(shot["start"], duration,
+                               source_duration_seconds=audio.get("duration", 0))
+        generated, trim_start = plan.frame_count, plan.final_trim_start_seconds
+    start_frame = round(trim_start * FPS)  # OutputTrim's exact video rounding.
+    return {"fps": FPS, "requested_seconds": duration, "requested_frames": requested,
+            "aligned_frames": generated, "generated_seconds": generated / FPS,
+            "delivery_trim_frames": visible, "delivery_trim_start_seconds": trim_start,
+            "delivery_start_frame": start_frame, "delivery_end_frame": start_frame + visible}
+
+
+def resolve_keyframes(shot, assets, *, clock=None):
+    """Resolve each explicit request afresh; do not clamp after a duration edit."""
+    value = shot.get(FIELD)
+    if not value or not any(item.get("enabled", True) for item in value["items"]):
+        return []
+    clock = shot_clock(shot, assets) if clock is None else clock
+    visible = clock["delivery_trim_frames"]
+    generated = clock["aligned_frames"]
     basis = value.get("time_basis", "visible_delivery")
     count = visible if basis == "visible_delivery" else generated
     used, result = {}, []
@@ -86,13 +105,15 @@ def resolve_keyframes(shot, assets):
         if asset is None or asset.get("kind") != "image":
             raise ValueError(f"{label}缺少实际图片，请选择图片或关闭该项")
         frame = resolve_position(item["position_mode"], item["position"], count, label=label)
+        if basis == "visible_delivery":
+            frame += clock["delivery_start_frame"]
         if frame in used:
             raise ValueError(f"{label}与第{used[frame]}项都定位到帧{frame}，请明确调整而非覆盖")
         used[frame] = number
         result.append({"id": item["id"], "asset_id": item["asset_id"],
             "position_mode": item["position_mode"], "position": item["position"],
             "frame_index": frame, "time_basis": basis, "visible_frames": visible,
-            "generated_frames": generated, "visible_in_delivery": frame < visible,
+            "generated_frames": generated, "visible_in_delivery": clock["delivery_start_frame"] <= frame < clock["delivery_end_frame"],
             "visual_noise_aug": item.get("visual_noise_aug", .999),
             "resize_mode": item.get("resize_mode", "center_crop")})
     return sorted(result, key=lambda item: item["frame_index"])

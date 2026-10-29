@@ -162,7 +162,9 @@ def test_recording_clock_can_be_resolved_without_claiming_avatar_middle_route(sc
     shot.update(sound="record", audio=audio["id"], start=2, end=5, autoDuration=True)
     shot[FIELD] = plan([row(images[2]["id"], 50, "percent")])
     actual = resolve_keyframes(shot, {item["id"]: item for item in [*images, audio]})[0]
-    assert actual["visible_frames"] == 72 and actual["frame_index"] == 36
+    from h3_audio_t8_pkg.timing import make_timing_plan
+    offset = round(make_timing_plan(2, 3, source_duration_seconds=8).final_trim_start_seconds * 24)
+    assert actual["visible_frames"] == 72 and actual["frame_index"] == offset + 36
     assert (shot["start"], shot["end"]) == (2, 5)
 
 

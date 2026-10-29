@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import gc
+import atexit
+from contextlib import contextmanager
+from contextvars import ContextVar
 import json
 import math
 import os
@@ -36,6 +39,7 @@ ASR_LANGUAGE_CODES = {
 _ASR_MODEL = None
 _ASR_MODEL_PATH: str | None = None
 _ASR_LOCK = threading.Lock()
+_ASR_CANCEL_CHECK = ContextVar('t8_asr_cancel_check', default=None)
 _SPEAKER_MODEL = None
 _SPEAKER_EXTRACTOR = None
 _SPEAKER_MODEL_PATH: str | None = None
@@ -276,20 +280,13 @@ def _audio_to_asr_array(audio: Mapping) -> np.ndarray:
 def _load_asr_model(model_path: Path, cpu_threads: int):
     global _ASR_MODEL, _ASR_MODEL_PATH
     canonical = str(model_path)
-    if _ASR_MODEL is not None and _ASR_MODEL_PATH == canonical:
+    if (_ASR_MODEL is not None and _ASR_MODEL_PATH == canonical
+            and getattr(_ASR_MODEL, 'alive', False)
+            and getattr(_ASR_MODEL, 'cpu_threads', None) == int(cpu_threads)):
         return _ASR_MODEL, True
-    try:
-        from faster_whisper import WhisperModel
-    except ImportError as exc:
-        raise RuntimeError(
-            "faster-whisper is optional and not installed in this ComfyUI Python environment"
-        ) from exc
-    _ASR_MODEL = WhisperModel(
-        canonical,
-        device="cpu",
-        compute_type="int8",
-        cpu_threads=int(cpu_threads),
-    )
+    _release_asr_model()
+    from .asr_process import ASRProcess
+    _ASR_MODEL = ASRProcess(canonical, int(cpu_threads), _check_asr_cancel)
     _ASR_MODEL_PATH = canonical
     return _ASR_MODEL, False
 
@@ -297,10 +294,62 @@ def _load_asr_model(model_path: Path, cpu_threads: int):
 def _release_asr_model() -> bool:
     global _ASR_MODEL, _ASR_MODEL_PATH
     released = _ASR_MODEL is not None
+    if callable(getattr(_ASR_MODEL, 'close', None)):
+        _ASR_MODEL.close()
     _ASR_MODEL = None
     _ASR_MODEL_PATH = None
     gc.collect()
     return released
+
+
+def _check_asr_cancel():
+    check = _ASR_CANCEL_CHECK.get()
+    if check is not None:
+        check()
+    else:
+        from comfy.model_management import throw_exception_if_processing_interrupted
+        throw_exception_if_processing_interrupted()
+
+
+@contextmanager
+def _asr_guard():
+    while True:
+        _check_asr_cancel()
+        if _ASR_LOCK.acquire(timeout=.05):
+            break
+    try:
+        _check_asr_cancel()
+        yield
+    finally:
+        _ASR_LOCK.release()
+
+
+def transcribe_audio(audio, model_directory, language='auto', beam_size=5, cpu_threads=8,
+                     unload_after=True, cancel_check=None):
+    """Actual transcription, with caller cancellation and no audio mutation."""
+    validate_audio(audio, 'ASR audio')
+    if language not in ASR_LANGUAGE_CODES or type(beam_size) is not int or beam_size < 1:
+        raise ValueError('Invalid ASR language or beam size')
+    if type(cpu_threads) is not int or cpu_threads < 1:
+        raise ValueError('ASR cpu_threads must be a positive integer')
+    path = resolve_asr_model_directory(model_directory)
+    token = _ASR_CANCEL_CHECK.set(cancel_check)
+    try:
+        with _asr_guard():
+            model, reused = _load_asr_model(path, cpu_threads)
+            try:
+                result = _transcribe(model, audio, language, beam_size)
+                _check_asr_cancel()
+                return {**result, 'engine': 'faster-whisper', 'device': 'cpu', 'compute_type': 'int8',
+                        'vad_filter': True, 'model_reused': reused}
+            finally:
+                if unload_after:
+                    _release_asr_model()
+    finally:
+        _ASR_CANCEL_CHECK.reset(token)
+
+
+atexit.register(_release_asr_model)
 
 
 def _load_speaker_model(model_path: Path):
@@ -385,17 +434,27 @@ def _transcribe(
         # alignment pad. Exact-target trimming below still fails closed.
         vad_filter=True,
     )
-    realized = list(segments)
+    realized = []
+    for segment in segments:
+        _check_asr_cancel()
+        realized.append(segment)
     words = []
+    untimed_words = []
     for segment in realized:
+        if not segment.words and segment.text.strip():
+            untimed_words.append({'word': segment.text.strip(), 'start': None, 'end': None,
+                                  'kind': 'segment_without_word_timestamps'})
         for word in segment.words or []:
             if word.start is None or word.end is None:
+                untimed_words.append({'word': str(word.word).strip(),
+                                      'start': word.start, 'end': word.end})
                 continue
             words.append(
                 {
                     "start": float(word.start),
                     "end": float(word.end),
                     "word": str(word.word).strip(),
+                    "probability": getattr(word, 'probability', None),
                 }
             )
     return {
@@ -404,6 +463,7 @@ def _transcribe(
         "language_probability": float(info.language_probability),
         "duration_seconds": float(info.duration),
         "words": words,
+        "untimed_words": untimed_words,
     }
 
 
@@ -431,7 +491,7 @@ def analyze_dialogue_boundary(
         raise ValueError("tail_activity_threshold_dbfs must be between -120 and 0")
 
     model_path = resolve_asr_model_directory(asr_model_directory)
-    with _ASR_LOCK:
+    with _asr_guard():
         model, reused = _load_asr_model(model_path, int(cpu_threads))
         released = False
         try:
@@ -673,7 +733,7 @@ def verify_speech_audio(
     text_report = {"status": "not_run"}
     if verify_mode != "off":
         model_path = resolve_asr_model_directory(asr_model_directory)
-        with _ASR_LOCK:
+        with _asr_guard():
             model, reused = _load_asr_model(model_path, int(cpu_threads))
             released = False
             try:

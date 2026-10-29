@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from .frame_grid import FPS, MIN_TRAINED_FRAMES as MIN_TRAINED_FRAMES, align_frame_count
+
 import torch
 import torchaudio
 
@@ -17,9 +19,7 @@ REFERENCE_PIXEL_AREA = 1920 * 1088
 # Compatibility alias for third-party code. This is a warning threshold, not a hard cap.
 MAX_PIXELS = REFERENCE_PIXEL_AREA
 REF_IMAGE_SHORT_EDGE = 2048
-FPS = 24
 AUDIO_LATENT_FPS = 40
-MIN_TRAINED_FRAMES = 124
 MAX_TRAINED_FRAMES = 362
 
 
@@ -35,12 +35,6 @@ def reference_video_frame_warnings(frame_count: int, index: int, policy: str) ->
             "at 24fps, not an upper limit. Execution remains allowed; memory and quality are not guaranteed."
         ]
     return []
-
-
-def align_frame_count(frame_count: int) -> int:
-    """Snap up to MiniMax H3's 17n+5 frame grid."""
-    frame_count = max(5, int(frame_count))
-    return frame_count + ((5 - frame_count) % 17)
 
 
 def align_frame_count_down(frame_count: int) -> int:

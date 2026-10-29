@@ -4093,7 +4093,11 @@
     "MiniMaxH3PeriodicAVAuditEXPT8",
     "MiniMaxH3SolarStructureEncodeEXPT8",
     "MiniMaxH3SolarSilenceSetupEXPT8",
-    "MiniMaxH3SolarAuditEXPT8"
+    "MiniMaxH3SolarAuditEXPT8",
+    "MiniMaxH3AuthoredMaskSequenceEXPT8",
+    "MiniMaxH3OpenRegenerateSetupEXPT8",
+    "MiniMaxH3OpenRegenerateRecipeEXPT8",
+    "MiniMaxH3OpenRegenerateAuditEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",
@@ -7017,5 +7021,246 @@
       "workflows": "examples/workflows/90-h21-reviewed/README.md"
     },
     "human_acceptance_scope": "Exact selected source movies only; no arbitrary assets/models, cold variants, fair performance or absent hardware qualification."
+  },
+  "h27_working_tree_development": {
+    "status": "selected_scope_completed_TARA_not_integrated_after_negative_review",
+    "published": true,
+    "production_deployed": false,
+    "preserved_registered_prefix": 774,
+    "appended_nodes": 1,
+    "registered_nodes": 775,
+    "authored_mask_node": "MiniMaxH3AuthoredMaskSequenceEXPT8",
+    "authored_mask_source_binding": "full_source_RGB24_and_frame_map",
+    "authored_mask_audio": "unchanged",
+    "tara_status": "full_method_human_rejected_face_damage_no_visible_benefit_independent_research_only",
+    "documentation": "docs/H27_DIRECTOR_WORK.md",
+    "tara_node": "MiniMaxH3TaraMotionTimeEXPT8",
+    "tara_default_enabled": false,
+    "tara_attention_backend": "explicitly_selected_PyTorch_query_chunks",
+    "tara_gpu_scope": "Prototype:Ref2VA INT8 EMA B4step480x83296-frame OFF/ON each4forward+200attention; public node: same full assets, first56 reference frames,2s48-frame complete AV,4forward+200alignment/bias calls. Human quality and arbitrary combinations not certified.",
+    "whole_selected_implementation_complete": true,
+    "human_quality_accepted": false,
+    "authored_mask_selected_actual_RGB24_Core_composite_verified": true,
+    "tara_selected_public_node_GPU_observed": true,
+    "ASR_selected_actual_CPU_scope": "Existing multilingual small: actual H3 Chinese AV->SRT/VTT,CER1/16; cross-cut full-source clock, independent two-voice English audio,silence,disclosed artificial overlap; actual owned-child cancel/exit with following successful job. Prior141.86s English repetition retained. No natural conversation/speaker/lip quality certification.",
+    "human_feedback_sha256": "9629804f98cc0a9a085bfbbe358d31f59a36b116bb460296450aebff4e9d7899",
+    "human_accepted_groups": [
+      "endpoints",
+      "record"
+    ],
+    "human_accepted_generated_media_sha256": [
+      "55fbdf298bec6d6c1cb2d24291bc814f3e3386e963e7082a06c62c25cefd578e",
+      "e34fe11f010431629382d726a68fadf8f60baa122abccfbf4adf3ccc2b6e094e",
+      "96d939337f4351417b5f050fb7dfe702e34b170b3ea6eec6e70c64408db47d81",
+      "56013b5235b4464e10e9525a6fa8e7392dfc5f9d1b08f92dfcd147bf595fe01b"
+    ],
+    "tara_selected_human_accepted": false,
+    "tara_human_feedback": "完整TARA · 坐标＋时间约束 人脸还是只有半个",
+    "tara_relative_bias_clock": "motion-relative and independent of RoPE switch",
+    "tara_repair_CPU_passed": 7,
+    "tara_repair_selected_GPU_observed": true,
+    "tara_repair_GPU_scope": "Full4s/4NFE/200alignment+200bias and separate bias-only4s/4NFE/0alignment+200bias completed with official Ref2V Turbo4; human review: full picture issue/sound pass, bias-only and OFF picture+sound pass, motion same. Full TARA not admitted; no arbitrary-model or training-quality qualification.",
+    "tara_repair_default_enabled": false,
+    "ASR_selected_languages_observed": [
+      "zh",
+      "en"
+    ],
+    "ASR_actual_child_faults_verified": true,
+    "both_audible_reference_video_modes_CPU_passed": 6,
+    "tara_product_admission": "not_integrated_original_negative_benefit_condition",
+    "prompt_cache_measurement": "Existing complete32B NVFP4/AWQ native warm3.907s vs existing warm visual-prefix1.516s;239.54MiB CPU cache,changed reference misses,maxabs<=9.16e-5;0diffusionNFE. No new persistent cache or default change.",
+    "tara_standard_node_registered": false,
+    "latest_human_feedback_sha256": "77c923716c296d329d21cdc3c766045dc7ae688951fad3a43e9eb3da1fc29491",
+    "tara_full_review_picture": "issue",
+    "tara_full_review_sound": "pass",
+    "tara_full_review_motion": "same",
+    "tara_bias_only_selected_picture_sound_accepted": true,
+    "tara_bias_only_motion_benefit_confirmed": false,
+    "additional_human_accepted_media_sha256": [
+      "89a9eeb53e908e8f8ad7974cfc779573ed291d6c615fcf812b62b3a431093d7a",
+      "2387a4f36c7fe44c1c6fe7fdd03fd8fe62810289e0bec82eda28b5c237132e8d"
+    ],
+    "scope_completion_basis": "Original26 direction dispositions, including no integration when independent prototype has no visible benefit; not all experiments passed.",
+    "original_scope_dispositions_complete": true,
+    "all_prototypes_quality_passed": false,
+    "source_update": "2026-10-29"
+  },
+  "open_regenerate_2k_support": {
+    "status": "complete_author_recipe_selected_samples_human_accepted",
+    "published": true,
+    "production_deployed": false,
+    "preserved_registered_prefix": 775,
+    "registered_nodes": 778,
+    "appended_nodes": 3,
+    "node": "MiniMaxH3OpenRegenerateSetupEXPT8",
+    "loader": "existing unmodified Core Load LoRA Model Only; H3 compatibility loader CPU verified",
+    "adapter_scope": "Kijai rank384 refiner-only,416 BF16 tensors/208 fused native linear pairs; Turbo and Sharp not included",
+    "download_managed_by_user": true,
+    "trained_GPU_quality_verified": false,
+    "official_merged_recipe_equivalence_verified": false,
+    "documentation": "docs/OPEN_REGENERATE_2K.md",
+    "actual_adapter_file_SHA_verified": true,
+    "actual_adapter_parsed_CPU": true,
+    "actual_meta_model_registered_targets": 208,
+    "actual_meta_model_unmapped_targets": 0,
+    "CPU_regression_passed": 11,
+    "native_example_nodes": 23,
+    "native_example_links": 30,
+    "selected_actual_sampling_scope": "Published00e875d existing nodes and native Core loader,FL2VA pruned INT8,pure refiner1.0,learned3D upscale,source4s/96frames,3Euler raw sigmas,1/1 shifts;576x1024 and1440x2560 completed.Original audio exact before lossy mux.",
+    "example": "examples/workflows/92-open-regenerate/RefinerOnly_ExistingNodes_2K.json",
+    "full_browser_roundtrip_verified": true,
+    "full_2K_GPU_media_verified": true,
+    "new_setup_node_required_for_adapter": false,
+    "trained_GPU_compatibility_verified": true,
+    "new_setup_node_trained_GPU_verified": true,
+    "browser_roundtrip_scope": "ExistingNodes example only, published00e875d,load/save/reopen/export,23execution nodes/30links",
+    "optional_setup_example_browser_roundtrip_verified": false,
+    "native_core_loader_actual_targets": 208,
+    "selected_GPU_measurements": {
+      "small_seconds": 193.4539999999979,
+      "2K_seconds": 1795.3280000000086,
+      "2K_torch_peak_allocated_bytes": 10922772480,
+      "scope": "Selected4s case,8attention groups/8FFN chunks,reserve5GB,no compiler/CUDA graphs;not general capacity or speed qualification"
+    },
+    "optional_setup_example": "examples/workflows/92-open-regenerate/RefinerOnly_2K_EXP.json",
+    "human_quality_accepted": false,
+    "observed_quality_boundary": "Faces/details are redrawn; no guarantee of preserved identity or improved clarity.",
+    "full_recipe_loader_node": "MiniMaxH3OpenRegenerateRecipeEXPT8",
+    "runtime_report_node": "MiniMaxH3OpenRegenerateAuditEXPT8",
+    "full_author_recipe_trained_GPU_verified": true,
+    "preserved_published_prefix": 774,
+    "new_setup_node_trained_GPU_scope": "Used by selected complete-author3 route; optional18-node pure-refiner graph not separately trained-GPU/browser verified",
+    "full_author_recipe_trained_GPU_scope": "Selected existing-video3,HyperFlow8+3 andcustom8_start0.7,121frames2560x1440;not arbitrary models or author-engine qualification",
+    "legacy_flat_field_scope": "Fields describing Kijai rank384 and ExistingNodes refer to pure-refiner verification only;complete author scopes are separate below",
+    "complete_author_recipe": {
+      "loader_node": "MiniMaxH3OpenRegenerateRecipeEXPT8",
+      "setup_node": "MiniMaxH3OpenRegenerateSetupEXPT8",
+      "audit_node": "MiniMaxH3OpenRegenerateAuditEXPT8",
+      "registered_linear_targets": 208,
+      "sharp_curve_branches": 50,
+      "weights_revision": "5809c33730c18b6b1c827b40974855a4288641b3",
+      "merged_sha256": "8e36a0912ab72f7f3b00f41e3c7c97c7dfdec21e66c88ab22f08b9b0c681bb04",
+      "curve_file_sha256": "26ff1c4ea50fc5b0cea252912b67ec308a65d534cef026ef56f415ae92102e4e",
+      "curve_table_tensor_sha256": "c02a6c11888297688c1e6278185ea1f947023acfc69f9003bbcdcec9a229a8e7",
+      "sampler": "Euler",
+      "CFG": 1,
+      "default_sigmas": [
+        0.909375,
+        0.8571428571428571,
+        0.6666666666666666,
+        0
+      ],
+      "clock_shifts": [
+        1,
+        1
+      ],
+      "source_curve_checkpoint_loaded_to_GPU": false,
+      "shared_base_loader_count": 1,
+      "separate_HyperFlow_and_refine_MODEL_branches": true,
+      "scoped_temporary_curve_hooks": true,
+      "selected_logical_memory_methods": true,
+      "CPU_regression_groups": [
+        83,
+        144
+      ],
+      "CPU_regression_unique_cases": 227,
+      "browser_workflow_roundtrip_verified": [
+        "existing_video3",
+        "hyperflow8_refine3",
+        "custom8_start0.7"
+      ],
+      "complete_actual_GPU_cases": {
+        "author3": {
+          "status": "executed",
+          "actual_forwards": 3,
+          "refine_forwards": 3,
+          "all50Sharp_calls_per_branch": 3,
+          "native_clock_verified": true,
+          "seconds": 3700.2029999999795,
+          "torch_peak_allocated_bytes": 12577806336,
+          "media": [
+            {
+              "sha256": "e580da5b542a49fb313b5c3fd1ea466791c69bbcffc50e7d6d3332d899843bf7",
+              "width": 2560,
+              "height": 1440,
+              "frames": 121
+            }
+          ],
+          "audio_scope": "Author input has no audio; explicit silence, no original sound claimed",
+          "implementation_boundary": "Initial v1 bare MODEL selected case; current scoped-hook and memory fixes qualified by the two subsequent v5 cases.",
+          "selected_sample_human_accepted": true
+        },
+        "hyperflow8_refine3": {
+          "status": "executed",
+          "actual_forwards": 11,
+          "refine_forwards": 3,
+          "all50Sharp_calls_per_branch": 3,
+          "native_clock_verified": true,
+          "seconds": 3500.5929999999935,
+          "torch_peak_allocated_bytes": 12657798656,
+          "media": [
+            {
+              "sha256": "223d4fc2546dab27e83badb5d60a20f0c4b79436cb1d2e7b0d0f38541145608c",
+              "width": 2560,
+              "height": 1440,
+              "frames": 121
+            },
+            {
+              "sha256": "b450b08aaee3dfd999b943bb95a02b389275fa899fbb11ab4b79c7925441a2d6",
+              "width": 1344,
+              "height": 768,
+              "frames": 121
+            }
+          ],
+          "audio_scope": "Generated first-stage audio exact before lossy mux in draft and refined outputs",
+          "implementation_boundary": "Current frozen-v3 scoped hooks and logical memory methods; real forward counts verified.",
+          "selected_sample_human_accepted": true
+        },
+        "custom8": {
+          "status": "executed",
+          "actual_forwards": 8,
+          "refine_forwards": 8,
+          "all50Sharp_calls_per_branch": 8,
+          "native_clock_verified": true,
+          "seconds": 6290.061999999976,
+          "torch_peak_allocated_bytes": 12577806336,
+          "media": [
+            {
+              "sha256": "20d7246b2e73cbb5885c6aaba6761f254bb60c78d86c123212cb1c9c5616a92b",
+              "width": 2560,
+              "height": 1440,
+              "frames": 121
+            }
+          ],
+          "audio_scope": "Author input has no audio; explicit silence, no original sound claimed",
+          "implementation_boundary": "Current frozen-v3 scoped hooks and logical memory methods; real forward counts verified.",
+          "selected_sample_human_accepted": true
+        }
+      },
+      "user_Core_untouched": true,
+      "environment_packages_installed": false,
+      "human_quality_accepted": true,
+      "official_BF16_bitwise_equivalence_verified": false,
+      "author_SolEngine_speed_verified": false,
+      "production_deployed": false,
+      "GitHub_pushed": true,
+      "shared_base_branch_switch_actual_GPU_verified": true,
+      "custom8_boundary": "Both steps8 and start_sigma0.7 changed;not author default,not step-only or fair speed comparison.",
+      "review_mechanical_playback_verified": true,
+      "human_review": {
+        "date": "2026-10-29",
+        "method": "direct_user_message",
+        "statement": "没问题，推送github",
+        "review_binding": "6a55e5a6848edf7dcca2339033aa843e19a995f7cb95f2d122603b3b9a29c5e7",
+        "acceptance_receipt_sha256": "7626e3f73628ab8d8e39fa280a10ce3d4a4d014f0361b4d576c7f3f6c4a044d0",
+        "accepted_groups": [
+          "author3",
+          "custom8",
+          "hyperflow8_refine3"
+        ],
+        "scope": "Selected full-recipe samples only;legacy pure-refiner failure remains."
+      }
+    },
+    "source_update": "2026-10-29"
   }
 }

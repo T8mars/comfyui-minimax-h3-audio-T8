@@ -54,11 +54,13 @@ _GENERATE_LOCK = asyncio.Lock()
 _CORE_EPOCH = str(uuid.uuid4())
 _FILM_EXPORT_LOCK = asyncio.Lock()
 _FILM_EXPORT_TASKS = {}
+_FILM_ASR_TASKS = {}
+_FILM_ASR_LOCK = asyncio.Lock()
 _DIRECTOR_UI_MODULES = frozenset((
     "assets_ui.mjs", "bundle_ui.mjs", "candidate_diagnostics.mjs", "caption_ui.mjs", "compare_ui.mjs",
     "content_hash.mjs", "continuity_recipes.mjs", "creation_library.mjs", "creation_ui.mjs",
     "control_state.mjs", "control_ui.mjs", "control_ui.css",
-    "film_ui.mjs", "frame_ui.mjs", "layout_ui.mjs", "modal_ui.mjs", "preflight_ui.mjs",
+    "film_ui.mjs", "mask_author_ui.mjs", "frame_ui.mjs", "layout_ui.mjs", "modal_ui.mjs", "preflight_ui.mjs",
     "keyframes_state.mjs", "keyframes_ui.mjs", "keyframes_ui.css",
     "radar_state.mjs", "radar_ui.mjs", "references_ui.mjs", "sampling_ui.mjs", "session.mjs",
     "storyboard_ui.mjs", "tasks_ui.mjs", "trim_ui.mjs", "workbench.mjs", "workbench.css",
@@ -950,6 +952,119 @@ def register_director_routes():
         result = await asyncio.to_thread(extract_frame, get_store(), request.match_info['project_id'],
                                          request.match_info['film_id'], body['index'], body['frame'])
         return web.json_response(result)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/mask-frames/{index}/{frame}")
+    @guarded
+    async def mask_author_frame_route(request):
+        from .director_mask_author import preview_frame
+        info = request.match_info
+        result = await asyncio.to_thread(preview_frame, get_store(), info['project_id'], info['film_id'],
+                                         int(info['index']), int(info['frame']))
+        return web.json_response(result)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/masks/{index}/{author_id}")
+    @guarded
+    async def mask_author_load_route(request):
+        from .director_mask_author import load_author
+        info = request.match_info
+        result = await asyncio.to_thread(load_author, get_store(), info['project_id'], info['film_id'],
+                                         int(info['index']), info['author_id'])
+        return web.json_response(result)
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/masks/{index}/{author_id}")
+    @guarded
+    async def mask_author_save_route(request):
+        from .director_mask_author import save_author
+        info = request.match_info
+        body = await request.json()
+        result = await asyncio.to_thread(save_author, get_store(), info['project_id'], info['film_id'],
+                                         int(info['index']), info['author_id'], body)
+        return web.json_response(result)
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/masks/{index}/{author_id}/export")
+    @guarded
+    async def mask_author_export_route(request):
+        from .director_mask_author import export_author
+        from .director_project import file_sha
+        info = request.match_info
+        path = await asyncio.to_thread(export_author, get_store(), info['project_id'], info['film_id'],
+                                       int(info['index']), info['author_id'])
+        receipt = json.loads(path.with_suffix('.json').read_text(encoding='utf-8'))
+        return web.json_response({'ready': True, 'sha256': await asyncio.to_thread(file_sha, path),
+                                  'author_sha256': receipt['author_sha256']})
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/masks/{index}/{author_id}/file")
+    @guarded
+    async def mask_author_download_route(request):
+        from .director_mask_author import export_file
+        info = request.match_info
+        path = await asyncio.to_thread(export_file, get_store(), info['project_id'], info['film_id'],
+                                       int(info['index']), info['author_id'], request.query.get('sha'))
+        return web.FileResponse(path, headers={'Content-Disposition': 'attachment; filename="frame-masks.zip"'})
+
+    @routes.get(PREFIX + "/caption-asr/models")
+    @guarded
+    async def caption_asr_models(request):
+        from .director_caption_asr import model_catalog
+        return web.json_response(await asyncio.to_thread(model_catalog))
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/captions/asr/{job_id}")
+    @guarded
+    async def caption_asr_start(request):
+        from .director_caption_asr import reserve_asr, run_asr, interrupt_asr
+        body = await request.json()
+        args = tuple(identity(request.match_info[key]) for key in ('project_id', 'film_id', 'job_id'))
+        store = get_store()
+        async with _FILM_ASR_LOCK:
+            job, created = await asyncio.to_thread(reserve_asr, store, *args, body)
+            if created:
+                async def work():
+                    failure = None
+                    try:
+                        await asyncio.to_thread(run_asr, store, *args)
+                        return None
+                    except asyncio.CancelledError:
+                        from .director_caption_asr import cancel_asr
+                        # to_thread cancellation alone cannot stop native code.
+                        # Persist cancellation so its owned process is reaped.
+                        cancel_asr(store, *args)
+                        raise
+                    except Exception as error:
+                        failure = {'state': 'error', 'error': str(error), 'status_persisted': False}
+                        return failure
+                    finally:
+                        if failure is None:
+                            _FILM_ASR_TASKS.pop(args[2], None)
+                _FILM_ASR_TASKS[args[2]] = asyncio.create_task(work())
+            elif job['state'] in {'queued', 'running'} and args[2] not in _FILM_ASR_TASKS:
+                job = await asyncio.to_thread(interrupt_asr, store, *args)
+        return web.json_response(job, status=202 if created else 200)
+
+    @routes.get(PREFIX + "/films/{project_id}/{film_id}/captions/asr/{job_id}")
+    @guarded
+    async def caption_asr_progress(request):
+        from .director_caption_asr import asr_status, recognized_track, interrupt_asr
+        args = tuple(request.match_info[key] for key in ('project_id', 'film_id', 'job_id'))
+        store = get_store()
+        job = await asyncio.to_thread(asr_status, store, *args)
+        task = _FILM_ASR_TASKS.get(args[2])
+        if job['state'] in {'queued', 'running'}:
+            if task is None or task.cancelled():
+                job = await asyncio.to_thread(interrupt_asr, store, *args)
+            elif task.done():
+                failure = task.result()
+                if isinstance(failure, dict):
+                    job = {**job, **failure}
+        if job['state'] == 'success':
+            job = {**job, **await asyncio.to_thread(recognized_track, store, *args)}
+        return web.json_response(job)
+
+    @routes.post(PREFIX + "/films/{project_id}/{film_id}/captions/asr/{job_id}/cancel")
+    @guarded
+    async def caption_asr_cancel(request):
+        from .director_caption_asr import cancel_asr
+        args = tuple(request.match_info[key] for key in ('project_id', 'film_id', 'job_id'))
+        return web.json_response(await asyncio.to_thread(cancel_asr, get_store(), *args))
 
     @routes.post(PREFIX + "/films/{project_id}/{film_id}/captions/speech-track")
     @guarded

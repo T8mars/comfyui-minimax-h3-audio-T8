@@ -20,7 +20,10 @@ class H24ReviewedSource(unittest.TestCase):
         self.review = json.loads((ROOT / self.path).read_text(encoding='utf8'))
 
     def copy_root(self, root):
-        for name in [*self.review['files'], self.path, 'tests/fixtures/h21_reviewed_sampling_1_102.json']:
+        h27_path = 'tests/fixtures/h27_reviewed_sampling_source.json'
+        h27 = json.loads((ROOT / h27_path).read_text(encoding='utf8'))
+        for name in [*self.review['files'], self.path, 'tests/fixtures/h21_reviewed_sampling_1_102.json',
+                     *h27['files'], h27_path]:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)

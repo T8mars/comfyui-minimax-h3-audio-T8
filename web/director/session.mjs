@@ -788,6 +788,30 @@ export function makeDirectorServices(ctx) {
             {shot_id:shotId,report,confirm_media_match:confirmed});
         return origin===contextToken()?result:null;
     }
+    function maskPath(film,index,authorId){
+        if(film.project_id!==projectId)throw Error('遮罩属于之前的项目，请回到对应采用版本');
+        return `films/${encodeURIComponent(projectId)}/${encodeURIComponent(film.id)}/masks/${index}/${encodeURIComponent(authorId)}`;
+    }
+    const maskAuthor={
+        async load(film,index,authorId){const token=contextToken(),result=await request(maskPath(film,index,authorId));return token===contextToken()?result:null;},
+        async save(film,index,authorId,draft){const token=contextToken(),result=await request(maskPath(film,index,authorId),draft);return token===contextToken()?result:null;},
+        async frame(film,index,frame){if(film.project_id!==projectId)throw Error('项目已切换');const token=contextToken(),result=await request(`films/${encodeURIComponent(projectId)}/${encodeURIComponent(film.id)}/mask-frames/${index}/${frame}`);return token===contextToken()?result:null;},
+        async export(film,index,authorId){const path=maskPath(film,index,authorId),token=contextToken(),result=await request(path+'/export',{});const url=new URL(path+'/file',base);url.searchParams.set('sha',result.author_sha256);return token===contextToken()?url.href:null;}
+    };
+    function captionASRPath(target){return `films/${encodeURIComponent(target.project_id)}/${encodeURIComponent(target.film_id)}/captions/asr/${encodeURIComponent(target.job_id)}`;}
+    const captionASR={
+        models:()=>request('caption-asr/models'),
+        async start(film,shotId,options){
+            if(film.project_id!==projectId)throw Error('冻结整片不属于当前项目');
+            const origin=contextToken(),target={project_id:projectId,film_id:film.id,job_id:id()};
+            storageWrite('localStorage','t8director.captionASR:'+projectId,JSON.stringify(target));
+            const result=await request(captionASRPath(target),{film_sha256:film.sha256,shot_id:shotId,...options});
+            return origin===contextToken()?{...result,target}:null;
+        },
+        async status(target){const origin=contextToken(),result=await request(captionASRPath(target));return origin===contextToken()?{...result,target}:null;},
+        cancel:target=>request(captionASRPath(target)+'/cancel',{}),
+        async last(){let target;try{target=JSON.parse(storageRead('localStorage','t8director.captionASR:'+projectId)||'null');}catch{return null;}return target?this.status(target):null;}
+    };
     async function configurationEvidence(record) {
         const project=envelope(),baseJSON=JSON.stringify(project),context=contextToken(),current=ctx.current();
         const sequence=++configurationRequest,key=directorResultKey(record);
@@ -1397,5 +1421,5 @@ export function makeDirectorServices(ctx) {
         if(!Number.isInteger(canvas?.width)||!Number.isInteger(canvas?.height)||canvas.width<=0||canvas.height<=0)throw Error('服务端未返回有效画布，暂用比例示意；请重新预检。');
         latest=report;latestSnapshot=snapshot;ctx.refreshSummary?.();return canvas;
     }
-    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, configurationEvidence, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, prepareFilmCaptions, filmCaptionStatus, importFilmSpeechTrack, contextToken, checkedCanvas, refreshControlCanvas, cancelUpload: () => activeUpload?.abort() };
+    return { draft, upload, restore, envelope, editorRecovery, compile, loadModels, showVersion, configurationEvidence, showExternalTake, taskSnapshot, prepareFilm, prepareComparison, prepareFrame, extractFrame, prepareBundle, buildBundle, uploadBundle, applyBundle, lastBundleImport, startFilmExport, filmExportStatus, prepareFilmCaptions, filmCaptionStatus, importFilmSpeechTrack, captionASR, maskAuthor, contextToken, checkedCanvas, refreshControlCanvas, cancelUpload: () => activeUpload?.abort() };
 }

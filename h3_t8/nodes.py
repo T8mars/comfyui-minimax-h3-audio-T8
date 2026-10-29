@@ -516,13 +516,15 @@ class MiniMaxH3OutputTrimT8(io.ComfyNode):
                 io.Float.Input("duration_seconds", default=5.0, min=0.04, max=None, step=0.001),
                 io.Float.Input("fps", default=24.0, min=1.0, max=240.0, step=0.001, advanced=True),
                 io.Audio.Input("audio", optional=True),
+                io.Int.Input("frame_count", default=0, min=0, max=None, optional=True, advanced=True,
+                             tooltip="Exact video frame count; 0 keeps duration rounding. Audio still uses the requested seconds."),
             ],
             outputs=[io.Image.Output("frames"), io.Audio.Output("audio"), io.String.Output("report_json")],
         )
 
     @classmethod
-    def execute(cls, frames, start_seconds, duration_seconds, fps, audio=None):
-        return io.NodeOutput(*trim_av_output(frames, start_seconds, duration_seconds, audio, fps))
+    def execute(cls, frames, start_seconds, duration_seconds, fps, audio=None, frame_count=0):
+        return io.NodeOutput(*trim_av_output(frames, start_seconds, duration_seconds, audio, fps, frame_count))
 
 
 class MiniMaxH3PreflightT8(io.ComfyNode):

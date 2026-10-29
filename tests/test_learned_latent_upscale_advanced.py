@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from pathlib import Path
 
@@ -584,7 +585,11 @@ def test_new_nodes_append_without_changing_existing_order():
     assert len(ids) == len(set(ids))
     assert ids[:len(legacy_ids)] == legacy_ids
     assert ids[len(legacy_ids):len(legacy_ids) + len(modular_ids)] == modular_ids
-    assert ids[-1] == "MiniMaxH3HyperVAE2xLoaderEXPT8"
+    # HyperVAE was a historical tail, not the current tail. Bind the complete
+    # published00e875d registry prefix rather than forbidding future appends.
+    assert ids[553] == "MiniMaxH3HyperVAE2xLoaderEXPT8"
+    published = json.dumps(ids[:774], ensure_ascii=False, separators=(',', ':')).encode()
+    assert hashlib.sha256(published).hexdigest() == 'cde4078f4d8d9e20056d3620e93c33075d9068294960445789935dee5cef73e1'
     assert ids[336:339] == [
         'MiniMaxH3FastH3V2SetupEXPT8',
         'MiniMaxH3FastH3V2RuntimeAuditEXPT8',

@@ -14,13 +14,19 @@ class MiniMaxH3DirectorKeyframeConditioningEXPT8(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         original = MiniMaxH3MultiKeyframeConditioningT8Advanced.define_schema()
-        return io.Schema(node_id=cls.__name__, display_name="H3 中间关键帧条件 · 可选 Relay (EXP/T8)",
+        return io.Schema(node_id=cls.__name__, display_name="H3 首中尾关键帧条件 · 可选 Relay (EXP/T8)",
             category=original.category, is_experimental=True,
             description="普通提示词无需Relay。连接Plan时复用同一次中间图新编码，绑定实际物理位置；MODEL和positive必须成对使用。旧节点和接口保持。",
-            inputs=[*original.inputs, PromptRelayPlanIO.Input("prompt_relay_plan", optional=True),
+            inputs=[*(io.Combo.Input("task_type", options=["auto", "T2VA", "I2VA", "L2VA", "FL2VA", "Ref2VA", "Hybrid"], default="auto")
+                      if item.id == "task_type" else item for item in original.inputs),
+                PromptRelayPlanIO.Input("prompt_relay_plan", optional=True),
                 BridgeIO.Input("semantic_bridge", optional=True),
                 io.Combo.Input("execution_mode", options=["report_only", "apply_exp"], default="report_only", advanced=True),
-                io.Int.Input("query_chunk_rows", default=256, min=32, max=2048, step=32, advanced=True)],
+                io.Int.Input("query_chunk_rows", default=256, min=32, max=2048, step=32, advanced=True),
+                io.Int.Input("first_frame_index", default=-1, min=-1, max=None, optional=True, advanced=True,
+                    tooltip="Actual generated-frame index; -1 keeps the native first endpoint."),
+                io.Int.Input("last_frame_index", default=-1, min=-1, max=None, optional=True, advanced=True,
+                    tooltip="Actual generated-frame index; -1 keeps the native last endpoint."),],
             outputs=[io.Model.Output("model"), io.Conditioning.Output("positive"), io.Latent.Output("av_latent"),
                 io.Audio.Output("mux_audio"), io.String.Output("conditioned_prompt"),
                 io.String.Output("media_map_json"), io.String.Output("report_json")])
@@ -35,7 +41,8 @@ class MiniMaxH3DirectorKeyframeConditioningEXPT8(io.ComfyNode):
         kwargs.pop("prompt")  # The connected Relay plan is authoritative.
         kwargs.pop("length")
         options = {key: kwargs.pop(key) for key in (
-            "first_frame_noise_aug", "last_frame_noise_aug", "reference_visual_noise_aug") if key in kwargs}
+            "first_frame_noise_aug", "last_frame_noise_aug", "reference_visual_noise_aug",
+            "first_frame_index", "last_frame_index") if key in kwargs}
         return io.NodeOutput(*build_prompt_relay_conditioning(**kwargs, prompt_relay_plan=prompt_relay_plan,
             execution_mode=execution_mode, query_chunk_rows=query_chunk_rows, keyframe_options=options))
 
