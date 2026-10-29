@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.102.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.103.0** · [更新日志](CHANGELOG.md)
 
 [最新源码更新](docs/H24_SOURCE_UPDATE.md)：导演台修复、Compact、音画循环与Solar；[三套已审工作流](examples/workflows/91-h24-reviewed/README.md)。
 

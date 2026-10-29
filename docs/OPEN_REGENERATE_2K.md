@@ -98,4 +98,4 @@ Kijai 的 `minimax_h3_open_regenerate_2k_refiner_rank_384_bf16.safetensors` 是 
 
 ## 已审源码更新（2026-10-29）
 
-用户确认当前三组对照“没问题，推送github”。[工作流索引](../examples/workflows/93-director-reviewed/index.json)记录所选视频与原生保存图的SHA。8步低起点图作为实验一并保存，默认仍为作者3步。旧Kijai纯Refiner手部失败不因本次接受而撤销；可选18节点纯Refiner图的独立验证边界也不扩大。本次保持版本1.102.0，更新GitHub源码，不重复发布Registry版本或自动重启用户Core。
+用户确认当前三组对照“没问题，推送github”。[工作流索引](../examples/workflows/93-director-reviewed/index.json)记录所选视频与原生保存图的SHA。8步低起点图作为实验一并保存，默认仍为作者3步。旧Kijai纯Refiner手部失败不因本次接受而撤销；可选18节点纯Refiner图的独立验证边界也不扩大。该次源码推送保持1.102.0；随后正式发行见[v1.103.0](RELEASE_1.103.0.md)，不自动重启用户Core。

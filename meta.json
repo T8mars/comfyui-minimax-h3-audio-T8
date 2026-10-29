@@ -1080,7 +1080,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.102.0",
+  "version": "1.103.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
