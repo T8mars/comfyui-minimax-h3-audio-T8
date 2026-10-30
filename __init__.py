@@ -307,8 +307,14 @@ class _PikaFlexExtension(_OpenRegenerateExtension):
         return [*(await super().get_node_list()), *NODES]
 
 
+class _PikaTwoPassExtension(_PikaFlexExtension):
+    async def get_node_list(self):
+        from .nodes_pika_two_pass import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _PikaFlexExtension()
+    return _PikaTwoPassExtension()
 
 
 WEB_DIRECTORY = "./web"

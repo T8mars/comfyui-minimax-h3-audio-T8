@@ -1,0 +1,191 @@
+{
+  "schema": "t8.pika_dual.reviewed_workflows.v1",
+  "review_date": "2026-10-30",
+  "acceptance_scope": "Eight selected native browser workflows and bound media only. Both picture and sound accepted. No general performance or arbitrary-model qualification.",
+  "preserved_registered_prefix": 779,
+  "registered_nodes": 780,
+  "reviews": [
+    {
+      "binding": "ecc55d1707b8f4e640e4fb8658302df116483f14c7bb950c599af216357a130c",
+      "human_feedback_sha256": "7cf21dd163aaef746c39158c73d41357a71cb8f4aad59f0aaff76b2984e42fb1",
+      "picture": "pass",
+      "sound": "pass",
+      "media": {
+        "fl_compare": [
+          "d7fb4a1929242c2ff8e484c592b9c003c2734ed8934c169be08dadc9e38287e7",
+          "362e6d4356792ad0b6ad96e086c3df3081dc1e748ba82776d0b38b945f5d1239",
+          "c05ec7eab2cb717f77e1ca3465e97c1b57e326e8d05b2e6a5899be612ad6ed3f"
+        ],
+        "t2va": [
+          "8d6d98bc71d38d7254708f30c4ad7c53a62360a4516bb156a88879015a6501e6"
+        ],
+        "ref2va": [
+          "3522cf0e301bd3dcddacede58039ffa3dc586ae39bf956ae3609007144a1188f",
+          "9ea8dd25f557f8985654b3d44347fd0aeb19080b39dbc394b14edf3a76e06c78"
+        ],
+        "refine": [
+          "d7fb4a1929242c2ff8e484c592b9c003c2734ed8934c169be08dadc9e38287e7",
+          "23e9eb466d594b786ed3cee25e8c2e77a57d331d4b6e725996427eebf539998d"
+        ]
+      }
+    },
+    {
+      "binding": "9c4a4f50cdf64979cfb29792222c826ed1007147ef9b819836124a549f5962ee",
+      "human_feedback_sha256": "c5f0707fe3ed63215c320d1055fc1ca4da10773fb27e517ee0933daa39c9fe06",
+      "picture": "pass",
+      "sound": "pass",
+      "media": {
+        "regular_6plus3": [
+          "5413c9dc2ec237aa36b53340e14222f6829b49a1ac798b03eb9880d39c9ecc8b",
+          "e38d33290fc8ce73f66fa9bd46b6f9f318af47d1fc0dcfb9237c440f26837c3b",
+          "1939f1327d2c735bbfe3da6eca5d770f815007f1b192f5f9de6b484ed0bf5547"
+        ]
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "case_id": "t2va_4plus2",
+      "path": "examples/workflows/95-pika-dual/Pika_文字_双采4加2.json",
+      "workflow_sha256": "0d0f531fd044bda10658c0967d8a6625aa60a67abc87fc5b00beff03b465548c",
+      "media_sha256": [
+        "8d6d98bc71d38d7254708f30c4ad7c53a62360a4516bb156a88879015a6501e6"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "fl2va_4plus2",
+      "path": "examples/workflows/95-pika-dual/Pika_首尾帧_双采4加2.json",
+      "workflow_sha256": "d76964a88675bd3e7d922b2e090bf240bec7c30bd9d5dc9fb74f3c0349e9e201",
+      "media_sha256": [
+        "362e6d4356792ad0b6ad96e086c3df3081dc1e748ba82776d0b38b945f5d1239"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "fl2va_3plus3",
+      "path": "examples/workflows/95-pika-dual/Pika_首尾帧_双采3加3.json",
+      "workflow_sha256": "04b5b8262e384623d29d66cb60c9e5e966968f2b17ed5d1b8a0ee29287b7299e",
+      "media_sha256": [
+        "c05ec7eab2cb717f77e1ca3465e97c1b57e326e8d05b2e6a5899be612ad6ed3f"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "ref2va_4plus2",
+      "path": "examples/workflows/95-pika-dual/Pika_参考图_双采4加2.json",
+      "workflow_sha256": "abd9f48ca16fac9f6dd63a7c6ef9da8fbaf71b6a3d07ce828323420bd6ad81cc",
+      "media_sha256": [
+        "3522cf0e301bd3dcddacede58039ffa3dc586ae39bf956ae3609007144a1188f"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "fl2va_native6",
+      "path": "examples/workflows/95-pika-dual/Pika_首尾帧_单采6步.json",
+      "workflow_sha256": "ac31b2f84f5a127d8ade1aa1bb332712f764d4598ba9edd86d09746b152d2b4a",
+      "media_sha256": [
+        "d7fb4a1929242c2ff8e484c592b9c003c2734ed8934c169be08dadc9e38287e7"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "fl2va_6plus3_2k",
+      "path": "examples/workflows/95-pika-dual/Pika_完整6加3_2K细化.json",
+      "workflow_sha256": "4241095134730e4e021515a4ccaa5acf1191ef579535e28e2ea5d2cc557a6ff2",
+      "media_sha256": [
+        "d7fb4a1929242c2ff8e484c592b9c003c2734ed8934c169be08dadc9e38287e7",
+        "23e9eb466d594b786ed3cee25e8c2e77a57d331d4b6e725996427eebf539998d"
+      ],
+      "frames": 124,
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "NFE": 9,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "ref2va_video_4plus2",
+      "path": "examples/workflows/95-pika-dual/Pika_图片加视频参考_双采4加2.json",
+      "workflow_sha256": "b9c4e252f3852adbf479845ab1b3a1d74bd0b2477b1231a092c2b76cb2491826",
+      "media_sha256": [
+        "9ea8dd25f557f8985654b3d44347fd0aeb19080b39dbc394b14edf3a76e06c78"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 6,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true
+    },
+    {
+      "case_id": "fl2va_regular_6plus3",
+      "path": "examples/workflows/95-pika-dual/Pika_普通模型6加3_潜空间放大.json",
+      "workflow_sha256": "464404c985c6cf3c033dfec09499f8d855e78545af7dee1122d8ceb0bd76c18f",
+      "media_sha256": [
+        "e38d33290fc8ce73f66fa9bd46b6f9f318af47d1fc0dcfb9237c440f26837c3b",
+        "5413c9dc2ec237aa36b53340e14222f6829b49a1ac798b03eb9880d39c9ecc8b",
+        "1939f1327d2c735bbfe3da6eca5d770f815007f1b192f5f9de6b484ed0bf5547"
+      ],
+      "frames": 124,
+      "dimensions": [
+        1024,
+        576
+      ],
+      "NFE": 9,
+      "picture": "pass",
+      "sound": "pass",
+      "browser_roundtrip_parameters_and_links_preserved": true,
+      "official_Pika_hires_recipe": false
+    }
+  ],
+  "original_workflow_bytes_preserved": true,
+  "old_canvas_candidate_notes": "The immutable browser exports may retain candidate/unreviewed notes. This index and README record the later bound human acceptance.",
+  "assets_not_bundled": "Select your own endpoint images and 24fps reference video; models and review media are not in the repository."
+}

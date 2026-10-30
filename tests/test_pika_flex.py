@@ -185,4 +185,5 @@ def test_schema_and_original_published_registration_prefix_are_preserved():
     expected = json.loads((Path(__file__).parents[1] / 'features.json').read_text('utf-8'))['nodes']
     # Metadata may append this node as development proceeds; the released prefix
     # remains an exact ordered comparison, not a recaptured baseline.
-    assert actual[:778] == expected[:778] and actual[778:] == [MiniMaxH3PikaFlexSetupEXPT8.__name__]
+    assert actual[:778] == expected[:778]
+    assert actual[778:] == [MiniMaxH3PikaFlexSetupEXPT8.__name__, 'MiniMaxH3PikaTwoPassSamplerEXPT8']

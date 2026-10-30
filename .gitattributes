@@ -11,3 +11,6 @@ examples/workflows/93-director-reviewed/*.json -text whitespace=blank-at-eol,bla
 
 # Preserve pinned third-party source bytes; audit hashes cover this exact vendored tree.
 h3_t8/vendor/vretoucher_upstream/** -whitespace
+
+# Keep all eight accepted Pika two-stage browser exports byte-identical.
+examples/workflows/95-pika-dual/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

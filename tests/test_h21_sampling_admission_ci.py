@@ -41,9 +41,11 @@ class H21ReleaseAdmission(unittest.TestCase):
         h27 = json.loads((ROOT / h27_path).read_text(encoding='utf8'))
         pika_path = 'tests/fixtures/pika_flex_source.json'
         pika = json.loads((ROOT / pika_path).read_text(encoding='utf8'))
+        dual_path = 'tests/fixtures/pika_two_pass_source.json'
+        dual = json.loads((ROOT / dual_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in set([*pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
+            for relative in set([*dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
                                  'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

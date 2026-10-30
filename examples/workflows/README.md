@@ -98,3 +98,5 @@ Windows 命名预算：仓库相对路径≤140、JSON文件名≤96字符；新
 新增入口：[FreeVideo 新四档 Full／Cold](76-freevideo-quality/README.md)。Light8+3／Medium12指定样片人审通过，16／20仅CPU结构支持；[旧8+2／4+4](72-freevideo-split/README.md)保持。
 
 使用顺序建议：先从稳定基础/音频工作流确认模型链可运行，再按具体目的进入 Advanced/EXP 目录。不要把不同高级采样器直接串联；组合能力应使用专门的 Mixer 工作流或遵循画布 NOTE。
+
+新增入口：[Pika双采与两种6+3的八套已审图](95-pika-dual/README.md)：普通Pika约0.6MP和可选2K细化独立选择，原单采示例保留。

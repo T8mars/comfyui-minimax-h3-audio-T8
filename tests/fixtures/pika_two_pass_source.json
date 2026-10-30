@@ -1,0 +1,69 @@
+{
+  "schema": "t8.pika_two_pass.source.v1",
+  "previous_files": {
+    "__init__.py": "a1cb224a5207b63fa25138fdb78e70bb4909295bd35afa7e738893f65437a914",
+    "tools/audit_modular_new_sampling.py": "ee600418d41a13adba8d44955920ee421815e4699b90ee3e80966304f302b608",
+    "tests/test_h21_sampling_admission_ci.py": "7b02465f29a9ebd6e7a4e1af20379747e38a925dd55a8f43bdc43dbced9547d5",
+    "tests/test_h24_sampling_admission_ci.py": "dffd26c434f3250f302c9ec0aaf11be1f5ca61813201d44cd0adc03137765ad1",
+    "tests/test_h27_sampling_admission_ci.py": "bdc77afc65342a93a00487b94005308970b63f88eb2d28da5003923b418598a7"
+  },
+  "files": {
+    "__init__.py": "2e0e831b9d9ef97023240a73a1088b3e154cfecb291368f4b4563044e5631e9c",
+    "tools/audit_modular_new_sampling.py": "b8f881be3167a9dfcd061a538d7aa760e081a9161593f4bdddf3536a1df28711",
+    "tests/test_h21_sampling_admission_ci.py": "3d11913f6bab184c19fa498d76ff0f3b8421cf1f0551dd000507aa08505cd240",
+    "tests/test_h24_sampling_admission_ci.py": "a0a89e447a0a068d0071d2b3a6dc40a649c68b5f6b33f119cf26f7b9cdcb9216",
+    "tests/test_h27_sampling_admission_ci.py": "98962d6feb41e5366769ce14995ca9e8af76701a1220ce0f3b1d59246d72ccd5",
+    "h3_t8/pika_two_pass.py": "d6cdb657d19c82e78ca29e26a7459cf41dbe39c2e8875305c998cb2aa57da28c",
+    "h3_t8/nodes_pika_two_pass.py": "1b43ff7490d6357351a6f6610e8056f75f53fe843fa289fb3628ada2a5083d4b"
+  },
+  "scope": "Exact two-stage native LCM bridge: six evaluations, one noise stream and learned clean-latent lift. Code/CPU contracts reviewed; trained GPU and human quality recorded separately. No claim of generic effect or disk resume qualification; no historical ledger recapture.",
+  "preserved_nodes": 779,
+  "appended_nodes": [
+    "MiniMaxH3PikaTwoPassSamplerEXPT8"
+  ],
+  "reviewed_sites": [
+    {
+      "path": "h3_t8/nodes_pika_two_pass.py",
+      "symbol": "MiniMaxH3PikaTwoPassSamplerEXPT8.execute",
+      "callee": "sample_pika_two_pass",
+      "call_sha256": "875ada1704adb6200e3236461097a745ce0837a9e667e7799cab83422d7b6dd1"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass",
+      "callee": "runtime._native_stage",
+      "call_sha256": "0101e83178ae05188dfc23c80a532ce0a86e0568d834bfb8400906df25ffcd6b"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass",
+      "callee": "runtime._native_stage",
+      "call_sha256": "f6d49f30c9de0e18c942dbee0b14a904fad75de72a3a715bab068d9ebed26ebb"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass.high_solver",
+      "callee": "base.process_latent_in",
+      "call_sha256": "ba6f451acc766696c5cf60628902e301c1558186477b2becdedbb1bf13796980"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass.high_solver",
+      "callee": "sample_lcm",
+      "call_sha256": "779a737f0e8931162342653f92b7ee32d2c3d43cd69febf844851d5c71461682"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass.low_solver",
+      "callee": "base.process_latent_out",
+      "call_sha256": "a8813249bcde1f84611ac82c222409821c16493db099a7acfd5f165c574457e3"
+    },
+    {
+      "path": "h3_t8/pika_two_pass.py",
+      "symbol": "sample_pika_two_pass.low_solver",
+      "callee": "sample_lcm",
+      "call_sha256": "0c328705e121bb3fbb5ff2445457858a0b309ed01d3225753c4a6e666ce4f015"
+    }
+  ],
+  "human_quality_accepted": false
+}

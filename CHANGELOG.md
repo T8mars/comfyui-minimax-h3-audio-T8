@@ -2,6 +2,12 @@
 
 [首页](README.md) · [English](README_EN.md)
 
+## GitHub 源码更新：Pika双采及两种6+3（2026-10-30）
+
+- 末尾追加Pika原生LCM双采节点，4+2/3+3共6次前向；实际调用学习型3D潜空间放大，保持音视频时钟、随机噪声流及两阶段独立多LoRA链，原779节点定义保持。
+- 保存八套已审原生工作流：文字、首尾、图片/视频参考，以及普通Pika6+3和可选完整NV 2K6+3。普通版默认约0.6MP，不加载2K Refiner，保留一采声音；原有单采和2K路线保留。
+- 两份独立反馈按binding和成片SHA核对，指定画面与声音均通过。CPU、实际GPU、前端往返与完整播放分别记录；源码审计限定新桥接范围，不扩大历史准入资格，不包含模型、媒体或本地交接。详见[使用说明](docs/PIKA_DOUBLE_SAMPLING.md)及[八图索引](examples/workflows/95-pika-dual/index.json)。
+
 ## 当前版本：1.104.0
 
 - 新增Pika Flex采样准备节点，复用现有LoRA加载器和Core LCM/FLOW_AV，自动提供作者6步sigma及12/3音视频时钟。

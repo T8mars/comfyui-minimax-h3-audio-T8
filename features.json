@@ -4098,7 +4098,8 @@
     "MiniMaxH3OpenRegenerateSetupEXPT8",
     "MiniMaxH3OpenRegenerateRecipeEXPT8",
     "MiniMaxH3OpenRegenerateAuditEXPT8",
-    "MiniMaxH3PikaFlexSetupEXPT8"
+    "MiniMaxH3PikaFlexSetupEXPT8",
+    "MiniMaxH3PikaTwoPassSamplerEXPT8"
   ],
   "h3_memory_nodes_development_20260915": {
     "status": "v1.81.0 release implementation; independent implementation and fixed short validation complete",
@@ -7332,5 +7333,195 @@
     "human_review_binding": "d5531d4dfe834aa8ecc8f40bae3b256b3cc1c96023e3acc6cb72782b91ff439a",
     "human_review_date": "2026-10-30",
     "workflow_index": "examples/workflows/94-pika-flex/index.json"
+  },
+  "pika_two_pass_support": {
+    "status": "github_source_update_human_reviewed",
+    "node": "MiniMaxH3PikaTwoPassSamplerEXPT8",
+    "preserved_registered_prefix": 779,
+    "registered_nodes": 780,
+    "steps": 6,
+    "split_options": [
+      4,
+      3
+    ],
+    "independent_stage_model_and_conditioning": true,
+    "shared_base_supported": true,
+    "existing_LoRAs_and_user_patches_preserved": true,
+    "learned_3D_upscaler": true,
+    "intermediate_noise_draws": 5,
+    "human_review_status": "accepted_for_bound_selected_media",
+    "published": true,
+    "documentation": "docs/PIKA_DOUBLE_SAMPLING.md",
+    "selected_GPU_cases": [
+      {
+        "id": "fl2va_3plus3",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "c05ec7eab2cb717f77e1ca3465e97c1b57e326e8d05b2e6a5899be612ad6ed3f",
+        "end_to_end_seconds": 283.76600000000326,
+        "peak_torch_allocated_bytes": 9098421248
+      },
+      {
+        "id": "fl2va_4plus2",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "362e6d4356792ad0b6ad96e086c3df3081dc1e748ba82776d0b38b945f5d1239",
+        "end_to_end_seconds": 249.06299999996554,
+        "peak_torch_allocated_bytes": 9098421248
+      },
+      {
+        "id": "fl2va_native6",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "d7fb4a1929242c2ff8e484c592b9c003c2734ed8934c169be08dadc9e38287e7",
+        "end_to_end_seconds": 396.98499999998603,
+        "peak_torch_allocated_bytes": 9098421248
+      },
+      {
+        "id": "ref2va_4plus2",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "3522cf0e301bd3dcddacede58039ffa3dc586ae39bf956ae3609007144a1188f",
+        "end_to_end_seconds": 252.625,
+        "peak_torch_allocated_bytes": 8828455424
+      },
+      {
+        "id": "t2va_4plus2",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "8d6d98bc71d38d7254708f30c4ad7c53a62360a4516bb156a88879015a6501e6",
+        "end_to_end_seconds": 243.20300000003772,
+        "peak_torch_allocated_bytes": 8860173312
+      },
+      {
+        "id": "fl2va_6plus3_2k",
+        "steps": 9,
+        "frames": 124,
+        "dimensions": [
+          2560,
+          1440
+        ],
+        "media_sha256": "23e9eb466d594b786ed3cee25e8c2e77a57d331d4b6e725996427eebf539998d",
+        "graph_execution_seconds": 3293.75,
+        "peak_torch_allocated_bytes": 12547538432,
+        "original_audio_preserved_before_mux": true,
+        "encoded_original_audio_and_timing_preserved": true
+      },
+      {
+        "id": "ref2va_video_4plus2",
+        "steps": 6,
+        "frames": 124,
+        "dimensions": [
+          1024,
+          576
+        ],
+        "media_sha256": "9ea8dd25f557f8985654b3d44347fd0aeb19080b39dbc394b14edf3a76e06c78",
+        "graph_execution_seconds": 734.6560000000172,
+        "peak_torch_allocated_bytes": 10376961024,
+        "reference": "one_picture_and_one_24fps_video"
+      }
+    ],
+    "source_deployed": false,
+    "native_browser_roundtrip_cases": 7,
+    "original_779_schemas_unchanged": true,
+    "original_ten_reviewed_workflows_unchanged": true,
+    "CPU_related_contracts_passed": 114,
+    "timing_scope": "graph execution excluding isolated process bootstrap",
+    "shared_base_memory_probe": {
+      "frames": 5,
+      "actual_forwards": 9,
+      "layers": 50,
+      "FC1_calls_per_layer_each_forward": 8,
+      "quality_sample": false
+    },
+    "review_browser_playback_verified": true,
+    "individual_browser_EOF_clips": 8,
+    "original_audio_preserved_before_and_after_mux": true,
+    "human_feedback": {
+      "four_picture_and_sound_groups": "pass",
+      "T2VA_preferred": "4+2",
+      "other_groups_preference": "no winner selected; similar",
+      "does_not_accept_new_regular_6plus3": true
+    },
+    "human_review_date": "2026-10-30",
+    "human_feedback_sha256": "7cf21dd163aaef746c39158c73d41357a71cb8f4aad59f0aaff76b2984e42fb1",
+    "review_binding": "ecc55d1707b8f4e640e4fb8658302df116483f14c7bb950c599af216357a130c",
+    "workflow_directory": "examples/workflows/95-pika-dual"
+  },
+  "pika_regular_6plus3_support": {
+    "status": "github_source_update_human_reviewed",
+    "requires_new_runtime_node": false,
+    "base": "shared H3 FL2VA with independent Pika FL2VA LoRA branches",
+    "native_official_hires_recipe": false,
+    "steps": [
+      6,
+      3
+    ],
+    "first_pass_dimensions": [
+      512,
+      288
+    ],
+    "target_dimensions": [
+      1024,
+      576
+    ],
+    "learned_3D_upscaler": true,
+    "second_pass_video_sigmas": [
+      0.8,
+      0.5714285714285714,
+      0.3333333333333333,
+      0
+    ],
+    "sampler": "lcm",
+    "video_audio_shifts": [
+      12,
+      3
+    ],
+    "guidance": 1,
+    "separate_multiple_LoRA_chains": true,
+    "no_2K_refiner_loaded": true,
+    "first_pass_audio_latent_and_encoded_output_preserved": true,
+    "CPU_related_testcases_passed": 47,
+    "selected_GPU_task": "FL2VA",
+    "frames": 124,
+    "actual_forwards": 9,
+    "graph_execution_seconds": 388.6719999999623,
+    "peak_torch_allocated_bytes": 9175009280,
+    "frontend_browser_roundtrip_verified": true,
+    "review_clips_browser_EOF_verified": 3,
+    "human_review_status": "accepted_for_bound_selected_media",
+    "existing_2K_route_preserved": true,
+    "published": true,
+    "deployed_to_user_Core": false,
+    "human_review_date": "2026-10-30",
+    "human_feedback_sha256": "c5f0707fe3ed63215c320d1055fc1ca4da10773fb27e517ee0933daa39c9fe06",
+    "review_binding": "9c4a4f50cdf64979cfb29792222c826ed1007147ef9b819836124a549f5962ee",
+    "workflow_directory": "examples/workflows/95-pika-dual",
+    "human_feedback": {
+      "picture": "pass",
+      "sound": "pass",
+      "notes": "都不错",
+      "preferred": "no winner selected"
+    }
   }
 }

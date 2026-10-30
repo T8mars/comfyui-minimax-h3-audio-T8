@@ -397,6 +397,47 @@ def _pika_review(root, predecessor):
     return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
 
 
+def _pika_dual_review(root, predecessor):
+    """Exact six-step bridge successor; never recapture the historical ledger.
+
+    This local code review binds the seven concrete AST sites, including two
+    coordinate conversions. It grants no trained-media/human acceptance and no
+    generic EAV/Relay, disk-resume, or future sampler admission.
+    """
+    path = root / 'tests/fixtures/pika_two_pass_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'__init__.py', 'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py', 'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    added = {'h3_t8/pika_two_pass.py', 'h3_t8/nodes_pika_two_pass.py'}
+    expected = Counter({
+        ('h3_t8/nodes_pika_two_pass.py', 'MiniMaxH3PikaTwoPassSamplerEXPT8.execute', 'sample_pika_two_pass'): 1,
+        ('h3_t8/pika_two_pass.py', 'sample_pika_two_pass', 'runtime._native_stage'): 2,
+        ('h3_t8/pika_two_pass.py', 'sample_pika_two_pass.low_solver', 'sample_lcm'): 1,
+        ('h3_t8/pika_two_pass.py', 'sample_pika_two_pass.low_solver', 'base.process_latent_out'): 1,
+        ('h3_t8/pika_two_pass.py', 'sample_pika_two_pass.high_solver', 'sample_lcm'): 1,
+        ('h3_t8/pika_two_pass.py', 'sample_pika_two_pass.high_solver', 'base.process_latent_in'): 1,
+    })
+    required = {'schema', 'previous_files', 'files', 'scope', 'preserved_nodes',
+                'appended_nodes', 'reviewed_sites', 'human_quality_accepted'}
+    if (set(review) != required or review['schema'] != 't8.pika_two_pass.source.v1'
+            or set(review['previous_files']) != changed or set(review['files']) != changed | added
+            or review['preserved_nodes'] != 779
+            or review['appended_nodes'] != ['MiniMaxH3PikaTwoPassSamplerEXPT8']
+            or review['human_quality_accepted'] is not False or not review['scope']
+            or any(predecessor['files'].get(name) != digest for name, digest in review['previous_files'].items())
+            or any(not re.fullmatch(r'[0-9a-f]{64}', digest) for digest in review['files'].values())
+            or any(set(row) != {'path', 'symbol', 'callee', 'call_sha256'}
+                   or not re.fullmatch(r'[0-9a-f]{64}', row['call_sha256']) for row in review['reviewed_sites'])
+            or Counter((row['path'], row['symbol'], row['callee']) for row in review['reviewed_sites']) != expected
+            or len({_key(row) for row in review['reviewed_sites']}) != 7):
+        raise ValueError('Invalid bounded Pika two-pass source review')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']},
+            'reviewed_sites': [*predecessor['reviewed_sites'], *review['reviewed_sites']]}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -434,6 +475,7 @@ def _h27_review(root):
             or not set(review['workflow_files']) <= set(review['files'])):
         raise ValueError('H27 source/workflow binding incomplete')
     review = _pika_review(root, review)
+    review = _pika_dual_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

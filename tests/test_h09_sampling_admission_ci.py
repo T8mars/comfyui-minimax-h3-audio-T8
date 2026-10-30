@@ -62,8 +62,11 @@ class ReviewedINT8Delta(unittest.TestCase):
         with patch.object(gate, "discover", return_value=live):
             result = gate.guard(ROOT, new)
             self.assertEqual(result["status"], "pass", result["issues"])
+            # The exact seven-site Pika two-pass successor is checked by the
+            # source gate; the historical H09 ledger is not recaptured.
+            self.assertEqual(len(read("tests/fixtures/pika_two_pass_source.json")["reviewed_sites"]), 7)
             self.assertEqual((result["declared_baseline_sites"], result["current_sites"],
-                              result["reviewed_absent_root_alias_sites"]), (131, 113, 21))
+                              result["reviewed_absent_root_alias_sites"]), (131, 120, 21))
             before = gate.guard(ROOT, old)
             self.assertEqual((before["status"], before["new_sites"], before["removed_sites"]),
                              ("fail", 3, 0))

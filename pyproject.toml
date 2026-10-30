@@ -22,7 +22,7 @@ DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
     "docs/RELEASE_1.104.0.md",
-    "docs/PIKA_H3_FLEX.md", "THIRD_PARTY_NOTICES/PIKA-FLEX-SOURCES.md",
+    "docs/PIKA_H3_FLEX.md", "docs/PIKA_DOUBLE_SAMPLING.md", "THIRD_PARTY_NOTICES/PIKA-FLEX-SOURCES.md",
     "docs/RELEASE_1.103.0.md",
     "docs/OPEN_REGENERATE_2K.md",
     "THIRD_PARTY_NOTICES/OPEN-REGENERATE-SOURCES.md",

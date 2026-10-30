@@ -23,8 +23,11 @@ class H27ReviewedSource(unittest.TestCase):
     def copy_root(self, root):
         pika_path = 'tests/fixtures/pika_flex_source.json'
         pika = json.loads((ROOT / pika_path).read_text('utf8'))
+        dual_path = 'tests/fixtures/pika_two_pass_source.json'
+        dual = json.loads((ROOT / dual_path).read_text('utf8'))
         for name in [*self.review['files'], self.path, 'tests/fixtures/h21_reviewed_sampling_1_102.json',
-                     'tests/fixtures/h24_reviewed_sampling_source.json', *pika['files'], pika_path]:
+                     'tests/fixtures/h24_reviewed_sampling_source.json', *pika['files'], pika_path,
+                     *dual['files'], dual_path]:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)
