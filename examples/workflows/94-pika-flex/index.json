@@ -1,0 +1,53 @@
+{
+  "schema": "t8.pika_flex.reviewed_workflows.v1",
+  "review_date": "2026-10-30",
+  "review_binding": "d5531d4dfe834aa8ecc8f40bae3b256b3cc1c96023e3acc6cb72782b91ff439a",
+  "human_feedback_sha256": "9029e6927b5471d39341f084c66f20d40e0b0f28b4364461f3df7b1983506d13",
+  "acceptance_scope": "Three selected pictures accepted; sound remains unreviewed in the supplied form. User explicitly authorized workflow saving and GitHub publication.",
+  "preserved_registered_prefix": 778,
+  "registered_nodes": 779,
+  "workflows": [
+    {
+      "case_id": "t2va",
+      "path": "examples/workflows/94-pika-flex/PikaFlex_t2va_6step_EXP.json",
+      "workflow_sha256": "6bda67c51004aa9c1b93d5d9d31392bdc430d0ba95a3859f5e4ec38079e7f563",
+      "source_media_sha256": "6a0cd61d31f58950de8d50c6cb21f603ed3db371da0966dd408b2ee91a83548f",
+      "picture": "pass",
+      "sound": "unreviewed",
+      "frames": 120,
+      "dimensions": [
+        832,
+        480
+      ],
+      "NFE": 6
+    },
+    {
+      "case_id": "fl2va",
+      "path": "examples/workflows/94-pika-flex/PikaFlex_fl2va_6step_EXP.json",
+      "workflow_sha256": "89e4282fbe29203534daa726d17ea8999cc3da91ad0673578698ece058b596c0",
+      "source_media_sha256": "787fac0c9ca5746eb90c4f62459ca7376f398151d7ee1013b617132a039a5013",
+      "picture": "pass",
+      "sound": "unreviewed",
+      "frames": 124,
+      "dimensions": [
+        832,
+        480
+      ],
+      "NFE": 6
+    },
+    {
+      "case_id": "ref2va",
+      "path": "examples/workflows/94-pika-flex/PikaFlex_ref2va_6step_EXP.json",
+      "workflow_sha256": "f9db78c35e3f0351825f3624b061ce287e8e9bda7e7b41fd1ca395b2ee99a4e7",
+      "source_media_sha256": "80c79a92cb414dee2b6d3e32edf0fb7a74607fdc9d6a71b921f5d4c5987afce4",
+      "picture": "pass",
+      "sound": "unreviewed",
+      "frames": 120,
+      "dimensions": [
+        832,
+        480
+      ],
+      "NFE": 6
+    }
+  ]
+}

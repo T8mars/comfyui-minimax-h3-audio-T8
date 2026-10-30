@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.103.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.104.0** · [更新日志](CHANGELOG.md)
 
 [最新源码更新](docs/H24_SOURCE_UPDATE.md)：导演台修复、Compact、音画循环与Solar；[三套已审工作流](examples/workflows/91-h24-reviewed/README.md)。
 
@@ -27,6 +27,7 @@ Windows 更新提示 `Filename too long`？见[短路径与恢复说明](docs/WI
 
 |你想做什么|入口|
 |---|---|
+|Pika H3 Flex 6步文字／首尾帧／参考图（EXP）|[三套已审工作流](examples/workflows/94-pika-flex/README.md) · [用法](docs/PIKA_H3_FLEX.md)|
 |同条件先音后画／Wuli普通Hybrid（EXP）|[H13两份已审工作流](examples/workflows/88-h13-reviewed/README.md) · [接线与边界](docs/H13_AUDIO_FIRST_HYBRID.md)|
 |Spark／Wuli原生4与8步、仅音频参考／耗时卡／桥参数侧车（EXP）|[H11八份已审工作流](examples/workflows/87-h11-reviewed/README.md) · [接线与边界](docs/H11_NATIVE_EXTENSIONS.md)|
 |Veda R2VA、FreeVideo INT8、人物移除与原声／参考提案（EXP）|[H09九张已审来源图](examples/workflows/86-h09-reviewed/README.md) · [接线与限制](docs/RELEASE_1.98.0.md)|

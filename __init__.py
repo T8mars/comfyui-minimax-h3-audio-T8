@@ -301,8 +301,14 @@ class _OpenRegenerateExtension(_AuthoredMaskExtension):
         return [*(await super().get_node_list()), *NODES]
 
 
+class _PikaFlexExtension(_OpenRegenerateExtension):
+    async def get_node_list(self):
+        from .nodes_pika_flex import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _OpenRegenerateExtension()
+    return _PikaFlexExtension()
 
 
 WEB_DIRECTORY = "./web"

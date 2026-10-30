@@ -373,6 +373,30 @@ def _h27_expected(review, relative, expected):
     return expected
 
 
+def _pika_review(root, predecessor):
+    """Finite append-only registration successor; no H27 media is reaccepted."""
+    path = root / 'tests/fixtures/pika_flex_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'__init__.py', 'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py', 'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    added = {'h3_t8/pika_flex.py', 'h3_t8/nodes_pika_flex.py'}
+    if (set(review) != {'schema', 'previous_files', 'files', 'scope', 'preserved_nodes', 'appended_nodes'}
+            or review['schema'] != 't8.pika_flex.source.v1'
+            or set(review['previous_files']) != changed or set(review['files']) != changed | added
+            or review['preserved_nodes'] != 778
+            or review['appended_nodes'] != ['MiniMaxH3PikaFlexSetupEXPT8'] or not review['scope']
+            or any(predecessor['files'].get(name) != digest
+                   for name, digest in review['previous_files'].items())
+            or any(not re.fullmatch(r'[0-9a-f]{64}', digest) for digest in review['files'].values())):
+        raise ValueError('Invalid bounded Pika successor or different H27 source binding')
+    # The original path/SHA loop checks all successor files. Historical media,
+    # workflows and callsites remain bound to the untouched predecessor ledger.
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -409,6 +433,7 @@ def _h27_review(root):
     if (not set(review['previous_files']) <= set(review['files'])
             or not set(review['workflow_files']) <= set(review['files'])):
         raise ValueError('H27 source/workflow binding incomplete')
+    review = _pika_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

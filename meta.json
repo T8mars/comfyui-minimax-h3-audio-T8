@@ -1080,7 +1080,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.103.0",
+  "version": "1.104.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
@@ -1947,5 +1947,74 @@
       }
     },
     "source_update": "2026-10-29"
+  },
+  "pika_flex_support": {
+    "status": "selected_GPU_and_picture_human_reviewed",
+    "node": "MiniMaxH3PikaFlexSetupEXPT8",
+    "preserved_registered_prefix": 778,
+    "registered_nodes": 779,
+    "sampler": "native_Core_LCM_FLOW_AV",
+    "steps": 6,
+    "knots": [
+      1000,
+      750,
+      500,
+      250,
+      100,
+      40,
+      0
+    ],
+    "video_shift": 12.0,
+    "audio_shift": 3.0,
+    "LoRA_loading": "existing_compatibility_or_native_loader",
+    "existing_model_files_reused": true,
+    "model_downloads": false,
+    "environment_changes": false,
+    "Director_defaults_changed": false,
+    "existing_LoRAs_and_user_patches_preserved": true,
+    "CPU_contracts_passed": 170,
+    "publication": "GitHub_release_1.104.0",
+    "documentation": "docs/PIKA_H3_FLEX.md",
+    "trained_GPU_selected_cases": [
+      {
+        "id": "t2va",
+        "frames": 120,
+        "dimensions": [
+          832,
+          480
+        ],
+        "NFE": 6,
+        "media_sha256": "6a0cd61d31f58950de8d50c6cb21f603ed3db371da0966dd408b2ee91a83548f"
+      },
+      {
+        "id": "fl2va",
+        "frames": 124,
+        "dimensions": [
+          832,
+          480
+        ],
+        "NFE": 6,
+        "media_sha256": "787fac0c9ca5746eb90c4f62459ca7376f398151d7ee1013b617132a039a5013"
+      },
+      {
+        "id": "ref2va",
+        "frames": 120,
+        "dimensions": [
+          832,
+          480
+        ],
+        "NFE": 6,
+        "media_sha256": "80c79a92cb414dee2b6d3e32edf0fb7a74607fdc9d6a71b921f5d4c5987afce4"
+      }
+    ],
+    "workflow_directory": "examples/workflows/94-pika-flex",
+    "native_browser_workflow_roundtrip": true,
+    "review_browser_playback_verified": true,
+    "human_picture_accepted": true,
+    "human_sound_review_status": "unreviewed_in_supplied_feedback",
+    "human_feedback_sha256": "9029e6927b5471d39341f084c66f20d40e0b0f28b4364461f3df7b1983506d13",
+    "human_review_binding": "d5531d4dfe834aa8ecc8f40bae3b256b3cc1c96023e3acc6cb72782b91ff439a",
+    "human_review_date": "2026-10-30",
+    "workflow_index": "examples/workflows/94-pika-flex/index.json"
   }
 }

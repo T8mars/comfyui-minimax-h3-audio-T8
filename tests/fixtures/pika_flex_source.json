@@ -1,0 +1,24 @@
+{
+  "schema": "t8.pika_flex.source.v1",
+  "previous_files": {
+    "__init__.py": "e29fa92007fac13425d9854d329b64053f98879a4feb096f295e1a5211df1d16",
+    "tools/audit_modular_new_sampling.py": "10cb3b323d5eebdb77cb8a50da7f25e14bd3088008d283f55fad7144d37af76c",
+    "tests/test_h21_sampling_admission_ci.py": "7e98ffc765c433a2a788093be59310e92ae119d4237e27c4aa92408f1d485485",
+    "tests/test_h24_sampling_admission_ci.py": "f133eb3b7acf9e57667e1d4829d1f0f281bf6b6273bfb34d53785c8120ee8672",
+    "tests/test_h27_sampling_admission_ci.py": "80a7df795dcad177d1f35af8a730f65becaa87e457b3a18f96dbc4d5c9aef20d"
+  },
+  "files": {
+    "__init__.py": "a1cb224a5207b63fa25138fdb78e70bb4909295bd35afa7e738893f65437a914",
+    "tools/audit_modular_new_sampling.py": "ee600418d41a13adba8d44955920ee421815e4699b90ee3e80966304f302b608",
+    "tests/test_h21_sampling_admission_ci.py": "7b02465f29a9ebd6e7a4e1af20379747e38a925dd55a8f43bdc43dbced9547d5",
+    "tests/test_h24_sampling_admission_ci.py": "dffd26c434f3250f302c9ec0aaf11be1f5ca61813201d44cd0adc03137765ad1",
+    "tests/test_h27_sampling_admission_ci.py": "bdc77afc65342a93a00487b94005308970b63f88eb2d28da5003923b418598a7",
+    "h3_t8/pika_flex.py": "999fc2dd36cab79adc9d8e996e0fa296cdd342674a2eb2ca2e1e7a1f5fb7b73c",
+    "h3_t8/nodes_pika_flex.py": "f1f220927e5c96b0ed29ee2f7d5c605c8071e11746d2bfd0a580152fc1c47eb0"
+  },
+  "scope": "One appended Pika recipe node using existing native LCM/FLOW_AV. Historical H27 builders and human acceptance unchanged; Pika media and human quality separate. No old ledger recapture.",
+  "preserved_nodes": 778,
+  "appended_nodes": [
+    "MiniMaxH3PikaFlexSetupEXPT8"
+  ]
+}

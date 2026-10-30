@@ -1,6 +1,6 @@
 [project]
 name = "minimax-h3-audio-t8"
-version = "1.103.0"
+version = "1.104.0"
 description = "MiniMax H3 joint AV, audio refine, long-video, reference control, motion analysis, temporal restoration, and acceleration nodes for ComfyUI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,6 +21,8 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/RELEASE_1.104.0.md",
+    "docs/PIKA_H3_FLEX.md", "THIRD_PARTY_NOTICES/PIKA-FLEX-SOURCES.md",
     "docs/RELEASE_1.103.0.md",
     "docs/OPEN_REGENERATE_2K.md",
     "THIRD_PARTY_NOTICES/OPEN-REGENERATE-SOURCES.md",

@@ -28,6 +28,20 @@ def _admissions(*entries):
     return {"schema": SCHEMA, "entries": list(entries)}
 
 
+def _current_baseline():
+    from tools.audit_modular_new_sampling import BASELINE as current
+    return json.loads(current.read_text(encoding="utf8"))
+
+
+def _effective_sites(baseline):
+    from tools import audit_modular_new_sampling as gate
+    sites, omitted = reviewed_layout_sites(ROOT, baseline)
+    for review in (gate.reviewed_model_choice_sites, gate.reviewed_h21_sites,
+                   gate.reviewed_h24_sites, gate.reviewed_h27_sites):
+        sites = review(ROOT, sites)
+    return sites, omitted
+
+
 def test_freevideo_finite_reviewed_sites_and_both_independent_resume_topologies():
     from tools.audit_modular_new_sampling import _admission_issues
     review = json.loads((ROOT / "tests/fixtures/freevideo_reviewed_sampling_admission_1_91.json").read_text(encoding="utf8"))
@@ -73,10 +87,12 @@ def test_current_production_sampler_sites_match_frozen_review_baseline():
         site for site in before_encoder["sites"] if not changed_safety(site)]
     assert sum(changed_safety(site) for site in before_safety["sites"]) == 1
     assert sum(changed_safety(site) for site in baseline["sites"]) == 1
-    report = audit(ROOT, baseline, _admissions(), {route.id: route for route in catalogue.ROUTES})
+    current = _current_baseline()
+    report = audit(ROOT, current, _admissions(), {route.id: route for route in catalogue.ROUTES})
     assert report["status"] == "pass"
-    effective, omitted = reviewed_layout_sites(ROOT, baseline)
-    assert len(baseline["sites"]) == report["declared_baseline_sites"] == 126
+    effective, omitted = _effective_sites(current)
+    assert len(baseline["sites"]) == 126  # The historical v11 snapshot is retained.
+    assert report["declared_baseline_sites"] == len(current["sites"]) == 131
     assert report["baseline_sites"] == report["current_sites"] == len(effective)
     assert report["reviewed_absent_root_alias_sites"] == len(omitted)
     assert report["new_sites"] == report["removed_sites"] == 0
@@ -154,29 +170,34 @@ def test_v10_preserves104_sites_and_only_explicit_reviewed_delta_and_real_curve_
     assert {site[0] for site in curve_sites} == {
         "h3_t8/modular_sampling/hyperflow_curve.py", "h3_t8/nodes_hyperflow_curve_exp.py"}
     before_curve = {**current, "sites": [site for site in current["sites"] if tuple(key(site)) not in curve_sites]}
+    assert len(before_curve["sites"]) == 123  # Original historical delta.
+    runtime = _current_baseline()
+    before_curve = {**runtime, "sites": [site for site in runtime["sites"] if tuple(key(site)) not in curve_sites]}
     captured = capture()["nodes"]
     live = {node["id"] for node in captured}
     qwen = ["MiniMaxH3ReferenceQwenViewEXPT8"] if "MiniMaxH3ReferenceQwenViewEXPT8" in live else []
     declared = json.loads((ROOT / "features.json").read_text(encoding="utf8"))["nodes"]
     assert [node["id"] for node in captured] == declared
-    assert len(live) == 671 + len(qwen)
+    historical_node_count = 671 + len(qwen)
+    assert len(captured[:historical_node_count]) == historical_node_count
+    assert len(live) == len(declared)
     assert [node["id"] for node in captured[656:663]] == [
         "MiniMaxH3PostprocessSaveEXPT8", "MiniMaxH3ReferenceCreateEXPT8",
         "MiniMaxH3ReferenceSaveEXPT8", "MiniMaxH3ReferenceLoadEXPT8",
         "MiniMaxH3ReferenceRouteEXPT8", "MiniMaxH3ReferenceConditioningEXPT8",
         "MiniMaxH3ReferenceRelayConditioningEXPT8",
     ]
-    assert [node["id"] for node in captured[663:]] == qwen + [
+    assert [node["id"] for node in captured[663:historical_node_count]] == [
         "MiniMaxH3FreeVideoQualityLoaderEXPT8", "MiniMaxH3FreeVideoQualitySamplerEXPT8",
         "MiniMaxH3FreeVideoCommunityHIGH3EXPT8", "MiniMaxH3FreeVideoQualityStageSaveEXPT8",
         "MiniMaxH3FreeVideoQualityStageLoadEXPT8", "MiniMaxH3FreeVideoQualityLoRAEXPT8",
         "MiniMaxH3FreeVideoQualityEAVEXPT8", "MiniMaxH3FreeVideoQualityPromptRelayEXPT8",
-    ]
+    ] + qwen
     report = audit(ROOT, before_curve, admissions, {route.id: route for route in catalogue.ROUTES}, live)
     assert report["status"] == "pass" and report["new_sites"] == 3
-    effective, _ = reviewed_layout_sites(ROOT, before_curve)
+    effective, _ = _effective_sites(before_curve)
     assert report["removed_sites"] == 0 and report["baseline_sites"] == len(effective)
-    assert report["declared_baseline_sites"] == 123
+    assert report["declared_baseline_sites"] == len(before_curve["sites"]) == 128
     assert audit(ROOT, before_curve, _admissions(), {})["status"] == "fail"
 
 
@@ -193,7 +214,8 @@ def test_temporal_finite_delegate_sites_preserve121_and_real_full_cold_effect_to
     routes = {entry["route"]: SimpleNamespace(public_nodes=tuple(live_ids)) for entry in entries}
     # The three later FVQ sites are already independently admitted. Remove
     # only the exact two historical Temporal sites for this negative delta.
-    historical = {**baseline, "sites": baseline["sites"][:121] + baseline["sites"][123:]}
+    runtime = _current_baseline()
+    historical = {**runtime, "sites": runtime["sites"][:121] + runtime["sites"][123:]}
     report = audit(ROOT, historical, _admissions(*entries), routes, live_ids)
     assert report["status"] == "pass" and report["new_sites"] == 2 and report["removed_sites"] == 0
     for entry in entries:
@@ -214,11 +236,11 @@ def test_future_head_tail_and_native_calls_are_not_hidden_outside_multistage_nam
 
 
 def test_ci_guard_needs_only_python_stdlib_and_rejects_new_site(tmp_path):
-    baseline = json.loads(BASELINE.read_text(encoding="utf8"))
+    baseline = _current_baseline()
     result = subprocess.run([sys.executable, "-S", str(ROOT / "tools/audit_modular_new_sampling.py"),
                              "guard"], cwd=ROOT, capture_output=True, text=True, check=False)
     assert result.returncode == 0
-    effective, _ = reviewed_layout_sites(ROOT, baseline)
+    effective, _ = _effective_sites(baseline)
     assert json.loads(result.stdout)["current_sites"] == len(effective)
     source = tmp_path / "h3_t8" / "new_two_pass.py"
     source.parent.mkdir()

@@ -2,7 +2,7 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.103.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.104.0** · [Changelog](CHANGELOG.md)
 
 [Latest source update](docs/H24_SOURCE_UPDATE.md): Director fixes, Compact PTD, periodic AV and Solar; [three reviewed workflows](examples/workflows/91-h24-reviewed/README.md).
 
@@ -27,6 +27,7 @@ Use a single complete prompt: [ordinary-prompt workflow index](examples/workflow
 
 |Goal|Start here|
 |---|---|
+|Pika H3 Flex six-step text / endpoint / reference generation (EXP)|[Three picture-reviewed workflows](examples/workflows/94-pika-flex/README.md) · [Guide](docs/PIKA_H3_FLEX.md)|
 |Same-condition AudioFirst / ordinary Wuli Hybrid (EXP)|[Two reviewed H13 workflows](examples/workflows/88-h13-reviewed/README.md) · [Wiring and limits](docs/H13_AUDIO_FIRST_HYBRID.md)|
 |Spark / Wuli native 4/8-step, audio-only references, phase cards and Bridge sidecars (EXP)|[Eight reviewed H11 workflows](examples/workflows/87-h11-reviewed/README.md) · [Wiring and limits](docs/H11_NATIVE_EXTENSIONS.md)|
 |Veda R2VA, FreeVideo INT8, Person Removal, source PCM and proposals (EXP)|[Nine H09 source templates](examples/workflows/86-h09-reviewed/README.md) · [Wiring and limits](docs/RELEASE_1.98.0.md)|
