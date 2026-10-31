@@ -2206,5 +2206,37 @@
       "notes": "都不错",
       "preferred": "no winner selected"
     }
+  },
+  "Core_compatibility_20261031": {
+    "status": "CPU_verified_three_Core_revisions",
+    "Core_revisions": {
+      "latest": "7c4390a6f70cd8eb41014d6af52969397a752fc4",
+      "v0.43.0": "426f5eea52a7ece1dd599fff4cb6cd1f352ddd24",
+      "v0.41.1": "45bf90d1c91eecd782643346dcfb73cb0017667f"
+    },
+    "fixes": [
+      "unchanged_native_SigmaShift_factory_not_rejected_by_unrelated_module_changes",
+      "registered_nonpersistent_buffer_exports_restore_original_bytes"
+    ],
+    "native_factory_source_and_live_bytecode_still_checked": true,
+    "real_corrupt_or_unregistered_state_still_rejected": true,
+    "Bridge_math_defaults_and_existing_workflows_unchanged": true,
+    "registered_nodes": 780,
+    "new_runtime_nodes": 0,
+    "actual_Bridge_assets_CPU_pipeline": [
+      "Original",
+      "BUNNY",
+      "Comic Combat",
+      "Wushu v1"
+    ],
+    "pipeline_boundary": "Actual trained Bridge adapters with random tiny native H3 denoiser; no new trained H3 GPU or media quality claim",
+    "actual_Python": "3.12.10",
+    "real_Python_3_13_interpreter_verification": false,
+    "PR31": "Existing stricter metadata handling retained; duplicate proposal not merged",
+    "PR29": "Two dispatch bugs reproduced at pinned head; not merged",
+    "documentation": "docs/CORE_COMPAT_20261031.md",
+    "local_Core_or_installed_T8_modified": false,
+    "models_downloaded": false,
+    "source_only_update_not_Registry_activation": true
   }
 }

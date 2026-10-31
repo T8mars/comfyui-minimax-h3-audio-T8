@@ -1,5 +1,6 @@
 """Actual Core Shift + original ER-SDE, not a reimplementation of sampling math."""
 from copy import deepcopy
+import hashlib
 import importlib
 import inspect
 from pathlib import Path
@@ -115,7 +116,7 @@ def test_existing_T8_identity_format_and_new_core_content_binding():
     selected = _configured().get_model_object("model_sampling")
     first = identity._v2_sampling_identity(selected)
     assert first["protocol"] == "core_minimax_h3_sigma_shift"
-    assert first["factory"]["source_sha256"] == identity.CORE_SIGMA_SHIFT_SOURCE_SHA256
+    assert first["factory"]["source_sha256"] == hashlib.sha256(Path(native_h3.__file__).read_bytes()).hexdigest()
     selected.set_parameters(shift=7.5, audio_shift=2.25)
     second = identity._v2_sampling_identity(selected)
     assert first != second and first["factory"] == second["factory"]
@@ -167,11 +168,26 @@ def test_unknown_sampling_execution_is_not_portably_certified(mutation):
         identity._v2_sampling_identity(selected)
 
 
-def test_unknown_core_source_epoch_is_not_certified(monkeypatch):
+def test_unknown_core_factory_source_is_not_certified(monkeypatch):
     selected = _configured().get_model_object("model_sampling")
-    monkeypatch.setattr(identity, "CORE_SIGMA_SHIFT_SOURCE_SHA256", "0" * 64)
+    monkeypatch.setattr(identity, "CORE_SIGMA_SHIFT_EXECUTE_SHA256", "0" * 64)
     with pytest.raises(UnverifiedModelStack, match="audited sampling factory"):
         identity._v2_sampling_identity(selected)
+
+
+def test_unrelated_core_module_additions_do_not_reject_unchanged_factory(monkeypatch):
+    selected = _configured().get_model_object('model_sampling')
+    before = identity._v2_sampling_identity(selected)
+    path = Path(native_h3.__file__).resolve()
+    original = Path.read_bytes
+    changed = original(path) + b'\n# unrelated Core node metadata\n'
+    def read_bytes(item):
+        return changed if item.resolve() == path else original(item)
+    monkeypatch.setattr(Path, 'read_bytes', read_bytes)
+    after = identity._v2_sampling_identity(selected)
+    assert after['factory']['execute_sha256'] == before['factory']['execute_sha256']
+    assert after['factory']['source_sha256'] == hashlib.sha256(changed).hexdigest()
+    assert after['factory']['source_sha256'] != before['factory']['source_sha256']
 
 
 def test_live_factory_bytecode_replacement_is_not_certified(monkeypatch):

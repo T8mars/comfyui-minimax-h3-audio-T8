@@ -438,6 +438,32 @@ def _pika_dual_review(root, predecessor):
             'reviewed_sites': [*predecessor['reviewed_sites'], *review['reviewed_sites']]}
 
 
+def _core_compat_review(root, predecessor):
+    """Finite identity-only successor; no sampling site or media relabelling."""
+    path = root / 'tests/fixtures/core_compat_20261031_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'h3_t8/long_video_dual_identity.py', 'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py', 'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py', '.github/workflows/modular-sampling-admission.yml'}
+    h24 = json.loads((root / 'tests/fixtures/h24_reviewed_sampling_source.json').read_text(encoding='utf8'))
+    prior = {**h24['files'], **predecessor['files']}
+    if (set(review) != {'schema', 'previous_files', 'files', 'scope', 'sampling_site_delta',
+                       'registered_nodes', 'human_quality_accepted'}
+            or review['schema'] != 't8.core_compat.source.v1'
+            or set(review['files']) != changed or set(review['previous_files']) != changed
+            or review['sampling_site_delta'] != [] or review['registered_nodes'] != 780
+            or review['human_quality_accepted'] is not False or not review['scope']
+            or any(prior.get(name) != digest for name, digest in review['previous_files'].items())
+            or any(not re.fullmatch(r'[0-9a-f]{64}', digest) for digest in review['files'].values())):
+        raise ValueError('Invalid bounded Core compatibility source review or different prior source binding')
+    identity = 'h3_t8/long_video_dual_identity.py'
+    return {**predecessor,
+            'previous_files': {**predecessor['previous_files'], identity: review['previous_files'][identity]},
+            'files': {**predecessor['files'], **review['files']}}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -476,6 +502,7 @@ def _h27_review(root):
         raise ValueError('H27 source/workflow binding incomplete')
     review = _pika_review(root, review)
     review = _pika_dual_review(root, review)
+    review = _core_compat_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

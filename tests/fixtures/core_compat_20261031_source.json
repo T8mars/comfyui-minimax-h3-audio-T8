@@ -1,0 +1,23 @@
+{
+  "schema": "t8.core_compat.source.v1",
+  "previous_files": {
+    "h3_t8/long_video_dual_identity.py": "e80241a0e5c7a0bd491b31cbffc84d96a3633e860d08bfc62c0c1d6301d61bc5",
+    "tools/audit_modular_new_sampling.py": "b8f881be3167a9dfcd061a538d7aa760e081a9161593f4bdddf3536a1df28711",
+    "tests/test_h21_sampling_admission_ci.py": "3d11913f6bab184c19fa498d76ff0f3b8421cf1f0551dd000507aa08505cd240",
+    "tests/test_h24_sampling_admission_ci.py": "a0a89e447a0a068d0071d2b3a6dc40a649c68b5f6b33f119cf26f7b9cdcb9216",
+    "tests/test_h27_sampling_admission_ci.py": "98962d6feb41e5366769ce14995ca9e8af76701a1220ce0f3b1d59246d72ccd5",
+    ".github/workflows/modular-sampling-admission.yml": "6867c954a80ec9b6b3fe82cde70dac028eca40ca6fb8da0d473f954d9be5c4f6"
+  },
+  "files": {
+    "h3_t8/long_video_dual_identity.py": "69a0c4a17f6efbe9d86628b8500ecdfdfa0c843dd7cb3efe880524cb0b9cbeb2",
+    "tools/audit_modular_new_sampling.py": "51e1a221c46d953069de303bfcecc7963fe5768f522d15efc359b155e2996daf",
+    "tests/test_h21_sampling_admission_ci.py": "d1fa41f8ec3a7e2d307c81ea1be08c1e4784627775a1f63091db06f40a1d5e8c",
+    "tests/test_h24_sampling_admission_ci.py": "f1a19f0a0578e02aa5508e29afd357e80d6f94007ca70a5bcfc47cf817a8b701",
+    "tests/test_h27_sampling_admission_ci.py": "cb0ae068564320b1fd19e9540079ea23e104da451ca592e542185ff56386c68f",
+    ".github/workflows/modular-sampling-admission.yml": "d79091c1d166629383dd4f48ad6eecf0ad2c02c9b8920954af3ddfabb04b217b"
+  },
+  "scope": "Identity-only compatibility: exact unchanged native SigmaShift factory survives unrelated Core module edits; registered nonpersistent buffer exports restore original bytes. No sampler math, default, workflow or model-choice change.",
+  "sampling_site_delta": [],
+  "registered_nodes": 780,
+  "human_quality_accepted": false
+}

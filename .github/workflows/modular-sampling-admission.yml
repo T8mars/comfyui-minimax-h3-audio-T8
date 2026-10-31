@@ -20,3 +20,5 @@ jobs:
         run: python3 tests/test_h27_sampling_admission_ci.py
       - name: Reject unreviewed sampling or Director graph-builder changes
         run: python3 tools/audit_modular_new_sampling.py guard
+      - name: Verify bounded Core compatibility without recapturing prior ledgers
+        run: python3 tests/test_core_compat_admission_ci.py

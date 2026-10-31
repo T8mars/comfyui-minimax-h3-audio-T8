@@ -73,6 +73,32 @@ def test_real_dynamic_load_nonpersistent_backups_are_not_a_malformed_state():
         assert patcher.backup_buffers["pixel_mean"] is source
 
 
+@pytest.mark.parametrize('corrupt_export', [False, True])
+def test_registered_nonpersistent_buffer_exported_by_native_state_hook(corrupt_export):
+    encoder = real_native_encoder()
+    patcher = dynamic(encoder)
+    def export_registered_buffer(module, state, prefix, metadata):
+        state[prefix + 'pixel_mean'] = module.pixel_mean.detach()
+    hook = patcher.model.register_state_dict_post_hook(export_registered_buffer)
+    try:
+        before = identity.content_identity(patcher.model_state_dict())
+        with loaded(patcher):
+            state = patcher.model_state_dict()
+            live = patcher.model.pixel_mean
+            assert 'pixel_mean' in patcher.model._non_persistent_buffers_set
+            if corrupt_export:
+                state['pixel_mean'] = state['pixel_mean'] + .125
+                with pytest.raises(ValueError, match='exported buffer'):
+                    identity._original_state(patcher, state)
+            else:
+                restored = identity._original_state(patcher, state)
+                assert identity.content_identity(restored) == before
+                assert restored['pixel_mean'] is patcher.backup_buffers['pixel_mean']
+                assert patcher.model.pixel_mean is live
+    finally:
+        hook.remove()
+
+
 @pytest.mark.parametrize("alias", [False, True])
 def test_real_native_producer_binds_original_buffers_across_dynamic_cast_and_source_change(
     alias,

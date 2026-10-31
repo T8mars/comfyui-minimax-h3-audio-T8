@@ -1,5 +1,7 @@
 # Semantic Bridge / BUNNY — v1.84.0
 
+2026-10-31：已修复新版Core同文件新增代码造成的SigmaShift整文件哈希误拒，以及状态导出hook含已注册非持久buffer时的身份恢复误判。Bridge权重计算、旧节点接口和参数不变。新旧Core验证与Issues／PR处理范围见[兼容说明](CORE_COMPAT_20261031.md)。仅更新ComfyUI本体不等于更新T8源码。
+
 ## v1.87.0 自动模型参数与显式多桥组合（EXP）
 
 新建时推荐 **H3 Semantic Bridge / 自动模型参数 (T8 EXP)**。它读取所选权重的实际内容SHA及固定应用契约，不根据文件名、`trans` 架构或训练报告中的历史alpha猜设置。只准备配置，不启动教师、编码器或采样器。

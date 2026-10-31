@@ -228,7 +228,15 @@ def _original_state(model, state, *, allow_unknown_buffers=False):
     for key, value in restored.items():
         if key in nonpersistent:
             if key in original:
-                raise ValueError("MODEL nonpersistent buffer unexpectedly appears in persistent state")
+                # Native/custom state_dict hooks may explicitly export a
+                # registered nonpersistent buffer. Preserve that export shape
+                # while restoring its actual pre-cast bytes, just as for an
+                # ordinary persistent entry. Never certify unrelated contents.
+                exported = content_identity(original[key])
+                live = content_identity(model.model.get_buffer(key))
+                if exported not in (live, content_identity(value)):
+                    raise ValueError("MODEL exported buffer does not match registered live or original state")
+                original[key] = value
             continue
         if key not in original:
             raise ValueError("Cannot reconstruct original MODEL identity from this buffer backup format")
@@ -253,6 +261,8 @@ def _original_state(model, state, *, allow_unknown_buffers=False):
     return original
 
 
+# Historical full-module identity, retained for old diagnostics. Compatibility
+# depends on the actual factory below, not unrelated nodes in the same module.
 CORE_SIGMA_SHIFT_SOURCE_SHA256 = "5999ed8c22b13c8251084c0629fd82137d2fb52b55106abfc73bf5cafc73841d"
 CORE_SIGMA_SHIFT_EXECUTE_SHA256 = "ef0b67d716bab7cd65c83f86ac8067859d8f8712b64dba88a3d7b84356a710a3"
 
@@ -309,7 +319,7 @@ def _native_sigma_shift_factory(cls, core_sampling):
     source = source_path.read_bytes()
     source_sha = hashlib.sha256(source).hexdigest()
     execute_sha = hashlib.sha256(inspect.getsource(factory).encode()).hexdigest()
-    if source_sha != CORE_SIGMA_SHIFT_SOURCE_SHA256 or execute_sha != CORE_SIGMA_SHIFT_EXECUTE_SHA256:
+    if execute_sha != CORE_SIGMA_SHIFT_EXECUTE_SHA256:
         raise UnverifiedModelStack("Core SigmaShift source is outside the audited sampling factory")
     compiled = compile(source, factory.__code__.co_filename, "exec", dont_inherit=True)
     def code_named(parent, name):
