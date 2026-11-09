@@ -76,8 +76,8 @@ def test_interpolation_audit_accepts_only_exact_fps_and_endpoint_convention():
 
 def test_node_exposes_separate_interpolation_not_mixed_with_upscale():
     ids = [cls.define_schema().node_id for cls in nodes_topaz.TOPAZ_NODE_CLASSES]
-    assert ids == ['MiniMaxH3TopazEnvironmentEXPT8', 'MiniMaxH3TopazVideoEXPT8',
-        'MiniMaxH3TopazFrameInterpolationEXPT8']
+    assert ids == ['MiniMaxH3TopazEnvironmentEXPT8', 'MiniMaxH3TopazSourcePrepareEXPT8',
+        'MiniMaxH3TopazVideoEXPT8', 'MiniMaxH3TopazFrameInterpolationEXPT8']
     schema = nodes_topaz.MiniMaxH3TopazFrameInterpolationEXPT8.GET_NODE_INFO_V1()['input']
     required = schema['required']
     assert required['model_id'][1]['options'] == nodes_topaz.TOPAZ_FI_MODEL_IDS
