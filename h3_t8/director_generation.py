@@ -791,6 +791,11 @@ def build_director_generation_prompt(
     elif sampling["mode"] == "hyperflow":
         two_pass = apply_hyperflow_graph(graph, shot, sampling, store, int(seed), d3)
     report["lora_loaders"] = two_pass.pop("lora_loaders") if two_pass else lora_loaders
+    from .director_stage_reuse import apply_stage_reuse
+    if "reuse_mode" in sampling:
+        report["stage_reuse"] = apply_stage_reuse(graph, sampling["reuse_mode"])
+        if report["stage_reuse"]["warning"]:
+            report["warnings"].append({"shot_id": shot_id, "message": report["stage_reuse"]["warning"]})
 
     enabled_d3_routes = []
     if bridge_enabled:
@@ -892,7 +897,10 @@ def director_job_status(prompt_id: str) -> dict[str, Any]:
                       and str(entry[1].get("prompt_id")) == prompt_id}
             if "execution_interrupted" in events and "execution_error" not in events:
                 state = "cancelled"
-        return {"prompt_id": prompt_id, "state": state, "status": status, "outputs": record.get("outputs", {}), "progress": progress_payload()}
+        from .director_stage_reuse import reuse_reports
+        outputs = record.get("outputs", {})
+        return {"prompt_id": prompt_id, "state": state, "status": status, "outputs": outputs,
+                "stage_reuse": reuse_reports(outputs), "progress": progress_payload()}
     running = server.prompt_queue.get_current_queue()
     if any(str(item[1]) == prompt_id for item in running[0]):
         return {"prompt_id": prompt_id, "state": "running", "progress": progress_payload()}

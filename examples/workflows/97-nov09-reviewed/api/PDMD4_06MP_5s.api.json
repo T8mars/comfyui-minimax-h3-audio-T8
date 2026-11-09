@@ -1,0 +1,205 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "minimax_h3_pdmd_4step_lora_avg_rank_57_bf16.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "5",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ],
+      "prompt": "A fixed cinematic medium shot of an adult woman in a green jacket standing beside a large sunny window in a modern library. She slowly opens a book and smiles. Sharp natural facial details, coherent fingers, smooth gentle movement, consistent bright daylight. Quiet room ambience, no speech, no music, no subtitles, no cuts.",
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s"
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "av_latent": [
+        "8",
+        1
+      ],
+      "steps": 4,
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "sampler_name": "euler",
+      "scheduler": "simple"
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ],
+      "conditioning": [
+        "8",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 81111
+    }
+  },
+  "12": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "11",
+        0
+      ],
+      "guider": [
+        "10",
+        0
+      ],
+      "sampler": [
+        "9",
+        1
+      ],
+      "sigmas": [
+        "9",
+        2
+      ],
+      "latent_image": [
+        "8",
+        1
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "12",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "13",
+        0
+      ],
+      "audio": [
+        "13",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frame_count": 120,
+      "audio_boundary_policy": "absolute_endpoints"
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "14",
+        0
+      ],
+      "audio": [
+        "14",
+        1
+      ],
+      "filename_prefix": "Nov09/pdmd4_1024x576_5s",
+      "crf": 18,
+      "preserve_audio_length": false
+    }
+  }
+}

@@ -212,7 +212,7 @@ def implementation_identity():
     from comfy.ldm.modules import attention
     from comfy_extras import nodes_sparse_attention
     from . import hyperflow_fresh, hyperflow_identity
-    from . import core_bypass_identity
+    from . import core_bypass_identity, automatic_reuse, reuse
     from .. import hyperflow_runtime_advanced, hyperflow_sampling_advanced
     selected = (v2, sampling, h3_core_compat, contracts, eav, comfy.model_base, comfy.sample,
                 comfy.samplers, comfy.conds, comfy.sampler_helpers, comfy.model_sampling,
@@ -226,7 +226,7 @@ def implementation_identity():
                 vdn_stages, vdn_identity, vdn_effects, vdn_relay, vdn_relay_math,
                 vdn_h3_advanced, vdn_two_pass, vdn_sdpa_backend, vdn_attention_compat,
                 hyperflow_fresh, hyperflow_identity, hyperflow_runtime_advanced, hyperflow_sampling_advanced,
-                core_bypass_identity)
+                core_bypass_identity, automatic_reuse, reuse)
     paths = {Path(module.__file__).resolve() for module in selected}
     paths.add(Path(__file__).resolve())
     return {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
@@ -405,6 +405,29 @@ class _DenoiserObserver:
         return value
 
 
+def sampler_is_known(model, sampler, stage_context):
+    """One shared execution/cache check; unknown samplers still run normally."""
+    known = (type(sampler) is comfy.samplers.KSAMPLER and
+             sampler.sampler_function is v2.sample_v2_euler and
+             sampler.extra_options.get("stage_start", 0) == stage_context.start and
+             sampler.extra_options.get("stage_end", 8) == stage_context.end)
+    from . import native_dual, manual_pass, rf_stages, native_explicit, pdd_stages, vdn_stages, hyperflow_fresh
+    for adapter in (native_dual, manual_pass, rf_stages, native_explicit, pdd_stages, vdn_stages):
+        if stage_context.recipe == adapter.RECIPE:
+            return adapter.sampler_is_known(model, sampler, stage_context)
+    if stage_context.recipe in hyperflow_fresh.RECIPES:
+        return hyperflow_fresh.sampler_is_known(model, sampler, stage_context)
+    return known
+
+
+def guider_is_known(guider):
+    from .core_sampler_identity import native_basic_guider_class
+    model = guider.model_patcher
+    return (type(guider) in (comfy.samplers.CFGGuider, Guider_Basic, native_basic_guider_class())
+            and not any(callable(value) and not (key == "inner_model" and value is model.model)
+                        for key, value in vars(guider).items()))
+
+
 def sample_stage(noise, guider, sampler, sigmas, latent_image, stage_context):
     from .noise import operator_identity
     model = guider.model_patcher
@@ -428,32 +451,12 @@ def sample_stage(noise, guider, sampler, sigmas, latent_image, stage_context):
         condition_identity = {"execution_only": uuid.uuid4().hex, "reason": str(error)}
         bound_conditions = condition_identity
         portable = False
-    sampler_known = (type(sampler) is comfy.samplers.KSAMPLER and
-                     sampler.sampler_function is v2.sample_v2_euler and
-                     sampler.extra_options.get("stage_start", 0) == stage_context.start and
-                     sampler.extra_options.get("stage_end", 8) == stage_context.end)
+    sampler_known = sampler_is_known(model, sampler, stage_context)
     from . import native_dual, manual_pass, rf_stages, native_explicit, pdd_stages, vdn_stages, hyperflow_fresh
-    if stage_context.recipe == native_dual.RECIPE:
-        sampler_known = native_dual.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe == manual_pass.RECIPE:
-        sampler_known = manual_pass.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe == rf_stages.RECIPE:
-        sampler_known = rf_stages.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe == native_explicit.RECIPE:
-        sampler_known = native_explicit.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe == pdd_stages.RECIPE:
-        sampler_known = pdd_stages.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe == vdn_stages.RECIPE:
-        sampler_known = vdn_stages.sampler_is_known(model, sampler, stage_context)
-    elif stage_context.recipe in hyperflow_fresh.RECIPES:
-        sampler_known = hyperflow_fresh.sampler_is_known(model, sampler, stage_context)
     # Core outer_sample deletes inner_model only on success. After a failed
     # run this exact selected MODEL may remain; prepare_sampling overwrites it
     # on retry. Authenticate that one derived slot, not arbitrary callables.
-    from .core_sampler_identity import native_basic_guider_class
-    guider_known = (type(guider) in (comfy.samplers.CFGGuider, Guider_Basic, native_basic_guider_class())
-                    and not any(callable(value) and not (key == "inner_model" and value is model.model)
-                                for key, value in vars(guider).items()))
+    guider_known = guider_is_known(guider)
     if not guider_known or not sampler_known:
         portable = False
     implementation = implementation_identity()

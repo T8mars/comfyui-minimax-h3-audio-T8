@@ -1,0 +1,777 @@
+{
+  "1": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "Cardigan_Model_Refine_5s__approved_two_cups.mp4"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "1",
+        0
+      ]
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "source_fps": [
+        "2",
+        2
+      ],
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "start_seconds": 0.0,
+      "short_video_policy": "hold_last_frame",
+      "short_audio_policy": "pad_silence",
+      "frames": [
+        "2",
+        0
+      ],
+      "source_audio": [
+        "2",
+        1
+      ],
+      "source_clock": [
+        "2",
+        3
+      ]
+    }
+  },
+  "4": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "Cardigan_Model_Refine_5s__edge_guided_cardigan.mp4"
+    }
+  },
+  "5": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "40",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3SourceControlDeriveEXPT8",
+    "inputs": {
+      "operation": "manual_mask",
+      "source_frames": [
+        "2",
+        0
+      ],
+      "manual_mask": [
+        "5",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "MiniMaxH3SourceControlMapEXPT8",
+    "inputs": {
+      "kind": "mask",
+      "width": 512,
+      "height": 288,
+      "frame_map": [
+        "3",
+        4
+      ],
+      "control_mask": [
+        "6",
+        1
+      ],
+      "lineage": [
+        "6",
+        2
+      ]
+    }
+  },
+  "8": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "9": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "10": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "11": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "head_chunks": 4,
+      "model": [
+        "11",
+        0
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "chunks": 2,
+      "seq_threshold": 4096,
+      "model": [
+        "12",
+        0
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "prompt": "A continuous realistic studio shot with exactly the same two adult women, the same faces, hair, natural gestures, two original beige paper cups and crossing motion. The curly-haired woman wears a plain deep-blue open-front knitted cardigan throughout. Preserve the original cardigan silhouette, folds, long sleeves and hems; it is already deep blue at the beginning and stays the same deep blue after the blonde woman occludes it. Her pale pink inner top is unchanged. Preserve all hands, skin and both cups as in the source. The blonde woman keeps her white blouse. Soft constant neutral studio lighting. Preserve source audio. Only the cardigan fabric color changes to deep blue; keep the original garment shape and pink inner top. No extra person, no extra hands, no text, no cuts.",
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "lock_source",
+      "audio_denoise_strength": 0.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "clip": [
+        "10",
+        0
+      ],
+      "video_vae": [
+        "8",
+        0
+      ],
+      "audio_vae": [
+        "9",
+        0
+      ],
+      "drive_audio": [
+        "3",
+        1
+      ],
+      "final_audio": [
+        "2",
+        1
+      ]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3LanPaintAVPrepareT8Advanced",
+    "inputs": {
+      "frames": [
+        "300",
+        0
+      ],
+      "source_audio": [
+        "3",
+        1
+      ],
+      "video_vae": [
+        "8",
+        0
+      ],
+      "audio_vae": [
+        "9",
+        0
+      ],
+      "audio_intervals": "[]",
+      "frame_policy": "strict",
+      "require_lanpaint_sampler": true,
+      "video_mask": [
+        "7",
+        1
+      ]
+    }
+  },
+  "16": {
+    "class_type": "KarrasScheduler",
+    "inputs": {
+      "steps": 20,
+      "sigma_max": 0.06,
+      "sigma_min": 0.001,
+      "rho": 1.0
+    }
+  },
+  "17": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "18": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 2610070321
+    }
+  },
+  "19": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "52",
+        0
+      ],
+      "conditioning": [
+        "52",
+        1
+      ]
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3LanPaintClockSamplerEXPT8",
+    "inputs": {
+      "noise": [
+        "18",
+        0
+      ],
+      "guider": [
+        "19",
+        0
+      ],
+      "sampler": [
+        "17",
+        0
+      ],
+      "sigmas": [
+        "16",
+        0
+      ],
+      "av_latent": [
+        "15",
+        0
+      ],
+      "inner_steps": 2,
+      "guidance_lambda": 5.0,
+      "step_size": 0.2,
+      "prompt_mode": "Image First"
+    }
+  },
+  "23": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "20",
+        0
+      ],
+      "video_vae": [
+        "8",
+        0
+      ],
+      "audio_vae": [
+        "9",
+        0
+      ]
+    }
+  },
+  "24": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frames": [
+        "23",
+        0
+      ],
+      "audio": [
+        "23",
+        1
+      ]
+    }
+  },
+  "25": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "filename_prefix": "Nov09/cardigan_coloured_input_sigma006/raw_candidate",
+      "crf": 18,
+      "images": [
+        "24",
+        0
+      ],
+      "audio": [
+        "24",
+        1
+      ]
+    }
+  },
+  "26": {
+    "class_type": "MiniMaxH3LanPaintAVCompositeT8Advanced",
+    "inputs": {
+      "audio_intervals": "[]",
+      "video_blend_pixels": 1,
+      "audio_crossfade_seconds": 0.0,
+      "source_frames": [
+        "3",
+        0
+      ],
+      "repaired_frames": [
+        "23",
+        0
+      ],
+      "source_audio": [
+        "3",
+        1
+      ],
+      "repaired_audio": [
+        "23",
+        1
+      ],
+      "video_mask": [
+        "7",
+        1
+      ]
+    }
+  },
+  "27": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frames": [
+        "26",
+        0
+      ],
+      "audio": [
+        "26",
+        1
+      ]
+    }
+  },
+  "28": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "filename_prefix": "Nov09/cardigan_coloured_input_sigma006/final_composite",
+      "crf": 18,
+      "images": [
+        "27",
+        0
+      ],
+      "audio": [
+        "27",
+        1
+      ]
+    }
+  },
+  "40": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "4",
+        0
+      ]
+    }
+  },
+  "41": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "3",
+        0
+      ],
+      "audio": [
+        "3",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0
+    }
+  },
+  "42": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "41",
+        0
+      ],
+      "audio": [
+        "41",
+        1
+      ],
+      "filename_prefix": "Nov09/cardigan_coloured_input_sigma006/source",
+      "crf": 18
+    }
+  },
+  "50": {
+    "class_type": "Canny",
+    "inputs": {
+      "image": [
+        "3",
+        0
+      ],
+      "low_threshold": 0.15,
+      "high_threshold": 0.35
+    }
+  },
+  "51": {
+    "class_type": "MiniMaxH3FunControlLoaderT8Advanced",
+    "inputs": {
+      "control_net_name": "MiniMax-H3-Fun-Controlnet-Union.safetensors"
+    }
+  },
+  "52": {
+    "class_type": "MiniMaxH3FunControlApplyT8Advanced",
+    "inputs": {
+      "model": [
+        "13",
+        0
+      ],
+      "positive": [
+        "117",
+        0
+      ],
+      "control_net": [
+        "51",
+        0
+      ],
+      "vae": [
+        "8",
+        0
+      ],
+      "control_video": [
+        "50",
+        0
+      ],
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "control_kind": "canny",
+      "fit_mode": "center_crop",
+      "strength": 1.0,
+      "start_percent": 0.0,
+      "end_percent": 1.0
+    }
+  },
+  "100": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-000.png"
+    }
+  },
+  "101": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "14",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 0,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "100",
+        0
+      ]
+    }
+  },
+  "102": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-015.png"
+    }
+  },
+  "103": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "101",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 15,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "102",
+        0
+      ]
+    }
+  },
+  "104": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-030.png"
+    }
+  },
+  "105": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "103",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 30,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "104",
+        0
+      ]
+    }
+  },
+  "106": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-045.png"
+    }
+  },
+  "107": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "105",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 45,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "106",
+        0
+      ]
+    }
+  },
+  "108": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-062.png"
+    }
+  },
+  "109": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "107",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 62,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "108",
+        0
+      ]
+    }
+  },
+  "110": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-077.png"
+    }
+  },
+  "111": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "109",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 77,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "110",
+        0
+      ]
+    }
+  },
+  "112": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-092.png"
+    }
+  },
+  "113": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "111",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 92,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "112",
+        0
+      ]
+    }
+  },
+  "114": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-107.png"
+    }
+  },
+  "115": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "113",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": 107,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "114",
+        0
+      ]
+    }
+  },
+  "116": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-119.png"
+    }
+  },
+  "117": {
+    "class_type": "MiniMaxH3BranchGuideEXPT8",
+    "inputs": {
+      "positive": [
+        "115",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ],
+      "frame_idx": -1,
+      "vae": [
+        "8",
+        0
+      ],
+      "image": [
+        "116",
+        0
+      ]
+    }
+  },
+  "300": {
+    "class_type": "MiniMaxH3MaskedColorStabilizeEXPT8",
+    "inputs": {
+      "repaired_frames": [
+        "3",
+        0
+      ],
+      "source_frames": [
+        "3",
+        0
+      ],
+      "video_mask": [
+        "7",
+        1
+      ],
+      "target_reference": [
+        "100",
+        0
+      ],
+      "source_reference_frame": 0,
+      "target_reference_index": 0,
+      "strength": 1.0,
+      "follow_source_lighting": true,
+      "stabilize_chroma": true,
+      "detail_source": "source_recolour"
+    }
+  },
+  "302": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frames": [
+        "300",
+        0
+      ],
+      "audio": [
+        "3",
+        1
+      ]
+    }
+  },
+  "303": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "filename_prefix": "Nov09/cardigan_coloured_input_sigma006/control_input_coloured",
+      "crf": 18,
+      "images": [
+        "302",
+        0
+      ],
+      "audio": [
+        "302",
+        1
+      ]
+    }
+  }
+}

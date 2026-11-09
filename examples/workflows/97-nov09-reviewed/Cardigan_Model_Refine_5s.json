@@ -1,0 +1,3759 @@
+{
+  "id": "936b93c2-c533-4725-af17-62e61ae8859d",
+  "revision": 0,
+  "last_node_id": 54,
+  "last_link_id": 101,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "Load Video",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__approved_two_cups.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3SourceClockEXPT8",
+      "title": "H3 Source · Decode + Clock / 同次解码时钟 (EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        120
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            3,
+            7
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            4,
+            18
+          ]
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceClockEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3SourceConformEXPT8",
+      "title": "H3 Source · Conform Once / 一次同源准备 (EXP/T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        448
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "link": 2,
+          "widget": {
+            "name": "source_fps"
+          }
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 4,
+          "shape": 7
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "link": 5,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            38,
+            48,
+            52,
+            94,
+            95
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            17,
+            20,
+            40,
+            49,
+            99
+          ]
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "frame_map",
+          "type": "T8_H3_SOURCE_FRAME_MAP",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceConformEXPT8"
+      },
+      "widgets_values": [
+        24.0,
+        512,
+        288,
+        124,
+        0,
+        "hold_last_frame",
+        "pad_silence"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "LoadVideo",
+      "title": "Load Video",
+      "pos": [
+        0,
+        214
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            47
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__edge_guided_cardigan.mp4"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "ImageToMask",
+      "title": "Convert Image to Mask",
+      "pos": [
+        880,
+        538
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageToMask"
+      },
+      "widgets_values": [
+        "red"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "MiniMaxH3SourceControlDeriveEXPT8",
+      "title": "H3 Source · Derive Control / 控制来源绑定 (EXP/T8)",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        176
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "manual_mask",
+          "type": "MASK",
+          "link": 8,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "control_image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "control_mask",
+          "type": "MASK",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "lineage",
+          "type": "T8_H3_CONTROL_LINEAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceControlDeriveEXPT8"
+      },
+      "widgets_values": [
+        "manual_mask"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3SourceControlMapEXPT8",
+      "title": "H3 Source · Map Control / 共用帧映射 (EXP/T8)",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        290
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frame_map",
+          "type": "T8_H3_SOURCE_FRAME_MAP",
+          "link": 9
+        },
+        {
+          "name": "control_image",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "control_mask",
+          "type": "MASK",
+          "link": 10,
+          "shape": 7
+        },
+        {
+          "name": "lineage",
+          "type": "T8_H3_CONTROL_LINEAGE",
+          "link": 11,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "control_image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "control_mask",
+          "type": "MASK",
+          "links": [
+            23,
+            42,
+            96
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceControlMapEXPT8"
+      },
+      "widgets_values": [
+        "mask",
+        512,
+        288
+      ]
+    },
+    {
+      "id": 8,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        428
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            15,
+            21,
+            32,
+            56,
+            60,
+            64,
+            68,
+            72,
+            76,
+            80,
+            84,
+            88,
+            92
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        642
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            16,
+            22,
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        856
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        0,
+        1158
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+      "title": "MiniMax H3 Low VRAM Attention / 低显存注意力 (Advanced EXP/T8)",
+      "pos": [
+        440,
+        210
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LowVRAMAttentionT8Advanced"
+      },
+      "widgets_values": [
+        4
+      ]
+    },
+    {
+      "id": 13,
+      "type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+      "title": "MiniMax H3 Chunk FeedForward / 分块前馈 (Advanced EXP/T8)",
+      "pos": [
+        880,
+        778
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            53
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkFeedForwardT8Advanced"
+      },
+      "widgets_values": [
+        2,
+        4096
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        1320,
+        266
+      ],
+      "size": [
+        390,
+        738
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 14
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 15
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": 17,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": 18,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            58
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "A continuous realistic studio shot with exactly the same two adult women, the same faces, hair, natural gestures, two original beige paper cups and crossing motion. The curly-haired woman wears a plain deep-blue open-front knitted cardigan throughout. Preserve the original cardigan silhouette, folds, long sleeves and hems; it is already deep blue at the beginning and stays the same deep blue after the blonde woman occludes it. Her pale pink inner top is unchanged. Preserve all hands, skin and both cups as in the source. The blonde woman keeps her white blouse. Soft constant neutral studio lighting. Preserve source audio. Only the cardigan fabric color changes to deep blue; keep the original garment shape and pink inner top. No extra person, no extra hands, no text, no cuts.",
+        512,
+        288,
+        124,
+        "T2VA",
+        "lock_source",
+        0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3LanPaintAVPrepareT8Advanced",
+      "title": "MiniMax H3 LanPaint AV Prepare / 音画局部重绘准备 (Advanced)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        342
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 19
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 20
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 21
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 22
+        },
+        {
+          "name": "video_mask",
+          "type": "MASK",
+          "link": 23,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            30,
+            59,
+            63,
+            67,
+            71,
+            75,
+            79,
+            83,
+            87,
+            91
+          ]
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LanPaintAVPrepareT8Advanced"
+      },
+      "widgets_values": [
+        "[]",
+        "strict",
+        true
+      ]
+    },
+    {
+      "id": 16,
+      "type": "KarrasScheduler",
+      "title": null,
+      "pos": [
+        0,
+        1416
+      ],
+      "size": [
+        390,
+        256
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KarrasScheduler"
+      },
+      "widgets_values": [
+        20,
+        0.06,
+        0.001,
+        1.0
+      ]
+    },
+    {
+      "id": 17,
+      "type": "KSamplerSelect",
+      "title": null,
+      "pos": [
+        0,
+        1762
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSamplerSelect"
+      },
+      "widgets_values": [
+        "euler"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1976
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        2610070321,
+        "fixed"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        7480,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3LanPaintClockSamplerEXPT8",
+      "title": "H3 LanPaint Audio Clock / 音频时钟适配采样 (EXP/T8)",
+      "pos": [
+        7920,
+        0
+      ],
+      "size": [
+        390,
+        386
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 26
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 27
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 28
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 29
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 30
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LanPaintClockSamplerEXPT8"
+      },
+      "widgets_values": [
+        2,
+        5.0,
+        0.2,
+        "Image First"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        8360,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 31
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 32
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 33
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            34,
+            39
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            35,
+            41
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 22,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        8800,
+        0
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 34
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 35,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            36
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            37
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0,
+        5,
+        24,
+        0,
+        0.0,
+        "legacy_duration"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        9240,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 36
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov09/cardigan_coloured_input_sigma006/raw_candidate",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 24,
+      "type": "MiniMaxH3LanPaintAVCompositeT8Advanced",
+      "title": "MiniMax H3 LanPaint AV Composite / 原片音画回贴 (Advanced)",
+      "pos": [
+        8800,
+        354
+      ],
+      "size": [
+        390,
+        342
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 38
+        },
+        {
+          "name": "repaired_frames",
+          "type": "IMAGE",
+          "link": 39
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 40
+        },
+        {
+          "name": "repaired_audio",
+          "type": "AUDIO",
+          "link": 41
+        },
+        {
+          "name": "video_mask",
+          "type": "MASK",
+          "link": 42,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            43
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            44
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LanPaintAVCompositeT8Advanced"
+      },
+      "widgets_values": [
+        "[]",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 25,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        9240,
+        310
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 43
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 44,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            45
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            46
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0,
+        5,
+        24,
+        0,
+        0.0,
+        "legacy_duration"
+      ]
+    },
+    {
+      "id": 26,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        9680,
+        0
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 46
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov09/cardigan_coloured_input_sigma006/final_composite",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 27,
+      "type": "MiniMaxH3SourceClockEXPT8",
+      "title": "H3 Source · Decode + Clock / 同次解码时钟 (EXP/T8)",
+      "pos": [
+        440,
+        450
+      ],
+      "size": [
+        390,
+        120
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceClockEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 28,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        1320,
+        1094
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 48
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 49,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            50
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            51
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0.0,
+        5.0,
+        24.0,
+        0,
+        0.0,
+        "legacy_duration"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        1760,
+        380
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 50
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 51
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov09/cardigan_coloured_input_sigma006/source",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 30,
+      "type": "Canny",
+      "title": "Detect Edges (Canny)",
+      "pos": [
+        1320,
+        1448
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 52
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            57
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Canny"
+      },
+      "widgets_values": [
+        0.15,
+        0.35
+      ]
+    },
+    {
+      "id": 31,
+      "type": "MiniMaxH3FunControlLoaderT8Advanced",
+      "title": "MiniMax H3 Fun ControlNet Loader (T8 Advanced)",
+      "pos": [
+        0,
+        2208
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "control_net",
+          "type": "H3_T8_FUN_CONTROL",
+          "links": [
+            55
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FunControlLoaderT8Advanced"
+      },
+      "widgets_values": [
+        "MiniMax-H3-Fun-Controlnet-Union.safetensors"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "MiniMaxH3FunControlApplyT8Advanced",
+      "title": "MiniMax H3 Fun ControlNet Apply (T8 Advanced)",
+      "pos": [
+        7040,
+        0
+      ],
+      "size": [
+        390,
+        562
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 53
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 54
+        },
+        {
+          "name": "control_net",
+          "type": "H3_T8_FUN_CONTROL",
+          "link": 55
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 56
+        },
+        {
+          "name": "control_video",
+          "type": "IMAGE",
+          "link": 57
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3FunControlApplyT8Advanced"
+      },
+      "widgets_values": [
+        512,
+        288,
+        124,
+        "canny",
+        "center_crop",
+        1.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": 33,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        2422
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            61,
+            97
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-000.png"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 58
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 59
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 60,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 61,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            62
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        0
+      ]
+    },
+    {
+      "id": 35,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        2636
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            65
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-015.png"
+      ]
+    },
+    {
+      "id": 36,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 62
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 63
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 64,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 65,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            66
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        15
+      ]
+    },
+    {
+      "id": 37,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        2850
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            69
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-030.png"
+      ]
+    },
+    {
+      "id": 38,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 66
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 67
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 68,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 69,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            70
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        30
+      ]
+    },
+    {
+      "id": 39,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        3064
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            73
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-045.png"
+      ]
+    },
+    {
+      "id": 40,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 70
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 71
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 72,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 73,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            74
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        45
+      ]
+    },
+    {
+      "id": 41,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        3278
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            77
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-062.png"
+      ]
+    },
+    {
+      "id": 42,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 74
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 75
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 76,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 77,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            78
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        62
+      ]
+    },
+    {
+      "id": 43,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        3492
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            81
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-077.png"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        5280,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 78
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 79
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 80,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 81,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            82
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        77
+      ]
+    },
+    {
+      "id": 45,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        3706
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            85
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-092.png"
+      ]
+    },
+    {
+      "id": 46,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        5720,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 82
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 83
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 84,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 85,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            86
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        92
+      ]
+    },
+    {
+      "id": 47,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        3920
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            89
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-107.png"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        6160,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 86
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 87
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 88,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 89,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            90
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        107
+      ]
+    },
+    {
+      "id": 49,
+      "type": "LoadImage",
+      "title": "LoadImage",
+      "pos": [
+        0,
+        4134
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            93
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-119.png"
+      ]
+    },
+    {
+      "id": 50,
+      "type": "MiniMaxH3BranchGuideEXPT8",
+      "title": "H3 Branch-safe Guide / 分支安全追加引导 (EXP/T8)",
+      "pos": [
+        6600,
+        0
+      ],
+      "size": [
+        390,
+        228
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 90
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 91
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 92,
+          "shape": 7
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 93,
+          "shape": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            54
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3BranchGuideEXPT8"
+      },
+      "widgets_values": [
+        -1
+      ]
+    },
+    {
+      "id": 51,
+      "type": "MiniMaxH3MaskedColorStabilizeEXPT8",
+      "title": "H3 Masked Color Stabilize / 局部颜色稳定（显式后处理 EXP/T8）",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        448
+      ],
+      "flags": {},
+      "order": 50,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "repaired_frames",
+          "type": "IMAGE",
+          "link": 94
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "link": 95
+        },
+        {
+          "name": "video_mask",
+          "type": "MASK",
+          "link": 96
+        },
+        {
+          "name": "target_reference",
+          "type": "IMAGE",
+          "link": 97
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            19,
+            98
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3MaskedColorStabilizeEXPT8"
+      },
+      "widgets_values": [
+        0,
+        0,
+        1.0,
+        true,
+        true,
+        "source_recolour"
+      ]
+    },
+    {
+      "id": 52,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        2640,
+        432
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 51,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 98
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 99,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            100
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            101
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0,
+        5,
+        24,
+        0,
+        0.0,
+        "legacy_duration"
+      ]
+    },
+    {
+      "id": 53,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        3080,
+        318
+      ],
+      "size": [
+        390,
+        220
+      ],
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 100
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 101
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov09/cardigan_coloured_input_sigma006/control_input_coloured",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 54,
+      "type": "MarkdownNote",
+      "pos": [
+        0,
+        -350
+      ],
+      "size": [
+        1000,
+        270
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "本工作流来自实际保存并通过导入/API/保存/重开的指定测试配方；对应成片已获人工接受。不是任意素材、模型或设备的效果保证。模型、LoRA顺序/强度、采样器、sigma及接线保持。请在加载节点选择自己的合法输入；示例媒体、引导静帧和权重不随GitHub上传。API图见同目录api；依赖和实际尺寸/时长见README。改变长链参数请使用新的chain_id。本例先以source_recolour给原片明确设色，再经原FL2VA模型低噪声细化；原生Karras rho1，20步，sigma0.06至0.001后归零，实际20次DiT。设色输入另存且不是模型结果；Decode直接接Composite，生成后没有RGB校色。这是指定纯换色配方的验收，不是任意服装款式/材质替换或模型原生通用去闪烁认证。"
+      ],
+      "title": "使用说明与验收范围 / 未发布候选"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      2,
+      2,
+      3,
+      1,
+      "FLOAT"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      2,
+      1,
+      3,
+      2,
+      "AUDIO"
+    ],
+    [
+      5,
+      2,
+      3,
+      3,
+      3,
+      "T8_H3_SOURCE_CLOCK"
+    ],
+    [
+      6,
+      27,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      2,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      5,
+      0,
+      6,
+      1,
+      "MASK"
+    ],
+    [
+      9,
+      3,
+      4,
+      7,
+      0,
+      "T8_H3_SOURCE_FRAME_MAP"
+    ],
+    [
+      10,
+      6,
+      1,
+      7,
+      2,
+      "MASK"
+    ],
+    [
+      11,
+      6,
+      2,
+      7,
+      3,
+      "T8_H3_CONTROL_LINEAGE"
+    ],
+    [
+      12,
+      11,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      13,
+      12,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      14,
+      10,
+      0,
+      14,
+      0,
+      "CLIP"
+    ],
+    [
+      15,
+      8,
+      0,
+      14,
+      1,
+      "VAE"
+    ],
+    [
+      16,
+      9,
+      0,
+      14,
+      2,
+      "VAE"
+    ],
+    [
+      17,
+      3,
+      1,
+      14,
+      3,
+      "AUDIO"
+    ],
+    [
+      18,
+      2,
+      1,
+      14,
+      4,
+      "AUDIO"
+    ],
+    [
+      19,
+      51,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      3,
+      1,
+      15,
+      1,
+      "AUDIO"
+    ],
+    [
+      21,
+      8,
+      0,
+      15,
+      2,
+      "VAE"
+    ],
+    [
+      22,
+      9,
+      0,
+      15,
+      3,
+      "VAE"
+    ],
+    [
+      23,
+      7,
+      1,
+      15,
+      4,
+      "MASK"
+    ],
+    [
+      24,
+      32,
+      0,
+      19,
+      0,
+      "MODEL"
+    ],
+    [
+      25,
+      32,
+      1,
+      19,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      26,
+      18,
+      0,
+      20,
+      0,
+      "NOISE"
+    ],
+    [
+      27,
+      19,
+      0,
+      20,
+      1,
+      "GUIDER"
+    ],
+    [
+      28,
+      17,
+      0,
+      20,
+      2,
+      "SAMPLER"
+    ],
+    [
+      29,
+      16,
+      0,
+      20,
+      3,
+      "SIGMAS"
+    ],
+    [
+      30,
+      15,
+      0,
+      20,
+      4,
+      "LATENT"
+    ],
+    [
+      31,
+      20,
+      0,
+      21,
+      0,
+      "LATENT"
+    ],
+    [
+      32,
+      8,
+      0,
+      21,
+      1,
+      "VAE"
+    ],
+    [
+      33,
+      9,
+      0,
+      21,
+      2,
+      "VAE"
+    ],
+    [
+      34,
+      21,
+      0,
+      22,
+      0,
+      "IMAGE"
+    ],
+    [
+      35,
+      21,
+      1,
+      22,
+      1,
+      "AUDIO"
+    ],
+    [
+      36,
+      22,
+      0,
+      23,
+      0,
+      "IMAGE"
+    ],
+    [
+      37,
+      22,
+      1,
+      23,
+      1,
+      "AUDIO"
+    ],
+    [
+      38,
+      3,
+      0,
+      24,
+      0,
+      "IMAGE"
+    ],
+    [
+      39,
+      21,
+      0,
+      24,
+      1,
+      "IMAGE"
+    ],
+    [
+      40,
+      3,
+      1,
+      24,
+      2,
+      "AUDIO"
+    ],
+    [
+      41,
+      21,
+      1,
+      24,
+      3,
+      "AUDIO"
+    ],
+    [
+      42,
+      7,
+      1,
+      24,
+      4,
+      "MASK"
+    ],
+    [
+      43,
+      24,
+      0,
+      25,
+      0,
+      "IMAGE"
+    ],
+    [
+      44,
+      24,
+      1,
+      25,
+      1,
+      "AUDIO"
+    ],
+    [
+      45,
+      25,
+      0,
+      26,
+      0,
+      "IMAGE"
+    ],
+    [
+      46,
+      25,
+      1,
+      26,
+      1,
+      "AUDIO"
+    ],
+    [
+      47,
+      4,
+      0,
+      27,
+      0,
+      "VIDEO"
+    ],
+    [
+      48,
+      3,
+      0,
+      28,
+      0,
+      "IMAGE"
+    ],
+    [
+      49,
+      3,
+      1,
+      28,
+      1,
+      "AUDIO"
+    ],
+    [
+      50,
+      28,
+      0,
+      29,
+      0,
+      "IMAGE"
+    ],
+    [
+      51,
+      28,
+      1,
+      29,
+      1,
+      "AUDIO"
+    ],
+    [
+      52,
+      3,
+      0,
+      30,
+      0,
+      "IMAGE"
+    ],
+    [
+      53,
+      13,
+      0,
+      32,
+      0,
+      "MODEL"
+    ],
+    [
+      54,
+      50,
+      0,
+      32,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      55,
+      31,
+      0,
+      32,
+      2,
+      "H3_T8_FUN_CONTROL"
+    ],
+    [
+      56,
+      8,
+      0,
+      32,
+      3,
+      "VAE"
+    ],
+    [
+      57,
+      30,
+      0,
+      32,
+      4,
+      "IMAGE"
+    ],
+    [
+      58,
+      14,
+      0,
+      34,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      59,
+      15,
+      0,
+      34,
+      1,
+      "LATENT"
+    ],
+    [
+      60,
+      8,
+      0,
+      34,
+      2,
+      "VAE"
+    ],
+    [
+      61,
+      33,
+      0,
+      34,
+      4,
+      "IMAGE"
+    ],
+    [
+      62,
+      34,
+      0,
+      36,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      63,
+      15,
+      0,
+      36,
+      1,
+      "LATENT"
+    ],
+    [
+      64,
+      8,
+      0,
+      36,
+      2,
+      "VAE"
+    ],
+    [
+      65,
+      35,
+      0,
+      36,
+      4,
+      "IMAGE"
+    ],
+    [
+      66,
+      36,
+      0,
+      38,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      67,
+      15,
+      0,
+      38,
+      1,
+      "LATENT"
+    ],
+    [
+      68,
+      8,
+      0,
+      38,
+      2,
+      "VAE"
+    ],
+    [
+      69,
+      37,
+      0,
+      38,
+      4,
+      "IMAGE"
+    ],
+    [
+      70,
+      38,
+      0,
+      40,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      71,
+      15,
+      0,
+      40,
+      1,
+      "LATENT"
+    ],
+    [
+      72,
+      8,
+      0,
+      40,
+      2,
+      "VAE"
+    ],
+    [
+      73,
+      39,
+      0,
+      40,
+      4,
+      "IMAGE"
+    ],
+    [
+      74,
+      40,
+      0,
+      42,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      75,
+      15,
+      0,
+      42,
+      1,
+      "LATENT"
+    ],
+    [
+      76,
+      8,
+      0,
+      42,
+      2,
+      "VAE"
+    ],
+    [
+      77,
+      41,
+      0,
+      42,
+      4,
+      "IMAGE"
+    ],
+    [
+      78,
+      42,
+      0,
+      44,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      79,
+      15,
+      0,
+      44,
+      1,
+      "LATENT"
+    ],
+    [
+      80,
+      8,
+      0,
+      44,
+      2,
+      "VAE"
+    ],
+    [
+      81,
+      43,
+      0,
+      44,
+      4,
+      "IMAGE"
+    ],
+    [
+      82,
+      44,
+      0,
+      46,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      83,
+      15,
+      0,
+      46,
+      1,
+      "LATENT"
+    ],
+    [
+      84,
+      8,
+      0,
+      46,
+      2,
+      "VAE"
+    ],
+    [
+      85,
+      45,
+      0,
+      46,
+      4,
+      "IMAGE"
+    ],
+    [
+      86,
+      46,
+      0,
+      48,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      87,
+      15,
+      0,
+      48,
+      1,
+      "LATENT"
+    ],
+    [
+      88,
+      8,
+      0,
+      48,
+      2,
+      "VAE"
+    ],
+    [
+      89,
+      47,
+      0,
+      48,
+      4,
+      "IMAGE"
+    ],
+    [
+      90,
+      48,
+      0,
+      50,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      91,
+      15,
+      0,
+      50,
+      1,
+      "LATENT"
+    ],
+    [
+      92,
+      8,
+      0,
+      50,
+      2,
+      "VAE"
+    ],
+    [
+      93,
+      49,
+      0,
+      50,
+      4,
+      "IMAGE"
+    ],
+    [
+      94,
+      3,
+      0,
+      51,
+      0,
+      "IMAGE"
+    ],
+    [
+      95,
+      3,
+      0,
+      51,
+      1,
+      "IMAGE"
+    ],
+    [
+      96,
+      7,
+      1,
+      51,
+      2,
+      "MASK"
+    ],
+    [
+      97,
+      33,
+      0,
+      51,
+      3,
+      "IMAGE"
+    ],
+    [
+      98,
+      51,
+      0,
+      52,
+      0,
+      "IMAGE"
+    ],
+    [
+      99,
+      3,
+      1,
+      52,
+      1,
+      "AUDIO"
+    ],
+    [
+      100,
+      52,
+      0,
+      53,
+      0,
+      "IMAGE"
+    ],
+    [
+      101,
+      52,
+      1,
+      53,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [
+        160,
+        450
+      ]
+    },
+    "workflow_title": "Cardigan_Model_Refine_5s — reviewed recipe / 已审配方"
+  },
+  "version": 0.4
+}

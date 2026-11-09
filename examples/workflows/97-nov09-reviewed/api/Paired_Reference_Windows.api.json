@@ -1,0 +1,320 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "pika_h3_flex_ref2va_v1_bf16.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "5",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ],
+      "prompt": "A continuous steady shot of the same woman as Video 2 in the same bright room, with the same red sweater and natural hand movement. Use the voice from Audio 2 and the appearance in Video 2. Video 1 and Video 3 show adjacent moments of the same scene and person. Natural realistic movement and voice, no cuts or subtitles.",
+      "width": 640,
+      "height": 352,
+      "length": 56,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_videos.ref_video_0": [
+        "50",
+        0
+      ],
+      "ref_videos.ref_video_1": [
+        "51",
+        0
+      ],
+      "ref_videos.ref_video_2": [
+        "52",
+        0
+      ],
+      "ref_video_audios.ref_video_audio_0": [
+        "50",
+        1
+      ],
+      "ref_video_audios.ref_video_audio_1": [
+        "51",
+        1
+      ],
+      "ref_video_audios.ref_video_audio_2": [
+        "52",
+        1
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3PikaFlexSetupEXPT8",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "av_latent": [
+        "8",
+        1
+      ]
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ],
+      "conditioning": [
+        "8",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 81114
+    }
+  },
+  "12": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "11",
+        0
+      ],
+      "guider": [
+        "10",
+        0
+      ],
+      "sampler": [
+        "9",
+        1
+      ],
+      "sigmas": [
+        "9",
+        2
+      ],
+      "latent_image": [
+        "8",
+        1
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "12",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "13",
+        0
+      ],
+      "audio": [
+        "13",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 2.0,
+      "fps": 24.0,
+      "frame_count": 48,
+      "audio_boundary_policy": "absolute_endpoints"
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "14",
+        0
+      ],
+      "audio": [
+        "14",
+        1
+      ],
+      "filename_prefix": "Nov08/Three_paired_reference_windows",
+      "crf": 18,
+      "preserve_audio_length": false
+    }
+  },
+  "40": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "Paired_Reference_Windows__spoken_source.mp4"
+    }
+  },
+  "41": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "40",
+        0
+      ]
+    }
+  },
+  "50": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "frames": [
+        "41",
+        0
+      ],
+      "source_audio": [
+        "41",
+        1
+      ],
+      "source_fps": [
+        "41",
+        2
+      ],
+      "source_clock": [
+        "41",
+        3
+      ],
+      "width": 640,
+      "height": 352,
+      "length": 56,
+      "start_seconds": 0.0,
+      "short_video_policy": "strict",
+      "short_audio_policy": "strict"
+    }
+  },
+  "51": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "frames": [
+        "41",
+        0
+      ],
+      "source_audio": [
+        "41",
+        1
+      ],
+      "source_fps": [
+        "41",
+        2
+      ],
+      "source_clock": [
+        "41",
+        3
+      ],
+      "width": 640,
+      "height": 352,
+      "length": 56,
+      "start_seconds": 0.75,
+      "short_video_policy": "strict",
+      "short_audio_policy": "strict"
+    }
+  },
+  "52": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "frames": [
+        "41",
+        0
+      ],
+      "source_audio": [
+        "41",
+        1
+      ],
+      "source_fps": [
+        "41",
+        2
+      ],
+      "source_clock": [
+        "41",
+        3
+      ],
+      "width": 640,
+      "height": 352,
+      "length": 56,
+      "start_seconds": 1.5,
+      "short_video_policy": "strict",
+      "short_audio_policy": "strict"
+    }
+  }
+}

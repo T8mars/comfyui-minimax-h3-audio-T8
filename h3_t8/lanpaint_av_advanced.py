@@ -24,6 +24,11 @@ UPSTREAM = "https://github.com/scraed/LanPaint"
 UPSTREAM_REVISION = "32cf848e93971da380d868936e007f5611218bee"
 
 
+def _require_finite(value: torch.Tensor, name: str):
+    if not isinstance(value, torch.Tensor) or not bool(torch.isfinite(value).all()):
+        raise ValueError(f"{name} must contain finite tensor values")
+
+
 def parse_audio_intervals(value: str, duration: float) -> list[tuple[float, float]]:
     text = str(value or "").strip()
     if not text:
@@ -97,6 +102,7 @@ def _video_mask_to_latent(mask, video: torch.Tensor, frame_count: int) -> torch.
         return torch.zeros_like(video)
     if not isinstance(mask, torch.Tensor):
         raise ValueError("video_mask must be a connected MASK tensor")
+    _require_finite(mask, "video_mask")
     value = mask.float()
     if value.ndim == 2:
         value = value.unsqueeze(0)
@@ -184,6 +190,7 @@ def prepare_lanpaint_av_latent(
 ):
     if not isinstance(frames, torch.Tensor) or frames.ndim != 4 or frames.shape[0] < 5:
         raise ValueError("frames must be a non-empty ComfyUI IMAGE batch")
+    _require_finite(frames, "source_frames")
     frame_count = int(frames.shape[0])
     aligned = align_frame_count_down(frame_count)
     if aligned < 5:
@@ -277,6 +284,7 @@ def prepare_lanpaint_av_latent(
 def _frame_mask(mask, count: int, height: int, width: int, device) -> torch.Tensor:
     if mask is None:
         return torch.zeros((count, height, width), device=device)
+    _require_finite(mask, "video_mask")
     value = mask.float()
     if value.ndim == 2:
         value = value.unsqueeze(0)
@@ -311,6 +319,10 @@ def _feather_video_mask(mask: torch.Tensor, pixels: int) -> torch.Tensor:
 def _fit_audio_pair(source_audio, repaired_audio):
     source, source_rate = validate_audio(source_audio, "source_audio")
     repaired, repaired_rate = validate_audio(repaired_audio, "repaired_audio")
+    _require_finite(source, "source_audio")
+    _require_finite(repaired, "repaired_audio")
+    if min(source_rate, repaired_rate) <= 0:
+        raise ValueError("source_audio and repaired_audio require positive sample rates")
     if repaired_rate != source_rate:
         repaired = torchaudio.functional.resample(repaired, repaired_rate, source_rate)
     channels = max(source.shape[1], repaired.shape[1])
@@ -324,8 +336,14 @@ def _fit_audio_pair(source_audio, repaired_audio):
 
     source = match(source)
     repaired = match(repaired)
-    length = min(source.shape[-1], repaired.shape[-1])
-    return source[..., :length], repaired[..., :length], source_rate
+    length = source.shape[-1]
+    available = min(length, repaired.shape[-1])
+    repaired = repaired[..., :length]
+    if available < length:
+        # The source owns the delivery length. Missing repair samples may be
+        # irrelevant (video-only repair), but cannot discard untouched speech.
+        repaired = functional.pad(repaired, (0, length - available))
+    return source, repaired, source_rate, available
 
 
 def composite_lanpaint_av(
@@ -340,6 +358,8 @@ def composite_lanpaint_av(
 ):
     if source_frames.ndim != 4 or repaired_frames.ndim != 4:
         raise ValueError("source_frames and repaired_frames must be IMAGE batches")
+    _require_finite(source_frames, "source_frames")
+    _require_finite(repaired_frames, "repaired_frames")
     count = min(int(source_frames.shape[0]), int(repaired_frames.shape[0]))
     if count < 1:
         raise ValueError("Cannot composite empty frame batches")
@@ -357,7 +377,7 @@ def composite_lanpaint_av(
     feathered = _feather_video_mask(mask, int(video_blend_pixels))
     frames = source * (1.0 - feathered[..., None]) + repaired * feathered[..., None]
 
-    source_wave, repaired_wave, sample_rate = _fit_audio_pair(source_audio, repaired_audio)
+    source_wave, repaired_wave, sample_rate, repaired_samples = _fit_audio_pair(source_audio, repaired_audio)
     duration = source_wave.shape[-1] / sample_rate
     intervals = parse_audio_intervals(audio_intervals, duration)
     audio_mask = audio_interval_mask(
@@ -374,6 +394,11 @@ def composite_lanpaint_av(
         right = kernel - 1 - left
         padded = functional.pad(audio_mask[None, None], (left, right), mode="replicate")
         audio_mask = functional.avg_pool1d(padded, kernel, stride=1)[0, 0]
+    if bool((audio_mask[repaired_samples:] > 0).any()):
+        raise ValueError(
+            "Repaired audio does not cover the selected audio interval and its crossfade: "
+            f"candidate has {repaired_samples} samples at {sample_rate} Hz"
+        )
     audio = source_wave * (1.0 - audio_mask[None, None]) + repaired_wave * audio_mask[None, None]
     report = {
         "schema": SCHEMA,
@@ -386,6 +411,8 @@ def composite_lanpaint_av(
         "audio_replaced_fraction": float(audio_mask.mean().item()),
         "audio_intervals": [list(item) for item in intervals],
         "source_audio_preserved_outside_intervals": True,
+        "source_audio_samples": int(source_wave.shape[-1]),
+        "available_repaired_audio_samples": int(repaired_samples),
     }
     return (
         frames.clamp(0.0, 1.0),

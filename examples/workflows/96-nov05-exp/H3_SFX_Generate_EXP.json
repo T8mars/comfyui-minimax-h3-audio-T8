@@ -1,0 +1,1390 @@
+{
+  "id": "915ee253-2404-4fe6-bd09-81a90dc5d9b1",
+  "revision": 0,
+  "last_node_id": 22,
+  "last_link_id": 31,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "title": "UNETLoader",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        390,
+        168
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+      "title": "MiniMax H3 Low VRAM Attention / 低显存注意力 (Advanced EXP/T8)",
+      "pos": [
+        440,
+        0
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LowVRAMAttentionT8Advanced"
+      },
+      "widgets_values": [
+        8
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+      "title": "MiniMax H3 Chunk FeedForward / 分块前馈 (Advanced EXP/T8)",
+      "pos": [
+        880,
+        0
+      ],
+      "size": [
+        390,
+        194
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3ChunkFeedForwardT8Advanced"
+      },
+      "widgets_values": [
+        8,
+        256
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CLIPLoader",
+      "title": "CLIPLoader",
+      "pos": [
+        0,
+        258
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        560
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            13,
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "VAELoader",
+      "title": "VAELoader",
+      "pos": [
+        0,
+        774
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            5,
+            14,
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3AudioConditioningT8",
+      "title": "MiniMax H3 Audio Conditioning (T8)",
+      "pos": [
+        440,
+        240
+      ],
+      "size": [
+        390,
+        686
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 5
+        },
+        {
+          "name": "drive_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "final_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "semantic_bridge",
+          "type": "T8_SEMANTIC_BRIDGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "media_map_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AudioConditioningT8"
+      },
+      "widgets_values": [
+        "A woman in a knitted red sweater slowly raises her hand, waves and lowers it in a quiet living room. Only generate subtle natural fabric rustling of her sleeve following the hand motion, with very quiet room tone. No speech, words, whispers, voices, vocalizations, music, impacts or electronic noise. The visible mouth movement should produce no voice.",
+        448,
+        256,
+        124,
+        "T2VA",
+        "native",
+        1.0,
+        false,
+        0,
+        true,
+        "match",
+        "official_2_to_15s",
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "LoadVideo",
+      "title": "Load Video",
+      "pos": [
+        0,
+        988
+      ],
+      "size": [
+        390,
+        124
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "TaoMate_Source.mp4"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3SourceClockEXPT8",
+      "title": "H3 Source · Decode + Clock / 同次解码时钟 (EXP/T8)",
+      "pos": [
+        440,
+        1016
+      ],
+      "size": [
+        390,
+        120
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceClockEXPT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3SourceConformEXPT8",
+      "title": "H3 Source · Conform Once / 一次同源准备 (EXP/T8)",
+      "pos": [
+        880,
+        284
+      ],
+      "size": [
+        390,
+        396
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "source_fps",
+          "type": "FLOAT",
+          "link": 8,
+          "widget": {
+            "name": "source_fps"
+          }
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "source_clock",
+          "type": "T8_H3_SOURCE_CLOCK",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            9,
+            28
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "duration_seconds",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "frame_map",
+          "type": "T8_H3_SOURCE_FRAME_MAP",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SourceConformEXPT8"
+      },
+      "widgets_values": [
+        24.0,
+        832,
+        480,
+        124,
+        0.0,
+        "hold_last_frame",
+        "pad_silence"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "ImageScale",
+      "title": "ImageScale",
+      "pos": [
+        1320,
+        0
+      ],
+      "size": [
+        390,
+        282
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageScale",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "area",
+        416,
+        240,
+        "disabled"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "ImagePadForOutpaint",
+      "title": "ImagePadForOutpaint",
+      "pos": [
+        1760,
+        0
+      ],
+      "size": [
+        390,
+        326
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImagePadForOutpaint",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        16,
+        8,
+        16,
+        8,
+        0
+      ]
+    },
+    {
+      "id": 13,
+      "type": "SolidMask",
+      "title": "Create Solid Mask",
+      "pos": [
+        0,
+        1202
+      ],
+      "size": [
+        390,
+        212
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SolidMask"
+      },
+      "widgets_values": [
+        0.0,
+        448,
+        256
+      ]
+    },
+    {
+      "id": 14,
+      "type": "MiniMaxH3LanPaintAVPrepareT8Advanced",
+      "title": "MiniMax H3 LanPaint AV Prepare / 音画局部重绘准备 (Advanced)",
+      "pos": [
+        2200,
+        0
+      ],
+      "size": [
+        390,
+        342
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 12
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 13
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 14
+        },
+        {
+          "name": "video_mask",
+          "type": "MASK",
+          "link": 15,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            17,
+            24
+          ]
+        },
+        {
+          "name": "source_frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LanPaintAVPrepareT8Advanced"
+      },
+      "widgets_values": [
+        "[{\"start\":0,\"end\":5.166666666666667}]",
+        "strict",
+        false
+      ]
+    },
+    {
+      "id": 15,
+      "type": "MiniMaxH3DualClockSamplerT8",
+      "title": "MiniMax H3 Dual-Clock Sampler (T8)",
+      "pos": [
+        2640,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 16
+        },
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockSamplerT8"
+      },
+      "widgets_values": [
+        40,
+        12.0,
+        3.0,
+        "dual_clock_euler",
+        "native_flow"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "BasicGuider",
+      "title": "Basic Guider",
+      "pos": [
+        3080,
+        0
+      ],
+      "size": [
+        390,
+        132
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 18
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BasicGuider"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 17,
+      "type": "RandomNoise",
+      "title": null,
+      "pos": [
+        0,
+        1504
+      ],
+      "size": [
+        390,
+        142
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomNoise"
+      },
+      "widgets_values": [
+        8301,
+        "fixed"
+      ]
+    },
+    {
+      "id": 18,
+      "type": "SamplerCustomAdvanced",
+      "title": null,
+      "pos": [
+        3520,
+        0
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 20
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 21
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 22
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 23
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            25
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SamplerCustomAdvanced"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 19,
+      "type": "MiniMaxH3AVDecodeT8",
+      "title": "MiniMax H3 AV Decode (T8)",
+      "pos": [
+        3960,
+        0
+      ],
+      "size": [
+        390,
+        158
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 25
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 26
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            29
+          ]
+        },
+        {
+          "name": "video_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "MiniMaxH3OutputTrimT8",
+      "title": "MiniMax H3 Output Trim (T8)",
+      "pos": [
+        4400,
+        0
+      ],
+      "size": [
+        390,
+        352
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "link": 28
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 29,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            31
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3OutputTrimT8"
+      },
+      "widgets_values": [
+        0.0,
+        5.0,
+        24.0,
+        120,
+        0.0,
+        "absolute_endpoints"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "MiniMax H3 Safe AV Save / 安全音视频保存 (Advanced EXP/T8)",
+      "pos": [
+        4840,
+        0
+      ],
+      "size": [
+        390,
+        264
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 30
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 31
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov05/SFX_H3_5s",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 22,
+      "type": "MarkdownNote",
+      "pos": [
+        0,
+        -350
+      ],
+      "size": [
+        1000,
+        270
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "H3 声音候选生成；未发布实验候选，人工听感待审。先上传自己的原片，并在 Load Video 选择；默认文件名 TaoMate_Source.mp4，JSON 不含媒体。默认 5 秒 / 24fps：原片统一到 832×480、124 帧供条件使用，最终只保存前 120 帧；采样条件另以 416×240 缩小并补边到 448×256。40 步 dual_clock_euler / native_flow，video mask=0 保留视频条件，audio mask=1 重绘整段声音；不加载加速 LoRA。最终保存直连原片同源画面，而非 VAE 重建画面。此图只生成 H3 音效候选，不提取或分离人声，也不能保证模型绝不生成声音以外内容；请听审。MMAudio 候选另用已有插件生成。生成文件 output/Nov05/SFX_H3_5s_*.mp4 可提取真实音频后接 Local_SFX_AB_EXP 的 h3_sfx_audio；原声和 MMAudio 候选仍单独接入。不要把本图当成三选混音图。"
+      ],
+      "title": "使用说明与验收范围 / 未发布候选"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      0,
+      "MODEL"
+    ],
+    [
+      3,
+      4,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      5,
+      0,
+      7,
+      1,
+      "VAE"
+    ],
+    [
+      5,
+      6,
+      0,
+      7,
+      2,
+      "VAE"
+    ],
+    [
+      6,
+      8,
+      0,
+      9,
+      0,
+      "VIDEO"
+    ],
+    [
+      7,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      9,
+      2,
+      10,
+      1,
+      "FLOAT"
+    ],
+    [
+      9,
+      10,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      11,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      12,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      10,
+      1,
+      14,
+      1,
+      "AUDIO"
+    ],
+    [
+      13,
+      5,
+      0,
+      14,
+      2,
+      "VAE"
+    ],
+    [
+      14,
+      6,
+      0,
+      14,
+      3,
+      "VAE"
+    ],
+    [
+      15,
+      13,
+      0,
+      14,
+      4,
+      "MASK"
+    ],
+    [
+      16,
+      3,
+      0,
+      15,
+      0,
+      "MODEL"
+    ],
+    [
+      17,
+      14,
+      0,
+      15,
+      1,
+      "LATENT"
+    ],
+    [
+      18,
+      15,
+      0,
+      16,
+      0,
+      "MODEL"
+    ],
+    [
+      19,
+      7,
+      0,
+      16,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      20,
+      17,
+      0,
+      18,
+      0,
+      "NOISE"
+    ],
+    [
+      21,
+      16,
+      0,
+      18,
+      1,
+      "GUIDER"
+    ],
+    [
+      22,
+      15,
+      1,
+      18,
+      2,
+      "SAMPLER"
+    ],
+    [
+      23,
+      15,
+      2,
+      18,
+      3,
+      "SIGMAS"
+    ],
+    [
+      24,
+      14,
+      0,
+      18,
+      4,
+      "LATENT"
+    ],
+    [
+      25,
+      18,
+      0,
+      19,
+      0,
+      "LATENT"
+    ],
+    [
+      26,
+      5,
+      0,
+      19,
+      1,
+      "VAE"
+    ],
+    [
+      27,
+      6,
+      0,
+      19,
+      2,
+      "VAE"
+    ],
+    [
+      28,
+      10,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      29,
+      19,
+      1,
+      20,
+      1,
+      "AUDIO"
+    ],
+    [
+      30,
+      20,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      31,
+      20,
+      1,
+      21,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [
+        160,
+        450
+      ]
+    },
+    "workflow_title": "H3_SFX_Generate_EXP — unpublished EXP candidate"
+  },
+  "version": 0.4
+}

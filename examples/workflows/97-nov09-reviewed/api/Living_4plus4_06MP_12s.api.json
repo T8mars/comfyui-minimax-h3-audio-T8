@@ -1,0 +1,191 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "22": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "23": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ],
+      "lora_name": "minimax_h3_turbo_v4_step600_ema_comfyui_B.safetensors",
+      "strength_model": 1.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    }
+  },
+  "24": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "23",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "25": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "24",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "40": {
+    "class_type": "MiniMaxH3DualModelLongVideoEXPT8",
+    "inputs": {
+      "low_width": 512,
+      "low_height": 288,
+      "upscaler_model": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "coarse_steps": 4,
+      "refine_steps": 4,
+      "first_shift_video": 12.0,
+      "first_shift_audio": 3.0,
+      "second_shift_video": 12.0,
+      "second_shift_audio": 3.0,
+      "second_audio_source": "auto",
+      "second_audio_strength": 0.0,
+      "chain_id": "nov09_living_plainprompt_12s_v1",
+      "total_duration_seconds": 12.0,
+      "width": 1024,
+      "height": 576,
+      "render_window_frames": 124,
+      "context_frames": 22,
+      "global_prompt": "Documentary footage of the same adult woman in a green jacket seated on a sofa in the same modern living room, reading an ordinary matte paper book. The tripod camera stays fixed in the reference composition. She makes one slow page turn and then raises her eyes into a relaxed silent smile. Maintain the same face, green jacket, furniture and room throughout the continuous take. Diffuse overcast daylight fills the room evenly, with constant neutral exposure, natural skin and matte surfaces. The soundtrack contains only quiet indoor room tone and gentle paper rustling.",
+      "segment_prompts_json": "",
+      "prompt_relay_mode": "disabled",
+      "query_chunk_rows": 256,
+      "eav_mode": "disabled",
+      "eav_tau": 4.0,
+      "eav_start_video_progress": 0.15,
+      "eav_end_video_progress": 0.9,
+      "eav_max_workspace_mib": 32,
+      "eav_g_hard_limit": 1.5,
+      "minimum_free_vram_mib": 512,
+      "base_seed": 81113,
+      "seed_policy": "increment",
+      "task_type": "auto",
+      "context_audio": "video_and_audio",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": true,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "first_frame_reuse": "segment0_only",
+      "persistent_identity_strategy": "single_reference",
+      "persistent_identity_interval": 1,
+      "resume_existing": false,
+      "filename_prefix": "Nov09/Living_PlainPrompt_12s",
+      "audio_seam_policy": "cosine_bridge",
+      "bridge_ms": 5.0,
+      "bit_depth": 8,
+      "crf": 18,
+      "color_match": true,
+      "video_context_mode": "reference_only",
+      "low_context_source": "accepted_picture_low_context_v1",
+      "color_match_mode": "bounded_spatial_v2",
+      "model_pass1": [
+        "4",
+        0
+      ],
+      "model_pass2": [
+        "25",
+        0
+      ],
+      "clip": [
+        "5",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ],
+      "first_frame": [
+        "16",
+        0
+      ]
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Living_4plus4_06MP_12s__living-clean-first.png"
+    }
+  }
+}

@@ -313,8 +313,25 @@ class _PikaTwoPassExtension(_PikaFlexExtension):
         return [*(await super().get_node_list()), *NODES]
 
 
+class _NovemberNoiseExtension(_PikaTwoPassExtension):
+    async def get_node_list(self):
+        from .nodes_progressive_noise import NODES
+        from .nodes_stage_reuse import NODES as REUSE_NODES
+        from .nodes_taomate_hd import NODES as TAOMATE_NODES
+        from .nodes_nag_h3 import NODES as NAG_NODES
+        from .nodes_local_sfx import NODES as SFX_NODES
+        from .nodes_refine_endpoints import NODES as ENDPOINT_NODES
+        return [*(await super().get_node_list()), *NODES, *REUSE_NODES, *TAOMATE_NODES, *NAG_NODES, *SFX_NODES, *ENDPOINT_NODES]
+
+
+class _MaskedColourExtension(_NovemberNoiseExtension):
+    async def get_node_list(self):
+        from .nodes_masked_color_stabilize import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _PikaTwoPassExtension()
+    return _MaskedColourExtension()
 
 
 WEB_DIRECTORY = "./web"

@@ -1,0 +1,680 @@
+{
+  "id": "602dd99b-32c9-4d8a-b40b-7d29961d3e0b",
+  "revision": 0,
+  "last_node_id": 12,
+  "last_link_id": 14,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadVideo",
+      "title": "01 原片画面 · 5 秒 / 24 fps",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        360,
+        300
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadVideo"
+      },
+      "widgets_values": [
+        "TaoMateHD_2LOW_1HIGH_5s_00001_.mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "GetVideoComponents",
+      "title": "原片解码 · 三路共享同一画面",
+      "pos": [
+        400,
+        0
+      ],
+      "size": [
+        360,
+        180
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            7,
+            9,
+            11,
+            13
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "bit_depth",
+          "type": "COMBO",
+          "links": null
+        },
+        {
+          "name": "color_space",
+          "type": "COMBO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetVideoComponents"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "LoadAudio",
+      "title": "02 原片整条音轨 · 不是分离人声",
+      "pos": [
+        0,
+        380
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "source_original.wav"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "TrimAudioDuration",
+      "title": "源 PCM 精确裁至 5 秒 · 去除尾部 padding",
+      "pos": [
+        400,
+        380
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            3,
+            5,
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "TrimAudioDuration"
+      },
+      "widgets_values": [
+        0.0,
+        5.0
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadAudio",
+      "title": "03 MMAudio 真实 PCM 候选",
+      "pos": [
+        0,
+        670
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "external_mmaudio.wav"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadAudio",
+      "title": "04 H3 真实 PCM 候选 · 不替换画面",
+      "pos": [
+        0,
+        960
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "widgets_values": [
+        "h3_candidate.wav"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "MiniMaxH3LocalSFXCandidatesT8",
+      "title": "选择原声 / MMAudio / H3 · 原声整轨保护",
+      "pos": [
+        830,
+        380
+      ],
+      "size": [
+        430,
+        440
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_audio",
+          "type": "AUDIO",
+          "link": 3
+        },
+        {
+          "name": "external_sfx_audio",
+          "type": "AUDIO",
+          "link": 4
+        },
+        {
+          "name": "protected_voice_audio",
+          "type": "AUDIO",
+          "link": 5,
+          "shape": 7
+        },
+        {
+          "name": "h3_sfx_audio",
+          "type": "AUDIO",
+          "link": 6,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "selected_audio",
+          "type": "AUDIO",
+          "links": [
+            14
+          ]
+        },
+        {
+          "name": "external_preview",
+          "type": "AUDIO",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "h3_preview",
+          "type": "AUDIO",
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3LocalSFXCandidatesT8"
+      },
+      "widgets_values": [
+        1.2,
+        3.5,
+        "original",
+        "target_rms_ceiling",
+        -56.0,
+        1.2,
+        0.01,
+        "none"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "A · 原片原声",
+      "pos": [
+        1330,
+        0
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov05/SFX_original_5s",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 9,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "B · 原声 + MMAudio 局部音效",
+      "pos": [
+        1770,
+        0
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov05/SFX_external_5s",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 10,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "C · 原声 + H3 局部音效",
+      "pos": [
+        2210,
+        0
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov05/SFX_h3_5s",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 11,
+      "type": "MiniMaxH3SafeAVSaveT8Advanced",
+      "title": "所选成片 · 跟随 selection",
+      "pos": [
+        1330,
+        430
+      ],
+      "size": [
+        400,
+        330
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3SafeAVSaveT8Advanced"
+      },
+      "widgets_values": [
+        "Nov05/SFX_selected_5s",
+        18,
+        false
+      ]
+    },
+    {
+      "id": 12,
+      "type": "MarkdownNote",
+      "pos": [
+        830,
+        900
+      ],
+      "size": [
+        1240,
+        460
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "局部音效三选对照 / 未发布 EXP\n\n先上传四个真实文件：原片视频、source_original.wav、external_mmaudio.wav、h3_candidate.wav。后三项是已生成的 PCM，图中不加载 MMAudio、不生成 H3，也不需要 VHS。未带素材的示例需要重新选择文件，不能用占位声音代替人审。\n\n本例固定为 24 fps、5 秒原片。源 PCM 先精确裁至 [0,5) 秒，去掉 AAC 解码尾部 padding，再把同一个结果同时接 source_audio 与 protected_voice_audio：这里保护的是原片整条音轨（对白和环境声），不是分离出来的人声。在原声之上只于 1.2–3.5 秒添加候选，两个候选都从 1.2 秒取声，边界淡化 0.01 秒。使用 target_rms_ceiling 只衰减不放大，候选 RMS 上限 -56 dBFS；这是本段轻微衣袖声音的低电平示例，换素材应调整。\n\nselection 三选：original=原片原声；external=原声+MMAudio；h3=原声+H3。默认 original。右侧三条对照始终可播放，另一个“所选成片”输出跟随 selection。画面全部来自同一个 GetVideoComponents，绝不换成 H3 音效候选视频。Safe AV Save 固定 24 fps；换其它帧率素材需改接与其匹配的保存节点。\n\n窗口外及保护音轨的精确保留指编码前 PCM；重新编码 AAC 不是逐字节无损。RMS 上限不等于感知响度。旧例强制归一到 -30 dBFS，曾把该 H3 候选放大约66.8倍；本例保留安静候选的原生电平。电平修正不能修复模型本身的音色或内容，仍需听审；本图不作人声分离或自动优胜判断。详细连接与素材来源见 docs/NOV05_LOCAL_SFX.md。"
+      ],
+      "title": "使用说明与验收范围 / 未发布候选"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "VIDEO"
+    ],
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "AUDIO"
+    ],
+    [
+      3,
+      4,
+      0,
+      7,
+      0,
+      "AUDIO"
+    ],
+    [
+      4,
+      5,
+      0,
+      7,
+      1,
+      "AUDIO"
+    ],
+    [
+      5,
+      4,
+      0,
+      7,
+      2,
+      "AUDIO"
+    ],
+    [
+      6,
+      6,
+      0,
+      7,
+      3,
+      "AUDIO"
+    ],
+    [
+      7,
+      2,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      4,
+      0,
+      8,
+      1,
+      "AUDIO"
+    ],
+    [
+      9,
+      2,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      7,
+      1,
+      9,
+      1,
+      "AUDIO"
+    ],
+    [
+      11,
+      2,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      7,
+      2,
+      10,
+      1,
+      "AUDIO"
+    ],
+    [
+      13,
+      2,
+      0,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      14,
+      7,
+      0,
+      11,
+      1,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        80,
+        100
+      ]
+    },
+    "workflow_title": "Local_SFX_AB_EXP — unpublished EXP candidate"
+  },
+  "version": 0.4
+}

@@ -518,13 +518,21 @@ class MiniMaxH3OutputTrimT8(io.ComfyNode):
                 io.Audio.Input("audio", optional=True),
                 io.Int.Input("frame_count", default=0, min=0, max=None, optional=True, advanced=True,
                              tooltip="Exact video frame count; 0 keeps duration rounding. Audio still uses the requested seconds."),
+                io.Float.Input("source_time_origin_seconds", default=0.0, min=None, max=None,
+                               optional=True, advanced=True,
+                               tooltip="Source frame/audio zero on the shared timeline. Start seconds uses that timeline; the default keeps old coordinates."),
+                io.Combo.Input("audio_boundary_policy", options=["legacy_duration", "absolute_endpoints"],
+                               default="legacy_duration", optional=True, advanced=True,
+                               tooltip="absolute_endpoints maps shared timeline endpoints once so adjacent audio windows meet without double rounding."),
             ],
             outputs=[io.Image.Output("frames"), io.Audio.Output("audio"), io.String.Output("report_json")],
         )
 
     @classmethod
-    def execute(cls, frames, start_seconds, duration_seconds, fps, audio=None, frame_count=0):
-        return io.NodeOutput(*trim_av_output(frames, start_seconds, duration_seconds, audio, fps, frame_count))
+    def execute(cls, frames, start_seconds, duration_seconds, fps, audio=None, frame_count=0,
+                source_time_origin_seconds=0.0, audio_boundary_policy="legacy_duration"):
+        return io.NodeOutput(*trim_av_output(frames, start_seconds, duration_seconds, audio, fps, frame_count,
+            source_time_origin_seconds=source_time_origin_seconds, audio_boundary_policy=audio_boundary_policy))
 
 
 class MiniMaxH3PreflightT8(io.ComfyNode):

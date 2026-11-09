@@ -1,6 +1,6 @@
 # MiniMax H3 T8 工作流目录
 
-最新已审：[Compact 4步、周期音画循环、Solar结构重渲染](91-h24-reviewed/README.md)。
+最新已审：[11套长片、PDD／PDMD／DMAD、局修、静帧、参考窗口和四VAE工作流](97-nov09-reviewed/README.md)；[11月实验接线](96-nov05-exp/README.md)。此前[Compact 4步、周期音画循环、Solar结构重渲染](91-h24-reviewed/README.md)保留。
 
 普通提示词入口：[全部原版→普通版对照](PLAIN_PROMPTS.md)。各分类的 `*_普通提示词.json`（按功能、采样和阶段命名，与原图同目录） 可一次输入完整描述，双采和多阶段文字仍可独立编辑；原 Relay 图保留。
 

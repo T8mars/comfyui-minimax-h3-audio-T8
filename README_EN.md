@@ -2,9 +2,9 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.104.0** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.105.0** · [Changelog](CHANGELOG.md)
 
-[Latest source update](docs/H24_SOURCE_UPDATE.md): Director fixes, Compact PTD, periodic AV and Solar; [three reviewed workflows](examples/workflows/91-h24-reviewed/README.md).
+[This release](docs/RELEASE_1.105.0.md): stage reuse, progressive sampling and local repair; [11 reviewed workflows](examples/workflows/97-nov09-reviewed/README.md).
 
 ## Install
 
@@ -27,6 +27,7 @@ Use a single complete prompt: [ordinary-prompt workflow index](examples/workflow
 
 |Goal|Start here|
 |---|---|
+|TaoMate-HD / paired noise / NAG / stage reuse / local SFX (EXP)|[Experimental wiring](examples/workflows/96-nov05-exp/README.md) · [Usage and validation scope](docs/NOV05_INTEGRATION.md)|
 |Pika H3 Flex six-step text / endpoint / reference generation (EXP)|[Three picture-reviewed workflows](examples/workflows/94-pika-flex/README.md) · [Guide](docs/PIKA_H3_FLEX.md)|
 |Pika two-pass 4+2 / 3+3, regular and optional 2K 6+3 (EXP)|[Eight reviewed workflows](examples/workflows/95-pika-dual/README.md) · [Guide](docs/PIKA_DOUBLE_SAMPLING.md)|
 |Same-condition AudioFirst / ordinary Wuli Hybrid (EXP)|[Two reviewed H13 workflows](examples/workflows/88-h13-reviewed/README.md) · [Wiring and limits](docs/H13_AUDIO_FIRST_HYBRID.md)|

@@ -14,3 +14,15 @@ h3_t8/vendor/vretoucher_upstream/** -whitespace
 
 # Keep all eight accepted Pika two-stage browser exports byte-identical.
 examples/workflows/95-pika-dual/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Keep candidate UI exports exact for the next human-review/source binding.
+examples/workflows/96-nov05-exp/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve reviewed UI/API recipes; only release NOTE/title text was updated.
+examples/workflows/97-nov09-reviewed/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+examples/workflows/97-nov09-reviewed/api/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Preserve verbatim upstream license/notice bytes, including their whitespace.
+THIRD_PARTY_NOTICES/NAG-H3-LICENSE.txt -text -whitespace
+THIRD_PARTY_NOTICES/TAOMATE-HD-LICENSE.txt -text -whitespace
+THIRD_PARTY_NOTICES/TAOMATE-HD-NOTICE.txt -text -whitespace

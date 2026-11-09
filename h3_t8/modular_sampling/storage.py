@@ -3,8 +3,8 @@
 A completed manifest is committed last, under an OS-owned lease. Readers need
 its exact SHA plus the expected stage; orphan tensors are never completion.
 Selecting an artifact deliberately freezes that prior stage, not an assertion
-that today's LOW settings still match it. Automatic recipe cache lookup is a
-separate, not-yet-enabled path.
+that today's LOW settings still match it. Optional automatic request lookup is
+implemented separately in reuse.py; these storage checks do not authorize it.
 """
 from __future__ import annotations
 

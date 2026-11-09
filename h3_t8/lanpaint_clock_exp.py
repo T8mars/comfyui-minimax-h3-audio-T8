@@ -8,6 +8,7 @@ unchanged. This does not certify editing quality or arbitrary patch stacks.
 from __future__ import annotations
 
 import copy
+import ast
 import hashlib
 import importlib.util
 import json
@@ -27,7 +28,11 @@ SOURCE_PINS = {
     "earlystop.py": "5bb0a033a509967d147924cb29a2c6fc14f61ab4e66f4228a746ab4ebc91e933",
     "types.py": "3a9a3b542c00a6e676225a5a61565b3a0c24ca31520e55f4b839c9e71f6e1c5c",
 }
-CORE_H3_PIN = "5e243986ad23469962a36291eb6b4e4427571b91f7a5930225e67c8322e6d122"
+_CORE_CLOCK_BODY = """
+def time_shift_sigma(sigma, from_shift, to_shift):
+    base = sigma / (from_shift + sigma * (1.0 - from_shift))
+    return to_shift * base / (1.0 + (to_shift - 1.0) * base)
+"""
 _LOCK = threading.RLock()
 
 
@@ -66,15 +71,34 @@ def _reviewed_backend():
         raise RuntimeError("This opt-in H3 clock adapter needs the reviewed LanPaint source; "
                            "use ordinary LanPaint for another version, not an automatic downgrade")
     core_source = Path(core_h3.__file__).resolve()
+    core_bytes = core_source.read_bytes()
+    core_sha = hashlib.sha256(core_bytes).hexdigest()
     sigma_fn = core_h3.__dict__.get("time_shift_sigma")
-    if (_sha(core_source) != CORE_H3_PIN or not isinstance(sigma_fn, FunctionType)
+    if (not isinstance(sigma_fn, FunctionType)
             or sigma_fn.__globals__ is not core_h3.__dict__
             or Path(sigma_fn.__code__.co_filename).resolve() != core_source):
         raise RuntimeError("The selected Core H3 time mapping is not the reviewed API")
+    # Only this pure clock API determines the analytic derivative. Unrelated
+    # H3 implementations may change without invalidating the same mapping.
+    tree = ast.parse(core_bytes)
+    clock_ast = next((item for item in tree.body
+                      if isinstance(item, ast.FunctionDef) and item.name == "time_shift_sigma"), None)
+    expected_ast = ast.parse(_CORE_CLOCK_BODY).body[0]
+    if clock_ast is not None:
+        if (clock_ast.body and isinstance(clock_ast.body[0],ast.Expr)
+                and isinstance(clock_ast.body[0].value,ast.Constant)
+                and isinstance(clock_ast.body[0].value.value,str)):
+            clock_ast.body = clock_ast.body[1:]
+        clock_ast.returns = None
+        clock_ast.type_comment = None
+        for argument in (*clock_ast.args.posonlyargs,*clock_ast.args.args,*clock_ast.args.kwonlyargs):
+            argument.annotation = None
+    if clock_ast is None or ast.dump(clock_ast, include_attributes=False) != ast.dump(expected_ast, include_attributes=False):
+        raise RuntimeError("The selected Core H3 time mapping does not implement the supported rational clock API")
     # Source bytes alone cannot authenticate a replaced live function. Compile
-    # the already pinned file without executing it and compare this tiny pure
+    # the checked source without executing it and compare this tiny pure
     # function's real instructions/constants/arguments, not debug line tables.
-    compiled = compile(core_source.read_bytes(), str(core_source), "exec", dont_inherit=True)
+    compiled = compile(core_bytes, str(core_source), "exec", dont_inherit=True)
     expected = next(item for item in compiled.co_consts
                     if isinstance(item, CodeType) and item.co_name == "time_shift_sigma")
     actual = sigma_fn.__code__
@@ -106,7 +130,9 @@ def _reviewed_backend():
     if {key: _sha(source.parent / key) for key in SOURCE_PINS} != pins:
         raise RuntimeError("LanPaint source changed while preparing the isolated adapter")
     return backend, original, dict(upstream_revision_reviewed=UPSTREAM_REVISION,
-        dependency_source_sha256=pins, Core_H3_source_sha256=CORE_H3_PIN,
+        dependency_source_sha256=pins, Core_H3_source_sha256=core_sha,
+        Core_clock_contract="rational_shift_API_and_actual_live_function",
+        unrelated_Core_source_changes_allowed=True,
         Core_time_shift_slope_present=callable(core_h3.__dict__.get("time_shift_slope")),
         upstream_clock_import_available=callable(original.time_shift_sigma)
             and callable(original.time_shift_slope),

@@ -64,6 +64,7 @@ class MiniMaxH3CreatorRunReceiptT8Advanced(io.ComfyNode):
                 ),
                 io.String.Input("notes", multiline=True, default=""),
                 CreatorRunLedgerIO.Input("previous_ledger", optional=True),
+                io.Custom("T8_STAGE_RESULT").Input("stage_result", optional=True),
             ],
             outputs=[
                 CreatorRunLedgerIO.Output("ledger"),

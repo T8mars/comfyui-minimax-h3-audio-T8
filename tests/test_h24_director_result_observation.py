@@ -50,6 +50,23 @@ def receipt_job(tmp_path, *, epoch="original-core"):
     return store, project, path, original
 
 
+def test_completed_stage_observation_survives_core_history_loss(tmp_path, monkeypatch):
+    store, project, path, original = receipt_job(tmp_path)
+    row = {"status": "miss_saved", "current_denoiser_evaluations": 4,
+           "artifact_path": "reused/native_low/manifest.json"}
+    observed = {"state": "error", "outputs": {"9": {"t8_stage_reuse": [row]}},
+                "stage_reuse": [{"node_id": "9", **row}]}
+    monkeypatch.setattr(routes, "director_job_status", lambda _: deepcopy(observed))
+    first = routes._observe_director_job(store, original["prompt_id"])
+    assert first["stage_reuse"] == observed["stage_reuse"]
+    assert json.loads(path.read_text("utf8"))["terminal"]["stage_reuse"] == observed["stage_reuse"]
+    monkeypatch.setattr(routes, "director_job_status", lambda _: pytest.fail("must use saved terminal"))
+    recovered = routes._observe_director_job(store, original["prompt_id"])
+    assert recovered["recovered_by"] == "request_receipt"
+    assert recovered["stage_reuse"] == observed["stage_reuse"]
+    assert recovered["state"] == "error"  # Completed sampling never turns failed delivery into success.
+
+
 @pytest.mark.parametrize("state", ("success", "error", "cancelled"))
 def test_first_observed_terminal_survives_new_core_and_does_not_leak_to_a_copy(tmp_path, monkeypatch, state):
     store, project, path, original = receipt_job(tmp_path)

@@ -90,7 +90,7 @@ def _canonical_sha(value: object) -> str:
 
 
 def _normalize_output_audio(
-    audio: Mapping[str, Any], *, expected_samples: int
+    audio: Mapping[str, Any], *, expected_samples: int, clip_amplitude: bool = True
 ) -> tuple[np.ndarray, int, dict[str, Any]]:
     if not isinstance(audio, Mapping):
         raise ValueError("H3-World safe output requires a ComfyUI AUDIO mapping")
@@ -112,8 +112,10 @@ def _normalize_output_audio(
         samples = samples[:, :expected_samples]
     if int(samples.shape[0]) == 1:
         samples = samples.repeat(2, 1)
-    clipped_values = int(torch.count_nonzero(samples.abs() > 1.0).item())
-    samples = samples.clamp(-1.0, 1.0).contiguous()
+    clipped_values = int(torch.count_nonzero(samples.abs() > 1.0).item()) if clip_amplitude else 0
+    if clip_amplitude:
+        samples = samples.clamp(-1.0, 1.0)
+    samples = samples.contiguous()
     return samples.numpy(), int(sample_rate), {
         "source_samples": source_samples,
         "encoded_samples": int(expected_samples),

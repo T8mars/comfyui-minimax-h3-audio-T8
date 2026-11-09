@@ -2,6 +2,9 @@
 import asyncio
 import copy
 import json
+import hashlib
+from pathlib import Path
+import sys
 from types import FunctionType
 
 import pytest
@@ -130,7 +133,8 @@ def test_explicit_new_node_and_bad_input_do_not_change_existing_LanPaint_schema(
     old = {item.id: item for item in MiniMaxH3LanPaintAVPrepareT8Advanced.GET_SCHEMA().inputs}
     assert old["require_lanpaint_sampler"].default is True and old["frame_policy"].default == "strict"
     identifiers = [kind.GET_SCHEMA().node_id for kind in asyncio.run(comfy_entrypoint().get_node_list())]
-    assert identifiers[-1] == schema.node_id and len(identifiers) == len(set(identifiers))
+    # This node was appended as entry683; later features must retain its slot.
+    assert identifiers.index(schema.node_id) == 682 and len(identifiers) == len(set(identifiers))
     with pytest.raises(ValueError, match="nested H3 AV"):
         clock.sample_lanpaint_clock(None, None, None, torch.tensor([.5, 0.]), {"samples": torch.zeros(1)})
     assert not torch.cuda.is_initialized()
@@ -182,4 +186,24 @@ def test_live_Core_clock_replacement_is_rejected_without_executing_foreign_code(
         with pytest.raises(RuntimeError, match="live Core H3 time function differs"):
             clock._reviewed_backend()
     assert calls == [] and core_h3.time_shift_sigma is native
+    assert not torch.cuda.is_initialized()
+
+
+def test_unrelated_Core_file_change_retains_real_clock_integration(installed_backend,monkeypatch,tmp_path):
+    _, original, _ = installed_backend
+    current_path = Path(core_h3.__file__)
+    copied_path = tmp_path / "model.py"
+    copied_path.write_bytes(current_path.read_bytes() + b"\n# Unrelated future H3 implementation change.\n")
+    native = core_h3.time_shift_sigma
+    relocated = FunctionType(native.__code__.replace(co_filename=str(copied_path)),native.__globals__)
+    namespace = original.__package__ + "._t8_h3_clock_v1"
+    with monkeypatch.context() as patch:
+        patch.setattr(core_h3,"__file__",str(copied_path))
+        patch.setattr(core_h3,"time_shift_sigma",relocated)
+        patch.delitem(sys.modules,namespace,raising=False)
+        backend,_,report = clock._reviewed_backend()
+        assert backend.time_shift_sigma is relocated
+        assert report["Core_H3_source_sha256"] == hashlib.sha256(copied_path.read_bytes()).hexdigest()
+        assert report["unrelated_Core_source_changes_allowed"]
+    assert core_h3.time_shift_sigma is native
     assert not torch.cuda.is_initialized()

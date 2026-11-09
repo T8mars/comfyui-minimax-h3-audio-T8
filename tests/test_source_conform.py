@@ -132,9 +132,9 @@ def test_invalid_clock_does_not_allocate_a_prepared_video(bad):
         prepared(source_fps=bad)
 
 
-def test_bad_frame_count_geometry_mask_and_budgets_rejected(monkeypatch):
+def test_actual_short_source_and_invalid_control_geometry_still_rejected():
     source = images()
-    with pytest.raises(ValueError, match="4096"):
+    with pytest.raises(ValueError, match="too short"):
         prepared(source, length=4096)
     mapping = prepared(source)[4]
     with pytest.raises(ValueError, match="grid differs"):
@@ -143,9 +143,6 @@ def test_bad_frame_count_geometry_mask_and_budgets_rejected(monkeypatch):
         c.derive_control(source, "manual_mask", torch.zeros(1, 32, 64))
     with pytest.raises(ValueError, match=r"\[0,1\]"):
         c.derive_control(source, "manual_mask", torch.full(source.shape[:3], 2.))
-    monkeypatch.setattr(c, "MAX_TENSOR_BYTES", 100)
-    with pytest.raises(ValueError, match="budget"):
-        prepared(source)
 
 
 @pytest.mark.parametrize("trim,crop", [(0., None), (2/24, (0, 0, 32, 32))])

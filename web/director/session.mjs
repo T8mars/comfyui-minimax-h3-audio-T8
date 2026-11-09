@@ -604,8 +604,11 @@ export function makeDirectorServices(ctx) {
                         const url = viewURL(item);
                         return url ? `<video controls preload="metadata" style="max-width:100%;max-height:55vh" src="${esc(url)}"></video>` : "";
                     }).join("");
+                    const reuseRows = Array.isArray(data.stage_reuse) ? data.stage_reuse : [];
+                    const reuseLabels = { verified_hit: "已复用完成阶段 · 本次采样 0 次", miss_saved: "已采样并保存阶段", refreshed: "已重新采样并保存新阶段", uncertified_executed: "此组合正常采样，未启用持久复用", disabled_executed: "正常重新采样" };
+                    const reuseInfo = reuseRows.length ? `<p>${reuseRows.map(row => esc(`阶段 ${row.node_id}：${reuseLabels[row.status] || row.status}`)).join("；")}</p>` : "";
                     lastJobDialog = [promptId, data.state === "success" ? "导演台任务结果" : "导演台生成失败",
-                        `<p>所属项目：${esc(owner || "旧记录未标注")} · 镜头：${esc(shotId)} · ${esc(recipe || "director")}</p>${reason}${media || "<p>本次没有可播放的视频条目。</p>"}<details><summary>任务详情与原始错误</summary><pre>${esc(JSON.stringify({ prompt_id: promptId, state: data.state, status: data.status, outputs: data.outputs }, null, 2))}</pre></details>`];
+                        `<p>所属项目：${esc(owner || "旧记录未标注")} · 镜头：${esc(shotId)} · ${esc(recipe || "director")}</p>${reason}${reuseInfo}${media || "<p>本次没有可播放的视频条目。</p>"}<details><summary>任务详情与原始错误</summary><pre>${esc(JSON.stringify({ prompt_id: promptId, state: data.state, status: data.status, outputs: data.outputs }, null, 2))}</pre></details>`];
                     $("[data-service=\"job-status\"]").hidden = false;
                     if (data.state === "success" && videos.length && !belongsHere) {
                         showJobDialog(promptId, "原项目任务已完成", `<p>所属项目：${esc(owner || "旧记录未标注") }；没有写入当前镜头。请打开原项目查看成片。</p>${media}`);
@@ -615,7 +618,7 @@ export function makeDirectorServices(ctx) {
                         notify("第 " + (ctx.doc().shots.findIndex(shot => shot.id === shotId) + 1) + " 镜已生成；点镜头卡或“镜头成片”即可直接播放。");
                     } else {
                         showJobDialog(promptId, data.state === "success" ? "生成完成但未找到视频" : "导演台生成失败",
-                            `<p>${data.state === "success" ? "Core 完成，但输出没有可播放视频；任务保留。" : "Core 返回失败，原任务记录已保留。"} · ${esc(recipe || "director")}</p>${reason}${media || "<p class=\"o-muted\">本次没有可播放的视频条目。</p>"}<details><summary>任务详情与原始错误</summary><pre>${esc(JSON.stringify({ prompt_id: promptId, state: data.state, status: data.status, outputs: data.outputs }, null, 2))}</pre></details>`);
+                            `<p>${data.state === "success" ? "Core 完成，但输出没有可播放视频；任务保留。" : "Core 返回失败，原任务记录已保留。"} · ${esc(recipe || "director")}</p>${reason}${reuseInfo}${reuseRows.some(row => ["verified_hit", "miss_saved", "refreshed"].includes(row.status)) ? "<p>已完成阶段保留；保持采样设置后重试可继续解码／导出。</p>" : ""}${media || "<p class=\"o-muted\">本次没有可播放的视频条目。</p>"}<details><summary>任务详情与原始错误</summary><pre>${esc(JSON.stringify({ prompt_id: promptId, state: data.state, status: data.status, outputs: data.outputs }, null, 2))}</pre></details>`);
                         notify(data.state === "success" ? "未找到视频输出；可从任务状态查看详情，当前编辑保留。" : "生成失败；没有自动重采样，可从任务状态查看详情，当前编辑保留。");
                     }
                 }

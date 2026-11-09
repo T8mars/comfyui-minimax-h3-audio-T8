@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 
 import torch
 import torch.nn.functional as torch_functional
@@ -25,9 +26,20 @@ def inject_audio_latent(av_latent: dict, source_audio: dict, audio_vae, mode: st
 def decode_av_latent(av_latent: dict, video_vae, audio_vae):
     video, audio = nested_av_parts(av_latent)
     images = video_vae.decode(video)
+    if not isinstance(images, torch.Tensor) or images.ndim not in (4, 5):
+        raise ValueError("Video VAE returned invalid IMAGE geometry")
     if images.ndim == 5:
         images = images.reshape(-1, *images.shape[-3:])
+    if min(images.shape) < 1 or images.shape[-1] not in (3, 4):
+        raise ValueError("Video VAE returned invalid IMAGE geometry")
+    # Validate before any downstream saver can clamp/cast NaN to uint8. Bound
+    # the temporary boolean storage to one frame, not the entire decoded clip.
+    if any(not bool(torch.isfinite(frame).all()) for frame in images):
+        raise ValueError("Video VAE returned nonfinite IMAGE values")
     decoded_audio = vae_decode_audio(audio_vae, {"samples": audio})
+    waveform, rate = validate_audio(decoded_audio, "decoded_audio")
+    if rate <= 0 or not bool(torch.isfinite(waveform).all()):
+        raise ValueError("Audio VAE returned invalid or nonfinite AUDIO values")
     video_latent = {key: value for key, value in av_latent.items() if key not in {"samples", "noise_mask"}}
     audio_latent = video_latent.copy()
     video_latent["samples"] = video
@@ -104,15 +116,44 @@ def mix_audio(
     return {"waveform": mixed, "sample_rate": target_rate}
 
 
+def _absolute_sample_tick(seconds, sample_rate, source_origin=0.0):
+    """Nearest global PCM tick, with stable ties across equivalent float sums.
+
+    At 44.1kHz a 24fps boundary can be exactly half a sample. Independent
+    representations of start+duration differ by a few floating point ulps;
+    snap only that arithmetic uncertainty to the half tick before ties-to-even.
+    """
+    tick = seconds * sample_rate
+    if not math.isfinite(tick):
+        raise ValueError("Audio time coordinate exceeds finite sample precision")
+    tolerance = 4 * max(math.ulp(tick), math.ulp(float(seconds)) * sample_rate,
+                        math.ulp(float(source_origin)) * sample_rate)
+    if tolerance >= .25:
+        raise ValueError("Audio time coordinate cannot resolve individual PCM samples; rebase source and requested times together")
+    half_tick = round(tick * 2) / 2
+    if abs(tick - half_tick) <= tolerance:
+        tick = half_tick
+    return round(tick)
+
+
 def trim_av_output(frames: torch.Tensor, start_seconds: float, duration_seconds: float, audio=None,
-                   fps: float = 24.0, frame_count: int = 0):
+                   fps: float = 24.0, frame_count: int = 0, *, source_time_origin_seconds: float = 0.0,
+                   audio_boundary_policy: str = "legacy_duration"):
     if frames.ndim != 4:
         raise ValueError(f"frames must be IMAGE [N,H,W,C], got {tuple(frames.shape)}")
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value)
+           for value in (start_seconds, duration_seconds, fps, source_time_origin_seconds)):
+        raise ValueError("trim times, source time origin and fps must be finite numbers")
     if start_seconds < 0 or duration_seconds <= 0 or fps <= 0:
         raise ValueError("trim start must be nonnegative; duration and fps must be positive")
+    if audio_boundary_policy not in ("legacy_duration", "absolute_endpoints"):
+        raise ValueError("Unknown audio_boundary_policy")
+    local_start = start_seconds - source_time_origin_seconds
+    if local_start < 0:
+        raise ValueError("Requested trim starts before the source time origin; video frames cannot be padded")
     if type(frame_count) is not int or frame_count < 0:
         raise ValueError("frame_count must be a nonnegative integer; 0 keeps legacy duration rounding")
-    start_frame = round(start_seconds * fps)
+    start_frame = round(local_start * fps)
     # A compiler's discrete video endpoint is independent of the requested
     # audio interval. Keep old callers' rounding and PCM coordinates unchanged.
     frame_count = frame_count or max(1, round(duration_seconds * fps))
@@ -124,14 +165,42 @@ def trim_av_output(frames: torch.Tensor, start_seconds: float, duration_seconds:
     trimmed_frames = frames[start_frame:end_frame]
 
     trimmed_audio = None
+    audio_mapping = None
     if audio is not None:
         waveform, sample_rate = validate_audio(audio)
-        start_sample = round(start_seconds * sample_rate)
-        sample_count = round(duration_seconds * sample_rate)
-        sliced = waveform[..., start_sample : start_sample + sample_count]
+        if sample_rate <= 0 or not bool(torch.isfinite(waveform).all()):
+            raise ValueError("trim AUDIO must have a positive sample rate and finite PCM")
+        absolute_start = round(start_seconds * sample_rate)
+        absolute_end = round((start_seconds + duration_seconds) * sample_rate)
+        origin_sample = round(source_time_origin_seconds * sample_rate)
+        if audio_boundary_policy == "absolute_endpoints":
+            absolute_start = _absolute_sample_tick(start_seconds, sample_rate, source_time_origin_seconds)
+            absolute_end = _absolute_sample_tick(start_seconds + duration_seconds, sample_rate, source_time_origin_seconds)
+            origin_sample = _absolute_sample_tick(source_time_origin_seconds, sample_rate)
+            start_sample, end_sample = absolute_start - origin_sample, absolute_end - origin_sample
+        else:
+            start_sample = round(local_start * sample_rate)
+            end_sample = start_sample + round(duration_seconds * sample_rate)
+        requested_absolute_start, requested_absolute_end = absolute_start, absolute_end
+        absolute_start, absolute_end = origin_sample + start_sample, origin_sample + end_sample
+        sample_count = end_sample - start_sample
+        sliced = waveform[..., start_sample:end_sample]
+        actual_samples = int(sliced.shape[-1])
         if sliced.shape[-1] < sample_count:
             sliced = torch_functional.pad(sliced, (0, sample_count - sliced.shape[-1]))
         trimmed_audio = {"waveform": sliced, "sample_rate": sample_rate}
+        audio_mapping = {
+            "sample_rate": sample_rate, "absolute_start_sample": absolute_start,
+            "absolute_end_sample": absolute_end, "source_origin_sample": origin_sample,
+            "requested_absolute_start_sample": requested_absolute_start,
+            "requested_absolute_end_sample": requested_absolute_end,
+            "local_start_sample": start_sample, "local_end_sample": end_sample,
+            "source_samples": int(waveform.shape[-1]), "copied_samples": actual_samples,
+            "right_padding_samples": sample_count - actual_samples,
+            "output_samples": sample_count, "resampled": False,
+            "boundary_rounding": ("global_nearest_ties_even_4ulp_half_tick" if audio_boundary_policy == "absolute_endpoints"
+                                  else "legacy_local_start_plus_rounded_duration"),
+        }
 
     report = json.dumps(
         {
@@ -141,6 +210,10 @@ def trim_av_output(frames: torch.Tensor, start_seconds: float, duration_seconds:
             "start_frame": start_frame,
             "frame_count": frame_count,
             "actual_video_duration_seconds": frame_count / fps,
+            "source_time_origin_seconds": source_time_origin_seconds,
+            "local_start_seconds": local_start,
+            "audio_boundary_policy": audio_boundary_policy,
+            "audio_mapping": audio_mapping,
         },
         ensure_ascii=False,
         indent=2,

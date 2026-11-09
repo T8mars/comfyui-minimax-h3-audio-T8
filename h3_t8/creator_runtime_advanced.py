@@ -163,6 +163,7 @@ def record_creator_run_receipt(
     artifact_manifest_json: str,
     notes: str,
     previous_ledger=None,
+    stage_result=None,
 ) -> tuple[dict, str, str, str]:
     workspace = validate_creator_workspace(workspace)
     if outcome not in OUTCOMES:
@@ -203,6 +204,22 @@ def record_creator_run_receipt(
         "artifact_paths_verified": False,
         "notes": notes,
     }
+    if stage_result is not None:
+        from .modular_sampling.automatic_reuse import creator_selection
+        from .modular_sampling.results import StageResult, _input_identity
+        if type(stage_result) is not StageResult:
+            raise ValueError("Creator stage_result must come from the actual Stage sampler")
+        receipt = stage_result.verify()
+        selected = creator_selection(workspace, run_position, variant_index)
+        if receipt["request"]["source"].get("t8_creator_selection") != _input_identity(selected):
+            raise ValueError("Completed Stage belongs to a different Creator shot or variant")
+        if receipt["verified_recipe_completion"] is not True:
+            raise ValueError("Creator Stage has no verified completed sampling")
+        event["completed_stage"] = {
+            "request_sha256": receipt["request_sha256"], "receipt_sha256": receipt["receipt_sha256"],
+            "outputs": receipt["outputs"], "stage_completion_verified": True,
+            "delivery_verified": False,
+        }
     event["event_hash"] = _hash(event)
     ledger["events"].append(event)
     ledger["event_count"] = len(ledger["events"])
@@ -221,6 +238,7 @@ def record_creator_run_receipt(
         "artifact_paths_verified": False,
         "queue_mutated": False,
         "files_mutated": False,
+        "stage_completion_verified": stage_result is not None,
         "interpretation": (
             "This is an explicit receipt, not an automatic ComfyUI queue/cache probe. "
             "Record only the outcome actually observed in history or output metadata."

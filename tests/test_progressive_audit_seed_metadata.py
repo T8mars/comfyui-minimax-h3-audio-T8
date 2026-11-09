@@ -5,7 +5,7 @@ import json
 import pytest
 
 from tools.api_to_frontend_workflow import convert, node_properties
-from tools.audit_progressive_workflows import audit_candidate
+from tools.audit_progressive_workflows import audit_candidate, audit_dynamic_socket
 from tools.frontend_workflow_compat import normalize_native_widget_inputs
 
 
@@ -30,6 +30,32 @@ def test_registry_owner_uses_schema_not_class_prefix(name, module, expected):
 def test_explicit_registry_metadata_is_preserved():
     assert node_properties("External", {"python_module": "custom_nodes.external", "cnr_id": "verified-owner"}) == {
         "Node name for S&R": "External", "cnr_id": "verified-owner"}
+
+
+def test_empty_runtime_combo_catalog_still_audits_literals_and_omitted_default():
+    info = {"Example": {"input": {"required": {"file": [[], {}],
+        "unused": [[], {}]}}, "output": [], "output_name": []}}
+    graph = {"1": {"class_type": "Example", "inputs": {"file": "user-selected.safetensors"}}}
+    workflow = convert(graph, info, "Empty catalog is not a changed execution value")
+    assert audit_candidate(graph, workflow, info)["explicit_widget_values"] == 1
+    changed = deepcopy(workflow)
+    changed["nodes"][0]["widgets_values"][-1] = "different.safetensors"
+    with pytest.raises(ValueError, match="Unspecified widget"):
+        audit_candidate(graph, changed, info)
+
+
+def test_native_autogrow_slots_are_zero_based_and_keep_sparse_existing_slots():
+    info = {"input": {"optional": {"ref_videos": ["COMFY_AUTOGROW_V3", {
+        "template": {"prefix": "ref_video_", "min": 0, "max": 3}}]}}}
+    for ordinal in (0, 1, 2):
+        audit_dynamic_socket(f"ref_videos.ref_video_{ordinal}", info)
+    with pytest.raises(ValueError, match="not declared"):
+        audit_dynamic_socket("ref_videos.ref_video_3", info)
+    named = {"input": {"optional": {"items": ["COMFY_AUTOGROW_V3", {
+        "template": {"names": ["first", "last"]}}]}}}
+    audit_dynamic_socket("items.last", named)
+    with pytest.raises(ValueError, match="not declared"):
+        audit_dynamic_socket("items.middle", named)
 
 
 def test_null_module_keeps_explicit_owner_and_graph_inputs():

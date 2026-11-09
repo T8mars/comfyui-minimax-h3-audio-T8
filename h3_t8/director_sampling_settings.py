@@ -150,6 +150,16 @@ def _hyperflow_stage_relay(value: Any, stage: str) -> dict[str, str]:
 
 
 def normalize_sampling(raw: Any) -> dict[str, Any]:
+    result = _normalize_sampling(raw)
+    if isinstance(raw, Mapping) and "reuse_mode" in raw:
+        from .director_stage_reuse import MODES
+        if raw["reuse_mode"] not in MODES:
+            raise ValueError("无效的阶段复用模式")
+        result["reuse_mode"] = raw["reuse_mode"]
+    return result
+
+
+def _normalize_sampling(raw: Any) -> dict[str, Any]:
     if raw is None:
         return {"mode": "single"}
     if not isinstance(raw, Mapping):

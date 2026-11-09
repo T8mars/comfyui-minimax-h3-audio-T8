@@ -483,10 +483,32 @@ def _model_identity(clip: Any, contract: Mapping[str, Any]) -> str:
     patcher = getattr(clip, "patcher", None)
     model = getattr(patcher, "model", None)
     patch_uuid = getattr(patcher, "patches_uuid", None)
+    stage = getattr(clip, "cond_stage_model", None)
+    encoder = getattr(stage, "qwen3vl_32b", None)
+    transformer = getattr(encoder, "transformer", None)
+    # This is a process-local KV cache, not an on-disk checkpoint identity.
+    # Core's patch UUID alone does not change when the encoder is recast, its
+    # execution device changes, or its weights are updated in place. Inspect
+    # tensor metadata/version counters only: never copy a 32B encoder to CPU.
+    tensors = []
+    source = transformer if isinstance(transformer, torch.nn.Module) else getattr(transformer, "model", None)
+    if isinstance(source, torch.nn.Module):
+        for name, value in (*source.named_parameters(), *source.named_buffers()):
+            try:
+                version = value._version
+            except RuntimeError:  # Inference tensors have no version counter.
+                version = None
+            tensors.append((name, id(value), str(value.dtype), tuple(value.shape), version))
     payload = {
         "model_object_id": id(model),
         "patch_uuid": None if patch_uuid is None else str(patch_uuid),
         "core_hashes": contract.get("hashes"),
+        "encoder_object_id": id(transformer),
+        "tokenizer_object_id": id(getattr(clip, "tokenizer", None)),
+        "load_device": str(getattr(patcher, "load_device", None)),
+        "execution_device": str(getattr(encoder, "execution_device", None)),
+        "encoder_dtypes": sorted(str(dtype) for dtype in getattr(stage, "dtypes", ())),
+        "encoder_tensor_versions": tensors,
     }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
@@ -508,6 +530,8 @@ class MiniMaxH3CachedClip:
         self.cache = cache
         self.contract = dict(contract)
         self.model_identity = _model_identity(clip, contract)
+        self._cache_model_identity = self.model_identity
+        self._post_encode_identity = None
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._clip, name)
@@ -564,18 +588,22 @@ class MiniMaxH3CachedClip:
             )
 
         clip_model = _unwrap_h3_clip_model(self._clip)
-        self._clip.load_model(dict(tokens))
         device = self._clip.patcher.load_device
-        self._clip.cond_stage_model.reset_clip_options()
-        self._clip.cond_stage_model.set_clip_options({"execution_device": device})
         import comfy.model_management as model_management
 
         with self.cache.lock, model_management.cuda_device_context(device):
-            # Tokenization and execution need not happen next to each other.
-            # Bind this lookup to the current loaded model/patch identity and
-            # current visual prefix, without mutating the caller's tokens.
-            key = fingerprint_tokens(tokens.prefix_tokens, _model_identity(self._clip, self.contract))
+            # Check before Core's load/offload cycle replaces Parameter objects.
+            # Native low-VRAM loading preserves weights but changes their IDs
+            # on every request. Track the state left by our own successful run;
+            # edits/recasts/replacement between requests still start a new key.
+            current_identity = _model_identity(self._clip, self.contract)
+            if current_identity != self._post_encode_identity:
+                self._cache_model_identity = current_identity
+            key = fingerprint_tokens(tokens.prefix_tokens, self._cache_model_identity)
             entry = self.cache.get(key)
+            self._clip.load_model(dict(tokens))
+            self._clip.cond_stage_model.reset_clip_options()
+            self._clip.cond_stage_model.set_clip_options({"execution_device": device})
             if entry is None:
                 entry = build_prefix_entry(
                     clip_model,
@@ -584,6 +612,7 @@ class MiniMaxH3CachedClip:
                 )
                 self.cache.put(entry)
             output, tags = encode_suffix_from_entry(clip_model, tokens.suffix_tokens, entry)
+            self._post_encode_identity = _model_identity(self._clip, self.contract)
         output = output.to(device=model_management.intermediate_device())
         tags = tags.to(device=model_management.intermediate_device())
         pooled = {"pooled_output": None, "minimax_token_tags": tags}

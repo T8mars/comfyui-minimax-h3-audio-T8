@@ -45,9 +45,11 @@ class H21ReleaseAdmission(unittest.TestCase):
         dual = json.loads((ROOT / dual_path).read_text(encoding='utf8'))
         compat_path = 'tests/fixtures/core_compat_20261031_source.json'
         compat = json.loads((ROOT / compat_path).read_text(encoding='utf8'))
+        november_path = 'tests/fixtures/nov05_reviewed_sampling_source.json'
+        november = json.loads((ROOT / november_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in set([*compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
+            for relative in set([*november['files'], november_path, *compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
                                  'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

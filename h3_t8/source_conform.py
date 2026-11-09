@@ -16,8 +16,6 @@ from .core import resize_image
 from .source_av import prepare_source_media_window
 
 _OWNER = object()
-MAX_FRAMES = 4096
-MAX_TENSOR_BYTES = 2 * 1024**3
 SCHEMA = "h3_source_conform_v1"
 
 
@@ -29,9 +27,8 @@ def identity(value):
     """Hash in frame-sized blocks: never duplicate a full resident video on CPU."""
     if not isinstance(value, torch.Tensor) or not value.is_floating_point() or value.ndim < 1:
         raise ValueError("Lineage requires a floating tensor")
-    size = value.numel() * value.element_size()
-    if not size or size > MAX_TENSOR_BYTES or value.shape[0] > MAX_FRAMES:
-        raise ValueError("Lineage tensor exceeds the explicit 2GiB/4096-frame budget or is empty")
+    if not value.numel():
+        raise ValueError("Lineage tensor is empty")
     shape = tuple(value.shape)
     digest = hashlib.sha256(canonical({"shape": shape, "dtype": str(value.dtype)}).encode())
     for item in value.detach():
@@ -124,7 +121,6 @@ def decode_clock(video, interrupt=lambda: None):
     interrupt()
     observed = []
     audio_observed = []
-    decoded_bytes = [0, 0]
     native = isinstance(video, InputImpl.VideoFromFile)
     origin = Fraction(0)
     if native:
@@ -146,18 +142,8 @@ def decode_clock(video, interrupt=lambda: None):
                     for frame in super().decode():
                         if self.packet.stream.type == "video" and frame.pts is not None:
                             if frame.pts >= begin and (not duration or frame.pts < end):
-                                if len(observed) >= MAX_FRAMES:
-                                    raise ValueError("Source PTS observation exceeds 4096 frames")
-                                decoded_bytes[0] += frame.width * frame.height * 3 * 4
-                                if decoded_bytes[0] > MAX_TENSOR_BYTES:
-                                    raise ValueError("Source decode exceeds conservative 2GiB RGB budget")
                                 observed.append(Fraction(frame.pts) * frame.time_base)
                         elif self.packet.stream.type == "audio" and frame.pts is not None:
-                            if len(audio_observed) >= MAX_FRAMES * 16:
-                                raise ValueError("Source audio PTS observation exceeds bounded budget")
-                            decoded_bytes[1] += frame.samples * len(frame.layout.channels) * 4
-                            if decoded_bytes[1] > MAX_TENSOR_BYTES:
-                                raise ValueError("Source decode exceeds conservative 2GiB PCM budget")
                             audio_observed.append((str(Fraction(frame.pts) * frame.time_base),
                                                    frame.samples, frame.sample_rate))
                         yield frame
@@ -197,13 +183,8 @@ def conform(frames, source_fps, width, height, length, start_seconds=0.,
         raise ValueError("Source fps and start must be finite; fps must be positive")
     if not isinstance(frames, torch.Tensor) or frames.ndim != 4 or frames.shape[-1] != 3:
         raise ValueError("Source Conform requires RGB IMAGE [N,H,W,3]")
-    from .core import align_frame_count
-    if align_frame_count(length) > MAX_FRAMES:
-        raise ValueError("Conform map exceeds explicit 4096-frame budget")
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("Conform width/height must be positive multiples of32")
-    if align_frame_count(length) * width * height * 3 * frames.element_size() > MAX_TENSOR_BYTES:
-        raise ValueError("Conform output would exceed the explicit 2GiB tensor budget")
     source_sha = identity(frames)
     source_audio_sha = audio_identity(source_audio)
     if clock is not None:
@@ -291,9 +272,6 @@ def map_control(frame_map, control, kind="image", width=0, height=0, lineage=Non
     height = value.output_geometry[1] if height == 0 else int(height)
     if width <= 0 or height <= 0 or width % 32 or height % 32:
         raise ValueError("Control stage width/height must be positive multiples of32")
-    channels = 1 if kind == "mask" else 3
-    if len(value.indices) * width * height * channels * control.element_size() > MAX_TENSOR_BYTES:
-        raise ValueError("Mapped control would exceed the explicit 2GiB tensor budget")
     selected = control.index_select(0, torch.tensor(value.indices, device=control.device))
     if kind == "mask":
         if not torch.isfinite(selected).all() or selected.min() < 0 or selected.max() > 1:

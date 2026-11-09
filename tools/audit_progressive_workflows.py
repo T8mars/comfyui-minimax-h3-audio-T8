@@ -29,6 +29,22 @@ def widget(spec):
         or spec[0] in {"INT", "FLOAT", "STRING", "BOOLEAN", "COMBO"})
 
 
+def audit_dynamic_socket(name, info):
+    if "." not in name:
+        return
+    group, local = name.split(".", 1)
+    specs = {**info.get("input", {}).get("required", {}), **info.get("input", {}).get("optional", {})}
+    spec = specs.get(group)
+    if not spec or spec[0] != "COMFY_AUTOGROW_V3":
+        return
+    template = spec[1].get("template", {})
+    names = template.get("names")
+    if names is None and isinstance(template.get("max"), int) and "prefix" in template:
+        names = [f"{template['prefix']}{i}" for i in range(template["max"])]
+    if names is not None and local not in names:
+        raise ValueError(f"Dynamic socket is not declared by the actual native schema: {name}")
+
+
 def audit_candidate(prompt, workflow, object_info):
     """Check literal values in schema order and physical edges without the builder."""
     ids = {key: i + 1 for i, key in enumerate(prompt)}
@@ -56,8 +72,10 @@ def audit_candidate(prompt, workflow, object_info):
                     raise ValueError(f"Missing serialized widget value: {key}.{name} at index {pos}")
                 groups[name] = values[pos]
                 options = spec[1] if len(spec) > 1 and isinstance(spec[1], dict) else {}
-                defaults[name] = options.get("default", spec[0][0] if isinstance(spec[0], list) and spec[0]
-                    else {"INT": 0, "FLOAT": 0., "BOOLEAN": False, "STRING": "", "COMBO": ""}.get(spec[0]))
+                kind = spec[0]
+                fallback = ((kind[0] if kind else "") if isinstance(kind, list) else
+                    {"INT": 0, "FLOAT": 0., "BOOLEAN": False, "STRING": "", "COMBO": ""}.get(kind))
+                defaults[name] = options.get("default", fallback)
                 pos += 1
                 # Honor the declared UI control, including explicit False.
                 # Name-based fallback only applies to older schemas without metadata.
@@ -71,6 +89,7 @@ def audit_candidate(prompt, workflow, object_info):
         if len(pins) != len(node["inputs"]):
             raise ValueError("Ambiguous input sockets")
         for name, value in source["inputs"].items():
+            audit_dynamic_socket(name, info)
             if link(value, ids):
                 if name not in pins:
                     raise ValueError("Missing linked socket")

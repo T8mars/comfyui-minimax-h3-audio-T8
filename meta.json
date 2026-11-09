@@ -1,4 +1,337 @@
 {
+  "nov05_development": {
+    "status": "released_original27_finite_scope_and_exact_selected_media_accepted",
+    "published": true,
+    "deployed_to_user_Core": false,
+    "preserved_registered_prefix": 780,
+    "appended_nodes": [
+      "MiniMaxH3ProgressivePairedNoiseEXPT8",
+      "MiniMaxH3StageReuseEXPT8",
+      "MiniMaxH3TaoMateHDEXPT8",
+      "MiniMaxH3NAGEXPT8",
+      "MiniMaxH3NAGAuditEXPT8",
+      "MiniMaxH3LocalSFXCandidatesT8",
+      "MiniMaxH3RefineEndpointsEXPT8",
+      "MiniMaxH3MaskedColorStabilizeEXPT8"
+    ],
+    "registered_nodes": 788,
+    "PH3_excluded_by_user": true,
+    "old_workflows_and_defaults_preserved": true,
+    "unknown_MODEL_and_LoRA_combinations_delegated": true,
+    "documentation": [
+      "docs/NOV05_INTEGRATION.md",
+      "docs/NOV05_STAGE_REUSE.md",
+      "docs/NOV05_AV_DELIVERY.md",
+      "docs/NOV05_CREATION_CONTRACTS.md",
+      "docs/NOV05_REWORK_VALIDATION.md",
+      "docs/NOV05_RECIPE_COMPATIBILITY.md",
+      "docs/NOV05_NATIVE_REFERENCE_SLICES.md",
+      "docs/NOV05_TAOMATE_HD.md",
+      "docs/NOV05_PAIRED_NOISE.md",
+      "docs/NOV05_REFINE_ENDPOINTS.md",
+      "docs/NOV05_NAG.md",
+      "docs/NOV05_LOCAL_SFX.md",
+      "docs/NOV05_REVIEW_20261108.md",
+      "docs/NOV08_FULL_ACCEPTANCE.md",
+      "docs/MASKED_COLOR_STABILIZE.md"
+    ],
+    "actual_CPU_Core_versions": [
+      "0.41.1",
+      "0.43.0",
+      "0.44.0"
+    ],
+    "human_quality_accepted": true,
+    "limitations": [
+      "Selected CPU consumers and actual GPU media are separate evidence.",
+      "Core 0.41.1 native baked PDD loading lacks the required constructor; existing T8 dynamic adapter path is supported.",
+      "Director/Creator support opt-in actual Stage reuse; declaration-only plans never become verified hits.",
+      "NAG requires an actual attention kernel interception interface; private fused sparse implementations remain unverified."
+    ],
+    "selected_trained_GPU_verified": true,
+    "human_review_groups": 5,
+    "human_review_clips": 12,
+    "actual_GPU_case_names": [
+      "run-noise_independent-v1",
+      "run-noise_haar-v1",
+      "run-taohd_2plus1-final-v1",
+      "run-taohd_rawclock-final-v1",
+      "run-endpoints_compare-v1",
+      "run-nag_off-v1",
+      "run-nag_empty-v1",
+      "run-nag_negative-v1",
+      "run-sfx_h3-v1",
+      "MMAudio_25step_local_candidates"
+    ],
+    "validation_summary": "Original27 finite requirements complete, PH3 dedicated image stack excluded by user. All32 assigned logical picture/sound requirements pass using exact accepted replacements; failures retained privately. Stage reuse, selected GPU/performance and three-Core contracts remain bounded by docs/NOV08_FULL_ACCEPTANCE.md.11 actual saved reviewed recipes published separately from experimental source examples. No arbitrary model/style/asset/algorithm qualification is inferred.",
+    "human_feedback_date": "2026-11-08",
+    "human_feedback_sha256": "d02a9597da700e5b8dcec4a5261df840c45e57ae498f22404b25bcac7128fc76",
+    "human_feedback_binding": "f10958e2c8ada66722d1a50cc54322aaaaaad3d73ba38276e0947fe5ba9f3807",
+    "human_review_counts": {
+      "picture": {
+        "pass": 9,
+        "fail": 2,
+        "unreviewed": 1,
+        "unsure": 0
+      },
+      "sound": {
+        "pass": 1,
+        "fail": 0,
+        "unreviewed": 11,
+        "unsure": 0
+      }
+    },
+    "human_review_ratings": {
+      "taohd": {
+        "picture": "pass",
+        "sound": "pass"
+      },
+      "noise-independent": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "noise-haar": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "nag-off": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "nag-empty": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "nag-negative": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "endpoints-before": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "endpoints-off": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "endpoints-on": {
+        "picture": "pass",
+        "sound": "unreviewed"
+      },
+      "sfx-original": {
+        "picture": "unreviewed",
+        "sound": "unreviewed"
+      },
+      "sfx-h3": {
+        "picture": "fail",
+        "sound": "unreviewed"
+      },
+      "sfx-external": {
+        "picture": "fail",
+        "sound": "unreviewed"
+      }
+    },
+    "human_review_notes": {
+      "taohd": "",
+      "paired": "Haar 关联噪声效果更好",
+      "nag": "",
+      "endpoints": "",
+      "sfx": "都是噪音，需要修复"
+    },
+    "sfx_issue": "Both exact revised soundtracks accepted; both old soundtracks failed. Other unspecified review fields retain original values.",
+    "sfx_recheck": {
+      "date": "2026-11-08",
+      "feedback_sha256": "504ecdd122d62ee9877f8c46d7a508bddfeca75547cbd874b7ce7e0509dc02a2",
+      "binding": "dd3f375b3fef19f1b762004dd0f235192aee350ed8dfe3c4ae363e46b3e6a05b",
+      "verified_media": 6,
+      "raw_groups": {
+        "sfx-h3": {
+          "ratings": {
+            "h3-original": {
+              "picture": "unreviewed",
+              "sound": "pass"
+            },
+            "h3-old": {
+              "picture": "unreviewed",
+              "sound": "fail"
+            },
+            "h3-revised": {
+              "picture": "unreviewed",
+              "sound": "pass"
+            }
+          },
+          "notes": ""
+        },
+        "sfx-external": {
+          "ratings": {
+            "external-original": {
+              "picture": "unreviewed",
+              "sound": "unreviewed"
+            },
+            "external-old": {
+              "picture": "unreviewed",
+              "sound": "fail"
+            },
+            "external-revised": {
+              "picture": "unreviewed",
+              "sound": "pass"
+            }
+          },
+          "notes": ""
+        }
+      },
+      "revised_sound_accepted_ids": [
+        "h3-revised",
+        "external-revised"
+      ],
+      "rejected_old_sound_ids": [
+        "h3-old",
+        "external-old"
+      ],
+      "acceptance_scope": "Only the two exact revised candidate soundtracks; raw picture/unreviewed fields remain as supplied.",
+      "all_revised_candidate_sounds_accepted": true
+    },
+    "scope27_fully_completed": true,
+    "selected_implementation_delivered": true,
+    "scope27_remaining_categories": [],
+    "scope27_completed_evidence_categories": [
+      "导演台适配采样边界的可选阶段复用与Creator实际消费者接线；专用整段配方边界另列",
+      "指定多Guide、非零ControlNet、原生Tiling及Ref2VA组合的训练模型证据",
+      "指定冷暖、第二请求、长工作集及预览与解码分阶段性能基线",
+      "指定VAE与有限量化及高级LoRA消费者；未授权Watercolor和完整Rung算法不冒充通过",
+      "自然多人局修、单帧编辑与色漂合同；新服装候选画面仍待复审",
+      "指定多窗口长链、第二场景及恢复实测",
+      "已分配声音评分及两条修订SFX原声保护验收"
+    ],
+    "known_remaining_development": [],
+    "resolved_development": [
+      {
+        "id": "director_creator_automatic_stage_reuse",
+        "needs_code": false,
+        "status": "implemented_selected_native_single_and_standard_two_pass_recovery_verified",
+        "scope": "Opt-in Director adapted sampler boundaries and wired Creator consumer preserve dependent invalidation and failed delivery recovery. Dedicated whole-recipe interfaces and uncertified external stacks retain their existing execution; no universal automatic reuse claim.",
+        "evidence": [
+          "h3_t8/director_stage_reuse.py",
+          "h3_t8/director_generation.py",
+          "h3_t8/modular_sampling/reuse.py",
+          "h3_t8/creator_segment_cache_advanced.py",
+          "tests/test_automatic_stage_reuse.py",
+          "docs/NOV05_STAGE_REUSE.md"
+        ]
+      }
+    ],
+    "full_acceptance_supplement": {
+      "finite_automated_and_real_model_targets_evidence_ready": 27,
+      "original_directions": 27,
+      "PH3_dedicated_stack_excluded": true,
+      "human_quality_accepted": true,
+      "private_review_groups": 9,
+      "private_review_assets": 29,
+      "reusable_workflows": 11,
+      "native_UI_API_save_reload_passed": true,
+      "user_Core_deployed": false,
+      "published": true,
+      "documentation": "docs/NOV08_FULL_ACCEPTANCE.md",
+      "limits": [
+        "Finite observed interfaces/assets/recipes only; not arbitrary model/style quality qualification.",
+        "Moving-camera clothing stress tests reverted colour or exposed skin and are not successful examples.",
+        "Designated Watercolor asset requires account authorization; full Rung algorithm not qualified.",
+        "Raw external LanPaint mask has actual temporal union; original RGB protection is checked separately at Composite."
+      ],
+      "nov09_rework_review": {
+        "status": "all_original_assigned_requirements_closed_by_exact_replacements",
+        "previous_feedback_counts": {
+          "passed": 25,
+          "failed_picture": 6,
+          "unreviewed_sound": 1
+        },
+        "previous_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+        "review_groups": 6,
+        "review_assets": 20,
+        "required_new_scores": 11,
+        "new_human_scores_created": 0,
+        "exact_rework_workflows": 6,
+        "native_UI_API_save_reload_passed": true,
+        "owned_GPU_and_CPU_Core_workers_released": true,
+        "old_failed_workflow_versions_excluded_from_promotion": 6,
+        "human_quality_accepted": false,
+        "published": false,
+        "user_Core_deployed": false,
+        "actual_human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+        "actual_human_counts": {
+          "pass": 10,
+          "fail": 1,
+          "unreviewed": 0
+        },
+        "accepted_rework_pictures": 5,
+        "all_new_required_sound_accepted": true,
+        "remaining_picture_failure": null,
+        "final_replacement_status": "actual_final_cardigan_picture_pass",
+        "final_replacement_feedback_sha256": "d00bfc2389fb20c1b7325ed607791b615c128d66cad25ddb2f9bb8fd8df6cc61"
+      },
+      "nov09_cardigan_colour_rework": {
+        "status": "specified_final_colour_control_model_refinement_human_accepted",
+        "previous_mean_correction_candidate_human_picture": "fail",
+        "whole_mask_mean_did_not_detect_local_flicker": true,
+        "detail_source_options": [
+          "generated",
+          "source_recolour"
+        ],
+        "legacy_default_detail_source": "generated",
+        "legacy_124_actual_RGB_frames_default_bit_identical": true,
+        "CPU_cases_per_Core": 20,
+        "Core_versions": [
+          "0.41.1",
+          "0.43.0",
+          "0.44.0"
+        ],
+        "same_CPU_cases_not_summed": true,
+        "pure_recolour": {
+          "operation": "explicit_original_source_texture_RGB_recolour",
+          "new_model_forwards": 0,
+          "full_frames": 120,
+          "CPU_graph_executed": true,
+          "workflow": "Cardigan_Recolour_5s",
+          "native_UI_API_save_reload_passed": true,
+          "scope": "Colour-only postprocess, not trained-model temporal quality qualification."
+        },
+        "coloured_input_model_refinement": {
+          "actual_GPU_Core": "0.44.0",
+          "trained_model_forwards": 20,
+          "seconds": 375.6528534999961,
+          "width": 512,
+          "height": 288,
+          "frames": 120,
+          "outer_steps": 20,
+          "scheduler": "native_Karras_rho1",
+          "sigmas": "0.06 to 0.001, append zero",
+          "no_generated_RGB_colour_correction": true,
+          "explicit_precoloured_input_not_generated_result": true,
+          "all120_frame_crops_and18_full_frames_checked": true,
+          "workflow": "Cardigan_Model_Refine_5s",
+          "native_UI_API_save_reload_passed": true,
+          "whole_browser_playback_checked": true,
+          "human_quality_accepted": true,
+          "scope": "Specified colour-only control-input refinement, not arbitrary garment/material editing."
+        },
+        "new_candidate_human_accepted": true,
+        "pending_picture_scores": 0,
+        "old_five_rework_pictures_and_all_sounds_accepted": true,
+        "source_audio_identity_matches_previously_accepted": true,
+        "owned_GPU_and_Core_workers_released": true,
+        "published": true,
+        "deployed_to_user_Core": false,
+        "human_feedback_sha256": "d00bfc2389fb20c1b7325ed607791b615c128d66cad25ddb2f9bb8fd8df6cc61"
+      },
+      "reviewed_workflows": 11,
+      "final_feedback_sha256": "d00bfc2389fb20c1b7325ed607791b615c128d66cad25ddb2f9bb8fd8df6cc61",
+      "original27_finite_acceptance_complete": true
+    },
+    "preserved_pre_colour_stabilize_registered_prefix": 787,
+    "final_acceptance_date": "2026-11-09",
+    "final_cardigan_feedback_sha256": "d00bfc2389fb20c1b7325ed607791b615c128d66cad25ddb2f9bb8fd8df6cc61",
+    "reviewed_workflow_index": "examples/workflows/97-nov09-reviewed/index.json",
+    "release_version": "1.105.0"
+  },
   "h24_working_tree_development": {
     "status": "github_source_update_human_reviewed",
     "preserved_registered_prefix": 768,
@@ -1080,7 +1413,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.104.0",
+  "version": "1.105.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",

@@ -80,7 +80,7 @@ def _inspect(model):
                 and isinstance(final.forward, MethodType) and final.forward.__self__ is head
                 and final.forward.__func__ is pdd.PDDHeadFinalLayer.forward,
                 "live final forward is outside its injection lifecycle")
-    restores = {"diffusion_model.final_layer": (final, original)}
+    restores = {"diffusion_model.final_layer": (final, original, None)}
 
     backbone, _ = injection(runtime["backbone_injection"], pdd._create_offloading_bypass_injections,
                             keys={"native_injection", "offload"})
@@ -97,8 +97,14 @@ def _inspect(model):
     for index, ((path, pair), hook) in enumerate(zip(manager.adapters.items(), manager.hooks)):
         require(type(path) is str and type(pair) is tuple and len(pair) == 2, "backbone target descriptor changed")
         adapter, strength = pair
-        require(type(hook) is BypassForwardHook and set(vars(hook)) == {
-            "module", "adapter", "multiplier", "original_forward"}, "backbone hook has unknown state")
+        hook_fields = {"module", "adapter", "multiplier", "original_forward"}
+        require(type(hook) is BypassForwardHook and set(vars(hook)) in (
+            hook_fields, hook_fields | {"original_force_forward"}), "backbone hook has unknown state")
+        force_forward = getattr(hook, "original_force_forward", getattr(hook.module, "comfy_force_forward", False))
+        require(type(force_forward) is bool, "backbone force-forward backup is not a boolean")
+        if hasattr(hook, "original_force_forward") and hook.original_forward is not None:
+            require(getattr(hook.module, "comfy_force_forward", None) is True,
+                    "active backbone force-forward flag changed")
         require(type(adapter) is LoRAAdapter and offload["adapters"][index] is adapter
                 and hook.adapter is adapter and hook.multiplier == strength, "backbone adapter order/owner differs")
         require(set(vars(adapter)) == {"loaded_keys", "weights", "multiplier", "is_conv", "conv_dim",
@@ -120,7 +126,7 @@ def _inspect(model):
         weights = tuple(value.to(dtype=dtype) if isinstance(value, torch.Tensor)
                         and dtype in (torch.float32, torch.float16, torch.bfloat16) else value for value in adapter.weights)
         records.append({"path": path, "loaded_keys": sorted(adapter.loaded_keys), "weights": content_identity(weights),
-                        "geometry": content_identity(expected)})
+                        "geometry": content_identity(expected), "original_force_forward": force_forward})
         previous = hook.original_forward
         if previous is None:
             previous = module.forward
@@ -128,10 +134,10 @@ def _inspect(model):
             require(isinstance(module.forward, MethodType) and module.forward.__self__ is hook
                     and module.forward.__func__ is BypassForwardHook._bypass_forward,
                     "live backbone forward changed during injection")
-        restores[path] = (module, previous)
+        restores[path] = (module, previous, force_forward)
     wrappers = model.get_wrappers("diffusion_model", pdd.PDD_WRAPPER_KEY)
     require(wrappers == [pdd.pdd_forward_wrapper], "absolute head selector source/order changed")
-    contract = {"schema": "t8.modular-sampling.pdd-dynamic.v1", "backbone": records,
+    contract = {"schema": "t8.modular-sampling.pdd-dynamic.v2", "backbone": records,
                 "head": content_identity({name: getattr(head, name) for name in
                     ("video_weight", "video_bias", "audio_weight", "audio_bias", "strength", "variant")})}
     return contract, restores
@@ -147,7 +153,7 @@ def project(model):
     view.model = copy(model.model)
     view.model._modules = dict(model.model._modules)
     cloned = {"": view.model}
-    for path, (original, forward) in restores.items():
+    for path, (original, forward, force_forward) in restores.items():
         parent = ""
         for part in path.split("."):
             current = (parent + "." + part).strip(".")
@@ -158,6 +164,8 @@ def project(model):
                 cloned[current] = child
             parent = current
         target = cloned[path]
+        if force_forward is not None:
+            target.comfy_force_forward = force_forward
         if isinstance(forward, MethodType) and forward.__self__ is original and forward.__func__ is type(original).forward:
             target.__dict__.pop("forward", None)
         else:

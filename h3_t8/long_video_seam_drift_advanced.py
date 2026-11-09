@@ -214,11 +214,26 @@ def process_long_video_seam_drift(
         rolled_back_frames = 0
         max_observed_change = 0.0
         texture_ratios: list[float] = []
+        transition_stop = None
+        transition_stop_reason = None
         if mode == "bounded_candidate_exp" and eligible:
             gain, offset = _bounded_correction(
                 before_rgb, after_rgb, float(maximum_gain), float(maximum_offset)
             )
             stop = min(int(source.shape[0]), boundary + transition)
+            # A valid seam can be followed by a different shot before the
+            # requested fade ends. Never carry its color correction across it.
+            later_boundaries = [item for item in boundaries if boundary < item < stop]
+            transition_stop_reason = "requested_transition_end"
+            if later_boundaries:
+                stop = later_boundaries[0]
+                transition_stop_reason = "declared_next_boundary"
+            for frame_index in range(boundary + 1, stop):
+                if _frame_mad(source[frame_index - 1], source[frame_index]) >= float(scene_cut_threshold):
+                    stop = frame_index
+                    transition_stop_reason = "later_scene_cut_or_large_flash"
+                    break
+            transition_stop = stop
             staged_frames: dict[int, torch.Tensor] = {}
             for frame_index in range(boundary, stop):
                 alpha = 1.0 - (frame_index - boundary) / max(1, transition)
@@ -290,6 +305,8 @@ def process_long_video_seam_drift(
                 "maximum_observed_change": max_observed_change,
                 "texture_ratio_min": min(texture_ratios) if texture_ratios else None,
                 "texture_ratio_max": max(texture_ratios) if texture_ratios else None,
+                "transition_stop_frame": transition_stop,
+                "transition_stop_reason": transition_stop_reason,
             }
         )
 

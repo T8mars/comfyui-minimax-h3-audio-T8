@@ -38,11 +38,11 @@ class MiniMaxH3SourceConformEXPT8(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         return schema(cls, "Conform Once / 一次同源准备", [
-            io.Image.Input("frames"), io.Float.Input("source_fps", default=24., min=.01, max=240.),
-            io.Int.Input("width", default=448, min=32, max=3840, step=32),
-            io.Int.Input("height", default=256, min=32, max=2160, step=32),
-            io.Int.Input("length", default=124, min=5, max=4096, step=17),
-            io.Float.Input("start_seconds", default=0., min=0., max=86400., step=.001),
+            io.Image.Input("frames"), io.Float.Input("source_fps", default=24., min=0.),
+            io.Int.Input("width", default=448, min=32, step=32),
+            io.Int.Input("height", default=256, min=32, step=32),
+            io.Int.Input("length", default=124, min=5, step=17),
+            io.Float.Input("start_seconds", default=0., min=0., step=.001),
             io.Combo.Input("short_video_policy", options=list(SHORT_VIDEO_POLICIES), default="strict"),
             io.Combo.Input("short_audio_policy", options=list(SHORT_AUDIO_POLICIES), default="pad_silence"),
             io.Audio.Input("source_audio", optional=True), CLOCK.Input("source_clock", optional=True)],
@@ -87,9 +87,9 @@ class MiniMaxH3SourceControlMapEXPT8(io.ComfyNode):
     def define_schema(cls):
         return schema(cls, "Map Control / 共用帧映射", [FRAME_MAP.Input("frame_map"),
             io.Combo.Input("kind", options=["image", "mask"], default="image"),
-            io.Int.Input("width", default=0, min=0, max=3840, step=32,
+            io.Int.Input("width", default=0, min=0, step=32,
                          tooltip="0 uses the Conform canvas. LOW/HIGH share indices, not geometry."),
-            io.Int.Input("height", default=0, min=0, max=2160, step=32),
+            io.Int.Input("height", default=0, min=0, step=32),
             io.Image.Input("control_image", optional=True), io.Mask.Input("control_mask", optional=True),
             LINEAGE.Input("lineage", optional=True)],
             [io.Image.Output("control_image"), io.Mask.Output("control_mask"), io.String.Output("report_json")],

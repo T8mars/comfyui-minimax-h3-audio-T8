@@ -574,6 +574,17 @@ root = Path(sys.argv[1])
 sys.path.insert(0, sys.argv[2])
 from comfy.cli_args import args
 args.cpu = True
+import torch
+def forbid_cuda_initialization():
+    raise RuntimeError('CPU validation subprocess must not initialize CUDA')
+torch.cuda._lazy_init = forbid_cuda_initialization
+try:
+    import comfy_kitchen
+except ImportError:
+    pass
+else:
+    # Optional attention capability probing is outside this graph-validator test.
+    comfy_kitchen.int8_attention_is_available = lambda *args, **kwargs: False
 import folder_paths
 folder_paths.get_filename_list = lambda folder: {
     'diffusion_models': ['minimax_h3_fl2va_int8_convrot.safetensors'],
@@ -601,14 +612,16 @@ for cls in (nodes_custom_sampler.BasicGuider, nodes_custom_sampler.RandomNoise,
             nodes_custom_sampler.SamplerCustomAdvanced):
     nodes.NODE_CLASS_MAPPINGS[cls.__name__] = cls
 valid = asyncio.run(execution.validate_prompt('director-hyperflow-separate', graph, None))
-print(json.dumps({'valid': valid[0], 'errors': valid[1]}, default=str))
+print(json.dumps({'valid': valid[0], 'errors': valid[1], 'cuda_initialized': torch.cuda.is_initialized()}, default=str))
 """
     env = os.environ.copy()
     env["PYTHONPATH"] = str(core) + os.pathsep + env.get("PYTHONPATH", "")
     result = subprocess.run([sys.executable, "-c", script, str(root), str(core)], input=json.dumps(graph),
                             text=True, capture_output=True, env=env, cwd=root, timeout=60, check=True)
     validation = json.loads(result.stdout.splitlines()[-1])
+    (tmp_path / "core-validation.json").write_text(json.dumps(validation, indent=2), encoding="utf-8")
     assert validation["valid"], validation["errors"]
+    assert not validation["cuda_initialized"]
 
 
 def test_director_hyperflow_separate_clones_semantic_bridge_per_stage(tmp_path, monkeypatch):

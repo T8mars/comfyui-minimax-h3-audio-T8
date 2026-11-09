@@ -1,0 +1,232 @@
+{
+  "schema": "t8.nov09.reviewed-workflows.v1",
+  "version": "1.105.0",
+  "source": "Actual saved execution recipes; only title/NOTE release text changed. API bytes preserved.",
+  "workflows": [
+    {
+      "name": "Long_Garden_12s_4plus4",
+      "path": "examples/workflows/97-nov09-reviewed/Long_Garden_12s_4plus4.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Long_Garden_12s_4plus4.api.json",
+      "workflow_sha256": "e93c0e5f66d186bf1c4a079b6c715e4470c8e3c71408e09cabd33655c8f50471",
+      "api_sha256": "3e9a723d22eaa0f62449037b994ed997fa73955884cf0bdea4e378456f1b82e2",
+      "source_UI_sha256": "ca3f1149d7fb707ae2a21610dd3ba713ca9b9a1de0a05e680512d73f9a623a0d",
+      "source_API_sha256": "3e9a723d22eaa0f62449037b994ed997fa73955884cf0bdea4e378456f1b82e2",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "ba81cf221f3fb9c24bb9192ea64ec2399a1299340399a2f87430c61a65566651"
+      ],
+      "human_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+      "source_build": "workflow-build-v8",
+      "input_filenames": [],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Still_Direct1",
+      "path": "examples/workflows/97-nov09-reviewed/Still_Direct1.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Still_Direct1.api.json",
+      "workflow_sha256": "68445eaebf82e60044daa369b50fce2cfe5271429269bb3c6efd8ccff13f9792",
+      "api_sha256": "336a7a2e8de22d05467417e93599009e7e528ece3e021fa3158056323205e47f",
+      "source_UI_sha256": "b9e49bbd34c3a9d8edcb045ac35d848bd13485e8815446fe8129eadbee3b7e0b",
+      "source_API_sha256": "336a7a2e8de22d05467417e93599009e7e528ece3e021fa3158056323205e47f",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "d1c2ca39b08b6d08d3c606d2a866ff046717e006a684c562b5c4a54da27be257"
+      ],
+      "human_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+      "source_build": "workflow-build-v8",
+      "input_filenames": [
+        "Still_Direct1__source.png"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Still_Native22",
+      "path": "examples/workflows/97-nov09-reviewed/Still_Native22.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Still_Native22.api.json",
+      "workflow_sha256": "618e9152aa07c38d99b2fee751ce42d40eaaceb1788bd9474860f2a52d7923b7",
+      "api_sha256": "4154b0d4568fb9db34d75a9c0a019537c6c5a0d2ea0b87117dfe9900faf63057",
+      "source_UI_sha256": "ca04204c30636e66a5353ac791dcbd77104b7e0925e6ff4b6104e159266e0d12",
+      "source_API_sha256": "4154b0d4568fb9db34d75a9c0a019537c6c5a0d2ea0b87117dfe9900faf63057",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "5ad14da43a18e44059f1b663e80aca39a53d09c1ce9790359ec3e02c77056e25"
+      ],
+      "human_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+      "source_build": "workflow-build-v8",
+      "input_filenames": [
+        "Still_Native22__source.png"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Paired_Reference_Windows",
+      "path": "examples/workflows/97-nov09-reviewed/Paired_Reference_Windows.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Paired_Reference_Windows.api.json",
+      "workflow_sha256": "d3097b8b98032dd8d5871073c720a3458b265e0ea2314266346fbc26caa87440",
+      "api_sha256": "e88d004946672a882de4afa3beb94e84c9ec685446b3d812f1e2cb09ec72d778",
+      "source_UI_sha256": "fc56380111e5e322e7df9d8285a4c7dd312d0336d0ff72a06aa1e2df6b464399",
+      "source_API_sha256": "e88d004946672a882de4afa3beb94e84c9ec685446b3d812f1e2cb09ec72d778",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "48b03b0d9e51b1b83da84ac2980b36c50118b5f4a75ee310b8f062a36b34386a"
+      ],
+      "human_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+      "source_build": "workflow-build-v8",
+      "input_filenames": [
+        "Paired_Reference_Windows__spoken_source.mp4"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Four_VAE_Compare",
+      "path": "examples/workflows/97-nov09-reviewed/Four_VAE_Compare.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Four_VAE_Compare.api.json",
+      "workflow_sha256": "264eeffa02bcc419fc2d80c9a7e27bb7682a33894b2727a8b4f18bd82b1ca1a2",
+      "api_sha256": "822aae9621d2206ef0c75dd20c14754693b9bac9c1f0e0a3a40899a9629ed474",
+      "source_UI_sha256": "5d24f3d5342327351e54218545f34c15590d47a82529f0e0d534b9cbbdffdfdb",
+      "source_API_sha256": "822aae9621d2206ef0c75dd20c14754693b9bac9c1f0e0a3a40899a9629ed474",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "249ffeb00b06f538fdffdd959ad71cea47fc7767e6cde74f56c60f0a6fd11661",
+        "946f53a0cb3212a01be7ae91038151fb62fb64b2f46700af8e255d97e53b9897",
+        "4420dbd455343e4fef9ac61f1ca241b164081b8fd6bee11a251c6fe041d15f4a",
+        "17959c822b8e964b24e9ecc0c042c045b52ccdba33af8e87787790143951d25b"
+      ],
+      "human_feedback_sha256": "a326de50d0cc791afc22e0af7a440184811f8edc610263a35fe2a49b05100b11",
+      "source_build": "workflow-build-v8",
+      "input_filenames": [],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "PDMD4_06MP_5s",
+      "path": "examples/workflows/97-nov09-reviewed/PDMD4_06MP_5s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/PDMD4_06MP_5s.api.json",
+      "workflow_sha256": "cd86c566dcbd24595ec6d94977fb6045e5124adbf21de5f56ca063193a4fb719",
+      "api_sha256": "389671ce2b6d0960b004b20b796af34701a17d9c7418d9e33465bd59719992e8",
+      "source_UI_sha256": "03071f78014d32750852675eed9d460eaa26493d735a89bbfa783e119db737cd",
+      "source_API_sha256": "389671ce2b6d0960b004b20b796af34701a17d9c7418d9e33465bd59719992e8",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "e147899430a6e910bcd587f45e3b49396a851eee833d6c6d7e4871811c6c5a47"
+      ],
+      "human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+      "source_build": "nov09-workflow-build-v1",
+      "input_filenames": [],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "DMAD8_06MP_5s",
+      "path": "examples/workflows/97-nov09-reviewed/DMAD8_06MP_5s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/DMAD8_06MP_5s.api.json",
+      "workflow_sha256": "3f9601ff172692587770c4a50ea474fd8dbf48d005d7a6519b6ba2f2f1c51749",
+      "api_sha256": "6ff5539c73c0c9f755afb9356f08f7351486894f230126a74dfa946a9d80773a",
+      "source_UI_sha256": "606bd4551db7519bcb8cabc5e5933950e8e3e728c2e9dfd9723b17bc9b67a66f",
+      "source_API_sha256": "6ff5539c73c0c9f755afb9356f08f7351486894f230126a74dfa946a9d80773a",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "9e268f257aedee8e87e5dced7799666094a533a12cbf182ee0bf59b42c783921"
+      ],
+      "human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+      "source_build": "nov09-workflow-build-v1",
+      "input_filenames": [],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Control_PDD8_06MP_5s",
+      "path": "examples/workflows/97-nov09-reviewed/Control_PDD8_06MP_5s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Control_PDD8_06MP_5s.api.json",
+      "workflow_sha256": "bdfddaee2b6f8cdb32594017e902146f75bc0112c2aacfd8d34149fa4c05f07e",
+      "api_sha256": "adbe004feb848ec3898ca65077c01de3a7be66428acb530d042db251288e202c",
+      "source_UI_sha256": "12e7aac549b9a6b4078c0e5143db40befe6517b44202a5442a8d7c1079a8724c",
+      "source_API_sha256": "adbe004feb848ec3898ca65077c01de3a7be66428acb530d042db251288e202c",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "32192ed2cab32f36bc57dffb16c44f387f4b88557161b772c9167fccc72c5086"
+      ],
+      "human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+      "source_build": "nov09-workflow-build-control-v1",
+      "input_filenames": [
+        "Control_PDD8_06MP_5s__clean-control-first.png",
+        "Control_PDD8_06MP_5s__clean-control-last.png",
+        "Control_PDD8_06MP_5s__clean-control-middle.png",
+        "Control_PDD8_06MP_5s__clean-curly-identity.png",
+        "Control_PDD8_06MP_5s__clean_control_source.mp4"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Cup_Blue_3Guides_5s",
+      "path": "examples/workflows/97-nov09-reviewed/Cup_Blue_3Guides_5s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Cup_Blue_3Guides_5s.api.json",
+      "workflow_sha256": "436775b449981d992b6a8ef3a950a0d396e52a0a12cfc6c2a9f1054a9d365699",
+      "api_sha256": "e37b9b367b41d40434f401f1c71b52e91e5671abca76d36ee6e24051a69b225f",
+      "source_UI_sha256": "ba03075b6a8aaf35ea13837554e492856727df02d4a6258e2619319bd7029154",
+      "source_API_sha256": "e37b9b367b41d40434f401f1c71b52e91e5671abca76d36ee6e24051a69b225f",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "e48487b9db4e2ae941d5af2cc9d2dcd9bc7bc99496ef9889b035d939e4f552fb"
+      ],
+      "human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+      "source_build": "nov09-workflow-build-cup-guided-v1",
+      "input_filenames": [
+        "Cup_Blue_3Guides_5s__approved_two_cups.mp4",
+        "Cup_Blue_3Guides_5s__authored-cup-blue-000.png",
+        "Cup_Blue_3Guides_5s__authored-cup-blue-062.png",
+        "Cup_Blue_3Guides_5s__authored-cup-blue-119.png",
+        "Cup_Blue_3Guides_5s__precise_cup_mask120.mp4"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Living_4plus4_06MP_12s",
+      "path": "examples/workflows/97-nov09-reviewed/Living_4plus4_06MP_12s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Living_4plus4_06MP_12s.api.json",
+      "workflow_sha256": "ea18bbcaf99e3f8d12b15996e5e6521a1ca1ec28b6274450b5ec3653c99482f1",
+      "api_sha256": "2ccf245bf74d6ed5f4a7f65f3c8fd6b562d1a6bf1e3a7255254d2d51957efdd4",
+      "source_UI_sha256": "a384782dc0e3797557f91637061394d43e2f595a9af4134f3e2f3e5758c41e30",
+      "source_API_sha256": "2ccf245bf74d6ed5f4a7f65f3c8fd6b562d1a6bf1e3a7255254d2d51957efdd4",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "14f5b76771e6cbbcb84456a4735e165e12085e54f84b6c32340e5344c794e009"
+      ],
+      "human_feedback_sha256": "89eb6dc22c77ee7bacfdfc5bb0c2817793485a3554312caaa2763958f73cb259",
+      "source_build": "nov09-workflow-build-long-plain-v1",
+      "input_filenames": [
+        "Living_4plus4_06MP_12s__living-clean-first.png"
+      ],
+      "media_and_weights_not_in_repository": true
+    },
+    {
+      "name": "Cardigan_Model_Refine_5s",
+      "path": "examples/workflows/97-nov09-reviewed/Cardigan_Model_Refine_5s.json",
+      "api_path": "examples/workflows/97-nov09-reviewed/api/Cardigan_Model_Refine_5s.api.json",
+      "workflow_sha256": "5de97e9d036e72d26cfedac418befad6fd3c7af248a5e1f56ec4fc891db8b13d",
+      "api_sha256": "8f7b36392821d27944741b07c3a61b62163af883c5cf85285e91bc1eb2edf5d2",
+      "source_UI_sha256": "7b4aba1904f20db40a466ea4085b815bd04f79c6fb87cbab330f1ecd258bfcba",
+      "source_API_sha256": "8f7b36392821d27944741b07c3a61b62163af883c5cf85285e91bc1eb2edf5d2",
+      "sampler_loader_wires_and_parameters_preserved": true,
+      "source_media_sha256": [
+        "11c5dbb96159058c3b86c17ab366236ceafc99d704176052ef2d56b1e8ea8187"
+      ],
+      "human_feedback_sha256": "d00bfc2389fb20c1b7325ed607791b615c128d66cad25ddb2f9bb8fd8df6cc61",
+      "source_build": "nov09-workflow-build-cardigan-model-v1",
+      "input_filenames": [
+        "Cardigan_Model_Refine_5s__approved_two_cups.mp4",
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-000.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-062.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-clean-blue-119.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-015.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-030.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-045.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-077.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-092.png",
+        "Cardigan_Model_Refine_5s__authored-cardigan-dense9-blue-107.png",
+        "Cardigan_Model_Refine_5s__edge_guided_cardigan.mp4"
+      ],
+      "media_and_weights_not_in_repository": true
+    }
+  ],
+  "workflow_count": 11,
+  "all_assigned_picture_and_sound_scores_passed": true,
+  "rejected_versions_not_promoted": true
+}

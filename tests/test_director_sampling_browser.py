@@ -13,6 +13,13 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def launch_browser(playwright):
+    options = {"headless": True}
+    if os.environ.get("T8_TEST_CHROMIUM"):
+        options["executable_path"] = os.environ["T8_TEST_CHROMIUM"]
+    return playwright.chromium.launch(**options)
+
+
 def test_split_workflow_export_downloads_without_queueing():
     class Quiet(SimpleHTTPRequestHandler):
         def log_message(self, *_args):
@@ -26,7 +33,7 @@ def test_split_workflow_export_downloads_without_queueing():
     worker.start()
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser = launch_browser(playwright)
             page = browser.new_page(accept_downloads=True)
             errors, sent = [], []
             page.on("pageerror", lambda error: errors.append(str(error)))
@@ -69,7 +76,7 @@ def test_hyperflow_separate_variant_is_explicit_and_survives_reload():
     worker.start()
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser = launch_browser(playwright)
             page = browser.new_page(viewport={"width": 1360, "height": 900})
             page.route("**/models", lambda route: route.fulfill(json={
                 "unet": [], "clip": [], "video_vae": [], "audio_vae": [], "lora": [],
@@ -149,7 +156,7 @@ def test_sampling_dialog_cancel_and_apply_do_not_change_legacy_until_committed()
     worker.start()
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
+            browser = launch_browser(playwright)
             page = browser.new_page(viewport={"width": 1360, "height": 900})
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
@@ -191,10 +198,13 @@ def test_sampling_dialog_cancel_and_apply_do_not_change_legacy_until_committed()
             page.locator('[data-stage="low_loras"] [data-sampling-field="name"]').select_option("style.safetensors")
             page.locator('[data-stage="low_loras"] [data-sampling-field="enabled"]').check()
             page.locator('[data-sampling-action="copy-low"]').click()
+            assert page.locator('[data-sampling-reuse]').input_value() == "disabled"
+            page.locator('[data-sampling-reuse]').select_option("reuse_completed")
             assert page.locator('[data-stage="high_loras"] [data-sampling-field="name"]').input_value() == "style.safetensors"
             page.locator('[data-action="apply-model-settings"]').click()
             applied = page.evaluate("""() => { const key = Object.keys(localStorage).find(x => x.startsWith('t8director.draft:')); return JSON.parse(localStorage.getItem(key)); }""")
             assert applied["version"] == 2 and applied["doc"]["sampling"]["mode"] == "two_pass"
+            assert applied["doc"]["sampling"]["reuse_mode"] == "reuse_completed"
             page.locator('.w-header-actions [data-action="model-settings"]').click()
             assert page.locator('[data-sampling-mode="two_pass"]').get_attribute("aria-pressed") == "true"
             assert page.locator('[data-stage="low_loras"] [data-sampling-field="name"]').input_value() == "style.safetensors"
@@ -239,7 +249,7 @@ def test_live_director_sampling_route_when_requested():
     if not url:
         pytest.skip("Set T8_DIRECTOR_LIVE_URL for the running Core UI smoke")
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = launch_browser(playwright)
         page = browser.new_page(viewport={"width": 1360, "height": 900})
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
@@ -283,7 +293,7 @@ def test_live_director_recovers_completed_video_when_requested():
     assert len(expected_files) == 1
     target = base+'/ui?'+urlencode({'project_id': project_id})
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = launch_browser(playwright)
         page = browser.new_page(viewport={"width": 1360, "height": 900})
         errors, result_reads, writes = [], [], []
         page.on("pageerror", lambda error: errors.append(str(error)))

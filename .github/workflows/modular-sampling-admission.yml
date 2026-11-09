@@ -22,3 +22,5 @@ jobs:
         run: python3 tools/audit_modular_new_sampling.py guard
       - name: Verify bounded Core compatibility without recapturing prior ledgers
         run: python3 tests/test_core_compat_admission_ci.py
+      - name: Verify reviewed November scope and reject altered calls or borrowed media
+        run: python3 tests/test_nov05_sampling_admission_ci.py

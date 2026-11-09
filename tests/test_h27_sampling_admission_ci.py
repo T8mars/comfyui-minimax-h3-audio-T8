@@ -27,9 +27,12 @@ class H27ReviewedSource(unittest.TestCase):
         dual = json.loads((ROOT / dual_path).read_text('utf8'))
         compat_path = 'tests/fixtures/core_compat_20261031_source.json'
         compat = json.loads((ROOT / compat_path).read_text('utf8'))
+        november_path = 'tests/fixtures/nov05_reviewed_sampling_source.json'
+        november = json.loads((ROOT / november_path).read_text('utf8'))
         for name in [*self.review['files'], self.path, 'tests/fixtures/h21_reviewed_sampling_1_102.json',
                      'tests/fixtures/h24_reviewed_sampling_source.json', *pika['files'], pika_path,
-                     *dual['files'], dual_path, *compat['files'], compat_path]:
+                     *dual['files'], dual_path, *compat['files'], compat_path,
+                     *november['files'], november_path]:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)

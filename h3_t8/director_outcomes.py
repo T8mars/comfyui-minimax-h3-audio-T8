@@ -59,6 +59,10 @@ def terminal_payload(observed):
     payload = {"state": state, "outputs": deepcopy(outputs)}
     if isinstance(observed.get("status"), dict):
         payload["status"] = deepcopy(observed["status"])
+    from .director_stage_reuse import reuse_reports
+    reports = reuse_reports(outputs)
+    if reports:
+        payload["stage_reuse"] = reports
     return payload
 
 

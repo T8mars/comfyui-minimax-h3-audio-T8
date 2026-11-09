@@ -464,6 +464,82 @@ def _core_compat_review(root, predecessor):
             'files': {**predecessor['files'], **review['files']}}
 
 
+def _nov05_review(root, predecessor):
+    """Bound the reviewed November delta without recapturing older ledgers.
+
+    This is a source-development tripwire, never a runtime MODEL allowlist.
+    Three identical reuse call ASTs are distinct control-flow callsites and
+    retain their multiplicity. Old H27 media remain attached to old H27 files.
+    """
+    path = root / 'tests/fixtures/nov05_reviewed_sampling_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'__init__.py', 'h3_t8/audio_ops.py', 'h3_t8/director_generation.py',
+               'h3_t8/h3_av_delivery.py', 'h3_t8/nodes.py',
+               'tests/test_director_generation.py', 'web/director/session.mjs',
+               'h3_t8/director_outcomes.py', 'h3_t8/director_sampling_settings.py',
+               'h3_t8/h3_world_advanced.py',
+               'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py',
+               '.github/workflows/modular-sampling-admission.yml'}
+    required = {'schema', 'baseline_commit', 'previous_files', 'files', 'previous_sites',
+                'reviewed_sites', 'workflows_index', 'accepted_media_sha256',
+                'human_feedback_sha256', 'preserved_nodes', 'appended_nodes',
+                'registered_nodes', 'scope', 'limits'}
+    expected = Counter({
+        ('h3_t8/director_generation.py', 'build_director_generation_prompt', '<director_graph_builder>'): 1,
+        ('h3_t8/modular_sampling/reuse.py', 'sample_or_reuse', 'results.sample_stage'): 3,
+        ('h3_t8/nodes_stage_reuse.py', 'MiniMaxH3StageReuseEXPT8.execute', 'sample'): 1,
+        ('h3_t8/taomate_hd_runtime.py', 'sample_taomate_hd', 'current.sample'): 1,
+    })
+    appended = ['MiniMaxH3ProgressivePairedNoiseEXPT8', 'MiniMaxH3StageReuseEXPT8',
+                'MiniMaxH3TaoMateHDEXPT8', 'MiniMaxH3NAGEXPT8', 'MiniMaxH3NAGAuditEXPT8',
+                'MiniMaxH3LocalSFXCandidatesT8', 'MiniMaxH3RefineEndpointsEXPT8',
+                'MiniMaxH3MaskedColorStabilizeEXPT8']
+    h24 = json.loads((root / 'tests/fixtures/h24_reviewed_sampling_source.json').read_text(encoding='utf8'))
+    prior = {**h24['files'], **predecessor['files']}
+    if (set(review) != required or review['schema'] != 't8.nov05.reviewed_sampling_source.v1'
+            or review['baseline_commit'] != '3a23f333537d9a715aad7ce79af8d9ec891d9ad8'
+            or set(review['previous_files']) != changed
+            or not changed <= set(review['files'])
+            or any(prior.get(name) != digest
+                   for name, digest in review['previous_files'].items())
+            or review['preserved_nodes'] != 780 or review['registered_nodes'] != 788
+            or review['appended_nodes'] != appended or not review['scope'] or not review['limits']
+            or review['workflows_index'] != 'examples/workflows/97-nov09-reviewed/index.json'
+            or len(review['previous_sites']) != 1
+            or Counter((r['path'], r['symbol'], r['callee']) for r in review['reviewed_sites']) != expected
+            or any(set(r) != {'path', 'symbol', 'callee', 'call_sha256'}
+                   or not re.fullmatch(r'[0-9a-f]{64}', r['call_sha256'])
+                   for r in [*review['previous_sites'], *review['reviewed_sites']])
+            or not {_key(r) for r in review['previous_sites']} <= {_key(r) for r in predecessor['reviewed_sites']}
+            or not re.fullmatch(r'[0-9a-f]{64}', review['files'].get(review['workflows_index'], ''))):
+        raise ValueError('Invalid bounded November source review or different prior source binding')
+    index = json.loads((root / review['workflows_index']).read_text(encoding='utf8'))
+    rows = index['workflows']
+    if (index.get('schema') != 't8.nov09.reviewed-workflows.v1'
+            or len(rows) != 11 or index.get('workflow_count') != 11
+            or len({r['name'] for r in rows}) != 11
+            or {v for r in rows for v in r['source_media_sha256']} != set(review['accepted_media_sha256'])
+            or {r['human_feedback_sha256'] for r in rows} != set(review['human_feedback_sha256'])
+            or len(set(review['human_feedback_sha256'])) != 3
+            or any(not re.fullmatch(r'[0-9a-f]{64}', v)
+                   for v in [*review['accepted_media_sha256'], *review['human_feedback_sha256']])
+            or any(review['files'].get(r['path']) != r['workflow_sha256']
+                   or review['files'].get(r['api_path']) != r['api_sha256']
+                   or r.get('sampler_loader_wires_and_parameters_preserved') is not True for r in rows)):
+        raise ValueError('November workflows refer to different actual media or saved recipe')
+    old = {_key(r) for r in review['previous_sites']}
+    previous_files = {**review['previous_files'], **predecessor['previous_files']}
+    return {**predecessor, 'previous_files': previous_files,
+            'files': {**predecessor['files'], **review['files']},
+            'reviewed_sites': [r for r in predecessor['reviewed_sites'] if _key(r) not in old]
+                              + review['reviewed_sites']}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -503,6 +579,7 @@ def _h27_review(root):
     review = _pika_review(root, review)
     review = _pika_dual_review(root, review)
     review = _core_compat_review(root, review)
+    review = _nov05_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

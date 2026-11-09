@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from copy import deepcopy
-from pathlib import Path
 
 import pytest
 
@@ -13,7 +12,7 @@ from h3_audio_t8_pkg.director_workflow_export import export_director_split_workf
 
 
 def _registry(monkeypatch):
-    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[3]))
+    # Core is supplied by the test runner/conftest, not a fixed checkout depth.
     import nodes
     from comfy_extras.nodes_custom_sampler import BasicGuider, RandomNoise, SamplerCustomAdvanced
     import h3_audio_t8_pkg
