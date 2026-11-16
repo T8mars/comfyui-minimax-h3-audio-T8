@@ -540,6 +540,182 @@ def _nov05_review(root, predecessor):
                               + review['reviewed_sites']}
 
 
+def _nov12_review(root, predecessor):
+    """Admit only the finite November development delta, without media approval.
+
+    This successor preserves the older accepted workflow/media ledgers. Its
+    source tripwire does not certify experimental output quality or arbitrary
+    user MODEL combinations, and never becomes a runtime compatibility gate.
+    """
+    path = root / 'tests/fixtures/nov12_sampling_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    required = {'schema', 'baseline_commit', 'previous_files', 'files',
+                'previous_sites', 'reviewed_sites', 'preserved_nodes',
+                'registered_nodes', 'appended_nodes', 'preserved_prefix_sha256',
+                'human_quality_accepted', 'accepted_media_sha256',
+                'human_feedback_sha256', 'scope', 'limits'}
+    changed = {'__init__.py', 'h3_t8/director_generation.py',
+               'h3_t8/director_hyperflow.py',
+               'h3_t8/director_two_pass.py', 'h3_t8/nodes_open_regenerate.py',
+               'h3_t8/open_regenerate_recipe.py', 'web/director/session.mjs',
+               'h3_t8/director_sampling_settings.py',
+               'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    builders = {
+        ('h3_t8/director_generation.py', 'build_director_generation_prompt', '<director_graph_builder>'),
+        ('h3_t8/director_two_pass.py', 'apply_two_pass_graph', '<director_graph_builder>'),
+        ('h3_t8/director_hyperflow.py', 'apply_hyperflow_graph', '<director_graph_builder>')}
+    selected = builders | {('h3_t8/prompt_edit_guidance.py', 'PromptEditGuider.sample', 'super().sample')}
+    appended = ['MiniMaxH3LatentUpscale2DT8', 'MiniMaxH3PromptEditGuiderT8',
+                'MiniMaxH3PromptEditAuditT8', 'MiniMaxH3LoRAWindowT8',
+                'MiniMaxH3AttachLoRAWindowsT8', 'MiniMaxH3HyperFlowFlashLoaderT8',
+                'MiniMaxH3FlashCheckpointSigmasT8', 'MiniMaxH3DMADRenoiseSetupEXPT8',
+                'MiniMaxH3ICRecipeEXPT8', 'MiniMaxH3ICComposeEXPT8',
+                'MiniMaxH3FinalAudioAuditEXPT8', 'MiniMaxH3ICSamplerEXPT8',
+                'MiniMaxH3AudioPrefixCarryEXPT8', 'MiniMaxH3AudioTailReleaseEXPT8',
+                'MiniMaxH3AudioTailAuditEXPT8']
+    # HyperFlow's last reviewed builder belongs to H24 and was unchanged by
+    # H27/Nov05. The two other builders have later predecessor identities.
+    h24 = json.loads((root / 'tests/fixtures/h24_reviewed_sampling_source.json').read_text(encoding='utf8'))
+    prior_sites = [*predecessor['reviewed_sites'],
+                   *(r for r in h24['reviewed_sites'] if r['path'] == 'h3_t8/director_hyperflow.py')]
+    prior_files = {**h24['files'], **predecessor['files']}
+    helpers = set('''h3_t8/hyperflow_runtime_advanced.py
+        h3_t8/learned_latent_upscale_advanced.py h3_t8/logical_object.py
+        h3_t8/environment_audit.py h3_t8/prompt_provider_advanced.py
+        web/director/sampling_ui.mjs h3_t8/audio_tail_release.py h3_t8/dmad_renoise.py
+        h3_t8/final_audio_audit.py h3_t8/hyperflow_flash_bridge.py
+        h3_t8/ic_draft_refine.py h3_t8/latent_upscale_2d.py h3_t8/lora_windows.py
+        h3_t8/nodes_audio_tail_release.py h3_t8/nodes_dmad_renoise.py
+        h3_t8/nodes_final_audio_audit.py h3_t8/nodes_hyperflow_flash_bridge.py
+        h3_t8/nodes_ic_draft_refine.py h3_t8/nodes_latent_upscale_2d.py
+        h3_t8/nodes_lora_windows.py h3_t8/nodes_prompt_edit_guidance.py
+        h3_t8/prompt_edit_guidance.py h3_t8/vendor/lbh_upscale2d.py
+        h3_t8/video_interval_screen.py'''.split())
+    if (set(review) != required or review['schema'] != 't8.nov12.sampling_source.v1'
+            or review['baseline_commit'] != 'fa3d6c1cbf6342a878d8be91ffedd62cbacbce69'
+            or set(review['previous_files']) != changed
+            or any(prior_files.get(name) != digest for name, digest in review['previous_files'].items())
+            or set(review['files']) != changed | helpers
+            or review['preserved_nodes'] != 788 or review['registered_nodes'] != 803
+            or review['appended_nodes'] != appended
+            or review['preserved_prefix_sha256'] != 'd61591dd715d8c468516273e852881ff8213b0522c80d2021f0b9dc7afbca153'
+            or review['human_quality_accepted'] is not False
+            or review['accepted_media_sha256'] != [] or review['human_feedback_sha256'] != []
+            or not review['scope'] or not review['limits']
+            or Counter((r['path'], r['symbol'], r['callee']) for r in review['previous_sites']) != Counter(builders)
+            or Counter((r['path'], r['symbol'], r['callee']) for r in review['reviewed_sites']) != Counter(selected)
+            or any(set(r) != {'path', 'symbol', 'callee', 'call_sha256'}
+                   or not re.fullmatch(r'[0-9a-f]{64}', r['call_sha256'])
+                   for r in [*review['previous_sites'], *review['reviewed_sites']])
+            or not {_key(r) for r in review['previous_sites']} <= {_key(r) for r in prior_sites}
+            or not {r['path'] for r in review['reviewed_sites']} <= set(review['files'])):
+        raise ValueError('Invalid bounded Nov12 source review or different prior source binding')
+    old = {_key(r) for r in review['previous_sites']}
+    # Keep original predecessor bindings when earlier releases check their own
+    # history. New source only replaces the selected terminal file digests.
+    return {**predecessor,
+            'previous_files': {**review['previous_files'], **predecessor['previous_files']},
+            'files': {**predecessor['files'], **review['files']},
+            'previous_sites': [*predecessor['previous_sites'],
+                               *(r for r in review['previous_sites']
+                                 if _key(r) not in {_key(p) for p in predecessor['reviewed_sites']})],
+            'reviewed_sites': [r for r in predecessor['reviewed_sites'] if _key(r) not in old] + review['reviewed_sites']}
+
+
+def _nov16_audio_review(root, predecessor):
+    """Finite opt-in audio handoff successor; no new sampler site or media approval."""
+    path = root / 'tests/fixtures/nov16_audio_handoff_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'__init__.py', 'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    helpers = {'h3_t8/two_pass_audio_continuation.py',
+               'h3_t8/nodes_two_pass_audio_continuation.py'}
+    required = {'schema', 'previous_files', 'files', 'preserved_nodes', 'registered_nodes',
+                'appended_nodes', 'reviewed_sites', 'human_quality_accepted', 'scope'}
+    selected = {
+        ('h3_t8/nodes_two_pass_audio_continuation.py', 'MiniMaxH3TwoPassAudioContinueEXPT8.execute', 'continue_audio'),
+        ('h3_t8/two_pass_audio_continuation.py', 'AudioContinuationNoise.generate_noise', 'self.parent.generate_noise')}
+    if (set(review) != required or review['schema'] != 't8.nov16.audio_handoff_source.v1'
+            or set(review['previous_files']) != changed
+            or any(predecessor['files'].get(k) != v for k, v in review['previous_files'].items())
+            or set(review['files']) != changed | helpers
+            or review['preserved_nodes'] != 803 or review['registered_nodes'] != 804
+            or review['appended_nodes'] != ['MiniMaxH3TwoPassAudioContinueEXPT8']
+            or Counter((r['path'], r['symbol'], r['callee']) for r in review['reviewed_sites']) != Counter(selected)
+            or any(set(r) != {'path', 'symbol', 'callee', 'call_sha256'}
+                   or not re.fullmatch(r'[0-9a-f]{64}', r['call_sha256']) for r in review['reviewed_sites'])
+            or review['human_quality_accepted'] is not False
+            or not review['scope']):
+        raise ValueError('Invalid bounded Nov16 audio handoff source review')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']},
+            'reviewed_sites': [*predecessor['reviewed_sites'], *review['reviewed_sites']]}
+
+
+def _nov17_audio_review(root, predecessor):
+    """Replace only the reviewed handoff call after the direct-clock repair."""
+    path = root / 'tests/fixtures/nov17_audio_clock_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'h3_t8/two_pass_audio_continuation.py',
+               'h3_t8/nodes_two_pass_audio_continuation.py',
+               'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    required = {'schema', 'previous_files', 'files', 'previous_sites',
+                'reviewed_sites', 'human_quality_accepted', 'scope'}
+    selected = ('h3_t8/nodes_two_pass_audio_continuation.py',
+                'MiniMaxH3TwoPassAudioContinueEXPT8.execute', 'continue_audio')
+    if (set(review) != required or review['schema'] != 't8.nov17.audio_clock_source.v1'
+            or set(review['previous_files']) != changed or set(review['files']) != changed
+            or any(predecessor['files'].get(k) != v for k, v in review['previous_files'].items())
+            or review['human_quality_accepted'] is not False or not review['scope']):
+        raise ValueError('Invalid bounded Nov17 audio clock source review')
+    for rows in (review['previous_sites'], review['reviewed_sites']):
+        if (len(rows) != 1 or _key(rows[0])[:3] != selected
+                or set(rows[0]) != {'path', 'symbol', 'callee', 'call_sha256'}
+                or not re.fullmatch(r'[0-9a-f]{64}', rows[0]['call_sha256'])):
+            raise ValueError('Invalid bounded Nov17 audio clock callsite')
+    old = {_key(r) for r in review['previous_sites']}
+    if not old <= {_key(r) for r in predecessor['reviewed_sites']}:
+        raise ValueError('Nov17 audio clock cannot replace a different handoff call')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']},
+            'reviewed_sites': [*[r for r in predecessor['reviewed_sites'] if _key(r) not in old],
+                               *review['reviewed_sites']]}
+
+
+def _release_1106_review(root, predecessor):
+    """Finite CI-only successor; no runtime callsite or media admission changes."""
+    path = root / 'tests/fixtures/release_1_106_sampling_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'tools/audit_modular_new_sampling.py',
+               'tests/test_h09_sampling_admission_ci.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py'}
+    required = {'schema', 'previous_files', 'files', 'runtime_sites_added',
+                'registered_nodes', 'human_quality_accepted', 'scope'}
+    if (set(review) != required or review['schema'] != 't8.release1106.source.v1'
+            or set(review['previous_files']) != changed or set(review['files']) != changed
+            or any(predecessor['files'].get(k) != v for k, v in review['previous_files'].items())
+            or review['runtime_sites_added'] != 0 or review['registered_nodes'] != 804
+            or review['human_quality_accepted'] is not False or not review['scope']):
+        raise ValueError('Invalid bounded release1106 CI source review')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -580,6 +756,10 @@ def _h27_review(root):
     review = _pika_dual_review(root, review)
     review = _core_compat_review(root, review)
     review = _nov05_review(root, review)
+    review = _nov12_review(root, review)
+    review = _nov16_audio_review(root, review)
+    review = _nov17_audio_review(root, review)
+    review = _release_1106_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

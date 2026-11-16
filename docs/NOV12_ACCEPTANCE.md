@@ -1,0 +1,42 @@
+# v1.106.0 验收范围
+
+原28条初审中22条画面/声音通过，5条声音失败、1条漏评。随后独立五视图/单正面对照两片及原文漏评片通过；最后三条声音返修也由用户明确通过。合计28个不同SHA的已接受媒体，不将失败原片重新标为通过。
+
+本次推荐目录保存22份UI/API工作流，API执行图保留原字节；仅更新UI说明中的过时“未审”文字。媒体、私人输入和权重不随源码或发行包发布。RGB对照、原生文字LoRA等不另造重复推荐工作流。
+
+- 自动验证：同组13项音频机制用例各在Core0.41.1/0.43.0/0.44.0执行；含文字/首帧、完整/分段轨迹、未知对象委托、真实错误、取消与无伪缓存。跨Core重复执行不计为39个不同用例。
+- GPU与界面：最终声音修正分别实际8、9、9NFE，全部299帧已查看；三份最终图实际导入、导出API、保存重开通过。原批还包括2D/3D、编辑、LoRA区间、DMAD、IC、声音尾接和Stage8/0NFE等指定完整实跑。
+- 人工验收：只批准下面对应的实际样片；不把CPU、能解码、ASR或音频能量指标当成听审，也不承诺不同素材、模型或长片都无问题。
+
+Flash本次双采为**完整LOW6+HIGH3，共9NFE**。低采完成音频，高采已知区保留同次音频；浮点最大舍入差约2.98e-8，经既有Audio Audit回到精确输入latent。它不是6NFE的3+3，也没有借其它片音轨。
+
+|工作流|通过媒体SHA256|
+|---|---|
+|2D_Tier1_4plus4_06MP_EXP|`2e7e94812328b50d40108522efc13e6d76912c7e307f12f92431e86755f9984c`|
+|2D_Tier3_4plus4_06MP_EXP|`950a11e646c6f0586476d0bafb941017498cb1cdc1bed9945c73d8c2b2dec992`|
+|3D_4plus4_06MP_Control|`67dfe5e742a0f09da396fd43cc45f3438ff5e548bd9a1caee59d9f6058eba03c`|
+|DMAD_Renoise8_06MP_EXP|`9e268f257aedee8e87e5dced7799666094a533a12cbf182ee0bf59b42c783921`|
+|PromptEdit_Original_06MP_EXP|`40a3fca9ae2373ff0650ebc206923deb9ec212ea15ff227c1fc3e88032d3003d`|
+|PromptEdit_Rewrite_06MP_EXP|`2550246867a499aa2348023182c1183ba9cccedb0175288465bd632dcdd878f2`|
+|PromptEdit_Guidance_06MP_EXP|`57050b343e5bb3660fc49340aa5ed7d35a56f41e8df1d311699e225f9f4e7b7c`|
+|LoRA_Windows_06MP_EXP|`9d5f1f54cc87f200e87575823ddcaaf9e0b09ca823f981b394d167c2e19eee3d`|
+|IC_Draft_UP3_06MP_EXP|`d9e512dbd6cb2a97bccaadf09ecc65598e398fa87d2fb3aca3fd709692639514`|
+|IC_Off_Control_06MP_EXP|`74e53b61b33e2372b2271a84eeffe227ac4b97e126f7bf3396c4e731cdc6848d`|
+|Flash_FL6_06MP_EXP|`dfc2368ef1277c4c50104435e0918a0e333eb5564f5d49eebd1dcb7fb47da04d`|
+|Dual_3D_Book_Motion_EXP|`524689d288fd564b3c7a08b74c4d4f1c31eed585103430e75b29c487ecb223a4`|
+|Dual_2D_T6_Book_Motion_EXP|`6655fef561257832cae4d2fcff35acb2315f747be676c7567689da797de06957`|
+|Voice_Carry_A_to_B_EXP|`7428eff24e25476097709ca19f0d768394da11b979c9ce58757f85fa6832acde`<br>`45555bc939c41ac43859cc51e8905f5d4b3231f6fa30f0a7084e5ac0c2749e7b`|
+|Flash_Ref6_06MP_EXP|`089b169e680a80fad9ce5ccae7c127fbbf909c1103287adcda7b929f4321eff8`|
+|Paired_PCM_Windows_New_Source_EXP|`320ef88bcba98d62c9a458e35be3711f5067b435c3faa6f0e54ec61fc1ebfd19`|
+|Native_Stage_Reuse_8_EXP|`45555bc939c41ac43859cc51e8905f5d4b3231f6fa30f0a7084e5ac0c2749e7b`|
+|Five_References_Turn_Hybrid8_06MP_EXP|`cc9e59ede0f679c67d9e395401793f644cc8f327ab1a105aff61d2e249c818a7`|
+|Front_Reference_Turn_Hybrid8_06MP_Control|`0747759dfce552d4cfe97d3a52528c1d0a74d8683c448ca192a75ebb4abf5e55`|
+|2D_Tier1_4plus4_Audio_Clock_EXP|`9d989c5237d04d3efcfb1478150334e2c2afc9ea204ffc7de02844255e949700`|
+|Flash_FL_6plus3_Complete_Audio_EXP|`705820341c544fe4c2b008b6d2f01d13ecb1ec0a3543f18f268d3c262741e240`|
+|Flash_Ref_6plus3_Complete_Audio_EXP|`30635121c547cf17972d8692fb4110d149e0e0ad92cdb881b9efc88c9ccd2a1c`|
+
+## 不扩张的范围
+
+RealismV2三个原文件仍需授权访问，未取得命名风格的训练模型资格；通用LoRA区间接口可以使用用户自己的文件。Flash3+3、旧静态Refmod/拼版转身失败片和最初翻书声音失败图均不收入已审目录。未将RGB/SOLRICKS对照升级为默认16MP后处理；不重复开发PH3官方已有图像栈，也不宣称完成外部训练/移动端/云端后端。
+
+原788节点顺序保留，新增16节点，总计804。用户原来的模型、LoRA组合、顺序、强度和旧默认保持；未知可执行组合保留/警告，不取得伪造的可移植缓存身份。真实缺接口、张量/路径/SHA损坏仍报告。

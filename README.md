@@ -2,9 +2,9 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.105.0** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.106.0** · [更新日志](CHANGELOG.md)
 
-[本版更新](docs/RELEASE_1.105.0.md)：阶段复用、渐进采样与局部返修；[11套已审工作流](examples/workflows/97-nov09-reviewed/README.md)。
+[本版更新](docs/RELEASE_1.106.0.md)：2D放大、LoRA区间、声音接续与双采修正；[22套已审创作工作流](examples/workflows/98-nov12-reviewed/README.md)。
 
 ## 安装
 
@@ -27,6 +27,7 @@ Windows 更新提示 `Filename too long`？见[短路径与恢复说明](docs/WI
 
 |你想做什么|入口|
 |---|---|
+|2D放大／LoRA区间／DMAD／IC／Flash6+3／声音尾接（EXP）|[22套已审图](examples/workflows/98-nov12-reviewed/README.md) · [接线与范围](docs/NOV12_CREATION_EXP.md)|
 |TaoMate-HD／关联噪声／NAG／阶段复用／局部音效（EXP）|[实验接线](examples/workflows/96-nov05-exp/README.md) · [用法与验证范围](docs/NOV05_INTEGRATION.md)|
 |Pika H3 Flex 6步文字／首尾帧／参考图（EXP）|[三套已审工作流](examples/workflows/94-pika-flex/README.md) · [用法](docs/PIKA_H3_FLEX.md)|
 |Pika双采4+2／3+3、普通模型与可选2K 6+3（EXP）|[八套已审工作流](examples/workflows/95-pika-dual/README.md) · [用法](docs/PIKA_DOUBLE_SAMPLING.md)|

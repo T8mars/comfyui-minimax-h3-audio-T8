@@ -26,3 +26,14 @@ examples/workflows/97-nov09-reviewed/api/*.json -text whitespace=blank-at-eol,bl
 THIRD_PARTY_NOTICES/NAG-H3-LICENSE.txt -text -whitespace
 THIRD_PARTY_NOTICES/TAOMATE-HD-LICENSE.txt -text -whitespace
 THIRD_PARTY_NOTICES/TAOMATE-HD-NOTICE.txt -text -whitespace
+THIRD_PARTY_NOTICES/LBH-2D-LICENSE.txt -text -whitespace
+
+# Keep accepted creation UI/API exports byte-identical in release archives.
+examples/workflows/98-nov12-reviewed/**/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+examples/workflows/98-nov12-reviewed/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+THIRD_PARTY_NOTICES/IC-APACHE2.txt -text -whitespace
+THIRD_PARTY_NOTICES/IC-UPSTREAM-NOTICE.txt -text -whitespace
+
+# Preserve the extracted upstream model-definition bytes, including whitespace.
+h3_t8/vendor/lbh_upscale2d.py -whitespace

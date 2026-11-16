@@ -5,6 +5,7 @@ from hashlib import sha256
 from io import BytesIO
 import ipaddress
 import json
+import math
 import os
 import re
 import time
@@ -386,11 +387,40 @@ def _ollama_messages(
     return [{"role": "system", "content": system}, user]
 
 
+def _openai_response_summary(payload: Mapping[str, Any]) -> str:
+    """Describe an empty result without echoing provider text or tool arguments."""
+    choices = payload.get("choices")
+    choice = choices[0] if isinstance(choices, list) and choices else {}
+    choice = choice if isinstance(choice, Mapping) else {}
+    message = choice.get("message")
+    message = message if isinstance(message, Mapping) else {}
+    reason = choice.get("finish_reason")
+    known_reasons = {"stop", "length", "content_filter", "tool_calls", "function_call"}
+    reason = reason if isinstance(reason, str) and reason in known_reasons else "unknown"
+    facts = [f"finish_reason={reason}"]
+    for name in ("refusal", "tool_calls", "function_call", "reasoning", "reasoning_content"):
+        if message.get(name):
+            facts.append(f"{name}_present=true")
+    usage = payload.get("usage")
+    if isinstance(usage, Mapping):
+        for name in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            value = usage.get(name)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                # JSON numbers outside float's range must not break diagnostics.
+                try:
+                    valid = math.isfinite(value) and value >= 0
+                except OverflowError:
+                    valid = False
+                if valid:
+                    facts.append(f"{name}={value}")
+    return ", ".join(facts)
+
+
 def _response_text(provider: str, payload: Mapping[str, Any]) -> str:
     message: Mapping[str, Any] | None = None
     try:
         if provider == "openai_compatible":
-            content = payload["choices"][0]["message"]["content"]
+            content = payload["choices"][0]["message"].get("content")
             if isinstance(content, list):
                 content = "".join(
                     str(item.get("text", ""))
@@ -402,8 +432,12 @@ def _response_text(provider: str, payload: Mapping[str, Any]) -> str:
             content = message.get("content") if isinstance(message, Mapping) else None
             if content is None:
                 content = payload.get("response")
-    except (KeyError, IndexError, TypeError) as error:
-        raise ValueError("Provider returned an unsupported response envelope") from error
+    except (KeyError, IndexError, TypeError, AttributeError) as error:
+        detail = (
+            "; " + _openai_response_summary(payload)
+            if provider == "openai_compatible" else ""
+        )
+        raise ValueError("Provider returned an unsupported response envelope" + detail) from error
     text = str(content or "").strip()
     if not text:
         thinking = (
@@ -417,7 +451,12 @@ def _response_text(provider: str, payload: Mapping[str, Any]) -> str:
                 "message.content; increase max_new_tokens or configure the model "
                 "to emit a final answer"
             )
-        raise ValueError("Provider returned an empty rewritten prompt")
+        detail = (
+            "; " + _openai_response_summary(payload)
+            + ". These are provider-reported fields; no final text was returned."
+            if provider == "openai_compatible" else ""
+        )
+        raise ValueError("Provider returned an empty rewritten prompt" + detail)
     return text
 
 

@@ -101,7 +101,8 @@ def test_environment_audit_passes_a_known_small_contract_without_claiming_safety
 def test_current_core_and_t8_custom_samplers_satisfy_audio_scale_contract():
     result = collect_h3_audio_scale_snapshot()
     assert result["core_protocol"] == "flow_av"
-    assert result["core_requires_model_sampling_audio_scale"] is True
+    assert result["core_reads_model_sampling_audio_scale"] is True
+    assert isinstance(result["core_requires_model_sampling_audio_scale"], bool)
     assert result["native_model_sampling_av_available"] is True
     assert result["native_audio_scale_12_over_3"] == pytest.approx(4.0)
     assert result["stable_custom_audio_scale"] == pytest.approx(1.0)

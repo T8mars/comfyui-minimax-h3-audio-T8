@@ -1,0 +1,20 @@
+name: Creation source admission
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  creation-source-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify bounded creation sources and reject borrowed media
+        run: python3 tests/test_nov12_sampling_admission_ci.py
+      - name: Verify opt-in audio source ownership and negative mutations
+        run: python3 tests/test_nov16_audio_source_ci.py
+      - name: Verify direct-clock repair admission without new sampling paths
+        run: python3 tests/test_nov17_audio_source_ci.py
+      - name: Verify finite release CI source bindings and negative mutations
+        run: python3 tests/test_release_1106_sampling_admission_ci.py

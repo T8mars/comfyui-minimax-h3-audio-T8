@@ -1,0 +1,22 @@
+# Notices
+
+This package is an independent ComfyUI companion for:
+
+- Open-H3-Regenerate-2K-IC, NVlabs/Sana `sol-engine`
+  https://github.com/NVlabs/Sana/tree/sol-engine/models/Open-H3-Regenerate-2K/IC
+- Weights: Efficient-Large-Model/Open-H3-Regenerate-2K-IC
+  https://huggingface.co/Efficient-Large-Model/Open-H3-Regenerate-2K-IC
+
+The optional `silence_audio_124f.safetensors` asset is obtained separately from
+the official Open-H3-Regenerate-2K-IC weights repository
+(`assets/silence_audio_124f.safetensors`) so the target audio rows match the
+official sampler. This T8 distribution does not bundle that asset or model weights. Model weights and
+derivative assets remain subject to the MiniMax-H3 Community License and the
+upstream notices, not the license of this node code.
+
+MiniMax-H3 is a MiniMax model. Open-H3-Regenerate-2K-IC is not an official
+MiniMax product.
+
+The LoRA conversion script is derived from the tensor-layout mappings documented
+by the upstream project and ComfyUI's MiniMax-H3 loader conventions.
+

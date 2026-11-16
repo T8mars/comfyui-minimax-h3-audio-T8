@@ -1,0 +1,374 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3HyperFlowLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "hyperflow_file": "hyperflow/minimax_h3_hyperflow_8step_v1.0.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3OpenRegenerateRecipeEXPT8",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "merged_lora_name": "OpenRegenerateIC/sharp_linears_comfy_fp32.safetensors",
+      "curve_lora_name": "OpenRegenerateAuthor/sharp_curve_branches.safetensors",
+      "curve_source_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "linear_strength": 1.0,
+      "curve_strength": 1.0
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "lora_name": "minimax_h3_open_regenerate_2k_ic_comfy_bf16.safetensors",
+      "strength_model": 0.0,
+      "file_alpha_policy": "legacy_tensor_only",
+      "prefix_policy": "legacy"
+    }
+  },
+  "5": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "6": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "10": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "11": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "20": {
+    "class_type": "LoadVideo",
+    "inputs": {
+      "file": "ic-draft.mp4"
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3SourceClockEXPT8",
+    "inputs": {
+      "video": [
+        "20",
+        0
+      ]
+    }
+  },
+  "22": {
+    "class_type": "MiniMaxH3SourceConformEXPT8",
+    "inputs": {
+      "frames": [
+        "21",
+        0
+      ],
+      "source_fps": [
+        "21",
+        2
+      ],
+      "width": 512,
+      "height": 288,
+      "length": 124,
+      "start_seconds": 0.0,
+      "short_video_policy": "hold_last_frame",
+      "short_audio_policy": "pad_silence",
+      "source_audio": [
+        "21",
+        1
+      ],
+      "source_clock": [
+        "21",
+        3
+      ]
+    }
+  },
+  "23": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "22",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    }
+  },
+  "24": {
+    "class_type": "VAEEncodeAudio",
+    "inputs": {
+      "audio": [
+        "22",
+        1
+      ],
+      "vae": [
+        "12",
+        0
+      ]
+    }
+  },
+  "25": {
+    "class_type": "MiniMaxH3AVLatentBuilderT8Advanced",
+    "inputs": {
+      "video_latent": [
+        "23",
+        0
+      ],
+      "audio_latent": [
+        "24",
+        0
+      ]
+    }
+  },
+  "26": {
+    "class_type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "25",
+        0
+      ],
+      "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "size_mode": "target_dimensions",
+      "scale_by": 2.0,
+      "target_megapixels": 0.6,
+      "target_width": 1024,
+      "target_height": 576,
+      "aspect_policy": "preserve_source",
+      "max_anisotropy": 1.05,
+      "precision": "fp16",
+      "release_policy": "offload_after"
+    }
+  },
+  "27": {
+    "class_type": "MiniMaxH3ICRecipeEXPT8",
+    "inputs": {
+      "caption": "A fixed cinematic medium shot of an adult woman in a green jacket standing beside a large sunny window in a modern library. She slowly opens a book and smiles. Sharp natural facial details, coherent fingers, smooth gentle movement, consistent bright daylight. Quiet room ambience, no speech, no music, no subtitles, no cuts.",
+      "preset": "up3",
+      "custom_sigmas": ""
+    }
+  },
+  "28": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "10",
+        0
+      ],
+      "video_vae": [
+        "11",
+        0
+      ],
+      "audio_vae": [
+        "12",
+        0
+      ],
+      "prompt": [
+        "27",
+        0
+      ],
+      "width": 1024,
+      "height": 576,
+      "length": 124,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_videos.ref_video_0": [
+        "22",
+        0
+      ]
+    }
+  },
+  "29": {
+    "class_type": "MiniMaxH3ICComposeEXPT8",
+    "inputs": {
+      "video_latent": [
+        "26",
+        0
+      ],
+      "reference_latent": [
+        "28",
+        1
+      ],
+      "silence_name": "silence_audio_124f.safetensors",
+      "audio_fit": "strict",
+      "pin_audio": true
+    }
+  },
+  "30": {
+    "class_type": "MiniMaxH3ICSamplerEXPT8",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "av_latent": [
+        "29",
+        0
+      ],
+      "preset": "up3"
+    }
+  },
+  "31": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "30",
+        0
+      ],
+      "conditioning": [
+        "28",
+        0
+      ]
+    }
+  },
+  "32": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 12113
+    }
+  },
+  "33": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "32",
+        0
+      ],
+      "guider": [
+        "31",
+        0
+      ],
+      "sampler": [
+        "30",
+        1
+      ],
+      "sigmas": [
+        "30",
+        2
+      ],
+      "latent_image": [
+        "29",
+        0
+      ]
+    }
+  },
+  "34": {
+    "class_type": "MiniMaxH3OpenRegenerateAuditEXPT8",
+    "inputs": {
+      "model": [
+        "30",
+        0
+      ],
+      "after_sampling": [
+        "33",
+        0
+      ]
+    }
+  },
+  "35": {
+    "class_type": "MiniMaxH3AVLatentSeparateT8",
+    "inputs": {
+      "av_latent": [
+        "34",
+        0
+      ]
+    }
+  },
+  "36": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "35",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    }
+  },
+  "37": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "36",
+        0
+      ],
+      "audio": [
+        "21",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 5.0,
+      "fps": 24.0,
+      "frame_count": 120,
+      "audio_boundary_policy": "absolute_endpoints"
+    }
+  },
+  "38": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "37",
+        0
+      ],
+      "audio": [
+        "37",
+        1
+      ],
+      "filename_prefix": "Nov12/ic-source-off-v1",
+      "crf": 18,
+      "preserve_audio_length": false
+    }
+  }
+}

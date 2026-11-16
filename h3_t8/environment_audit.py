@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import ast
 import importlib
 import inspect
 import json
@@ -8,6 +9,7 @@ import math
 from pathlib import Path
 import subprocess
 import sys
+import textwrap
 from typing import Any
 
 from .vram_policy import runtime_snapshot
@@ -168,12 +170,51 @@ def _constant_property_value(owner: type, name: str) -> float | None:
     return value if math.isfinite(value) else None
 
 
+def _audio_scale_access_contract(method: Any) -> dict[str, Any]:
+    """Separate FLOW_AV reads from a direct property's absence being an error."""
+    unknown = {"core_protocol": "unknown", "core_reads_model_sampling_audio_scale": None,
+               "core_requires_model_sampling_audio_scale": None}
+    if not callable(method):
+        return {"core_protocol": "legacy_dual_clock",
+                "core_reads_model_sampling_audio_scale": False,
+                "core_requires_model_sampling_audio_scale": False}
+    source = _safe_source(method)
+    if not source:
+        return unknown
+    try:
+        tree = ast.parse(textwrap.dedent(source))
+    except (SyntaxError, ValueError):
+        return unknown
+
+    def sampling_owner(node):
+        return (isinstance(node, ast.Attribute) and node.attr == "model_sampling"
+                and isinstance(node.value, ast.Name) and node.value.id == "self")
+
+    reads = required = False
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Attribute) and node.attr == "audio_scale"
+                and sampling_owner(node.value)):
+            reads = required = True
+        elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+              and node.func.id == "getattr" and len(node.args) >= 2
+              and sampling_owner(node.args[0])
+              and isinstance(node.args[1], ast.Constant) and node.args[1].value == "audio_scale"):
+            reads = True
+            required = required or len(node.args) < 3
+    if not reads:
+        # An unfamiliar implementation is not evidence of the legacy protocol.
+        return unknown
+    return {"core_protocol": "flow_av", "core_reads_model_sampling_audio_scale": True,
+            "core_requires_model_sampling_audio_scale": required}
+
+
 def collect_h3_audio_scale_snapshot() -> dict[str, Any]:
     """Inspect the pre/post FLOW_AV contract without loading a model or CUDA kernel."""
 
     result: dict[str, Any] = {
         "inspected": True,
         "core_protocol": "unknown",
+        "core_reads_model_sampling_audio_scale": None,
         "core_requires_model_sampling_audio_scale": None,
         "native_model_sampling_av_available": False,
         "native_audio_scale_12_over_3": None,
@@ -186,14 +227,7 @@ def collect_h3_audio_scale_snapshot() -> dict[str, Any]:
         model_base = importlib.import_module("comfy.model_base")
         minimax_base = getattr(model_base, "MiniMaxH3")
         audio_scale_method = getattr(minimax_base, "audio_scale", None)
-        audio_scale_source = _safe_source(audio_scale_method)
-        requires_audio_scale = bool(
-            callable(audio_scale_method)
-            and audio_scale_source
-            and "model_sampling.audio_scale" in audio_scale_source
-        )
-        result["core_requires_model_sampling_audio_scale"] = requires_audio_scale
-        result["core_protocol"] = "flow_av" if requires_audio_scale else "legacy_dual_clock"
+        result.update(_audio_scale_access_contract(audio_scale_method))
     except Exception as error:
         result["errors"].append(
             {
@@ -387,7 +421,7 @@ def _capabilities(git: Mapping[str, Any], sources: Mapping[str, str | None]) -> 
             (
                 "stable and multirate custom samplers expose neutral audio_scale=1.0 for the current FLOW_AV core"
                 if audio_scale_compatible
-                and audio_scale_snapshot.get("core_requires_model_sampling_audio_scale")
+                and audio_scale_snapshot.get("core_protocol") == "flow_av"
                 else "neutral custom audio-scale properties preserve the legacy dual-clock core contract"
                 if audio_scale_compatible
                 else "a custom H3 sampler does not satisfy the active core audio-scale contract"

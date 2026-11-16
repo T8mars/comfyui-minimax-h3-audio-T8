@@ -1,0 +1,348 @@
+{
+  "1": {
+    "class_type": "MiniMaxH3HyperFlowFlashLoaderT8",
+    "inputs": {
+      "model_name": "minimax_h3_ref2va_hyperflow_flash_14b-int8_convrot.safetensors",
+      "weights_in": "auto"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "head_chunks": 8
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "chunks": 8,
+      "seq_threshold": 256
+    }
+  },
+  "4": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "5": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "7": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "living-clean-first.png"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "5",
+        0
+      ],
+      "audio_vae": [
+        "6",
+        0
+      ],
+      "prompt": "The adult woman in <Picture 1>, wearing the same green jacket, sits in a sunlit living room and slowly opens her book. Stable identity and furniture, coherent hands. One continuous medium shot, quiet room sounds, no speech, no music or captions.",
+      "width": 512,
+      "height": 288,
+      "length": 97,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_images.ref_image_0": [
+        "7",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3FlashCheckpointSigmasT8",
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "schedule": "6"
+    }
+  },
+  "10": {
+    "class_type": "SplitSigmas",
+    "inputs": {
+      "sigmas": [
+        "9",
+        0
+      ],
+      "step": 3
+    }
+  },
+  "11": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "conditioning": [
+        "8",
+        0
+      ]
+    }
+  },
+  "12": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 12121
+    }
+  },
+  "24": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "13": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "12",
+        0
+      ],
+      "guider": [
+        "11",
+        0
+      ],
+      "sampler": [
+        "24",
+        0
+      ],
+      "sigmas": [
+        "9",
+        0
+      ],
+      "latent_image": [
+        "8",
+        1
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3LearnedLatentUpscaleT8Advanced",
+    "inputs": {
+      "av_latent": [
+        "13",
+        1
+      ],
+      "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "size_mode": "target_dimensions",
+      "scale_by": 2.0,
+      "target_megapixels": 0.6,
+      "target_width": 1024,
+      "target_height": 576,
+      "aspect_policy": "preserve_source",
+      "max_anisotropy": 1.05,
+      "precision": "fp16",
+      "release_policy": "offload_after"
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "clip": [
+        "4",
+        0
+      ],
+      "video_vae": [
+        "5",
+        0
+      ],
+      "audio_vae": [
+        "6",
+        0
+      ],
+      "prompt": "The adult woman in <Picture 1>, wearing the same green jacket, sits in a sunlit living room and slowly opens her book. Stable identity and furniture, coherent hands. One continuous medium shot, quiet room sounds, no speech, no music or captions.",
+      "width": [
+        "14",
+        1
+      ],
+      "height": [
+        "14",
+        2
+      ],
+      "length": 97,
+      "task_type": "Ref2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 1.0,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "ref_images.ref_image_0": [
+        "7",
+        0
+      ]
+    }
+  },
+  "16": {
+    "class_type": "MiniMaxH3TwoPassLatentReconcileT8Advanced",
+    "inputs": {
+      "learned_latent": [
+        "14",
+        0
+      ],
+      "highres_template": [
+        "15",
+        1
+      ],
+      "positive": [
+        "15",
+        0
+      ],
+      "audio_policy": "auto",
+      "second_pass_audio_source": "first_pass",
+      "second_pass_audio_strength": 0.0
+    }
+  },
+  "17": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "conditioning": [
+        "16",
+        1
+      ]
+    }
+  },
+  "18": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 12122
+    }
+  },
+  "19": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "18",
+        0
+      ],
+      "guider": [
+        "17",
+        0
+      ],
+      "sampler": [
+        "24",
+        0
+      ],
+      "sigmas": [
+        "10",
+        1
+      ],
+      "latent_image": [
+        "16",
+        0
+      ]
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "85",
+        0
+      ],
+      "video_vae": [
+        "5",
+        0
+      ],
+      "audio_vae": [
+        "6",
+        0
+      ]
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "frames": [
+        "20",
+        0
+      ],
+      "audio": [
+        "20",
+        1
+      ],
+      "start_seconds": 0.0,
+      "duration_seconds": 4.0,
+      "fps": 24.0,
+      "frame_count": 96,
+      "audio_boundary_policy": "absolute_endpoints"
+    }
+  },
+  "22": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "images": [
+        "21",
+        0
+      ],
+      "audio": [
+        "21",
+        1
+      ],
+      "filename_prefix": "Nov17/nov17-flash-ref-6plus3-v1",
+      "crf": 18,
+      "preserve_audio_length": false
+    }
+  },
+  "85": {
+    "class_type": "MiniMaxH3TwoPassAudioAuditT8Advanced",
+    "inputs": {
+      "second_pass_input": [
+        "16",
+        0
+      ],
+      "second_pass_output": [
+        "19",
+        0
+      ],
+      "expected_audio_strength": 0.0,
+      "fail_on_locked_mismatch": true,
+      "locked_atol": 1e-05
+    }
+  }
+}

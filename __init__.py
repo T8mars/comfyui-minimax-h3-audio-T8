@@ -330,8 +330,68 @@ class _MaskedColourExtension(_NovemberNoiseExtension):
         return [*(await super().get_node_list()), *NODES]
 
 
+class _November2DResizerExtension(_MaskedColourExtension):
+    async def get_node_list(self):
+        from .nodes_latent_upscale_2d import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberPromptEditExtension(_November2DResizerExtension):
+    async def get_node_list(self):
+        from .nodes_prompt_edit_guidance import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberLoRAWindowExtension(_NovemberPromptEditExtension):
+    async def get_node_list(self):
+        from .nodes_lora_windows import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberFlashBridgeExtension(_NovemberLoRAWindowExtension):
+    async def get_node_list(self):
+        from .nodes_hyperflow_flash_bridge import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberDMADRenoiseExtension(_NovemberFlashBridgeExtension):
+    async def get_node_list(self):
+        from .nodes_dmad_renoise import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberICDraftExtension(_NovemberDMADRenoiseExtension):
+    async def get_node_list(self):
+        from .nodes_ic_draft_refine import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberFinalAudioAuditExtension(_NovemberICDraftExtension):
+    async def get_node_list(self):
+        from .nodes_final_audio_audit import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberICSamplingExtension(_NovemberFinalAudioAuditExtension):
+    async def get_node_list(self):
+        from .nodes_ic_draft_refine import SAMPLER_NODES
+        return [*(await super().get_node_list()), *SAMPLER_NODES]
+
+
+class _NovemberAudioTailExtension(_NovemberICSamplingExtension):
+    async def get_node_list(self):
+        from .nodes_audio_tail_release import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
+class _NovemberAudioContinuationExtension(_NovemberAudioTailExtension):
+    async def get_node_list(self):
+        from .nodes_two_pass_audio_continuation import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _MaskedColourExtension()
+    return _NovemberAudioContinuationExtension()
 
 
 WEB_DIRECTORY = "./web"

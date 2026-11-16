@@ -38,6 +38,7 @@ class MiniMaxH3OpenRegenerateRecipeEXPT8(io.ComfyNode):
         return io.Schema(node_id=cls.__name__, display_name='H3 Open Regenerate · 完整配方加载 (EXP/T8)',
             category='T8/MiniMax H3/Refinement/Experimental', is_experimental=True,
             description='加载作者已合并的Refiner+Turbo+Sharp普通权重，另加独立Sharp时间曲线分支。'
+                        '也可显式选择仅Sharp线性因子供IC配方使用；此时上游需独立加载真正HyperFlow与IC。'
                         '曲线来源另选作者使用的Ref2VA pruned底模；不会用当前底模的另一张曲线替换它。'
                         '保留上游MODEL/LoRA。加载不代表采样或画质通过，采样后连接实际运行报告。',
             inputs=[io.Model.Input('model'),

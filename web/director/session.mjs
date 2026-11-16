@@ -95,6 +95,8 @@ export function directorShotInputKey(doc, shot, assets = []) {
             const input={name:row.name,strength:row.strength??1};
             for(const [field,legacy] of [['file_alpha_policy','legacy_tensor_only'],['prefix_policy','legacy']])
                 if(row[field]!==undefined&&row[field]!==legacy)input[field]=row[field];
+            for(const [field,legacy] of [['start_percent',0],['end_percent',1]])
+                if(row[field]!==undefined&&row[field]!==legacy)input[field]=row[field];
             return input;
         });
     }

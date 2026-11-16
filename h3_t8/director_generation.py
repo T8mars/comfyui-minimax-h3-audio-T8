@@ -9,7 +9,8 @@ from typing import Any, Mapping
 import folder_paths
 
 from .director_project import ProjectStore, compile_project, validate_project
-from .director_sampling_settings import effective_sampling, lora_interpretation
+from .director_sampling_settings import effective_sampling, lora_interpretation, lora_window, has_lora_window
+import json
 from .director_two_pass import apply_two_pass_graph
 from .director_hyperflow import apply_hyperflow_graph
 from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
@@ -87,7 +88,7 @@ def _director_generation_settings(project: Mapping[str, Any]) -> dict[str, Any]:
     lora_rows = [{"name": str(row["name"]), "strength": float(row.get("strength", 1.0)),
                   "enabled": bool(row.get("enabled", True)),
                   **({"id": row["id"]} if "id" in row else {}),
-                  **lora_interpretation(row)} for row in rows]
+                  **lora_interpretation(row), **lora_window(row)} for row in rows]
     resolution = raw.get("resolution_mp", "auto")
     if resolution != "auto":
         try:
@@ -414,14 +415,14 @@ def build_director_generation_prompt(
             lora_entries = [
                 {"name": _pick_requested("loras", row["name"], (row["name"],), "LoRA"),
                  "strength": row["strength"], "row_index": index, "row_id": row.get("id"),
-                 "source": lora_source, **lora_interpretation(row)}
+                 "source": lora_source, **lora_interpretation(row), **lora_window(row)}
                 for index, row in requested_rows
             ]
     elif generation["lora_mode"] == "manual" and any(row["enabled"] for row in generation["loras"]):
         lora_entries = [
             {"name": _pick_requested("loras", row["name"], (row["name"],), "LoRA"),
              "strength": row["strength"], "row_index": index, "row_id": row.get("id"),
-             "source": lora_source, **lora_interpretation(row)}
+             "source": lora_source, **lora_interpretation(row), **lora_window(row)}
             for index, row in enumerate(generation["loras"], 1) if row["enabled"]
         ]
         report["warnings"].append({"shot_id": shot_id,
@@ -429,7 +430,8 @@ def build_director_generation_prompt(
     # Keep the old public tuple report and graph IDs, not a second LoRA chain.
     lora_names = [(row["name"], row["strength"]) for row in lora_entries]
     lora_loaders = []
-    for row in lora_entries:
+    scheduled_loras = lora_entries if has_lora_window(lora_entries) else []
+    for row in ([] if scheduled_loras else lora_entries):
         graph[str(next_id)] = {
             "class_type": "MiniMaxH3LoRACompatibilityLoaderT8Advanced",
             "inputs": {"model": [model_id, 0], "lora_name": row["name"],
@@ -791,6 +793,17 @@ def build_director_generation_prompt(
     elif sampling["mode"] == "hyperflow":
         two_pass = apply_hyperflow_graph(graph, shot, sampling, store, int(seed), d3)
     report["lora_loaders"] = two_pass.pop("lora_loaders") if two_pass else lora_loaders
+    if scheduled_loras and not two_pass:
+        window_id = str(max(map(int, graph)) + 1)
+        graph[window_id] = {"class_type": "MiniMaxH3AttachLoRAWindowsT8", "inputs": {
+            "model": graph["7"]["inputs"]["model"],
+            "positive": graph["7"]["inputs"]["conditioning"],
+            "windows_json": json.dumps(scheduled_loras, ensure_ascii=False),
+        }}
+        graph["7"]["inputs"]["conditioning"] = [window_id, 0]
+        report["lora_loaders"] = [{"node_id": window_id, "stage": "SINGLE",
+            "row_index": index, "row_id": row.get("id"), "source": "native_window_hooks"}
+            for index, row in enumerate(scheduled_loras, 1)]
     from .director_stage_reuse import apply_stage_reuse
     if "reuse_mode" in sampling:
         report["stage_reuse"] = apply_stage_reuse(graph, sampling["reuse_mode"])

@@ -1,0 +1,21 @@
+{
+  "schema": "t8.release1106.source.v1",
+  "previous_files": {
+    "tools/audit_modular_new_sampling.py": "fbef5d44a5fb7173952274378a5e7cd3aa824ba3eb6b19a95a1c23715f67ac00",
+    "tests/test_h09_sampling_admission_ci.py": "ac014b9913b413a4f446acb1e2b0a80a334079af9254a90a8b5b55b0e22c210d",
+    "tests/test_h21_sampling_admission_ci.py": "e7d8596865395b60b71dc0866eee6890e4464d6fa7d3c58f57a27a5e6e4a8904",
+    "tests/test_h24_sampling_admission_ci.py": "a79be77b3c3f07ec7698f034c76197622da0b7075ceb72cbd6af2d305da853d4",
+    "tests/test_h27_sampling_admission_ci.py": "ce8c5d4122e94b37c15e33e703ee1cf6ac01b05383bba5a591ad805b19c3bf35"
+  },
+  "files": {
+    "tools/audit_modular_new_sampling.py": "3ea193d0685b1d29fe2ca4125f9a4814bb36d183f2a4e6c4420f8cf3c7c7e021",
+    "tests/test_h09_sampling_admission_ci.py": "78e1dede6c4f24a913f1652b1a7f82aefef9a51bbb8db31cc6954a52e65ae960",
+    "tests/test_h21_sampling_admission_ci.py": "f86499987714dc16859e1593ef5b76f636bfbcda3638912efc9c0f6f0b845cd1",
+    "tests/test_h24_sampling_admission_ci.py": "9ddf71b257a35fccd86fcf27b1a506616056b0c1cd4c9b02ee9a354cf5d749dd",
+    "tests/test_h27_sampling_admission_ci.py": "d7d375a11e749168c68dcb157d6f88ad3c0af78f0b8b4e32e6a0d6666bc50dcf"
+  },
+  "runtime_sites_added": 0,
+  "registered_nodes": 804,
+  "human_quality_accepted": false,
+  "scope": "Only releaseCI count125to128 for3previously bounded creation/helper delegates and temporary-root fixture copying; no runtime changes, no site added and no prior source or human ledger recaptured."
+}

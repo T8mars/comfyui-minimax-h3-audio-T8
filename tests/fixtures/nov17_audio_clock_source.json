@@ -1,0 +1,37 @@
+{
+  "schema": "t8.nov17.audio_clock_source.v1",
+  "previous_files": {
+    "h3_t8/two_pass_audio_continuation.py": "577fd1438d1ec7cbe99b2df5aa61158b6991535b93f47ff8432274e75b1bbc03",
+    "h3_t8/nodes_two_pass_audio_continuation.py": "5deb4451551c991d2e61208bf399f5d33e57d0dafd8687b93f7b63f8cfd1f769",
+    "tools/audit_modular_new_sampling.py": "13e21cba52943f12a8d10e3c187e33a30f1393dfc4e953e9b135edc94df943f9",
+    "tests/test_h21_sampling_admission_ci.py": "a0715ebcd4cd9a328e98c6b6d46d8bf8d716f097d1f333d7955ec3a4e090b225",
+    "tests/test_h24_sampling_admission_ci.py": "ccab9cec18fe8d6ca541f9cb26aff2242da5eb8ecd2eda2e44c74c0f8d73a828",
+    "tests/test_h27_sampling_admission_ci.py": "b3b8a1aee8b8a776cc4f91489ad0fd9fb0c30222c576c0332e7ae46bf1d24009"
+  },
+  "files": {
+    "h3_t8/two_pass_audio_continuation.py": "4d1cce13d9898b0ce5953555db43e301ffcaa8aa4a2855c319be5cf35cebf601",
+    "h3_t8/nodes_two_pass_audio_continuation.py": "46c4c505f79c340d23141655f59b2a7f4adaea4446d280451af029c3668acdf1",
+    "tools/audit_modular_new_sampling.py": "fbef5d44a5fb7173952274378a5e7cd3aa824ba3eb6b19a95a1c23715f67ac00",
+    "tests/test_h21_sampling_admission_ci.py": "e7d8596865395b60b71dc0866eee6890e4464d6fa7d3c58f57a27a5e6e4a8904",
+    "tests/test_h24_sampling_admission_ci.py": "a79be77b3c3f07ec7698f034c76197622da0b7075ceb72cbd6af2d305da853d4",
+    "tests/test_h27_sampling_admission_ci.py": "ce8c5d4122e94b37c15e33e703ee1cf6ac01b05383bba5a591ad805b19c3bf35"
+  },
+  "previous_sites": [
+    {
+      "path": "h3_t8/nodes_two_pass_audio_continuation.py",
+      "symbol": "MiniMaxH3TwoPassAudioContinueEXPT8.execute",
+      "callee": "continue_audio",
+      "call_sha256": "e4b54806542169a118ba639f08cd7e917eb43120645168062074e8624ee23aa2"
+    }
+  ],
+  "reviewed_sites": [
+    {
+      "path": "h3_t8/nodes_two_pass_audio_continuation.py",
+      "symbol": "MiniMaxH3TwoPassAudioContinueEXPT8.execute",
+      "callee": "continue_audio",
+      "call_sha256": "440f7edd47fe6fa9e9b2ba72033437a547a7b646ff5d6da66c95eaf418fa67f6"
+    }
+  ],
+  "human_quality_accepted": false,
+  "scope": "Finite explicit LOW sampler clock normalization repair. Same128selected sites and zero new DiT paths. Prior Nov16 source and media failure evidence retained, no accepted old media reclassified. CPU split versus complete trajectory tested; actual trained media still requires exact feedback."
+}

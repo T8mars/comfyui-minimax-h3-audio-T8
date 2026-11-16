@@ -48,6 +48,26 @@ def lora_interpretation(row: Mapping[str, Any]) -> dict[str, str]:
     return result
 
 
+def lora_window(row: Mapping[str, Any]) -> dict[str, float]:
+    if "start_percent" not in row and "end_percent" not in row:
+        return {}
+    try:
+        if isinstance(row.get("start_percent"), bool) or isinstance(row.get("end_percent"), bool):
+            raise ValueError()
+        start, end = float(row.get("start_percent", 0.0)), float(row.get("end_percent", 1.0))
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("LoRA 采样区间需要有限数字") from error
+    if not math.isfinite(start) or not math.isfinite(end) or not 0 <= start < end <= 1:
+        raise ValueError("LoRA 采样区间需要 0 <= 起点 < 终点 <= 1")
+    return {"start_percent": start, "end_percent": end}
+
+
+def has_lora_window(rows):
+    return any(row.get("enabled", True) and
+               (row.get("start_percent", 0.0) != 0.0 or row.get("end_percent", 1.0) != 1.0)
+               for row in rows)
+
+
 def _lora_rows(value: Any, stage: str) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise ValueError(f"{stage} LoRA 必须是列表")
@@ -69,6 +89,7 @@ def _lora_rows(value: Any, stage: str) -> list[dict[str, Any]]:
             "enabled": enabled,
             "source": str(row.get("source") or "user"),
             **lora_interpretation(row),
+            **lora_window(row),
         })
     if len({row["id"] for row in result}) != len(result):
         raise ValueError(f"{stage} LoRA 行 ID 重复")
@@ -249,7 +270,7 @@ def _normalize_sampling(raw: Any) -> dict[str, Any]:
     upscaler = raw.get("upscaler", "auto")
     if not isinstance(upscaler, str):
         raise ValueError("3D 放大模型必须是文件名")
-    return {
+    result = {
         "mode": "two_pass",
         "preset": preset,
         "output_mp": target,
@@ -257,6 +278,17 @@ def _normalize_sampling(raw: Any) -> dict[str, Any]:
         "low_loras": _lora_rows(raw.get("low_loras", []), "一采"),
         "high_loras": _lora_rows(raw.get("high_loras", []), "二采"),
     }
+    if "upscaler_architecture" in raw:
+        architecture = raw["upscaler_architecture"]
+        if architecture not in {"3d", "2d"}:
+            raise ValueError("放大策略应为 3d 或 2d")
+        result["upscaler_architecture"] = architecture
+    if "upscaler_sharpness" in raw:
+        sharpness = raw["upscaler_sharpness"]
+        if type(sharpness) is not int or not 1 <= sharpness <= 6:
+            raise ValueError("2D 锐度档位应为 1–6 整数")
+        result["upscaler_sharpness"] = sharpness
+    return result
 
 
 def effective_sampling(doc: Mapping[str, Any], shot: Mapping[str, Any]) -> dict[str, Any]:

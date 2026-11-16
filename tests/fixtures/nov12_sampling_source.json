@@ -1,0 +1,127 @@
+{
+  "schema": "t8.nov12.sampling_source.v1",
+  "baseline_commit": "fa3d6c1cbf6342a878d8be91ffedd62cbacbce69",
+  "previous_files": {
+    "__init__.py": "cc21130867fb461dedb994f0ad558310dd1bdedd32860ba5d50628908a1b43a2",
+    "h3_t8/director_generation.py": "6ad974390708a357d086d049a421e32fbcfd3d8123837364987a432fee52e2b5",
+    "h3_t8/director_sampling_settings.py": "d592c11583eabb30f60d1b1c971e50ec63fb54cc3dba7ec8943cfbe5024a7076",
+    "h3_t8/director_two_pass.py": "b127abab6c63fc2ca49964ed8ab2eb4e58c5c921f27edba792d759dee8f2d6c9",
+    "h3_t8/nodes_open_regenerate.py": "f68b181465aa0d0027261e233df3dbb437ee2c607b78755578e4c29688c11219",
+    "h3_t8/open_regenerate_recipe.py": "de6d8b6004da09cc1d0a704edfc9126ce93d8bf94a84bf80fe51d4609830d471",
+    "tests/test_h27_sampling_admission_ci.py": "ecef8f5a3162dddd7b6e5bae9061fe080050c8bb1657717000cf053cb9fee5d7",
+    "tools/audit_modular_new_sampling.py": "91242cb0da6c00e1427d2c9adc78d1df4cf8286fb0462d6092629a72dbe406f8",
+    "web/director/session.mjs": "a7432b0ca841f78011897ba4c1e54724bea83d090f257bbc8c98135346f8605b",
+    "h3_t8/director_hyperflow.py": "5e4ff550cba05094eb073958e6758b5e2eb82ccadd561e7acae1be3367c4005d",
+    "tests/test_h21_sampling_admission_ci.py": "4557f0eb09b6014ddb9edb92257487ef68a0558ab8085e03345d4c2bae504dca",
+    "tests/test_h24_sampling_admission_ci.py": "5cd338fc45c2928d4e5fc14ee13835ad2dc0f44159fdd740d362f9b570224ba1"
+  },
+  "files": {
+    "__init__.py": "c31851b7e9537d878a330edc9afd7a4bfd0961372f6aa53714b009307588cb10",
+    "h3_t8/audio_tail_release.py": "4ce11520b39078a746de088920f540909b848d39b3b79fa7e338544eeff8a61b",
+    "h3_t8/director_generation.py": "ee359fca32d4a2edea4adb351c9bbd6b163e4023de40ae4a059ee7f52247c466",
+    "h3_t8/director_hyperflow.py": "90ada296686f375f11337568e9fbc026fd7543506d2437dc98ff16fbb9f5be7f",
+    "h3_t8/director_sampling_settings.py": "94dac1d0d15b3e5ade0a46e6f6e0d3a20c7bfd832f0119194105176393c9d636",
+    "h3_t8/director_two_pass.py": "15bdcbb1d5ef2eb5eaf558898867e6e392d50237f5effb2e2b0def45ae21d8f5",
+    "h3_t8/dmad_renoise.py": "8089cf0046dc701cb28dd6ffd2429350a7a614e0b13b9966e97e51e964195c08",
+    "h3_t8/environment_audit.py": "1154bec6500f3d2fda7c3e0995b950c957534761f6f3b8f18478eae863522318",
+    "h3_t8/final_audio_audit.py": "c8166ebbb8495b6636aae18bc63b436a6ad4fd9a5c3eba972d6e3c42a66579b5",
+    "h3_t8/hyperflow_flash_bridge.py": "3071472ff7853b3ff56e548ddf121b9a3b0b106253bc4d61fc95b2d0c701c649",
+    "h3_t8/hyperflow_runtime_advanced.py": "51d2b58666342db15e4b88cd43bd5c227e77cc0516542b547d6d7276e63426df",
+    "h3_t8/ic_draft_refine.py": "958ba428cc6d9a23f10b3f0de4edddb3c5e11f0c6d41af06ccdf10bfcafdf2e7",
+    "h3_t8/latent_upscale_2d.py": "664d4a941981bd921559e767b64da8865cdc82893255e3c474ea2149ebd5719d",
+    "h3_t8/learned_latent_upscale_advanced.py": "92374169b1850aefc9eaecda2721be94c20a1d66c40bbe76abfc77c349bfccd9",
+    "h3_t8/logical_object.py": "29e4f4d9656d14a8470bc24e727c2edbd201d79359d15aa407bf112404c88b88",
+    "h3_t8/lora_windows.py": "f38cdc865ffdf3086249186b6bec8ef70d5974e4adc865be145e8bc2fb300c65",
+    "h3_t8/nodes_audio_tail_release.py": "ee6f652164c5a1e4bdb2b53c6812d9c52ce2bba92bf150fe848a308f00cc89e4",
+    "h3_t8/nodes_dmad_renoise.py": "ad5178ae339d2d94ece37f916b2842fe8388a48d2a746224fe7abc945d0fe3b3",
+    "h3_t8/nodes_final_audio_audit.py": "da56af63febf6717868a8bad70664f86244ea8e45b4ac9575d8c672eca0dd733",
+    "h3_t8/nodes_hyperflow_flash_bridge.py": "5b0cee5d41371891c835ab6147f1b71f0d9d118fe17385ebff0e417e7ca6321d",
+    "h3_t8/nodes_ic_draft_refine.py": "8c9c1a6b42d2afb6efb49cd5b3f81d4add8035211dfc20dff1c6282debbb572b",
+    "h3_t8/nodes_latent_upscale_2d.py": "9c884eb8504e717c3c9deb3d9a7d684c44aab86d22a73dd6a571a7f889715670",
+    "h3_t8/nodes_lora_windows.py": "21967ba9d96d619be8d9d26001357106c4cdf877ddf7db33ae9df50304cc2872",
+    "h3_t8/nodes_open_regenerate.py": "87f8ed740c8266d87476af21096b81c334046add333179184b9226a295f5859d",
+    "h3_t8/nodes_prompt_edit_guidance.py": "969d063da2af5c69fc163de7f39ae2f8be2193fe91722999d0efea31e5ca6bff",
+    "h3_t8/open_regenerate_recipe.py": "c79f21f6460c3d3b7371894bb0eedd17b8ad6b50c387682e606038e0046e78ac",
+    "h3_t8/prompt_edit_guidance.py": "efc6d1036f2b171c51744caacbc77d0cbcea22fcd46193b421cd9b737f55a3fb",
+    "h3_t8/prompt_provider_advanced.py": "a95f1b791b71479da3a242fa61f08d444d9cc647079c2ca795c56d5ac20115e9",
+    "h3_t8/vendor/lbh_upscale2d.py": "8daee88c457f29be72823f934693853e50da2771090d7a3fecdb956690024e29",
+    "h3_t8/video_interval_screen.py": "d8ee7d73aaa09728e841bce392039c1e40e2074430982cc2b9d052e260acfba3",
+    "tests/test_h27_sampling_admission_ci.py": "1919af32764623e8b5a1f822ebff5f32e45653e7291f7c117ce2a04e60dea286",
+    "tools/audit_modular_new_sampling.py": "37df2828ec324f8d08f02073b0a6dbe706d60e13cb23651eb280b4f11d7fa351",
+    "web/director/sampling_ui.mjs": "ee436293f8a6b61ca9b79f8def13c701e090ca3aee21203fd51c5baecb24c3a5",
+    "web/director/session.mjs": "f813ee5043a7d6164fba6a8e7ff56e4dabdfec66ff66e3a0ba1007498745c37e",
+    "tests/test_h21_sampling_admission_ci.py": "f6b5d4c8846e7c8b927d926be14bc4cfd7d2e7bb0c3c5f9ea7c81d21697e3810",
+    "tests/test_h24_sampling_admission_ci.py": "9488ad36f55b810633a33f388aa7d335d84765913ac1931ac46d25760ec9923b"
+  },
+  "previous_sites": [
+    {
+      "path": "h3_t8/director_hyperflow.py",
+      "symbol": "apply_hyperflow_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "33e29491a71853e43b98435acc8438bc6e96b9f8963eb38193e1475bf745c15b"
+    },
+    {
+      "path": "h3_t8/director_two_pass.py",
+      "symbol": "apply_two_pass_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "9e5fd7a16915154d8368fa67a9517467d71aa94bd29ed4141f5293e320a429d2"
+    },
+    {
+      "path": "h3_t8/director_generation.py",
+      "symbol": "build_director_generation_prompt",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "7ab365f40a8515661df8e27161ea666cb3bb47aea6a96486a7558c931e5e244b"
+    }
+  ],
+  "reviewed_sites": [
+    {
+      "path": "h3_t8/director_generation.py",
+      "symbol": "build_director_generation_prompt",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "c42e6bae72a9c557c19c7dc70a6dcb8f42569adfab948b4baf4e70a766c8099a"
+    },
+    {
+      "path": "h3_t8/director_hyperflow.py",
+      "symbol": "apply_hyperflow_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "9d9fa5dd27cf0d712e8c2943b8c2dfacab77aa8fa99a552e8f8cec9a0a7a4d0e"
+    },
+    {
+      "path": "h3_t8/director_two_pass.py",
+      "symbol": "apply_two_pass_graph",
+      "callee": "<director_graph_builder>",
+      "call_sha256": "51c89327cc474b3330d5e3c28839f8a738ff50324a41e548ce784d627fc7637b"
+    },
+    {
+      "path": "h3_t8/prompt_edit_guidance.py",
+      "symbol": "PromptEditGuider.sample",
+      "callee": "super().sample",
+      "call_sha256": "31b4d309d9aa2feeef5c364fdc17c62abe036e2d502f584cd85ede3db4c4a470"
+    }
+  ],
+  "preserved_nodes": 788,
+  "registered_nodes": 803,
+  "appended_nodes": [
+    "MiniMaxH3LatentUpscale2DT8",
+    "MiniMaxH3PromptEditGuiderT8",
+    "MiniMaxH3PromptEditAuditT8",
+    "MiniMaxH3LoRAWindowT8",
+    "MiniMaxH3AttachLoRAWindowsT8",
+    "MiniMaxH3HyperFlowFlashLoaderT8",
+    "MiniMaxH3FlashCheckpointSigmasT8",
+    "MiniMaxH3DMADRenoiseSetupEXPT8",
+    "MiniMaxH3ICRecipeEXPT8",
+    "MiniMaxH3ICComposeEXPT8",
+    "MiniMaxH3FinalAudioAuditEXPT8",
+    "MiniMaxH3ICSamplerEXPT8",
+    "MiniMaxH3AudioPrefixCarryEXPT8",
+    "MiniMaxH3AudioTailReleaseEXPT8",
+    "MiniMaxH3AudioTailAuditEXPT8"
+  ],
+  "preserved_prefix_sha256": "d61591dd715d8c468516273e852881ff8213b0522c80d2021f0b9dc7afbca153",
+  "human_quality_accepted": false,
+  "accepted_media_sha256": [],
+  "human_feedback_sha256": [],
+  "scope": "Finite Nov12 development source delta only: 3 Director builders, one delegated single-stage guider call, 15 append-only nodes and selected helper implementations. Native stages remain independently wired.",
+  "limits": "No release, deployment, human media acceptance or universal MODEL compatibility claim. New candidate workflows remain private until human review. Old accepted media stay bound to their historical ledgers; scanner cannot discover every returned guider or external consumer."
+}

@@ -556,3 +556,7 @@ files.
 ## H11 additive adapters and resource recipes
 
 See [H11 source acknowledgements](THIRD_PARTY_NOTICES/H11-SOURCES.md) for Spark-H3 (zechengtang), Wuli-art and sandpies, FlashML FreeVideo/FreeToken, T8 Semantic Bridge Trainer and Sam Wasserman. Separately downloaded source, wheels and model weights retain their respective licenses; no weights are bundled, and acknowledgement is not general quality or speed qualification.
+
+## Creation interfaces and optional IC assets
+
+The extracted LBH 2D model definitions retain the [MIT license](THIRD_PARTY_NOTICES/LBH-2D-LICENSE.txt). IC adapters retain [upstream notices](THIRD_PARTY_NOTICES/IC-UPSTREAM-NOTICE.txt) and the [Apache-2.0 text](THIRD_PARTY_NOTICES/IC-APACHE2.txt). No model or silence-latent weights are bundled; separately obtained assets retain their own model licenses.

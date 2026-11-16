@@ -13,7 +13,7 @@ from pathlib import Path
 
 import folder_paths
 
-from .director_sampling_settings import lora_interpretation
+from .director_sampling_settings import lora_interpretation, has_lora_window
 from .director_two_pass import _pick_upscaler
 from .h3_weight_diagnostics import inspect_h3_weight_file
 from .nodes_hyperflow_advanced import _resolve
@@ -37,6 +37,7 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
     variant = sampling["variant"]
     next_id = max(map(int, graph)) + 1
     lora_loaders = []
+    window_rows = {}
 
     def add(kind, inputs):
         nonlocal next_id
@@ -47,9 +48,12 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
 
     def stage_model(stage):
         model = "1"
-        for row_index, row in enumerate(sampling[f"{stage}_loras"], 1):
-            if not row["enabled"]:
-                continue
+        selected = [(index, row) for index, row in enumerate(sampling[f"{stage}_loras"], 1)
+                    if row["enabled"]]
+        scheduled = has_lora_window([row for _, row in selected])
+        if scheduled:
+            window_rows[stage] = [{**row, "_original_row_index": index} for index, row in selected]
+        for row_index, row in selected:
             name = row["name"]
             content_path = folder_paths.get_full_path("loras", name)
             if name not in set(folder_paths.get_filename_list("loras")) or not content_path:
@@ -63,6 +67,10 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
             if (Path(content_path).resolve() == original.resolve()
                     or any(item.get("kind") == "hyperflow" for item in special)):
                 raise ValueError("HyperFlow 原始权重不能放在一采/二采内容 LoRA 列表；请只在专用 HyperFlow 权重栏选择")
+            if scheduled:
+                # One ordered hook group contains both windowed and full-time
+                # rows; do not move static rows in front of scheduled ones.
+                continue
             model = add("MiniMaxH3LoRACompatibilityLoaderT8Advanced", {
                 "model": [model, 0], "lora_name": name, "strength_model": row["strength"],
                 **lora_interpretation(row)})
@@ -78,6 +86,19 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
                 "seq_threshold": int(memory.get("seq_threshold", 4096))})
         return add("MiniMaxH3HyperFlowFreshLoaderEXPT8", {
             "model": [model, 0], "hyperflow_file": sampling["hyperflow_file"]})
+
+    def with_windows(stage, result):
+        rows = window_rows.get(stage)
+        if not rows:
+            return result
+        hook_id = add("MiniMaxH3AttachLoRAWindowsT8", {
+            "model": result["model"], "positive": result["positive"],
+            "windows_json": json.dumps(rows, ensure_ascii=False)})
+        result["positive"] = [hook_id, 0]
+        lora_loaders.extend({"node_id": hook_id, "stage": stage.upper(),
+            "row_index": row["_original_row_index"], "row_id": row.get("id"),
+            "source": "native_window_hooks"} for row in rows)
+        return result
 
     positive = graph["7"]["inputs"]["conditioning"]
     factory_id = positive[0]
@@ -145,7 +166,7 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
                 model=result["model"], positive=positive_link,
                 width=inputs["width"], height=inputs["height"], length=control_condition_length(graph, inputs),
                 video_vae=["2", 0], add=add))
-        return result
+        return with_windows(stage, result) if controls else result
 
     checkpoint = sampling.get("stage_checkpoint", {"mode": "off"})
     resume_tail = variant == "continuous4plus4separate" and checkpoint["mode"] == "resume_tail"
@@ -196,6 +217,7 @@ def apply_hyperflow_graph(graph, shot, sampling, store, seed, d3):
                 width=[resized, 1], height=[resized, 2],
                 length=control_condition_length(graph, high_condition["inputs"]),
                 video_vae=["2", 0], add=add))
+            with_windows("high", high_condition)
             high_plan = add("MiniMaxH3HyperFlowTailPlanT8Advanced", {"model": high_condition["model"]})
             high_setup = add("MiniMaxH3HyperFlowPartialRefineSamplerT8Advanced" if variant == "upscale4plus4"
                              else "MiniMaxH3HyperFlowRefineSamplerT8Advanced", {

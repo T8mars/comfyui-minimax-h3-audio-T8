@@ -47,9 +47,17 @@ class H21ReleaseAdmission(unittest.TestCase):
         compat = json.loads((ROOT / compat_path).read_text(encoding='utf8'))
         november_path = 'tests/fixtures/nov05_reviewed_sampling_source.json'
         november = json.loads((ROOT / november_path).read_text(encoding='utf8'))
+        nov12_path = 'tests/fixtures/nov12_sampling_source.json'
+        nov12 = json.loads((ROOT / nov12_path).read_text(encoding='utf8'))
+        audio_path = 'tests/fixtures/nov16_audio_handoff_source.json'
+        audio = json.loads((ROOT / audio_path).read_text(encoding='utf8'))
+        clock_path = 'tests/fixtures/nov17_audio_clock_source.json'
+        clock = json.loads((ROOT / clock_path).read_text(encoding='utf8'))
+        release_path = 'tests/fixtures/release_1_106_sampling_source.json'
+        release = json.loads((ROOT / release_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in set([*november['files'], november_path, *compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
+            for relative in set([*release['files'], release_path, *clock['files'], clock_path, *audio['files'], audio_path, *nov12['files'], nov12_path, *november['files'], november_path, *compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
                                  'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

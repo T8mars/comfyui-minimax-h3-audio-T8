@@ -112,7 +112,7 @@ def test_versions_seed_scope_and_background_completion():
             assert batches[0]['seed_map'][original[2]] == 314
             assert batches[0]['project']['doc']['shots'][1]['adoptedResultId'] == 'version-1'
             expect(page.locator('[data-draft-status]')).to_contain_text('待完善')
-            page.locator('.w-readiness summary').click()
+            page.locator('summary[data-draft-status]').click()
             page.locator('[data-draft-field="source"]').click()
             expect(page.locator('[data-workbench-section="source"]')).to_be_visible()
             page.locator('[data-service="task-list"]').first.click()

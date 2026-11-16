@@ -23,6 +23,7 @@ from safetensors import safe_open
 from .h3_lora_compat_advanced import build_minimax_h3_lora_key_map, convert_fastvideo_h3_adapter
 from .h3_weight_diagnostics import lora_mapping_diagnostics
 from .patch_stack_policy import warn_patch_stack
+from .logical_object import logical_object
 
 
 KEY = 't8_open_regenerate_recipe_v1'
@@ -57,17 +58,6 @@ def interpolate_curve(table, times):
     position = times.float().clamp(0, 1) * (len(table) - 1)
     lower = position.floor().long().clamp(max=len(table) - 2)
     return torch.lerp(table[lower], table[lower + 1], (position - lower).unsqueeze(-1))
-
-
-def logical_object(model, name):
-    """Resolve descendants of selected or backed-up parent object patches."""
-    parts = name.split('.')
-    for patches in (getattr(model, 'object_patches', {}), getattr(model, 'object_patches_backup', {})):
-        for count in range(len(parts), 0, -1):
-            parent = '.'.join(parts[:count])
-            if parent in patches:
-                return comfy.utils.get_attr(patches[parent], '.'.join(parts[count:])) if count < len(parts) else patches[parent]
-    return model.get_model_object(name)
 
 
 def native_clock_values(network, x, timestep, context, options, payload=None,
@@ -152,6 +142,17 @@ class CurveRuntime:
                         frame.update(times=times, coordinates=interpolate_curve(self.table, times),
                             clock_source='actual_native_time_embedder_input', clock_verified=True)
                     cleanup.callback(embedder.register_forward_pre_hook(observe_time).remove)
+                    def observe_expanded_time(_module, _inputs, _output):
+                        # T8's two-time runtime may expand equal t rows whose r
+                        # endpoints differ. Sharp uses each row's actual t,
+                        # including duplicates; never repeat/infer coordinates
+                        # merely to fit the projection shape.
+                        from .hyperflow_runtime_advanced import active_time_values
+                        times = active_time_values()
+                        if times is not None:
+                            frame.update(times=times, coordinates=interpolate_curve(self.table, times),
+                                clock_source='actual_HyperFlow_expanded_current_time_rows', clock_verified=True)
+                    cleanup.callback(embedder.register_forward_hook(observe_expanded_time).remove)
                 for name in self.branches:
                     layer = comfy.utils.get_attr(network, name)
 
@@ -282,7 +283,7 @@ def load_recipe(model, linear_path, curve_path, table_path, linear_strength=1., 
         'curve_table_sha256': tensor_sha(table),
         'files': {kind: {'name': Path(path).name, 'sha256': file_sha(path)} for kind, path in
                   [('merged_lora', linear_path), ('sharp_curves', curve_path)]},
-        'contract': 'Scale-one merged factors already include Turbo alpha/rank; independent Sharp branch is base(x)+strength*B(A(source_curve(t))). Existing MODEL patches and native forward are retained.'}
+        'contract': 'Linear factors are consumed at their stored scale; any Turbo/refiner merge or Sharp-only extraction is a property of the selected file, not added by this loader. Independent Sharp branch is base(x)+strength*B(A(source_curve(t))). Existing MODEL patches and native forward are retained.'}
     selected, runtime = attach_curves(selected, table, branches, curve_strength, declaration)
     return selected, json.dumps(runtime.report(), ensure_ascii=False, indent=2)
 

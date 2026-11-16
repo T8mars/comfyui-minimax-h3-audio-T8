@@ -65,9 +65,17 @@ class ReviewedINT8Delta(unittest.TestCase):
             # Keep H09's131-site ledger immutable. Pika adds seven sites;
             # the bounded November successor adds five net sites (including
             # three equal-AST reuse branches), each checked by the source gate.
+            # Nov12/Nov16 add only the reviewed PromptEdit and audio helper/noise
+            # delegates. Nov17 replaces one helper call without adding a site.
             self.assertEqual(len(read("tests/fixtures/pika_two_pass_source.json")["reviewed_sites"]), 7)
+            creation = {
+                ("h3_t8/prompt_edit_guidance.py", "PromptEditGuider.sample", "super().sample"),
+                ("h3_t8/nodes_two_pass_audio_continuation.py", "MiniMaxH3TwoPassAudioContinueEXPT8.execute", "continue_audio"),
+                ("h3_t8/two_pass_audio_continuation.py", "AudioContinuationNoise.generate_noise", "self.parent.generate_noise"),
+            }
+            self.assertEqual(sum((s["path"], s["symbol"], s["callee"]) in creation for s in live), 3)
             self.assertEqual((result["declared_baseline_sites"], result["current_sites"],
-                              result["reviewed_absent_root_alias_sites"]), (131, 125, 21))
+                              result["reviewed_absent_root_alias_sites"]), (131, 128, 21))
             before = gate.guard(ROOT, old)
             self.assertEqual((before["status"], before["new_sites"], before["removed_sites"]),
                              ("fail", 3, 0))

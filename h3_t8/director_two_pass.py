@@ -7,18 +7,21 @@ from typing import Any
 
 import folder_paths
 
-from .director_sampling_settings import lora_interpretation
+from .director_sampling_settings import lora_interpretation, has_lora_window
+import json
 from .director_control_graph import append_director_controls, audit_control_latent, control_condition_length
 
 
 UPSCALE_CANDIDATES = ("minimax_h3_latent_upscaler_3d_fp16.safetensors",)
 
 
-def _pick_upscaler(requested: str) -> str:
+def _pick_upscaler(requested: str, architecture: str = "3d") -> str:
     choices = set(folder_paths.get_filename_list("latent_upscale_models"))
-    name = next((candidate for candidate in UPSCALE_CANDIDATES if candidate in choices), None) if requested == "auto" else requested
+    candidates = ("minimax_h3_latent_upscaler_2d_conv_v1_bf16.safetensors",
+                  "minimax_h3_latent_upscaler_2d_conv_v1_fp16.safetensors") if architecture == "2d" else UPSCALE_CANDIDATES
+    name = next((candidate for candidate in candidates if candidate in choices), None) if requested == "auto" else requested
     if not name or name not in choices or not folder_paths.get_full_path("latent_upscale_models", name):
-        raise ValueError("双采缺少所选学习型 3D 放大模型，请在 models/latent_upscale_models 安装后重试")
+        raise ValueError(f"双采缺少所选学习型 {architecture.upper()} 放大模型，请在 models/latent_upscale_models 安装后重试")
     return name
 
 
@@ -40,9 +43,11 @@ def apply_two_pass_graph(
     plan = shot["two_pass_canvas"]
     if not plan:
         raise ValueError("双采缺少实际 LOW/HIGH 尺寸计划")
-    upscaler_name = _pick_upscaler(sampling["upscaler"])
+    architecture = sampling.get("upscaler_architecture", "3d")
+    upscaler_name = _pick_upscaler(sampling["upscaler"], architecture)
     next_id = max(map(int, graph)) + 1
     lora_loaders = []
+    window_rows = {}
 
     def add(kind: str, inputs: dict[str, Any]) -> str:
         nonlocal next_id
@@ -53,7 +58,14 @@ def apply_two_pass_graph(
 
     def stage_model(stage: str) -> str:
         model = "1"
-        for row_index, row in enumerate(sampling[f"{stage}_loras"], 1):
+        selected = sampling[f"{stage}_loras"]
+        if has_lora_window(selected):
+            # Keep every row in one native hook stack so an interleaved static
+            # row cannot move ahead of the user's scheduled rows.
+            window_rows[stage] = [{**row, "_original_row_index": index}
+                                  for index, row in enumerate(selected, 1) if row["enabled"]]
+            selected = []
+        for row_index, row in enumerate(selected, 1):
             if not row["enabled"]:
                 continue
             name = row["name"]
@@ -76,6 +88,19 @@ def apply_two_pass_graph(
                 "seq_threshold": int(memory.get("seq_threshold", 4096)),
             })
         return model
+
+    def with_windows(stage, model, positive):
+        rows = window_rows.get(stage)
+        if not rows:
+            return positive
+        node = add("MiniMaxH3AttachLoRAWindowsT8", {
+            "model": model, "positive": positive,
+            "windows_json": json.dumps(rows, ensure_ascii=False),
+        })
+        for index, row in enumerate(rows, 1):
+            lora_loaders.append({"node_id": node, "stage": stage.upper(),
+                "row_index": row["_original_row_index"], "row_id": row.get("id"), "source": "native_window_hooks"})
+        return [node, 0]
 
     low_model, high_model = stage_model("low"), stage_model("high")
     relay = bool(d3["prompt_relay"].get("enabled"))
@@ -120,6 +145,7 @@ def apply_two_pass_graph(
     low_latent = [low_condition, 2 if returns_model else 1]
     high_latent = [high_condition, 2 if returns_model else 1]
     low_positive_output = [low_positive, 1 if returns_model and not high_bridge else 0]
+    low_positive_output = with_windows("low", low_model_output, low_positive_output)
     high_positive_output = [high_bridge or high_condition, 1 if returns_model and not high_bridge else 0]
     low_controls = append_director_controls(graph, shot, stage="LOW",
         model=low_model_output, positive=low_positive_output,
@@ -140,14 +166,19 @@ def apply_two_pass_graph(
         "guider": ["7", 0], "sampler": ["6", 1], "sigmas": [parity, 0],
         "latent_image": low_latent,
     })
-    upscaler = add("MiniMaxH3LearnedLatentUpscaleT8Advanced", {
+    upscaler_inputs = {
         "av_latent": audit_control_latent(add, ["9", 1], low_controls["states"]), "model_name": upscaler_name,
         "size_mode": "target_megapixels", "scale_by": 2.0,
         "target_megapixels": plan["actual_megapixels"],
         "target_width": plan["width"], "target_height": plan["height"],
         "aspect_policy": "preserve_source", "max_anisotropy": 1.05,
         "precision": "fp16", "release_policy": "offload_after",
-    })
+    }
+    upscaler_kind = "MiniMaxH3LearnedLatentUpscaleT8Advanced"
+    if architecture == "2d":
+        upscaler_kind = "MiniMaxH3LatentUpscale2DT8"
+        upscaler_inputs.update(precision="bf16", sharpness=sampling.get("upscaler_sharpness", 1), chunk_frames=8)
+    upscaler = add(upscaler_kind, upscaler_inputs)
     high_inputs["width"], high_inputs["height"] = [upscaler, 1], [upscaler, 2]
     reconciled = add("MiniMaxH3TwoPassLatentReconcileT8Advanced", {
         "learned_latent": [upscaler, 0],
@@ -158,7 +189,7 @@ def apply_two_pass_graph(
         "second_pass_audio_strength": 0.0,
     })
     high_controls = append_director_controls(graph, shot, stage="HIGH",
-        model=high_model_output, positive=[reconciled, 1],
+        model=high_model_output, positive=with_windows("high", high_model_output, [reconciled, 1]),
         width=high_inputs["width"], height=high_inputs["height"], length=control_condition_length(graph, high_inputs),
         video_vae=["2", 0], add=add)
     mixer = add("MiniMaxH3TwoPassDetailMixerT8Advanced", {

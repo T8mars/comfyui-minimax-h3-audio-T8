@@ -390,6 +390,7 @@ def learned_upscale_geometry(
     target_height: int,
     aspect_policy: str,
     max_anisotropy: float,
+    legacy_bounds: bool = True,
 ) -> dict[str, Any]:
     if size_mode not in SIZE_MODES:
         raise ValueError(f"Unknown size_mode {size_mode!r}; expected one of {SIZE_MODES}")
@@ -399,8 +400,11 @@ def learned_upscale_geometry(
     source_height = int(source_latent_height) * PIXELS_PER_H3_LATENT
     source_aspect = source_width / source_height
     if size_mode == "scale_by":
-        if not math.isfinite(scale_by) or not 1.0 <= float(scale_by) <= 4.0:
-            raise ValueError("scale_by must be finite and within [1.0, 4.0]")
+        if legacy_bounds:
+            if not math.isfinite(scale_by) or not 1.0 <= float(scale_by) <= 4.0:
+                raise ValueError("scale_by must be finite and within [1.0, 4.0]")
+        elif not math.isfinite(scale_by) or float(scale_by) <= 0:
+            raise ValueError("scale_by must be positive and finite")
         ideal_width = source_width * float(scale_by)
         ideal_height = source_height * float(scale_by)
         output_width, output_height = _best_aligned_size(
@@ -424,18 +428,21 @@ def learned_upscale_geometry(
         output_width = _round_multiple(ideal_width)
         output_height = _round_multiple(ideal_height)
 
-    if output_width < source_width or output_height < source_height:
+    if legacy_bounds and (output_width < source_width or output_height < source_height):
         raise ValueError(
             "Learned latent resize only supports non-shrinking geometry: "
             f"source={source_width}x{source_height}, target={output_width}x{output_height}"
         )
     scale_x = output_width / source_width
     scale_y = output_height / source_height
-    if max(scale_x, scale_y) > 4.0:
+    if legacy_bounds and max(scale_x, scale_y) > 4.0:
         raise ValueError("The learned model is limited to at most 4x on either spatial axis")
     anisotropy = max(scale_x, scale_y) / min(scale_x, scale_y)
-    if not math.isfinite(max_anisotropy) or not 1.0 <= float(max_anisotropy) <= 2.0:
-        raise ValueError("max_anisotropy must be finite and within [1.0, 2.0]")
+    if legacy_bounds:
+        if not math.isfinite(max_anisotropy) or not 1.0 <= float(max_anisotropy) <= 2.0:
+            raise ValueError("max_anisotropy must be finite and within [1.0, 2.0]")
+    elif not math.isfinite(max_anisotropy) or float(max_anisotropy) < 1.0:
+        raise ValueError("max_anisotropy must be finite and at least 1.0")
     if anisotropy > float(max_anisotropy):
         raise ValueError(
             f"Requested anisotropic scale {scale_x:.5f}x{scale_y:.5f} has ratio "
@@ -454,6 +461,8 @@ def learned_upscale_geometry(
         "scale_y": scale_y,
         "effective_scale": math.sqrt(scale_x * scale_y),
         "anisotropy": anisotropy,
+        **({"outside_legacy_3d_geometry": max(scale_x, scale_y) > 4.0 or min(scale_x, scale_y) < 1.0 or anisotropy > 2.0}
+           if not legacy_bounds else {}),
         "aspect_error_percent": abs((output_width / output_height) / source_aspect - 1.0)
         * 100.0,
         "size_mode": size_mode,

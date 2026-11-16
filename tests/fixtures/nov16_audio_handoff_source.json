@@ -1,0 +1,40 @@
+{
+  "schema": "t8.nov16.audio_handoff_source.v1",
+  "previous_files": {
+    "__init__.py": "c31851b7e9537d878a330edc9afd7a4bfd0961372f6aa53714b009307588cb10",
+    "tools/audit_modular_new_sampling.py": "37df2828ec324f8d08f02073b0a6dbe706d60e13cb23651eb280b4f11d7fa351",
+    "tests/test_h21_sampling_admission_ci.py": "f6b5d4c8846e7c8b927d926be14bc4cfd7d2e7bb0c3c5f9ea7c81d21697e3810",
+    "tests/test_h24_sampling_admission_ci.py": "9488ad36f55b810633a33f388aa7d335d84765913ac1931ac46d25760ec9923b",
+    "tests/test_h27_sampling_admission_ci.py": "1919af32764623e8b5a1f822ebff5f32e45653e7291f7c117ce2a04e60dea286"
+  },
+  "files": {
+    "__init__.py": "ab744ca97a8e68fd4b009d6d52bb2b4e7ffe7152149353a6ae042954df97aa45",
+    "tools/audit_modular_new_sampling.py": "13e21cba52943f12a8d10e3c187e33a30f1393dfc4e953e9b135edc94df943f9",
+    "tests/test_h21_sampling_admission_ci.py": "a0715ebcd4cd9a328e98c6b6d46d8bf8d716f097d1f333d7955ec3a4e090b225",
+    "tests/test_h24_sampling_admission_ci.py": "ccab9cec18fe8d6ca541f9cb26aff2242da5eb8ecd2eda2e44c74c0f8d73a828",
+    "tests/test_h27_sampling_admission_ci.py": "b3b8a1aee8b8a776cc4f91489ad0fd9fb0c30222c576c0332e7ae46bf1d24009",
+    "h3_t8/two_pass_audio_continuation.py": "577fd1438d1ec7cbe99b2df5aa61158b6991535b93f47ff8432274e75b1bbc03",
+    "h3_t8/nodes_two_pass_audio_continuation.py": "5deb4451551c991d2e61208bf399f5d33e57d0dafd8687b93f7b63f8cfd1f769"
+  },
+  "preserved_nodes": 803,
+  "registered_nodes": 804,
+  "appended_nodes": [
+    "MiniMaxH3TwoPassAudioContinueEXPT8"
+  ],
+  "human_quality_accepted": false,
+  "scope": "Explicit socket0 audio continuation; selected visual noise delegates once, zero fresh audio noise. Scanner detects2helper/noise delegates,0new DiT calls. Preserve original source/human ledgers. Actual trained outputs require new feedback.",
+  "reviewed_sites": [
+    {
+      "path": "h3_t8/nodes_two_pass_audio_continuation.py",
+      "symbol": "MiniMaxH3TwoPassAudioContinueEXPT8.execute",
+      "callee": "continue_audio",
+      "call_sha256": "e4b54806542169a118ba639f08cd7e917eb43120645168062074e8624ee23aa2"
+    },
+    {
+      "path": "h3_t8/two_pass_audio_continuation.py",
+      "symbol": "AudioContinuationNoise.generate_noise",
+      "callee": "self.parent.generate_noise",
+      "call_sha256": "26c98fd711eca08a0cd2c0a27921434f80856151fbb4c1813fe484fcd70efb29"
+    }
+  ]
+}

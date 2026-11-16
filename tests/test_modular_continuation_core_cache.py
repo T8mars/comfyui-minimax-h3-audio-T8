@@ -57,7 +57,9 @@ def graph(case, kind):
 @pytest.mark.parametrize("change", ["high_prompt", "high_model_patch", "high_video_noise", "low_prompt", "high_cancel", "parent_changed"])
 @pytest.mark.parametrize("kind", ["plain", "combined"])
 def test_actual_core_cache_and_revalidation(accepted, monkeypatch, change, kind):  # noqa: F811
-    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[3]))
+    # Use the Core actually imported by the runner. A standalone checkout can
+    # live directly below a drive root and has no project parents[3].
+    monkeypatch.syspath_prepend(str(Path(comfy.model_management.__file__).resolve().parents[1]))
     import execution
     import nodes
     from comfy_extras.nodes_custom_sampler import RandomNoise

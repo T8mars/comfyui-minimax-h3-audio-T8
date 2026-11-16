@@ -1,5 +1,12 @@
 # 更新日志 / Changelog
 
+## 1.106.0 — 2026-11-17
+
+- 追加16个独立创作入口：2D放大、定向编辑、LoRA区间、Flash独立加载、DMAD重加噪、IC、声音尾接/释放与最终音轨审计；原788节点和默认保留。
+- 修正直接双时钟部分音频的续采缩放，保存已通过的4+4翻书和Flash6+3（9NFE）声音工作流。
+- 保存22份已审UI/API图，指定通过媒体共28个不同SHA；失败原图、私人素材/模型/ROADMAP不发布。Realism原资产未取得授权，不宣称命名风格资格。
+- [详情](docs/RELEASE_1.106.0.md) · [工作流](examples/workflows/98-nov12-reviewed/README.md) · [验收范围](docs/NOV12_ACCEPTANCE.md)
+
 [首页](README.md) · [English](README_EN.md)
 
 ## 1.105.0

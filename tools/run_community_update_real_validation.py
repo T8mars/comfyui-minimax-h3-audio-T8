@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from datetime import datetime, timezone
+import importlib.util
 import json
 from pathlib import Path
 import shutil
@@ -47,6 +48,20 @@ TURBO_ALPHA8 = "minimax_h3_fl2v_turbo_4step_v0.1_comfyui_alpha8.safetensors"
 UPSCALER = "minimax_h3_latent_upscaler_3d_fp16.safetensors"
 REFERENCE_IMAGE = "codex_prompt_relay_fl2va_first.png"
 STATIC_BACKGROUND_MASK = "codex_h3_static_background_subject_mask_576x320.png"
+
+
+def _default_comfy_root() -> Path | None:
+    # A standalone checkout/worktree may have fewer than four parents. Find a
+    # real Core instead of assuming the repository lives under custom_nodes.
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "main.py").is_file() and (candidate / "comfy").is_dir():
+            return candidate
+    spec = importlib.util.find_spec("folder_paths")
+    if spec is not None and spec.origin:
+        candidate = Path(spec.origin).resolve().parent
+        if (candidate / "main.py").is_file() and (candidate / "comfy").is_dir():
+            return candidate
+    return None
 
 
 def _utc_now() -> str:
@@ -1136,7 +1151,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-free-ram-gib", type=float, default=50.0)
     parser.add_argument("--reserve-vram-gib", type=float, default=2.0)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument("--comfy-root", type=Path, default=Path(__file__).resolve().parents[3])
+    parser.add_argument("--comfy-root", type=Path, default=_default_comfy_root())
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument(
         "--artifact-root",
@@ -1279,7 +1294,10 @@ def _wait_for_mux_finalize(
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    parser = _parser()
+    args = parser.parse_args(argv)
+    if args.comfy_root is None:
+        parser.error("ComfyUI was not found; provide --comfy-root for this standalone checkout")
     args.project_root = args.project_root.resolve()
     args.comfy_root = args.comfy_root.resolve()
     args.python = args.python.resolve()
