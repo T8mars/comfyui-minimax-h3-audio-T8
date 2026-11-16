@@ -704,7 +704,8 @@ def _release_1106_review(root, predecessor):
                'tests/test_h09_sampling_admission_ci.py',
                'tests/test_h21_sampling_admission_ci.py',
                'tests/test_h24_sampling_admission_ci.py',
-               'tests/test_h27_sampling_admission_ci.py'}
+               'tests/test_h27_sampling_admission_ci.py',
+               '.github/workflows/modular-sampling-admission.yml'}
     required = {'schema', 'previous_files', 'files', 'runtime_sites_added',
                 'registered_nodes', 'human_quality_accepted', 'scope'}
     if (set(review) != required or review['schema'] != 't8.release1106.source.v1'

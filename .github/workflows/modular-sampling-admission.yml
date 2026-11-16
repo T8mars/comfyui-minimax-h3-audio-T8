@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Use the reviewed AST fingerprint interpreter
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Verify the bounded reviewed INT8 delta and unknown-call rejection
         run: python3 tests/test_h09_sampling_admission_ci.py
       - name: Verify the reviewed H21 source delta and reject changed or future calls

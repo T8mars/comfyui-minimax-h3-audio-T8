@@ -21,7 +21,7 @@ class Release1106Source(unittest.TestCase):
                          ('pass', 128, 0, 0))
 
     def test_source_parent_extra_runtime_and_borrowed_media_fail(self):
-        for kind in ('source', 'parent', 'extra', 'media'):
+        for kind in ('source', 'workflow', 'parent', 'extra', 'media'):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 old = historical.H27ReviewedSource()
@@ -29,8 +29,9 @@ class Release1106Source(unittest.TestCase):
                 old.copy_root(root)
                 path = root / 'tests/fixtures/release_1_106_sampling_source.json'
                 review = json.loads(path.read_text('utf8'))
-                if kind == 'source':
-                    selected = root / 'tests/test_h09_sampling_admission_ci.py'
+                if kind in {'source', 'workflow'}:
+                    selected = root / ('tests/test_h09_sampling_admission_ci.py' if kind == 'source'
+                                       else '.github/workflows/modular-sampling-admission.yml')
                     selected.write_bytes(selected.read_bytes() + b'\n# unreviewed\n')
                 elif kind == 'parent':
                     review['previous_files']['tools/audit_modular_new_sampling.py'] = '0' * 64

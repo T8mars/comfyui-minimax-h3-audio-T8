@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Use the reviewed AST fingerprint interpreter
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Verify bounded creation sources and reject borrowed media
         run: python3 tests/test_nov12_sampling_admission_ci.py
       - name: Verify opt-in audio source ownership and negative mutations
