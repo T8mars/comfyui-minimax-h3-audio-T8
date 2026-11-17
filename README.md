@@ -2,7 +2,7 @@
 
 用于 ComfyUI 的 MiniMax H3 视频与声音节点：参考图／音频、双采与长视频、人物口型、运镜编辑，以及可选高清后处理。
 
-简体中文 | [English](README_EN.md) · 当前版本：**1.106.2** · [更新日志](CHANGELOG.md)
+简体中文 | [English](README_EN.md) · 当前版本：**1.106.3** · [更新日志](CHANGELOG.md)
 
 [本版更新](docs/RELEASE_1.106.0.md)：Core0.45 FinalLayer兼容与社区问题处理；[22套已审创作工作流](examples/workflows/98-nov12-reviewed/README.md)。
 

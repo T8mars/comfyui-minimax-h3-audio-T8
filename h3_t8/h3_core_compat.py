@@ -111,10 +111,11 @@ def _final_layer_schedule_parameters(forward, *, return_name=False):
                 and forward._t8_hyperflow_owner == state["owner"]
                 and forward._t8_hyperflow_inner is state["final_original"]):
             parameters = _parameters(state["final_original"])
-    if {"sigma", "sample_sigmas", "grids"} <= parameters:
-        schedule_name = "grids"
-    elif {"sigma", "sample_sigmas", "shifts"} <= parameters:
+    # Existing shift consumers keep their ABI even if they add an optional grid.
+    if {"sigma", "sample_sigmas", "shifts"} <= parameters:
         schedule_name = "shifts"
+    elif {"sigma", "sample_sigmas", "grids"} <= parameters:
+        schedule_name = "grids"
     elif names.intersection(parameters):
         raise RuntimeError("Unsupported partial H3 FinalLayer schedule interface")
     else:

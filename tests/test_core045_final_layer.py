@@ -75,3 +75,18 @@ def test_optional_grid_keyword_does_not_reject_a_legacy_user_delegate():
     assert call_h3_final_layer(UserLayer(), 2, 3, None, None, sigma=.5,
                                sample_sigmas=None, shifts=(12., 3.)) == (2, 3)
     assert calls == [None]
+
+
+def test_existing_shift_protocol_wins_over_an_optional_grid_argument():
+    calls = []
+    sigma, schedule, shifts = object(), object(), (12., 3.)
+
+    class UserLayer:
+        def __call__(self, x, t_emb, video_seg, audio_seg, sigma, sample_sigmas,
+                     shifts, grids=None):
+            calls.append((sigma, sample_sigmas, shifts, grids))
+            return x, t_emb
+
+    assert call_h3_final_layer(UserLayer(), 2, 3, None, None, sigma=sigma,
+                               sample_sigmas=schedule, shifts=shifts) == (2, 3)
+    assert len(calls) == 1 and calls[0] == (sigma, schedule, shifts, None)
