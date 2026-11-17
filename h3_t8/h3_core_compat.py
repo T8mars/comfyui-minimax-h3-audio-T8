@@ -96,7 +96,7 @@ def plain_attention_backend(override) -> str | None:
 
 def _final_layer_schedule_parameters(forward, *, return_name=False):
     parameters = _parameters(forward)
-    names = {"sigma", "sample_sigmas", "shifts", "grids"}
+    names = {"sigma", "sample_sigmas", "shifts"}
     if not names.intersection(parameters):
         # HyperFlow's own remap closure accepts *args/**kwargs to support both
         # Core FinalLayer ABIs. Inspect its proven delegate's interface only;

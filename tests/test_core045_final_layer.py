@@ -62,3 +62,16 @@ def test_grid_delegate_error_is_not_retried_or_hidden():
         call_h3_final_layer(BrokenLayer(), 2, 3, None, None, sigma=.5,
                              sample_sigmas=None, shifts=(12., 3.), grids=([1., 0.],))
     assert len(calls) == 1
+
+
+def test_optional_grid_keyword_does_not_reject_a_legacy_user_delegate():
+    calls = []
+
+    class UserLayer:
+        def __call__(self, x, t_emb, video_seg, audio_seg, grids=None):
+            calls.append(grids)
+            return x, t_emb
+
+    assert call_h3_final_layer(UserLayer(), 2, 3, None, None, sigma=.5,
+                               sample_sigmas=None, shifts=(12., 3.)) == (2, 3)
+    assert calls == [None]
