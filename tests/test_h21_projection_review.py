@@ -6,6 +6,7 @@ restored; production files, frozen snapshots and prior tests are never edited.
 """
 
 import importlib.util
+import inspect
 from pathlib import Path
 import sys
 from types import FunctionType, MethodType
@@ -36,6 +37,11 @@ def actual_CPU_only(monkeypatch):
 
 
 def final_layer(heads=1):
+    pdd = {}
+    if "pdd_steps" in inspect.signature(core.FinalLayer).parameters:
+        pdd["pdd_steps"] = heads
+    elif heads != 1:
+        pytest.skip("This Core predates native PDD output heads")
     return initialize(
         core.FinalLayer(
             12,
@@ -43,7 +49,7 @@ def final_layer(heads=1):
             3,
             2,
             1e-6,
-            pdd_steps=heads,
+            **pdd,
             dtype=torch.float32,
             device="cpu",
             operations=ops.manual_cast,
@@ -51,17 +57,20 @@ def final_layer(heads=1):
     )
 
 
-def final_inputs():
+def final_inputs(heads=1):
+    from test_h21_projection_chunks import final_schedule
+
     x, t, _, _ = block_inputs()
-    return (
+    values = (
         x,
         t,
         (0, 12, 0),
         (12, 19, 1),
         torch.tensor(0.6),
         torch.tensor([1.0, 0.8, 0.6, 0.2, 0.0]),
-        (12.0, 3.0),
+        final_schedule(heads),
     )
+    return values if "sigma" in inspect.signature(core.FinalLayer.forward).parameters else values[:4]
 
 
 def test_same_key_foreign_callable_identity_is_not_compared_by_value():
@@ -91,7 +100,7 @@ def test_same_key_foreign_callable_identity_is_not_compared_by_value():
 
 @pytest.mark.parametrize("heads", [1, 32])
 def test_final_row_coupled_norm_hook_keeps_original_full_stream_semantics(heads):
-    final, values, seen = final_layer(heads), final_inputs(), []
+    final, values, seen = final_layer(heads), final_inputs(heads), []
 
     def row_coupled(_module, inputs, output):
         seen.append(inputs[0].shape[0])

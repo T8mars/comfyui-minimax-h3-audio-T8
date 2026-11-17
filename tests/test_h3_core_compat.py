@@ -99,7 +99,9 @@ def test_vdn_runtime_guard_survives_clone_and_warns_without_replacing_user_hook(
     }
     cloned = copy.deepcopy(options)
     vdn.validate_vdn_runtime_options(cloned)
-    replacement = lambda *args: "user-hook"
+    def replacement(*args):
+        return "user-hook"
+
     cloned["patches_replace"]["dit"][("double_block", 1)] = replacement
     vdn.validate_vdn_runtime_options(cloned)
     assert cloned["patches_replace"]["dit"][("double_block", 1)] is replacement
@@ -130,7 +132,11 @@ def test_real_core_final_layer_matches_direct_call():
     schedule = dict(sigma=torch.tensor(0.5), sample_sigmas=torch.tensor([1., 0.5, 0.]), shifts=(12, 3))
     actual = call_h3_final_layer(layer, *args, **schedule)
     import inspect
-    expected = layer(*args, **schedule) if "sigma" in inspect.signature(layer.forward).parameters else layer(*args)
+    parameters = inspect.signature(layer.forward).parameters
+    if "grids" in parameters:
+        schedule["grids"] = tuple(minimax_model.pdd_grid(layer.pdd_steps, shift)
+                                  for shift in schedule.pop("shifts"))
+    expected = layer(*args, **schedule) if "sigma" in parameters else layer(*args)
     for left, right in zip(actual, expected):
         torch.testing.assert_close(left, right, rtol=0, atol=0)
 

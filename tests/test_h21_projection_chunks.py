@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+import inspect
 import threading
 from types import MethodType
 
@@ -352,11 +353,22 @@ def test_actual_full_core_embedding_refs_first_mask_and_fp32_final_roundtrip():
     )
 
 
+def final_schedule(heads=1):
+    if "grids" in inspect.signature(core.FinalLayer.forward).parameters:
+        return tuple(core.pdd_grid(heads, shift) for shift in (12.0, 3.0))
+    return (12.0, 3.0)
+
+
 @pytest.mark.parametrize("heads", [1, 32])
 @pytest.mark.parametrize("audio_empty", [False, True])
 def test_real_original_final_pdd_absolute_schedule_vector_rows_and_empty_range(
     heads, audio_empty
 ):
+    pdd = {}
+    if "pdd_steps" in inspect.signature(core.FinalLayer).parameters:
+        pdd["pdd_steps"] = heads
+    elif heads != 1:
+        pytest.skip("This Core predates native PDD output heads")
     final = initialize(
         core.FinalLayer(
             12,
@@ -364,7 +376,7 @@ def test_real_original_final_pdd_absolute_schedule_vector_rows_and_empty_range(
             3,
             2,
             1e-6,
-            pdd_steps=heads,
+            **pdd,
             dtype=torch.float32,
             device="cpu",
             operations=ops.manual_cast,
@@ -384,8 +396,10 @@ def test_real_original_final_pdd_absolute_schedule_vector_rows_and_empty_range(
         aa,
         torch.tensor(0.6),
         torch.tensor([1.0, 0.8, 0.6, 0.2, 0.0]),
-        (12.0, 3.0),
+        final_schedule(heads),
     )
+    if "sigma" not in inspect.signature(core.FinalLayer.forward).parameters:
+        args = args[:4]
     expected = final(*args)
     with chunks.projection_scope(final, chunks.ProjectionPlan(rows=3)) as runtime:
         actual = final(*args)

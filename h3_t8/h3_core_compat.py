@@ -94,9 +94,9 @@ def plain_attention_backend(override) -> str | None:
     return None
 
 
-def _final_layer_schedule_parameters(forward):
+def _final_layer_schedule_parameters(forward, *, return_name=False):
     parameters = _parameters(forward)
-    names = {"sigma", "sample_sigmas", "shifts"}
+    names = {"sigma", "sample_sigmas", "shifts", "grids"}
     if not names.intersection(parameters):
         # HyperFlow's own remap closure accepts *args/**kwargs to support both
         # Core FinalLayer ABIs. Inspect its proven delegate's interface only;
@@ -111,16 +111,32 @@ def _final_layer_schedule_parameters(forward):
                 and forward._t8_hyperflow_owner == state["owner"]
                 and forward._t8_hyperflow_inner is state["final_original"]):
             parameters = _parameters(state["final_original"])
-    present = names.intersection(parameters)
-    if present and present != names:
+    if {"sigma", "sample_sigmas", "grids"} <= parameters:
+        schedule_name = "grids"
+    elif {"sigma", "sample_sigmas", "shifts"} <= parameters:
+        schedule_name = "shifts"
+    elif names.intersection(parameters):
         raise RuntimeError("Unsupported partial H3 FinalLayer schedule interface")
-    return bool(present)
+    else:
+        schedule_name = None
+    return schedule_name if return_name else schedule_name is not None
 
 
-def call_h3_final_layer(layer, x, t_emb, video_seg, audio_seg, *, sigma, sample_sigmas, shifts):
+def call_h3_final_layer(layer, x, t_emb, video_seg, audio_seg, *, sigma, sample_sigmas, shifts,
+                        grids=None):
     forward = getattr(layer, "forward", layer)
     function = getattr(forward, "__func__", forward)
-    if _final_layer_schedule_parameters(function):
+    schedule_name = _final_layer_schedule_parameters(function, return_name=True)
+    if schedule_name == "grids":
+        if grids is None:
+            from comfy.ldm.minimax import model as minimax_model
+
+            # Core 0.45 supplies explicit PDD grids instead of flow shifts.
+            # Use its actual helper and head count, just as native _forward does.
+            grids = tuple(minimax_model.pdd_grid(layer.pdd_steps, shift) for shift in shifts)
+        return layer(x, t_emb, video_seg, audio_seg,
+                     sigma=sigma, sample_sigmas=sample_sigmas, grids=grids)
+    if schedule_name == "shifts":
         return layer(x, t_emb, video_seg, audio_seg,
                      sigma=sigma, sample_sigmas=sample_sigmas, shifts=shifts)
     return layer(x, t_emb, video_seg, audio_seg)
