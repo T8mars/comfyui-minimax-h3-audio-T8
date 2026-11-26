@@ -28,3 +28,5 @@ jobs:
         run: python3 tests/test_core_compat_admission_ci.py
       - name: Verify reviewed November scope and reject altered calls or borrowed media
         run: python3 tests/test_nov05_sampling_admission_ci.py
+      - name: Verify optional Sulphur corrector source and preserved historical bindings
+        run: python3 tests/test_sulphur_sampling_admission_ci.py

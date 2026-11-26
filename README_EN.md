@@ -27,6 +27,7 @@ Use a single complete prompt: [ordinary-prompt workflow index](examples/workflow
 
 |Goal|Start here|
 |---|---|
+|Sulphur-3 optional corrector network|[Nodes and wiring](docs/SULPHUR3_CORRECTOR.md) · [Candidate graph](examples/workflows/99-sulphur3)|
 |2D upscaling / LoRA windows / DMAD / IC / Flash6+3 / audio carry (EXP)|[22 reviewed graphs](examples/workflows/98-nov12-reviewed/README.md) · [Scope and wiring](docs/NOV12_CREATION_EXP.md)|
 |TaoMate-HD / paired noise / NAG / stage reuse / local SFX (EXP)|[Experimental wiring](examples/workflows/96-nov05-exp/README.md) · [Usage and validation scope](docs/NOV05_INTEGRATION.md)|
 |Pika H3 Flex six-step text / endpoint / reference generation (EXP)|[Three picture-reviewed workflows](examples/workflows/94-pika-flex/README.md) · [Guide](docs/PIKA_H3_FLEX.md)|

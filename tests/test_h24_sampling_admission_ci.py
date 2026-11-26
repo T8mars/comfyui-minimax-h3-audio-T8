@@ -38,11 +38,13 @@ class H24ReviewedSource(unittest.TestCase):
         clock = json.loads((ROOT / clock_path).read_text(encoding='utf8'))
         release_path = 'tests/fixtures/release_1_106_sampling_source.json'
         release = json.loads((ROOT / release_path).read_text(encoding='utf8'))
+        sulphur_path = 'tests/fixtures/sulphur_corrector_source.json'
+        sulphur = json.loads((ROOT / sulphur_path).read_text(encoding='utf8'))
         for name in [*self.review['files'], self.path, 'tests/fixtures/h21_reviewed_sampling_1_102.json',
                      *h27['files'], h27_path, *pika['files'], pika_path, *dual['files'], dual_path,
                      *compat['files'], compat_path, *november['files'], november_path,
                      *nov12['files'], nov12_path, *audio['files'], audio_path,
-                     *clock['files'], clock_path, *release['files'], release_path]:
+                     *clock['files'], clock_path, *sulphur['files'], sulphur_path, *release['files'], release_path]:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)

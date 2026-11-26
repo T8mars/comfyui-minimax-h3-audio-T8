@@ -8027,5 +8027,31 @@
       "private27Bwriting-guide examples",
       "RGBrefiner as a new default16MP path"
     ]
+  },
+  "sulphur3_corrector_development": {
+    "status": "implemented_CPU_and_full_corrector_GPU_verified_no_trained_H3_media",
+    "published": false,
+    "deployed_to_user_Core": false,
+    "preserved_registered_prefix": 804,
+    "appended_nodes": [
+      "MiniMaxH3CorrectorLoaderT8",
+      "MiniMaxH3CorrectorApplyT8"
+    ],
+    "registered_nodes": 806,
+    "documentation": [
+      "docs/SULPHUR3_CORRECTOR.md"
+    ],
+    "trained_H3_media_generated": false,
+    "human_quality_accepted": false,
+    "model_revision": "988224b9913740d60ee54b5a53c7a892467edc76",
+    "actual_CPU_Core_versions": [
+      "0.46.0",
+      "0.43.0",
+      "0.41.1"
+    ],
+    "full_corrector_weights_verified": true,
+    "full_corrector_CPU_and_CUDA_original_parity": true,
+    "actual_GPU_Core_sampler_two_MODEL_branches": true,
+    "portable_Stage_cache_resume_supported": false
   }
 }

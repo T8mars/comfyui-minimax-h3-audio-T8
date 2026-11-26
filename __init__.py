@@ -390,8 +390,14 @@ class _NovemberAudioContinuationExtension(_NovemberAudioTailExtension):
         return [*(await super().get_node_list()), *NODES]
 
 
+class _SulphurCorrectorExtension(_NovemberAudioContinuationExtension):
+    async def get_node_list(self):
+        from .nodes_sulphur_corrector import NODES
+        return [*(await super().get_node_list()), *NODES]
+
+
 def comfy_entrypoint():
-    return _NovemberAudioContinuationExtension()
+    return _SulphurCorrectorExtension()
 
 
 WEB_DIRECTORY = "./web"

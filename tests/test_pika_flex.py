@@ -186,4 +186,5 @@ def test_schema_and_original_published_registration_prefix_are_preserved():
     # Metadata may append this node as development proceeds; the released prefix
     # remains an exact ordered comparison, not a recaptured baseline.
     assert actual[:778] == expected[:778]
-    assert actual[778:] == [MiniMaxH3PikaFlexSetupEXPT8.__name__, 'MiniMaxH3PikaTwoPassSamplerEXPT8']
+    assert actual[778:780] == [MiniMaxH3PikaFlexSetupEXPT8.__name__, 'MiniMaxH3PikaTwoPassSamplerEXPT8']
+    assert actual[:len(expected)] == expected

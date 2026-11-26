@@ -1,0 +1,231 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "s3.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "MiniMaxH3CorrectorLoaderT8",
+    "inputs": {
+      "corrector": "s3_corrector.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "MiniMaxH3LowVRAMAttentionT8Advanced",
+    "inputs": {
+      "head_chunks": 8,
+      "model": [
+        "1",
+        0
+      ]
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ChunkFeedForwardT8Advanced",
+    "inputs": {
+      "chunks": 8,
+      "seq_threshold": 256,
+      "model": [
+        "3",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "6": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "MiniMaxH3AudioConditioningT8",
+    "inputs": {
+      "prompt": "A photorealistic medium shot in a sunlit pottery studio. An adult woman in a blue shirt slowly turns a white ceramic cup in both hands, sets it on a wooden table, and smiles at the camera. The camera stays steady. Clear natural daylight, consistent hands and clothing. Quiet room ambience and a soft ceramic tap. No speech, no subtitles.",
+      "width": 672,
+      "height": 384,
+      "length": 124,
+      "task_type": "T2VA",
+      "audio_mode": "native",
+      "audio_denoise_strength": 0.35,
+      "add_source_as_reference": false,
+      "prompt_primary_audio_ordinal": 0,
+      "strict_prompt_tags": true,
+      "ref_image_size": "match",
+      "reference_video_policy": "official_2_to_15s",
+      "allow_above_reference_area": true,
+      "clip": [
+        "5",
+        0
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "MiniMaxH3CorrectorApplyT8",
+    "inputs": {
+      "strength": 1.0,
+      "budget_fraction": 0.5,
+      "velocity_floor": 0.001,
+      "start_step": 0,
+      "end_step": -1,
+      "model": [
+        "17",
+        0
+      ],
+      "corrector": [
+        "2",
+        0
+      ],
+      "sigmas": [
+        "18",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ],
+      "conditioning": [
+        "8",
+        0
+      ]
+    }
+  },
+  "11": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 20261126
+    }
+  },
+  "12": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "11",
+        0
+      ],
+      "guider": [
+        "10",
+        0
+      ],
+      "sampler": [
+        "19",
+        0
+      ],
+      "sigmas": [
+        "18",
+        0
+      ],
+      "latent_image": [
+        "8",
+        1
+      ]
+    }
+  },
+  "13": {
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "inputs": {
+      "av_latent": [
+        "12",
+        1
+      ],
+      "video_vae": [
+        "6",
+        0
+      ],
+      "audio_vae": [
+        "7",
+        0
+      ]
+    }
+  },
+  "14": {
+    "class_type": "MiniMaxH3OutputTrimT8",
+    "inputs": {
+      "start_seconds": -0.0,
+      "duration_seconds": 5.166666666666667,
+      "fps": 24,
+      "frame_count": 124,
+      "frames": [
+        "13",
+        0
+      ],
+      "audio": [
+        "13",
+        1
+      ]
+    }
+  },
+  "15": {
+    "class_type": "MiniMaxH3SafeAVSaveT8Advanced",
+    "inputs": {
+      "filename_prefix": "Sulphur3/Corrector_T2VA_EXP",
+      "crf": 18,
+      "preserve_audio_length": false,
+      "images": [
+        "14",
+        0
+      ],
+      "audio": [
+        "14",
+        1
+      ]
+    }
+  },
+  "17": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "shift_video": 12.0,
+      "shift_audio": 3.0,
+      "model": [
+        "4",
+        0
+      ]
+    }
+  },
+  "18": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 20,
+      "denoise": 1.0,
+      "model": [
+        "17",
+        0
+      ]
+    }
+  },
+  "19": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  }
+}

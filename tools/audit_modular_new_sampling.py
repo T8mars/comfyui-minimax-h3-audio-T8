@@ -717,6 +717,36 @@ def _release_1106_review(root, predecessor):
     return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
 
 
+def _sulphur_review(root, predecessor):
+    """Bound the optional post-CFG extension without relabelling old media."""
+    path = root / 'tests/fixtures/sulphur_corrector_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'__init__.py', 'tools/audit_modular_new_sampling.py',
+               'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py',
+               'tests/test_h27_sampling_admission_ci.py',
+               '.github/workflows/modular-sampling-admission.yml'}
+    helpers = {'h3_t8/sulphur_corrector_network.py', 'h3_t8/sulphur_corrector.py',
+               'h3_t8/nodes_sulphur_corrector.py',
+               'examples/workflows/99-sulphur3/S3_Corrector_T2VA_EXP.json',
+               'examples/workflows/99-sulphur3/S3_Corrector_T2VA_EXP_API.json'}
+    required = {'schema', 'previous_files', 'files', 'runtime_sites_added',
+                'preserved_nodes', 'registered_nodes', 'appended_nodes',
+                'human_quality_accepted', 'scope'}
+    if (set(review) != required or review['schema'] != 't8.sulphur_corrector.source.v1'
+            or set(review['previous_files']) != changed
+            or any(predecessor['files'].get(k) != v for k, v in review['previous_files'].items())
+            or set(review['files']) != changed | helpers
+            or review['runtime_sites_added'] != 0 or review['preserved_nodes'] != 804
+            or review['registered_nodes'] != 806
+            or review['appended_nodes'] != ['MiniMaxH3CorrectorLoaderT8', 'MiniMaxH3CorrectorApplyT8']
+            or review['human_quality_accepted'] is not False or not review['scope']):
+        raise ValueError('Invalid bounded Sulphur corrector source review')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -761,6 +791,7 @@ def _h27_review(root):
     review = _nov16_audio_review(root, review)
     review = _nov17_audio_review(root, review)
     review = _release_1106_review(root, review)
+    review = _sulphur_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

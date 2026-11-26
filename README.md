@@ -27,6 +27,7 @@ Windows 更新提示 `Filename too long`？见[短路径与恢复说明](docs/WI
 
 |你想做什么|入口|
 |---|---|
+|Sulphur-3 可选 Corrector 修正网络|[节点与接线](docs/SULPHUR3_CORRECTOR.md) · [候选工作流](examples/workflows/99-sulphur3)|
 |2D放大／LoRA区间／DMAD／IC／Flash6+3／声音尾接（EXP）|[22套已审图](examples/workflows/98-nov12-reviewed/README.md) · [接线与范围](docs/NOV12_CREATION_EXP.md)|
 |TaoMate-HD／关联噪声／NAG／阶段复用／局部音效（EXP）|[实验接线](examples/workflows/96-nov05-exp/README.md) · [用法与验证范围](docs/NOV05_INTEGRATION.md)|
 |Pika H3 Flex 6步文字／首尾帧／参考图（EXP）|[三套已审工作流](examples/workflows/94-pika-flex/README.md) · [用法](docs/PIKA_H3_FLEX.md)|

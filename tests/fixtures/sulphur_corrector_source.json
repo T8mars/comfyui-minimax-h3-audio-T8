@@ -1,0 +1,33 @@
+{
+  "schema": "t8.sulphur_corrector.source.v1",
+  "previous_files": {
+    "__init__.py": "ab744ca97a8e68fd4b009d6d52bb2b4e7ffe7152149353a6ae042954df97aa45",
+    "tools/audit_modular_new_sampling.py": "60e54e11a03ac4ec0cc588312a224d2337fb3bc212f92434e860a53a6e55a216",
+    "tests/test_h21_sampling_admission_ci.py": "f86499987714dc16859e1593ef5b76f636bfbcda3638912efc9c0f6f0b845cd1",
+    "tests/test_h24_sampling_admission_ci.py": "9ddf71b257a35fccd86fcf27b1a506616056b0c1cd4c9b02ee9a354cf5d749dd",
+    "tests/test_h27_sampling_admission_ci.py": "d7d375a11e749168c68dcb157d6f88ad3c0af78f0b8b4e32e6a0d6666bc50dcf",
+    ".github/workflows/modular-sampling-admission.yml": "bb49551a02e3f3cbe4fbea26048f50d268905ac9f570a2028ad577a3fd66640f"
+  },
+  "files": {
+    "__init__.py": "d03a40e56db228a77b5201a82ee0a61c54de2b199f3c378a849cca1903560221",
+    "tools/audit_modular_new_sampling.py": "84fca4cdcf1963aa468cdaca91c9cfa5bfd3b31262a0e070d55ddd1e46b63ffb",
+    "tests/test_h21_sampling_admission_ci.py": "7bad9700306cda23b3490c302563f406852821e62fab42f63cfbe57610d2bd74",
+    "tests/test_h24_sampling_admission_ci.py": "f7afeec5e3a38dc09a4aa586f479df3d84465dd3945f034bf3f91dc08842c5f0",
+    "tests/test_h27_sampling_admission_ci.py": "119c3c53fd96c5e9f3a5f6170c061315951f6da60fbb4a513233807bd72220a0",
+    ".github/workflows/modular-sampling-admission.yml": "af97776142a29744ce2e422d64504e52a635eeccd745d52e2c439d71a9ff0a3b",
+    "h3_t8/sulphur_corrector_network.py": "329ed3575d7f20fa5c20c8ef0463d9d65b0739a95e8d716fe6f47e15e550715e",
+    "h3_t8/sulphur_corrector.py": "88625b00704566b35a7e1413bc9b776355224f0dc102d3d569f39dec7e46a443",
+    "h3_t8/nodes_sulphur_corrector.py": "786b840ba88db7ccbef7dd906d501639dfa191b9f90a5dda916ad7d85fb313d3",
+    "examples/workflows/99-sulphur3/S3_Corrector_T2VA_EXP.json": "c2520d5cdf5e92069f8d49bcfbba205d640322675349b2a2425df9eee450f92d",
+    "examples/workflows/99-sulphur3/S3_Corrector_T2VA_EXP_API.json": "ab8cc00f83f7c842c6cfb12c6f1c23ce2f44bfc4a5fa03505746a82d2a5c1ad7"
+  },
+  "runtime_sites_added": 0,
+  "preserved_nodes": 804,
+  "registered_nodes": 806,
+  "appended_nodes": [
+    "MiniMaxH3CorrectorLoaderT8",
+    "MiniMaxH3CorrectorApplyT8"
+  ],
+  "human_quality_accepted": false,
+  "scope": "Append two optional Sulphur corrector entrypoints and a separate network; post-CFG velocity correction without changing existing samplers, model selections, audio slices or reviewed workflows. No historical ledger or media acceptance is recaptured."
+}

@@ -1,5 +1,9 @@
 # 更新日志 / Changelog
 
+## 未发布 / Unreleased
+
+- 新增 Sulphur-3 可选 Corrector 加载／应用节点，保留FP32、现有LoRA与后处理链。提供20步普通提示词候选图，不替换已审工作流；[接线与验证范围](docs/SULPHUR3_CORRECTOR.md)。
+
 ## 1.106.3 — 2026-11-17
 
 - 保留旧shift协议优先级，避免旧用户层增加可选grids后被错误切到新接口；原四参数与原生Core0.45网格接口保持。

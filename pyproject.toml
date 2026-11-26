@@ -21,6 +21,8 @@ PublisherId = "t8star"
 DisplayName = "MiniMax H3 Audio T8"
 Icon = "https://avatars.githubusercontent.com/u/96167788"
 includes = [
+    "docs/SULPHUR3_CORRECTOR.md", "THIRD_PARTY_NOTICES/SULPHUR3-SOURCES.md",
+    "THIRD_PARTY_NOTICES/SULPHUR3-MODEL-LICENSE.txt",
     "docs/RELEASE_1.106.3.md",
     "docs/RELEASE_1.106.2.md",
     "docs/RELEASE_1.106.1.md", "docs/COMMUNITY_ISSUES_20261117.md",
