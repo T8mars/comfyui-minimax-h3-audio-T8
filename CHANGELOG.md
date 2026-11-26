@@ -1,8 +1,8 @@
 # 更新日志 / Changelog
 
-## 未发布 / Unreleased
+## 1.107.0 — 2026-11-26
 
-- 新增 Sulphur-3 可选 Corrector 加载／应用节点，保留FP32、现有LoRA与后处理链。提供20步普通提示词候选图，不替换已审工作流；[接线与验证范围](docs/SULPHUR3_CORRECTOR.md)。
+- 新增 Sulphur-3 可选 Corrector 加载与应用节点。支持单采和双采，沿用所选 LoRA 和后处理顺序。附 20 步 Euler 候选工作流。[版本说明](docs/RELEASE_1.107.0.md) · [接线与验证范围](docs/SULPHUR3_CORRECTOR.md)
 
 ## 1.106.3 — 2026-11-17
 

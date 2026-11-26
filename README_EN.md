@@ -2,9 +2,9 @@
 
 MiniMax H3 video/audio nodes for ComfyUI: reference control, two-pass and long-video workflows, speech and singing, camera editing, and optional enhancement.
 
-[简体中文](README.md) | English · Current version: **1.106.3** · [Changelog](CHANGELOG.md)
+[简体中文](README.md) | English · Current version: **1.107.0** · [Changelog](CHANGELOG.md)
 
-[This release](docs/RELEASE_1.106.0.md): Core0.45 FinalLayer compatibility and community issue maintenance; [22 reviewed creation workflows](examples/workflows/98-nov12-reviewed/README.md).
+This release adds Sulphur-3 Corrector loader and apply nodes. [Release notes](docs/RELEASE_1.107.0.md) · [22 reviewed creation workflows](examples/workflows/98-nov12-reviewed/README.md)
 
 ## Install
 

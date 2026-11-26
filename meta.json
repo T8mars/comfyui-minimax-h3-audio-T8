@@ -1413,7 +1413,7 @@
     ]
   },
   "name": "minimax-h3-audio-T8",
-  "version": "1.106.3",
+  "version": "1.107.0",
   "release_1_79_0": {
     "scope": "Dual-MODEL4+learned-upscale+4, KJ/Sol integration, official regular Topaz upscaling, R1 reliability, VDN upstream override coexistence",
     "qualification": "Reviewed two-segment8s prefix-lock sample accepted; old workflow defaults preserved.177 targetedCPU and62 VDN/Core checks passed; no GPU rerun for override gate removal.",
@@ -2705,7 +2705,8 @@
   },
   "sulphur3_corrector_development": {
     "status": "implemented_CPU_and_full_corrector_GPU_verified_no_trained_H3_media",
-    "published": false,
+    "published": true,
+    "release_version": "1.107.0",
     "deployed_to_user_Core": false,
     "preserved_registered_prefix": 804,
     "appended_nodes": [

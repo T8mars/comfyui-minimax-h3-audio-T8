@@ -8030,7 +8030,8 @@
   },
   "sulphur3_corrector_development": {
     "status": "implemented_CPU_and_full_corrector_GPU_verified_no_trained_H3_media",
-    "published": false,
+    "published": true,
+    "release_version": "1.107.0",
     "deployed_to_user_Core": false,
     "preserved_registered_prefix": 804,
     "appended_nodes": [
