@@ -88,6 +88,38 @@ def test_corrector_folder_retains_external_paths_and_extensions(tmp_path, monkey
     assert {'.custom', '.safetensors'} <= extensions
 
 
+def test_loader_lists_and_loads_correctors_from_both_folders(tmp_path, monkeypatch):
+    legacy, loras, extra = (tmp_path / name for name in ('h3_correctors', 'loras', 'extra_loras'))
+    for folder in (legacy, loras, extra / 'nested'):
+        folder.mkdir(parents=True)
+    monkeypatch.setattr(folder_paths, 'models_dir', str(tmp_path))
+    monkeypatch.setattr(folder_paths, 'filename_list_cache', {})
+    monkeypatch.setitem(folder_paths.folder_names_and_paths, 'h3_correctors', ([str(legacy)], {'.safetensors'}))
+    monkeypatch.setitem(folder_paths.folder_names_and_paths, 'loras', ([str(loras), str(extra)], {'.safetensors'}))
+
+    network = tiny_corrector()['network']
+    weights = network.state_dict()
+    for file, value in [(legacy/'legacy.safetensors', 1.), (legacy/'shared.safetensors', 2.),
+                        (loras/'shared.safetensors', 3.), (loras/'renamed.safetensors', 4.),
+                        (extra/'nested/extra.safetensors', 5.)]:
+        weights['patch_out.bias'].fill_(value)
+        save_file(weights, str(file), metadata=network.config.to_metadata())
+    save_file({'lora.weight': torch.ones(1)}, str(loras/'ordinary.safetensors'))
+    (loras/'broken.safetensors').write_bytes(b'not a safetensors file')
+    choices = MiniMaxH3CorrectorLoaderT8.GET_NODE_INFO_V1()['input']['required']['corrector'][1]['options']
+    assert {Path(name).as_posix() for name in choices} == {
+        'legacy.safetensors', 'shared.safetensors', 'renamed.safetensors', 'nested/extra.safetensors'}
+    for filename, value in [('legacy.safetensors', 1.), ('shared.safetensors', 2.),
+                            ('renamed.safetensors', 4.), ('nested/extra.safetensors', 5.)]:
+        selected = MiniMaxH3CorrectorLoaderT8.execute(filename).result[0]
+        assert torch.equal(selected['network'].patch_out.bias, torch.full_like(weights['patch_out.bias'], value))
+    with pytest.raises(ValueError, match='architecture metadata'):
+        MiniMaxH3CorrectorLoaderT8.execute('ordinary.safetensors')
+    (legacy/'shared.safetensors').unlink()
+    selected = MiniMaxH3CorrectorLoaderT8.execute('shared.safetensors').result[0]
+    assert torch.equal(selected['network'].patch_out.bias, torch.full_like(weights['patch_out.bias'], 3.))
+
+
 @pytest.mark.parametrize('fault', ['metadata', 'missing_tensor', 'wrong_shape'])
 def test_actual_invalid_weight_files_fail(tmp_path, monkeypatch, fault):
     chosen = tiny_corrector()

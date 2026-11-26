@@ -11,7 +11,7 @@ class MiniMaxH3CorrectorLoaderT8(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(node_id=cls.__name__, display_name='H3 Sulphur · Corrector加载 / Load (T8)',
                          category='T8/MiniMax H3/Corrector',
-                         description='加载 models/h3_correctors 中的独立修正网络，保留FP32权重。'
+                         description='从 models/loras 或 models/h3_correctors 加载 Corrector，保留FP32权重。'
                                      '它不是LoRA，不加载或更换H3底模；原版s3_corrector约需8GB权重内存。',
                          inputs=[io.Combo.Input('corrector', options=corrector_names())],
                          outputs=[CORRECTOR.Output('corrector'), io.String.Output('report_json')])

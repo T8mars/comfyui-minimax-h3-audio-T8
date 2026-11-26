@@ -7,11 +7,11 @@ Sulphur-3 底模使用现有 `UNETLoader`；`s3_raw_lora` 使用现有 H3 LoRA �
 |文件|目录|用途|
 |---|---|---|
 |`s3.safetensors` 或自选 H3 底模|`ComfyUI/models/diffusion_models/`|由原有底模加载器加载|
-|`s3_corrector.safetensors`|`ComfyUI/models/h3_correctors/`|由 `H3 Sulphur · Corrector加载 / Load (T8)` 加载|
+|`s3_corrector.safetensors`|`ComfyUI/models/loras/` 或 `ComfyUI/models/h3_correctors/`|由 `H3 Sulphur · Corrector加载 / Load (T8)` 加载|
 
 加载节点 ID 为 `MiniMaxH3CorrectorLoaderT8`，输出 `H3_CORRECTOR` 和准备报告；应用节点 ID 为 `MiniMaxH3CorrectorApplyT8`，输出修正后的 `MODEL` 和准备报告。类型与原节点兼容；节点 ID 使用 T8 名称，避免与原插件冲突。原插件的 Load/Apply 也可跨接相同类型。旧图里的 `LoadH3Corrector`、`ApplyH3Corrector` 不会被静默替换，迁移时换成这两个节点并保留参数。
 
-搜索路径可通过 `extra_model_paths.yaml` 的 `h3_correctors` 配置，已有路径和扩展名不会被清除。节点不自动下载或改名模型，不根据底模名称作准入限制。
+从 `loras` 读取带 `h3_corrector` 架构元数据的 Safetensors 文件。`extra_model_paths.yaml` 配置的 `h3_correctors` 和 `loras` 路径同样可用。两个类别里有相同相对文件名时，优先选用 `h3_correctors`，原工作流可以继续使用原文件。
 
 原文件有 1,997,065,056 个参数，FP32 权重占 7,988,260,224 字节；文件总长 7,988,398,520 字节。加载保持 **FP32**，CUDA 前向按原节点使用 BF16 autocast。不能把权重直接降到 BF16 冒充原版配方；底模、文本编码器、激活还需要额外内存。Corrector 交给 ComfyUI 的 additional-model 管理加载与卸载，不常驻一个独立隐藏 CUDA 模型。
 
@@ -59,7 +59,7 @@ Sulphur-3 底模使用现有 `UNETLoader`；`s3_raw_lora` 使用现有 H3 LoRA �
 
 ## English summary
 
-Load the optional FP32 corrector from `models/h3_correctors` and apply it to your MODEL before the guider. The two T8 nodes use the upstream `H3_CORRECTOR` socket type; the original plugin is not required. Existing MODEL choices, LoRAs, callbacks, conditions and sampling settings stay selected.
+Load the optional FP32 corrector from `models/loras` or `models/h3_correctors` and apply it to your MODEL before the guider. The loader identifies corrector files in the LoRA folder by their `h3_corrector` metadata. If a relative filename exists in both locations, `h3_correctors` takes precedence. Both nodes use the upstream `H3_CORRECTOR` socket type.
 
 The author's single-pass baseline is Euler/simple, 20 steps, CFG1 and video/audio shifts12/3. For two-pass graphs, apply separately to both MODEL branches, retaining each branch's existing recipe. The audio slice is untouched within each callback; subsequent joint H3 denoising can still change the final audio. A missing sampler schedule produces a warning and skips correction unless optional fallback sigmas are connected.
 

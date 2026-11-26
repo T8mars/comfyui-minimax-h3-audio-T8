@@ -747,6 +747,23 @@ def _sulphur_review(root, predecessor):
     return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
 
 
+def _sulphur_paths_review(root, predecessor):
+    """Allow the loader lookup update without rebinding the sampler ledger."""
+    path = root / 'tests/fixtures/sulphur_corrector_paths_source.json'
+    if not path.is_file():
+        return predecessor
+    review = json.loads(path.read_text(encoding='utf8'))
+    changed = {'h3_t8/sulphur_corrector.py', 'h3_t8/nodes_sulphur_corrector.py',
+               'tools/audit_modular_new_sampling.py', 'tests/test_h21_sampling_admission_ci.py',
+               'tests/test_h24_sampling_admission_ci.py', 'tests/test_h27_sampling_admission_ci.py'}
+    if (set(review) != {'schema', 'previous_files', 'files'}
+            or review['schema'] != 't8.sulphur_corrector.paths_source.v1'
+            or set(review['previous_files']) != changed or set(review['files']) != changed
+            or any(predecessor['files'].get(k) != v for k, v in review['previous_files'].items())):
+        raise ValueError('Invalid bounded Sulphur corrector path update')
+    return {**predecessor, 'files': {**predecessor['files'], **review['files']}}
+
+
 def _h27_review(root):
     """Two explicitly reviewed builder replacements; historical ledgers stay fixed."""
     root = Path(root).resolve()
@@ -792,6 +809,7 @@ def _h27_review(root):
     review = _nov17_audio_review(root, review)
     review = _release_1106_review(root, review)
     review = _sulphur_review(root, review)
+    review = _sulphur_paths_review(root, review)
     for relative, expected in review['files'].items():
         target = root / relative
         if (Path(relative).is_absolute() or '..' in Path(relative).parts or target.is_symlink()

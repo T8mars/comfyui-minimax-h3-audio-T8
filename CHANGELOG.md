@@ -1,5 +1,9 @@
 # 更新日志 / Changelog
 
+## 未发布 / Unreleased
+
+- Corrector 加载节点支持从 `models/loras` 选择模型。旧 `models/h3_correctors` 目录继续可用，同名时优先读取旧目录。[用法](docs/SULPHUR3_CORRECTOR.md)
+
 ## 1.107.0 — 2026-11-26
 
 - 新增 Sulphur-3 可选 Corrector 加载与应用节点。支持单采和双采，沿用所选 LoRA 和后处理顺序。附 20 步 Euler 候选工作流。[版本说明](docs/RELEASE_1.107.0.md) · [接线与验证范围](docs/SULPHUR3_CORRECTOR.md)

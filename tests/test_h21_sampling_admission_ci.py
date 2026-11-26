@@ -59,7 +59,7 @@ class H21ReleaseAdmission(unittest.TestCase):
         sulphur = json.loads((ROOT / sulphur_path).read_text(encoding='utf8'))
         with tempfile.TemporaryDirectory(prefix='h21-source-admission-') as temporary:
             root = Path(temporary)
-            for relative in set([*sulphur['files'], sulphur_path, *release['files'], release_path, *clock['files'], clock_path, *audio['files'], audio_path, *nov12['files'], nov12_path, *november['files'], november_path, *compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
+            for relative in set([*sulphur['files'], sulphur_path, 'tests/fixtures/sulphur_corrector_paths_source.json', *release['files'], release_path, *clock['files'], clock_path, *audio['files'], audio_path, *nov12['files'], nov12_path, *november['files'], november_path, *compat['files'], compat_path, *dual['files'], dual_path, *pika['files'], pika_path, *self.review['files'], *successor['files'], successor_path, *h27['files'], h27_path,
                                  'tests/fixtures/h21_reviewed_sampling_1_102.json']):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,19 @@
+{
+  "schema": "t8.sulphur_corrector.paths_source.v1",
+  "previous_files": {
+    "h3_t8/sulphur_corrector.py": "88625b00704566b35a7e1413bc9b776355224f0dc102d3d569f39dec7e46a443",
+    "h3_t8/nodes_sulphur_corrector.py": "786b840ba88db7ccbef7dd906d501639dfa191b9f90a5dda916ad7d85fb313d3",
+    "tools/audit_modular_new_sampling.py": "84fca4cdcf1963aa468cdaca91c9cfa5bfd3b31262a0e070d55ddd1e46b63ffb",
+    "tests/test_h21_sampling_admission_ci.py": "7bad9700306cda23b3490c302563f406852821e62fab42f63cfbe57610d2bd74",
+    "tests/test_h24_sampling_admission_ci.py": "f7afeec5e3a38dc09a4aa586f479df3d84465dd3945f034bf3f91dc08842c5f0",
+    "tests/test_h27_sampling_admission_ci.py": "119c3c53fd96c5e9f3a5f6170c061315951f6da60fbb4a513233807bd72220a0"
+  },
+  "files": {
+    "h3_t8/sulphur_corrector.py": "fa6293262c8351df17189ee46ff9e6154a1c151875e68deb920a5c0defb8ce8e",
+    "h3_t8/nodes_sulphur_corrector.py": "7a86af659f59d72f36c96de7ce2455debd46dcb0a81408fe70e2cb339696f74d",
+    "tools/audit_modular_new_sampling.py": "d9f0724b90c833b4916dbbb6223ad77ea42adcdb2f5a4db054f55831881ad432",
+    "tests/test_h21_sampling_admission_ci.py": "4ae79d544a386a05907c08ea656ef6d426aec3f17fd3e83f24a673aebedbfca7",
+    "tests/test_h24_sampling_admission_ci.py": "6311452c4f5106c325cee97502e20e08052d9c79ca7dcc1a711f78215de10b8a",
+    "tests/test_h27_sampling_admission_ci.py": "9b8fb972e1fb2b8fe60293b33f17312e0ca1ab1f387da167d8ad353280df8437"
+  }
+}

@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from functools import lru_cache
 import json
 import logging
 import math
 from pathlib import Path
 
 import torch
-from safetensors import safe_open
+from safetensors import SafetensorError, safe_open
 from safetensors.torch import load_file
 
 import comfy.model_management
@@ -31,12 +32,38 @@ def register_corrector_folder():
 
 def corrector_names():
     register_corrector_folder()
-    return folder_paths.get_filename_list('h3_correctors')
+    names = set(folder_paths.get_filename_list('h3_correctors'))
+    for filename in folder_paths.get_filename_list('loras'):
+        if filename in names or Path(filename).suffix.lower() != '.safetensors':
+            continue
+        path = folder_paths.get_full_path('loras', filename)
+        if path is None:
+            continue
+        try:
+            stat = Path(path).stat()
+            identity = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+            if _has_corrector_metadata(path, identity):
+                names.add(filename)
+        except (OSError, SafetensorError):
+            # An unreadable unrelated LoRA must not break the dropdown.
+            continue
+    return sorted(names)
+
+
+@lru_cache(maxsize=1024)
+def _has_corrector_metadata(path, file_identity):
+    """Use the file stat in the cache key so replaced models are rescanned."""
+    with safe_open(path, framework='pt', device='cpu') as handle:
+        return 'h3_corrector' in (handle.metadata() or {})
 
 
 def load_corrector(corrector):
     register_corrector_folder()
-    path = folder_paths.get_full_path_or_raise('h3_correctors', corrector)
+    path = folder_paths.get_full_path('h3_correctors', corrector)
+    if path is None and Path(corrector).suffix.lower() == '.safetensors':
+        path = folder_paths.get_full_path('loras', corrector)
+    if path is None:
+        raise FileNotFoundError(f"Corrector '{corrector}' not found in h3_correctors or loras.")
     with safe_open(path, framework='pt', device='cpu') as handle:
         config = CorrectorConfig.from_metadata(handle.metadata())
     # Avoid initializing an 8 GB throwaway random network before loading it.

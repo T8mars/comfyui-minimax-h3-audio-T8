@@ -44,7 +44,7 @@ class H24ReviewedSource(unittest.TestCase):
                      *h27['files'], h27_path, *pika['files'], pika_path, *dual['files'], dual_path,
                      *compat['files'], compat_path, *november['files'], november_path,
                      *nov12['files'], nov12_path, *audio['files'], audio_path,
-                     *clock['files'], clock_path, *sulphur['files'], sulphur_path, *release['files'], release_path]:
+                     *clock['files'], clock_path, *sulphur['files'], sulphur_path, 'tests/fixtures/sulphur_corrector_paths_source.json', *release['files'], release_path]:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)
